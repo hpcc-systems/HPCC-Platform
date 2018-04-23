@@ -2,31 +2,31 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DEDUP">
-  <!-- DNT-Start --><title>DEDUP<indexterm>
+  <title>DEDUP<indexterm>
       <primary>DEDUP</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->DEDUP<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->DEDUP<!-- DNT-End --> function</primary>
+  <para><emphasis role="bold">DEDUP<indexterm>
+      <primary>DEDUP function</primary>
     </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
   role="bold">[,</emphasis><emphasis> condition </emphasis><emphasis
-  role="bold">[[<!-- DNT-Start -->MANY<!-- DNT-End -->], <!-- DNT-Start -->ALL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->ALL<!-- DNT-End --></primary>
-    </indexterm>[, <!-- DNT-Start -->HASH<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->HASH<!-- DNT-End --></primary>
-    </indexterm>]] [,<!-- DNT-Start -->BEST<!-- DNT-End --> (<indexterm>
-      <primary><!-- DNT-Start -->BEST<!-- DNT-End --></primary>
+  role="bold">[[MANY], ALL<indexterm>
+      <primary>ALL</primary>
+    </indexterm>[, HASH<indexterm>
+      <primary>HASH</primary>
+    </indexterm>]] [,BEST (<indexterm>
+      <primary>BEST</primary>
     </indexterm></emphasis><emphasis>sort-list</emphasis><emphasis
-  role="bold">)[[, <!-- DNT-Start -->KEEP<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->KEEP<!-- DNT-End --></primary>
+  role="bold">)[[, KEEP<indexterm>
+      <primary>KEEP</primary>
     </indexterm> </emphasis><emphasis>n </emphasis><emphasis role="bold">]
   [</emphasis>,<emphasis> keeper </emphasis><emphasis role="bold">] ]
-  [</emphasis><emphasis>, </emphasis><emphasis role="bold"><!-- DNT-Start -->LOCAL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --></primary>
-    </indexterm>]</emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> |
-  <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis>
+  [</emphasis><emphasis>, </emphasis><emphasis role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>]</emphasis> <emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -37,7 +37,7 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>recordset</emphasis></entry>
 
             <entry>The set of records to process, typically sorted in the same
             order that the expression will test. This may be the name of a
@@ -46,20 +46,20 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>condition</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>condition</emphasis></entry>
 
             <entry>Optional. A comma-delimited list of expressions or key
             fields in the recordset that defines "duplicate" records. The
-            keywords <!-- DNT-Start -->LEFT<!-- DNT-End --> and <!-- DNT-Start -->RIGHT<!-- DNT-End --> may be used as dataset qualifiers for
+            keywords LEFT and RIGHT may be used as dataset qualifiers for
             fields in the recordset. If the condition is omitted, every
             recordset field becomes the match condition. You may use the
-            keyword <!-- DNT-Start -->RECORD<!-- DNT-End --> (or <!-- DNT-Start -->WHOLE<!-- DNT-End --> <!-- DNT-Start -->RECORD<!-- DNT-End -->) to indicate all fields in that
-            structure, and/or you may use the keyword <!-- DNT-Start -->EXCEPT<!-- DNT-End --> to list non-dedup
+            keyword RECORD (or WHOLE RECORD) to indicate all fields in that
+            structure, and/or you may use the keyword EXCEPT to list non-dedup
             fields in the structure.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">MANY</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">MANY</emphasis></entry>
 
             <entry>Optional. Specifies or perform a local sort/dedup before
             finding duplicates globally. This is most useful when many
@@ -67,7 +67,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
 
             <entry>Optional. Matches the condition against all records, not
             just adjacent records. This option may change the output order of
@@ -75,23 +75,23 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">HASH</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">HASH</emphasis></entry>
 
-            <entry>Optional. Specifies the <!-- DNT-Start -->ALL<!-- DNT-End --> operation is performed using
+            <entry>Optional. Specifies the ALL operation is performed using
             hash tables.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">BEST</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">BEST</emphasis></entry>
 
             <entry>Optional. Provides additional control over which records
             are retained from a set of "duplicate" records. The first in the
-            &lt;sort-list&gt; order of records are retained. <!-- DNT-Start -->BEST<!-- DNT-End --> cannot be
-            used with a <!-- DNT-Start -->KEEP<!-- DNT-End --> parameter greater than 1.</entry>
+            &lt;sort-list&gt; order of records are retained. BEST cannot be
+            used with a KEEP parameter greater than 1.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>sort-list</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>sort-list</emphasis></entry>
 
             <entry>A comma delimited list of fields defining the duplicate
             records to keep.. The fields may be prefixed with a minus sign to
@@ -99,52 +99,52 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">KEEP</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">KEEP</emphasis></entry>
 
             <entry>Optional. Specifies keeping n number of duplicate records.
-            If omitted, the default behavior is to <!-- DNT-Start -->KEEP<!-- DNT-End --> 1. Not valid with the
-            <!-- DNT-Start -->ALL<!-- DNT-End --> option present.</entry>
+            If omitted, the default behavior is to KEEP 1. Not valid with the
+            ALL option present.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>n</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>n</emphasis></entry>
 
             <entry>The number of duplicate records to keep.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>keeper</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>keeper</emphasis></entry>
 
-            <entry>Optional. The keywords <!-- DNT-Start -->LEFT<!-- DNT-End --> or <!-- DNT-Start -->RIGHT<!-- DNT-End -->. <!-- DNT-Start -->LEFT<!-- DNT-End --> (the default, if
-            omitted) keeps the first record encountered and <!-- DNT-Start -->RIGHT<!-- DNT-End --> keeps the
+            <entry>Optional. The keywords LEFT or RIGHT. LEFT (the default, if
+            omitted) keeps the first record encountered and RIGHT keeps the
             last.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">LOCAL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
             <entry>Optional. Specifies the operation is performed on each
             supercomputer node independently, without requiring interaction
             with all other nodes to acquire data; the operation maintains the
-            distribution of any previous <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->.</entry>
+            distribution of any previous DISTRIBUTE.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record
             order.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not
             significant. When True, specifies the default output record
@@ -152,75 +152,75 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is
             significant.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in
             parallel.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using
             <emphasis>numthreads</emphasis> threads.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this
             activity.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
             <entry>The algorithm to use for this activity. Must be from the
-            list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and
-            <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->DEDUP<!-- DNT-End --> returns a set of records.</entry>
+            <entry>DEDUP returns a set of records.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->DEDUP<!-- DNT-End --></emphasis> function evaluates the
+  <para>The <emphasis role="bold">DEDUP</emphasis> function evaluates the
   <emphasis>recordset</emphasis> for duplicate records, as defined by the
   <emphasis>condition</emphasis> parameter, and returns a unique return set.
-  This is similar to the <!-- DNT-Start -->DISTINCT<!-- DNT-End --> statement in <!-- DNT-Start -->SQL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->DISTINCT<!-- DNT-End --> statement in <!-- DNT-Start -->SQL<!-- DNT-End --></primary>
+  This is similar to the DISTINCT statement in SQL<indexterm>
+      <primary>DISTINCT statement in SQL</primary>
     </indexterm>. The <emphasis>recordset</emphasis> should be sorted, unless
-  <!-- DNT-Start -->ALL<!-- DNT-End --> is specified.</para>
+  ALL is specified.</para>
 
   <para>If a <emphasis>condition </emphasis>parameter is a single value
-  (<emphasis>field</emphasis>), <!-- DNT-Start -->DEDUP<!-- DNT-End --> does a simple field-level de-dupe
+  (<emphasis>field</emphasis>), DEDUP does a simple field-level de-dupe
   equivalent to
-  <!-- DNT-Start -->LEFT<!-- DNT-End -->.<emphasis>field</emphasis>=<!-- DNT-Start -->RIGHT<!-- DNT-End -->.<emphasis>field</emphasis>. The
+  LEFT.<emphasis>field</emphasis>=RIGHT.<emphasis>field</emphasis>. The
   <emphasis>condition </emphasis>is evaluated for each pair of adjacent
   records in the record set. If the <emphasis>condition </emphasis>returns
-  <!-- DNT-Start -->TRUE<!-- DNT-End -->, the <emphasis>keeper</emphasis> record is kept and the other
+  TRUE, the <emphasis>keeper</emphasis> record is kept and the other
   removed.</para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ALL<!-- DNT-End --></emphasis> option means that every
+  <para>The <emphasis role="bold">ALL</emphasis> option means that every
   record pair is evaluated rather than only those pairs adjacent to each
   other, irrespective of sort order. The evaluation is such that, for records
   1, 2, 3, 4, the record pairs that are compared to each other are:</para>
@@ -230,34 +230,34 @@
   <para>This means two compares happen for each pair, allowing the
   <emphasis>condition </emphasis>to be non-commutative.</para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->KEEP<!-- DNT-End --></emphasis> <emphasis>n</emphasis>
+  <para><emphasis role="bold">KEEP</emphasis> <emphasis>n</emphasis>
   effectively means leaving <emphasis>n</emphasis> records of each duplicate
-  type. This is useful for sampling. The <emphasis role="bold"><!-- DNT-Start -->LEFT<!-- DNT-End --></emphasis>
-  <emphasis>keeper</emphasis> value (implicit if neither <!-- DNT-Start -->LEFT<!-- DNT-End --> nor <!-- DNT-Start -->RIGHT<!-- DNT-End --> are
+  type. This is useful for sampling. The <emphasis role="bold">LEFT</emphasis>
+  <emphasis>keeper</emphasis> value (implicit if neither LEFT nor RIGHT are
   specified) means that if the left and right records meet the de-dupe
   criteria (that is, they "match"), the left record is kept. If the <emphasis
-  role="bold"><!-- DNT-Start -->RIGHT<!-- DNT-End --></emphasis> <emphasis>keeper</emphasis> appears instead,
+  role="bold">RIGHT</emphasis> <emphasis>keeper</emphasis> appears instead,
   the right is kept. In both cases, the next comparison involves the de-dupe
   survivor; in this way, many duplicate records can collapse into one.</para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->BEST<!-- DNT-End --></emphasis> option provides additional
+  <para>The <emphasis role="bold">BEST</emphasis> option provides additional
   control over which records are retained from a set of "duplicate" records.
   The first in the <emphasis>sort-list</emphasis> order of records are
   retained. The <emphasis>sort-list</emphasis> is comma delimited list of
   fields. The fields may be prefixed with a minus sign to require a reverse
   sort on that field. </para>
 
-  <para><!-- DNT-Start -->DEDUP<!-- DNT-End -->(recordset, field1, <!-- DNT-Start -->BEST<!-- DNT-End -->(field2) ) means that from set of
+  <para>DEDUP(recordset, field1, BEST(field2) ) means that from set of
   duplicate records, the first record from the set duplicates sorted by field2
-  is retained. <!-- DNT-Start -->DEDUP<!-- DNT-End -->(recordset, field1, <!-- DNT-Start -->BEST<!-- DNT-End -->(-field2) ) produces the last
+  is retained. DEDUP(recordset, field1, BEST(-field2) ) produces the last
   record sorted by field2 from the set of duplicates. </para>
 
-  <para>The <!-- DNT-Start -->BEST<!-- DNT-End --> option cannot be used with a <!-- DNT-Start -->KEEP<!-- DNT-End --> parameter greater than
+  <para>The BEST option cannot be used with a KEEP parameter greater than
   1.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>SomeFile := DATASET([{'001','KC','G'}, 
+  <programlisting>SomeFile := DATASET([{'001','KC','G'}, 
                      {'002','KC','Z'}, 
                      {'003','KC','Z'}, 
                      {'004','KC','C'}, 
@@ -287,25 +287,25 @@ DEDUP(SomeFile1, Value1, HASH, BEST(Value2));
 // id value1 value2
 // 008 KA B
 // 006 KB A
-// 004 KC C</programlisting><!-- DNT-End -->
+// 004 KC C</programlisting>
 
   <sect2 id="Complex_Record_Set_Conditions">
-    <!-- DNT-Start --><title>Complex Record Set Conditions</title><!-- DNT-End -->
+    <title>Complex Record Set Conditions</title>
 
-    <para>The <!-- DNT-Start -->DEDUP<!-- DNT-End --> function<indexterm>
-        <primary><!-- DNT-Start -->DEDUP<!-- DNT-End --> function</primary>
-      </indexterm> with the <!-- DNT-Start -->ALL<!-- DNT-End --> option is useful in determining complex
-    recordset conditions between records in the same recordset. Although <!-- DNT-Start -->DEDUP<!-- DNT-End -->
+    <para>The DEDUP function<indexterm>
+        <primary>DEDUP function</primary>
+      </indexterm> with the ALL option is useful in determining complex
+    recordset conditions between records in the same recordset. Although DEDUP
     is traditionally used to eliminate duplicate records next to each other in
-    the recordset, the conditional expression combined with the <!-- DNT-Start -->ALL<!-- DNT-End --> option
-    extends this capability. The <!-- DNT-Start -->ALL<!-- DNT-End --> option causes each record to be compared
+    the recordset, the conditional expression combined with the ALL option
+    extends this capability. The ALL option causes each record to be compared
     according to the conditional expression to every other record in the
     recordset. This capability is most effective with small recordsets; larger
-    recordsets should also use the <!-- DNT-Start -->HASH<!-- DNT-End --> option.</para>
+    recordsets should also use the HASH option.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>LastTbl := TABLE(Person,{per_last_name});
+    <programlisting>LastTbl := TABLE(Person,{per_last_name});
 Lasts   := SORT(LastTbl,per_last_name);
 MySet   := DEDUP(Lasts,per_last_name);
       // unique last names -- this is exactly equivalent to:
@@ -342,10 +342,10 @@ DedupedInqs := DEDUP(inquiry, LEFT.inq_ind_code='BB' AND
         ALL );
 InqCount := COUNT(Inquiry) - COUNT(DedupedInqs);
 OUTPUT(person(InqCount &gt;0),{InqCount});  
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="SORT"><!-- DNT-Start -->SORT<!-- DNT-End --></link>, <link
-    linkend="ROLLUP"><!-- DNT-Start -->ROLLUP<!-- DNT-End --></link>, <link linkend="TABLE"><!-- DNT-Start -->TABLE<!-- DNT-End --></link>, <link
-    linkend="FUNCTION_Structure"><!-- DNT-Start -->FUNCTION<!-- DNT-End --> Structure</link></para>
+    <para>See Also: <link linkend="SORT">SORT</link>, <link
+    linkend="ROLLUP">ROLLUP</link>, <link linkend="TABLE">TABLE</link>, <link
+    linkend="FUNCTION_Structure">FUNCTION Structure</link></para>
   </sect2>
 </sect1>

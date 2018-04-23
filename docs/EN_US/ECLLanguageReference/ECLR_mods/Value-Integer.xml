@@ -2,53 +2,53 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="INTEGER">
-  <!-- DNT-Start --><title>INTEGER<indexterm>
+  <title>INTEGER<indexterm>
       <primary>INTEGER</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
   <para><emphasis
   role="bold">[</emphasis><emphasis>IntType</emphasis><emphasis role="bold">]
-  [<!-- DNT-Start -->UNSIGNED<!-- DNT-End -->] <!-- DNT-Start -->INTEGER<!-- DNT-End -->[</emphasis><emphasis>n</emphasis><emphasis
+  [UNSIGNED] INTEGER[</emphasis><emphasis>n</emphasis><emphasis
   role="bold">]</emphasis><emphasis role="bold"></emphasis></para>
 
   <para><emphasis
   role="bold">[</emphasis><emphasis>IntType</emphasis><emphasis role="bold">]
-  <!-- DNT-Start -->UNSIGNED<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->UNSIGNED<!-- DNT-End --></primary>
+  UNSIGNED<indexterm>
+      <primary>UNSIGNED</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->UNSIGNED<!-- DNT-End --> value type</primary>
+      <primary>UNSIGNED value type</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->INTEGER<!-- DNT-End --> value type</primary>
+      <primary>INTEGER value type</primary>
     </indexterm></emphasis><emphasis>n</emphasis></para>
 
   <para><emphasis role="bold">An </emphasis><emphasis>n</emphasis>-byte
   integer value. Valid values for <emphasis>n</emphasis> are: 1, 2, 3, 4, 5,
-  6, 7,or 8. If <emphasis>n</emphasis> is not specified for the <!-- DNT-Start -->INTEGER<!-- DNT-End -->, the
+  6, 7,or 8. If <emphasis>n</emphasis> is not specified for the INTEGER, the
   default is 8-bytes.</para>
 
   <para>The optional <emphasis>IntType</emphasis> may specify either the
-  <!-- DNT-Start -->BIG<!-- DNT-End -->_<!-- DNT-Start -->ENDIAN<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->BIG<!-- DNT-End -->_<!-- DNT-Start -->ENDIAN<!-- DNT-End --></primary>
-    </indexterm> (Sun/<!-- DNT-Start -->UNIX<!-- DNT-End -->-type, valid only inside a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure) or
-  <!-- DNT-Start -->LITTLE<!-- DNT-End -->_<!-- DNT-Start -->ENDIAN<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->LITTLE<!-- DNT-End -->_<!-- DNT-Start -->ENDIAN<!-- DNT-End --></primary>
+  BIG_ENDIAN<indexterm>
+      <primary>BIG_ENDIAN</primary>
+    </indexterm> (Sun/UNIX-type, valid only inside a RECORD structure) or
+  LITTLE_ENDIAN<indexterm>
+      <primary>LITTLE_ENDIAN</primary>
     </indexterm> (Intel-type) style of integers. These two
   <emphasis>IntTypes</emphasis> have opposite internal byte orders. If the
   <emphasis>IntType</emphasis> is missing, the integer is
-  <!-- DNT-Start -->LITTLE<!-- DNT-End -->_<!-- DNT-Start -->ENDIAN<!-- DNT-End -->.</para>
+  LITTLE_ENDIAN.</para>
 
-  <para>If the optional <!-- DNT-Start -->UNSIGNED<!-- DNT-End --> keyword is missing, the integer is signed.
-  Unsigned integer declarations may be contracted to <!-- DNT-Start -->UNSIGNED<!-- DNT-End --><emphasis>n
-  </emphasis>instead of <!-- DNT-Start -->UNSIGNED<!-- DNT-End --> <!-- DNT-Start -->INTEGER<!-- DNT-End --><emphasis>n</emphasis>.</para>
+  <para>If the optional UNSIGNED keyword is missing, the integer is signed.
+  Unsigned integer declarations may be contracted to UNSIGNED<emphasis>n
+  </emphasis>instead of UNSIGNED INTEGER<emphasis>n</emphasis>.</para>
 
   <sect2 id="Integer_Value_Ranges">
-    <!-- DNT-Start --><title>INTEGER Value Ranges</title><!-- DNT-End -->
+    <title>INTEGER Value Ranges</title>
 
     <informaltable>
       <tgroup cols="3">
         <tbody>
           <row>
-            <entry><!-- DNT-Start -->Size<!-- DNT-End --></entry>
+            <entry>Size</entry>
 
             <entry>Signed Values</entry>
 
@@ -56,7 +56,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->1-byte<!-- DNT-End --></entry>
+            <entry>1-byte</entry>
 
             <entry>-128 to 127</entry>
 
@@ -64,7 +64,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->2-byte<!-- DNT-End --></entry>
+            <entry>2-byte</entry>
 
             <entry>-32,768 to 32,767</entry>
 
@@ -72,7 +72,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->3-byte<!-- DNT-End --></entry>
+            <entry>3-byte</entry>
 
             <entry>-8,388,608 to 8,388,607</entry>
 
@@ -80,7 +80,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->4-byte<!-- DNT-End --></entry>
+            <entry>4-byte</entry>
 
             <entry>-2,147,483,648 to 2,147,483,647</entry>
 
@@ -88,7 +88,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->5-byte<!-- DNT-End --></entry>
+            <entry>5-byte</entry>
 
             <entry>-549,755,813,888 to 549,755,813,887</entry>
 
@@ -96,7 +96,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->6-byte<!-- DNT-End --></entry>
+            <entry>6-byte</entry>
 
             <entry>-140,737,488,355,328 to 140,737,488,355,327</entry>
 
@@ -104,7 +104,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->7-byte<!-- DNT-End --></entry>
+            <entry>7-byte</entry>
 
             <entry>-36,028,797,018,963,968 to 36,028,797,018,963,967</entry>
 
@@ -112,7 +112,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->8-byte<!-- DNT-End --></entry>
+            <entry>8-byte</entry>
 
             <entry>-9,223,372,036,854,775,808 to
             9,223,372,036,854,775,807</entry>
@@ -125,7 +125,7 @@
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>INTEGER1 MyValue := MAP(MyString = '1' =&gt; MyString, '0');
+    <programlisting>INTEGER1 MyValue := MAP(MyString = '1' =&gt; MyString, '0');
        //MyValue is 1 or 0, changing type from string to integer
 UNSIGNED INTEGER1 MyValue := 255; //max value possible in 1 byte
 UNSIGNED1 MyValue := 255;
@@ -134,6 +134,6 @@ MyRec := RECORD
   LITTLE_ENDIAN INTEGER2 MyLittleEndianValue := 1;
   BIG_ENDIAN INTEGER2 MyBigEndianValue := 1;
        //the physical byte-order is opposite in these two
-END</programlisting><!-- DNT-End -->
+END</programlisting>
   </sect2>
 </sect1>

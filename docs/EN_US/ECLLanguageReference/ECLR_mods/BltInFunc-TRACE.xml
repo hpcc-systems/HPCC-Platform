@@ -2,11 +2,11 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TRACE">
-  <!-- DNT-Start --><title>TRACE</title><!-- DNT-End -->
+  <title>TRACE</title>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-  :=<emphasis role="bold"> ] <!-- DNT-Start -->TRACE<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->TRACE<!-- DNT-End --></primary>
+  :=<emphasis role="bold"> ] TRACE<indexterm>
+      <primary>TRACE</primary>
     </indexterm>(</emphasis><emphasis>baserecset</emphasis><emphasis
   role="bold">, [</emphasis><emphasis role="bold">
   </emphasis><emphasis>options </emphasis><emphasis role="bold">]
@@ -20,20 +20,20 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>attrname</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>attrname</emphasis></entry>
 
             <entry>Optional. The name for the expression. </entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>baserecset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>baserecset</emphasis></entry>
 
-            <entry>The set of data records for which the <!-- DNT-Start -->TRACE<!-- DNT-End --> is
+            <entry>The set of data records for which the TRACE is
             defined.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>options</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>options</emphasis></entry>
 
             <entry>Optional. One or more of the options listed below.</entry>
           </row>
@@ -41,52 +41,52 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->TRACE<!-- DNT-End --> </emphasis>expression defines tracing
+  <para>The <emphasis role="bold">TRACE </emphasis>expression defines tracing
   to log files (Thor slave logs, hThor logs, or Roxie logs). </para>
 
-  <para>You can add <!-- DNT-Start -->TRACE<!-- DNT-End --> to your code at interesting junctures without any
+  <para>You can add TRACE to your code at interesting junctures without any
   impact on performance. Later, if you need to investigate behavior, you can
   enable them without modifying the code by setting an option or stored
-  <!-- DNT-Start -->BOOLEAN<!-- DNT-End -->.</para>
+  BOOLEAN.</para>
 
   <para>Tracing is written to log files, in the form:</para>
 
   <para><programlisting>TRACE: &lt;name&gt;&lt;fieldname&gt;value&lt;/fieldname&gt;...&lt;/name&gt; </programlisting></para>
 
-  <para>Tracing is not output by default even if <!-- DNT-Start -->TRACE<!-- DNT-End --> statements are present;
+  <para>Tracing is not output by default even if TRACE statements are present;
   tracing is only output when the workunit debug value traceEnabled is set or
   if the default platform settings are changed to always output tracing. In
   Roxie you can also request tracing on a deployed query by specifying
-  traceEnabled=1 in the query <!-- DNT-Start -->XML<!-- DNT-End -->.</para>
+  traceEnabled=1 in the query XML.</para>
 
-  <para>It is therefore possible to leave <!-- DNT-Start -->TRACE<!-- DNT-End --> statements in the <!-- DNT-Start -->ECL<!-- DNT-End --> without
+  <para>It is therefore possible to leave TRACE statements in the ECL without
   any detectable overhead until tracing is enabled. To enable tracing:</para>
 
   <para><programlisting>#OPTION ('traceEnabled'<indexterm>
         <primary>traceEnabled</primary>
       </indexterm>, 1) // trace statements enabled </programlisting></para>
 
-  <para>It is also possible to override the default value for <!-- DNT-Start -->KEEP<!-- DNT-End --> at a
+  <para>It is also possible to override the default value for KEEP at a
   global, per-workunit, or per-query level.</para>
 
   <para><programlisting>#OPTION ('traceLimit'<indexterm>
         <primary>traceLimit</primary>
       </indexterm>, 100) // overrides the default KEEP value (10) </programlisting></para>
 
-  <para>You can use a stored <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> as the filter expression for a trace
+  <para>You can use a stored BOOLEAN as the filter expression for a trace
   activity to allow you to turn individual trace activities on and off.</para>
 
   <sect2 id="TRACE_Options" role="brk">
-    <!-- DNT-Start --><title>TRACE Options</title><!-- DNT-End -->
+    <title>TRACE Options</title>
 
-    <para>The following options are available for <!-- DNT-Start -->TRACE<!-- DNT-End -->:</para>
+    <para>The following options are available for TRACE:</para>
 
     <para><emphasis
     role="bold">[</emphasis><emphasis>filterExpression,</emphasis><emphasis
-    role="bold">] [<!-- DNT-Start -->KEEP<!-- DNT-End -->(</emphasis><emphasis>n</emphasis>),<emphasis
-    role="bold">] [<!-- DNT-Start -->SKIP<!-- DNT-End -->(</emphasis><emphasis>n</emphasis><emphasis
-    role="bold">),] [<!-- DNT-Start -->SAMPLE<!-- DNT-End -->(</emphasis><emphasis>n</emphasis><emphasis
-    role="bold">),][<!-- DNT-Start -->NAMED<!-- DNT-End -->(</emphasis><emphasis>string</emphasis><emphasis
+    role="bold">] [KEEP(</emphasis><emphasis>n</emphasis>),<emphasis
+    role="bold">] [SKIP(</emphasis><emphasis>n</emphasis><emphasis
+    role="bold">),] [SAMPLE(</emphasis><emphasis>n</emphasis><emphasis
+    role="bold">),][NAMED(</emphasis><emphasis>string</emphasis><emphasis
     role="bold">)]</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -97,7 +97,7 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis>filterExpression</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>filterExpression</emphasis></entry>
 
               <entry>Optional. A valid expression which acts as a filter. Only
               rows matching the filter condition are included in the
@@ -105,27 +105,27 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">KEEP(n)</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis role="bold">KEEP(n)</emphasis></entry>
 
               <entry>Optional. Specifies the number of rows to trace.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">SKIP(n)</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis role="bold">SKIP(n)</emphasis></entry>
 
               <entry>Optional. Specifies the number of rows to skip before
               trace begins.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">SAMPLE(n)</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis role="bold">SAMPLE(n)</emphasis></entry>
 
               <entry>Optional. Specifies that only every nth row is traced.
               .</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">NAMED(string)</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis role="bold">NAMED(string)</emphasis></entry>
 
               <entry>Optional. Specifies the name for rows in tracing.</entry>
             </row>

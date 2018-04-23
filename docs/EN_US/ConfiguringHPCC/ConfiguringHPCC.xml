@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <!-- DNT-Start --><title>Configuring the HPCC System</title><!-- DNT-End -->
+    <title>Configuring the HPCC System</title>
 
     <mediaobject>
       <imageobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
+      <para>HPCC Systems<superscript>Â®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -48,7 +48,7 @@
                 xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems<superscript>Â®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
@@ -62,10 +62,10 @@
   </bookinfo>
 
   <chapter id="Buildin-HPCC-from-Source">
-    <!-- DNT-Start --><title>Using Configuration Manager</title><!-- DNT-End -->
+    <title>Using Configuration Manager</title>
 
     <para>Configuration Manager is the utility with which we configure the
-    <!-- DNT-Start -->HPCC<!-- DNT-End --> platform. The <!-- DNT-Start -->HPCC<!-- DNT-End --> platform's configuration is stored in an <!-- DNT-Start -->XML<!-- DNT-End --> file
+    HPCC platform. The HPCC platform's configuration is stored in an XML file
     named <emphasis role="bold">environment.xml</emphasis>. When you install a
     package, a default single-node environment.xml is generated. After that,
     you can use the Configuration Manager to modify it and add nodes and
@@ -81,22 +81,22 @@
     View, it is a good idea to start with a wizard generated configuration and
     use Advanced View to finish it.</para>
 
-    <para>This document will guide you through configuring an <!-- DNT-Start -->HPCC<!-- DNT-End --> environment
+    <para>This document will guide you through configuring an HPCC environment
     using the Configuration Manager.</para>
 
     <sect1 id="configuring-a-multi-node-system">
-      <!-- DNT-Start --><title>Running the Configuration Manager</title><!-- DNT-End -->
+      <title>Running the Configuration Manager</title>
 
-      <para>This document will guide you through configuring an <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      <para>This document will guide you through configuring an HPCC
       environment using the Configuration Manager.</para>
 
-      <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> package should already be installed on <!-- DNT-Start -->ALL<!-- DNT-End --> nodes.</para>
+      <para>The HPCC package should already be installed on ALL nodes.</para>
 
       <para>You can use any tool or shell script you choose.</para>
 
       <orderedlist>
         <listitem>
-          <para><!-- DNT-Start -->SSH<!-- DNT-End --> to a node in your environment and login as a user with
+          <para>SSH to a node in your environment and login as a user with
           sudo privileges. We would suggest that it would be the first node,
           and that it is a support node, however that is up to your
           discretion.</para>
@@ -108,7 +108,7 @@
           you use the same node to start the Configuration Manager every time,
           but this is also entirely up to you).</para>
 
-          <!-- DNT-Start --><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting><!-- DNT-End -->
+          <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
           <para><graphic fileref="images/gs_img_configmgrStart.jpg" /></para>
         </listitem>
@@ -117,13 +117,13 @@
           <para>Using a Web browser, go to the Configuration Manager's
           interface:</para>
 
-          <!-- DNT-Start --><programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting><!-- DNT-End -->
+          <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
 
           <para>The Configuration Manager startup wizard displays.</para>
         </listitem>
       </orderedlist>
 
-      <para>There are different ways to configure your <!-- DNT-Start -->HPCC<!-- DNT-End --> system. You can
+      <para>There are different ways to configure your HPCC system. You can
       use the <emphasis role="bold">Generate environment wizard</emphasis> and
       use that environment or experienced users can then use the <emphasis
       role="bold">Advanced View</emphasis> for more specific customization.
@@ -132,7 +132,7 @@
       then go in and add only the components you would want.</para>
 
       <sect2 id="Env_Wizard">
-        <!-- DNT-Start --><title>Environment Wizard</title><!-- DNT-End -->
+        <title>Environment Wizard</title>
 
         <orderedlist>
           <listitem>
@@ -148,10 +148,10 @@
           <listitem>
             <para>Provide a name for the environment file.</para>
 
-            <para>This will then be the name of the configuration <!-- DNT-Start -->XML<!-- DNT-End --> file.
+            <para>This will then be the name of the configuration XML file.
             For example, we will name our environment
             <emphasis>NewEnvironment</emphasis> and this will produce a
-            configuration <!-- DNT-Start -->XML<!-- DNT-End --> file named
+            configuration XML file named
             <emphasis>NewEnvironment.xml</emphasis> that we will
             use.<emphasis> </emphasis></para>
           </listitem>
@@ -159,20 +159,20 @@
           <listitem>
             <para>Press the Next button.</para>
 
-            <para>Next you will need to define the <!-- DNT-Start -->IP<!-- DNT-End --> addresses that your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            <para>Next you will need to define the IP addresses that your HPCC
             system will be using.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Enter the <!-- DNT-Start -->IP<!-- DNT-End --> addresses or hostname(s).</para>
+            <para>Enter the IP addresses or hostname(s).</para>
 
-            <para><!-- DNT-Start -->IP<!-- DNT-End --> Addresses can be specified individually using semi-colon
+            <para>IP Addresses can be specified individually using semi-colon
             delimiters. You can also specify a range of IPs using a hyphen
             (for example, nnn.nnn.nnn.x-y). In the image below, we specified
-            the <!-- DNT-Start -->IP<!-- DNT-End --> addresses 10.239.219.1 through 10.239.219.100 using the
-            range syntax, and also a single <!-- DNT-Start -->IP<!-- DNT-End --> 10.239.219.111. Alternatively,
+            the IP addresses 10.239.219.1 through 10.239.219.100 using the
+            range syntax, and also a single IP 10.239.219.111. Alternatively,
             you can enter the hostnames.</para>
 
             <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg"
@@ -182,8 +182,8 @@
           <listitem>
             <para>Press the Next button.</para>
 
-            <para>Now you will define how many nodes to use for the <!-- DNT-Start -->Roxie<!-- DNT-End --> and
-            <!-- DNT-Start -->Thor<!-- DNT-End --> clusters.</para>
+            <para>Now you will define how many nodes to use for the Roxie and
+            Thor clusters.</para>
           </listitem>
 
           <listitem>
@@ -208,8 +208,8 @@
                 <term>Number of nodes for Roxie cluster:</term>
 
                 <listitem>
-                  <para>Specify the number of nodes to use for your <!-- DNT-Start -->Roxie<!-- DNT-End -->
-                  cluster. Enter zero (0) if you do not want a <!-- DNT-Start -->Roxie<!-- DNT-End -->
+                  <para>Specify the number of nodes to use for your Roxie
+                  cluster. Enter zero (0) if you do not want a Roxie
                   cluster.</para>
                 </listitem>
               </varlistentry>
@@ -218,9 +218,9 @@
                 <term>Number of slave nodes for Thor cluster</term>
 
                 <listitem>
-                  <para>Specify the number of slave nodes to use in your <!-- DNT-Start -->Thor<!-- DNT-End -->
-                  cluster. A <!-- DNT-Start -->Thor<!-- DNT-End --> master node will be added automatically.
-                  Enter zero (0) if you do not want any <!-- DNT-Start -->Thor<!-- DNT-End --> slaves.</para>
+                  <para>Specify the number of slave nodes to use in your Thor
+                  cluster. A Thor master node will be added automatically.
+                  Enter zero (0) if you do not want any Thor slaves.</para>
                 </listitem>
               </varlistentry>
 
@@ -228,9 +228,9 @@
                 <term>Number of Thor slaves per node (default 1)</term>
 
                 <listitem>
-                  <para>Specify the number of <!-- DNT-Start -->Thor<!-- DNT-End --> slave processes to
+                  <para>Specify the number of Thor slave processes to
                   instantiate on each slave node. Enter zero (0) if you do not
-                  want a <!-- DNT-Start -->Thor<!-- DNT-End --> cluster.</para>
+                  want a Thor cluster.</para>
                 </listitem>
               </varlistentry>
 
@@ -239,7 +239,7 @@
 
                 <listitem>
                   <para>Specify whether or not to allow queries to be run
-                  immediately on <!-- DNT-Start -->Roxie<!-- DNT-End -->. This must be enabled to run the
+                  immediately on Roxie. This must be enabled to run the
                   debugger. (Default is true)</para>
                 </listitem>
               </varlistentry>
@@ -285,11 +285,11 @@
               <row>
                 <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                <entry>Keep in mind, that your <!-- DNT-Start -->HPCC<!-- DNT-End --> configuration may be
+                <entry>Keep in mind, that your HPCC configuration may be
                 different depending on your needs. For example, you may not
-                need a <!-- DNT-Start -->Roxie<!-- DNT-End --> or you may need several smaller <!-- DNT-Start -->Roxie<!-- DNT-End --> clusters.
-                In addition, in a production [<!-- DNT-Start -->Thor<!-- DNT-End -->] system, you would ensure
-                that <!-- DNT-Start -->Thor<!-- DNT-End --> and <!-- DNT-Start -->Roxie<!-- DNT-End --> nodes are dedicated and have no other
+                need a Roxie or you may need several smaller Roxie clusters.
+                In addition, in a production [Thor] system, you would ensure
+                that Thor and Roxie nodes are dedicated and have no other
                 processes running on them. This document is intended to show
                 you how to use the configuration tools. Capacity planning and
                 system design is covered in a training module.</entry>
@@ -299,15 +299,15 @@
         </informaltable>
 
         <sect3 id="Distrib_Conf" role="brk">
-          <!-- DNT-Start --><title>Distribute the Configuration</title><!-- DNT-End -->
+          <title>Distribute the Configuration</title>
 
           <orderedlist>
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Stop the <!-- DNT-Start -->HPCC<!-- DNT-End --> system.</para>
+              <para>Stop the HPCC system.</para>
 
-              <para>If it is running stop the <!-- DNT-Start -->HPCC<!-- DNT-End --> system (on every node),
+              <para>If it is running stop the HPCC system (on every node),
               using a command such as this:</para>
 
               <para><programlisting>sudo /etc/init.d/hpcc-init stop</programlisting></para>
@@ -319,7 +319,7 @@
                   <listitem>
                     <para>You may have a multi-node system and a custom script
                     such as the one illustrated in Appendix of the <emphasis
-                    role="bluebold">Installing and Running the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+                    role="bluebold">Installing and Running the HPCC
                     Platform</emphasis> document to start and stop your
                     system. If that is the case please use the appropriate
                     command for stopping your system on every node.</para>
@@ -338,7 +338,7 @@
                         <entry><inlinegraphic
                         fileref="images/caution.png" /></entry>
 
-                        <entry>Be sure <!-- DNT-Start -->HPCC<!-- DNT-End --> is stopped before attempting to
+                        <entry>Be sure HPCC is stopped before attempting to
                         copy the environment.xml file.</entry>
                       </row>
                     </tbody>
@@ -349,8 +349,8 @@
             <listitem>
               <para>Back up the original environment.xml file.</para>
 
-              <!-- DNT-Start --><programlisting># For example
-sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environment-date.xml </programlisting><!-- DNT-End -->
+              <programlisting># For example
+sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environment-date.xml </programlisting>
 
               <variablelist>
                 <varlistentry>
@@ -379,8 +379,8 @@ sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environ
               /etc/HPCCSystems and rename the file to
               <emphasis>environment.xml</emphasis></para>
 
-              <!-- DNT-Start --><programlisting># for example
-sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting><!-- DNT-End -->
+              <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
               <para></para>
             </listitem>
@@ -391,16 +391,16 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <emphasis role="bold">/etc/HPCCSystems/</emphasis> on to
               <emphasis>every</emphasis> node.</para>
 
-              <para>You may want to use a script to push out the <!-- DNT-Start -->XML<!-- DNT-End --> file to
+              <para>You may want to use a script to push out the XML file to
               all nodes. See the <emphasis>Example Scripts</emphasis> section
               in the Appendix of the <emphasis role="bluebold">Installing and
-              Running the <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform</emphasis> document. You can use the
+              Running the HPCC Platform</emphasis> document. You can use the
               scripts as a model to create your own script to copy the
               environment.xml file out to all your nodes.</para>
             </listitem>
 
             <listitem>
-              <para>Restart the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform on all nodes.</para>
+              <para>Restart the HPCC platform on all nodes.</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -409,14 +409,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
   </chapter>
 
   <chapter>
-    <!-- DNT-Start --><title>Configuration Manager Advanced View</title><!-- DNT-End -->
+    <title>Configuration Manager Advanced View</title>
 
     <para>For the advanced user, the Advanced View offers access to adding
     additional instances of components or making configuration settings for
     individual components.</para>
 
     <sect1 id="configuring-advanced-setup">
-      <!-- DNT-Start --><title>Using ConfigMgr in Advanced Mode</title><!-- DNT-End -->
+      <title>Using ConfigMgr in Advanced Mode</title>
 
       <para>This section shows some of the configuration options in Advanced
       Mode. There are a few different ways to configure your system. If you
@@ -426,12 +426,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
       <orderedlist>
         <listitem>
-          <para><!-- DNT-Start -->SSH<!-- DNT-End --> to the first box in your environment and login as a user
+          <para>SSH to the first box in your environment and login as a user
           with sudo privileges.</para>
         </listitem>
 
         <listitem>
-          <para>If it is running, stop the <!-- DNT-Start -->HPCC<!-- DNT-End --> system using this command on
+          <para>If it is running, stop the HPCC system using this command on
           every node:</para>
 
           <para><programlisting>sudo /etc/init.d/hpcc-init stop</programlisting></para>
@@ -445,7 +445,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 to use a script to perform this step. See the
                 <emphasis>Example Scripts</emphasis> section in the Appendix
                 of the <emphasis role="bluebold">Installing and Running the
-                <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform</emphasis> document.</para>
+                HPCC Platform</emphasis> document.</para>
               </listitem>
             </varlistentry>
           </variablelist>
@@ -463,7 +463,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry><inlinegraphic
                     fileref="images/OSSgr3.png" /></entry>
 
-                    <entry>You can use this command to confirm <!-- DNT-Start -->HPCC<!-- DNT-End --> processes
+                    <entry>You can use this command to confirm HPCC processes
                     are stopped: <para><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
                   </row>
                 </tbody>
@@ -476,7 +476,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           the first node is considered the head node and is used for this
           task, but this is up to you).</para>
 
-          <!-- DNT-Start --><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting><!-- DNT-End -->
+          <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
           <para><graphic fileref="images/gs_img_configmgrStart.jpg" /></para>
         </listitem>
@@ -485,7 +485,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>Using a Web browser, go to the Configuration Manager's
           interface:</para>
 
-          <!-- DNT-Start --><programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting><!-- DNT-End -->
+          <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
 
           <para>The Configuration Manager startup wizard displays.</para>
         </listitem>
@@ -500,9 +500,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
 
         <listitem>
-          <para>Select an <!-- DNT-Start -->XML<!-- DNT-End --> file from the drop list.</para>
+          <para>Select an XML file from the drop list.</para>
 
-          <para>This list is populated from versions of an environment <!-- DNT-Start -->XML<!-- DNT-End -->
+          <para>This list is populated from versions of an environment XML
           file in your server's /etc/HPCCSystems/source/ directory.</para>
 
           <para>The system will check the current environment file and if a
@@ -582,16 +582,16 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </orderedlist>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>XML View</title><!-- DNT-End -->
+        <title>XML View</title>
 
         <para>In the advanced view of Configuration Manager, you can
-        optionally choose to work with the <!-- DNT-Start -->XML<!-- DNT-End --> View.</para>
+        optionally choose to work with the XML View.</para>
 
-        <para>To see the the configuration in <!-- DNT-Start -->XML<!-- DNT-End --> View, click on the
+        <para>To see the the configuration in XML View, click on the
         Environment heading in the Navigator panel on the left side.</para>
 
         <para><graphic fileref="images/CM-120.jpg" />You can access all
-        attributes through the <!-- DNT-Start -->XML<!-- DNT-End --> view.</para>
+        attributes through the XML view.</para>
 
         <para>If you wish to add an attribute that does not exist, right-click
         on one of the components then you can choose to add an
@@ -602,7 +602,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
     </sect1>
 
     <sect1 role="brk">
-      <!-- DNT-Start --><title>Hardware Section</title><!-- DNT-End -->
+      <title>Hardware Section</title>
 
       <para>This section allows you to define your list of servers. When
       defining instances of components, you will choose from servers in this
@@ -644,17 +644,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>Start <!-- DNT-Start -->IP<!-- DNT-End --> Address</para>
+              <para>Start IP Address</para>
             </listitem>
 
             <listitem>
-              <para>Stop <!-- DNT-Start -->IP<!-- DNT-End --> Address</para>
+              <para>Stop IP Address</para>
 
-              <para>The <!-- DNT-Start -->IP<!-- DNT-End --> Addresses can be specified in a range if all your
-              host <!-- DNT-Start -->IP<!-- DNT-End --> addresses are consecutively numbered. If the <!-- DNT-Start -->IP<!-- DNT-End -->
+              <para>The IP Addresses can be specified in a range if all your
+              host IP addresses are consecutively numbered. If the IP
               addresses are not sequential you should repeat the process for
-              each individual <!-- DNT-Start -->IP<!-- DNT-End --> address and just add the <!-- DNT-Start -->IP<!-- DNT-End --> address in both
-              the start and stop <!-- DNT-Start -->IP<!-- DNT-End --> address field. You will then need to
+              each individual IP address and just add the IP address in both
+              the start and stop IP address field. You will then need to
               repeat the process for each node.</para>
             </listitem>
           </itemizedlist>
@@ -663,7 +663,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Press the <emphasis role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> button.</para>
+          <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
 
           <para>The list of nodes now displays with the nodes that you just
           added.</para>
@@ -674,7 +674,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>Next, edit each System Server component instance and set it to
           a newly defined node.</para>
 
-          <!-- DNT-Start --><!--***The steps that follow are using one component per node. You can allocate more components per node, if needed.--><!-- DNT-End -->
+          <!--***The steps that follow are using one component per node. You can allocate more components per node, if needed.-->
         </listitem>
 
         <listitem>
@@ -692,10 +692,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>Software Section</title><!-- DNT-End -->
+      <title>Software Section</title>
 
       <para>Use the software components section to configure software
-      components of the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform. Most software components are actual
+      components of the HPCC platform. Most software components are actual
       running processes; however, some are just definitions used by the
       system. These definitions are used by the configuration
       generator.</para>
@@ -703,17 +703,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       <para>Items that appear in <emphasis role="red">red</emphasis> indicate
       optional values. They are only written to the environment if you add to
       or change that value. If untouched, they will not appear in the
-      environment <!-- DNT-Start -->XML<!-- DNT-End --> file.</para>
+      environment XML file.</para>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Backupnode</title><!-- DNT-End -->
+        <title>Backupnode</title>
 
-        <para><!-- DNT-Start -->Backupnode<!-- DNT-End --> allows you to back up <!-- DNT-Start -->Thor<!-- DNT-End --> clusters at regular
-        intervals. The <!-- DNT-Start -->Backupnode<!-- DNT-End --> component is a way to allow administrators
+        <para>Backupnode allows you to back up Thor clusters at regular
+        intervals. The Backupnode component is a way to allow administrators
         to manage the backupnode process without using a cron job.</para>
 
-        <para>To configure scheduled <!-- DNT-Start -->Thor<!-- DNT-End --> node backups, add the backupnode
-        component, choose the hardware instance to run it on and then add <!-- DNT-Start -->Thor<!-- DNT-End -->
+        <para>To configure scheduled Thor node backups, add the backupnode
+        component, choose the hardware instance to run it on and then add Thor
         groups to it. <graphic fileref="images/CM-img21.jpg"
         vendor="configmgrSS" /></para>
 
@@ -729,13 +729,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <listitem>
               <para>From the tabs on the right side, select the <emphasis
-              role="bold"><!-- DNT-Start -->Instances<!-- DNT-End --></emphasis> tab.</para>
+              role="bold">Instances</emphasis> tab.</para>
             </listitem>
 
             <listitem>
               <para>Right click on the <emphasis
               role="bold">computer</emphasis> column and choose <emphasis
-              role="bold">Add <!-- DNT-Start -->Instances<!-- DNT-End --></emphasis>...<graphic
+              role="bold">Add Instances</emphasis>...<graphic
               fileref="images/CM-img22.jpg" vendor="configmgrSS" /></para>
             </listitem>
 
@@ -743,18 +743,18 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <para>Select the computer for the backupnode component, or press
               <emphasis role="bold">Add Hardware</emphasis> to add a new
               computer instance. You would always want to run backupnode on
-              the <!-- DNT-Start -->Thor<!-- DNT-End --> master of the cluster.</para>
+              the Thor master of the cluster.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <emphasis role="bold"><!-- DNT-Start -->Thor<!-- DNT-End --> Node
+              <para>Select the <emphasis role="bold">Thor Node
               Groups</emphasis> tab.</para>
             </listitem>
 
             <listitem>
               <para>Right click on the the <emphasis
               role="bold">Interval</emphasis> column and choose the interval
-              and/or <!-- DNT-Start -->Thor<!-- DNT-End --> group to back up.</para>
+              and/or Thor group to back up.</para>
             </listitem>
 
             <listitem>
@@ -763,27 +763,27 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
           </orderedlist>The default backup locations are:</para>
 
-        <!-- DNT-Start --><programlisting> /var/lib/HPCCSystems/hpcc-data/backupnode/&lt;thorname&gt;/last_backup </programlisting><!-- DNT-End -->
+        <programlisting> /var/lib/HPCCSystems/hpcc-data/backupnode/&lt;thorname&gt;/last_backup </programlisting>
 
         <para>The interval attribute of the backupnode component determines
         how many hours between backups.</para>
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Dali</title><!-- DNT-End -->
+        <title>Dali</title>
 
         <sect3>
-          <!-- DNT-Start --><title>Instances</title><!-- DNT-End -->
+          <title>Instances</title>
 
           <para>
             <orderedlist>
               <listitem>
-                <para>Select <emphasis role="bold"><!-- DNT-Start -->Dali<!-- DNT-End --> Server</emphasis> in
+                <para>Select <emphasis role="bold">Dali Server</emphasis> in
                 the Navigator panel on the left side.</para>
               </listitem>
 
               <listitem>
-                <para>Select the <!-- DNT-Start -->Instances<!-- DNT-End --> tab.</para>
+                <para>Select the Instances tab.</para>
               </listitem>
 
               <listitem>
@@ -803,7 +803,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>DaliServer attributes</title><!-- DNT-End -->
+          <title>DaliServer attributes</title>
 
           <para>This section describes the DaliServer attributes.</para>
 
@@ -813,7 +813,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para />
 
-          <!-- DNT-Start --><!--configMgr-Dali-Server-Include-XXX1--><!-- DNT-End -->
+          <!--configMgr-Dali-Server-Include-XXX1-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
@@ -825,9 +825,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>DaliServer store</title><!-- DNT-End -->
+          <title>DaliServer store</title>
 
-          <para>This section describes the attributes configuring how <!-- DNT-Start -->Dali<!-- DNT-End -->
+          <para>This section describes the attributes configuring how Dali
           handles the system data store.</para>
 
           <para>
@@ -836,7 +836,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para />
 
-          <!-- DNT-Start --><!--configMgr-Dali-Server-Include-XXX2--><!-- DNT-End -->
+          <!--configMgr-Dali-Server-Include-XXX2-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
@@ -848,15 +848,15 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>DaliServer LDAP options</title><!-- DNT-End -->
+          <title>DaliServer LDAP options</title>
 
-          <para>This section describes the DaliServer <!-- DNT-Start -->LDAP<!-- DNT-End --> tab.</para>
+          <para>This section describes the DaliServer LDAP tab.</para>
 
           <para>
             <graphic fileref="images/CM-img04-4.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-DaliServer-LDAP-Include-XXX3--><!-- DNT-End -->
+          <!--configMgr-DaliServer-LDAP-Include-XXX3-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
@@ -866,7 +866,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>DaliServer Notes</title><!-- DNT-End -->
+          <title>DaliServer Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -875,21 +875,21 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="DaliServerPlugin" role="brk">
-        <!-- DNT-Start --><title>DaliServerPlugin</title><!-- DNT-End -->
+        <title>DaliServerPlugin</title>
 
-        <para><!-- DNT-Start -->DaliServerPlugin<!-- DNT-End --> allows you to add plugin functionality to a
+        <para>DaliServerPlugin allows you to add plugin functionality to a
         Dail server.</para>
 
         <sect3>
-          <!-- DNT-Start --><title>DaliServerPlugin attributes</title><!-- DNT-End -->
+          <title>DaliServerPlugin attributes</title>
 
-          <para>This section describes the <!-- DNT-Start -->DaliServerPlugin<!-- DNT-End --> attributes.</para>
+          <para>This section describes the DaliServerPlugin attributes.</para>
 
           <para>
             <graphic fileref="images/Cass2.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-daplugin-Include--><!-- DNT-End -->
+          <!--configMgr-daplugin-Include-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/daliplugin.xsd.mod.xml"
@@ -899,9 +899,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>DaliServerPlugin Options</title><!-- DNT-End -->
+          <title>DaliServerPlugin Options</title>
 
-          <para>This section describes the <!-- DNT-Start -->DaliServerPlugin<!-- DNT-End --> options</para>
+          <para>This section describes the DaliServerPlugin options</para>
 
           <para>These options are available for the DaliServerplugin when
           configuring a Casandra server. See the System Administrator's Guide
@@ -918,7 +918,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start -->randomWuidSuffix<!-- DNT-End --></entry>
+                    <entry>randomWuidSuffix</entry>
 
                     <entry>An integer value indicating how many randomized
                     digits to append to workunits. Set this if you need to
@@ -928,7 +928,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->traceLevel<!-- DNT-End --></entry>
+                    <entry>traceLevel</entry>
 
                     <entry>An integer value indicating how much tracing to
                     output from Cassandra workunit operations. Set to zero or
@@ -936,7 +936,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->partitions<!-- DNT-End --></entry>
+                    <entry>partitions</entry>
 
                     <entry>An integer value indicating how many ways to
                     partition the data on a Cassandra cluster. The default is
@@ -948,7 +948,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->prefixsize<!-- DNT-End --></entry>
+                    <entry>prefixsize</entry>
 
                     <entry>
                       <para>An integer value specifying the minimum number of
@@ -961,22 +961,22 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->keyspace<!-- DNT-End --></entry>
+                    <entry>keyspace</entry>
 
                     <entry>The name of the Cassandra keyspace to use for the
-                    <!-- DNT-Start -->HPCC<!-- DNT-End --> data store. The default is
+                    HPCC data store. The default is
                     <emphasis>hpcc</emphasis>.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->user<!-- DNT-End --></entry>
+                    <entry>user</entry>
 
                     <entry>The username to use if the Cassandra server is
                     configured to require credentials.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->password<!-- DNT-End --></entry>
+                    <entry>password</entry>
 
                     <entry>The password to use if the Cassandra server is
                     configured to require credentials.</entry>
@@ -989,10 +989,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="Dafilesrv-Process" role="brk">
-        <!-- DNT-Start --><title>Dafilesrv Process</title><!-- DNT-End -->
+        <title>Dafilesrv Process</title>
 
         <sect3>
-          <!-- DNT-Start --><title>Dafilesrv Instances</title><!-- DNT-End -->
+          <title>Dafilesrv Instances</title>
 
           <para>Dafilesrv is a helper process that every node needs.</para>
 
@@ -1003,7 +1003,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>Select the <!-- DNT-Start -->Instances<!-- DNT-End --> tab.</para>
+              <para>Select the Instances tab.</para>
             </listitem>
 
             <listitem>
@@ -1016,7 +1016,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
               <para>Select all computers in the list by checking the <emphasis
               role="bold">Select All</emphasis> box, then press the <emphasis
-              role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> button.</para>
+              role="bold">OK</emphasis> button.</para>
 
               <para>
                 <graphic fileref="images/CM-img12.jpg" vendor="configmgrSS" />
@@ -1033,7 +1033,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>Dafilesrv attributes</title><!-- DNT-End -->
+          <title>Dafilesrv attributes</title>
 
           <para>This section describes the Dafilesrv attributes.</para>
 
@@ -1041,7 +1041,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img12-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-DaFileSrv-Include-XXX4--><!-- DNT-End -->
+          <!--configMgr-DaFileSrv-Include-XXX4-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/dafilesrv.xsd.mod.xml"
@@ -1052,19 +1052,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="DFU-Server" role="brk">
-        <!-- DNT-Start --><title>DFU Server</title><!-- DNT-End -->
+        <title>DFU Server</title>
 
         <sect3>
-          <!-- DNT-Start --><title>DfuServer Instances</title><!-- DNT-End -->
+          <title>DfuServer Instances</title>
 
           <orderedlist>
             <listitem>
-              <para>Select <emphasis role="bold"><!-- DNT-Start -->DFU<!-- DNT-End --> Server</emphasis> in the
+              <para>Select <emphasis role="bold">DFU Server</emphasis> in the
               Navigator panel on the left side.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <!-- DNT-Start -->Instances<!-- DNT-End --> tab.</para>
+              <para>Select the Instances tab.</para>
             </listitem>
 
             <listitem>
@@ -1081,7 +1081,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>DfuServer Attributes Tab</title><!-- DNT-End -->
+          <title>DfuServer Attributes Tab</title>
 
           <para>This section describes the DfuServer attributes.</para>
 
@@ -1089,7 +1089,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img05-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-DFUSrvr-Attr-Include-XXX6--><!-- DNT-End -->
+          <!--configMgr-DFUSrvr-Attr-Include-XXX6-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/dfuserver.xsd.mod.xml"
@@ -1099,15 +1099,15 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>DfuServer SSH Options</title><!-- DNT-End -->
+          <title>DfuServer SSH Options</title>
 
-          <para>This section describes the DfuServer <!-- DNT-Start -->SSH<!-- DNT-End --> Options..</para>
+          <para>This section describes the DfuServer SSH Options..</para>
 
           <para>
             <graphic fileref="images/CM-img05-2.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-DFUSrvr-SSH-Include-XXX7--><!-- DNT-End -->
+          <!--configMgr-DFUSrvr-SSH-Include-XXX7-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/dfuserver.xsd.mod.xml"
@@ -1117,7 +1117,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>DfuServer Notes</title><!-- DNT-End -->
+          <title>DfuServer Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -1126,9 +1126,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Directories</title><!-- DNT-End -->
+        <title>Directories</title>
 
-        <para>The <!-- DNT-Start -->Directories<!-- DNT-End --> component is a global definition used by other
+        <para>The Directories component is a global definition used by other
         components to determine the directories they will use for various
         functions.</para>
 
@@ -1144,7 +1144,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start -->Name<!-- DNT-End --></entry>
+                <entry>Name</entry>
 
                 <entry>Directory</entry>
 
@@ -1152,29 +1152,29 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->
+                <entry>
                   <emphasis role="bold">log</emphasis>
-                <!-- DNT-End --></entry>
+                </entry>
 
-                <entry>/var/log/[<!-- DNT-Start -->NAME<!-- DNT-End -->]/[<!-- DNT-Start -->INST<!-- DNT-End -->]</entry>
+                <entry>/var/log/[NAME]/[INST]</entry>
 
                 <entry>Location for Log files</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->
+                <entry>
                   <emphasis role="bold">temp</emphasis>
-                <!-- DNT-End --></entry>
+                </entry>
 
-                <entry>/var/lib/[<!-- DNT-Start -->NAME<!-- DNT-End -->]/[<!-- DNT-Start -->INST<!-- DNT-End -->]/temp</entry>
+                <entry>/var/lib/[NAME]/[INST]/temp</entry>
 
                 <entry>Location for temp files</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->
+                <entry>
                   <emphasis role="bold">data</emphasis>
-                <!-- DNT-End --></entry>
+                </entry>
 
                 <entry />
 
@@ -1182,9 +1182,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->
+                <entry>
                   <emphasis role="bold">data2</emphasis>
-                <!-- DNT-End --></entry>
+                </entry>
 
                 <entry />
 
@@ -1192,9 +1192,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->
+                <entry>
                   <emphasis role="bold">data3</emphasis>
-                <!-- DNT-End --></entry>
+                </entry>
 
                 <entry />
 
@@ -1202,9 +1202,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->
+                <entry>
                   <emphasis role="bold">mirror</emphasis>
-                <!-- DNT-End --></entry>
+                </entry>
 
                 <entry />
 
@@ -1212,9 +1212,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->
+                <entry>
                   <emphasis role="bold">query</emphasis>
-                <!-- DNT-End --></entry>
+                </entry>
 
                 <entry />
 
@@ -1226,10 +1226,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="Drop-Zone" role="brk">
-        <!-- DNT-Start --><title>Drop Zone</title><!-- DNT-End -->
+        <title>Drop Zone</title>
 
         <para>A Drop Zone (or landing zone) is a location where files can be
-        transferred to or from your <!-- DNT-Start -->HPCC<!-- DNT-End --> system. The drop zone is a logical
+        transferred to or from your HPCC system. The drop zone is a logical
         combination of a path and one or more servers.</para>
 
         <para>Multiple drop zones allow you to configure different top level
@@ -1254,7 +1254,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </para>
 
         <sect3>
-          <!-- DNT-Start --><title>Drop Zone Attributes</title><!-- DNT-End -->
+          <title>Drop Zone Attributes</title>
 
           <para>You can change the configuration of your drop zone using the
           attributes tab. If you have multiple drop zones, select the drop
@@ -1295,7 +1295,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
-          <!-- DNT-Start --><!-- /*Attribute table***replace with dynamically generated table*/
+          <!-- /*Attribute table***replace with dynamically generated table*/
           <informaltable>
             <tgroup cols="2">
               <tbody>
@@ -1327,11 +1327,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </informaltable>
 
 
---><!-- DNT-End -->
+-->
         </sect3>
 
         <sect3 id="DropZoneServerList">
-          <!-- DNT-Start --><title>Drop Zone Server List</title><!-- DNT-End -->
+          <title>Drop Zone Server List</title>
 
           <para>This tab allows you to add any servers that you wish to
           configure as a part of the selected drop zone.</para>
@@ -1349,7 +1349,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </listitem>
 
               <listitem>
-                <para>Enter the hostname or <!-- DNT-Start -->IP<!-- DNT-End --> address of the server.</para>
+                <para>Enter the hostname or IP address of the server.</para>
               </listitem>
 
               <listitem>
@@ -1359,7 +1359,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 id="DropZoneNotes">
-          <!-- DNT-Start --><title>Drop Zone Notes</title><!-- DNT-End -->
+          <title>Drop Zone Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -1368,19 +1368,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="ECL-Agent" role="brk">
-        <!-- DNT-Start --><title>ECL Agent</title><!-- DNT-End -->
+        <title>ECL Agent</title>
 
         <sect3>
-          <!-- DNT-Start --><title>Instances</title><!-- DNT-End -->
+          <title>Instances</title>
 
           <orderedlist>
             <listitem>
-              <para>Select <!-- DNT-Start -->ECL<!-- DNT-End --> Agent in the Navigator panel on the left
+              <para>Select ECL Agent in the Navigator panel on the left
               side.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <!-- DNT-Start -->Instances<!-- DNT-End --> tab.</para>
+              <para>Select the Instances tab.</para>
             </listitem>
 
             <listitem>
@@ -1397,7 +1397,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>EclAgent Attributes Tab</title><!-- DNT-End -->
+          <title>EclAgent Attributes Tab</title>
 
           <para>This section describes the EclAgent Attributes tab.</para>
 
@@ -1405,7 +1405,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img07-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-ECLAgent-Attr-Include-XXX8--><!-- DNT-End -->
+          <!--configMgr-ECLAgent-Attr-Include-XXX8-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/eclagent_config.xsd.mod.xml"
@@ -1415,7 +1415,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>EclAgent Options Tab</title><!-- DNT-End -->
+          <title>EclAgent Options Tab</title>
 
           <para>This section describes the EclAgent Options tab.</para>
 
@@ -1423,7 +1423,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img07-2.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-ECLAgent-Options-Include-XXX9--><!-- DNT-End -->
+          <!--configMgr-ECLAgent-Options-Include-XXX9-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/eclagent_config.xsd.mod.xml"
@@ -1433,7 +1433,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>EclAgentProcessNotes</title><!-- DNT-End -->
+          <title>EclAgentProcessNotes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -1442,20 +1442,20 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>ECL CC Server Process</title><!-- DNT-End -->
+        <title>ECL CC Server Process</title>
 
         <sect3>
-          <!-- DNT-Start --><title>Ecl CC Server Instances</title><!-- DNT-End -->
+          <title>Ecl CC Server Instances</title>
 
           <para>
             <orderedlist>
               <listitem>
-                <para>Select Ecl <!-- DNT-Start -->CC<!-- DNT-End --> Server - myeclccserver in the Navigator
+                <para>Select Ecl CC Server - myeclccserver in the Navigator
                 panel on the left side.</para>
               </listitem>
 
               <listitem>
-                <para>Select the <!-- DNT-Start -->Instances<!-- DNT-End --> tab.</para>
+                <para>Select the Instances tab.</para>
               </listitem>
 
               <listitem>
@@ -1473,16 +1473,16 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>Ecl CC Server Attributes Tab</title><!-- DNT-End -->
+          <title>Ecl CC Server Attributes Tab</title>
 
-          <para>This section describes the Ecl <!-- DNT-Start -->CC<!-- DNT-End --> Server Attributes
+          <para>This section describes the Ecl CC Server Attributes
           tab.</para>
 
           <para>
             <graphic fileref="images/CM-ECLCC-02.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--ECLCCServer-Include-cc.t2-XXX-X--><!-- DNT-End -->
+          <!--ECLCCServer-Include-cc.t2-XXX-X-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/eclccserver.xsd.mod.xml"
@@ -1492,21 +1492,21 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>EclCC Server Process Options</title><!-- DNT-End -->
+          <title>EclCC Server Process Options</title>
 
           <para>To add a custom option, right-click and select add. These
           options are passed to the eclcc compiler.</para>
 
-          <para>See the <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler chapter in the <emphasis
+          <para>See the ECL Compiler chapter in the <emphasis
           role="bluebold">Client Tools</emphasis> manual for details.</para>
 
-          <!-- DNT-Start --><!--This feature allows the user to configure any options pertinent to the Ecl CC Server Process --><!-- DNT-End -->
+          <!--This feature allows the user to configure any options pertinent to the Ecl CC Server Process -->
 
           <para />
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>EclCC Server Process Notes</title><!-- DNT-End -->
+          <title>EclCC Server Process Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -1515,19 +1515,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="ECL-Scheduler" role="brk">
-        <!-- DNT-Start --><title>ECL Scheduler</title><!-- DNT-End -->
+        <title>ECL Scheduler</title>
 
         <sect3>
-          <!-- DNT-Start --><title>Instances</title><!-- DNT-End -->
+          <title>Instances</title>
 
           <orderedlist>
             <listitem>
-              <para>Select <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler</emphasis> in
+              <para>Select <emphasis role="bold">ECL Scheduler</emphasis> in
               the Navigator panel on the left side.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <!-- DNT-Start -->Instances<!-- DNT-End --> tab.</para>
+              <para>Select the Instances tab.</para>
             </listitem>
 
             <listitem>
@@ -1544,7 +1544,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>EclScheduler Attributes Tab</title><!-- DNT-End -->
+          <title>EclScheduler Attributes Tab</title>
 
           <para>This section describes the EclScheduler Attributes tab.</para>
 
@@ -1552,7 +1552,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-160.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-DaliServer-LDAP-Include-XXX-XI--><!-- DNT-End -->
+          <!--configMgr-DaliServer-LDAP-Include-XXX-XI-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/eclscheduler.xsd.mod.xml"
@@ -1562,7 +1562,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>EclScheduler Notes</title><!-- DNT-End -->
+          <title>EclScheduler Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -1571,19 +1571,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="ESP-Server" role="brk">
-        <!-- DNT-Start --><title>ESP Server</title><!-- DNT-End -->
+        <title>ESP Server</title>
 
         <sect3>
-          <!-- DNT-Start --><title>Esp Process Instances</title><!-- DNT-End -->
+          <title>Esp Process Instances</title>
 
           <orderedlist>
             <listitem>
-              <para>Select <emphasis role="bold"><!-- DNT-Start -->ESP<!-- DNT-End --> - myesp</emphasis> in the
+              <para>Select <emphasis role="bold">ESP - myesp</emphasis> in the
               Navigator panel on the left side.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <!-- DNT-Start -->Instances<!-- DNT-End --> tab.</para>
+              <para>Select the Instances tab.</para>
             </listitem>
 
             <listitem>
@@ -1602,7 +1602,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>Esp - myesp Attributes Tab</title><!-- DNT-End -->
+          <title>Esp - myesp Attributes Tab</title>
 
           <para>This section describes the Esp - myesp Attributes tab.</para>
 
@@ -1610,7 +1610,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img08-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--MyESP-Include-ESP.t6-XXX12--><!-- DNT-End -->
+          <!--MyESP-Include-ESP.t6-XXX12-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
@@ -1620,7 +1620,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>Esp - myesp Service BindingsTab</title><!-- DNT-End -->
+          <title>Esp - myesp Service BindingsTab</title>
 
           <para>This section describes the Esp - myesp Service Bindings tab.
           This tab requires additional steps to configure the service
@@ -1633,9 +1633,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>You must first add the service bindings in the first table
           (Right-click, add). Then you would configure the attributes in the
           other tables on that tab. The next table describes the <emphasis
-          role="bold"><!-- DNT-Start -->URL<!-- DNT-End --> Authentication</emphasis> table.</para>
+          role="bold">URL Authentication</emphasis> table.</para>
 
-          <!-- DNT-Start --><!--MyESP-Include-ESP.t1-XXXIII--><!-- DNT-End -->
+          <!--MyESP-Include-ESP.t1-XXXIII-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
@@ -1648,7 +1648,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>The following tables describe the ESPProcess Service Bindings,
           <emphasis role="bold">Feature Authentications</emphasis>.</para>
 
-          <!-- DNT-Start --><!--MyESP-Include-ES.t2-XXX-14--><!-- DNT-End -->
+          <!--MyESP-Include-ES.t2-XXX-14-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
@@ -1670,7 +1670,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>Esp - myesp AuthenticationTab</title><!-- DNT-End -->
+          <title>Esp - myesp AuthenticationTab</title>
 
           <para>This section describes the Esp - myesp Service Authentication
           tab.</para>
@@ -1679,7 +1679,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img08-3.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--MyESP-Authentication-ES.t4-XXX-16--><!-- DNT-End -->
+          <!--MyESP-Authentication-ES.t4-XXX-16-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
@@ -1699,34 +1699,34 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start -->none<!-- DNT-End --></entry>
+                    <entry>none</entry>
 
                     <entry>uses no authentication</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->local<!-- DNT-End --></entry>
+                    <entry>local</entry>
 
                     <entry>uses the local credentials for the server running
-                    the <!-- DNT-Start -->ESP<!-- DNT-End --></entry>
+                    the ESP</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->ldap<!-- DNT-End --></entry>
+                    <entry>ldap</entry>
 
                     <entry>uses Lightweight Directory Access Protocol for
                     authentication</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->ldaps<!-- DNT-End --></entry>
+                    <entry>ldaps</entry>
 
-                    <entry>similar to <!-- DNT-Start -->LDAP<!-- DNT-End --> but uses a more secure (<!-- DNT-Start -->TLS<!-- DNT-End -->)
+                    <entry>similar to LDAP but uses a more secure (TLS)
                     protocol</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->secmgrPlugin<!-- DNT-End --></entry>
+                    <entry>secmgrPlugin</entry>
 
                     <entry>uses the security manager plug-in</entry>
                   </row>
@@ -1737,7 +1737,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>Esp - AuthDomain Tab</title><!-- DNT-End -->
+          <title>Esp - AuthDomain Tab</title>
          
           <!--   Temporarily removing image 
 		  <para>
@@ -1747,7 +1747,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>The <emphasis role="bold">AuthDomain</emphasis> attribute
           allows you to configure the settings used for session management. </para>
 
-          <!-- DNT-Start --><!--MyESP-HTTPS.t7-XXX-17--><!-- DNT-End -->
+          <!--MyESP-HTTPS.t7-XXX-17-->
 
          <!-- <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
@@ -1761,9 +1761,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Esp - myesp HTTPS Tab</title><!-- DNT-End -->
+          <title>Esp - myesp HTTPS Tab</title>
 
-          <para>This section describes the Esp - myesp <!-- DNT-Start -->HTTPS<!-- DNT-End --> tab.</para>
+          <para>This section describes the Esp - myesp HTTPS tab.</para>
 
           <para>
             <graphic fileref="images/CM-img08-4.jpg" vendor="configmgrSS" />
@@ -1774,7 +1774,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           openssl. See the documentation at openssl.org for more information
           about ciphers.</para>
 
-          <!-- DNT-Start --><!--MyESP-HTTPS.t5-XXX-17--><!-- DNT-End -->
+          <!--MyESP-HTTPS.t5-XXX-17-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
@@ -1784,7 +1784,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>EspProcess Notes</title><!-- DNT-End -->
+          <title>EspProcess Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -1793,24 +1793,24 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="ESP_Services" role="brk">
-        <!-- DNT-Start --><title>ESP Services</title><!-- DNT-End -->
+        <title>ESP Services</title>
 
-        <para><!-- DNT-Start -->ESP<!-- DNT-End --> Services provide a means to add functionality to an <!-- DNT-Start -->ESP<!-- DNT-End -->
+        <para>ESP Services provide a means to add functionality to an ESP
         Server.</para>
 
         <sect3 id="CfgMgrEclWatch">
-          <!-- DNT-Start --><title>ECL Watch Service</title><!-- DNT-End -->
+          <title>ECL Watch Service</title>
 
-          <para>Ecl Watch allows you to configure options for the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
+          <para>Ecl Watch allows you to configure options for the ECL Watch
           utility.</para>
 
           <para>
             <graphic fileref="images/CM-009.jpg" vendor="configmgrSS" />
           </para>
 
-          <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch Attribute definitions.</para>
+          <para>ECL Watch Attribute definitions.</para>
 
-          <!-- DNT-Start --><!--ECLWa-Include-TBLZ-1--><!-- DNT-End -->
+          <!--ECLWa-Include-TBLZ-1-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
@@ -1818,9 +1818,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
-          <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch Monitoring attributes.</para>
+          <para>ECL Watch Monitoring attributes.</para>
 
-          <!-- DNT-Start --><!--ECLWa-Include-TBLZ-2--><!-- DNT-End -->
+          <!--ECLWa-Include-TBLZ-2-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
@@ -1830,7 +1830,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 id="cfgmgr_WsECL" role="brk">
-          <!-- DNT-Start --><title>WsECL Service</title><!-- DNT-End -->
+          <title>WsECL Service</title>
 
           <para>The WsECL service allows you to configure options for the
           WsECL utility.</para>
@@ -1839,9 +1839,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-010.jpg" vendor="configmgrSS" />
           </para>
 
-          <para>The Ws <!-- DNT-Start -->ECL<!-- DNT-End --> configuration attributes.</para>
+          <para>The Ws ECL configuration attributes.</para>
 
-          <!-- DNT-Start --><!--WsECL-Include-ZXX-1--><!-- DNT-End -->
+          <!--WsECL-Include-ZXX-1-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
@@ -1851,9 +1851,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <?hard-pagebreak ?>
 
-          <para>Ws <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->VIPS<!-- DNT-End --> option attributes.</para>
+          <para>Ws ECL VIPS option attributes.</para>
 
-          <!-- DNT-Start --><!--WsECL-Include-ZXX-2--><!-- DNT-End -->
+          <!--WsECL-Include-ZXX-2-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
@@ -1861,9 +1861,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
-          <para>Ws <!-- DNT-Start -->ECL<!-- DNT-End --> Target Restrictions table.</para>
+          <para>Ws ECL Target Restrictions table.</para>
 
-          <!-- DNT-Start --><!--WsECL-Include-ZXX-3--><!-- DNT-End -->
+          <!--WsECL-Include-ZXX-3-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
@@ -1874,13 +1874,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="FTSlave-Process" role="brk">
-        <!-- DNT-Start --><title>FTSlave Process</title><!-- DNT-End -->
+        <title>FTSlave Process</title>
 
         <para>FTSlave is a helper process that every node needs. This section
         depicts an FTSlave installation.</para>
 
         <sect3>
-          <!-- DNT-Start --><title>Instances</title><!-- DNT-End -->
+          <title>Instances</title>
 
           <orderedlist>
             <listitem>
@@ -1889,7 +1889,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>Select the <!-- DNT-Start -->Instances<!-- DNT-End --> tab.</para>
+              <para>Select the Instances tab.</para>
             </listitem>
 
             <listitem>
@@ -1907,7 +1907,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <?dbfo keep-together="always"?>
 
               <para>Select all computers in the list, then press the <emphasis
-              role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> button.</para>
+              role="bold">OK</emphasis> button.</para>
 
               <para>
                 <graphic fileref="images/CM-112-4.jpg" vendor="configmgrSS" />
@@ -1922,12 +1922,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>FtSlave attributes</title><!-- DNT-End -->
+          <title>FtSlave attributes</title>
 
           <para>This section describes an FTSlaveProcess attributes
           tab.</para>
 
-          <!-- DNT-Start --><!--FTSlave-Include-XXX-18--><!-- DNT-End -->
+          <!--FTSlave-Include-XXX-18-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/ftslave_linux.xsd.mod.xml"
@@ -1937,7 +1937,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>FtSlave Process Notes</title><!-- DNT-End -->
+          <title>FtSlave Process Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -1946,41 +1946,41 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="LDAPServer_Process" role="brk">
-        <!-- DNT-Start --><title>LDAP Server Process</title><!-- DNT-End -->
+        <title>LDAP Server Process</title>
 
         <para>This section describes the configuration attributes of an
         LDAPServer Installation in ConfigManager. For a complete description
-        of how to add <!-- DNT-Start -->LDAP<!-- DNT-End --> Authentication see <emphasis>Using <!-- DNT-Start -->LDAP<!-- DNT-End -->
+        of how to add LDAP Authentication see <emphasis>Using LDAP
         Authentication</emphasis> section in the <emphasis
-        role="bluebold">Installing and Running The <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform</emphasis>
+        role="bluebold">Installing and Running The HPCC Platform</emphasis>
         document.</para>
 
         <para>
           <graphic fileref="images/LDAP_004.jpg" />
         </para>
 
-        <!-- DNT-Start --><!--LdapServer-Include-fullDoc-XXX-19--><!-- DNT-End -->
+        <!--LdapServer-Include-fullDoc-XXX-19-->
 
         <xi:include href="../XMLGeneration/xml/ldapserver.xsd.mod.xml"
                     xpointer="xpointer(//*[@id='ldapSrv'])"
                     xmlns:xi="http://www.w3.org/2001/XInclude" />
 
         <sect3>
-          <!-- DNT-Start --><title>LDAP Server Process Instances</title><!-- DNT-End -->
+          <title>LDAP Server Process Instances</title>
 
-          <para>This tab allows you to add instances to your <!-- DNT-Start -->LDAP<!-- DNT-End -->
+          <para>This tab allows you to add instances to your LDAP
           Configuration. In order to add instances you would have previously
-          added the <!-- DNT-Start -->LDAP<!-- DNT-End --> computers in the Hardware section. For a complete
-          description of how to add <!-- DNT-Start -->LDAP<!-- DNT-End --> Authentication see <emphasis>Using
-          <!-- DNT-Start -->LDAP<!-- DNT-End --> Authentication</emphasis> section in the <emphasis
-          role="bluebold">Installing and Running The <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform</emphasis>
+          added the LDAP computers in the Hardware section. For a complete
+          description of how to add LDAP Authentication see <emphasis>Using
+          LDAP Authentication</emphasis> section in the <emphasis
+          role="bluebold">Installing and Running The HPCC Platform</emphasis>
           document.</para>
 
           <orderedlist>
             <listitem>
-              <para>On the <emphasis role="bold"><!-- DNT-Start -->Instances<!-- DNT-End --></emphasis> tab,
+              <para>On the <emphasis role="bold">Instances</emphasis> tab,
               right-click on the table on the right hand side, choose
-              <emphasis role="bold">Add <!-- DNT-Start -->Instances<!-- DNT-End -->...</emphasis></para>
+              <emphasis role="bold">Add Instances...</emphasis></para>
             </listitem>
 
             <listitem>
@@ -1995,7 +1995,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>LDAP Server Process Notes</title><!-- DNT-End -->
+          <title>LDAP Server Process Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -2004,10 +2004,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Sasha Server</title><!-- DNT-End -->
+        <title>Sasha Server</title>
 
         <sect3>
-          <!-- DNT-Start --><title>Instances</title><!-- DNT-End -->
+          <title>Instances</title>
 
           <orderedlist>
             <listitem>
@@ -2015,7 +2015,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>Select the <!-- DNT-Start -->Instances<!-- DNT-End --> tab.</para>
+              <para>Select the Instances tab.</para>
             </listitem>
 
             <listitem>
@@ -2028,16 +2028,16 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>Sasha Server Attributes</title><!-- DNT-End -->
+          <title>Sasha Server Attributes</title>
 
-          <!-- DNT-Start --><!--***Might-Want-to-add-CM-Sasha17A.jpg-image-***--><!-- DNT-End -->
+          <!--***Might-Want-to-add-CM-Sasha17A.jpg-image-***-->
 
           <para>This section described the SashaServerProcess <emphasis
           role="bold">Attribute</emphasis> tab values.</para>
 
           <graphic fileref="images/CM-Sasha17A.jpg" vendor="configmgrSS" />
 
-          <!-- DNT-Start --><!--configMgr-Sasha-t1-Include-XXX-20--><!-- DNT-End -->
+          <!--configMgr-Sasha-t1-Include-XXX-20-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
@@ -2049,7 +2049,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>SashaServer Process Archiver</title><!-- DNT-End -->
+          <title>SashaServer Process Archiver</title>
 
           <para>This section describes the SashaServer Process Archiver
           tab.</para>
@@ -2058,7 +2058,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img17-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-Sasha-Archiver-Include-XXX-21--><!-- DNT-End -->
+          <!--configMgr-Sasha-Archiver-Include-XXX-21-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
@@ -2070,7 +2070,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>SashaServer Process Coalescer</title><!-- DNT-End -->
+          <title>SashaServer Process Coalescer</title>
 
           <para>This section describes the SashaServer Process Coalescer
           tab.</para>
@@ -2079,7 +2079,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img17-2.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-Sasha-Coaleser-Include-XXX-22--><!-- DNT-End -->
+          <!--configMgr-Sasha-Coaleser-Include-XXX-22-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
@@ -2091,7 +2091,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>SashaServer Process DfuXRef</title><!-- DNT-End -->
+          <title>SashaServer Process DfuXRef</title>
 
           <para>This section describes the SashaServer Process DfuXref
           tab.</para>
@@ -2100,7 +2100,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img17-3.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-Sasha-DfuXref-Include-XXX-23--><!-- DNT-End -->
+          <!--configMgr-Sasha-DfuXref-Include-XXX-23-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
@@ -2112,7 +2112,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>SashaServer Process DfuExpiry</title><!-- DNT-End -->
+          <title>SashaServer Process DfuExpiry</title>
 
           <para>This section describes the SashaServer Process DfuExpiry
           tab.</para>
@@ -2123,7 +2123,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para />
 
-          <!-- DNT-Start --><!--configMgr-Sasha-DfuExpiry-Include-XXX-24--><!-- DNT-End -->
+          <!--configMgr-Sasha-DfuExpiry-Include-XXX-24-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
@@ -2135,7 +2135,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>SashaServer Process ThorQMon</title><!-- DNT-End -->
+          <title>SashaServer Process ThorQMon</title>
 
           <para>This section describes the SashaServer Process ThorQMon
           tab.</para>
@@ -2144,7 +2144,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img17-5.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-Sasha-ThorQMon-IncludeXXX-25--><!-- DNT-End -->
+          <!--configMgr-Sasha-ThorQMon-IncludeXXX-25-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
@@ -2156,7 +2156,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>SashaServer Process DaFileSrvMonitor</title><!-- DNT-End -->
+          <title>SashaServer Process DaFileSrvMonitor</title>
 
           <para>This section describes the SashaServer Process
           DaFileSrvMonitor tab.</para>
@@ -2165,7 +2165,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img17-6.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-Sasha-DafiSrvMon-Include-XXX26--><!-- DNT-End -->
+          <!--configMgr-Sasha-DafiSrvMon-Include-XXX26-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
@@ -2175,7 +2175,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>SashaServer Process Notes</title><!-- DNT-End -->
+          <title>SashaServer Process Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -2184,30 +2184,30 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="Thor" role="brk">
-        <!-- DNT-Start --><title>Thor</title><!-- DNT-End -->
+        <title>Thor</title>
 
-        <para>This section details how to define a Data Refinery (<!-- DNT-Start -->Thor<!-- DNT-End -->)
+        <para>This section details how to define a Data Refinery (Thor)
         cluster. Before you begin, you should decide the width of the cluster
         (i.e., how many slave nodes will you have).</para>
 
         <orderedlist>
           <listitem>
-            <para>Select <emphasis role="bold"><!-- DNT-Start -->Thor<!-- DNT-End --> Cluster -
+            <para>Select <emphasis role="bold">Thor Cluster -
             mythor</emphasis> in the Navigator panel on the left side.</para>
           </listitem>
 
           <listitem>
-            <para>Select the <emphasis role="bold"><!-- DNT-Start -->Topology<!-- DNT-End --></emphasis>
+            <para>Select the <emphasis role="bold">Topology</emphasis>
             tab.</para>
           </listitem>
 
           <listitem>
-            <para>Expand the <!-- DNT-Start -->Topology<!-- DNT-End -->, if needed, then right-click the Master
+            <para>Expand the Topology, if needed, then right-click the Master
             and select Delete.</para>
           </listitem>
         </orderedlist>
 
-        <para>This deletes the sample one-node <!-- DNT-Start -->Thor<!-- DNT-End -->.</para>
+        <para>This deletes the sample one-node Thor.</para>
 
         <para>You will replace this with a multi-node cluster.</para>
 
@@ -2215,7 +2215,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>right-click on the <!-- DNT-Start -->Topology<!-- DNT-End --> and select Add Master.</para>
+            <para>right-click on the Topology and select Add Master.</para>
 
             <para>
               <graphic fileref="images/CM-img13.jpg" vendor="configmgrSS" />
@@ -2225,7 +2225,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Select a computer from the list, then press the <!-- DNT-Start -->OK<!-- DNT-End -->
+            <para>Select a computer from the list, then press the OK
             button.</para>
 
             <para>
@@ -2247,11 +2247,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <?dbfo keep-together="always"?>
 
             <para>Select the computers to use as slaves from the list, then
-            press the <!-- DNT-Start -->OK<!-- DNT-End --> button. Use <!-- DNT-Start -->CTRL<!-- DNT-End -->+<!-- DNT-Start -->CLICK<!-- DNT-End --> to multi-select or <!-- DNT-Start -->SHIFT<!-- DNT-End -->+<!-- DNT-Start -->CLICK<!-- DNT-End -->
+            press the OK button. Use CTRL+CLICK to multi-select or SHIFT+CLICK
             to select a range.</para>
 
             <para><graphic fileref="images/CM-112-3.jpg"
-            vendor="configmgrSS" />The Nodes now display below the <!-- DNT-Start -->Thor<!-- DNT-End --> Master
+            vendor="configmgrSS" />The Nodes now display below the Thor Master
             node.</para>
 
             <para>
@@ -2260,7 +2260,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </listitem>
 
           <listitem>
-            <para>Select <!-- DNT-Start -->Thor<!-- DNT-End --> Cluster - mythor in the Navigator panel on the
+            <para>Select Thor Cluster - mythor in the Navigator panel on the
             left side.</para>
           </listitem>
 
@@ -2288,20 +2288,20 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>Changing Thor topology</title><!-- DNT-End -->
+          <title>Changing Thor topology</title>
 
-          <para>If you want to designate a different node as the <!-- DNT-Start -->Thor<!-- DNT-End --> master
+          <para>If you want to designate a different node as the Thor master
           when setting up a multi-node system, follow these steps.</para>
 
           <orderedlist>
             <listitem>
-              <para>Select <emphasis role="bold"><!-- DNT-Start -->Thor<!-- DNT-End --> Cluster -
+              <para>Select <emphasis role="bold">Thor Cluster -
               mythor</emphasis> in the Navigator panel on the left
               side.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <emphasis role="bold"><!-- DNT-Start -->Topology<!-- DNT-End --></emphasis>
+              <para>Select the <emphasis role="bold">Topology</emphasis>
               tab.</para>
             </listitem>
 
@@ -2330,9 +2330,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                     <tbody>
                       <row>
-                        <entry><!-- DNT-Start -->
+                        <entry>
                           <inlinegraphic fileref="images/caution.png" />
-                        <!-- DNT-End --></entry>
+                        </entry>
 
                         <entry>You should only use this feature when initially
                         setting up your system. If there is data on the nodes
@@ -2350,29 +2350,29 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3 id="ThorClusterAttributesTab">
-          <!-- DNT-Start --><title>ThorCluster Attributes</title><!-- DNT-End -->
+          <title>ThorCluster Attributes</title>
 
-          <para>This section describes the <!-- DNT-Start -->Thor<!-- DNT-End --> Cluster Attributes tab.</para>
+          <para>This section describes the Thor Cluster Attributes tab.</para>
 
           <para>
             <graphic fileref="images/CM-img18-1.jpg" vendor="configmgrSS" />
           </para>
 
           <sect4 id="ThorMemorySettings">
-            <!-- DNT-Start --><title>Thor Memory Settings</title><!-- DNT-End -->
+            <title>Thor Memory Settings</title>
 
             <para>When the <emphasis role="bold">globalMemorySize</emphasis>
-            is left unset, <!-- DNT-Start -->Thor<!-- DNT-End -->[master] detects total physical memory and
+            is left unset, Thor[master] detects total physical memory and
             allocates 75% of it. If there are multiple slaves per node
             (slavesPerNode&gt;1) it divides the total among the slaves. If
             globalMemorySize is defined, then it allocates that amount of
             memory to each slave. The masterMemorySize attribute allocates
-            memory for the <!-- DNT-Start -->Thor<!-- DNT-End --> master. If omitted, <!-- DNT-Start -->Thor<!-- DNT-End --> master uses
+            memory for the Thor master. If omitted, Thor master uses
             globalMemorySize, or the default 75% of memory.</para>
 
             <para>On systems with a lot of memory, the default 75% of physical
             memory is probably too conservative and reserving total physical
-            minus 2<!-- DNT-Start -->GB<!-- DNT-End --> (for the <!-- DNT-Start -->OS<!-- DNT-End --> and other processes) is sensible. You should
+            minus 2GB (for the OS and other processes) is sensible. You should
             then divide that number by the number of slavesPerNode.</para>
 
             <para>If there are multiple Thors sharing the same nodes, then
@@ -2384,11 +2384,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             should use a formula similar to the following in your calculations
             when configuring globalMemorySize:</para>
 
-            <!-- DNT-Start --><programlisting>globalMemorySize = (total-physical-memory)-2GB / (2*2) </programlisting><!-- DNT-End -->
+            <programlisting>globalMemorySize = (total-physical-memory)-2GB / (2*2) </programlisting>
 
-            <para>Without any specified setting, <!-- DNT-Start -->Thor<!-- DNT-End --> assumes it has exclusive
+            <para>Without any specified setting, Thor assumes it has exclusive
             access to the memory and would therefore use too much (because
-            each <!-- DNT-Start -->Thor<!-- DNT-End --> is unaware of the other's configuration and memory
+            each Thor is unaware of the other's configuration and memory
             usage).</para>
 
             <para>If <emphasis role="bold">localThor</emphasis> is set to true
@@ -2400,14 +2400,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             role="bold">masterMemorySize.</emphasis></para>
 
             <para>Although a configuration may be set using upper memory
-            limits that exceed total physical memory, <!-- DNT-Start -->Thor<!-- DNT-End --> will not actually
+            limits that exceed total physical memory, Thor will not actually
             reserve the memory ahead of time and will only hit memory problems
             when and if your jobs use all of memory. So, for example, two
             Thors that are configured to use all available memory could
             peacefully co-exist until a query on each are simultaneously using
             more memory than the node has available.</para>
 
-            <!-- DNT-Start --><!--configMgr-Thor-Attribute-Include-XXX--><!-- DNT-End -->
+            <!--configMgr-Thor-Attribute-Include-XXX-->
 
             <para>
               <xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
@@ -2424,15 +2424,15 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>ThorCluster SSH Options</title><!-- DNT-End -->
+          <title>ThorCluster SSH Options</title>
 
-          <para>This section describes the ThorCluster <!-- DNT-Start -->SSH<!-- DNT-End --> Options tab.</para>
+          <para>This section describes the ThorCluster SSH Options tab.</para>
 
           <para>
             <graphic fileref="images/CM-img18-2.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-Thor-SSH-Include-XXX--><!-- DNT-End -->
+          <!--configMgr-Thor-SSH-Include-XXX-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
@@ -2442,7 +2442,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>ThorCluster Debug</title><!-- DNT-End -->
+          <title>ThorCluster Debug</title>
 
           <para>The debug tab is for internal use only</para>
         </sect3>
@@ -2450,7 +2450,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>ThorCluster Swap Node</title><!-- DNT-End -->
+          <title>ThorCluster Swap Node</title>
 
           <para>This section describes the ThorCluster Swap Node tab.</para>
 
@@ -2458,7 +2458,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img18-4.jpg" vendor="configmgrSS" />
           </para>
 
-          <!-- DNT-Start --><!--configMgr-Thor-SwapNode-Include-XXX--><!-- DNT-End -->
+          <!--configMgr-Thor-SwapNode-Include-XXX-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
@@ -2470,7 +2470,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <!-- DNT-Start --><title>ThorCluster Notes</title><!-- DNT-End -->
+          <title>ThorCluster Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
@@ -2479,23 +2479,23 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="Roxie" role="brk">
-        <!-- DNT-Start --><title>Roxie</title><!-- DNT-End -->
+        <title>Roxie</title>
 
         <para>This section details how to define a Rapid Data Delivery Engine
-        (<!-- DNT-Start -->Roxie<!-- DNT-End -->) cluster. Before you begin, you should decide the width of the
+        (Roxie) cluster. Before you begin, you should decide the width of the
         cluster (i.e., how many agent nodes will you have).</para>
 
-        <!-- DNT-Start --><!--***This section appears to have had signifcent changes*** --><!-- DNT-End -->
+        <!--***This section appears to have had signifcent changes*** -->
 
         <orderedlist>
           <listitem>
-            <para>Select <emphasis role="bold"><!-- DNT-Start -->Roxie<!-- DNT-End --> Cluster</emphasis> in the
+            <para>Select <emphasis role="bold">Roxie Cluster</emphasis> in the
             Navigator panel on the left side.</para>
 
             <para><emphasis role="bold">Note:</emphasis> If you did not
-            specify a value in the <emphasis>Number of nodes for <!-- DNT-Start -->Roxie<!-- DNT-End --> cluster
+            specify a value in the <emphasis>Number of nodes for Roxie cluster
             </emphasis>field when you first set up your environment, you will
-            not have a <!-- DNT-Start -->Roxie<!-- DNT-End --> Cluster. To add a <!-- DNT-Start -->Roxie<!-- DNT-End --> Cluster component:
+            not have a Roxie Cluster. To add a Roxie Cluster component:
             Right-click on the <emphasis role="bold">Software</emphasis>
             component in the Navigator Panel, then select <emphasis
             role="bold">New Components</emphasis> then <emphasis
@@ -2510,7 +2510,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Right-click the <!-- DNT-Start -->Roxie<!-- DNT-End --> Servers and select
+            <para>Right-click the Roxie Servers and select
             <guimenuitem>Reconfigure Servers</guimenuitem>.</para>
 
             <para>
@@ -2522,7 +2522,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <?dbfo keep-together="always"?>
 
             <para>Select the computers to use as Servers from the list, then
-            press the <!-- DNT-Start -->OK<!-- DNT-End --> button.</para>
+            press the OK button.</para>
 
             <para>
               <graphic fileref="images/CM-112-2.jpg" vendor="configmgrSS" />
@@ -2557,17 +2557,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </orderedlist>
 
         <sect3>
-          <!-- DNT-Start --><title>Roxie Configuration Attributes</title><!-- DNT-End -->
+          <title>Roxie Configuration Attributes</title>
 
-          <para><!-- DNT-Start -->Roxie<!-- DNT-End --> has many configurable attributes which can be used to
+          <para>Roxie has many configurable attributes which can be used to
           for customizing and tuning to your specific needs. The following
-          section expands on each of the <!-- DNT-Start -->Roxie<!-- DNT-End --> tabs and the available
-          attributes. There is additional <!-- DNT-Start -->Roxie<!-- DNT-End --> configuration information in
+          section expands on each of the Roxie tabs and the available
+          attributes. There is additional Roxie configuration information in
           the section immediately following these tables.</para>
         </sect3>
       </sect2>
 
-      <!-- DNT-Start --><!--configMgr-ROXIE-Include-SEC4--><!-- DNT-End -->
+      <!--configMgr-ROXIE-Include-SEC4-->
 
       <?hard-pagebreak ?>
 
@@ -2579,17 +2579,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title />
 
         <sect3>
-          <!-- DNT-Start --><title>Additional Roxie Configuration items</title><!-- DNT-End -->
+          <title>Additional Roxie Configuration items</title>
 
           <para>
-            <emphasis role="bold">Add Servers to <!-- DNT-Start -->Roxie<!-- DNT-End --> Farm</emphasis>
+            <emphasis role="bold">Add Servers to Roxie Farm</emphasis>
           </para>
 
-          <para>To add servers to a <!-- DNT-Start -->Roxie<!-- DNT-End --> farm</para>
+          <para>To add servers to a Roxie farm</para>
 
           <para><orderedlist>
               <listitem>
-                <para>Select the <emphasis role="bold"><!-- DNT-Start -->Roxie<!-- DNT-End --> Cluster -
+                <para>Select the <emphasis role="bold">Roxie Cluster -
                 myroxie</emphasis> (default) from the Navigator window on the
                 left side.</para>
               </listitem>
@@ -2600,7 +2600,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </listitem>
 
               <listitem>
-                <para>Right-click on <emphasis role="bold"><!-- DNT-Start -->Roxie<!-- DNT-End -->
+                <para>Right-click on <emphasis role="bold">Roxie
                 Servers</emphasis>.</para>
               </listitem>
 
@@ -2616,7 +2616,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
               <listitem>
                 <para>Enter the values for the new server(s) in the dialog
-                then press <!-- DNT-Start -->OK<!-- DNT-End -->.</para>
+                then press OK.</para>
               </listitem>
             </orderedlist>All configured servers are then used when you create
           a port to listen on. </para>
@@ -2636,7 +2636,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="Topology" role="brk">
-        <!-- DNT-Start --><title>Topology</title><!-- DNT-End -->
+        <title>Topology</title>
 
         <para>This section describes the topology tab.</para>
 
@@ -2651,41 +2651,41 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start -->Attribute name<!-- DNT-End --></entry>
+                  <entry>Attribute name</entry>
 
                   <entry>Definition</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->
+                  <entry>
                     <emphasis>Topology</emphasis>
-                  <!-- DNT-End --></entry>
+                  </entry>
 
                   <entry>describes the system topology</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->
+                  <entry>
                     <emphasis>Cluster - thor</emphasis>
-                  <!-- DNT-End --></entry>
+                  </entry>
 
-                  <entry>describes the <!-- DNT-Start -->Thor<!-- DNT-End --> clusters</entry>
+                  <entry>describes the Thor clusters</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->
+                  <entry>
                     <emphasis>Cluster - hthor</emphasis>
-                  <!-- DNT-End --></entry>
+                  </entry>
 
                   <entry>describes the hthor clusters</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->
+                  <entry>
                     <emphasis>Cluster - roxie</emphasis>
-                  <!-- DNT-End --></entry>
+                  </entry>
 
-                  <entry>describes the <!-- DNT-Start -->Roxie<!-- DNT-End --> clusters</entry>
+                  <entry>describes the Roxie clusters</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2693,7 +2693,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </para>
 
         <sect3 id="Propogate-configuration-changes" role="brk">
-          <!-- DNT-Start --><title>Distribute Configuration Changes to all Nodes</title><!-- DNT-End -->
+          <title>Distribute Configuration Changes to all Nodes</title>
 
           <para>Once your environment is set up as desired, you must copy the
           configuration file to the other nodes.</para>
@@ -2715,9 +2715,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                     <tbody>
                       <row>
-                        <entry><!-- DNT-Start -->
+                        <entry>
                           <inlinegraphic fileref="images/caution.png" />
-                        <!-- DNT-End --></entry>
+                        </entry>
 
                         <entry>Be sure system is stopped before attempting to
                         copy the Environment.xml file.</entry>
@@ -2731,8 +2731,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <listitem>
               <para>Back up the original environment.xml file</para>
 
-              <!-- DNT-Start --><programlisting># for example
-sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak </programlisting><!-- DNT-End -->
+              <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak </programlisting>
 
               <para>Note: the "live environment.xml file is located in your
               <emphasis role="bold">/etc/HPCCSystems/</emphasis> directory.
@@ -2747,8 +2747,8 @@ sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.ba
               to the /etc/HPCCSystems and rename the file to
               environment.xml</para>
 
-              <!-- DNT-Start --><programlisting># for example
-sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting><!-- DNT-End -->
+              <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
               <para />
             </listitem>
@@ -2761,7 +2761,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>Restart the <!-- DNT-Start -->HPCC<!-- DNT-End --> system</para>
+              <para>Restart the HPCC system</para>
 
               <para>You might prefer to script this process, especially if you
               have many nodes. See the Example Scripts section in the Appendix

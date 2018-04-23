@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <bookinfo>
-    <!-- DNT-Start --><title>Client Tools Overview</title><!-- DNT-End -->
+    <title>Client Tools Overview</title>
 
     <author>
       <firstname>Boca Raton</firstname>
@@ -19,72 +19,72 @@
   </bookinfo>
 
   <chapter id="The_ECL_Ide">
-    <!-- DNT-Start --><title>The ECL IDE</title><!-- DNT-End -->
+    <title>The ECL IDE</title>
 
     <sect1 id="ECL_IDE_Introduction" role="nobrk">
-      <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
+      <title>Introduction</title>
 
-      <para><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> is the simple and easy way to create Queries into your
-      data, and <!-- DNT-Start -->ECL<!-- DNT-End --> files with which to build your queries. You build your
-      Queries and files (see the <emphasis><!-- DNT-Start -->ECL<!-- DNT-End --> Language Reference
-      </emphasis>and<emphasis> </emphasis>the<emphasis> <!-- DNT-Start -->ECL<!-- DNT-End --> Programmer's
-      Guide) </emphasis>using Enterprise Control Language (<!-- DNT-Start -->ECL<!-- DNT-End -->). <!-- DNT-Start -->ECL<!-- DNT-End --> has been
+      <para>ECL IDE is the simple and easy way to create Queries into your
+      data, and ECL files with which to build your queries. You build your
+      Queries and files (see the <emphasis>ECL Language Reference
+      </emphasis>and<emphasis> </emphasis>the<emphasis> ECL Programmer's
+      Guide) </emphasis>using Enterprise Control Language (ECL). ECL has been
       designed specifically for use in huge projects where many things can be
       similar.</para>
 
-      <para><!-- DNT-Start -->ECL<!-- DNT-End -->'s extreme scalability comes from a design that allows you to
+      <para>ECL's extreme scalability comes from a design that allows you to
       leverage every query you create for re-use in subsequent queries as
-      needed. To do this, <!-- DNT-Start -->ECL<!-- DNT-End --> takes a <emphasis>dictionary</emphasis> approach
-      to building queries wherein each <!-- DNT-Start -->ECL<!-- DNT-End --> definition defines an <!-- DNT-Start -->ECL<!-- DNT-End --> file.
-      Each previously defined <!-- DNT-Start -->ECL<!-- DNT-End --> file can then be used in succeeding <!-- DNT-Start -->ECL<!-- DNT-End --> File
+      needed. To do this, ECL takes a <emphasis>dictionary</emphasis> approach
+      to building queries wherein each ECL definition defines an ECL file.
+      Each previously defined ECL file can then be used in succeeding ECL File
       definitions--<emphasis>the language extends itself as you use
       it</emphasis>.</para>
 
-      <para><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> is an <!-- DNT-Start -->ECL<!-- DNT-End --> programmer's tool. Its main use is to create the
-      <!-- DNT-Start -->ECL<!-- DNT-End --> files and is designed to make <!-- DNT-Start -->ECL<!-- DNT-End --> coding as easy as possible.</para>
+      <para>ECL IDE is an ECL programmer's tool. Its main use is to create the
+      ECL files and is designed to make ECL coding as easy as possible.</para>
 
       <sect2 id="ECL_Files">
-        <!-- DNT-Start --><title>ECL files</title><!-- DNT-End -->
+        <title>ECL files</title>
 
         <para><emphasis role="bold">These are the basic building blocks from
-        which you create queries into your data. <!-- DNT-Start -->ECL<!-- DNT-End --> files are extensively
-        defined in the </emphasis><emphasis><!-- DNT-Start -->ECL<!-- DNT-End --> Language
+        which you create queries into your data. ECL files are extensively
+        defined in the </emphasis><emphasis>ECL Language
         Reference.</emphasis></para>
 
-        <para>You create an <!-- DNT-Start -->ECL<!-- DNT-End --> file by coding an expression that defines how
-        a calculation or record set derivation is to be done. Once an <!-- DNT-Start -->ECL<!-- DNT-End --> file
-        is defined you may use it in succeeding <!-- DNT-Start -->ECL<!-- DNT-End --> file definitions, making
-        each succeeding <!-- DNT-Start -->ECL<!-- DNT-End --> file more and more highly leveraged upon the work
+        <para>You create an ECL file by coding an expression that defines how
+        a calculation or record set derivation is to be done. Once an ECL file
+        is defined you may use it in succeeding ECL file definitions, making
+        each succeeding ECL file more and more highly leveraged upon the work
         you have done before. This results in extremely efficient query
         construction.</para>
       </sect2>
 
       <sect2 id="Built_in_Functions">
-        <!-- DNT-Start --><title>Built-in Functions</title><!-- DNT-End -->
+        <title>Built-in Functions</title>
 
-        <para><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> also has all the <!-- DNT-Start -->ECL<!-- DNT-End --> built-in functions available to you
+        <para>ECL IDE also has all the ECL built-in functions available to you
         for simple point-and-click use in your query construction. For
         example, the Standard String Library (Std.Str) contains common
-        functions to operate on <!-- DNT-Start -->STRING<!-- DNT-End --> fields such as the <emphasis
+        functions to operate on STRING fields such as the <emphasis
         role="bold">ToUpperCase </emphasis> function which converts characters
         in a string to uppercase.</para>
 
         <para>These are installed as plugins and are in the ecllib folder
         shown in the Repository window.</para>
 
-        <!-- DNT-Start --><!-- add screen shot***--><!-- DNT-End -->
+        <!-- add screen shot***-->
       </sect2>
 
       <sect2 id="Used_to_Build_Queries">
-        <!-- DNT-Start --><title>How are all these used to build Queries?</title><!-- DNT-End -->
+        <title>How are all these used to build Queries?</title>
 
-        <para><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> allows you to mix-and-match your data with any of the
-        <!-- DNT-Start -->ECL<!-- DNT-End --> built-in functions and/or <!-- DNT-Start -->ECL<!-- DNT-End --> files you have defined to create
-        Queries. Because <!-- DNT-Start -->ECL<!-- DNT-End --> files build upon each other, the resulting
+        <para>ECL IDE allows you to mix-and-match your data with any of the
+        ECL built-in functions and/or ECL files you have defined to create
+        Queries. Because ECL files build upon each other, the resulting
         queries can be as complex as needed to obtain the result.</para>
 
         <para>Once the Query is built, you send it to a High Performance
-        Computing Cluster (<!-- DNT-Start -->HPCC<!-- DNT-End -->) which processes the query and returns the
+        Computing Cluster (HPCC) which processes the query and returns the
         result--extremely quickly.</para>
 
         <para>Complex Queries that may have taken weeks to format, program,
@@ -93,9 +93,9 @@
       </sect2>
 
       <sect2 id="Configuration_Files">
-        <!-- DNT-Start --><title>Configuration Files</title><!-- DNT-End -->
+        <title>Configuration Files</title>
 
-        <para><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> uses configuration files (.<!-- DNT-Start -->CFG<!-- DNT-End -->) to store the information
+        <para>ECL IDE uses configuration files (.CFG) to store the information
         for environments to which it will connect. Create multiple
         configuration files to connect to different environments. Use the
         <emphasis role="bold">Save As </emphasis>option on the <emphasis
@@ -107,12 +107,12 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>The <!-- DNT-Start -->IP<!-- DNT-End --> address of the <!-- DNT-Start -->ESP<!-- DNT-End --> Server.</para>
+              <para>The IP address of the ESP Server.</para>
             </listitem>
 
             <listitem>
               <para>If services are not using the default ports, you will also
-              need to know the port bindings for the following <!-- DNT-Start -->ESP<!-- DNT-End --> Web
+              need to know the port bindings for the following ESP Web
               services:</para>
 
               <para><itemizedlist mark="bullet">
@@ -126,7 +126,7 @@
 
                   <listitem>
                     <para>WsAttributes (default port is 8145) <emphasis
-                    role="bold">Note:</emphasis> Not part of <!-- DNT-Start -->VM<!-- DNT-End --> or Community
+                    role="bold">Note:</emphasis> Not part of VM or Community
                     Edition</para>
                   </listitem>
 
@@ -149,10 +149,10 @@
             </listitem>
           </itemizedlist></para>
 
-        <!-- DNT-Start --><!-- add a screen shot here***--><!-- DNT-End -->
+        <!-- add a screen shot here***-->
 
-        <para>You can find the <!-- DNT-Start -->ESP<!-- DNT-End --> Server's <!-- DNT-Start -->IP<!-- DNT-End --> address and the bindings for
-        service ports using the System Servers section in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+        <para>You can find the ESP Server's IP address and the bindings for
+        service ports using the System Servers section in ECL Watch.</para>
 
         <para>To create or edit configuration files:</para>
 
@@ -166,11 +166,11 @@
         <para><itemizedlist>
             <listitem>
               <para>Press the <emphasis role="bold">Preferences</emphasis>
-              button on the <!-- DNT-Start -->Login<!-- DNT-End --> window.</para>
+              button on the Login window.</para>
 
               <para><emphasis role="bold">Note:</emphasis> Some options, such
               as the Server settings, can only be changed by accessing the
-              preferences through the <!-- DNT-Start -->Login<!-- DNT-End --> window.</para>
+              preferences through the Login window.</para>
             </listitem>
           </itemizedlist>The Preferences window displays:</para>
 
@@ -179,7 +179,7 @@
               <?dbfo keep-together="always"?>
 
               <para>Select the <emphasis role="bold">Server</emphasis> tab and
-              enter the <!-- DNT-Start -->IP<!-- DNT-End --> address of the <!-- DNT-Start -->ESP<!-- DNT-End --> in the Server field, but do not
+              enter the IP address of the ESP in the Server field, but do not
               include the port details:</para>
 
               <para><graphic fileref="../../images/CT03.jpg" /></para>
@@ -202,7 +202,7 @@
               compiler matches each server you need to access. Check the
               <emphasis role="bold">Override Automatic Compiler
               Selection</emphasis> checkbox and specify the Complier that
-              matches your <!-- DNT-Start -->HPCC<!-- DNT-End --> instance.</para>
+              matches your HPCC instance.</para>
 
               <para><graphic fileref="../../images/CT03a.jpg" /></para>
             </listitem>
@@ -219,26 +219,26 @@
               <emphasis role="bold">Submit</emphasis> on the <emphasis
               role="bold">Builder</emphasis> window.</para>
 
-              <!-- DNT-Start --><!-- --><!-- DNT-End -->
+              <!-- -->
 
               <para>If you are running under Windows and want to compile
-              locally, install the Microsoft <!-- DNT-Start -->VS<!-- DNT-End --> 2008 C++ compiler (either
-              Express or Professional edition). Linux users need <!-- DNT-Start -->GCC<!-- DNT-End -->.</para>
+              locally, install the Microsoft VS 2008 C++ compiler (either
+              Express or Professional edition). Linux users need GCC.</para>
             </listitem>
 
             <listitem>
-              <para>Specify your <!-- DNT-Start -->ECL<!-- DNT-End --> Folders.</para>
+              <para>Specify your ECL Folders.</para>
 
-              <para>When creating queries in <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, you must save the <!-- DNT-Start -->ECL<!-- DNT-End -->
+              <para>When creating queries in ECL IDE, you must save the ECL
               file before you can run the query. Specify the locations on your
-              computer where you want the <!-- DNT-Start -->ECL<!-- DNT-End --> files to be saved. All folders
+              computer where you want the ECL files to be saved. All folders
               specified here are listed in the <emphasis
-              role="bold">Repository</emphasis> window in <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> where you
+              role="bold">Repository</emphasis> window in ECL IDE where you
               can get easy access to all your files.</para>
 
-              <para>Sample <!-- DNT-Start -->ECL<!-- DNT-End --> files which are supplied with <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> are
-              automatically installed onto your computer when you download <!-- DNT-Start -->ECL<!-- DNT-End -->
-              <!-- DNT-Start -->IDE<!-- DNT-End -->. They are downloaded to the My Documents folder on your
+              <para>Sample ECL files which are supplied with ECL IDE are
+              automatically installed onto your computer when you download ECL
+              IDE. They are downloaded to the My Documents folder on your
               computer and the location of this Working Folder is
               automatically added into the configuration.</para>
             </listitem>
@@ -252,7 +252,7 @@
             <listitem>
               <para>If you are editing an existing configuration, click
               <emphasis role="bold">Apply</emphasis> and then <emphasis
-              role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> to save your changes.</para>
+              role="bold">OK</emphasis> to save your changes.</para>
 
               <para>When you have completed your configuration changes, you
               are prompted to relogin.</para>
@@ -261,26 +261,26 @@
       </sect2>
 
       <sect2 id="Using_the_Preferences_Window">
-        <!-- DNT-Start --><title>Using the Preferences Window</title><!-- DNT-End -->
+        <title>Using the Preferences Window</title>
 
         <sect3 id="CT_ECLIDE_ServerTab">
-          <!-- DNT-Start --><title>Server Tab</title><!-- DNT-End -->
+          <title>Server Tab</title>
 
           <para>The <emphasis role="bold">Server tab</emphasis> has two modes
           for setting the server information: Normal and Advanced. Use the
-          normal mode when all <!-- DNT-Start -->ESP<!-- DNT-End --> web services are deployed using default
+          normal mode when all ESP web services are deployed using default
           settings.</para>
 
-          <para>In normal mode, you need only supply the <!-- DNT-Start -->ESP<!-- DNT-End --> server's <!-- DNT-Start -->IP<!-- DNT-End -->
-          address or <!-- DNT-Start -->DNS<!-- DNT-End --> machine name. The remaining values are automatically
+          <para>In normal mode, you need only supply the ESP server's IP
+          address or DNS machine name. The remaining values are automatically
           completed.</para>
 
           <para>If you are creating a connection using Secure Socket Layer
-          (<!-- DNT-Start -->SSL<!-- DNT-End -->) to connect, check the <emphasis role="bold"><!-- DNT-Start -->SSL<!-- DNT-End -->
-          </emphasis>box. See the <emphasis>Using <!-- DNT-Start -->SSL<!-- DNT-End --> </emphasis>section in
+          (SSL) to connect, check the <emphasis role="bold">SSL
+          </emphasis>box. See the <emphasis>Using SSL </emphasis>section in
           this manual for more information.</para>
 
-          <para>Use Advanced Mode to edit individual values for the <!-- DNT-Start -->ESP<!-- DNT-End --> Server
+          <para>Use Advanced Mode to edit individual values for the ESP Server
           connections.</para>
 
           <para>Check the <emphasis role="bold">Advanced</emphasis> box to use
@@ -289,14 +289,14 @@
           <para><graphic fileref="../../images/CT03.jpg" /></para>
 
           <para>The Server settings, can only be changed by accessing the
-          preferences through the <!-- DNT-Start -->Login<!-- DNT-End --> window.</para>
+          preferences through the Login window.</para>
 
           <para>Press <emphasis role="bold">Apply</emphasis> and then
-          <emphasis role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> to save the current information
+          <emphasis role="bold">OK</emphasis> to save the current information
           to a new configuration file. All available configuration files are
           shown on the <emphasis role="bold">Configurations</emphasis> drop
-          list when you log in and you simply select the one you want <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
-          to use to connect to an <!-- DNT-Start -->HPCC<!-- DNT-End --> environment.</para>
+          list when you log in and you simply select the one you want ECL IDE
+          to use to connect to an HPCC environment.</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -319,10 +319,10 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_EditorTab">
-          <!-- DNT-Start --><title>Editor tab</title><!-- DNT-End -->
+          <title>Editor tab</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">Editor tab</emphasis> allows you to
-          configure the editor to your preference.</para><!-- DNT-End -->
+          <para>The <emphasis role="bold">Editor tab</emphasis> allows you to
+          configure the editor to your preference.</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -332,63 +332,63 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Tab Width
-                  (chars)</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Tab Width
+                  (chars)</emphasis></entry>
 
                   <entry>Specify the number of character spaces to use for a
                   tab. The default is 2.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Use Spaces</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Use Spaces</emphasis></entry>
 
                   <entry>Specify to use spaces for a tab.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Auto Save
-                  (secs)</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Auto Save
+                  (secs)</emphasis></entry>
 
                   <entry>Specify automatic save interval in seconds. The
                   default is 10.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Maintain
-                  Indent</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Maintain
+                  Indent</emphasis></emphasis></entry>
 
                   <entry>Check this box to maintain the level of indention
                   when creating a new line in the editor.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Line Numbers</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Line Numbers</emphasis></entry>
 
                   <entry>Check this box to display line numbers in the
                   editor.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Tree</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Tree</emphasis></emphasis></entry>
 
                   <entry>Check this box to display code structures in a
                   collapsible tree at the side of the editor.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold"><emphasis
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
                   role="bold">Open MDI children
-                  Maximized</emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                  Maximized</emphasis></emphasis></emphasis></entry>
 
                   <entry>Check this box if you prefer child windows to open
                   maximized within the application frame.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold"><emphasis
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
                   role="bold">Target Background
-                  Colors</emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                  Colors</emphasis></emphasis></emphasis></entry>
 
                   <entry>Check this box to change the editor background color
                   depending on the selected Target. The colors are defined in
@@ -396,31 +396,31 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold"><emphasis
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
                   role="bold">Keep Repository
-                  Synchronised</emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                  Synchronised</emphasis></emphasis></emphasis></entry>
 
-                  <entry>Check this box if you want to ensure that when an <!-- DNT-Start -->ECL<!-- DNT-End -->
-                  file window is selected, the <!-- DNT-Start -->ECL<!-- DNT-End --> file is auto selected in
+                  <entry>Check this box if you want to ensure that when an ECL
+                  file window is selected, the ECL file is auto selected in
                   the repository.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold"><emphasis
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
                   role="bold">Auto Complete on
-                  Period</emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                  Period</emphasis></emphasis></emphasis></entry>
 
-                  <entry>Check this box to show a list of available <!-- DNT-Start -->ECL<!-- DNT-End --> files
+                  <entry>Check this box to show a list of available ECL files
                   whenever an existing folder name is typed.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold"><emphasis
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
                   role="bold">Double Click Selects Qualified
-                  Label</emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                  Label</emphasis></emphasis></emphasis></entry>
 
                   <entry>Check this box to ensure that on a double click, the
-                  entire folder and <!-- DNT-Start -->ECL<!-- DNT-End --> file name is selected. When unchecked,
+                  entire folder and ECL file name is selected. When unchecked,
                   only the folder name is selected on a double click.</entry>
                 </row>
               </tbody>
@@ -429,13 +429,13 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_ColorsTab" role="brk">
-          <!-- DNT-Start --><title>Colors tab</title><!-- DNT-End -->
+          <title>Colors tab</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">Colors tab</emphasis> allows you to
+          <para>The <emphasis role="bold">Colors tab</emphasis> allows you to
           configure the text, foreground and background colors to your
           preference. There are several predefined color schemes or you can
           also choose to customize the color scheme to your preference.
-          <graphic fileref="../../images/CT04.jpg" vendor="IDE-SS" /></para><!-- DNT-End -->
+          <graphic fileref="../../images/CT04.jpg" vendor="IDE-SS" /></para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -445,52 +445,52 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Element</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Element</emphasis></entry>
 
                   <entry>There are two Element fields. The one on the left
                   allows you to choose one of the supported file types, such
-                  as <!-- DNT-Start -->ECL<!-- DNT-End -->, <!-- DNT-Start -->ESDL<!-- DNT-End -->, <!-- DNT-Start -->SALT<!-- DNT-End -->, <!-- DNT-Start -->KEL<!-- DNT-End -->, etc. To the right, you can choose
+                  as ECL, ESDL, SALT, KEL, etc. To the right, you can choose
                   the element to customize in the selected file type, such as
                   comment, string, operator, etc.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Defaults</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Defaults</emphasis></entry>
 
                   <entry>Press this button to reset all values to the default
                   color settings.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Font</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Font</emphasis></entry>
 
                   <entry>Specify the font to use in the Results window. The
                   default is Arial.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Size</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Size</emphasis></entry>
 
                   <entry>Specify the font size to use in the Results window.
                   The default is 10.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Foreground</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Foreground</emphasis></entry>
 
                   <entry>Select a color for the foreground from the drop list
                   provided.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Background</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Background</emphasis></entry>
 
                   <entry>Select a color for the background from the drop list
                   provided.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Bold</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Bold</emphasis></entry>
 
                   <entry>Check this box to embolden the color of the
                   text.</entry>
@@ -503,10 +503,10 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_ResultsTab">
-          <!-- DNT-Start --><title>Results tab</title><!-- DNT-End -->
+          <title>Results tab</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">Results tab</emphasis> allows you to
-          configure how results display.</para><!-- DNT-End -->
+          <para>The <emphasis role="bold">Results tab</emphasis> allows you to
+          configure how results display.</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -516,22 +516,22 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Result Font</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Result Font</emphasis></entry>
 
                   <entry>Specify the fonts to use in the Results window. The
                   default is Arial.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Size</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Size</emphasis></entry>
 
                   <entry>Specify the font size to use in the Results window.
                   The default is 10.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Limit Result
-                  (rows)</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Limit Result
+                  (rows)</emphasis></entry>
 
                   <entry>Specify the default result limit you want to use. The
                   system default is 100. You can override this setting by
@@ -544,10 +544,10 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_CompilerTab">
-          <!-- DNT-Start --><title>Compiler tab</title><!-- DNT-End -->
+          <title>Compiler tab</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">Compliler tab</emphasis> allows you
-          to configure the local compiler (eclcc).</para><!-- DNT-End -->
+          <para>The <emphasis role="bold">Compliler tab</emphasis> allows you
+          to configure the local compiler (eclcc).</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -560,10 +560,10 @@
                   <entry><graphic fileref="../../images/tip.jpg" /></entry>
 
                   <entry>If you are running under Windows and want to compile
-                  locally, you need to install the Microsoft <!-- DNT-Start -->VS<!-- DNT-End --> 2008 C++
+                  locally, you need to install the Microsoft VS 2008 C++
                   compiler. (either Express or Professional edition) <emphasis
                   role="bold">. <emphasis>Linux users</emphasis></emphasis>
-                  need <!-- DNT-Start -->GCC<!-- DNT-End -->.</entry>
+                  need GCC.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -583,48 +583,48 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Compiler</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Compiler</emphasis></emphasis></entry>
 
                   <entry>Specify the compiler's full path and executable
                   name.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Arguments</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
 
-                  <entry>Optional compiler arguments. See the Command Line <!-- DNT-Start -->ECL<!-- DNT-End -->
+                  <entry>Optional compiler arguments. See the Command Line ECL
                   section for more info.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Working
-                  Folder</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Working
+                  Folder</emphasis></entry>
 
                   <entry>Specify the full path to the folder you want to use
                   when compiling locally.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">WU Arguments</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">WU Arguments</emphasis></entry>
 
                   <entry>Optional command line parameters to pass to a locally
                   compiling workunit.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">ECL Folder</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">ECL Folder</emphasis></entry>
 
                   <entry>Specify the full path to the folder you will use to
-                  store your <!-- DNT-Start -->ECL<!-- DNT-End --> files. Some folders are automatically
-                  predefined when <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> is installed. They are used to store
-                  <!-- DNT-Start -->ECL<!-- DNT-End --> sample and example code.</entry>
+                  store your ECL files. Some folders are automatically
+                  predefined when ECL IDE is installed. They are used to store
+                  ECL sample and example code.</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry>The Arrows next to the <!-- DNT-Start -->ECL<!-- DNT-End --> Folder allow you to move
+                  <entry>The Arrows next to the ECL Folder allow you to move
                   folders up and down in appearance in the workspace</entry>
                 </row>
 
@@ -633,7 +633,7 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Reset</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Reset</emphasis></entry>
 
                   <entry>Resets the values of all fields to the default
                   settings.</entry>
@@ -644,10 +644,10 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_OtherTab">
-          <!-- DNT-Start --><title>Other tab</title><!-- DNT-End -->
+          <title>Other tab</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">Other tab</emphasis> allows you to
-          configure other settings.</para><!-- DNT-End -->
+          <para>The <emphasis role="bold">Other tab</emphasis> allows you to
+          configure other settings.</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -657,9 +657,9 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Active
+                  <entry><emphasis role="bold"><emphasis role="bold">Active
                   Workunits Refresh Interval
-                  (secs)</emphasis></emphasis><!-- DNT-End --></entry>
+                  (secs)</emphasis></emphasis></entry>
 
                   <entry>Specify the refresh interval (in seconds). This
                   determines how often the Active Workunit Toolbox refreshes.
@@ -667,53 +667,53 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Test GPF</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Test GPF</emphasis></entry>
 
                   <entry>For internal use only.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Disable
-                  Invoke</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Disable
+                  Invoke</emphasis></entry>
 
                   <entry>Check this box to disable Invoke.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Graph Search Includes
-                  Tooltips</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Graph Search Includes
+                  Tooltips</emphasis></entry>
 
                   <entry>Check this box to ensure that tooltips are also
                   included in your search.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Ignore Whitespace on
-                  Compare</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Ignore Whitespace on
+                  Compare</emphasis></entry>
 
                   <entry>Check this box to ignore whitespace (ii.e. spaces and
-                  blank lines) when comparing <!-- DNT-Start -->ECL<!-- DNT-End --> files.</entry>
+                  blank lines) when comparing ECL files.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Show CR/LF on
-                  Compare</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Show CR/LF on
+                  Compare</emphasis></entry>
 
                   <entry>Check this box to show the type of line endings in
-                  the compare window when comparing two <!-- DNT-Start -->ECL<!-- DNT-End --> files (for
+                  the compare window when comparing two ECL files (for
                   example, on checkin or history).</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Ignore Server
-                  Version</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Ignore Server
+                  Version</emphasis></entry>
 
                   <entry>For internal use only.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">WU Fetch
-                  Limit</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">WU Fetch
+                  Limit</emphasis></entry>
 
                   <entry>The maximum number of WUs that can be fetched, for
                   example, when looking for workunits sent during a specific
@@ -721,11 +721,11 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">ECL Watch Graph
-                  Control</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">ECL Watch Graph
+                  Control</emphasis></entry>
 
-                  <entry>While the graph viewer control is built in to <!-- DNT-Start -->ECL<!-- DNT-End -->
-                  <!-- DNT-Start -->IDE<!-- DNT-End -->, <!-- DNT-Start -->ECL<!-- DNT-End --> Watch requires this control to be installed so that
+                  <entry>While the graph viewer control is built in to ECL
+                  IDE, ECL Watch requires this control to be installed so that
                   it can display graphs properly. The currently installed
                   version is identified and the version number of the new
                   version shown. You should only adjust this setting if
@@ -738,23 +738,23 @@
       </sect2>
 
       <sect2 id="Login" role="brk">
-        <!-- DNT-Start --><title>Login</title><!-- DNT-End -->
+        <title>Login</title>
 
-        <para>When you start the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, the <!-- DNT-Start -->Login<!-- DNT-End --> window
+        <para>When you start the ECL IDE, the Login window
         displays.<itemizedlist>
             <listitem>
               <para>If you have created a configuration file to connect to the
-              desired <!-- DNT-Start -->HPCC<!-- DNT-End --> environment, select it from the <emphasis
+              desired HPCC environment, select it from the <emphasis
               role="bold">Configurations</emphasis> drop list. If not, press
               the <emphasis role="bold">Preferences</emphasis>button to create
               one.</para>
             </listitem>
 
             <listitem>
-              <para>Enter your credentials (<!-- DNT-Start -->Login<!-- DNT-End --> <!-- DNT-Start -->ID<!-- DNT-End --> and Password) and press
-              the <emphasis role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis>button.</para>
+              <para>Enter your credentials (Login ID and Password) and press
+              the <emphasis role="bold">OK</emphasis>button.</para>
 
-              <para>The <!-- DNT-Start -->Login<!-- DNT-End --> window displays errors (e.g., invalid login
+              <para>The Login window displays errors (e.g., invalid login
               information) if it cannot connect properly as shown
               below.</para>
 
@@ -773,7 +773,7 @@
                   <entry><graphic fileref="../../images/tip.jpg" /></entry>
 
                   <entry>The title bar of the login window also displays the
-                  version of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->.</entry>
+                  version of the ECL IDE.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -781,9 +781,9 @@
       </sect2>
 
       <sect2 id="ECL_IDE_Workspace" role="brk">
-        <!-- DNT-Start --><title><emphasis>The ECL IDE Workspace</emphasis></title><!-- DNT-End -->
+        <title><emphasis>The ECL IDE Workspace</emphasis></title>
 
-        <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> workspace is customizable. You can choose which
+        <para>The ECL IDE workspace is customizable. You can choose which
         toolboxes to display and the location to dock them. You can also move
         toolbars to the position you choose. In addition, you can open child
         windows in normal mode or maximized or minimize the Ribbon.</para>
@@ -794,7 +794,7 @@
         <para><graphic fileref="../../images/CT06.jpg" /></para>
 
         <sect3 id="CT_ECLIDE_UsingTheRibbon">
-          <!-- DNT-Start --><title>Using the Ribbon</title><!-- DNT-End -->
+          <title>Using the Ribbon</title>
 
           <para>The Ribbon makes the commands that you need use to complete a
           task easy to find.</para>
@@ -807,7 +807,7 @@
 
           <para>The Ribbon reduces clutter by showing some tabs only when
           needed. For example, the Browser Navigation tab is shown only when
-          <!-- DNT-Start -->ECL<!-- DNT-End --> Watch is active.</para>
+          ECL Watch is active.</para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
@@ -848,12 +848,12 @@
             </listitem>
           </itemizedlist>
 
-          <para>To use the Ribbon while minimized, <!-- DNT-Start -->CLICK<!-- DNT-End --> on a tab, then <!-- DNT-Start -->CLICK<!-- DNT-End -->
+          <para>To use the Ribbon while minimized, CLICK on a tab, then CLICK
           the option or command you want.</para>
         </sect3>
 
         <sect3 id="CT_ECLIDE_QuickAccessToolbar">
-          <!-- DNT-Start --><title>The Quick Access Toolbar</title><!-- DNT-End -->
+          <title>The Quick Access Toolbar</title>
 
           <para>Quick Access toolbar provides shortcut buttons for commonly
           used tasks, such as New Builder Window, Save, or Print. You can
@@ -883,7 +883,7 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_WorkingWithToolBoxes" role="brk">
-          <!-- DNT-Start --><title>Working with Toolboxes</title><!-- DNT-End -->
+          <title>Working with Toolboxes</title>
 
           <para>Toolboxes can be docked, pinned, unpinned, grouped, or hidden.
           In the graphic shown above, all toolboxes are shown pinned to the
@@ -891,7 +891,7 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_GroupingDockingAutoHide">
-          <!-- DNT-Start --><title>Grouping, Docking, and AutoHide</title><!-- DNT-End -->
+          <title>Grouping, Docking, and AutoHide</title>
 
           <para>Once grouped, the toolboxes open and close as a group until
           ungrouped. AutoHide mode (unpinned state) also acts upon the
@@ -919,22 +919,22 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_RepositoryToolbox" role="brk">
-          <!-- DNT-Start --><title>Repository Toolbox</title><!-- DNT-End -->
+          <title>Repository Toolbox</title>
 
           <para>This toolbox displays the Files and Folders for the current
           configuration. The files are organized by folders displayed in a
-          tree format. Expand any folder branch to see the <!-- DNT-Start -->ECL<!-- DNT-End --> files within
-          it. The <!-- DNT-Start -->IDE<!-- DNT-End --> supports other languages in addition to <!-- DNT-Start -->ECL<!-- DNT-End -->, namely
-          <!-- DNT-Start -->ESDL<!-- DNT-End -->, <!-- DNT-Start -->KEL<!-- DNT-End -->, <!-- DNT-Start -->SALT<!-- DNT-End -->, and others. To help differentiate the files are
+          tree format. Expand any folder branch to see the ECL files within
+          it. The IDE supports other languages in addition to ECL, namely
+          ESDL, KEL, SALT, and others. To help differentiate the files are
           color coded according to the type of file they are.</para>
 
           <para><graphic fileref="../../images/CT12.jpg" /></para>
 
           <para>In addition to folders, plugin service libraries are also
           displayed at the bottom of the repository. These special folders are
-          pre-compiled libraries of functions that you can use in your <!-- DNT-Start -->ECL<!-- DNT-End -->
+          pre-compiled libraries of functions that you can use in your ECL
           code. For example, the Standard Library (stringlib) contains common
-          functions to operate on <!-- DNT-Start -->STRING<!-- DNT-End --> fields such as the <emphasis
+          functions to operate on STRING fields such as the <emphasis
           role="bold">ToUpperCase</emphasis> function which converts
           characters in a string to uppercase.</para>
 
@@ -954,11 +954,11 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_FindRepoToolbox" role="brk">
-          <!-- DNT-Start --><title>Find (Repository) Toolbox</title><!-- DNT-End -->
+          <title>Find (Repository) Toolbox</title>
 
           <para>This toolbox allows you to search the active Repository.
           Results are organized by folder and displayed in a tree format.
-          Expand any folder to see the <!-- DNT-Start -->ECL<!-- DNT-End --> files within it.</para>
+          Expand any folder to see the ECL files within it.</para>
 
           <para><graphic fileref="../../images/CT13.jpg" /><informaltable
               colsep="1" frame="all" rowsep="1">
@@ -969,26 +969,26 @@
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Search</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Search</emphasis></entry>
 
                     <entry>Type your search phrase or regular expression
                     (depending on the mode selected).</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">User</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">User</emphasis></entry>
 
                     <entry>Limits search to a single user.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Folder</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Folder</emphasis></entry>
 
                     <entry>Limits search to a single folder.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Mode</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Mode</emphasis></entry>
 
                     <entry>Select the search mode from the drop list. There
                     are several options. <programlisting role="tab"><emphasis
@@ -999,55 +999,55 @@
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Sandboxed</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Sandboxed</emphasis></entry>
 
-                    <entry>Check this box to only locate <!-- DNT-Start -->ECL<!-- DNT-End --> files which are
+                    <entry>Check this box to only locate ECL files which are
                     in your sandbox.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Checked
-                    out</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Checked
+                    out</emphasis></entry>
 
-                    <entry>Check this box to only find <!-- DNT-Start -->ECL<!-- DNT-End --> files that have
+                    <entry>Check this box to only find ECL files that have
                     been checked out.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Locked</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Locked</emphasis></entry>
 
-                    <entry>Check this box to only find <!-- DNT-Start -->ECL<!-- DNT-End --> files that have
+                    <entry>Check this box to only find ECL files that have
                     been locked.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Orphaned</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Orphaned</emphasis></entry>
 
-                    <entry>Check this box to only find <!-- DNT-Start -->ECL<!-- DNT-End --> files that have
+                    <entry>Check this box to only find ECL files that have
                     been orphaned.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Modified
-                    since</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Modified
+                    since</emphasis></entry>
 
                     <entry>If checked, this option enables the date and time
                     fields. Enter the time and/or date limit (or press the
                     lookup button to select the date from a calendar). This
-                    filters <!-- DNT-Start -->ECL<!-- DNT-End --> files based on the date and time
+                    filters ECL files based on the date and time
                     supplied.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                    role="bold">Copy</emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">Copy</emphasis></emphasis></entry>
 
                     <entry>Press this button after the search to copy the list
-                    of found <!-- DNT-Start -->ECL<!-- DNT-End --> files.</entry>
+                    of found ECL files.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Search</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Search</emphasis></entry>
 
                     <entry>Press this button to initiate the search. When
                     completed, search results are displayed at the bottom of
@@ -1055,8 +1055,8 @@
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                    role="bold">Clear</emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">Clear</emphasis></emphasis></entry>
 
                     <entry>Press this button to clear the search
                     results.</entry>
@@ -1069,7 +1069,7 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_WorkUnitsToolbox">
-          <!-- DNT-Start --><title>WorkunitsToolbox</title><!-- DNT-End -->
+          <title>WorkunitsToolbox</title>
 
           <para>This toolbox displays Workunits for the environment to which
           you are connected. Workunits are organized into "folders" by date
@@ -1078,7 +1078,7 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_ActiveWorkunits">
-          <!-- DNT-Start --><title>Active Workunits</title><!-- DNT-End -->
+          <title>Active Workunits</title>
 
           <para>This toolbox displays active Workunits for the environment to
           which you are connected. Active Workunits are those which are in one
@@ -1089,7 +1089,7 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_FindWorkunitsToolbox" role="brk">
-          <!-- DNT-Start --><title>Find (Workunits) Toolbox</title><!-- DNT-End -->
+          <title>Find (Workunits) Toolbox</title>
 
           <para>This toolbox allows you to search online Workunits in the
           environment to which you are connected.</para>
@@ -1103,45 +1103,45 @@
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">User</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">User</emphasis></entry>
 
                     <entry>If enabled, this filters on the username. Enter a
                     user's name to see only that user's Workunits.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                    role="bold">Cluster</emphasis> </emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">Cluster</emphasis> </emphasis></entry>
 
                     <entry>If enabled, select a cluster from the drop list to
                     see only that cluster's Workunits.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                    role="bold">State</emphasis> </emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">State</emphasis> </emphasis></entry>
 
                     <entry>If enabled, select a State from the drop list to
                     see Workunits with that state.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
+                    <entry><emphasis role="bold"><emphasis
                     role="bold"><emphasis role="bold">Date
-                    Range</emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                    Range</emphasis></emphasis></emphasis></entry>
 
                     <entry>If enabled, this allows you to specify a range of
                     dates/times to limit the display results</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Max Count</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Max Count</emphasis></entry>
 
                     <entry>Limits the number of Workunits to display.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Search</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Search</emphasis></entry>
 
                     <entry>Press this button to initiate the search. When
                     completed, search results are displayed at the bottom of
@@ -1149,8 +1149,8 @@
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                    role="bold">Clear</emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">Clear</emphasis></emphasis></entry>
 
                     <entry>Press this button to clear the search
                     results.</entry>
@@ -1163,7 +1163,7 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_DataSetsToobox">
-          <!-- DNT-Start --><title>Datasets Toolbox</title><!-- DNT-End -->
+          <title>Datasets Toolbox</title>
 
           <para>This toolbox displays Logical files for the environment to
           which you are connected. Logical files are are organized into
@@ -1176,7 +1176,7 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_FindDatasetsToolbox">
-          <!-- DNT-Start --><title>Find (Datasets) Toolbox</title><!-- DNT-End -->
+          <title>Find (Datasets) Toolbox</title>
 
           <para>This toolbox allows you to search for Logical files in the
           environment to which you are connected.</para>
@@ -1190,21 +1190,21 @@
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Prefix</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Prefix</emphasis></entry>
 
                     <entry>This filters on the logical file's prefix.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                    role="bold">Cluster</emphasis> </emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold"><emphasis
+                    role="bold">Cluster</emphasis> </emphasis></entry>
 
                     <entry>This filters on a cluster. Specify a cluster name
                     from the environment.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Logical</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Logical</emphasis></entry>
 
                     <entry>Specify all or part of a file's logical name. Use
                     an asterisk to wildcard a name (for example, *person* find
@@ -1212,9 +1212,9 @@
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
+                    <entry><emphasis role="bold"><emphasis
                     role="bold"><emphasis
-                    role="bold">Description</emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                    role="bold">Description</emphasis></emphasis></emphasis></entry>
 
                     <entry>Specify all or part of a file's description. Use an
                     asterisk to wildcard a description (for example, *person*
@@ -1223,7 +1223,7 @@
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Owner</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Owner</emphasis></entry>
 
                     <entry>Specify an Owner name to find only files created by
                     a specific user.</entry>
@@ -1234,32 +1234,32 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_SyntaxErrorsToolbox" role="brk">
-          <!-- DNT-Start --><title>Syntax Errors Toolbox</title><!-- DNT-End -->
+          <title>Syntax Errors Toolbox</title>
 
           <para>The Syntax Errors toolbox displays syntax errors and warnings
           if any are found when conducting a Syntax Check. A syntax check is
           also performed when submitting a job (pressing Submit or Go
           button).</para>
 
-          <para>For example, referencing an <!-- DNT-Start -->ECL<!-- DNT-End --> file which has not yet been
+          <para>For example, referencing an ECL file which has not yet been
           defined will display a syntax error as shown below.</para>
 
           <para><graphic fileref="../../images/CT16.jpg" /></para>
 
-          <para><!-- DNT-Start -->DOUBLE<!-- DNT-End -->-<!-- DNT-Start -->CLICK<!-- DNT-End --> on any error displayed to take you to the line
+          <para>DOUBLE-CLICK on any error displayed to take you to the line
           containing the error. If the error is in a different attribute, a
-          <!-- DNT-Start -->DOUBLE<!-- DNT-End -->-<!-- DNT-Start -->CLICK<!-- DNT-End --> on the error opens that attribute in an editor
+          DOUBLE-CLICK on the error opens that attribute in an editor
           window.</para>
         </sect3>
 
         <sect3 id="CT_ECLIDE_ErrorLogToolbox">
-          <!-- DNT-Start --><title>Error Log Toolbox</title><!-- DNT-End -->
+          <title>Error Log Toolbox</title>
 
           <para>The Error Log toolbox displays errors and warnings from the
-          <!-- DNT-Start -->HPCC<!-- DNT-End --> system.</para>
+          HPCC system.</para>
 
-          <para>For example, attempting to create an <!-- DNT-Start -->ECL<!-- DNT-End --> file in a folder
-          without <!-- DNT-Start -->WRITE<!-- DNT-End --> permission will display an access denied error as
+          <para>For example, attempting to create an ECL file in a folder
+          without WRITE permission will display an access denied error as
           shown below:</para>
 
           <para><graphic fileref="../../images/CT17.png" /></para>
@@ -1290,10 +1290,10 @@
       </sect2>
 
       <sect2 id="Orb_Menu">
-        <!-- DNT-Start --><title>Orb Menu</title><!-- DNT-End -->
+        <title>Orb Menu</title>
 
         <sect3 id="CT_ECLIDE_OrbMenu">
-          <!-- DNT-Start --><title>Orb Menu</title><!-- DNT-End -->
+          <title>Orb Menu</title>
 
           <para><graphic fileref="../../images/CT02.jpg" /></para>
 
@@ -1311,82 +1311,82 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">New</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">New</emphasis></entry>
 
-                  <entry>opens a new <!-- DNT-Start -->ECL<!-- DNT-End --> Builder window. <!-- DNT-Start -->CTRL<!-- DNT-End -->-N</entry>
+                  <entry>opens a new ECL Builder window. CTRL-N</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Open</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Open</emphasis></entry>
 
                   <entry>Provides access to the following Open submenus:
-                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> opens a saved query (.<!-- DNT-Start -->ECL<!-- DNT-End --> file) into a new <!-- DNT-Start -->ECL<!-- DNT-End --> Builder window. <!-- DNT-Start -->CTRL<!-- DNT-End -->-O
+                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> opens a saved query (.ECL file) into a new ECL Builder window. CTRL-O
 <emphasis role="bold">Open Attribute:</emphasis> opens a dialog to name the attribute to open. 
                       Enter the fully qualified attribute name, then press the <emphasis
-                        role="bold"><!-- DNT-Start -->OK<!-- DNT-End --> </emphasis>button.
+                        role="bold">OK </emphasis>button.
 <emphasis role="bold">Open Workunit:</emphasis> opens a dialog to name the Workunit to open. 
-                      Enter the Workunit <!-- DNT-Start -->ID<!-- DNT-End --> (<!-- DNT-Start -->WUID<!-- DNT-End -->), then press the <emphasis
-                        role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> button.</programlisting></entry>
+                      Enter the Workunit ID (WUID), then press the <emphasis
+                        role="bold">OK</emphasis> button.</programlisting></entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Save</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Save</emphasis></entry>
 
                   <entry>saves the contents of the window with input focus. An
-                  <!-- DNT-Start -->ECL<!-- DNT-End --> Builder window query is saved to an .<!-- DNT-Start -->ECL<!-- DNT-End --> file. An Editor
-                  window saves the <!-- DNT-Start -->ECL<!-- DNT-End --> file to the Repository. <!-- DNT-Start -->CTRL<!-- DNT-End -->-S</entry>
+                  ECL Builder window query is saved to an .ECL file. An Editor
+                  window saves the ECL file to the Repository. CTRL-S</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Save As</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Save As</emphasis></entry>
 
                   <entry>saves the contents of the window with input focus to
                   a new filename.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Print</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Print</emphasis></entry>
 
                   <entry>Provides access to the following Print submenus:
                   <programlisting role="tab"><emphasis role="bold">Print <emphasis
                           role="bold">Setup</emphasis>:</emphasis> opens a page setup dialog where you can set margins,
                       paper size, and orientation, etc.
-<emphasis role="bold">Print:</emphasis> prints the contents of the active window. <!-- DNT-Start -->CTRL<!-- DNT-End -->-P
+<emphasis role="bold">Print:</emphasis> prints the contents of the active window. CTRL-P
 </programlisting></entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Close</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Close</emphasis></entry>
 
-                  <entry>closes the active window. <!-- DNT-Start -->CTRL<!-- DNT-End -->-F4</entry>
+                  <entry>closes the active window. CTRL-F4</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Logout</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Logout</emphasis></entry>
 
                   <entry>closes the session and allows you to login
                   again.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Change
-                  Password</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Change
+                  Password</emphasis></entry>
 
                   <entry>allows you to change your password.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Exit</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Exit</emphasis></entry>
 
-                  <entry>closes the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->.</entry>
+                  <entry>closes the ECL IDE.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Preferences </emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Preferences </emphasis></emphasis></entry>
 
                   <entry>opens the Preferences window to allow you to
-                  configure <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> options.</entry>
+                  configure ECL IDE options.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1398,15 +1398,15 @@
       </sect2>
 
       <sect2 id="Ribbon_Tabs">
-        <!-- DNT-Start --><title>Ribbon Tabs</title><!-- DNT-End -->
+        <title>Ribbon Tabs</title>
 
         <para></para>
 
         <sect3 id="CT_ECLIDE_RibbonCurrentTab">
-          <!-- DNT-Start --><title>Current Tab</title><!-- DNT-End -->
+          <title>Current Tab</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">Current Tab</emphasis> contains the
-          following selections:</para><!-- DNT-End -->
+          <para>The <emphasis role="bold">Current Tab</emphasis> contains the
+          following selections:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
@@ -1422,7 +1422,7 @@
 
                   <entry><emphasis role="bold">Submit</emphasis></entry>
 
-                  <entry>Submits the <!-- DNT-Start -->ECL<!-- DNT-End --> code to be compiled and executed on
+                  <entry>Submits the ECL code to be compiled and executed on
                   the target cluster.</entry>
                 </row>
 
@@ -1436,7 +1436,7 @@
                   Debug <itemizedlist>
                       <listitem>
                         <para><emphasis role="bold">Submit </emphasis>-
-                        submits the <!-- DNT-Start -->ECL<!-- DNT-End --> code to be compiled and executed on
+                        submits the ECL code to be compiled and executed on
                         the target cluster.</para>
                       </listitem>
 
@@ -1448,14 +1448,14 @@
 
                       <listitem>
                         <para><emphasis role="bold">Compile</emphasis> -
-                        compiles but does not execute the <!-- DNT-Start -->ECL<!-- DNT-End -->. Allows the
+                        compiles but does not execute the ECL. Allows the
                         workunit to be published for later execution.</para>
                       </listitem>
 
                       <listitem>
                         <para><emphasis role="bold">Debug</emphasis> - Submits
-                        hThor and Roxie <!-- DNT-Start -->ECL<!-- DNT-End --> code to the compiler and opens a
-                        debugger window. See <link linkend="ECL_Debugger"><!-- DNT-Start -->ECL<!-- DNT-End -->
+                        hThor and Roxie ECL code to the compiler and opens a
+                        debugger window. See <link linkend="ECL_Debugger">ECL
                         Debugger</link> section for more information.</para>
                       </listitem>
                     </itemizedlist></entry>
@@ -1466,7 +1466,7 @@
 
                   <entry><emphasis role="bold">Locate</emphasis></entry>
 
-                  <entry>Locates the <!-- DNT-Start -->ECL<!-- DNT-End --> file selected in a builder or editor
+                  <entry>Locates the ECL file selected in a builder or editor
                   window. F9</entry>
                 </row>
               </tbody>
@@ -1475,10 +1475,10 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_ClipboardTab">
-          <!-- DNT-Start --><title>Clipboard Tab</title><!-- DNT-End -->
+          <title>Clipboard Tab</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">Clipboard Tab</emphasis> contains
-          the following selections:</para><!-- DNT-End -->
+          <para>The <emphasis role="bold">Clipboard Tab</emphasis> contains
+          the following selections:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
@@ -1494,7 +1494,7 @@
 
                   <entry><emphasis role="bold">Paste</emphasis></entry>
 
-                  <entry>Standard Windows text paste operation. <!-- DNT-Start -->CTRL<!-- DNT-End -->-V</entry>
+                  <entry>Standard Windows text paste operation. CTRL-V</entry>
                 </row>
 
                 <row>
@@ -1502,7 +1502,7 @@
 
                   <entry><emphasis role="bold">Cut</emphasis></entry>
 
-                  <entry>Standard Windows text cut operation. <!-- DNT-Start -->CTRL<!-- DNT-End -->-X</entry>
+                  <entry>Standard Windows text cut operation. CTRL-X</entry>
                 </row>
 
                 <row>
@@ -1510,7 +1510,7 @@
 
                   <entry><emphasis role="bold">Copy</emphasis></entry>
 
-                  <entry>Standard Windows text copy operation. <!-- DNT-Start -->CTRL<!-- DNT-End -->-C</entry>
+                  <entry>Standard Windows text copy operation. CTRL-C</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1518,11 +1518,11 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_TheEditorTab">
-          <!-- DNT-Start --><title>Editor Tab</title><!-- DNT-End -->
+          <title>Editor Tab</title>
 
-          <!-- DNT-Start --><para><emphasis role="bold">The </emphasis><emphasis
+          <para><emphasis role="bold">The </emphasis><emphasis
           role="bold">Editor Tab</emphasis> contains the following
-          selections:</para><!-- DNT-End -->
+          selections:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
@@ -1541,7 +1541,7 @@
                   <entry>Restores the text to state it was in before the last
                   change (multiple Undo calls will restore each successive
                   change back until the text is in its original format).
-                  <!-- DNT-Start -->CTRL<!-- DNT-End -->-Z</entry>
+                  CTRL-Z</entry>
                 </row>
 
                 <row>
@@ -1552,7 +1552,7 @@
                   <entry>Restores the text to state it was in before the last
                   Undo (multiple Redo calls will restore each successive
                   change back until the text is in its final changed format).
-                  <!-- DNT-Start -->CTRL<!-- DNT-End -->-Y</entry>
+                  CTRL-Y</entry>
                 </row>
 
                 <row>
@@ -1561,7 +1561,7 @@
                   <entry><emphasis role="bold">Select All</emphasis></entry>
 
                   <entry>Highlights all text in the currently active window.
-                  <!-- DNT-Start -->CTRL<!-- DNT-End -->-A</entry>
+                  CTRL-A</entry>
                 </row>
 
                 <row>
@@ -1579,7 +1579,7 @@
                   <entry><emphasis role="bold">Record\Stop</emphasis></entry>
 
                   <entry>Record macros for playback later.
-                  <!-- DNT-Start -->CTRL<!-- DNT-End -->-<!-- DNT-Start -->SHIFT<!-- DNT-End -->-R</entry>
+                  CTRL-SHIFT-R</entry>
                 </row>
 
                 <row>
@@ -1588,7 +1588,7 @@
                   <entry><emphasis role="bold">Play</emphasis></entry>
 
                   <entry>Playback recorded macro<emphasis role="bold">.
-                  </emphasis><!-- DNT-Start -->CTRL<!-- DNT-End -->-<!-- DNT-Start -->SHIFT<!-- DNT-End -->-P</entry>
+                  </emphasis>CTRL-SHIFT-P</entry>
                 </row>
 
                 <row>
@@ -1603,91 +1603,91 @@
                 <row>
                   <entry></entry>
 
-                  <entry><!-- DNT-Start --><programlisting role="tab"><emphasis role="bold">   Complete Word</emphasis></programlisting><!-- DNT-End --></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Complete Word</emphasis></programlisting></entry>
 
                   <entry>A list of keywords and folders from which you can
                   select. This allows you to complete a word by selecting from
-                  the list. <!-- DNT-Start -->CTRL<!-- DNT-End -->-Space</entry>
+                  the list. CTRL-Space</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry><!-- DNT-Start --><programlisting role="tab"><emphasis role="bold">   Match Brace</emphasis></programlisting><!-- DNT-End --></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Match Brace</emphasis></programlisting></entry>
 
                   <entry>When the insertion point is adjacent to a grouping
                   character (parenthesis, square bracket, or curly brace)
                   moves the insertion point to the matching grouping
-                  character, beginning or end. <!-- DNT-Start -->CTRL<!-- DNT-End -->-E</entry>
+                  character, beginning or end. CTRL-E</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry><!-- DNT-Start --><programlisting role="tab"><emphasis role="bold">   Select to Brace</emphasis></programlisting><!-- DNT-End --></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Select to Brace</emphasis></programlisting></entry>
 
                   <entry>When the insertion point is adjacent to a grouping
                   character (parenthesis, square bracket, or curly brace)
                   selects to the matching grouping character.
-                  <!-- DNT-Start -->CTRL<!-- DNT-End -->-<!-- DNT-Start -->SHIFT<!-- DNT-End -->-E</entry>
+                  CTRL-SHIFT-E</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry><!-- DNT-Start --><programlisting role="tab"><emphasis role="bold">   Toggle Comment</emphasis></programlisting><!-- DNT-End --></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Toggle Comment</emphasis></programlisting></entry>
 
                   <entry>Toggles comment characters before selected lines.
-                  <!-- DNT-Start -->CTRL<!-- DNT-End -->-Q</entry>
+                  CTRL-Q</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry><!-- DNT-Start --><programlisting role="tab"><emphasis role="bold">   Box Comment</emphasis></programlisting><!-- DNT-End --></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Box Comment</emphasis></programlisting></entry>
 
                   <entry>Encloses selected text in a comment structure.
-                  <!-- DNT-Start -->CTRL<!-- DNT-End -->-<!-- DNT-Start -->SHIFT<!-- DNT-End -->-Q</entry>
+                  CTRL-SHIFT-Q</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry><!-- DNT-Start --><programlisting role="tab"><emphasis role="bold">   Uppercase</emphasis></programlisting><!-- DNT-End --></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Uppercase</emphasis></programlisting></entry>
 
                   <entry>Changes case of selected text to uppercase.
-                  <!-- DNT-Start -->CTRL<!-- DNT-End -->-<!-- DNT-Start -->SHIFT<!-- DNT-End -->-U</entry>
+                  CTRL-SHIFT-U</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry><!-- DNT-Start --><programlisting role="tab"><emphasis role="bold">   Lowercase</emphasis></programlisting><!-- DNT-End --></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Lowercase</emphasis></programlisting></entry>
 
                   <entry>Changes case of selected text to lowercase.
-                  <!-- DNT-Start -->CTRL<!-- DNT-End -->-U</entry>
+                  CTRL-U</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry><!-- DNT-Start --><programlisting role="tab"><emphasis role="bold">   Line Numbers</emphasis></programlisting><!-- DNT-End --></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Line Numbers</emphasis></programlisting></entry>
 
-                  <entry>Toggles line numbers in the editor. <!-- DNT-Start -->CTRL<!-- DNT-End -->-L</entry>
+                  <entry>Toggles line numbers in the editor. CTRL-L</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry><!-- DNT-Start --><programlisting role="tab"><emphasis role="bold">   Word Wrap</emphasis></programlisting><!-- DNT-End --></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Word Wrap</emphasis></programlisting></entry>
 
-                  <entry>Toggles word wrapping in the editor. <!-- DNT-Start -->CTRL<!-- DNT-End -->-W</entry>
+                  <entry>Toggles word wrapping in the editor. CTRL-W</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry><!-- DNT-Start --><programlisting role="tab"><emphasis role="bold">   Set Tab Size</emphasis></programlisting><!-- DNT-End --></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Set Tab Size</emphasis></programlisting></entry>
 
                   <entry>Select to set a tab width of between 1-16.</entry>
                 </row>
@@ -1697,10 +1697,10 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_SearchTab">
-          <!-- DNT-Start --><title>Search Tab</title><!-- DNT-End -->
+          <title>Search Tab</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">SearchTab</emphasis> contains the
-          following selections:</para><!-- DNT-End -->
+          <para>The <emphasis role="bold">SearchTab</emphasis> contains the
+          following selections:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
@@ -1717,7 +1717,7 @@
                   <entry><emphasis role="bold">Find </emphasis></entry>
 
                   <entry>Locates specific text in the currently active window.
-                  <!-- DNT-Start -->CTRL<!-- DNT-End -->-F</entry>
+                  CTRL-F</entry>
                 </row>
 
                 <row>
@@ -1736,7 +1736,7 @@
                   Previous</emphasis></entry>
 
                   <entry>Locates the previous instance of the same specific
-                  text in the currently active window. <!-- DNT-Start -->CTRL<!-- DNT-End -->-F3</entry>
+                  text in the currently active window. CTRL-F3</entry>
                 </row>
 
                 <row>
@@ -1745,7 +1745,7 @@
                   <entry><emphasis role="bold">Replace</emphasis></entry>
 
                   <entry>Locates specific text in the currently active window
-                  and replaces it with new text. <!-- DNT-Start -->CTRL<!-- DNT-End -->-H</entry>
+                  and replaces it with new text. CTRL-H</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1753,10 +1753,10 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_SyntaxTab">
-          <!-- DNT-Start --><title>Syntax Tab</title><!-- DNT-End -->
+          <title>Syntax Tab</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">SyntaxTab</emphasis> contains the
-          following selections:</para><!-- DNT-End -->
+          <para>The <emphasis role="bold">SyntaxTab</emphasis> contains the
+          following selections:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
@@ -1772,7 +1772,7 @@
 
                   <entry><emphasis role="bold">Check Syntax</emphasis></entry>
 
-                  <entry>Checks the <!-- DNT-Start -->ECL<!-- DNT-End --> code in the window with input focus
+                  <entry>Checks the ECL code in the window with input focus
                   for syntax errors.</entry>
                 </row>
 
@@ -1811,9 +1811,9 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_ECLTab">
-          <!-- DNT-Start --><title>ECL Tab</title><!-- DNT-End -->
+          <title>ECL Tab</title>
 
-          <para>The <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Tab</emphasis> contains the
+          <para>The <emphasis role="bold">ECL Tab</emphasis> contains the
           following selections:</para>
 
           <para><graphic fileref="../../images/CT41.png" /></para>
@@ -1826,46 +1826,46 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Show
-                  Complexity...</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Show
+                  Complexity...</emphasis></entry>
 
                   <entry>displays a complexity score. Use this option to
                   evaluate and optimize queries.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Show
-                  Dependency...</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Show
+                  Dependency...</emphasis></entry>
 
-                  <entry>displays a list of <!-- DNT-Start -->ECL<!-- DNT-End --> files upon which the current
-                  <!-- DNT-Start -->ECL<!-- DNT-End --> file depends.</entry>
+                  <entry>displays a list of ECL files upon which the current
+                  ECL file depends.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Copy Title</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Copy Title</emphasis></entry>
 
                   <entry>copies the title of the active tab to the
                   clipboard.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Locate
-                  Current</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Locate
+                  Current</emphasis></entry>
 
-                  <entry>highlights the current <!-- DNT-Start -->ECL<!-- DNT-End --> file in the tree</entry>
+                  <entry>highlights the current ECL file in the tree</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Locate
-                  Selected</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Locate
+                  Selected</emphasis></entry>
 
                   <entry>highlights an item in the Repository tree when its
                   name is highlighted in a text control.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Open
-                  Selected</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Open
+                  Selected</emphasis></entry>
 
                   <entry>opens an item in the Builder window when its name is
                   highlighted in a text control.</entry>
@@ -1878,15 +1878,15 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_BrowserTab">
-          <!-- DNT-Start --><title>Browser Tab</title><!-- DNT-End -->
+          <title>Browser Tab</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">Browser </emphasis>tab is shown only
+          <para>The <emphasis role="bold">Browser </emphasis>tab is shown only
           when the ECL Watch page is displayed for a workunit. To view the ECL
           Watch page from within ECL IDE, simply click on the workunit ID
           during or after it has completed running. ECL Watch is one of the
           pages that can be viewed at this point. The Browser tab is shown at
           the top of the Builder window and contains the following
-          selections:</para><!-- DNT-End -->
+          selections:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
@@ -1948,7 +1948,7 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_WindowTab">
-          <!-- DNT-Start --><title>Window Tab</title><!-- DNT-End -->
+          <title>Window Tab</title>
 
           <para>The <emphasis role="bold">Window </emphasis>Tab contains
           general actions for controlling open windows on the desktop.</para>
@@ -1963,41 +1963,41 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Cascade</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Cascade</emphasis></entry>
 
                   <entry>displays all open windows so that their top left
                   corner is visible from beneath the window on top.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Tile</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Tile</emphasis></entry>
 
                   <entry>displays all open windows one above the other</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Arrange
-                  Icons</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Arrange
+                  Icons</emphasis></entry>
 
                   <entry>lines up icons for all minimized windows</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Sort</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Sort</emphasis></emphasis></entry>
 
                   <entry>sorts open windows</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Group</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Group</emphasis></entry>
 
                   <entry>groups similar windows together</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Degroup</emphasis> </emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Degroup</emphasis> </emphasis></entry>
 
                   <entry>de-groups windows previously grouped</entry>
                 </row>
@@ -2020,25 +2020,25 @@
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">New
-                    Builder</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">New
+                    Builder</emphasis></entry>
 
                     <entry>Opens a new, empty builder window.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Close All</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Close All</emphasis></entry>
 
                     <entry>Closes all open windows.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Windows</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Windows</emphasis></entry>
 
                     <entry>Displays a dialog listing all currently open
                     windows. Simply click on one or more windows to highlight
                     them in the list and press the required button. Activate,
-                    displays the window(s) you selected, <!-- DNT-Start -->OK<!-- DNT-End --> takes you back to
+                    displays the window(s) you selected, OK takes you back to
                     where you were, Save, enables you to save the selected
                     window(s), and Close Window(s) closes only those windows
                     highlighted in the list.</entry>
@@ -2049,7 +2049,7 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_WorkSpaceTab" role="brk">
-          <!-- DNT-Start --><title>Workspace(s) Tab</title><!-- DNT-End -->
+          <title>Workspace(s) Tab</title>
 
           <graphic fileref="../../images/CT82.jpg" />
 
@@ -2062,13 +2062,13 @@
 
           <para>Your saved workspace(s) are shown in the list under the
           <emphasis role="bold">Default</emphasis> option. Selecting a
-          workspace as the default will ensure that every time <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> is
+          workspace as the default will ensure that every time ECL IDE is
           started, the selected workspace is automatically loaded ready for
           you to use.</para>
         </sect3>
 
         <sect3 id="CT_ECLIDE_ViewTab">
-          <!-- DNT-Start --><title>View Tab</title><!-- DNT-End -->
+          <title>View Tab</title>
 
           <para><graphic fileref="../../images/CT47.jpg" /></para>
 
@@ -2079,10 +2079,10 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_HelpMenu">
-          <!-- DNT-Start --><title>Help Menu</title><!-- DNT-End -->
+          <title>Help Menu</title>
 
-          <!-- DNT-Start --><para>The <emphasis role="bold">Help </emphasis>menu contains the
-          following selections:</para><!-- DNT-End -->
+          <para>The <emphasis role="bold">Help </emphasis>menu contains the
+          following selections:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -2090,15 +2090,15 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Download
-                  Resources</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Download
+                  Resources</emphasis></entry>
 
-                  <entry>opens the Download Resources page of <!-- DNT-Start -->ECL<!-- DNT-End --> Watch in a
+                  <entry>opens the Download Resources page of ECL Watch in a
                   browser</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">About </emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">About </emphasis></entry>
 
                   <entry>displays information about the program and the
                   server</entry>
@@ -2112,13 +2112,13 @@
       </sect2>
 
       <sect2 id="CT_ECLIDE_Pop-Up_Menus">
-        <!-- DNT-Start --><title>Pop-up Menus</title><!-- DNT-End -->
+        <title>Pop-up Menus</title>
 
         <sect3 id="CT_ECLIDE_WorkUnitPopUpMenu_">
-          <!-- DNT-Start --><title>Workunit Pop-up Menu</title><!-- DNT-End -->
+          <title>Workunit Pop-up Menu</title>
 
-          <!-- DNT-Start --><para>Right-click on any Workunit for a Pop-up menu
-          containing:</para><!-- DNT-End -->
+          <para>Right-click on any Workunit for a Pop-up menu
+          containing:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -2126,89 +2126,89 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Open Results</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Open Results</emphasis></entry>
 
-                  <entry>opens an <!-- DNT-Start -->ECL<!-- DNT-End --> Builder window displaying the results
+                  <entry>opens an ECL Builder window displaying the results
                   tab</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Show Graph</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Show Graph</emphasis></entry>
 
                   <entry>displays the graph for the selected workunit</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Browse
-                  ECL Watch</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Browse
+                  ECL Watch</emphasis></emphasis></entry>
 
-                  <entry>opens a web page of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch tool</entry>
+                  <entry>opens a web page of the ECL Watch tool</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">View
-                  Exceptions</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">View
+                  Exceptions</emphasis></entry>
 
                   <entry>displays the contents of the Exceptions tab for the
                   selected workunit.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Open ECL</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Open ECL</emphasis></entry>
 
-                  <entry>opens an <!-- DNT-Start -->ECL<!-- DNT-End --> Builder window displaying the <!-- DNT-Start -->ECL<!-- DNT-End --> code
+                  <entry>opens an ECL Builder window displaying the ECL code
                   for the Workunit</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Save as
-                  Excel Workbook</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Save as
+                  Excel Workbook</emphasis></emphasis></entry>
 
                   <entry>saves workunit results to an Excel workbook. Each
                   result set is saved as a sheet in the workbook.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Copy WUID</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Copy WUID</emphasis></entry>
 
-                  <entry>copies the Workunit <!-- DNT-Start -->ID<!-- DNT-End --> to the clipboard</entry>
+                  <entry>copies the Workunit ID to the clipboard</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Abort</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Abort</emphasis></entry>
 
                   <entry>stops an executing Workunit</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Resubmit</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Resubmit</emphasis></entry>
 
                   <entry>reruns the Workunit</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Delete</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Delete</emphasis></emphasis></entry>
 
                   <entry>removes the Workunit from the system data
                   store</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Protect</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Protect</emphasis></entry>
 
                   <entry>protects the Workunit (prevents deletion and
                   archiving)</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Unprotect</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Unprotect</emphasis></entry>
 
                   <entry>removes protection from the Workunit</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Follow Up</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Follow Up</emphasis></entry>
 
                   <entry>enables you to mark the selected workunit so you can
                   come back to it later. The <emphasis
@@ -2218,7 +2218,7 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">SetPriority </emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">SetPriority </emphasis></entry>
 
                   <entry>allows you to set the priority in the queue for a
                   running Workunit. You can move a workunit up or down one
@@ -2227,15 +2227,15 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">SetState</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">SetState</emphasis></emphasis></entry>
 
                   <entry>allows you to set the state of a Workunit.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Refresh</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Refresh</emphasis></emphasis></entry>
 
                   <entry>refreshes the display</entry>
                 </row>
@@ -2247,13 +2247,13 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_RepositoryPopUpMenu">
-          <!-- DNT-Start --><title>Repository Pop-up Menu</title><!-- DNT-End -->
+          <title>Repository Pop-up Menu</title>
 
-          <!-- DNT-Start --><para>Right-click in the <emphasis role="bold">Repository Window
+          <para>Right-click in the <emphasis role="bold">Repository Window
           </emphasis>for a Pop-up menu containing options which are available
           depending on whether you have a folder or ECL file selected. Note,
           if you have TortoiseGit installed, the menu is extended. See <link
-          linkend="versioncontrol">Version Control</link> for details</para><!-- DNT-End -->
+          linkend="versioncontrol">Version Control</link> for details</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -2261,123 +2261,123 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Open in Builder
-                  Window</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Open in Builder
+                  Window</emphasis></entry>
 
-                  <entry>Opens the selected <!-- DNT-Start -->ECL<!-- DNT-End --> file in an <!-- DNT-Start -->ECL<!-- DNT-End --> Builder
+                  <entry>Opens the selected ECL file in an ECL Builder
                   window</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Locate File in
-                  Explorer</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Locate File in
+                  Explorer</emphasis></entry>
 
                   <entry>Only valid in locally compiled workunits</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Copy
-                  "&lt;attribute_name&gt;"</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Copy
+                  "&lt;attribute_name&gt;"</emphasis></emphasis></entry>
 
-                  <entry>Copies the fully qualified <!-- DNT-Start -->ECL<!-- DNT-End --> file name to the
+                  <entry>Copies the fully qualified ECL file name to the
                   clipboard</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Paste
-                  Selection</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Paste
+                  Selection</emphasis></entry>
 
-                  <entry>Pastes the <!-- DNT-Start -->ECL<!-- DNT-End --> file name you copied where the cursor
+                  <entry>Pastes the ECL file name you copied where the cursor
                   is currently positioned</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Check Syntax</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Check Syntax</emphasis></entry>
 
-                  <entry>Displays a sub-menu of all available <!-- DNT-Start -->INVOKE<!-- DNT-End -->
-                  structures for the selected <!-- DNT-Start -->ECL<!-- DNT-End --> file</entry>
+                  <entry>Displays a sub-menu of all available INVOKE
+                  structures for the selected ECL file</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Invoke</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Invoke</emphasis></entry>
 
-                  <entry>Displays a sub-menu of all available <!-- DNT-Start -->INVOKE<!-- DNT-End -->
-                  structures for the selected <!-- DNT-Start -->ECL<!-- DNT-End --> file</entry>
+                  <entry>Displays a sub-menu of all available INVOKE
+                  structures for the selected ECL file</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Insert
-                  Root Module</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Insert
+                  Root Module</emphasis></emphasis></entry>
 
                   <entry>Adds a new folder at the top most level of the
                   repository tree</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Insert
-                  Module</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Insert
+                  Module</emphasis></entry>
 
                   <entry>Adds a new 'nested' folder within the currently
                   selected folder</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Rename
-                  Module</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Rename
+                  Module</emphasis></entry>
 
                   <entry>Renames the selected folder.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Delete
-                  Module</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Delete
+                  Module</emphasis></entry>
 
                   <entry>Deletes the selected folder.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Insert File</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Insert File</emphasis></entry>
 
-                  <entry>Adds a new <!-- DNT-Start -->ECL<!-- DNT-End --> file inside the selected
+                  <entry>Adds a new ECL file inside the selected
                   folder.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Rename
-                  File</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Rename
+                  File</emphasis></emphasis></entry>
 
-                  <entry>Renames the selected <!-- DNT-Start -->ECL<!-- DNT-End --> file</entry>
+                  <entry>Renames the selected ECL file</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Copy
-                  File</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Copy
+                  File</emphasis></emphasis></entry>
 
-                  <entry>Enables you to copy the selected <!-- DNT-Start -->ECL<!-- DNT-End --> file so it can
+                  <entry>Enables you to copy the selected ECL file so it can
                   be pasted into a different folder.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Move
-                  File</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Move
+                  File</emphasis></emphasis></entry>
 
-                  <entry>Moves the selected <!-- DNT-Start -->ECL<!-- DNT-End --> file to specified
+                  <entry>Moves the selected ECL file to specified
                   folder</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Delete
-                  File</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Delete
+                  File</emphasis></emphasis></entry>
 
-                  <entry>Moves the selected <!-- DNT-Start -->ECL<!-- DNT-End --> file to the Trash folder on
+                  <entry>Moves the selected ECL file to the Trash folder on
                   your desktop. You can also press the <emphasis
                   role="bold">Delete</emphasis> key to access this
                   functionality. </entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Refresh</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Refresh</emphasis></emphasis></entry>
 
                   <entry>Refreshes the repository folder display</entry>
                 </row>
@@ -2387,9 +2387,9 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_ResultsPopUpMenu">
-          <!-- DNT-Start --><title>Results Pop-up Menu</title><!-- DNT-End -->
+          <title>Results Pop-up Menu</title>
 
-          <!-- DNT-Start --><para>Right-click on Results Pop-up menu containing:</para><!-- DNT-End -->
+          <para>Right-click on Results Pop-up menu containing:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -2397,207 +2397,207 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Save</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Save</emphasis></entry>
 
                   <entry>saves the results to a file</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">SaveAs</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">SaveAs</emphasis></entry>
 
                   <entry>saves the results to a new file</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Save As XML</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Save As XML</emphasis></entry>
 
-                  <entry>saves the results to a file in <!-- DNT-Start -->XML<!-- DNT-End --> format</entry>
+                  <entry>saves the results to a file in XML format</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Cut</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Cut</emphasis></entry>
 
                   <entry>removes (from display) and copies the selected
                   results to the clipboard</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Copy</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Copy</emphasis></emphasis></entry>
 
                   <entry>copies the selected results to the clipboard</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Paste</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Paste</emphasis></entry>
 
                   <entry>pastes contents of clipboard into result.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Copy As ECL</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Copy As ECL</emphasis></entry>
 
-                  <entry>copies the selected results to the clipboard in <!-- DNT-Start -->ECL<!-- DNT-End -->
+                  <entry>copies the selected results to the clipboard in ECL
                   format</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Send to ""</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Send to ""</emphasis></entry>
 
                   <entry>sends the selected results to the application
-                  associated with <!-- DNT-Start -->CSV<!-- DNT-End --> files (for example, Microsoft
+                  associated with CSV files (for example, Microsoft
                   Excel)</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Select All</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Select All</emphasis></entry>
 
                   <entry>selects all results</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Select
-                  Row</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Select
+                  Row</emphasis></emphasis></entry>
 
                   <entry>selects the current row</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Select
-                  Column</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Select
+                  Column</emphasis></emphasis></entry>
 
                   <entry>selects the current column</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Delete
-                  Selection</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Delete
+                  Selection</emphasis></emphasis></entry>
 
                   <entry>deletes the selected results from displayed
                   results</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Show
-                  Column in Hex</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Show
+                  Column in Hex</emphasis></emphasis></entry>
 
                   <entry>displays hex value for the current column</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Format</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Format</emphasis></emphasis></entry>
 
                   <entry>displays a submenu with options to format selected
                   cells.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Auto Size
-                  Column</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Auto Size
+                  Column</emphasis></emphasis></entry>
 
                   <entry>adjusts the current column width to allow all
                   characters to display</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Auto Size
-                  All Columns</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Auto Size
+                  All Columns</emphasis></emphasis></entry>
 
                   <entry>adjusts the all column widths to allow all characters
                   to display</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Find</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Find</emphasis></emphasis></entry>
 
                   <entry>locates specific text in the results</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Find
-                  Next</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Find
+                  Next</emphasis></emphasis></entry>
 
                   <entry>locates the next instance of the same specific text
                   in the results</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Find
-                  Previous</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Find
+                  Previous</emphasis></emphasis></entry>
 
                   <entry>locates the previous instance of the same specific
                   text in the results</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">GoTo</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">GoTo</emphasis></emphasis></entry>
 
                   <entry>positions the cursor at a specified row number in the
                   results</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Drilldown</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Drilldown</emphasis></emphasis></entry>
 
                   <entry>sends the selected result rows to a previously
-                  defined Drilldown <!-- DNT-Start -->ECL<!-- DNT-End --> file. This method sends the selected
-                  rows to an <!-- DNT-Start -->ECL<!-- DNT-End --> file as a set.</entry>
+                  defined Drilldown ECL file. This method sends the selected
+                  rows to an ECL file as a set.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Drilldown
-                  (1 per row)</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Drilldown
+                  (1 per row)</emphasis></emphasis></entry>
 
                   <entry>sends the selected result rows to a previously
-                  defined Drilldown <!-- DNT-Start -->ECL<!-- DNT-End --> file. This method sends each row to
+                  defined Drilldown ECL file. This method sends each row to
                   the Drilldown separately.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Drilldown
-                  II</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Drilldown
+                  II</emphasis></emphasis></entry>
 
-                  <entry>generates <!-- DNT-Start -->ECL<!-- DNT-End --> code that ends with a call to the
-                  selected <!-- DNT-Start -->MACRO<!-- DNT-End --> <!-- DNT-Start -->ECL<!-- DNT-End --> file.</entry>
+                  <entry>generates ECL code that ends with a call to the
+                  selected MACRO ECL file.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Copy WUID
-                  </emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Copy WUID
+                  </emphasis></emphasis></entry>
 
-                  <entry>copies the Workunit <!-- DNT-Start -->ID<!-- DNT-End --> to the clipboard</entry>
+                  <entry>copies the Workunit ID to the clipboard</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Save As
-                  Excel Workbook</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Save As
+                  Excel Workbook</emphasis></emphasis></entry>
 
                   <entry>sends the result set to a Excel Workbook with each
                   result set on a sheet.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Sync
-                  Workunit</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Sync
+                  Workunit</emphasis></emphasis></entry>
 
                   <entry>locates the current Workunit in the Workunit History
                   tree</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Close
-                  Workunit</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Close
+                  Workunit</emphasis></emphasis></entry>
 
                   <entry>closes the current Workunit</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Delete
-                  Workunit</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Delete
+                  Workunit</emphasis></emphasis></entry>
 
                   <entry>deletes the current Workunit</entry>
                 </row>
@@ -2607,24 +2607,24 @@
         </sect3>
 
         <sect3 id="CT_ECLIDE_UsingDrillDown">
-          <!-- DNT-Start --><title>Using Drilldown</title><!-- DNT-End -->
+          <title>Using Drilldown</title>
 
           <para>There are three different versions of drilldown: Drilldown,
-          Drilldown (1 per row), and Drilldown <!-- DNT-Start -->II<!-- DNT-End -->.</para>
+          Drilldown (1 per row), and Drilldown II.</para>
 
           <para>Drilldown sends the selected result row(s) to the selected
-          <!-- DNT-Start -->MACRO<!-- DNT-End --> <!-- DNT-Start -->ECL<!-- DNT-End --> file as a single string of <!-- DNT-Start -->XML<!-- DNT-End --> data.</para>
+          MACRO ECL file as a single string of XML data.</para>
 
           <para>Each selected row is contained within &lt;row&gt;&lt;/row&gt;
-          <!-- DNT-Start -->XML<!-- DNT-End --> tags. The <!-- DNT-Start -->MACRO<!-- DNT-End --> must use <!-- DNT-Start -->LOADXML<!-- DNT-End --> to instantiate an <!-- DNT-Start -->XML<!-- DNT-End --> scope and
-          should use #<!-- DNT-Start -->FOR<!-- DNT-End -->(row) to process each separate record. Each field in
+          XML tags. The MACRO must use LOADXML to instantiate an XML scope and
+          should use #FOR(row) to process each separate record. Each field in
           the record is treated as a template symbol and may be referenced in
-          the <!-- DNT-Start -->MACRO<!-- DNT-End --> as %fieldname%.</para>
+          the MACRO as %fieldname%.</para>
 
           <para><emphasis role="bold">Example Drilldown
-          <!-- DNT-Start -->MACRO<!-- DNT-End -->:</emphasis></para>
+          MACRO:</emphasis></para>
 
-          <!-- DNT-Start --><programlisting>export TestDrilldown(xmlRow) := MACRO
+          <programlisting>export TestDrilldown(xmlRow) := MACRO
 LOADXML(xmlRow);
 #DECLARE(Ctr)
 #SET(Ctr, 0 )
@@ -2642,51 +2642,51 @@ LOADXML(xmlRow);
 #APPEND(OutputStr,']));\n')
 %OutputStr%
 ENDMACRO;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
           <para><emphasis role="bold">Drilldown (1 per row)</emphasis> sends
-          the selected result row(s) to the selected <!-- DNT-Start -->MACRO<!-- DNT-End --> <!-- DNT-Start -->ECL<!-- DNT-End --> file as <!-- DNT-Start -->XML<!-- DNT-End -->
+          the selected result row(s) to the selected MACRO ECL file as XML
           data. If multiple rows are selected, each is sent to a separate
-          <!-- DNT-Start -->MACRO<!-- DNT-End --> call as a single string of <!-- DNT-Start -->XML<!-- DNT-End --> data. The <!-- DNT-Start -->MACRO<!-- DNT-End --> must use
-          <!-- DNT-Start -->LOADXML<!-- DNT-End --> to instantiate an <!-- DNT-Start -->XML<!-- DNT-End --> scope. Each field in the record is
-          treated as a template symbol and may be referenced in the <!-- DNT-Start -->MACRO<!-- DNT-End --> as
+          MACRO call as a single string of XML data. The MACRO must use
+          LOADXML to instantiate an XML scope. Each field in the record is
+          treated as a template symbol and may be referenced in the MACRO as
           %fieldname%.</para>
 
           <para><emphasis role="bold">Example Drilldown (1 Per Row)
-          <!-- DNT-Start -->MACRO<!-- DNT-End -->:</emphasis></para>
+          MACRO:</emphasis></para>
 
-          <!-- DNT-Start --><programlisting>export TestDrilldownOnePerRow(xmlRow) := MACRO
+          <programlisting>export TestDrilldownOnePerRow(xmlRow) := MACRO
 LOADXML(xmlRow);
 OUTPUT(ProgGuide.Person.file(PersonID = %personid%));
 ENDMACRO;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-          <para><emphasis role="bold">Drilldown <!-- DNT-Start -->II<!-- DNT-End --> </emphasis>generates <!-- DNT-Start -->ECL<!-- DNT-End -->
-          code that ends with a call to the selected <!-- DNT-Start -->MACRO<!-- DNT-End --> <!-- DNT-Start -->ECL<!-- DNT-End --> file. Each
-          field in the result is defined as a separate set <!-- DNT-Start -->ECL<!-- DNT-End --> file and as a
-          field in an inline <!-- DNT-Start -->DATASET<!-- DNT-End -->. The <!-- DNT-Start -->MACRO<!-- DNT-End --> should be written to make use
-          of whichever of the <!-- DNT-Start -->ECL<!-- DNT-End --> files best allows it to accomplish its task
+          <para><emphasis role="bold">Drilldown II </emphasis>generates ECL
+          code that ends with a call to the selected MACRO ECL file. Each
+          field in the result is defined as a separate set ECL file and as a
+          field in an inline DATASET. The MACRO should be written to make use
+          of whichever of the ECL files best allows it to accomplish its task
           (typically, to show all base data from which the result set was
           drawn).</para>
 
-          <para><emphasis role="bold">Example Drilldown <!-- DNT-Start -->II<!-- DNT-End -->
-          <!-- DNT-Start -->MACRO<!-- DNT-End -->:</emphasis></para>
+          <para><emphasis role="bold">Example Drilldown II
+          MACRO:</emphasis></para>
 
-          <!-- DNT-Start --><programlisting>EXPORT TestDrilldownII := MACRO
+          <programlisting>EXPORT TestDrilldownII := MACRO
 OUTPUT(ProgGuide.Person.file(personid IN
           Set_personID));
 ENDMACRO;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
           <para></para>
         </sect3>
       </sect2>
 
       <sect2 id="KeyboardShortcuts">
-        <!-- DNT-Start --><title>Keyboard Shortcuts</title><!-- DNT-End -->
+        <title>Keyboard Shortcuts</title>
 
         <para>The following table lists all the keyboard shortcuts available
-        in the <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
+        in the IDE.</para>
 
         <para><informaltable>
             <tgroup cols="2">
@@ -2696,7 +2696,7 @@ ENDMACRO;
 
               <thead>
                 <row>
-                  <entry><!-- DNT-Start -->Keyboard Shortcut<!-- DNT-End --></entry>
+                  <entry>Keyboard Shortcut</entry>
 
                   <entry>Action</entry>
                 </row>
@@ -2704,302 +2704,302 @@ ENDMACRO;
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start -->F1<!-- DNT-End --></entry>
+                  <entry>F1</entry>
 
                   <entry>Online Help (Syntax)</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+F<!-- DNT-End --></entry>
+                  <entry>Ctrl+F</entry>
 
                   <entry>Find</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->F3<!-- DNT-End --></entry>
+                  <entry>F3</entry>
 
                   <entry>Find Next</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Shift+F3<!-- DNT-End --></entry>
+                  <entry>Shift+F3</entry>
 
                   <entry>Find Previous</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+H<!-- DNT-End --></entry>
+                  <entry>Ctrl+H</entry>
 
                   <entry>Replace</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->F4<!-- DNT-End --></entry>
+                  <entry>F4</entry>
 
                   <entry>Next Error</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Shift+F4<!-- DNT-End --></entry>
+                  <entry>Shift+F4</entry>
 
                   <entry>Previous Error</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->F5<!-- DNT-End --></entry>
+                  <entry>F5</entry>
 
                   <entry>Refresh Repository</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->F7<!-- DNT-End --></entry>
+                  <entry>F7</entry>
 
                   <entry>Check Syntax</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->F8<!-- DNT-End --></entry>
+                  <entry>F8</entry>
 
                   <entry>Locate File in Explorer</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->F9<!-- DNT-End --></entry>
+                  <entry>F9</entry>
 
                   <entry>Locate Current FIle</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->F11<!-- DNT-End --></entry>
+                  <entry>F11</entry>
 
                   <entry>Locate Selected File</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->F12<!-- DNT-End --></entry>
+                  <entry>F12</entry>
 
                   <entry>Open Selected File</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Enter<!-- DNT-End --></entry>
+                  <entry>Ctrl+Enter</entry>
 
-                  <entry>Submit <!-- DNT-Start -->ECL<!-- DNT-End --></entry>
+                  <entry>Submit ECL</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Shift+Enter<!-- DNT-End --></entry>
+                  <entry>Ctrl+Shift+Enter</entry>
 
-                  <entry>Submit Selected <!-- DNT-Start -->ECL<!-- DNT-End --></entry>
+                  <entry>Submit Selected ECL</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+X / Shift+Delete<!-- DNT-End --></entry>
+                  <entry>Ctrl+X / Shift+Delete</entry>
 
                   <entry>Cut</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+C / Ctrl+Insert<!-- DNT-End --></entry>
+                  <entry>Ctrl+C / Ctrl+Insert</entry>
 
                   <entry>Copy</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+V / Shift+Insert<!-- DNT-End --></entry>
+                  <entry>Ctrl+V / Shift+Insert</entry>
 
                   <entry>Paste</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Z / Alt+backspace<!-- DNT-End --></entry>
+                  <entry>Ctrl+Z / Alt+backspace</entry>
 
                   <entry>Undo</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Y<!-- DNT-End --></entry>
+                  <entry>Ctrl+Y</entry>
 
                   <entry>Redo</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+F4<!-- DNT-End --></entry>
+                  <entry>Ctrl+F4</entry>
 
                   <entry>Close File/Builder Window</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Alt+F4<!-- DNT-End --></entry>
+                  <entry>Alt+F4</entry>
 
                   <entry>Close all and exit</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Q<!-- DNT-End --></entry>
+                  <entry>Ctrl+Q</entry>
 
                   <entry>Toggle Comment with //</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Shift+Q<!-- DNT-End --></entry>
+                  <entry>Ctrl+Shift+Q</entry>
 
                   <entry>Toggle Block Comment /*</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+L<!-- DNT-End --></entry>
+                  <entry>Ctrl+L</entry>
 
                   <entry>Toggle Line Numbers</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+S<!-- DNT-End --></entry>
+                  <entry>Ctrl+S</entry>
 
                   <entry>Save</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+O<!-- DNT-End --></entry>
+                  <entry>Ctrl+O</entry>
 
                   <entry>Open</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+P<!-- DNT-End --></entry>
+                  <entry>Ctrl+P</entry>
 
                   <entry>Print</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+N<!-- DNT-End --></entry>
+                  <entry>Ctrl+N</entry>
 
                   <entry>New Builder Window</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+G<!-- DNT-End --></entry>
+                  <entry>Ctrl+G</entry>
 
                   <entry>Go to Line</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+A<!-- DNT-End --></entry>
+                  <entry>Ctrl+A</entry>
 
                   <entry>Select All</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+D<!-- DNT-End --></entry>
+                  <entry>Ctrl+D</entry>
 
                   <entry>Duplicate Line</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+T<!-- DNT-End --></entry>
+                  <entry>Ctrl+T</entry>
 
                   <entry>Switch the current line position with the previous
                   line position</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Space<!-- DNT-End --></entry>
+                  <entry>Ctrl+Space</entry>
 
                   <entry>Complete Word</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+E<!-- DNT-End --></entry>
+                  <entry>Ctrl+E</entry>
 
                   <entry>Match Brace</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Shift+E<!-- DNT-End --></entry>
+                  <entry>Ctrl+Shift+E</entry>
 
                   <entry>Select to Brace</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+W<!-- DNT-End --></entry>
+                  <entry>Ctrl+W</entry>
 
                   <entry>Toggle Word Wrap</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Alt+C<!-- DNT-End --></entry>
+                  <entry>Ctrl+Alt+C</entry>
 
                   <entry>Copy Filename</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Shift+U<!-- DNT-End --></entry>
+                  <entry>Ctrl+Shift+U</entry>
 
                   <entry>Uppercase</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+U<!-- DNT-End --></entry>
+                  <entry>Ctrl+U</entry>
 
                   <entry>Lowercase</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Shift+R<!-- DNT-End --></entry>
+                  <entry>Ctrl+Shift+R</entry>
 
                   <entry>Record/Stop Macro</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Shift+P<!-- DNT-End --></entry>
+                  <entry>Ctrl+Shift+P</entry>
 
                   <entry>Play Macro</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Tab<!-- DNT-End --></entry>
+                  <entry>Ctrl+Tab</entry>
 
                   <entry>Next Tab</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Shift+Tab<!-- DNT-End --></entry>
+                  <entry>Ctrl+Shift+Tab</entry>
 
                   <entry>Previous Tab</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Alt+Shift+Arrow keys<!-- DNT-End --></entry>
+                  <entry>Alt+Shift+Arrow keys</entry>
 
                   <entry>Column Mode Select</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Alt + Left Mouse Drag<!-- DNT-End --></entry>
+                  <entry>Alt + Left Mouse Drag</entry>
 
                   <entry>Column Mode Select</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+BackSpace<!-- DNT-End --></entry>
+                  <entry>Ctrl+BackSpace</entry>
 
                   <entry>Delete to start of word</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Delete<!-- DNT-End --></entry>
+                  <entry>Ctrl+Delete</entry>
 
                   <entry>Delete to end of word</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Shift+BackSpace<!-- DNT-End --></entry>
+                  <entry>Ctrl+Shift+BackSpace</entry>
 
                   <entry>Delete to start of line</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Ctrl+Shift+Delete<!-- DNT-End --></entry>
+                  <entry>Ctrl+Shift+Delete</entry>
 
                   <entry>Delete to end of line</entry>
                 </row>
@@ -3011,36 +3011,36 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="ECL_Builder_Window" role="brk">
-        <!-- DNT-Start --><title>ECL Builder Window</title><!-- DNT-End -->
+        <title>ECL Builder Window</title>
 
-        <para>This window allows you to edit, build, and run <!-- DNT-Start -->ECL<!-- DNT-End --> Queries. It
+        <para>This window allows you to edit, build, and run ECL Queries. It
         also shows results and Workunit information for each Workunit created
-        by submitting the <!-- DNT-Start -->ECL<!-- DNT-End --> code.</para>
+        by submitting the ECL code.</para>
 
         <para><graphic fileref="../../images/CT49.jpg" /></para>
 
         <itemizedlist>
           <listitem>
-            <para><emphasis role="bold">Submit</emphasis> submits the <!-- DNT-Start -->ECL<!-- DNT-End --> code
+            <para><emphasis role="bold">Submit</emphasis> submits the ECL code
             to be compiled and executed on the target cluster. Press the arrow
             on the submit button to display other options.</para>
           </listitem>
 
           <listitem>
             <para><emphasis role="bold">Submit Selected</emphasis> submits
-            only the selected <!-- DNT-Start -->ECL<!-- DNT-End --> code for execution.</para>
+            only the selected ECL code for execution.</para>
           </listitem>
 
           <listitem>
             <para><emphasis role="bold">Compile</emphasis> compiles but does
-            not execute the <!-- DNT-Start -->ECL<!-- DNT-End -->. This allows the workunit to be published for
+            not execute the ECL. This allows the workunit to be published for
             later execution.</para>
           </listitem>
 
           <listitem>
             <para><emphasis role="bold">Debug</emphasis> submits hThor or
-            Roxie <!-- DNT-Start -->ECL<!-- DNT-End --> code to the compiler and opens a debugger window. See
-            <link linkend="ECL_Debugger"><!-- DNT-Start -->ECL<!-- DNT-End --> Debugger</link> section for more
+            Roxie ECL code to the compiler and opens a debugger window. See
+            <link linkend="ECL_Debugger">ECL Debugger</link> section for more
             information.</para>
           </listitem>
         </itemizedlist>
@@ -3051,24 +3051,24 @@ ENDMACRO;
         options have been set.</para>
 
         <para>The tabs beneath the text area represent Workunits created by
-        submitting the <!-- DNT-Start -->ECL<!-- DNT-End --> code. Select a Workunit tab to see results, graphs,
-        and the <!-- DNT-Start -->ECL<!-- DNT-End --> watch page for the Workunit.</para>
+        submitting the ECL code. Select a Workunit tab to see results, graphs,
+        and the ECL watch page for the Workunit.</para>
 
-        <para>You can save your queries to an <!-- DNT-Start -->ECL<!-- DNT-End --> file by pressing the
+        <para>You can save your queries to an ECL file by pressing the
         <emphasis role="bold">Save</emphasis> button on the toolbar, or
         selecting the <emphasis role="bold">File &gt; Save</emphasis> menu
         selection.</para>
 
-        <para>Using <!-- DNT-Start -->CTRL<!-- DNT-End -->+<!-- DNT-Start -->MOUSEWHEEL<!-- DNT-End --> will grow or shrink the font size used in
+        <para>Using CTRL+MOUSEWHEEL will grow or shrink the font size used in
         the window.</para>
 
         <para>There is also a right-click pop-up menu with the all the options
         found on the <emphasis role="bold">Edit</emphasis> menu.</para>
 
         <sect3 role="brk">
-          <!-- DNT-Start --><title>Builder Tab Options</title><!-- DNT-End -->
+          <title>Builder Tab Options</title>
 
-          <para>When working in the <!-- DNT-Start -->IDE<!-- DNT-End --> builder window you may find that you
+          <para>When working in the IDE builder window you may find that you
           have numerous tabs open. Right-click on any of the open tabs to
           display tab options. <graphic
           fileref="../../images/IDE0101.jpg" /></para>
@@ -3109,7 +3109,7 @@ ENDMACRO;
         </sect3>
 
         <sect3 id="CT_ECLIDE_AdvancedBuilderWindowOptions" role="brk">
-          <!-- DNT-Start --><title>Advanced Builder Window Options</title><!-- DNT-End -->
+          <title>Advanced Builder Window Options</title>
 
           <para>Press the <emphasis role="bold">More</emphasis> button to
           display the advanced options. Press the <emphasis
@@ -3130,16 +3130,16 @@ ENDMACRO;
           <emphasis role="bold">Submit</emphasis> button becomes a <emphasis
           role="bold">Schedule</emphasis> button. The <emphasis
           role="bold">Schedule </emphasis>button sends a scheduled query to
-          the <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
+          the HPCC.</para>
 
-          <para>When the job is submitted it is assigned a workunit <!-- DNT-Start -->ID<!-- DNT-End --> and
+          <para>When the job is submitted it is assigned a workunit ID and
           appears in the workunit list as <emphasis>scheduled</emphasis> (with
           a clock icon). You can monitor the workunit in the same manner as a
           submitted workunit.</para>
 
           <para>The <emphasis role="bold">Label </emphasis>drop list allows
           you to select a Repository Label which specifies a previous version
-          of <!-- DNT-Start -->ECL<!-- DNT-End --> files.</para>
+          of ECL files.</para>
 
           <para>The <emphasis role="bold">Limit </emphasis>spinbox allows you
           to override the default setting for result limits.</para>
@@ -3149,11 +3149,11 @@ ENDMACRO;
           exceeded.</para>
 
           <para>The <emphasis role="bold">Debug </emphasis>button invokes the
-          browser which enables you to step through your <!-- DNT-Start -->ECL<!-- DNT-End --> to monitor
+          browser which enables you to step through your ECL to monitor
           progress and identify problems.</para>
 
           <para>The <emphasis role="bold">Archive </emphasis> button is for
-          debugging purposes and archives all <!-- DNT-Start -->ECL<!-- DNT-End --> (including dependencies)
+          debugging purposes and archives all ECL (including dependencies)
           into the workunit for examination without executing the code.</para>
 
           <para>The <emphasis role="bold">Enhanced Syntax Check
@@ -3167,28 +3167,28 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Editing" role="brk">
-        <!-- DNT-Start --><title>Editing</title><!-- DNT-End -->
+        <title>Editing</title>
 
-        <para>The Builder Window also supports editing <!-- DNT-Start -->ECL<!-- DNT-End --> files.</para>
+        <para>The Builder Window also supports editing ECL files.</para>
 
         <para><graphic fileref="../../images/CT49.jpg" /></para>
 
-        <para>Using <!-- DNT-Start -->CTRL<!-- DNT-End -->+<!-- DNT-Start -->MOUSEWHEEL<!-- DNT-End --> will grow or shrink the font size used in
+        <para>Using CTRL+MOUSEWHEEL will grow or shrink the font size used in
         the window.</para>
 
         <para>There is also a right-click pop-up menu with the all the options
         found on the <emphasis role="bold">Edit</emphasis> menu.</para>
 
         <sect3 id="IDE_Support_For_Other_Languages">
-          <!-- DNT-Start --><title>Support for Other Languages</title><!-- DNT-End -->
+          <title>Support for Other Languages</title>
 
-          <para>In addition to providing native support for <!-- DNT-Start -->ECL<!-- DNT-End --> Files, the <!-- DNT-Start -->ECL<!-- DNT-End -->
-          <!-- DNT-Start -->IDE<!-- DNT-End --> also provides support for working with other languages. The <!-- DNT-Start -->IDE<!-- DNT-End -->
+          <para>In addition to providing native support for ECL Files, the ECL
+          IDE also provides support for working with other languages. The IDE
           provides colored file type differentiation, where different file
-          types all display in a different color. The <!-- DNT-Start -->IDE<!-- DNT-End --> also provides
+          types all display in a different color. The IDE also provides
           colorized keywords in the supported languages. The colorization is
           set up as a default, but can be customized. Other languages that the
-          <!-- DNT-Start -->IDE<!-- DNT-End --> supports</para>
+          IDE supports</para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
@@ -3196,14 +3196,14 @@ ENDMACRO;
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis role="bold">Language</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis role="bold">Language</emphasis></entry>
 
                     <entry><emphasis
                     role="bold">Functionality</emphasis></entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->ECL<!-- DNT-End --></entry>
+                    <entry>ECL</entry>
 
                     <entry><itemizedlist>
                         <listitem>
@@ -3230,7 +3230,7 @@ ENDMACRO;
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->ESDL<!-- DNT-End --></entry>
+                    <entry>ESDL</entry>
 
                     <entry><itemizedlist>
                         <listitem>
@@ -3247,7 +3247,7 @@ ENDMACRO;
                         </listitem>
 
                         <listitem>
-                          <para>Generates <!-- DNT-Start -->ECL<!-- DNT-End --></para>
+                          <para>Generates ECL</para>
                         </listitem>
 
                         <listitem>
@@ -3257,7 +3257,7 @@ ENDMACRO;
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->KEL<!-- DNT-End --></entry>
+                    <entry>KEL</entry>
 
                     <entry><itemizedlist>
                         <listitem>
@@ -3274,7 +3274,7 @@ ENDMACRO;
                         </listitem>
 
                         <listitem>
-                          <para>Generates <!-- DNT-Start -->ECL<!-- DNT-End --> and <!-- DNT-Start -->DUD<!-- DNT-End --> files</para>
+                          <para>Generates ECL and DUD files</para>
                         </listitem>
 
                         <listitem>
@@ -3284,7 +3284,7 @@ ENDMACRO;
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->SPC (SALT)<!-- DNT-End --></entry>
+                    <entry>SPC (SALT)</entry>
 
                     <entry><itemizedlist>
                         <listitem>
@@ -3301,7 +3301,7 @@ ENDMACRO;
                         </listitem>
 
                         <listitem>
-                          <para>Generates <!-- DNT-Start -->ECL<!-- DNT-End --></para>
+                          <para>Generates ECL</para>
                         </listitem>
 
                         <listitem>
@@ -3311,7 +3311,7 @@ ENDMACRO;
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->DUD<!-- DNT-End --></entry>
+                    <entry>DUD</entry>
 
                     <entry><itemizedlist>
                         <listitem>
@@ -3335,9 +3335,9 @@ ENDMACRO;
       </sect2>
 
       <sect2>
-        <!-- DNT-Start --><title>Bookmarks</title><!-- DNT-End -->
+        <title>Bookmarks</title>
 
-        <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> supports internal bookmarks. <!-- DNT-Start -->Bookmarks<!-- DNT-End --> provide a way
+        <para>The ECL IDE supports internal bookmarks. Bookmarks provide a way
         to mark a place that you can easily return to any time in the
         future.</para>
 
@@ -3345,22 +3345,22 @@ ENDMACRO;
         <emphasis role="bold">todo</emphasis>, or <emphasis
         role="bold">hack</emphasis>, simply enter the appropriate code into
         the place you want to mark, and save it. The syntax is in the form of
-        an <!-- DNT-Start -->ECL<!-- DNT-End --> comment. Note that bookmarks <!-- DNT-Start -->ARE<!-- DNT-End --> case-sensitive.</para>
+        an ECL comment. Note that bookmarks ARE case-sensitive.</para>
 
         <para>Bookmark syntax. Note the square brackets and that it is all
         upper case.</para>
 
-        <!-- DNT-Start --><programlisting>//[BM]</programlisting><!-- DNT-End -->
+        <programlisting>//[BM]</programlisting>
 
         <para>To do syntax. Note that it is all upper case and terminated with
         a colon.</para>
 
-        <!-- DNT-Start --><programlisting>//TODO:</programlisting><!-- DNT-End -->
+        <programlisting>//TODO:</programlisting>
 
         <para>Hack syntax. Note that it is all upper case and terminated with
         a colon.</para>
 
-        <!-- DNT-Start --><programlisting>//HACK:</programlisting><!-- DNT-End -->
+        <programlisting>//HACK:</programlisting>
 
         <para>Enter the code into your workspace in the builder window then
         save.</para>
@@ -3376,7 +3376,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Results_Viewer">
-        <!-- DNT-Start --><title>Results Viewer</title><!-- DNT-End -->
+        <title>Results Viewer</title>
 
         <para>Each result is displayed on a results tab on the workunit
         tab.</para>
@@ -3387,7 +3387,7 @@ ENDMACRO;
 
         <itemizedlist mark="bullet">
           <listitem>
-            <para><!-- DNT-Start -->CLICK<!-- DNT-End --> on a column header to sort by that column.</para>
+            <para>CLICK on a column header to sort by that column.</para>
           </listitem>
 
           <listitem>
@@ -3421,14 +3421,14 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="versioncontrol">
-        <!-- DNT-Start --><title>Version Control</title><!-- DNT-End -->
+        <title>Version Control</title>
 
-        <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> does not directly provide version control
+        <para>The ECL IDE does not directly provide version control
         functionality, but it does support integration with the TortoiseGit
         Window Shell Interface to Git version control. This open-source
         toolset provides easy access to Git commands from Windows Explorer.
-        The <!-- DNT-Start -->IDE<!-- DNT-End -->'s integration extends that to the context menu of the
-        Repository toolbox in the <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
+        The IDE's integration extends that to the context menu of the
+        Repository toolbox in the IDE.</para>
 
         <para></para>
 
@@ -3449,7 +3449,7 @@ ENDMACRO;
           </listitem>
 
           <listitem>
-            <para>Add that folder to the list of <!-- DNT-Start -->ECL<!-- DNT-End --> Folders on the <emphasis
+            <para>Add that folder to the list of ECL Folders on the <emphasis
             role="bold">Compiler</emphasis> tab of the <emphasis
             role="bold">Preferences</emphasis> dialog.</para>
 
@@ -3473,7 +3473,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Graph_Viewer" role="brk">
-        <!-- DNT-Start --><title>Graph Viewer</title><!-- DNT-End -->
+        <title>Graph Viewer</title>
 
         <para>A workunit's execution graph is displayed in the Graph
         Tab.</para>
@@ -3507,9 +3507,9 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="ECLWatch_View" role="brk">
-        <!-- DNT-Start --><title>ECL Watch View</title><!-- DNT-End -->
+        <title>ECL Watch View</title>
 
-        <para>A workunit's Workunit Details page view is displayed in the <!-- DNT-Start -->ECL<!-- DNT-End -->
+        <para>A workunit's Workunit Details page view is displayed in the ECL
         Watch Tab.</para>
 
         <para>The Workunit Details page provides more information about a
@@ -3534,7 +3534,7 @@ ENDMACRO;
               <row>
                 <entry><graphic fileref="../../images/tip.jpg" /></entry>
 
-                <entry>You can copy a Workunit's <!-- DNT-Start -->ECL<!-- DNT-End --> Watch <!-- DNT-Start -->URL<!-- DNT-End --> by rt-clicking
+                <entry>You can copy a Workunit's ECL Watch URL by rt-clicking
                 on the <emphasis role="bold">Open in New Page</emphasis> icon
                 and selecting <emphasis role="bold">Copy
                 Shortcut</emphasis>.</entry>
@@ -3604,20 +3604,20 @@ ENDMACRO;
     </sect1>
 
     <sect1 id="ECL_Debugger">
-      <!-- DNT-Start --><title>ECL Debugger</title><!-- DNT-End -->
+      <title>ECL Debugger</title>
 
       <sect2 id="ECL_Debugger_Intro">
-        <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
+        <title>Introduction</title>
 
-        <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Debugger provides quick and easy access to features
-        which show you exactly how your <!-- DNT-Start -->ECL<!-- DNT-End --> query is working. It is integrated
-        into the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, giving immediate access to the debugging process as
+        <para>The ECL Debugger provides quick and easy access to features
+        which show you exactly how your ECL query is working. It is integrated
+        into the ECL IDE, giving immediate access to the debugging process as
         you develop your queries. It is a useful development tool helping you
         to:</para>
 
         <itemizedlist mark="bullet">
           <listitem>
-            <para>Learn how the <!-- DNT-Start -->ECL<!-- DNT-End --> Language works.</para>
+            <para>Learn how the ECL Language works.</para>
           </listitem>
 
           <listitem>
@@ -3645,7 +3645,7 @@ ENDMACRO;
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Note</emphasis>:<!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Note</emphasis>:</entry>
 
                   <entry>The ability to view debugging information for queries
                   run against a Thor cluster is part of ongoing planned
@@ -3657,10 +3657,10 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Global_and_Active_Graphs">
-        <!-- DNT-Start --><title>Global and Active Graphs</title><!-- DNT-End -->
+        <title>Global and Active Graphs</title>
 
-        <para>The two graph windows are displayed side by side within the <!-- DNT-Start -->ECL<!-- DNT-End -->
-        <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
+        <para>The two graph windows are displayed side by side within the ECL
+        IDE.</para>
 
         <para><graphic fileref="../../images/CT57.png" scalefit="1" /></para>
 
@@ -3676,21 +3676,21 @@ ENDMACRO;
 
         <para>These graphs may show different information. The Global Graph
         may not show the parts of the graph that cannot be executed, for
-        example, <!-- DNT-Start -->IF<!-- DNT-End --> statements or when using the Graph command. The Active
+        example, IF statements or when using the Graph command. The Active
         window may show expanded sections for commands such as Graph or
         Library.</para>
       </sect2>
 
       <sect2 id="Edges_and_Vertices">
-        <!-- DNT-Start --><title>Edges and Vertices</title><!-- DNT-End -->
+        <title>Edges and Vertices</title>
 
         <para>The graphs are displayed as a series of edges and
         vertices.</para>
 
-        <para>A vertex is an <!-- DNT-Start -->ECL<!-- DNT-End --> keyword or activity, for example, <!-- DNT-Start -->SORT<!-- DNT-End --> or
-        <!-- DNT-Start -->JOIN<!-- DNT-End -->. Vertices are represented on the graphs surrounded by a
+        <para>A vertex is an ECL keyword or activity, for example, SORT or
+        JOIN. Vertices are represented on the graphs surrounded by a
         rectangle. When a vertex is selected and has a definition associated
-        with it, the <!-- DNT-Start -->ECL<!-- DNT-End --> that caused it to be created is highlighted in the
+        with it, the ECL that caused it to be created is highlighted in the
         Debug Information window.</para>
 
         <para>An edge is shown on the graphs as a line joining two vertices
@@ -3704,9 +3704,9 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Breakpoints">
-        <!-- DNT-Start --><title>Breakpoints</title><!-- DNT-End -->
+        <title>Breakpoints</title>
 
-        <para>Using the <!-- DNT-Start -->ECL<!-- DNT-End --> Debugger breakpoint feature, the debugging process
+        <para>Using the ECL Debugger breakpoint feature, the debugging process
         can be paused at any point.</para>
 
         <para>Global breakpoints stop the debugging process every time the
@@ -3714,7 +3714,7 @@ ENDMACRO;
         for that specific occurrence.</para>
 
         <para>The debugging process pauses at the point at which the
-        breakpoint is set. <!-- DNT-Start -->Breakpoints<!-- DNT-End --> can only be set on edges. However,
+        breakpoint is set. Breakpoints can only be set on edges. However,
         there are a number of ways to use breakpoints:</para>
 
         <itemizedlist mark="bullet">
@@ -3730,7 +3730,7 @@ ENDMACRO;
           </listitem>
 
           <listitem>
-            <para>A breakpoint set on the <!-- DNT-Start -->ECL<!-- DNT-End --> code in the Debug Information
+            <para>A breakpoint set on the ECL code in the Debug Information
             window, pauses the debugging process when the first row of data
             arrives at the edge of the vertex you selected.</para>
           </listitem>
@@ -3746,27 +3746,27 @@ ENDMACRO;
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start --><emphasis role="bold">Break</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis role="bold">Break</emphasis></entry>
 
                 <entry>Pauses the debugging process at the specified
                 edge.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis role="bold">Skip</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis role="bold">Skip</emphasis></entry>
 
                 <entry>Skips any row that matches the conditions set.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis role="bold">Limit</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis role="bold">Limit</emphasis></entry>
 
                 <entry>Only allows the specified number of rows
                 through.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis role="bold">Continue</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis role="bold">Continue</emphasis></entry>
 
                 <entry>Temporarily disables a breakpoint that is not currently
                 needed but that might be required later.</entry>
@@ -3786,20 +3786,20 @@ ENDMACRO;
         expected.</para>
 
         <para>Each breakpoint you set on your graph is shown in the list in
-        the <!-- DNT-Start -->Breakpoints<!-- DNT-End --> window showing the settings used to create each one
-        including, for example, Edge <!-- DNT-Start -->ID<!-- DNT-End -->, Mode, Condition, etc.</para>
+        the Breakpoints window showing the settings used to create each one
+        including, for example, Edge ID, Mode, Condition, etc.</para>
       </sect2>
 
       <sect2 id="Starting_the_ECL_Debugger">
-        <!-- DNT-Start --><title>Starting the ECL Debugger</title><!-- DNT-End -->
+        <title>Starting the ECL Debugger</title>
 
         <itemizedlist mark="bullet">
           <listitem>
-            <para><!-- DNT-Start -->Login<!-- DNT-End --> to the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> in the usual way.</para>
+            <para>Login to the ECL IDE in the usual way.</para>
           </listitem>
 
           <listitem>
-            <para>Open or create your <!-- DNT-Start -->ECL<!-- DNT-End --> Query in a Builder window. Make sure
+            <para>Open or create your ECL Query in a Builder window. Make sure
             that the Queue and Cluster you have selected point to either an
             hThor or a Roxie cluster.</para>
           </listitem>
@@ -3811,7 +3811,7 @@ ENDMACRO;
           </listitem>
         </itemizedlist>
 
-        <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Debugger workspace displays a graph in the Global
+        <para>The ECL Debugger workspace displays a graph in the Global
         window, but the Active window is empty since the debug process has not
         yet begun.</para>
 
@@ -3822,13 +3822,13 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Debugger_Menus">
-        <!-- DNT-Start --><title>Debugger Menus</title><!-- DNT-End -->
+        <title>Debugger Menus</title>
 
         <para>The Home and View menu options are identical to those on the
-        main the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> menu.</para>
+        main the ECL IDE menu.</para>
 
         <sect3 id="CT_ECLIDE_DeBug_BasicMenu">
-          <!-- DNT-Start --><title>Basic Menu</title><!-- DNT-End -->
+          <title>Basic Menu</title>
 
           <para><emphasis role="bold">The </emphasis><emphasis
           role="bold">Basic</emphasis> ribbon bar contains the following
@@ -3845,27 +3845,27 @@ ENDMACRO;
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Detach</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Detach</emphasis></entry>
 
                   <entry>Detaches from the current debugging session and
                   allows the workunit to run to completion.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Abort</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Abort</emphasis></entry>
 
                   <entry>Aborts the current workunit which also causes the
                   debugging session to abort.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Break</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Break</emphasis></entry>
 
                   <entry>Pause the execution of the running workunit.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Continue</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Continue</emphasis></entry>
 
                   <entry>Continues the execution of a paused workunit</entry>
                 </row>
@@ -3884,8 +3884,8 @@ ENDMACRO;
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Step</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Step</emphasis></emphasis></entry>
 
                   <entry>Continues the debugging process until the next graph
                   event. This is typically the start of a new active graph or
@@ -3893,14 +3893,14 @@ ENDMACRO;
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Step Start</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Step Start</emphasis></entry>
 
                   <entry>Continues the debugging process until a new active
                   graph is about to start.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Step End</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Step End</emphasis></entry>
 
                   <entry>Continues the debugging process until the current
                   active graph completes.</entry>
@@ -3920,15 +3920,15 @@ ENDMACRO;
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Step</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Step</emphasis></emphasis></entry>
 
                   <entry>Continues the debugging process until a new row of
                   data is available on any edge in the active graph.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Next</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Next</emphasis></entry>
 
                   <entry>Continues the debugging process until a new row of
                   data arrives at the active edge or until the current active
@@ -3949,27 +3949,27 @@ ENDMACRO;
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Add Global</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Add Global</emphasis></entry>
 
                   <entry>Adds a global conditional breakpoint.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Add</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Add</emphasis></emphasis></entry>
 
                   <entry>Adds a local conditional breakpoint.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Clear</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Clear</emphasis></entry>
 
                   <entry>Clears all the breakpoints on the selected
                   edge.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Clear All</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Clear All</emphasis></entry>
 
                   <entry>Clears all breakpoints.</entry>
                 </row>
@@ -3988,32 +3988,32 @@ ENDMACRO;
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Find</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Find</emphasis></entry>
 
                   <entry>Locates a vertex with matching text in the graph you
                   are currently using (Global or Active).</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Next</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Next</emphasis></emphasis></entry>
 
                   <entry>Locates the next occurrence in the graph you are
                   currently using.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Previous</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Previous</emphasis></entry>
 
                   <entry>Locates the previous occurrence in the graph you are
                   currently using.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Goto</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Goto</emphasis></entry>
 
                   <entry>Locates the subgraph/vertex/edge which matches the
-                  specified <!-- DNT-Start -->ID<!-- DNT-End --> and centers it.</entry>
+                  specified ID and centers it.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4030,24 +4030,24 @@ ENDMACRO;
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Zoom</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Zoom</emphasis></emphasis></entry>
 
                   <entry>Resizes the graph according to your
                   selection.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Recenter
-                  Active</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Recenter
+                  Active</emphasis></entry>
 
                   <entry>When the graph is paused, clicking on this option
                   takes you to the active edge on that graph.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
-                  role="bold">Layout</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis
+                  role="bold">Layout</emphasis></emphasis></entry>
 
                   <entry>Performs a new layout on the active graph. This can
                   be particularly useful when the label have changed. The top
@@ -4061,7 +4061,7 @@ ENDMACRO;
         </sect3>
 
         <sect3 id="CT_ECLIDE_DeBug_AdvancedMenu">
-          <!-- DNT-Start --><title>Advanced Menu</title><!-- DNT-End -->
+          <title>Advanced Menu</title>
 
           <para>The Advanced ribbon bar contains the following
           features:</para>
@@ -4077,16 +4077,16 @@ ENDMACRO;
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Running
-                  Only</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Running
+                  Only</emphasis></emphasis></entry>
 
                   <entry>Only shows items that have started to
                   execute.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Search Results
-                  Only</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Search Results
+                  Only</emphasis></entry>
 
                   <entry>Only shows items that have been found using the
                   Search Window.</entry>
@@ -4106,16 +4106,16 @@ ENDMACRO;
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold"><emphasis role="bold">Running
-                  Only</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold">Running
+                  Only</emphasis></emphasis></entry>
 
                   <entry>Only shows items that have started to
                   execute.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Search Results
-                  Only</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Search Results
+                  Only</emphasis></entry>
 
                   <entry>Only shows items that have been found using the
                   Search Window.</entry>
@@ -4127,7 +4127,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Stepping_through_a_query">
-        <!-- DNT-Start --><title>Stepping through a query</title><!-- DNT-End -->
+        <title>Stepping through a query</title>
 
         <itemizedlist mark="bullet">
           <listitem>
@@ -4161,7 +4161,7 @@ ENDMACRO;
           </listitem>
         </itemizedlist>
 
-        <para>Navigating the graph using <!-- DNT-Start -->ECL<!-- DNT-End --></para>
+        <para>Navigating the graph using ECL</para>
 
         <itemizedlist mark="bullet">
           <listitem>
@@ -4175,7 +4175,7 @@ ENDMACRO;
           </listitem>
 
           <listitem>
-            <para>Scroll down to the line of <!-- DNT-Start -->ECL<!-- DNT-End --> which defines what you want
+            <para>Scroll down to the line of ECL which defines what you want
             to locate.</para>
           </listitem>
 
@@ -4213,7 +4213,7 @@ ENDMACRO;
           </listitem>
 
           <listitem>
-            <para>Click the <!-- DNT-Start -->OK<!-- DNT-End --> button.</para>
+            <para>Click the OK button.</para>
           </listitem>
         </itemizedlist>
 
@@ -4223,7 +4223,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Setting_Local_Breakpoints">
-        <!-- DNT-Start --><title>Setting local breakpoints</title><!-- DNT-End -->
+        <title>Setting local breakpoints</title>
 
         <itemizedlist mark="bullet">
           <listitem>
@@ -4245,7 +4245,7 @@ ENDMACRO;
           </listitem>
 
           <listitem>
-            <para>Click the <!-- DNT-Start -->OK<!-- DNT-End --> button. The breakpoint is shown on the graph as
+            <para>Click the OK button. The breakpoint is shown on the graph as
             a red dot.</para>
           </listitem>
         </itemizedlist>
@@ -4257,12 +4257,12 @@ ENDMACRO;
         <para><emphasis role="bold">Note</emphasis>: Simple breakpoints that
         do not require any conditions to be set, are quickly added by
         selecting an edge and using the right-click option Set Breakpoint.
-        <!-- DNT-Start -->Breakpoints<!-- DNT-End --> set in this way use the default settings which are the
+        Breakpoints set in this way use the default settings which are the
         Mode setting Break and the Condition Always.</para>
       </sect2>
 
       <sect2 id="Setting_a_breakpoint_line_in_ECL">
-        <!-- DNT-Start --><title>Setting a breakpoint on a line of ECL</title><!-- DNT-End -->
+        <title>Setting a breakpoint on a line of ECL</title>
 
         <itemizedlist mark="bullet">
           <listitem>
@@ -4287,13 +4287,13 @@ ENDMACRO;
         <itemizedlist mark="bullet">
           <listitem>
             <para>Highlight the edge where the breakpoint is shown and click
-            on <!-- DNT-Start -->Breakpoints<!-- DNT-End -->/Clear, or right-click and select Clear
+            on Breakpoints/Clear, or right-click and select Clear
             Breakpoint(s).</para>
           </listitem>
 
           <listitem>
             <para>Single breakpoints can also be removed by right-clicking on
-            the breakpoint listed in the <!-- DNT-Start -->Breakpoints<!-- DNT-End --> window and selecting
+            the breakpoint listed in the Breakpoints window and selecting
             delete.</para>
           </listitem>
         </itemizedlist>

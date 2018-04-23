@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FindCount">
-  <!-- DNT-Start --><title>FindCount</title><!-- DNT-End -->
+  <title>FindCount</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.FindCount<indexterm>
+  <para><emphasis role="bold">STD.Str.FindCount<indexterm>
       <primary>STD.Str.FindCount</primary>
     </indexterm><indexterm>
       <primary>Str.FindCount</primary>
     </indexterm><indexterm>
       <primary>FindCount</primary>
     </indexterm>(</emphasis> <emphasis>source, target</emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,38 +21,38 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source</emphasis></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>target </emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>target </emphasis></entry>
 
           <entry>A string containing the substring to search for.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry>StringFindCount returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value.</entry>
+          <entry>StringFindCount returns an INTEGER value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->FindCount<!-- DNT-End --> </emphasis>function returns the
+  <para>The <emphasis role="bold">FindCount </emphasis>function returns the
   number of non-overlapping instances of the <emphasis>target
   </emphasis>string within the <emphasis>source</emphasis> string.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := IF(STD.Str.FindCount('ABCDE', 'BC') = 1,
+  <programlisting format="linespecific">A := IF(STD.Str.FindCount('ABCDE', 'BC') = 1,
    'Success',
    'Failure - 1');  //success
     
 B := IF(STD.Str.FindCount('ABCDEABCDE', 'BC') = 1,
    'Success',
    'Failure - 1');  //failure
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

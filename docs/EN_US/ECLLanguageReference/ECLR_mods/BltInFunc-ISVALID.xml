@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ISVALID">
-  <!-- DNT-Start --><title>ISVALID</title><!-- DNT-End -->
+  <title>ISVALID</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->ISVALID<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->ISVALID<!-- DNT-End --></primary>
+  <para><emphasis role="bold">ISVALID<indexterm>
+      <primary>ISVALID</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->ISVALID<!-- DNT-End --> function</primary>
+      <primary>ISVALID function</primary>
     </indexterm>(</emphasis><emphasis> field </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,31 +19,31 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>field</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>field</emphasis></entry>
 
-            <entry>The name of a <!-- DNT-Start -->DECIMAL<!-- DNT-End -->, <!-- DNT-Start -->REAL<!-- DNT-End -->, or alien data <!-- DNT-Start -->TYPE<!-- DNT-End -->
+            <entry>The name of a DECIMAL, REAL, or alien data TYPE
             field.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->ISVALID<!-- DNT-End --> returns a single Boolean value.</entry>
+            <entry>ISVALID returns a single Boolean value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ISVALID<!-- DNT-End --> </emphasis>function validates that
+  <para>The <emphasis role="bold">ISVALID </emphasis>function validates that
   the <emphasis>field</emphasis> contains a legal value. If the contents are
   not valid for the declared value type of the <emphasis>field</emphasis>
-  (such as hexadecimal values greater than 9 in a <!-- DNT-Start -->DECIMAL<!-- DNT-End -->), <!-- DNT-Start -->ISVALID<!-- DNT-End --> returns
-  <!-- DNT-Start -->FALSE<!-- DNT-End -->, otherwise it returns <!-- DNT-Start -->TRUE<!-- DNT-End -->.</para>
+  (such as hexadecimal values greater than 9 in a DECIMAL), ISVALID returns
+  FALSE, otherwise it returns TRUE.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>MyVal := IF(ISVALID(Infile.DecimalField),Infile.DecimalField,0);
-//ISVALID returns TRUE if the value is legal</programlisting><!-- DNT-End -->
+  <programlisting>MyVal := IF(ISVALID(Infile.DecimalField),Infile.DecimalField,0);
+//ISVALID returns TRUE if the value is legal</programlisting>
 
-  <para>See Also: <link linkend="TYPE_Structure"><!-- DNT-Start -->TYPE<!-- DNT-End --> Structure</link>, <link linkend="DECIMAL"><!-- DNT-Start -->DECIMAL<!-- DNT-End --></link>, <link linkend="REAL"><!-- DNT-Start -->REAL<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="TYPE_Structure">TYPE Structure</link>, <link linkend="DECIMAL">DECIMAL</link>, <link linkend="REAL">REAL</link></para>
 </sect1>

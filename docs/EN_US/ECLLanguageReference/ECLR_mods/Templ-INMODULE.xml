@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_INMODULE">
-  <!-- DNT-Start --><title>#INMODULE</title><!-- DNT-End -->
+  <title>#INMODULE</title>
 
-  <para><emphasis role="bold">#<!-- DNT-Start -->INMODULE<!-- DNT-End --><indexterm>
-      <primary>#<!-- DNT-Start -->INMODULE<!-- DNT-End --></primary>
+  <para><emphasis role="bold">#INMODULE<indexterm>
+      <primary>#INMODULE</primary>
     </indexterm>( </emphasis><emphasis> module, attribute </emphasis><emphasis
   role="bold">);</emphasis></para>
 
@@ -17,14 +17,14 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>module</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>module</emphasis></entry>
 
             <entry>A previously defined user-defined symbol containing the
-            name of an <!-- DNT-Start -->ECL<!-- DNT-End --> source module.</entry>
+            name of an ECL source module.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>attribute</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>attribute</emphasis></entry>
 
             <entry>A previously defined user-defined symbol containing the
             name of an Attribute that may or may not be in the module.</entry>
@@ -33,13 +33,13 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#<!-- DNT-Start -->INMODULE<!-- DNT-End --> </emphasis>statement returns a
-  Boolean <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --> as to whether the <emphasis>attribute</emphasis>
+  <para>The <emphasis role="bold">#INMODULE </emphasis>statement returns a
+  Boolean TRUE or FALSE as to whether the <emphasis>attribute</emphasis>
   exists in the specified <emphasis>module</emphasis>.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  #DECLARE (mod)
+  <programlisting>  #DECLARE (mod)
   #DECLARE (attr)
   #DECLARE (stg)
   
@@ -60,5 +60,5 @@
   //
   // Output: (For 'default.Fred')
   // stg = 'Fred Does Not Exist In Module default'
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

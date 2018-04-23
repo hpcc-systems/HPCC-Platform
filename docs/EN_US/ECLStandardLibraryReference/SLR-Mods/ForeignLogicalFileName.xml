@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ForeignLogicalFileName">
-  <!-- DNT-Start --><title>ForeignLogicalFileName</title><!-- DNT-End -->
+  <title>ForeignLogicalFileName</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.ForeignLogicalFileName<indexterm>
+  <para><emphasis role="bold">STD.File.ForeignLogicalFileName<indexterm>
       <primary>STD.File.ForeignLogicalFileName</primary>
     </indexterm><indexterm>
       <primary>STD.File.ForeignLogicalFileName</primary>
@@ -13,7 +13,7 @@
     </indexterm>(</emphasis> <emphasis>filename </emphasis> <emphasis
   role="bold">[,</emphasis> <emphasis>foreigndali </emphasis> <emphasis
   role="bold">] [,</emphasis> <emphasis>absolutepath</emphasis> <emphasis
-  role="bold">] )</emphasis></para><!-- DNT-End -->
+  role="bold">] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,49 +23,49 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>filename</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>foreigndali</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>foreigndali</emphasis></entry>
 
-          <entry>A null-terminated string containing the <!-- DNT-Start -->IP<!-- DNT-End --> address of the
+          <entry>A null-terminated string containing the IP address of the
           foreign Dali. If omitted, the <emphasis>filename</emphasis> is
           presumed to be a foreign logical file name, which is converted to a
           local logical file name.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>absolutepath</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>absolutepath</emphasis></entry>
 
-          <entry>Optional. A boolean <!-- DNT-Start -->TRUE<!-- DNT-End -->/<!-- DNT-Start -->FALSE<!-- DNT-End --> to indicate whether to prepend
+          <entry>Optional. A boolean TRUE/FALSE to indicate whether to prepend
           a tilde (~) to the resulting foreign logical file name. If omitted,
-          the default is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          the default is FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->ForeignLogicalFileName<!-- DNT-End --> returns returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End -->
+          <entry>ForeignLogicalFileName returns returns a VARSTRING
           (null-terminated) value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ForeignLogicalFileName<!-- DNT-End --> </emphasis>function
+  <para>The <emphasis role="bold">ForeignLogicalFileName </emphasis>function
   returns either a foreign logical file name (if the
   <emphasis>foreigndali</emphasis> parameter is present) or a local logical
   file name.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">sf := '~thor_data400::BASE::Business_Header';
+  <programlisting format="linespecific">sf := '~thor_data400::BASE::Business_Header';
 ff := STD.File.ForeignLogicalFileName(sf,'10.150.29.161',true);
  //results in: ~foreign::10.150.29.161::thor_data400::base::business_header
 lf := STD.File.ForeignLogicalFileName(ff,'',true);
- //results in: ~thor_data400::base::business_header</programlisting><!-- DNT-End -->
+ //results in: ~thor_data400::base::business_header</programlisting>
 </sect1>

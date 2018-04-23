@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Day">
-  <!-- DNT-Start --><title>Day</title><!-- DNT-End -->
+  <title>Day</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.Day<indexterm>
+  <para><emphasis role="bold">STD.Date.Day<indexterm>
       <primary>STD.Date.Day</primary>
     </indexterm><indexterm>
       <primary>Date.Day</primary>
     </indexterm><indexterm>
       <primary>Day</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,32 +21,32 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>date</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>date</emphasis></entry>
 
           <entry>A date value in the Date_t format.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->Day<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value in the range of 1 through
+          <entry>Day returns an INTEGER value in the range of 1 through
           31.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->Day<!-- DNT-End --></emphasis> function returns the <!-- DNT-Start -->Day<!-- DNT-End -->
+  <para>The <emphasis role="bold">Day</emphasis> function returns the Day
   number from the <emphasis>date</emphasis> value.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 UNSIGNED4 MyDate := 20120101;   //January 1, 2012
   
 D := STD.Date.Day(MyDate);
     //D contains 1, representing the first of the month
-  </programlisting><!-- DNT-End -->
+  </programlisting>
 
   <para></para>
 </sect1>

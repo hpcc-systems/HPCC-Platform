@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="REGEXREPLACE">
-  <!-- DNT-Start --><title>REGEXREPLACE</title><!-- DNT-End -->
+  <title>REGEXREPLACE</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->REGEXREPLACE<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->REGEXREPLACE<!-- DNT-End --></primary>
+  <para><emphasis role="bold">REGEXREPLACE<indexterm>
+      <primary>REGEXREPLACE</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->REGEXREPLACE<!-- DNT-End --> function</primary>
+      <primary>REGEXREPLACE function</primary>
     </indexterm>(</emphasis><emphasis>regex, text, replacement
-  </emphasis><emphasis role="bold">[, <!-- DNT-Start -->NOCASE<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->NOCASE<!-- DNT-End --></primary>
+  </emphasis><emphasis role="bold">[, NOCASE<indexterm>
+      <primary>NOCASE</primary>
     </indexterm>])</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -21,19 +21,19 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>regex</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>regex</emphasis></entry>
 
             <entry>A standard Perl regular expression.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>text</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>text</emphasis></entry>
 
             <entry>The text to parse.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>replacement</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>replacement</emphasis></entry>
 
             <entry>The replacement text. In this string, $0 refers to the
             substring that matched the <emphasis>regex</emphasis> pattern, and
@@ -42,21 +42,21 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">NOCASE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">NOCASE</emphasis></entry>
 
             <entry>Optional. Specifies a case insensitive search.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->REGEXREPLACE<!-- DNT-End --> returns a single value.</entry>
+            <entry>REGEXREPLACE returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->REGEXREPLACE<!-- DNT-End --> </emphasis>function uses the
+  <para>The <emphasis role="bold">REGEXREPLACE </emphasis>function uses the
   <emphasis>regex<indexterm>
       <primary>regex</primary>
     </indexterm></emphasis> to parse through the <emphasis>text</emphasis> and
@@ -68,7 +68,7 @@
   non-unicode <emphasis>text</emphasis>, see boost docs at <ulink
   url="http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html">http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html</ulink>.
   Note that the version of Boost library may vary depending on your distro.
-  For unicode <emphasis>text</emphasis>, see the <!-- DNT-Start -->ICU<!-- DNT-End --> docs, the sections
+  For unicode <emphasis>text</emphasis>, see the ICU docs, the sections
   'Regular Expression Metacharacters' and 'Regular Expression Operators' at
   <emphasis
   role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
@@ -79,7 +79,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>REGEXREPLACE('(.a)t', 'the cat sat on the mat', '$1p');
+  <programlisting>REGEXREPLACE('(.a)t', 'the cat sat on the mat', '$1p');
         //ASCII
 REGEXREPLACE(u'(.a)t', u'the cat sat on the mat', u'$1p');
         //UNICODE
@@ -109,8 +109,8 @@ She She fhe Eins Eins \xc3\xabins
 Sells Sellf fellf Zwei Zw\xc3\xabi Zw\xc3\xabi
 Sea Sea fea Drei Dr\xc3\xabi Dr\xc3\xabi
 Shells Shellf fhellf Vier Vi\xc3\xabr Vi\xc3\xabr */
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="PARSE"><!-- DNT-Start -->PARSE<!-- DNT-End --></link>, <link
-  linkend="REGEXFIND"><!-- DNT-Start -->REGEXFIND<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="PARSE">PARSE</link>, <link
+  linkend="REGEXFIND">REGEXFIND</link></para>
 </sect1>

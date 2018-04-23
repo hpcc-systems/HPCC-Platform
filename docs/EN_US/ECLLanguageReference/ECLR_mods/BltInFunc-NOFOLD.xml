@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="NOFOLD">
-  <!-- DNT-Start --><title>NOFOLD<indexterm>
+  <title>NOFOLD<indexterm>
       <primary>NOFOLD function</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
   <para><emphasis role="bold">[</emphasis><emphasis>name</emphasis>
-  :=<emphasis role="bold"> ] <!-- DNT-Start -->NOFOLD<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->NOFOLD<!-- DNT-End --></primary>
+  :=<emphasis role="bold"> ] NOFOLD<indexterm>
+      <primary>NOFOLD</primary>
     </indexterm>(</emphasis><emphasis> expression </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -20,13 +20,13 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
             <entry>Optional. The identifier for this function.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->expression<!-- DNT-End --></entry>
+            <entry>expression</entry>
 
             <entry>The expression to evaluate.</entry>
           </row>
@@ -34,7 +34,7 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->NOFOLD<!-- DNT-End --></emphasis> function creates a barrier
+  <para>The <emphasis role="bold">NOFOLD</emphasis> function creates a barrier
   that prevents optimizations occurring between the
   <emphasis>expression</emphasis> and the context it is used in. This is used
   to prevent constant-folding in the context so that it may be evaluated
@@ -45,7 +45,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>OUTPUT(2 * 2);  // is normally constant folded to:
+  <programlisting>OUTPUT(2 * 2);  // is normally constant folded to:
 OUTPUT(4);      // at compile time. 
 
   //However adding NOFOLD() around one argument prevents that 
@@ -57,5 +57,5 @@ OUTPUT(NOFOLD(2 * 2));
   //is the same as
 OUTPUT(NOFOLD(4));
   
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

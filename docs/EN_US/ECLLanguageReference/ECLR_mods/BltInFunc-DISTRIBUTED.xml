@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DISTRIBUTED">
-  <!-- DNT-Start --><title>DISTRIBUTED<indexterm>
+  <title>DISTRIBUTED<indexterm>
       <primary>DISTRIBUTED</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --> function</primary>
+  <para><emphasis role="bold">DISTRIBUTED<indexterm>
+      <primary>DISTRIBUTED function</primary>
     </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, expression </emphasis><emphasis
   role="bold">] )</emphasis></para>
@@ -20,28 +20,28 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>recordset</emphasis></entry>
 
             <entry>The set of distributed records.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>Optional. An expression that specifies how the recordset is
             distributed.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --> returns a set of records.</entry>
+            <entry>DISTRIBUTED returns a set of records.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --></emphasis> function is a
+  <para>The <emphasis role="bold">DISTRIBUTED</emphasis> function is a
   compiler directive indicating that the records from the
   <emphasis>recordset</emphasis> are already distributed across the nodes of
   the Data Refinery based on the specified <emphasis>expression</emphasis>.
@@ -54,8 +54,8 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn));
-        //all people with the same SSN are already on the same node</programlisting><!-- DNT-End -->
+  <programlisting>MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn));
+        //all people with the same SSN are already on the same node</programlisting>
 
-  <para>See Also: <link linkend="HASH32"><!-- DNT-Start -->HASH<!-- DNT-End -->32</link>, <link linkend="DISTRIBUTE"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="HASH32">HASH32</link>, <link linkend="DISTRIBUTE">DISTRIBUTE</link></para>
 </sect1>

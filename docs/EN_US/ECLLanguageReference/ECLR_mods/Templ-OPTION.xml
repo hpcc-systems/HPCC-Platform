@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_OPTION">
-  <!-- DNT-Start --><title>#OPTION</title><!-- DNT-End -->
+  <title>#OPTION</title>
 
-  <para><emphasis role="bold">#<!-- DNT-Start -->OPTION<!-- DNT-End --><indexterm>
-      <primary>#<!-- DNT-Start -->OPTION<!-- DNT-End --></primary>
+  <para><emphasis role="bold">#OPTION<indexterm>
+      <primary>#OPTION</primary>
     </indexterm>( </emphasis><emphasis> option, value </emphasis><emphasis
   role="bold">);</emphasis></para>
 
@@ -17,14 +17,14 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>option</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>option</emphasis></entry>
 
             <entry>A case sensitive string constant containing the name of the
             option to set.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>value</emphasis></entry>
 
             <entry>The value to set the option to. This may be any type of
             value, dependent on what the option expects to be.</entry>
@@ -33,14 +33,14 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#<!-- DNT-Start -->OPTION<!-- DNT-End --> </emphasis>statement is typically a
+  <para>The <emphasis role="bold">#OPTION </emphasis>statement is typically a
   compiler directive giving hints to the code generator as to how best to
   generate the executable code for a workunit. This statement may be used
-  outside an <!-- DNT-Start -->XML<!-- DNT-End --> scope and does not require a previous call to the <!-- DNT-Start -->LOADXML<!-- DNT-End -->
-  function to instantiate an <!-- DNT-Start -->XML<!-- DNT-End --> scope.</para>
+  outside an XML scope and does not require a previous call to the LOADXML
+  function to instantiate an XML scope.</para>
 
   <sect2 id="Definition_of_Terms">
-    <!-- DNT-Start --><title>Definition of Terms</title><!-- DNT-End -->
+    <title>Definition of Terms</title>
 
     <para>These definitions are "internal-only" terms used in the
     <emphasis>option</emphasis> definitions that follow.</para>
@@ -53,13 +53,13 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis>DFA</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>DFA</emphasis></entry>
 
               <entry>Deterministic Finite-state Automaton.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>Fold</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>Fold</emphasis></entry>
 
               <entry>To turn a complex expression into a simpler equivalent
               one. For example, the expression "1+1" can be replaced with "2"
@@ -67,14 +67,14 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>Spill</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>Spill</emphasis></entry>
 
               <entry>Writing intermediate result sets to disk so that memory
               is available for subsequent steps.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>Funnel</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>Funnel</emphasis></entry>
 
               <entry>The + (append file) operator between datasets can be
               visualized as pouring all the records into a funnel and getting
@@ -83,36 +83,36 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>TopN</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>TopN</emphasis></entry>
 
               <entry>An internally generated activity used in place of
-              <!-- DNT-Start -->CHOOSEN<!-- DNT-End -->(<!-- DNT-Start -->SORT<!-- DNT-End -->(xx), n) where n is small, as it can be computed
+              CHOOSEN(SORT(xx), n) where n is small, as it can be computed
               much more efficiently than sorting the entire record set then
               discarding all but the first n.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>Activity</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>Activity</emphasis></entry>
 
-              <entry>An <!-- DNT-Start -->ECL<!-- DNT-End --> operator that takes one or more datasets as
+              <entry>An ECL operator that takes one or more datasets as
               inputs.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>Graph</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>Graph</emphasis></entry>
 
               <entry>All the Activities in a query.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>Subgraph</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>Subgraph</emphasis></entry>
 
               <entry>A collection of Activities that can all be active at the
               same time in Thor.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>Peephole</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>Peephole</emphasis></entry>
 
               <entry>A method of code optimization that looks at a small
               amount of the unoptimized code at a time, in order to combine
@@ -124,7 +124,7 @@
   </sect2>
 
   <sect2 id="OPTION_Available_Options">
-    <!-- DNT-Start --><title>Available options</title><!-- DNT-End -->
+    <title>Available options</title>
 
     <para><emphasis role="bold">The following options are generally useful:
     </emphasis></para>
@@ -139,7 +139,7 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis>maxRunTime</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>maxRunTime</emphasis></entry>
 
               <entry>Default: none</entry>
 
@@ -148,54 +148,54 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>freezePersists</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>freezePersists</emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, does not calculate/recalculate <!-- DNT-Start -->PERSISTed<!-- DNT-End --></entry>
+              <entry>If true, does not calculate/recalculate PERSISTed</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>expirePersists</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>expirePersists</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, <!-- DNT-Start -->PERSISTs<!-- DNT-End --> expire after the specified period. This
+              <entry>If true, PERSISTs expire after the specified period. This
               is set in the Sasha configuration setting (PersistExpiryDefault)
               or using #option ('defaultPersistExpiry', n) where n is the
               number of days.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>defaultPersistExpiry</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>defaultPersistExpiry</emphasis></entry>
 
               <entry>Default: none</entry>
 
-              <entry>If set, <!-- DNT-Start -->PERSISTs<!-- DNT-End --> expire after the number of days
+              <entry>If set, PERSISTs expire after the number of days
               specified (overriding the Sasha PersistExpiryDefault
               setting).</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>multiplePersistInstances</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>multiplePersistInstances</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, multiple <!-- DNT-Start -->PERSISTs<!-- DNT-End --> are the default.</entry>
+              <entry>If true, multiple PERSISTs are the default.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>defaultNumPersistInstances</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>defaultNumPersistInstances</emphasis></entry>
 
               <entry>Default: none</entry>
 
-              <entry>Specifies the default number of <!-- DNT-Start -->PERSISTs<!-- DNT-End -->. A value of -1
+              <entry>Specifies the default number of PERSISTs. A value of -1
               specifies that all copies should be kept until they expire or
               manually deleted.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>check </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>checkÂ </emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -204,15 +204,15 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>expandRepeatAnyAsDfa</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>expandRepeatAnyAsDfa</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, expand <!-- DNT-Start -->ANY<!-- DNT-End -->* in a <!-- DNT-Start -->DFA<!-- DNT-End -->.</entry>
+              <entry>If true, expand ANY* in a DFA.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>forceFakeThor</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>forceFakeThor</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -220,16 +220,16 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>forceGenerate</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>forceGenerate</emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, force .<!-- DNT-Start -->SO<!-- DNT-End --> to be generated even if it's not worth
+              <entry>If true, force .SO to be generated even if it's not worth
               it</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>globalFold</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>globalFold</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -238,7 +238,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>globalOptimize</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>globalOptimize</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -246,16 +246,16 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>groupAllDistribute</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>groupAllDistribute</emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, <!-- DNT-Start -->GROUP<!-- DNT-End -->,<!-- DNT-Start -->ALL<!-- DNT-End --> generates a <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --> instead of a
-              global <!-- DNT-Start -->SORT<!-- DNT-End -->.</entry>
+              <entry>If true, GROUP,ALL generates a DISTRIBUTE instead of a
+              global SORT.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>maximizeLexer</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>maximizeLexer</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -264,7 +264,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>maxLength</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>maxLength</emphasis></entry>
 
               <entry>Default: 4096</entry>
 
@@ -272,7 +272,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>minimizeSpillSize</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>minimizeSpillSize</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -282,7 +282,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeGraph</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeGraph</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -291,7 +291,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>orderDiskFunnel</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>orderDiskFunnel</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -300,16 +300,16 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>parseDfaComplexity</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>parseDfaComplexity</emphasis></entry>
 
               <entry>Default: 2000</entry>
 
               <entry>Maximum complexity of expression to convert to a
-              <!-- DNT-Start -->DFA<!-- DNT-End -->.</entry>
+              DFA.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>pickBestEngine</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>pickBestEngine</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -318,7 +318,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>targetClusterType</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>targetClusterType</emphasis></entry>
 
               <entry>hthor|Thor|roxie</entry>
 
@@ -327,7 +327,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>topnLimit</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>topnLimit</emphasis></entry>
 
               <entry>Default: 10000</entry>
 
@@ -335,7 +335,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>outputLimit</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>outputLimit</emphasis></entry>
 
               <entry>Default: 10</entry>
 
@@ -344,7 +344,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>sortIndexPayload</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>sortIndexPayload</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -352,7 +352,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>workflow</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>workflow</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -360,7 +360,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>foldStored</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>foldStored</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -370,16 +370,16 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>skipFileFormatCrcCheck</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>skipFileFormatCrcCheck</emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>Specifies that the <!-- DNT-Start -->CRC<!-- DNT-End --> check on indices produces a
+              <entry>Specifies that the CRC check on indices produces a
               warning and not an error.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>allowedClusters</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>allowedClusters</emphasis></entry>
 
               <entry>Default: none</entry>
 
@@ -391,7 +391,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>AllowAutoQueueSwitch</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>AllowAutoQueueSwitch</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -401,30 +401,30 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>performWorkflowCse</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>performWorkflowCse</emphasis></entry>
 
               <entry>Default: false</entry>
 
               <entry>If true, specifies that the code generator automatically
               detects opportunities for Common Sub-expression Elimination that
-              may be "buried" within multiple <!-- DNT-Start -->PERSISTed<!-- DNT-End --> attributes. If false,
+              may be "buried" within multiple PERSISTed attributes. If false,
               notification of these opportunities are displayed to the
-              programmer as suggestions for the use of the <!-- DNT-Start -->INDEPENDENT<!-- DNT-End -->
+              programmer as suggestions for the use of the INDEPENDENT
               Workflow Service.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>defaultSkewError</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>defaultSkewError</emphasis></entry>
 
               <entry>Default: none</entry>
 
               <entry>A value between 0.0 and 1.0 that determines the amount of
               skew needed to generate a skew error. This value is ignored if
-              the <!-- DNT-Start -->ECL<!-- DNT-End --> has provided a <!-- DNT-Start -->SKEW<!-- DNT-End --> attribute.</entry>
+              the ECL has provided a SKEW attribute.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>defaultSkewWarning</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>defaultSkewWarning</emphasis></entry>
 
               <entry>Default: none</entry>
 
@@ -434,44 +434,44 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>overrideSkewError</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>overrideSkewError</emphasis></entry>
 
               <entry>Default: none</entry>
 
               <entry>If set to a value between 0.0 and 1.0, it overrides any
-              <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->SKEW<!-- DNT-End -->(nn) attribute values in the current job.</entry>
+              ECL SKEW(nn) attribute values in the current job.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>defaultSkewThreshold</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>defaultSkewThreshold</emphasis></entry>
 
-              <entry>Default: 1<!-- DNT-Start -->GB<!-- DNT-End --></entry>
+              <entry>Default: 1GB</entry>
 
               <entry>The size of the dataset (in bytes) local to a single node
               needed before Skew errors/warnings are generated if no
-              <!-- DNT-Start -->THRESHOLD<!-- DNT-End -->(nn) was supplied in <!-- DNT-Start -->ECL<!-- DNT-End -->.</entry>
+              THRESHOLD(nn) was supplied in ECL.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>overrideSkewThreshold</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>overrideSkewThreshold</emphasis></entry>
 
               <entry>Default: none</entry>
 
               <entry>The size of the dataset (in bytes) local to a single node
               needed before Skew errors/warnings are generated. Overrides any
-              <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->THRESHOLD<!-- DNT-End -->(nn) attribute values in the current job.</entry>
+              ECL THRESHOLD(nn) attribute values in the current job.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>applyInstantEclTransformations</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>applyInstantEclTransformations</emphasis></entry>
 
               <entry>Default false</entry>
 
-              <entry>Limit non-file outputs with a <!-- DNT-Start -->CHOOSEN<!-- DNT-End --></entry>
+              <entry>Limit non-file outputs with a CHOOSEN</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>applyInstantEclTransformationsLimit</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>applyInstantEclTransformationsLimit</emphasis></entry>
 
               <entry>Default 100</entry>
 
@@ -479,7 +479,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>divideByZero</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>divideByZero</emphasis></entry>
 
               <entry>Default zero</entry>
 
@@ -487,39 +487,39 @@
               causes the job to fail and report a division by zero error.
               'nan' (only currently supported for real numbers) creates a
               quiet NaN, which will propagate through any real expressions it
-              is used in. You can use <!-- DNT-Start -->NOT<!-- DNT-End --> <!-- DNT-Start -->ISVALID<!-- DNT-End -->(x) to test if the value is a
+              is used in. You can use NOT ISVALID(x) to test if the value is a
               NaN. Integer and decimal division by zero continue to return
               0.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>outputLimitMb</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>outputLimitMb</emphasis></entry>
 
-              <entry>Default 10 [<!-- DNT-Start -->MB<!-- DNT-End -->]</entry>
+              <entry>Default 10 [MB]</entry>
 
-              <entry>Limit of output to a workunit in <!-- DNT-Start -->MB<!-- DNT-End -->.</entry>
+              <entry>Limit of output to a workunit in MB.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>hthorMemoryLimit</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>hthorMemoryLimit</emphasis></entry>
 
-              <entry>Default 300 [<!-- DNT-Start -->MB<!-- DNT-End -->]</entry>
+              <entry>Default 300 [MB]</entry>
 
-              <entry>Override memory usage limit set in <!-- DNT-Start -->ECL<!-- DNT-End --> Agent's
+              <entry>Override memory usage limit set in ECL Agent's
               defaultMemoryLimitMB configuration option (for hThor
               only).</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>maxCsvRowSizeMb</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>maxCsvRowSizeMb</emphasis></entry>
 
-              <entry>Default 10 [<!-- DNT-Start -->MB<!-- DNT-End -->]</entry>
+              <entry>Default 10 [MB]</entry>
 
-              <entry>Upper limit of a <!-- DNT-Start -->CSV<!-- DNT-End --> line read in <!-- DNT-Start -->MB<!-- DNT-End -->.</entry>
+              <entry>Upper limit of a CSV line read in MB.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>compressInternalSpills</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>compressInternalSpills</emphasis></entry>
 
               <entry>Default true</entry>
 
@@ -528,23 +528,23 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>hdCompressorType</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>hdCompressorType</emphasis></entry>
 
-              <entry>Default '<!-- DNT-Start -->FLZ<!-- DNT-End -->'</entry>
+              <entry>Default 'FLZ'</entry>
 
               <entry>Distribute compressor to use.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>hdCompressorOptions</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>hdCompressorOptions</emphasis></entry>
 
               <entry>Default ''</entry>
 
-              <entry>Distribute compressor options (e.g., <!-- DNT-Start -->AES<!-- DNT-End --> key)</entry>
+              <entry>Distribute compressor options (e.g., AES key)</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>splitterSpill</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>splitterSpill</emphasis></entry>
 
               <entry>Default -1</entry>
 
@@ -554,16 +554,16 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>loopMaxEmpty</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>loopMaxEmpty</emphasis></entry>
 
               <entry>Default 1000</entry>
 
-              <entry>Max # of iterations that <!-- DNT-Start -->LOOP<!-- DNT-End --> can cycle through without
+              <entry>Max # of iterations that LOOP can cycle through without
               results before reporting an error</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>smallSortThreshold</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>smallSortThreshold</emphasis></entry>
 
               <entry>Default 0 (disabled)</entry>
 
@@ -572,16 +572,16 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>sort_max_deviance</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>sort_max_deviance</emphasis></entry>
 
-              <entry>Default 10 [<!-- DNT-Start -->MB<!-- DNT-End -->]</entry>
+              <entry>Default 10 [MB]</entry>
 
               <entry>Max (byte) variance allowed during sort
               partitioning</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>joinHelperThreads</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>joinHelperThreads</emphasis></entry>
 
               <entry>Default = same as number of cores</entry>
 
@@ -590,7 +590,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>bindCores</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>bindCores</emphasis></entry>
 
               <entry>Default = 0</entry>
 
@@ -599,16 +599,16 @@
               for coresPerQuery in Roxie configuration. <indexterm>
                   <primary>Roxie processor affinity</primary>
                 </indexterm><indexterm>
-                  <primary>Roxie <!-- DNT-Start -->CPU<!-- DNT-End --> pinning</primary>
+                  <primary>Roxie CPU pinning</primary>
                 </indexterm><indexterm>
-                  <primary><!-- DNT-Start -->CPU<!-- DNT-End --> pinning</primary>
+                  <primary>CPU pinning</primary>
                 </indexterm><indexterm>
                   <primary>processor affinity</primary>
                 </indexterm></entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>translateDFSlayouts</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>translateDFSlayouts</emphasis></entry>
 
               <entry>Default = 0</entry>
 
@@ -626,7 +626,7 @@
 
     <para>Logical graphs<indexterm>
         <primary>Logical graphs</primary>
-      </indexterm> are stored in the workunit and viewed in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. They
+      </indexterm> are stored in the workunit and viewed in ECL Watch. They
     include information about which attribute/line number/column the symbols
     are defined in. Exported attributes are represented by
     &lt;module&gt;.&lt;attribute&gt; in the header of the activity.
@@ -643,7 +643,7 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis>generateLogicalGraph</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>generateLogicalGraph</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -652,7 +652,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>generateLogicalGraphOnly</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>generateLogicalGraphOnly</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -661,23 +661,23 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>logicalGraphExpandPersist</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>logicalGraphExpandPersist</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, generates expands <!-- DNT-Start -->PERSISTed<!-- DNT-End --> attributes.</entry>
+              <entry>If true, generates expands PERSISTed attributes.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>logicalGraphExpandStored</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>logicalGraphExpandStored</emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, generates expands <!-- DNT-Start -->STORED<!-- DNT-End --> attributes.</entry>
+              <entry>If true, generates expands STORED attributes.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>logicalGraphIncludeName</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>logicalGraphIncludeName</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -686,7 +686,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>logicalGraphIncludeModule</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>logicalGraphIncludeModule</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -695,20 +695,20 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>logicalGraphDisplayJavadoc</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>logicalGraphDisplayJavadoc</emphasis></entry>
 
               <entry>Default: true</entry>
 
               <entry>If true, generates the Javadoc-style comments embedded in
-              the <!-- DNT-Start -->ECL<!-- DNT-End --> in place of the standard text that would be generated
+              the ECL in place of the standard text that would be generated
               (see http://java.sun.com/j2se/javadoc/writingdoccomments/).
-              Javadoc-style comments on <!-- DNT-Start -->RECORD<!-- DNT-End --> structures or scalar attributes
+              Javadoc-style comments on RECORD structures or scalar attributes
               will not generate, as they have no graph Activity box directly
               associated.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>logicalGraphDisplayJavadocParameters</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>logicalGraphDisplayJavadocParameters</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -717,7 +717,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>filteredReadSpillThreshold</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>filteredReadSpillThreshold</emphasis></entry>
 
               <entry>Default: 2</entry>
 
@@ -726,7 +726,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>foldConstantCast</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>foldConstantCast</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -734,7 +734,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>foldFilter</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>foldFilter</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -742,23 +742,23 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>foldAssign</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>foldAssign</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, <!-- DNT-Start -->TRANSFORMs<!-- DNT-End --> are constant folded.</entry>
+              <entry>If true, TRANSFORMs are constant folded.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>foldSQL</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>foldSQL</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, <!-- DNT-Start -->SQL<!-- DNT-End --> is constant folded.</entry>
+              <entry>If true, SQL is constant folded.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeDiskRead</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeDiskRead</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -767,24 +767,24 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeSQL</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeSQL</emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, optimize <!-- DNT-Start -->SQL<!-- DNT-End -->.</entry>
+              <entry>If true, optimize SQL.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeThorCounts</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeThorCounts</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, convert <!-- DNT-Start -->COUNT<!-- DNT-End -->(diskfile) into optimized
+              <entry>If true, convert COUNT(diskfile) into optimized
               version.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>peephole</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>peephole</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -792,16 +792,16 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>spotCSE</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>spotCSE</emphasis></entry>
 
               <entry>Default: true</entry>
 
               <entry>If true, look for common sub-expressions in
-              <!-- DNT-Start -->TRANSFORMs<!-- DNT-End -->/filters.</entry>
+              TRANSFORMs/filters.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>noteRecordSizeInGraph</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>noteRecordSizeInGraph</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -809,7 +809,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>showActivitySizeInGraph</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>showActivitySizeInGraph</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -817,7 +817,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>showMetaInGraph</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>showMetaInGraph</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -825,7 +825,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>showRecordCountInGraph</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>showRecordCountInGraph</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -853,34 +853,34 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis>spotTopN</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>spotTopN</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, convert <!-- DNT-Start -->CHOOSEN<!-- DNT-End -->(<!-- DNT-Start -->SORT<!-- DNT-End -->()) into a topN
+              <entry>If true, convert CHOOSEN(SORT()) into a topN
               activity.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>spotLocalMerge</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>spotLocalMerge</emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, if local <!-- DNT-Start -->JOIN<!-- DNT-End --> and both sides are sorted,
+              <entry>If true, if local JOIN and both sides are sorted,
               generate a light-weight merge.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>countIndex</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>countIndex</emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, optimize <!-- DNT-Start -->COUNT<!-- DNT-End -->(index) into optimized version
+              <entry>If true, optimize COUNT(index) into optimized version
               (also requires optimizeThorCounts).</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>allowThroughSpill</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>allowThroughSpill</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -888,16 +888,16 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeBoolReturn</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeBoolReturn</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, improve code when returning <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> from a
+              <entry>If true, improve code when returning BOOLEAN from a
               function.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeSubString</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeSubString</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -906,15 +906,15 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>thorKeys</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>thorKeys</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, allow <!-- DNT-Start -->INDEX<!-- DNT-End --> operations in Thor.</entry>
+              <entry>If true, allow INDEX operations in Thor.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>regexVersion</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>regexVersion</emphasis></entry>
 
               <entry>Default: 0</entry>
 
@@ -924,7 +924,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>compileOptions</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>compileOptions</emphasis></entry>
 
               <entry>Default: none</entry>
 
@@ -934,7 +934,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>linkOptions</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>linkOptions</emphasis></entry>
 
               <entry>Default: none</entry>
 
@@ -942,7 +942,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeProjects</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeProjects</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -951,7 +951,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>notifyOptimizedProjects</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>notifyOptimizedProjects</emphasis></entry>
 
               <entry>Default: 0</entry>
 
@@ -960,19 +960,19 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeProjectsPreservePersists</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeProjectsPreservePersists</emphasis></entry>
 
               <entry>Default: false</entry>
 
               <entry>If true, disables automatic field projection/distribution
-              optimization around reading <!-- DNT-Start -->PERSISTed<!-- DNT-End --> files. If a <!-- DNT-Start -->PERSISTed<!-- DNT-End --> file
+              optimization around reading PERSISTed files. If a PERSISTed file
               is read on a different size cluster than it was created on,
               optimizing the projected fields can mean that the
               distribution/sort order cannot be recreated.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>aggressiveOptimizeProjects</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>aggressiveOptimizeProjects</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -983,7 +983,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>percolateConstants</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>percolateConstants</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -1008,7 +1008,7 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis>clusterSize</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>clusterSize</emphasis></entry>
 
               <entry>Default: none</entry>
 
@@ -1017,16 +1017,16 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>debugNlp</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>debugNlp</emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, output debug information about the <!-- DNT-Start -->NLP<!-- DNT-End -->
+              <entry>If true, output debug information about the NLP
               processing to the .cpp file.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>resourceMaxMemory</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>resourceMaxMemory</emphasis></entry>
 
               <entry>Default: 400M</entry>
 
@@ -1034,7 +1034,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>resourceMaxSockets</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>resourceMaxSockets</emphasis></entry>
 
               <entry>Default: 2000</entry>
 
@@ -1042,7 +1042,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>resourceMaxActivities</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>resourceMaxActivities</emphasis></entry>
 
               <entry>Default: 200</entry>
 
@@ -1051,7 +1051,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>unlimitedResources</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>unlimitedResources</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -1060,28 +1060,28 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>traceRowXML</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>traceRowXML</emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, turns on tracing in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch graphs. This
+              <entry>If true, turns on tracing in ECL Watch graphs. This
               should only be used with small datasets for debugging
               purposes.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>_Probe</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>_Probe</emphasis></entry>
 
               <entry>Default: false</entry>
 
               <entry>If true, display all result rows from intermediate result
-              sets in the graph in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch when used in conjunction with the
+              sets in the graph in ECL Watch when used in conjunction with the
               traceRowXML option. This should only be used with small datasets
               for debugging purposes.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>debugQuery</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>debugQuery</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -1089,7 +1089,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeLevel</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeLevel</emphasis></entry>
 
               <entry>Default: 3 for roxie, else 0</entry>
 
@@ -1098,40 +1098,40 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>checkAsserts</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>checkAsserts</emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, enables <!-- DNT-Start -->ASSERT<!-- DNT-End --> checking.</entry>
+              <entry>If true, enables ASSERT checking.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>soapTraceLevel</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>soapTraceLevel</emphasis></entry>
 
               <entry>Default: 1</entry>
 
-              <entry>The level of detail in reporting <!-- DNT-Start -->SOAPCALL<!-- DNT-End --> or <!-- DNT-Start -->HTTPCALL<!-- DNT-End -->
+              <entry>The level of detail in reporting SOAPCALL or HTTPCALL
               information (set to 0 for none, 1 for normal, 2 - 8 for more
               detail)</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>traceEnabled</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>traceEnabled</emphasis></entry>
 
-              <entry>Default: <!-- DNT-Start -->FALSE<!-- DNT-End --></entry>
+              <entry>Default: FALSE</entry>
 
-              <entry>Enables tracing to log files when <!-- DNT-Start -->TRACE<!-- DNT-End --> actions are
-              present. See <link linkend="TRACE"><!-- DNT-Start -->TRACE<!-- DNT-End --></link>.</entry>
+              <entry>Enables tracing to log files when TRACE actions are
+              present. See <link linkend="TRACE">TRACE</link>.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>traceLimit</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>traceLimit</emphasis></entry>
 
               <entry>Default: 10</entry>
 
-              <entry>Overrides the the default <!-- DNT-Start -->KEEP<!-- DNT-End --> setting for a <!-- DNT-Start -->TRACE<!-- DNT-End -->
-              statement to indicate how many <!-- DNT-Start -->TRACE<!-- DNT-End --> statement to write to log
-              file. See <link linkend="TRACE"><!-- DNT-Start -->TRACE<!-- DNT-End --></link>.</entry>
+              <entry>Overrides the the default KEEP setting for a TRACE
+              statement to indicate how many TRACE statement to write to log
+              file. See <link linkend="TRACE">TRACE</link>.</entry>
             </row>
           </tbody>
         </tgroup>
@@ -1142,7 +1142,7 @@
     generation use:</emphasis></para>
 
     <para>These <emphasis>options</emphasis> should be left alone unless you
-    <!-- DNT-Start -->REALLY<!-- DNT-End --> know what you are doing. Typically they are used internally by our
+    REALLY know what you are doing. Typically they are used internally by our
     developers to enable/disable features that are still in development.
     Occasionally the technical support staff will suggest that you change one
     of these settings to work around a problem that you encounter, but
@@ -1158,7 +1158,7 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis>filteredReadSpillThreshold</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>filteredReadSpillThreshold</emphasis></entry>
 
               <entry>Default: 2</entry>
 
@@ -1167,7 +1167,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>foldConstantCast </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>foldConstantCast </emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -1175,7 +1175,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>foldFilter </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>foldFilter </emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -1183,23 +1183,23 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>foldAssign </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>foldAssign </emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, <!-- DNT-Start -->TRANSFORMs<!-- DNT-End --> are constant folded.</entry>
+              <entry>If true, TRANSFORMs are constant folded.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>foldSQL </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>foldSQL </emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, <!-- DNT-Start -->SQL<!-- DNT-End --> is constant folded.</entry>
+              <entry>If true, SQL is constant folded.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeDiskRead </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeDiskRead </emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -1208,24 +1208,24 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeSQL </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeSQL </emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, optimize <!-- DNT-Start -->SQL<!-- DNT-End -->.</entry>
+              <entry>If true, optimize SQL.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeThorCounts </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeThorCounts </emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, convert <!-- DNT-Start -->COUNT<!-- DNT-End -->(diskfile) into optimized
+              <entry>If true, convert COUNT(diskfile) into optimized
               version.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>peephole </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>peephole </emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -1233,43 +1233,43 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>spotCSE </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>spotCSE </emphasis></entry>
 
               <entry>Default: true</entry>
 
               <entry>If true, look for common sub-expressions in
-              <!-- DNT-Start -->TRANSFORMs<!-- DNT-End -->/filters.</entry>
+              TRANSFORMs/filters.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>spotTopN </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>spotTopN </emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, convert <!-- DNT-Start -->CHOOSEN<!-- DNT-End -->(<!-- DNT-Start -->SORT<!-- DNT-End -->()) into a topN
+              <entry>If true, convert CHOOSEN(SORT()) into a topN
               activity.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>spotLocalMerge </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>spotLocalMerge </emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, if local <!-- DNT-Start -->JOIN<!-- DNT-End --> and both sides are sorted,
+              <entry>If true, if local JOIN and both sides are sorted,
               generate a light-weight merge.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>countIndex </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>countIndex </emphasis></entry>
 
               <entry>Default: false</entry>
 
-              <entry>If true, optimize <!-- DNT-Start -->COUNT<!-- DNT-End -->(index) into optimized version
+              <entry>If true, optimize COUNT(index) into optimized version
               (also requires optimizeThorCounts).</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>allowThroughSpill </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>allowThroughSpill </emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -1277,16 +1277,16 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeBoolReturn </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeBoolReturn </emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, improve code when returning <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> from a
+              <entry>If true, improve code when returning BOOLEAN from a
               function.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeSubString </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeSubString </emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -1295,15 +1295,15 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>thorKeys </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>thorKeys </emphasis></entry>
 
               <entry>Default: true</entry>
 
-              <entry>If true, allow <!-- DNT-Start -->INDEX<!-- DNT-End --> operations in thor.</entry>
+              <entry>If true, allow INDEX operations in thor.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>regexVersion </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>regexVersion </emphasis></entry>
 
               <entry>Default: 0</entry>
 
@@ -1313,7 +1313,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>compileOptions </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>compileOptions </emphasis></entry>
 
               <entry>Default: none</entry>
 
@@ -1323,7 +1323,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>linkOptions </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>linkOptions </emphasis></entry>
 
               <entry>Default: none</entry>
 
@@ -1331,7 +1331,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeProjects </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeProjects </emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -1340,7 +1340,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>notifyOptimizedProjects </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>notifyOptimizedProjects </emphasis></entry>
 
               <entry>Default: 0</entry>
 
@@ -1349,20 +1349,20 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>optimizeProjectsPreservePersists
-              </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>optimizeProjectsPreservePersists
+              </emphasis></entry>
 
               <entry>Default: false</entry>
 
               <entry>If true, disables automatic field projection/distribution
-              optimization around reading <!-- DNT-Start -->PERSISTed<!-- DNT-End --> files. If a <!-- DNT-Start -->PERSISTed<!-- DNT-End --> file
+              optimization around reading PERSISTed files. If a PERSISTed file
               is read on a different size cluster than it was created on,
               optimizing the projected fields can mean that the
               distribution/sort order cannot be recreated.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>aggressiveOptimizeProjects </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>aggressiveOptimizeProjects </emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -1373,7 +1373,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>percolateConstants </emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>percolateConstants </emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -1382,7 +1382,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>exportDependencies</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>exportDependencies</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -1391,7 +1391,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>maxCompileThreads</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>maxCompileThreads</emphasis></entry>
 
               <entry>Default 4 for eclccserver and 1 for eclcc</entry>
 
@@ -1399,7 +1399,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>reportCppWarnings</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>reportCppWarnings</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -1407,7 +1407,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>saveCppTempFiles</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>saveCppTempFiles</emphasis></entry>
 
               <entry>Default: false</entry>
 
@@ -1415,7 +1415,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>spanMultipleCpp</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>spanMultipleCpp</emphasis></entry>
 
               <entry>Default: true</entry>
 
@@ -1423,7 +1423,7 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>activitiesPerCpp</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>activitiesPerCpp</emphasis></entry>
 
               <entry>Default 500 for Linux or 800 for Windows</entry>
 
@@ -1432,12 +1432,12 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>obfuscateOutput</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>obfuscateOutput</emphasis></entry>
 
               <entry>Default false</entry>
 
               <entry>If true, details are removed from the generated workunit,
-              including <!-- DNT-Start -->ECL<!-- DNT-End --> code, estimates of record size, and number of
+              including ECL code, estimates of record size, and number of
               records.</entry>
             </row>
           </tbody>
@@ -1446,7 +1446,7 @@
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>  #OPTION('traceRowXml', TRUE);
+    <programlisting>  #OPTION('traceRowXml', TRUE);
   #OPTION('_Probe', TRUE);
   
   my_rec := RECORD
@@ -1497,6 +1497,6 @@
        namesTable(age in ages, forename != badForename);
   
   OUTPUT(filtered([10,20,33], ''));
-</programlisting><!-- DNT-End -->
+</programlisting>
   </sect2>
 </sect1>

@@ -2,59 +2,59 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Attribute_Visibility">
-  <!-- DNT-Start --><title>Definition Visibility<indexterm>
+  <title>Definition Visibility<indexterm>
       <primary>Definition Visibility</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <para><!-- DNT-Start -->ECL<!-- DNT-End --> code, definitions, are stored in .<!-- DNT-Start -->ECL<!-- DNT-End --> files <indexterm>
-      <primary>.<!-- DNT-Start -->ECL<!-- DNT-End --> files</primary>
+  <para>ECL code, definitions, are stored in .ECL files <indexterm>
+      <primary>.ECL files</primary>
     </indexterm>in your code repository, which are organized into modules
-  (directories or folders on disk). Each .<!-- DNT-Start -->ECL<!-- DNT-End --> file may only contain a single
-  <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> definition (see below) along with any supporting local
+  (directories or folders on disk). Each .ECL file may only contain a single
+  EXPORT or SHARED definition (see below) along with any supporting local
   definitions required to fully define the definition's result. The name of
-  the file and the name of its <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> definition must exactly
+  the file and the name of its EXPORT or SHARED definition must exactly
   match.</para>
 
   <para>Within a module (directory or folder on disk), you may have as many
-  <!-- DNT-Start -->EXPORT<!-- DNT-End --> and/or <!-- DNT-Start -->SHARED<!-- DNT-End --> definitions as needed. An <!-- DNT-Start -->IMPORT<!-- DNT-End --> statement (see the
-  <emphasis role="bold"><!-- DNT-Start -->IMPORT<!-- DNT-End --> </emphasis>keyword) identifies any other
+  EXPORT and/or SHARED definitions as needed. An IMPORT statement (see the
+  <emphasis role="bold">IMPORT </emphasis>keyword) identifies any other
   modules whose visible definitions will be available for use in the current
   definition.</para>
 
   <para>The following fundamental definition visibility scopes are available
-  in <!-- DNT-Start -->ECL<!-- DNT-End -->: <emphasis role="bold">"Global," <!-- DNT-Start -->Module<!-- DNT-End --></emphasis>, and <emphasis
-  role="bold"><!-- DNT-Start -->Local<!-- DNT-End --></emphasis>.</para>
+  in ECL: <emphasis role="bold">"Global," Module</emphasis>, and <emphasis
+  role="bold">Local</emphasis>.</para>
 
   <sect2 id="Global_attribute_visibility">
-    <!-- DNT-Start --><title>"Global"</title><!-- DNT-End -->
+    <title>"Global"</title>
 
     <para>Definitions defined as <emphasis
-    role="bold"><!-- DNT-Start -->EXPORT<!-- DNT-End --></emphasis><indexterm>
-        <primary><!-- DNT-Start -->EXPORT<!-- DNT-End --></primary>
-      </indexterm> (see the <emphasis role="bold"><!-- DNT-Start -->EXPORT<!-- DNT-End --></emphasis> keyword)
+    role="bold">EXPORT</emphasis><indexterm>
+        <primary>EXPORT</primary>
+      </indexterm> (see the <emphasis role="bold">EXPORT</emphasis> keyword)
     are available throughout the module in which they are defined, and
-    throughout any other module that <!-- DNT-Start -->IMPORTs<!-- DNT-End --> that module (see the <emphasis
-    role="bold"><!-- DNT-Start -->IMPORT<!-- DNT-End --></emphasis> keyword).</para>
+    throughout any other module that IMPORTs that module (see the <emphasis
+    role="bold">IMPORT</emphasis> keyword).</para>
 
-    <!-- DNT-Start --><programlisting>//inside the Definition1.ecl file (in AnotherModule folder) you have:
+    <programlisting>//inside the Definition1.ecl file (in AnotherModule folder) you have:
 EXPORT Definition1 := 5;  
    //EXPORT makes Definition1 available to other modules and
-   //also available throughout its own module</programlisting><!-- DNT-End -->
+   //also available throughout its own module</programlisting>
   </sect2>
 
   <sect2 id="Module">
-    <!-- DNT-Start --><title>Module</title><!-- DNT-End -->
+    <title>Module</title>
 
     <para>The scope of the definitions defined as <emphasis
-    role="bold"><!-- DNT-Start -->SHARED<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->SHARED<!-- DNT-End --></primary>
-      </indexterm></emphasis> (see the <emphasis role="bold"><!-- DNT-Start -->SHARED<!-- DNT-End --></emphasis>
+    role="bold">SHARED<indexterm>
+        <primary>SHARED</primary>
+      </indexterm></emphasis> (see the <emphasis role="bold">SHARED</emphasis>
     keyword) is limited to that one module, and are available throughout the
     module (unlike local definitions). This allows you to keep private any
     definitions that are only needed to implement internal functionality.
-    <!-- DNT-Start -->SHARED<!-- DNT-End --> definitions are used to support <!-- DNT-Start -->EXPORT<!-- DNT-End --> definitions.</para>
+    SHARED definitions are used to support EXPORT definitions.</para>
 
-    <!-- DNT-Start --><programlisting>//inside the Definition2.ecl file you have:
+    <programlisting>//inside the Definition2.ecl file you have:
 IMPORT AnotherModule;
    //makes definitions from AnotherModule available to this code, as needed
 
@@ -68,23 +68,23 @@ IMPORT $;
 
 EXPORT Definition3 := $.Definition2 + 5;
   //make Definition3 available to other modules and
-  //also available throughout its own module</programlisting><!-- DNT-End -->
+  //also available throughout its own module</programlisting>
   </sect2>
 
   <sect2 id="Local">
-    <!-- DNT-Start --><title>Local</title><!-- DNT-End -->
+    <title>Local</title>
 
-    <para>A definition without either the <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> keywords is
-    available only to subsequent definitions, until the end of the next <!-- DNT-Start -->EXPORT<!-- DNT-End -->
-    or <!-- DNT-Start -->SHARED<!-- DNT-End --> definition. This makes them private definitions used only within
-    the scope of that one <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> definition, which allows you to
+    <para>A definition without either the EXPORT or SHARED keywords is
+    available only to subsequent definitions, until the end of the next EXPORT
+    or SHARED definition. This makes them private definitions used only within
+    the scope of that one EXPORT or SHARED definition, which allows you to
     keep private any definitions that are only needed to implement internal
-    functionality. <!-- DNT-Start -->Local<!-- DNT-End --> definitions definitions are used to support the
-    <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> definition in whose file they reside. <!-- DNT-Start -->Local<!-- DNT-End --> definitions
+    functionality. Local definitions definitions are used to support the
+    EXPORT or SHARED definition in whose file they reside. Local definitions
     are referenced by their definition name alone; no qualification is
     needed.</para>
 
-    <!-- DNT-Start --><programlisting>//then inside the Definition4.ecl file (in the same folder as Definition2) you have:
+    <programlisting>//then inside the Definition4.ecl file (in the same folder as Definition2) you have:
 IMPORT $;  
    //makes definitions from the current module available to this code, as needed
 
@@ -99,16 +99,16 @@ LocalDef2 := Definition4 + LocalDef;
   //and any local definitions following the EXPORT
   //or SHARED definition in the file are meaningless 
   //since they can never be used by anything
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->LOCAL<!-- DNT-End --></emphasis><indexterm>
-        <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --></primary>
+    <para>The <emphasis role="bold">LOCAL</emphasis><indexterm>
+        <primary>LOCAL</primary>
       </indexterm> keyword is valid for use within any nested structure, but
-    most useful within a <!-- DNT-Start -->FUNCTIONMACRO<!-- DNT-End --> structure to clearly identify that the
+    most useful within a FUNCTIONMACRO structure to clearly identify that the
     scope of a definition is limited to the code generated within the
-    <!-- DNT-Start -->FUNCTIONMACRO<!-- DNT-End -->.</para>
+    FUNCTIONMACRO.</para>
 
-    <!-- DNT-Start --><programlisting>AddOne(num) := FUNCTIONMACRO
+    <programlisting>AddOne(num) := FUNCTIONMACRO
   LOCAL numPlus := num + 1;
   RETURN numPlus;
 ENDMACRO;
@@ -116,11 +116,11 @@ ENDMACRO;
 numPlus := 'this is a syntax error without LOCAL in the FUNCTIONMACRO';
 numPlus;
 AddOne(5);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="IMPORT"><!-- DNT-Start -->IMPORT<!-- DNT-End --></link>, <link
-    linkend="EXPORT"><!-- DNT-Start -->EXPORT<!-- DNT-End --></link>, <link linkend="SHARED"><!-- DNT-Start -->SHARED<!-- DNT-End --></link>,
-    <link linkend="MODULE_Structure"><!-- DNT-Start -->MODULE<!-- DNT-End --></link>, <link
-    linkend="FUNCTIONMACRO_Structure"><!-- DNT-Start -->FUNCTIONMACRO<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
+    linkend="EXPORT">EXPORT</link>, <link linkend="SHARED">SHARED</link>,
+    <link linkend="MODULE_Structure">MODULE</link>, <link
+    linkend="FUNCTIONMACRO_Structure">FUNCTIONMACRO</link></para>
   </sect2>
 </sect1>

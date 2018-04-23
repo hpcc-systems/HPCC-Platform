@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Logical_Operators">
-  <!-- DNT-Start --><title>Logical Operators</title><!-- DNT-End -->
+  <title>Logical Operators</title>
 
-  <!-- DNT-Start --><para><emphasis>The following </emphasis>logical operators<indexterm>
+  <para><emphasis>The following </emphasis>logical operators<indexterm>
       <primary>logical operators</primary>
     </indexterm> are supported, listed here in their evaluation
-  precedence:</para><!-- DNT-End -->
+  precedence:</para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup align="left" cols="2">
@@ -17,34 +17,34 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start -->NOT<!-- DNT-End --></entry>
+          <entry>NOT</entry>
 
-          <entry>Boolean <!-- DNT-Start -->NOT<!-- DNT-End --><indexterm>
-              <primary>Boolean <!-- DNT-Start -->NOT<!-- DNT-End --></primary>
+          <entry>Boolean NOT<indexterm>
+              <primary>Boolean NOT</primary>
             </indexterm> operation</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->~<!-- DNT-End --></entry>
+          <entry>~</entry>
 
-          <entry>Boolean <!-- DNT-Start -->NOT<!-- DNT-End --><indexterm>
-              <primary>Boolean <!-- DNT-Start -->NOT<!-- DNT-End --></primary>
+          <entry>Boolean NOT<indexterm>
+              <primary>Boolean NOT</primary>
             </indexterm> operation</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->AND<!-- DNT-End --></entry>
+          <entry>AND</entry>
 
-          <entry>Boolean <!-- DNT-Start -->AND<!-- DNT-End --><indexterm>
-              <primary>Boolean <!-- DNT-Start -->AND<!-- DNT-End --></primary>
+          <entry>Boolean AND<indexterm>
+              <primary>Boolean AND</primary>
             </indexterm> operation</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->OR<!-- DNT-End --></entry>
+          <entry>OR</entry>
 
-          <entry>Boolean <!-- DNT-Start -->OR<!-- DNT-End --><indexterm>
-              <primary>Boolean <!-- DNT-Start -->OR<!-- DNT-End --></primary>
+          <entry>Boolean OR<indexterm>
+              <primary>Boolean OR</primary>
             </indexterm> operation</entry>
         </row>
       </tbody>
@@ -54,43 +54,43 @@
   <para></para>
 
   <sect2 id="Logical_Expression_Grouping">
-    <!-- DNT-Start --><title>Logical Expression Grouping</title><!-- DNT-End -->
+    <title>Logical Expression Grouping</title>
 
-    <para>When a complex logical expression has multiple <!-- DNT-Start -->OR<!-- DNT-End --> conditions, you
-    should group the <!-- DNT-Start -->OR<!-- DNT-End --> conditions and order them from least complex to most
+    <para>When a complex logical expression has multiple OR conditions, you
+    should group the OR conditions and order them from least complex to most
     complex to result in the most efficient processing. </para>
 
     <para>If the probability of occurrence is known, you should order them
     from the most likely to occur to the least likely to occur, because once
-    any part of a compound <!-- DNT-Start -->OR<!-- DNT-End --> condition evaluates to <!-- DNT-Start -->TRUE<!-- DNT-End -->, the remainder of
+    any part of a compound OR condition evaluates to TRUE, the remainder of
     the expression can be bypassed. However, this is not guaranteed. This is
-    also true of the order of <!-- DNT-Start -->MAP<!-- DNT-End --> function conditions.</para>
+    also true of the order of MAP function conditions.</para>
 
-    <para>Whenever <!-- DNT-Start -->AND<!-- DNT-End --> and <!-- DNT-Start -->OR<!-- DNT-End --> logical operations are mixed in the same
+    <para>Whenever AND and OR logical operations are mixed in the same
     expression, you should use parentheses to group within the expression to
     ensure correct evaluation and to clarify the intent of the expression. For
     example consider the following:</para>
 
-    <!-- DNT-Start --><programlisting>isCurrentRevolv := trades.trd_type = 'R' AND
+    <programlisting>isCurrentRevolv := trades.trd_type = 'R' AND
                    trades.trd_rate = '0' OR
-                   trades.trd_rate = '1';</programlisting><!-- DNT-End -->
+                   trades.trd_rate = '1';</programlisting>
 
     <para>does not produce the intended result. Use of parentheses ensures
     correct evaluation, as shown below:</para>
 
-    <!-- DNT-Start --><programlisting>isCurrentRevolv := trades.trd_type = 'R' AND
-          (trades.trd_rate = '0' OR trades.trd_rate = '1');</programlisting><!-- DNT-End -->
+    <programlisting>isCurrentRevolv := trades.trd_type = 'R' AND
+          (trades.trd_rate = '0' OR trades.trd_rate = '1');</programlisting>
   </sect2>
 
   <sect2 id="An_XOR_Operator">
-    <!-- DNT-Start --><title>An XOR Operator<indexterm>
+    <title>An XOR Operator<indexterm>
         <primary>XOR Operator</primary>
-      </indexterm></title><!-- DNT-End -->
+      </indexterm></title>
 
-    <para>The following function can be used to perform an <!-- DNT-Start -->XOR<!-- DNT-End --> operation on 2
+    <para>The following function can be used to perform an XOR operation on 2
     Boolean values:</para>
 
-    <!-- DNT-Start --><programlisting>BOOLEAN XOR(BOOLEAN cond1, BOOLEAN cond2) :=
-          (cond1 OR cond2) AND NOT (cond1 AND cond2);</programlisting><!-- DNT-End -->
+    <programlisting>BOOLEAN XOR(BOOLEAN cond1, BOOLEAN cond2) :=
+          (cond1 OR cond2) AND NOT (cond1 AND cond2);</programlisting>
   </sect2>
 </sect1>

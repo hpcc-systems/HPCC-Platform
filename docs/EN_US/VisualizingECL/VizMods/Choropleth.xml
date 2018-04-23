@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="VizBundleGeospatialMethods">
-  <!-- DNT-Start --><title><emphasis>Geospatial Methods</emphasis></title><!-- DNT-End -->
+  <title><emphasis>Geospatial Methods</emphasis></title>
 
   <para>This section covers the Geospatial methods that create geographical
   map visualizations contained in the Choropleth module. These methods project
@@ -11,14 +11,14 @@
   <para></para>
 
   <sect1 id="VizUSStates">
-    <!-- DNT-Start --><title>USStates</title><!-- DNT-End -->
+    <title>USStates</title>
 
-    <para><emphasis role="bold">Visualizer.Choropleth.<!-- DNT-Start -->USStates<!-- DNT-End -->(<indexterm>
-        <primary>Visualizer.Choropleth.<!-- DNT-Start -->USStates<!-- DNT-End --></primary>
+    <para><emphasis role="bold">Visualizer.Choropleth.USStates(<indexterm>
+        <primary>Visualizer.Choropleth.USStates</primary>
       </indexterm><indexterm>
-        <primary>Choropleth.<!-- DNT-Start -->USStates<!-- DNT-End --></primary>
+        <primary>Choropleth.USStates</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->USStates<!-- DNT-End --></primary>
+        <primary>USStates</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -36,46 +36,46 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>id</emphasis></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
-            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outputName</emphasis></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Maps Column Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filteredBy</emphasis></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>properties</emphasis></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -83,12 +83,12 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->USStates<!-- DNT-End --> </emphasis>visualization method
+    <para>The <emphasis role="bold">USStates </emphasis>visualization method
     depicts data on a map of U.S. States.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;
+    <programlisting format="linespecific">IMPORT Visualizer;
   _usStates := DATASET([  {'AL', 4779736}, 
                          {'AK', 710231}, 
                          {'AZ', 6392017}, 
@@ -98,18 +98,18 @@
   data_usStates;
   viz_usstates := Visualizer.Choropleth.USStates('usStates',, 'choro_usStates');
   viz_usstates;
-</programlisting><!-- DNT-End -->
+</programlisting>
   </sect1>
 
   <sect1 id="VizUSCounties">
-    <!-- DNT-Start --><title>USCounties</title><!-- DNT-End -->
+    <title>USCounties</title>
 
-    <para><emphasis role="bold">Visualizer.Choropleth.<!-- DNT-Start -->USCounties<!-- DNT-End -->(<indexterm>
-        <primary>Visualizer.Choropleth.<!-- DNT-Start -->USCounties<!-- DNT-End --></primary>
+    <para><emphasis role="bold">Visualizer.Choropleth.USCounties(<indexterm>
+        <primary>Visualizer.Choropleth.USCounties</primary>
       </indexterm><indexterm>
-        <primary>Choropleth.<!-- DNT-Start -->USCounties<!-- DNT-End --></primary>
+        <primary>Choropleth.USCounties</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->USCounties<!-- DNT-End --></primary>
+        <primary>USCounties</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -127,46 +127,46 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>id</emphasis></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
-            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outputName</emphasis></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Maps Column Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filteredBy</emphasis></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>properties</emphasis></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -174,12 +174,12 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->USCounties<!-- DNT-End --> </emphasis>visualization method
+    <para>The <emphasis role="bold">USCounties </emphasis>visualization method
     depicts data on a map of U.S. counties.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;
+    <programlisting format="linespecific">IMPORT Visualizer;
 
   _usCounties := DATASET([    {1073,29.946185501741},
                                         {1097,0.79566003616637},
@@ -191,18 +191,18 @@
   data_usCounties;
   viz_uscounties := Visualizer.Choropleth.USCounties('usCounties',, 'choro_usCounties');
   viz_uscounties;
-</programlisting><!-- DNT-End -->
+</programlisting>
   </sect1>
 
   <sect1 id="VizEuro">
-    <!-- DNT-Start --><title>Euro</title><!-- DNT-End -->
+    <title>Euro</title>
 
-    <para><emphasis role="bold">Visualizer.Choropleth.<!-- DNT-Start -->Euro<!-- DNT-End -->(<indexterm>
-        <primary>Visualizer.Choropleth.<!-- DNT-Start -->Euro<!-- DNT-End --></primary>
+    <para><emphasis role="bold">Visualizer.Choropleth.Euro(<indexterm>
+        <primary>Visualizer.Choropleth.Euro</primary>
       </indexterm><indexterm>
-        <primary>Choropleth.<!-- DNT-Start -->Euro<!-- DNT-End --></primary>
+        <primary>Choropleth.Euro</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->Euro<!-- DNT-End --></primary>
+        <primary>Euro</primary>
       </indexterm><indexterm>
         <primary>EuroGB</primary>
       </indexterm><indexterm>
@@ -226,52 +226,52 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>id</emphasis></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>region</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>region</emphasis></entry>
 
-            <entry>2 Letter European Code (<!-- DNT-Start -->GB<!-- DNT-End -->, <!-- DNT-Start -->IE<!-- DNT-End -->, etc.)</entry>
+            <entry>2 Letter European Code (GB, IE, etc.)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
-            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outputName</emphasis></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Maps Column Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filteredBy</emphasis></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>properties</emphasis></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -279,16 +279,16 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->Euro<!-- DNT-End --> </emphasis>visualization method
+    <para>The <emphasis role="bold">Euro </emphasis>visualization method
     depicts data on a map of Europe. The <emphasis
     role="bold">EuroIE</emphasis> and <emphasis role="bold">EuroGB</emphasis>
     methods are provided as examples. To create other country-specific
-    methods, merely use the <!-- DNT-Start -->Euro<!-- DNT-End --> method and provide the two-character country
+    methods, merely use the Euro method and provide the two-character country
     code in the _region parameter.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;
+    <programlisting format="linespecific">IMPORT Visualizer;
 _euroIE := DATASET([    {'Carlow', '27431', '27181', '54612'}, 
                                     {'Dublin City', '257303', '270309', '527612'}, 
                                     {'Kilkenny', '47788', '47631', '95419'}, 
@@ -298,6 +298,6 @@ _euroIE := DATASET([    {'Carlow', '27431', '27181', '54612'},
   data_euroIE;
   
   viz_euroIE := Visualizer.Choropleth.EuroIE('euroIE',, 'choro_euroIE', DATASET([{'County', 'region'}, {'Population', 'total'}], Visualizer.KeyValueDef),, DATASET([{'paletteID', 'Greens'}], Visualizer.KeyValueDef));
-  viz_euroIE;</programlisting><!-- DNT-End -->
+  viz_euroIE;</programlisting>
   </sect1>
 </chapter>

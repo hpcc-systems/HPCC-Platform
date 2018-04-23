@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <!-- DNT-Start --><title>ECL Programmers Guide</title><!-- DNT-End -->
+    <title>ECL Programmers Guide</title>
 
     <mediaobject>
       <imageobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
+      <para>HPCC Systems<superscript>Â®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -46,7 +46,7 @@
     <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems<superscript>Â®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -59,7 +59,7 @@
   </bookinfo>
 
   <chapter id="ECL_Programming_Concepts">
-    <!-- DNT-Start --><title>ECL Programming Concepts</title><!-- DNT-End -->
+    <title>ECL Programming Concepts</title>
 
     <xi:include href="ECLProgrammersGuide/PRG_Mods/PrG_Attribute_Creation.xml"
                 xpointer="element(/1)"
@@ -107,7 +107,7 @@
   </chapter>
 
   <chapter id="WorkingWithSuperFiles">
-    <!-- DNT-Start --><title>Working With SuperFiles</title><!-- DNT-End -->
+    <title>Working With SuperFiles</title>
 
     <xi:include href="ECLProgrammersGuide/PRG_Mods/PrG_Superfile_Overview.xml"
                 xpointer="element(/1)"
@@ -127,7 +127,7 @@
   </chapter>
 
   <chapter id="ProgGuide_WorkingWithRoxie">
-    <!-- DNT-Start --><title>Working With Roxie</title><!-- DNT-End -->
+    <title>Working With Roxie</title>
 
     <xi:include href="ECLProgrammersGuide/PRG_Mods/PrG_Roxie_Overview.xml"
                 xpointer="element(/1)"
@@ -159,7 +159,7 @@
   </chapter>
 
   <chapter id="GettingThingsDone">
-    <!-- DNT-Start --><title>Getting Things Done</title><!-- DNT-End -->
+    <title>Getting Things Done</title>
 
     <xi:include href="ECLProgrammersGuide/PRG_Mods/PrG_Cartesian_Product_of_Two_Datasets.xml"
                 xpointer="element(/1)"
@@ -184,7 +184,7 @@
   </chapter>
 
   <chapter id="EmbeddedLanguages_DataStores">
-    <!-- DNT-Start --><title>Embedded Languages and Data stores</title><!-- DNT-End -->
+    <title>Embedded Languages and Data stores</title>
 
     <xi:include href="ECLProgrammersGuide/PRG_Mods/CodeSign.xml"
                 xpointer="element(/1)"

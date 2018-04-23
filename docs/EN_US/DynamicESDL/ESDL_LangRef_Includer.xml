@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <bookinfo>
-    <!-- DNT-Start --><title>ESDL Language Reference</title><!-- DNT-End -->
+    <title>ESDL Language Reference</title>
 
     <mediaobject>
       <imageobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
+      <para>HPCC Systems<superscript>Â®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -48,7 +48,7 @@
                 xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems<superscript>Â®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
@@ -62,40 +62,40 @@
   </bookinfo>
 
   <chapter id="ESDLOverview">
-    <!-- DNT-Start --><title>ESDL Language Overview</title><!-- DNT-End -->
+    <title>ESDL Language Overview</title>
 
-    <para><!-- DNT-Start -->ESDL<!-- DNT-End --> (Enterprise Service Description Language) is a methodology that
+    <para>ESDL (Enterprise Service Description Language) is a methodology that
     helps you develop and manage web-based query interfaces quickly and
     consistently.</para>
 
-    <para>Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> takes an interface-first development approach. It
-    leverages the <!-- DNT-Start -->ESDL<!-- DNT-End --> Language to create a common interface "contract" that
+    <para>Dynamic ESDL takes an interface-first development approach. It
+    leverages the ESDL Language to create a common interface "contract" that
     both Roxie Query and Web interface developers will adhere to. It is
     intended to allow developers to create production web services, with clean
     interfaces that can evolve and grow over time without breaking existing
     applications.</para>
 
-    <para><!-- DNT-Start -->ESDL<!-- DNT-End -->'s built-in versioning support helps ensure compiled and
+    <para>ESDL's built-in versioning support helps ensure compiled and
     deployed applications continue to operate while changes are made to the
     deployed service's interface for new functionality.</para>
 
-    <para><!-- DNT-Start -->ESDL<!-- DNT-End -->'s ability to define and reuse common structures helps maintain
+    <para>ESDL's ability to define and reuse common structures helps maintain
     consistent interfaces across methods.</para>
 
-    <para>The Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> service is built to scale horizontally, and hooks
+    <para>The Dynamic ESDL service is built to scale horizontally, and hooks
     are provided to add custom logging and security to help create fully
     "productionalized" web services.</para>
 
     <para>Once a service is deployed, application developers and end-users can
-    consume the service using <!-- DNT-Start -->REST<!-- DNT-End -->, <!-- DNT-Start -->JSON<!-- DNT-End -->, <!-- DNT-Start -->XML<!-- DNT-End -->, <!-- DNT-Start -->SOAP<!-- DNT-End -->, or form encoded posts.
-    Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> provides quick and easy access to a <!-- DNT-Start -->WSDL<!-- DNT-End -->, live forms, sample
+    consume the service using REST, JSON, XML, SOAP, or form encoded posts.
+    Dynamic ESDL provides quick and easy access to a WSDL, live forms, sample
     requests and responses, and testing interfaces to allow developers to test
     logic changes, data changes, or new features, as well as to interact with
-    the service directly using <!-- DNT-Start -->SOAP<!-- DNT-End -->, <!-- DNT-Start -->XML<!-- DNT-End -->, or <!-- DNT-Start -->JSON<!-- DNT-End -->.</para>
+    the service directly using SOAP, XML, or JSON.</para>
   </chapter>
 
   <chapter id="ESDLStructures" role="nobrk">
-    <!-- DNT-Start --><title>ESDL Structures</title><!-- DNT-End -->
+    <title>ESDL Structures</title>
 
     <para></para>
 
@@ -133,7 +133,7 @@
   </chapter>
 
   <chapter id="ESDLDatatypes">
-    <!-- DNT-Start --><title>ESDL Datatypes</title><!-- DNT-End -->
+    <title>ESDL Datatypes</title>
 
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLbooleanbool.xml"
                 xpointer="element(/1)"
@@ -169,16 +169,16 @@
   </chapter>
 
   <chapter id="ESDLAttributes">
-    <!-- DNT-Start --><title>ESDL Attributes</title><!-- DNT-End -->
+    <title>ESDL Attributes</title>
 
-    <para>You can use <!-- DNT-Start -->ESDL<!-- DNT-End --> attributes to extend and override the default
-    behavior of an <!-- DNT-Start -->ESDL<!-- DNT-End --> definition. For example, adding a max_len(n) to a
+    <para>You can use ESDL attributes to extend and override the default
+    behavior of an ESDL definition. For example, adding a max_len(n) to a
     string defines the string will only need to store a certain number of
     characters.</para>
 
     <para>Many attributes are treated as hints that may have more effect on
     some implementations than others. For example, max_len(n) will affect
-    generated <!-- DNT-Start -->ECL<!-- DNT-End --> code, but is ignored when generating C++.</para>
+    generated ECL code, but is ignored when generating C++.</para>
 
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_len.xml"
                 xpointer="element(/1)"

@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WorkunitMessages">
-  <!-- DNT-Start --><title>WorkunitMessages</title><!-- DNT-End -->
+  <title>WorkunitMessages</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Workunit.WorkunitMessages    <indexterm>
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitMessages    <indexterm>
       <primary>STD.System.Workunit.WorkunitMessages</primary>
     </indexterm>
     <indexterm>
@@ -17,7 +17,7 @@
       <primary>WorkunitMessages</primary>
     </indexterm>
 (</emphasis>
-  <emphasis> wuid </emphasis> <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
+  <emphasis> wuid </emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -27,25 +27,25 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>wuid</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>wuid</emphasis></entry>
 
           <entry>A null-terminated string containing the WorkUnit
           IDentifier.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->WorkunitMessages<!-- DNT-End --> returns a <!-- DNT-Start -->DATASET<!-- DNT-End --> value.</entry>
+          <entry>WorkunitMessages returns a DATASET value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->WorkunitMessages<!-- DNT-End --> </emphasis>function returns
-  a <!-- DNT-Start -->DATASET<!-- DNT-End --> with this format:</para>
+  <para>The <emphasis role="bold">WorkunitMessages </emphasis>function returns
+  a DATASET with this format:</para>
 
-  <!-- DNT-Start --><programlisting>EXPORT WsMessage := RECORD
+  <programlisting>EXPORT WsMessage := RECORD
   UNSIGNED4 severity;
   INTEGER4 code;
   STRING32 location;
@@ -54,12 +54,12 @@
   STRING16 source;
   STRING20 time;
   STRING message{MAXLENGTH(1024)};
-END;</programlisting><!-- DNT-End -->
+END;</programlisting>
 
   <para>Each record in the returned dataset specifies a message in the
   workunit.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitMessages('W20070308-164946'));</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitMessages('W20070308-164946'));</programlisting>
 </sect1>

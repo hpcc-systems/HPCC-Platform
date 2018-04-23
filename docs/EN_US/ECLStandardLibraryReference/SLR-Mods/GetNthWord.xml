@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetNthWord">
-  <!-- DNT-Start --><title>GetNthWord</title><!-- DNT-End -->
+  <title>GetNthWord</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->GetNthWord<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->GetNthWord<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Str.GetNthWord<indexterm>
+      <primary>STD.Str.GetNthWord</primary>
     </indexterm><indexterm>
-      <primary>Str.<!-- DNT-Start -->GetNthWord<!-- DNT-End --></primary>
+      <primary>Str.GetNthWord</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->GetNthWord<!-- DNT-End --></primary>
+      <primary>GetNthWord</primary>
     </indexterm>(</emphasis> <emphasis>source, instance </emphasis><emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->GetNthWord<!-- DNT-End --> <indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->GetNthWord<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Uni.GetNthWord <indexterm>
+      <primary>STD.Uni.GetNthWord</primary>
     </indexterm> <indexterm>
-      <primary>Uni.<!-- DNT-Start -->GetNthWord<!-- DNT-End --></primary>
+      <primary>Uni.GetNthWord</primary>
     </indexterm> (</emphasis> <emphasis>source, instance </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>, locale</emphasis><emphasis role="bold">
   ] )</emphasis></para>
@@ -29,19 +29,19 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source</emphasis></entry>
 
           <entry>A string containing the space-delimited words.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>instance</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>instance</emphasis></entry>
 
           <entry>An integer specifying the word to return.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>locale</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -49,24 +49,24 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->GetNthWord<!-- DNT-End --> returns a string value.</entry>
+          <entry>GetNthWord returns a string value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->GetNthWord<!-- DNT-End --> </emphasis>function returns the
+  <para>The <emphasis role="bold">GetNthWord </emphasis>function returns the
   word in the <emphasis>instance</emphasis> position in the
   <emphasis>source</emphasis>string.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT Std;
+  <programlisting format="linespecific">IMPORT Std;
 
 str1 := 'a word a day keeps the doctor away';
 
 STD.STr.GetNthWord(str1,2);    //returns "word"
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

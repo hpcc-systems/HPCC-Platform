@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DEPRECATED">
-  <!-- DNT-Start --><title>DEPRECATED</title><!-- DNT-End -->
+  <title>DEPRECATED</title>
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
-  </emphasis><emphasis role="bold">: <!-- DNT-Start -->DEPRECATED<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->DEPRECATED<!-- DNT-End --></primary>
+  </emphasis><emphasis role="bold">: DEPRECATED<indexterm>
+      <primary>DEPRECATED</primary>
     </indexterm> [ ( </emphasis><emphasis> message </emphasis><emphasis
   role="bold">) ] <indexterm>
-      <primary><!-- DNT-Start -->DEPRECATED<!-- DNT-End --> workflow service</primary>
+      <primary>DEPRECATED workflow service</primary>
     </indexterm></emphasis>;</para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -20,19 +20,19 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>attribute</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>attribute</emphasis></entry>
 
             <entry>The name of the Attribute.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>The definition of the attribute.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>message</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>message</emphasis></entry>
 
             <entry>Optional. The text to append to the warning if the
             attribute is used.</entry>
@@ -41,18 +41,18 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->DEPRECATED<!-- DNT-End --> </emphasis>service displays a
+  <para>The <emphasis role="bold">DEPRECATED </emphasis>service displays a
   warning when the <emphasis>attribute</emphasis> is used in code that
   instantiates a workunit or during a syntax check. This is meant to be used
   on attribute definitions that have been superseded.</para>
 
-  <para>When used on a structure attribute (<!-- DNT-Start -->RECORD<!-- DNT-End -->, <!-- DNT-Start -->TRANSFORM<!-- DNT-End -->, <!-- DNT-Start -->FUNCTION<!-- DNT-End -->,
-  etc.), this must be placed between the keyword <!-- DNT-Start -->END<!-- DNT-End --> and its terminating
+  <para>When used on a structure attribute (RECORD, TRANSFORM, FUNCTION,
+  etc.), this must be placed between the keyword END and its terminating
   semi-colon.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  OldSort := SORT(Person,Person.per_first_name) : DEPRECATED('Use NewSort instead.');
+  <programlisting>  OldSort := SORT(Person,Person.per_first_name) : DEPRECATED('Use NewSort instead.');
   NewSort := SORT(Person,-Person.per_first_name);
   
   OUTPUT(OldSort); 
@@ -83,5 +83,5 @@
   OUTPUT(PROJECT(ds,Xform1(LEFT))); //produces these warnings:
   // Attribute r1 is marked as deprecated. Use R2 now.
   // Attribute Xform1 is marked as deprecated. Use Xform2 now.
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

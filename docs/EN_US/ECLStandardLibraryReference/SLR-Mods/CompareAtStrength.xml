@@ -2,19 +2,19 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CompareAtStrength">
-  <!-- DNT-Start --><title>CompareAtStrength</title><!-- DNT-End -->
+  <title>CompareAtStrength</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->CompareAtStrength<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->CompareAtStrength<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Uni.CompareAtStrength<indexterm>
+      <primary>STD.Uni.CompareAtStrength</primary>
     </indexterm><indexterm>
-      <primary>Uni.<!-- DNT-Start -->CompareAtStrength<!-- DNT-End --></primary>
+      <primary>Uni.CompareAtStrength</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->CompareAtStrength<!-- DNT-End --></primary>
+      <primary>CompareAtStrength</primary>
     </indexterm>(</emphasis> <emphasis>source1, source2, strength</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleCompareAtStrength<indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleCompareAtStrength</primary>
+  <para><emphasis role="bold">STD.Uni.LocaleCompareAtStrength<indexterm>
+      <primary>STD.Uni.LocaleCompareAtStrength</primary>
     </indexterm><indexterm>
       <primary>Uni.LocaleCompareAtStrength</primary>
     </indexterm><indexterm>
@@ -31,19 +31,19 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source1</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source1</emphasis></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>source2</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source2</emphasis></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>strength</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>strength</emphasis></entry>
 
           <entry>An integer value indicating how to compare. Valid values
           are:</entry>
@@ -81,12 +81,12 @@
           <entry></entry>
 
           <entry>5 differentiates between all strings whose canonically
-          decomposed forms (<!-- DNT-Start -->NFD<!-- DNT-End -->--Normalization Form D) are
+          decomposed forms (NFD--Normalization Form D) are
           non-identical</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>locale</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -94,15 +94,15 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->CompareAtStrength<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value.</entry>
+          <entry>CompareAtStrength returns an INTEGER value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->CompareAtStrength<!-- DNT-End --> </emphasis>functions
+  <para>The <emphasis role="bold">CompareAtStrength </emphasis>functions
   return zero (0) if the <emphasis>source1</emphasis> and
   <emphasis>source2</emphasis> strings contain the same data, ignoring any
   differences in the case of the letters. These functions return negative one
@@ -112,7 +112,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">base := u'caf\u00E9';   // U+00E9 is lowercase e with acute
+  <programlisting format="linespecific">base := u'caf\u00E9';   // U+00E9 is lowercase e with acute
 prim := u'coffee shop'; // 1st difference, different letters
 seco := u'cafe';        // 2nd difference, accents (no acute)
 tert := u'Caf\u00C9';   // 3rd, caps (U+00C9 is u/c E + acute)
@@ -137,5 +137,5 @@ A := STD.Uni.CompareAtStrength(base, seco, 3) != 0;
     
 A := STD.Uni.CompareAtStrength(base, tert, 3) != 0;
  // base and tert differ at strength 3
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

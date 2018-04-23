@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="NOTIFY">
-  <!-- DNT-Start --><title>NOTIFY</title><!-- DNT-End -->
+  <title>NOTIFY</title>
   <informalexample id="SchNOTIFY">
   <para><emphasis role="bold">[</emphasis><emphasis>attributename</emphasis>
   :=<emphasis role="bold"> ] <indexterm>
-      <primary><!-- DNT-Start -->NOTIFY<!-- DNT-End --> function</primary>
-    </indexterm><!-- DNT-Start -->NOTIFY<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->NOTIFY<!-- DNT-End --></primary>
+      <primary>NOTIFY function</primary>
+    </indexterm>NOTIFY<indexterm>
+      <primary>NOTIFY</primary>
     </indexterm>(</emphasis><emphasis> event </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, parm </emphasis><emphasis role="bold">]
   [</emphasis><emphasis>, expression </emphasis><emphasis role="bold">]
@@ -22,27 +22,27 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>attributename</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>attributename</emphasis></entry>
 
             <entry>Optional. The identifier for this action.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>event</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>event</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->EVENT<!-- DNT-End --> function, or a case-insensitive string constant
+            <entry>The EVENT function, or a case-insensitive string constant
             naming the event to generate.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>parm</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>parm</emphasis></entry>
 
             <entry>Optional. A case-insensitive string constant containing the
             event's parameter.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>Optional. A case-insensitive string constant allowing
             simple message passing, to restrict the event to a specific
@@ -52,17 +52,17 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->NOTIFY<!-- DNT-End --> </emphasis>action fires the
-  <emphasis>event</emphasis> so that the <!-- DNT-Start -->WAIT<!-- DNT-End --> function or <!-- DNT-Start -->WHEN<!-- DNT-End --> workflow
+  <para>The <emphasis role="bold">NOTIFY </emphasis>action fires the
+  <emphasis>event</emphasis> so that the WAIT function or WHEN workflow
   service can proceed with operations they are defined to perform.</para>
 
   <para>The <emphasis>expression</emphasis> parameter allows you to define a
-  service in <!-- DNT-Start -->ECL<!-- DNT-End --> that is initiated by an <emphasis>event</emphasis>, and only
+  service in ECL that is initiated by an <emphasis>event</emphasis>, and only
   responds to the workunit that initiated it.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>NOTIFY('testevent', 'foobar');
+  <programlisting>NOTIFY('testevent', 'foobar');
   
 receivedFileEvent(STRING name) := EVENT('ReceivedFile', name);
 NOTIFY(receivedFileEvent('myfile'));
@@ -82,10 +82,10 @@ NOTIFY('MyService',
 '&lt;Event&gt;&lt;returnTo&gt;'+WORKUNIT+'&lt;/returnTo&gt;....&lt;/Event&gt;');
 WAIT('MyServiceComplete');
 OUTPUT('WORKUNIT DONE')
-</programlisting><!-- DNT-End -->
+</programlisting>
 </informalexample>
-  <para>See Also: <link linkend="EVENT"><!-- DNT-Start -->EVENT<!-- DNT-End --></link>, <link
-  linkend="EVENTNAME"><!-- DNT-Start -->EVENTNAME<!-- DNT-End --></link>, <link
-  linkend="EVENTEXTRA"><!-- DNT-Start -->EVENTEXTRA<!-- DNT-End --></link>, <link linkend="CRON"><!-- DNT-Start -->CRON<!-- DNT-End --></link>,
-  <link linkend="WHEN"><!-- DNT-Start -->WHEN<!-- DNT-End --></link>, <link linkend="WAIT"><!-- DNT-Start -->WAIT<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="EVENT">EVENT</link>, <link
+  linkend="EVENTNAME">EVENTNAME</link>, <link
+  linkend="EVENTEXTRA">EVENTEXTRA</link>, <link linkend="CRON">CRON</link>,
+  <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link></para>
 </sect1>

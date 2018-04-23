@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="dbglog">
-  <!-- DNT-Start --><title>dbglog</title><!-- DNT-End -->
+  <title>dbglog</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Log.dbglog<indexterm>
+  <para><emphasis role="bold">STD.System.Log.dbglog<indexterm>
       <primary>STD.System.Log.dbglog</primary>
     </indexterm> <indexterm>
       <primary>System.Log.dbglog</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>dbglog</primary>
     </indexterm>(</emphasis> <emphasis> text </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,27 +23,27 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>text</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>text</emphasis></entry>
 
           <entry>A string containing the text to write.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->dbglog<!-- DNT-End --> does not return a value.</entry>
+          <entry>dbglog does not return a value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->dbglog<!-- DNT-End --> </emphasis>action writes the
+  <para>The <emphasis role="bold">dbglog </emphasis>action writes the
   <emphasis>text</emphasis> string to the eclagent.log file for the
   workunit.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 STD.System.Log.dbglog('Got Here 1');    //write text to log
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

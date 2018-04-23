@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="IMPORT">
-  <!-- DNT-Start --><title>IMPORT</title><!-- DNT-End -->
+  <title>IMPORT</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->IMPORT<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->IMPORT<!-- DNT-End --></primary>
+  <para><emphasis role="bold">IMPORT<indexterm>
+      <primary>IMPORT</primary>
     </indexterm> </emphasis><emphasis>module-selector-list</emphasis>;</para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->IMPORT<!-- DNT-End --> </emphasis><emphasis>folder
-  </emphasis><emphasis role="bold"> <!-- DNT-Start -->AS<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->AS<!-- DNT-End --></primary>
+  <para><emphasis role="bold">IMPORT </emphasis><emphasis>folder
+  </emphasis><emphasis role="bold"> AS<indexterm>
+      <primary>AS</primary>
     </indexterm> </emphasis><emphasis>alias </emphasis><emphasis
   role="bold">;</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->IMPORT<!-- DNT-End --> </emphasis><emphasis>symbol-list
-  </emphasis><emphasis role="bold"> <!-- DNT-Start -->FROM<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->FROM<!-- DNT-End --></primary>
+  <para><emphasis role="bold">IMPORT </emphasis><emphasis>symbol-list
+  </emphasis><emphasis role="bold"> FROM<indexterm>
+      <primary>FROM</primary>
     </indexterm> </emphasis><emphasis>folder </emphasis><emphasis
   role="bold">;</emphasis></para>
 
   <para><emphasis
-  role="bold"><!-- DNT-Start -->IMPORT<!-- DNT-End --></emphasis><emphasis>language</emphasis>;</para>
+  role="bold">IMPORT</emphasis><emphasis>language</emphasis>;</para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -29,7 +29,7 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>module-selector-list</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>module-selector-list</emphasis></entry>
 
           <entry>A comma-delimited list of folder or file names in the
           repository. The dollar sign ($) makes all definitions in the current
@@ -41,15 +41,15 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>folder</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>folder</emphasis></entry>
 
           <entry>A folder or file name in the repository.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">AS<indexterm>
+          <entry><emphasis role="bold">AS<indexterm>
               <primary>IMPORT AS</primary>
-            </indexterm></emphasis><!-- DNT-End --></entry>
+            </indexterm></emphasis></entry>
 
           <entry>Defines a local <emphasis>alias </emphasis>name for the
           <emphasis>folder</emphasis>, typically used to create shorter local
@@ -57,14 +57,14 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>alias</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>alias</emphasis></entry>
 
           <entry>The short name to use instead of the
           <emphasis>folder</emphasis> name.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>symbol-list</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>symbol-list</emphasis></entry>
 
           <entry>A comma-delimited list of definitions from the
           <emphasis>folder</emphasis> to make available without qualification.
@@ -73,35 +73,35 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">FROM<indexterm>
+          <entry><emphasis role="bold">FROM<indexterm>
               <primary>IMPORT FROM</primary>
-            </indexterm></emphasis><!-- DNT-End --></entry>
+            </indexterm></emphasis></entry>
 
           <entry>Specifies the <emphasis>folder</emphasis> name in which the
           <emphasis>symbol-list</emphasis> resides.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>language</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>language</emphasis></entry>
 
           <entry>Specifies the name of an external programming language whose
-          code you wish to embed in your <!-- DNT-Start -->ECL<!-- DNT-End -->. A language support module for
+          code you wish to embed in your ECL. A language support module for
           that language must have been installed in your plugins directory.
           This makes the <emphasis>language</emphasis> available for use by
-          the <!-- DNT-Start -->EMBED<!-- DNT-End --> structure and/or the <!-- DNT-Start -->IMPORT<!-- DNT-End --> function.</entry>
+          the EMBED structure and/or the IMPORT function.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->IMPORT<!-- DNT-End --></emphasis> keyword makes <!-- DNT-Start -->EXPORT<!-- DNT-End -->
-  definitions (and <!-- DNT-Start -->SHARED<!-- DNT-End --> definitions from the same
-  <emphasis>folder</emphasis>) available for use in the current <!-- DNT-Start -->ECL<!-- DNT-End -->
+  <para>The <emphasis role="bold">IMPORT</emphasis> keyword makes EXPORT
+  definitions (and SHARED definitions from the same
+  <emphasis>folder</emphasis>) available for use in the current ECL
   code.</para>
 
   <para><?hard-pagebreak ?>Examples:</para>
 
-  <!-- DNT-Start --><programlisting>IMPORT $;                      //makes all definitions from the same folder available
+  <programlisting>IMPORT $;                      //makes all definitions from the same folder available
 
 IMPORT $, Std;                 //makes the standard library functions available, also
 
@@ -127,10 +127,10 @@ IMPORT * FROM Fred;            //makes everything from Fred available, unqualifi
 IMPORT Dev.Me.Project1;        //makes the Dev/Me/Project1 folder available 
 
 IMPORT Python;                 //makes Python language code embeddable
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="EXPORT"><!-- DNT-Start -->EXPORT<!-- DNT-End --></link>, <link
-  linkend="SHARED"><!-- DNT-Start -->SHARED<!-- DNT-End --></link>, <link linkend="EMBED_Structure"><!-- DNT-Start -->EMBED<!-- DNT-End -->
-  Structure</link>, <link linkend="IMPORT_function"><!-- DNT-Start -->IMPORT<!-- DNT-End -->
+  <para>See Also: <link linkend="EXPORT">EXPORT</link>, <link
+  linkend="SHARED">SHARED</link>, <link linkend="EMBED_Structure">EMBED
+  Structure</link>, <link linkend="IMPORT_function">IMPORT
   function</link></para>
 </sect1>

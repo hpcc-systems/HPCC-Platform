@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SuperFile_Overview" role="nobrk">
-  <!-- DNT-Start --><title>SuperFile Overview</title><!-- DNT-End -->
+  <title>SuperFile Overview</title>
 
   <para>First, let's define some terms:</para>
 
@@ -14,28 +14,28 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">Logical File</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">Logical File</emphasis></entry>
 
             <entry>A single logical entity whose multiple physical parts (one
             on each node of the cluster) are internally managed by the
-            Distributed File Utility (<!-- DNT-Start -->DFU<!-- DNT-End -->).</entry>
+            Distributed File Utility (DFU).</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">Dataset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">Dataset</emphasis></entry>
 
-            <entry>A Logical File declared as a <!-- DNT-Start -->DATASET<!-- DNT-End -->.</entry>
+            <entry>A Logical File declared as a DATASET.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">SuperFile</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">SuperFile</emphasis></entry>
 
             <entry>A managed list of sub-files (Logical Files) treated as a
-            single logical entity. The sub-files do not need <!-- DNT-Start -->DATASET<!-- DNT-End -->
+            single logical entity. The sub-files do not need DATASET
             declarations (although they may have). A SuperFile must be
-            declared as a <!-- DNT-Start -->DATASET<!-- DNT-End --> for use in <!-- DNT-Start -->ECL<!-- DNT-End -->, and is treated in <!-- DNT-Start -->ECL<!-- DNT-End --> code
+            declared as a DATASET for use in ECL, and is treated in ECL code
             just like any other Dataset. The complexities of managing the
-            multiple sub-files are left up to the <!-- DNT-Start -->DFU<!-- DNT-End --> (just as it manages the
+            multiple sub-files are left up to the DFU (just as it manages the
             physical parts of each sub-file).</entry>
           </row>
         </tbody>
@@ -43,7 +43,7 @@
     </informaltable></para>
 
   <para><emphasis role="bold">Each sub-file in a SuperFile must have the same
-  structure type (<!-- DNT-Start -->THOR<!-- DNT-End -->, <!-- DNT-Start -->CSV<!-- DNT-End -->, or <!-- DNT-Start -->XML<!-- DNT-End -->) and the same field layout.</emphasis> A
+  structure type (THOR, CSV, or XML) and the same field layout.</emphasis> A
   sub-file may itself be a SuperFile, allowing you to build multi-level
   hierarchies that allow easy maintenance. The functions that build and
   maintain SuperFiles are all in the File standard library (see the
@@ -54,14 +54,14 @@
   be as simple as adding a new sub-file to an existing SuperFile.</para>
 
   <sect2 id="SuperFile_Existence_Functions">
-    <!-- DNT-Start --><title>SuperFile Existence Functions</title><!-- DNT-End -->
+    <title>SuperFile Existence Functions</title>
 
     <para>The following functions govern SuperFile creation, deletion, and
     existence detection:</para>
 
-    <!-- DNT-Start --><programlisting>CreateSuperFile()
+    <programlisting>CreateSuperFile()
 DeleteSuperFile()
-SuperFileExists()</programlisting><!-- DNT-End -->
+SuperFileExists()</programlisting>
 
     <para>You must first create a SuperFile using the CreateSuperFile()
     function before you can perform any other SuperFile operations on that
@@ -71,16 +71,16 @@ SuperFileExists()</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="SuperFile_Inquiry_Functions">
-    <!-- DNT-Start --><title>SuperFile Inquiry Functions</title><!-- DNT-End -->
+    <title>SuperFile Inquiry Functions</title>
 
     <para>The following functions provide information about a given
     SuperFile:</para>
 
-    <!-- DNT-Start --><programlisting>GetSuperFileSubCount()
+    <programlisting>GetSuperFileSubCount()
 GetSuperFileSubName()
 FindSuperFileSubName()
 SuperFileContents()
-LogicalFileSuperOwners()      </programlisting><!-- DNT-End -->
+LogicalFileSuperOwners()      </programlisting>
 
     <para>The GetSuperFileSubCount() function allows you to determine the
     number of sub-files in a given SuperFile. The GetSuperFileSubName()
@@ -93,16 +93,16 @@ LogicalFileSuperOwners()      </programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="SuperFile_Maintenance_Functions">
-    <!-- DNT-Start --><title>SuperFile Maintenance Functions</title><!-- DNT-End -->
+    <title>SuperFile Maintenance Functions</title>
 
     <para>The following functions allow you to maintain the list of sub-files
     that comprise a SuperFile:</para>
 
-    <!-- DNT-Start --><programlisting>AddSuperFile()
+    <programlisting>AddSuperFile()
 RemoveSuperFile()
 ClearSuperFile()
 SwapSuperFile()
-ReplaceSuperFile()</programlisting><!-- DNT-End -->
+ReplaceSuperFile()</programlisting>
 
     <para>The AddSuperFile() function adds a sub-file to the SuperFile. The
     RemoveSuperFile() function deletes a sub-file from the SuperFile. The
@@ -116,7 +116,7 @@ ReplaceSuperFile()</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="SuperFile_Transactions">
-    <!-- DNT-Start --><title>SuperFile Transactions</title><!-- DNT-End -->
+    <title>SuperFile Transactions</title>
 
     <para>The SuperFile Maintenance functions (only) must be called within a
     transaction frame if there is a possibility another process may try to use
@@ -125,12 +125,12 @@ ReplaceSuperFile()</programlisting><!-- DNT-End -->
     maintenance work can be accomplished without causing problems with any
     query that might use the SuperFile. This means two things:</para>
 
-    <para>1) The <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --> action must be used to ensure sequential execution
+    <para>1) The SEQUENTIAL action must be used to ensure sequential execution
     of the function calls within the transaction frame.</para>
 
     <para>2) The StartSuperFileTransaction() and FinishSuperFileTransaction()
     functions are used to "lock" the SuperFile during maintenance, and always
-    surround the SuperFile Maintenance function calls within the <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End -->
+    surround the SuperFile Maintenance function calls within the SEQUENTIAL
     action.</para>
 
     <para><emphasis role="bold">Any function other than the Maintenance
@@ -146,17 +146,17 @@ ReplaceSuperFile()</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Other_Useful_Functions">
-    <!-- DNT-Start --><title>Other Useful Functions</title><!-- DNT-End -->
+    <title>Other Useful Functions</title>
 
     <para>The following functions, while not specifically designed for
     SuperFile use, are generally useful in creating and maintaining
     SuperFiles:</para>
 
-    <!-- DNT-Start --><programlisting>RemoteDirectory()
+    <programlisting>RemoteDirectory()
 ExternalLogicalFilename()
 LogicalFileList()
 LogicalFileSuperOwners()
-</programlisting><!-- DNT-End -->
+</programlisting>
 
     <para>Use of these functions will be described in the subsequent set of
     SuperFile articles.</para>

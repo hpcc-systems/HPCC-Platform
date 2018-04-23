@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WorkunitExists">
-  <!-- DNT-Start --><title>WorkunitExists</title><!-- DNT-End -->
+  <title>WorkunitExists</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Workunit.WorkunitExists(<indexterm>
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitExists(<indexterm>
       <primary>STD.System.Workunit.WorkunitExists</primary>
     </indexterm><indexterm>
       <primary>System.Workunit.WorkunitExists</primary>
@@ -15,7 +15,7 @@
     </indexterm></emphasis> <emphasis> wuid </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>, online </emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>, archived </emphasis> <emphasis
-  role="bold">] )</emphasis></para><!-- DNT-End -->
+  role="bold">] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -25,40 +25,40 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>wuid</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>wuid</emphasis></entry>
 
           <entry>A null-terminated string containing the WorkUnit IDentifier
           to locate.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>online</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>online</emphasis></entry>
 
           <entry>Optional. A Boolean true/false value specifying whether the
-          search is performed online. If omitted, the default is <!-- DNT-Start -->TRUE<!-- DNT-End -->.</entry>
+          search is performed online. If omitted, the default is TRUE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>archived</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>archived</emphasis></entry>
 
           <entry>Optional. A Boolean true/false value specifying whether the
           search is performed in the archives. If omitted, the default is
-          <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->WorkunitExists<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
+          <entry>WorkunitExists returns a BOOLEAN value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->WorkunitExists<!-- DNT-End --> </emphasis>function returns
+  <para>The <emphasis role="bold">WorkunitExists </emphasis>function returns
   whether the <emphasis>wuid</emphasis> exists.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitExists('W20070308-164946'));</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitExists('W20070308-164946'));</programlisting>
 </sect1>

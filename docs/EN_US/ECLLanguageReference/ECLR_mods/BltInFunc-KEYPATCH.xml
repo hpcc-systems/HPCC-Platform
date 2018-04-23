@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="KEYPATCH">
-  <!-- DNT-Start --><title>KEYPATCH</title><!-- DNT-End -->
+  <title>KEYPATCH</title>
 
-  <!-- DNT-Start --><para><emphasis>[ </emphasis><emphasis>attrname</emphasis><emphasis
+  <para><emphasis>[ </emphasis><emphasis>attrname</emphasis><emphasis
   role="bold"> </emphasis><emphasis role="bold">:= ] KEYPATCH<indexterm>
       <primary>KEYPATCH</primary>
     </indexterm><indexterm>
@@ -16,7 +16,7 @@
   EXPIRE<indexterm>
       <primary>EXPIRE</primary>
     </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
-  role="bold">] ) ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para><!-- DNT-End -->
+  role="bold">] ) ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -26,7 +26,7 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>attrname</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>attrname</emphasis></entry>
 
           <entry>Optional. The action name, which turns the action into an
           attribute definition, therefore not executed until the attrname is
@@ -34,34 +34,34 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>index</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>index</emphasis></entry>
 
-          <entry>The <!-- DNT-Start -->INDEX<!-- DNT-End --> attribute to apply the changes to.</entry>
+          <entry>The INDEX attribute to apply the changes to.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>patchfile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>patchfile</emphasis></entry>
 
           <entry>A string constant specifying the logical name of the file
-          containing the changes to implement (created by <!-- DNT-Start -->KEYDIFF<!-- DNT-End -->).</entry>
+          containing the changes to implement (created by KEYDIFF).</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>newfile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>newfile</emphasis></entry>
 
           <entry>A string constant specifying the logical name of the file to
           write the new index to.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">OVERWRITE</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
 
           <entry>Optional. Specifies overwriting the
           <emphasis>newfile</emphasis> if it already exists.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">EXPIRE</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">EXPIRE</emphasis></entry>
 
           <entry>Optional. Specifies the <emphasis>newfile</emphasis> is a
           temporary file that may be automatically deleted after the specified
@@ -69,62 +69,62 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>days</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>days</emphasis></entry>
 
           <entry>Optional. The number of days after which the file may be
           automatically deleted. If omitted, the default is seven (7).</entry>
         </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
         
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->KEYPATCH<!-- DNT-End --> </emphasis>action uses the
+  <para>The <emphasis role="bold">KEYPATCH </emphasis>action uses the
   <emphasis>index</emphasis> and <emphasis>patchfile</emphasis> to write a new
   index to the specified <emphasis>newfile</emphasis> containing all the
   original index data updated by the information from the
@@ -132,7 +132,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>Vehicles := DATASET('vehicles',
+  <programlisting>Vehicles := DATASET('vehicles',
      {STRING2 st,
       STRING20 city,
       STRING20 lname,
@@ -149,8 +149,8 @@ b := KEYPATCH(i1,
     'KEY::DIFF::20050101::i1i2',
     'vkey::st.city.lname'OVERWRITE);    
 SEQUENTIAL(a,b);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="KEYDIFF"><!-- DNT-Start -->KEYDIFF<!-- DNT-End --></link>, <link
-  linkend="INDEX_record_structure"><!-- DNT-Start -->INDEX<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="KEYDIFF">KEYDIFF</link>, <link
+  linkend="INDEX_record_structure">INDEX</link></para>
 </sect1>

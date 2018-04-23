@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RemoveSuperFile">
-  <!-- DNT-Start --><title>RemoveSuperFile</title><!-- DNT-End -->
+  <title>RemoveSuperFile</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.RemoveSuperFile<indexterm>
+  <para><emphasis role="bold">STD.File.RemoveSuperFile<indexterm>
       <primary>STD.File.RemoveSuperFile</primary>
     </indexterm><indexterm>
       <primary>File.RemoveSuperFile</primary>
@@ -13,7 +13,7 @@
     </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
   <emphasis role="bold">[</emphasis> <emphasis>, delete</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>, removecontents</emphasis> <emphasis
-  role="bold">])</emphasis></para><!-- DNT-End -->
+  role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,14 +23,14 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>superfile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>superfile</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>subfile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>subfile</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           sub-file. This may be another superfile or a foreign file or
@@ -38,7 +38,7 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>delete</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>delete</emphasis></entry>
 
           <entry>A boolean flag specifying whether to delete the
           <emphasis>subfile</emphasis> from disk or just remove it from the
@@ -50,7 +50,7 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>removecontents</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>removecontents</emphasis></entry>
 
           <entry>A boolean flag specifying whether the contents of a
           <emphasis>subfile</emphasis> that is itself a superfile are
@@ -58,7 +58,7 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>Null.</entry>
         </row>
@@ -66,7 +66,7 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->RemoveSuperFile<!-- DNT-End --> </emphasis>function removes
+  <para>The <emphasis role="bold">RemoveSuperFile </emphasis>function removes
   the <emphasis>subfile</emphasis> from the list of files comprising the
   <emphasis>superfile</emphasis>.</para>
 
@@ -74,9 +74,9 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">SEQUENTIAL(
+  <programlisting format="linespecific">SEQUENTIAL(
  STD.File.StartSuperFileTransaction(),
  STD.File.RemoveSuperFile('MySuperFile','MySubFile'),
  STD.File.FinishSuperFileTransaction()
-);</programlisting><!-- DNT-End -->
+);</programlisting>
 </sect1>

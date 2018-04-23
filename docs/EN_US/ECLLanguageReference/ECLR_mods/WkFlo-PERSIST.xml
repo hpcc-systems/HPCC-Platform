@@ -2,29 +2,29 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PERSIST">
-  <!-- DNT-Start --><title>PERSIST</title><!-- DNT-End -->
+  <title>PERSIST</title>
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
-  </emphasis><emphasis role="bold">: <!-- DNT-Start -->PERSIST<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->PERSIST<!-- DNT-End --></primary>
+  </emphasis><emphasis role="bold">: PERSIST<indexterm>
+      <primary>PERSIST</primary>
     </indexterm>(</emphasis><emphasis> filename </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, cluster</emphasis> <emphasis
-  role="bold">]</emphasis><emphasis role="bold"> [, <!-- DNT-Start -->CLUSTER<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->CLUSTER<!-- DNT-End --></primary>
+  role="bold">]</emphasis><emphasis role="bold"> [, CLUSTER<indexterm>
+      <primary>CLUSTER</primary>
     </indexterm>(</emphasis><emphasis>target</emphasis><emphasis
-  role="bold">)] [, <!-- DNT-Start -->EXPIRE<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->EXPIRE<!-- DNT-End --></primary>
+  role="bold">)] [, EXPIRE<indexterm>
+      <primary>EXPIRE</primary>
     </indexterm>(</emphasis><emphasis>days</emphasis> <emphasis role="bold">)]
-  [, <!-- DNT-Start -->REFRESH<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->REFRESH<!-- DNT-End --></primary>
+  [, REFRESH<indexterm>
+      <primary>REFRESH</primary>
     </indexterm>(</emphasis><emphasis>flag</emphasis> <emphasis role="bold">)]
-  [, <!-- DNT-Start -->SINGLE<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->SINGLE<!-- DNT-End --></primary>
-    </indexterm> | <!-- DNT-Start -->MULTIPLE<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->MULTIPLE<!-- DNT-End --></primary>
+  [, SINGLE<indexterm>
+      <primary>SINGLE</primary>
+    </indexterm> | MULTIPLE<indexterm>
+      <primary>MULTIPLE</primary>
     </indexterm>[(</emphasis><emphasis>count</emphasis><emphasis
   role="bold">)]] ) <indexterm>
-      <primary><!-- DNT-Start -->PERSIST<!-- DNT-End --> workflow service</primary>
+      <primary>PERSIST workflow service</primary>
     </indexterm></emphasis>;</para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -35,20 +35,20 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>attribute</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>attribute</emphasis></entry>
 
             <entry>The name of the Attribute.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>The definition of the attribute. This typically defines a
             recordset (but it may be any expression).</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filename</emphasis></entry>
 
             <entry>A string constant specifying the storage name of the
             expression result. See <emphasis role="bold">Scope and Logical
@@ -56,7 +56,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>cluster</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>cluster</emphasis></entry>
 
             <entry>Optional. A string constant specifying the name of the Thor
             cluster on which to re-build the <emphasis>attribute</emphasis>
@@ -68,26 +68,26 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">CLUSTER</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">CLUSTER</emphasis></entry>
 
             <entry>Optional. Specifies writing the
             <emphasis>filename</emphasis> to the specified list of
             <emphasis>target</emphasis> clusters. If omitted, the
             <emphasis>filename</emphasis> is written to the cluster on which
-            the <!-- DNT-Start -->PERSIST<!-- DNT-End --> executes (as specified by the
+            the PERSIST executes (as specified by the
             <emphasis>cluster</emphasis> parameter). The number of physical
             file parts written to disk is always determined by the number of
-            nodes in the <emphasis>cluster</emphasis> on which the <!-- DNT-Start -->PERSIST<!-- DNT-End -->
+            nodes in the <emphasis>cluster</emphasis> on which the PERSIST
             executes, regardless of the number of nodes on the
             <emphasis>target(s)</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>target</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>target</emphasis></entry>
 
             <entry>A comma-delimited list of string constants containing the
             names of the clusters to write the <emphasis>filename</emphasis>
-            to. The names must be listed as they appear on the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
+            to. The names must be listed as they appear on the ECL Watch
             Activity page or returned by the Std.System.Thorlib.Group()
             function, optionally with square brackets containing a
             comma-delimited list of node-numbers (1-based) and/or ranges
@@ -96,7 +96,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">EXPIRE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">EXPIRE</emphasis></entry>
 
             <entry>Optional. Specifies the <emphasis>filename</emphasis> is a
             temporary file that may be automatically deleted after the
@@ -104,7 +104,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>days</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>days</emphasis></entry>
 
             <entry>Optional. The number of days after which the file may be
             automatically deleted. If omitted, it defaults to use the
@@ -112,65 +112,65 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">REFRESH</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">REFRESH</emphasis></entry>
 
-            <entry>Optional. Option to control when the <!-- DNT-Start -->PERSIST<!-- DNT-End --> rebuilds. If
-            omitted, the <!-- DNT-Start -->PERSIST<!-- DNT-End --> rebuilds if 1) the underlying file does not
+            <entry>Optional. Option to control when the PERSIST rebuilds. If
+            omitted, the PERSIST rebuilds if 1) the underlying file does not
             exist, or 2) the data has changed, or 3) the code has
             changed.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>flag</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>flag</emphasis></entry>
 
-            <entry>A boolean value indicating whether to rebuild the <!-- DNT-Start -->PERSIST<!-- DNT-End -->.
-            When set to <!-- DNT-Start -->FALSE<!-- DNT-End -->, the <!-- DNT-Start -->PERSIST<!-- DNT-End --> rebuilds <!-- DNT-Start -->ONLY<!-- DNT-End --> if the underlying
-            file does not exist. If your <!-- DNT-Start -->PERSIST<!-- DNT-End --> layout has changed and you
-            specify <!-- DNT-Start -->REFRESH<!-- DNT-End -->(<!-- DNT-Start -->FALSE<!-- DNT-End -->) the mismatch could cause your job to
+            <entry>A boolean value indicating whether to rebuild the PERSIST.
+            When set to FALSE, the PERSIST rebuilds ONLY if the underlying
+            file does not exist. If your PERSIST layout has changed and you
+            specify REFRESH(FALSE) the mismatch could cause your job to
             fail.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">SINGLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">SINGLE</emphasis></entry>
 
-            <entry>Optional. Specifies to keep a single <!-- DNT-Start -->PERSIST<!-- DNT-End -->. The name of
+            <entry>Optional. Specifies to keep a single PERSIST. The name of
             the persist file is the same as the name of the persist.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">MULTIPLE </emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">MULTIPLE </emphasis></entry>
 
             <entry>Optional. Specifies to keep different versions of the
-            <!-- DNT-Start -->PERSIST<!-- DNT-End -->. The name of the persist file generated is a combination
+            PERSIST. The name of the persist file generated is a combination
             of the name supplied suffixed with a 32-bit value derived from the
-            <!-- DNT-Start -->ECL<!-- DNT-End -->.</entry>
+            ECL.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>count</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>count</emphasis></entry>
 
-            <entry>Optional. The number of versions of a <!-- DNT-Start -->PERSIST<!-- DNT-End --> to keep. If
+            <entry>Optional. The number of versions of a PERSIST to keep. If
             omitted, the system default is used.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->PERSIST<!-- DNT-End --> </emphasis>service stores the result
+  <para>The <emphasis role="bold">PERSIST </emphasis>service stores the result
   of the <emphasis>expression</emphasis> globally so it remains permanently
-  available for use (including the result of any <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --> or <!-- DNT-Start -->GROUP<!-- DNT-End --> operation
+  available for use (including the result of any DISTRIBUTE or GROUP operation
   in the <emphasis>expression</emphasis>). This is particularly useful for
   <emphasis>attributes</emphasis> based on large, expensive data manipulation
   sequences. The <emphasis>attribute</emphasis> is re-calculated only when the
-  <!-- DNT-Start -->ECL<!-- DNT-End --> code or underlying data that was used to create it have changed,
+  ECL code or underlying data that was used to create it have changed,
   otherwise the <emphasis>attribute</emphasis> data is simply returned from
   the stored <emphasis>name</emphasis> file on disk when referenced. This
   service implicitly causes the <emphasis>attribute</emphasis> to be evaluated
   at global scope instead of the enclosing scope.</para>
 
-  <para><!-- DNT-Start -->PERSIST<!-- DNT-End --> may be combined with the <!-- DNT-Start -->WHEN<!-- DNT-End --> clause so that even though the
+  <para>PERSIST may be combined with the WHEN clause so that even though the
   <emphasis>attribute </emphasis>may be used more than once, its execution is
-  based upon the <!-- DNT-Start -->WHEN<!-- DNT-End --> clause (or the first use of the
+  based upon the WHEN clause (or the first use of the
   <emphasis>attribute</emphasis>) and not upon the number of times the
   <emphasis>attribute</emphasis> is used in the computation. This gives a kind
   of "compute in anticipation" capability.</para>
@@ -179,7 +179,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  CountPeople := COUNT(Person) : PERSIST('PeopleCount');
+  <programlisting>  CountPeople := COUNT(Person) : PERSIST('PeopleCount');
   //Makes CountPeople available for use in all subsequent work units
   
   sPeople := SORT(Person,Person.per_first_name) :
@@ -195,9 +195,9 @@
                   CLUSTER('AnotherThor'));
        //run the code on the OtherThor cluster
        // and write the file to the AnotherThor cluster
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="STORED"><!-- DNT-Start -->STORED<!-- DNT-End --></link>, <link
-  linkend="WHEN"><!-- DNT-Start -->WHEN<!-- DNT-End --></link>, <link linkend="GLOBAL"><!-- DNT-Start -->GLOBAL<!-- DNT-End --></link>, <link
-  linkend="CHECKPOINT"><!-- DNT-Start -->CHECKPOINT<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="STORED">STORED</link>, <link
+  linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, <link
+  linkend="CHECKPOINT">CHECKPOINT</link></para>
 </sect1>

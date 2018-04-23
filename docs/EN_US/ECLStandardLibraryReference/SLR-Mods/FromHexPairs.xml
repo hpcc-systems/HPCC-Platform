@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FromHexPairs">
-  <!-- DNT-Start --><title>FromHexPairs</title><!-- DNT-End -->
+  <title>FromHexPairs</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.FromHexPairs<indexterm>
+  <para><emphasis role="bold">STD.Str.FromHexPairs<indexterm>
       <primary>STD.Str.FromHexPairs</primary>
     </indexterm><indexterm>
       <primary>Str.FromHexPairs</primary>
     </indexterm><indexterm>
       <primary>FromHexPairs</primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
-  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,25 +21,25 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source</emphasis></entry>
 
           <entry>The string containing the hex pairs to process.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->FromHexPairs<!-- DNT-End --> returns a data value with each byte created from
+          <entry>FromHexPairs returns a data value with each byte created from
           a pair of hex digits.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->FromHexPairs<!-- DNT-End --> </emphasis>function returns a
+  <para>The <emphasis role="bold">FromHexPairs </emphasis>function returns a
   data value with each byte created from a pair of hex digits.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.FromHexPairs('0001FF80');</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := STD.Str.FromHexPairs('0001FF80');</programlisting>
 </sect1>

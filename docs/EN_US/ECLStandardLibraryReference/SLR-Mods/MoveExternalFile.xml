@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="MoveExternalFile">
-  <!-- DNT-Start --><title>MoveExternalFile</title><!-- DNT-End -->
+  <title>MoveExternalFile</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.MoveExternalFile<indexterm>
+  <para><emphasis role="bold">STD.File.MoveExternalFile<indexterm>
       <primary>STD.File.MoveExternalFile</primary>
     </indexterm><indexterm>
       <primary>File.MoveExternalFile</primary>
     </indexterm><indexterm>
       <primary>MoveExternalFile</primary>
     </indexterm>(</emphasis> <emphasis> location, frompath, topath </emphasis>
-  <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
+  <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,21 +21,21 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>location</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>location</emphasis></entry>
 
-          <entry>A null-terminated string containing the <!-- DNT-Start -->IP<!-- DNT-End --> address of the
+          <entry>A null-terminated string containing the IP address of the
           remote machine.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>frompath</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>frompath</emphasis></entry>
 
           <entry>A null-terminated string containing the path/name of the file
           to move.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>topath</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>topath</emphasis></entry>
 
           <entry>A null-terminated string containing the path/name of the
           target file.</entry>
@@ -44,7 +44,7 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->MoveExternalFile<!-- DNT-End --> </emphasis>function moves
+  <para>The <emphasis role="bold">MoveExternalFile </emphasis>function moves
   the single physical file specified by the <emphasis>frompath</emphasis> to
   the <emphasis>topath</emphasis>. Both <emphasis>frompath</emphasis> and
   <emphasis>topath</emphasis> are on the same remote machine, identified by
@@ -53,8 +53,8 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IP      := '10.150.254.6';
+  <programlisting format="linespecific">IP      := '10.150.254.6';
 infile  := '/c$/training/import/AdvancedECL/people';
 outfile := '/c$/training/import/DFUtest/people';
-STD.File.MoveExternalFile(IP,infile,outfile);</programlisting><!-- DNT-End -->
+STD.File.MoveExternalFile(IP,infile,outfile);</programlisting>
 </sect1>

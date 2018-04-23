@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SetWorkunitAppValue">
-  <!-- DNT-Start --><title>SetWorkunitAppValue</title><!-- DNT-End -->
+  <title>SetWorkunitAppValue</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Workunit.SetWorkunitAppValue
+  <para><emphasis role="bold">STD.System.Workunit.SetWorkunitAppValue
   <indexterm>
       <primary>STD.System.Workunit.SetWorkunitAppValue</primary>
     </indexterm> <indexterm>
@@ -15,7 +15,7 @@
       <primary>SetWorkunitAppValue</primary>
     </indexterm> (</emphasis> <emphasis>app, key, value,</emphasis> <emphasis
   role="bold"> [ </emphasis> <emphasis>overwrite</emphasis> <emphasis
-  role="bold"> ])</emphasis></para><!-- DNT-End -->
+  role="bold"> ])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -25,50 +25,50 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>app</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>app</emphasis></entry>
 
           <entry>The application name to set.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>key</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>key</emphasis></entry>
 
           <entry>The name of the value to set.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>value</emphasis></entry>
 
           <entry>The value to set.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>overwrite</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>overwrite</emphasis></entry>
 
-          <entry>A boolean <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --> flag indicating whether to allow the
-          value to overwrite an existing value. Default is <!-- DNT-Start -->TRUE<!-- DNT-End -->..</entry>
+          <entry>A boolean TRUE or FALSE flag indicating whether to allow the
+          value to overwrite an existing value. Default is TRUE..</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->SetWorkunitAppValue<!-- DNT-End --> returns <!-- DNT-Start -->TRUE<!-- DNT-End --> if the value was set
+          <entry>SetWorkunitAppValue returns TRUE if the value was set
           successfully.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->SetWorkunitAppValue<!-- DNT-End --> </emphasis>function sets
-  an application value in the current workunit. It returns <!-- DNT-Start -->TRUE<!-- DNT-End --> if the value
+  <para>The <emphasis role="bold">SetWorkunitAppValue </emphasis>function sets
+  an application value in the current workunit. It returns TRUE if the value
   was set successfully.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 STD.System.Workunit.SetWorkunitAppValue('MyApp','FirstName','Jim',TRUE);
 OUTPUT(STD.System.Workunit.WorkunitList(appvalues := 'MyApp/FirstName='Jim');
-//returns a list of workunits with app values where FirstName='Jim'</programlisting><!-- DNT-End -->
+//returns a list of workunits with app values where FirstName='Jim'</programlisting>
 
   <para>See Also: <link linkend="WorkunitList">WorkunitList</link></para>
 </sect1>

@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetSuperFileSubCount">
-  <!-- DNT-Start --><title>GetSuperFileSubCount</title><!-- DNT-End -->
+  <title>GetSuperFileSubCount</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.GetSuperFileSubCount<indexterm>
+  <para><emphasis role="bold">STD.File.GetSuperFileSubCount<indexterm>
       <primary>STD.File.GetSuperFileSubCount</primary>
     </indexterm><indexterm>
       <primary>File.GetSuperFileSubCount</primary>
     </indexterm><indexterm>
       <primary>GetSuperFileSubCount</primary>
     </indexterm>(</emphasis> <emphasis> superfile </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,22 +21,22 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>superfile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>superfile</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->GetSuperFileSubCount<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End -->4 value.</entry>
+          <entry>GetSuperFileSubCount returns an INTEGER4 value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->GetSuperFileSubCount<!-- DNT-End --> </emphasis>function
+  <para>The <emphasis role="bold">GetSuperFileSubCount </emphasis>function
   returns the number of sub-files comprising the
   <emphasis>superfile</emphasis>.</para>
 
@@ -44,5 +44,5 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.File.GetSuperFileSubCount('~CLASS::RT::IN::SF1');</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := STD.File.GetSuperFileSubCount('~CLASS::RT::IN::SF1');</programlisting>
 </sect1>

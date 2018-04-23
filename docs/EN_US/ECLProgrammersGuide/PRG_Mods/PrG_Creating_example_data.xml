@@ -2,68 +2,68 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Creating_Example_Data">
-  <!-- DNT-Start --><title>Creating Example Data</title><!-- DNT-End -->
+  <title>Creating Example Data</title>
 
   <sect2 id="Getting_Code_Files">
-    <!-- DNT-Start --><title>Getting Code Files</title><!-- DNT-End -->
+    <title>Getting Code Files</title>
 
     <para>All the example code for the <emphasis>Programmer's Guide</emphasis>
-    is available for download from the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems website from the same page
-    that the <!-- DNT-Start -->PDF<!-- DNT-End --> is available (<ulink
+    is available for download from the HPCC Systems website from the same page
+    that the PDF is available (<ulink
     url="http://hpccsystems.com/download/docs/learning-ecl">click
-    here</ulink>). To make this code available for use in the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, you
+    here</ulink>). To make this code available for use in the ECL IDE, you
     simply:</para>
 
     <orderedlist>
       <listitem>
-        <para>Download the <!-- DNT-Start -->ECL<!-- DNT-End -->_Code_Files.<!-- DNT-Start -->ZIP<!-- DNT-End --> file.</para>
+        <para>Download the ECL_Code_Files.ZIP file.</para>
       </listitem>
 
       <listitem>
-        <para>In the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, highlight your "My Files" folder, right-click
+        <para>In the ECL IDE, highlight your "My Files" folder, right-click
         and select "Insert Folder" from the popup menu.</para>
       </listitem>
 
       <listitem>
         <para>Name your new folder "ProgrammersGuide" (please note -- spaces
-        are <!-- DNT-Start -->NOT<!-- DNT-End --> allowed in your <!-- DNT-Start -->ECL<!-- DNT-End --> repository folder names).</para>
+        are NOT allowed in your ECL repository folder names).</para>
       </listitem>
 
       <listitem>
-        <para>In the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, highlight your "ProgrammersGuide" folder,
+        <para>In the ECL IDE, highlight your "ProgrammersGuide" folder,
         right-click and select "Locate File in Explorer" from the popup
         menu.</para>
       </listitem>
 
       <listitem>
-        <para>Extract all the files from the <!-- DNT-Start -->ECL<!-- DNT-End -->_Code_Files.<!-- DNT-Start -->ZIP<!-- DNT-End --> file into your
+        <para>Extract all the files from the ECL_Code_Files.ZIP file into your
         new folder.</para>
       </listitem>
     </orderedlist>
   </sect2>
 
   <sect2 id="Generating_Files">
-    <!-- DNT-Start --><title>Generating Files</title><!-- DNT-End -->
+    <title>Generating Files</title>
 
     <para>The code that generates the example data used by all the
     <emphasis>Programmer's Guide</emphasis> articles is contained in a file
-    named Gendata.<!-- DNT-Start -->ECL<!-- DNT-End -->. You simply need to open that file in the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
+    named Gendata.ECL. You simply need to open that file in the ECL IDE
     (select <emphasis role="bold">File &gt; Open</emphasis> from the menu,
-    select the Gendata.<!-- DNT-Start -->ECL<!-- DNT-End --> file, and it will open in a Builder window) then
+    select the Gendata.ECL file, and it will open in a Builder window) then
     press the <emphasis role="bold">Submit</emphasis> button to generate the
     data files. The process takes a couple of minutes to run. Here is the
     code, fully explained.</para>
   </sect2>
 
   <sect2 id="Some_Constants">
-    <!-- DNT-Start --><title>Some Constants</title><!-- DNT-End -->
+    <title>Some Constants</title>
 
-    <!-- DNT-Start --><programlisting>IMPORT std;
+    <programlisting>IMPORT std;
 
 P_Mult1 := 1000;
 P_Mult2 := 1000;
 TotalParents := P_Mult1 * P_Mult2;
-TotalChildren := 5000000;</programlisting><!-- DNT-End -->
+TotalChildren := 5000000;</programlisting>
 
     <para>These constants define the numbers used to generate 1,000,000 parent
     records and 5,000,000 child records. By defining these once as attributes
@@ -81,9 +81,9 @@ TotalChildren := 5000000;</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="The_RECORD_Structures">
-    <!-- DNT-Start --><title>The RECORD Structures</title><!-- DNT-End -->
+    <title>The RECORD Structures</title>
 
-    <!-- DNT-Start --><programlisting>Layout_Person := RECORD
+    <programlisting>Layout_Person := RECORD
   UNSIGNED3 PersonID;
   STRING15  FirstName;
   STRING25  LastName;
@@ -116,9 +116,9 @@ Layout_Combined := RECORD,MAXLENGTH(1000)
   Layout_Person;
   DATASET(Layout_Accounts) Accounts;
 END;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>These <!-- DNT-Start -->RECORD<!-- DNT-End --> structures define the field layouts for three datasets:
+    <para>These RECORD structures define the field layouts for three datasets:
     a parent file (Layout_Person), a child file (Layout_Accounts_Link), and a
     parent with nested child dataset (Layout_Combined). These are used to
     generate three separate data files. The Layout_Accounts_Link and
@@ -128,9 +128,9 @@ END;
   </sect2>
 
   <sect2 id="Starting_Point_Data">
-    <!-- DNT-Start --><title>Starting Point Data</title><!-- DNT-End -->
+    <title>Starting Point Data</title>
 
-    <!-- DNT-Start --><programlisting>//define data for record generation:
+    <programlisting>//define data for record generation:
              //100 possible middle initials, 52 letters and 48 blanks
 SetMiddleInitials := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ                  ' +
                      'ABCDEFGHIJKLMNOPQRSTUVWXYZ                  ';
@@ -144,7 +144,7 @@ SET OF STRING14     SetFnames := [
 SET OF STRING16 SetLnames := [
   'BIALES          ','COOLING         ','CROTHALL        ',      
   ... ];
-</programlisting><!-- DNT-End -->
+</programlisting>
 
     <para>These sets define the data that will be used to generate the
     records. By providing 1,000 first and last names, this code can generate
@@ -173,11 +173,11 @@ SET OF STRING5 SetZips := [
   </sect2>
 
   <sect2 id="Generating_Parent_Records">
-    <!-- DNT-Start --><title>Generating Parent Records</title><!-- DNT-End -->
+    <title>Generating Parent Records</title>
 
-    <!-- DNT-Start --><programlisting>BlankSet := DATASET([{0,'','','','','','','','',[]}],
+    <programlisting>BlankSet := DATASET([{0,'','','','','','','','',[]}],
                    Layout_Combined);
-CountCSZ := 9540;</programlisting><!-- DNT-End -->
+CountCSZ := 9540;</programlisting>
 
     <para>Here is the beginning of the data generation code. The BlankSet is a
     single empty "seed" record, used to start the process. The CountCSZ
@@ -185,7 +185,7 @@ CountCSZ := 9540;</programlisting><!-- DNT-End -->
     combinations that are available for use in subsequent calculations that
     will determine which to use in a given record.</para>
 
-    <!-- DNT-Start --><programlisting>Layout_Combined CreateRecs(Layout_Combined L,
+    <programlisting>Layout_Combined CreateRecs(Layout_Combined L,
                            INTEGER C,
                            INTEGER W) := TRANSFORM
   SELF.FirstName := IF(W=1,SetFnames[C],L.FirstName);
@@ -196,28 +196,28 @@ END;
 base_fn  := NORMALIZE(BlankSet,P_Mult1,CreateRecs(LEFT,COUNTER,1));
 
 base_fln := NORMALIZE(base_fn ,P_Mult2,CreateRecs(LEFT,COUNTER,2));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
     <para>The purpose of this code is to generate 1,000,000 unique first/last
-    name records as a starting point. The <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> operation is unique in
+    name records as a starting point. The NORMALIZE operation is unique in
     that its second parameter defines the number of times to call the
-    <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function for each input record. This makes it uniquely suited to
+    TRANSFORM function for each input record. This makes it uniquely suited to
     generating the kind of "bogus" data we need.</para>
 
-    <para>We're doing two <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> operations here. The first generates 1,000
+    <para>We're doing two NORMALIZE operations here. The first generates 1,000
     records with unique first names from the single blank record in the
-    BlankSet inline <!-- DNT-Start -->DATASET<!-- DNT-End -->. Then the second takes the 1,000 records from the
-    first <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> and creates 1,000 new records with unique last names for
+    BlankSet inline DATASET. Then the second takes the 1,000 records from the
+    first NORMALIZE and creates 1,000 new records with unique last names for
     each input record, resulting in 1,000,000 unique first/last name
     records.</para>
 
-    <para>One interesting "trick" here is the use of a single <!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
-    function for both of the <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> operations. Defining the <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> to
+    <para>One interesting "trick" here is the use of a single TRANSFORM
+    function for both of the NORMALIZE operations. Defining the TRANSFORM to
     receive one "extra" (third) parameter than it normally takes is what
-    allows this. This parameter simply flags which <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> pass the
-    <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> is doing.</para>
+    allows this. This parameter simply flags which NORMALIZE pass the
+    TRANSFORM is doing.</para>
 
-    <!-- DNT-Start --><programlisting>Layout_Combined PopulateRecs(Layout_Combined L, 
+    <programlisting>Layout_Combined PopulateRecs(Layout_Combined L, 
           Layout_Combined R,
           INTEGER HashVal) := TRANSFORM
   CSZ_Rec            := (HashVal % CountCSZ) + 1;
@@ -242,29 +242,29 @@ base_people   := ITERATE(base_fln_dist,
                          LOCAL);
 
 base_people_dist := DISTRIBUTE(base_people,HASH32(PersonID));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>Once the two <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> operations have done their work, the next
+    <para>Once the two NORMALIZE operations have done their work, the next
     task is to populate the rest of the fields. Since one of those fields is
     the PersonID, which is the unique identifier field for the record, the
-    fastest way to populate it is with <!-- DNT-Start -->ITERATE<!-- DNT-End --> using the <!-- DNT-Start -->LOCAL<!-- DNT-End --> option. Using
-    the Thorlib.Node() function and <!-- DNT-Start -->CLUSTERSIZE<!-- DNT-End --> compiler directive, you can
-    uniquely number each record in parallel on each node with <!-- DNT-Start -->ITERATE<!-- DNT-End -->. You may
+    fastest way to populate it is with ITERATE using the LOCAL option. Using
+    the Thorlib.Node() function and CLUSTERSIZE compiler directive, you can
+    uniquely number each record in parallel on each node with ITERATE. You may
     end up with a few holes in the numbering towards the end, but since the
     only requirement here is uniqueness and not contiguity, those holes are
-    irrelevant. Since the first two <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> operations took place on a
-    single node (look at the data skews shown in the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch graph), the
-    first thing to do is <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --> the records so each node has a
-    proportional chunk of the data to work with. Then the <!-- DNT-Start -->ITERATE<!-- DNT-End --> can do its
+    irrelevant. Since the first two NORMALIZE operations took place on a
+    single node (look at the data skews shown in the ECL Watch graph), the
+    first thing to do is DISTRIBUTE the records so each node has a
+    proportional chunk of the data to work with. Then the ITERATE can do its
     work on each chunk of records in parallel.</para>
 
     <para>To introduce an element of randomity to the data choices, the
-    <!-- DNT-Start -->ITERATE<!-- DNT-End --> passes a hash value to the <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function as an "extra" third
+    ITERATE passes a hash value to the TRANSFORM function as an "extra" third
     parameter. This is the same technique used previously, but passing
     calculated values instead of constants.</para>
 
-    <para>The <!-- DNT-Start -->CSZ<!-- DNT-End -->_Rec attribute definition illustrates the use of local
-    attribute definitions inside <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> functions. Defining the expression
+    <para>The CSZ_Rec attribute definition illustrates the use of local
+    attribute definitions inside TRANSFORM functions. Defining the expression
     once, then using it multiple times as needed to produce a valid city,
     state, zip combination. The rest of the fields are populated by data
     selected using the passed in hash value in their expressions. The modulus
@@ -275,9 +275,9 @@ base_people_dist := DISTRIBUTE(base_people,HASH32(PersonID));
   </sect2>
 
   <sect2 id="Generating_Child_Records">
-    <!-- DNT-Start --><title>Generating Child Records</title><!-- DNT-End -->
+    <title>Generating Child Records</title>
 
-    <!-- DNT-Start --><programlisting>BlankKids := DATASET([{0,'','','','','',0,0,0,0}],
+    <programlisting>BlankKids := DATASET([{0,'','','','','',0,0,0,0}],
           Layout_Accounts_Link);
 
 SetLinks  := SET(base_people,PersonID);
@@ -298,14 +298,14 @@ SetMonthDays := [31,28,31,30,31,30,31,31,30,31,30,31];
 SetNarrs     := [229,158,2,0,66,233,123,214,169,248,67,127,168,
                  65,208,114,73,218,238,57,125,113,88,
                  247,244,121,54,220,98,97];
-</programlisting><!-- DNT-End -->
+</programlisting>
 
     <para>Once again, we start by defining a "seed" record for the process as
-    an inline <!-- DNT-Start -->DATASET<!-- DNT-End --> and several sets of appropriate data for the specific
-    fields. The <!-- DNT-Start -->SET<!-- DNT-End --> function builds a set of valid PersonID values to use to
+    an inline DATASET and several sets of appropriate data for the specific
+    fields. The SET function builds a set of valid PersonID values to use to
     create the links between the parent and child records.</para>
 
-    <!-- DNT-Start --><programlisting>Layout_Accounts_Link CreateKids(Layout_Accounts_Link L,
+    <programlisting>Layout_Accounts_Link CreateKids(Layout_Accounts_Link L,
                                 INTEGER C) := TRANSFORM
   CSZ_IDX       := C % CountCSZ + 1;
   HashVal       := HASH32(SetCity[CSZ_IDX],SetStates[CSZ_IDX],SetZips[CSZ_IDX]);
@@ -340,27 +340,27 @@ base_kids := NORMALIZE( BlankKids,
                         TotalChildren,
                         CreateKids(LEFT,COUNTER));
 base_kids_dist := DISTRIBUTE(base_kids,HASH32(PersonID));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
     <para>This process is similar to the one used for the parent records. This
     time, instead of passing in a hash value, a local attribute does that work
-    inside the <!-- DNT-Start -->TRANSFORM<!-- DNT-End -->. Just as before, the hash value is used to select the
+    inside the TRANSFORM. Just as before, the hash value is used to select the
     actual data to go in each field of the record.</para>
 
     <para>The interesting bit here is the expression to determine the PersonID
     field value. Since we're generating 5,000,000 child records it would be
     very simple to just give each parent five children. However, real-world
-    data rarely looks like that. Therefore, the <!-- DNT-Start -->CHOOSE<!-- DNT-End --> function is used to
+    data rarely looks like that. Therefore, the CHOOSE function is used to
     select a different method for each set of a million child records. The
-    first million uses the first <!-- DNT-Start -->IF<!-- DNT-End --> expression, and the second million uses
+    first million uses the first IF expression, and the second million uses
     the second, and so on... This creates a varying number of children for
     each parent, ranging from one to nine.</para>
   </sect2>
 
   <sect2 id="Create_the_Nested_Child-Dataset_Records">
-    <!-- DNT-Start --><title>Create the Nested Child Dataset Records</title><!-- DNT-End -->
+    <title>Create the Nested Child Dataset Records</title>
 
-    <!-- DNT-Start --><programlisting>Layout_Combined AddKids(Layout_Combined L, base_kids R) := TRANSFORM
+    <programlisting>Layout_Combined AddKids(Layout_Combined L, base_kids R) := TRANSFORM
   SELF.Accounts := L.Accounts + 
      ROW({R.Account,R.OpenDate,R.IndustryCode,
      R.AcctType,R.AcctRate,R.Code1,
@@ -372,51 +372,51 @@ base_combined := DENORMALIZE( base_people_dist,
     base_kids_dist, 
     LEFT.PersonID = RIGHT.PersonID,
     AddKids(LEFT, RIGHT));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
     <para>Now that we have separate recordsets of parent and child records,
     the next step is to combine them into a single dataset with each parent's
     child data nested within the same physical record as the parent. The
     reason for nesting the child data this way is to allow easy parent-child
     queries in the Data Refinery and Rapid data Delivery Engine without
-    requiring the use of separate <!-- DNT-Start -->JOIN<!-- DNT-End --> steps to make the links between the
+    requiring the use of separate JOIN steps to make the links between the
     parent and child records.</para>
 
-    <para>To build the nested child dataset requires the <!-- DNT-Start -->DENORMALIZE<!-- DNT-End -->
+    <para>To build the nested child dataset requires the DENORMALIZE
     operation. This operation finds the links between the parent records and
-    their associated children, calling the <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function as many times as
+    their associated children, calling the TRANSFORM function as many times as
     there are child records for each parent. The interesting technique here is
-    the use of the <!-- DNT-Start -->ROW<!-- DNT-End --> function to construct each additional nested child
+    the use of the ROW function to construct each additional nested child
     record. This is done to eliminate the linking field (PersonID) from each
     child record stored in the combined dataset, since it is the same value as
     contained in the parent record's PersonID field.</para>
   </sect2>
 
   <sect2 id="Write_Files_to_Disk">
-    <!-- DNT-Start --><title>Write Files to Disk</title><!-- DNT-End -->
+    <title>Write Files to Disk</title>
 
-    <!-- DNT-Start --><programlisting>O1 := OUTPUT(PROJECT(base_people_dist,Layout_Person),,'~PROGGUIDE::EXAMPLEDATA::People',OVERWRITE);
+    <programlisting>O1 := OUTPUT(PROJECT(base_people_dist,Layout_Person),,'~PROGGUIDE::EXAMPLEDATA::People',OVERWRITE);
 
 O2 := OUTPUT(base_kids_dist,,'~PROGGUIDE::EXAMPLEDATA::Accounts',OVERWRITE);
 
 O3 := OUTPUT(base_combined,,'~PROGGUIDE::EXAMPLEDATA::PeopleAccts',OVERWRITE);
 
 P1 := PARALLEL(O1,O2,O3);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>These <!-- DNT-Start -->OUTPUT<!-- DNT-End --> attribute definitions will write the datasets to disk.
+    <para>These OUTPUT attribute definitions will write the datasets to disk.
     They are written as attribute definitions because they will be used in a
-    <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --> action. The <!-- DNT-Start -->PARALLEL<!-- DNT-End --> action attribute simply indicates that all
+    SEQUENTIAL action. The PARALLEL action attribute simply indicates that all
     these disk writes can occur "simultaneously" if the optimizer decides it
     can do that.</para>
 
-    <para>The first <!-- DNT-Start -->OUTPUT<!-- DNT-End --> uses a <!-- DNT-Start -->PROJECT<!-- DNT-End --> to produce the parent records as a
-    separate file because the data was originally generated into a <!-- DNT-Start -->RECORD<!-- DNT-End -->
-    structure that contains the nested child <!-- DNT-Start -->DATASET<!-- DNT-End --> field (Accounts) in
-    preparation for creating the third file. The <!-- DNT-Start -->PROJECT<!-- DNT-End --> eliminates that empty
+    <para>The first OUTPUT uses a PROJECT to produce the parent records as a
+    separate file because the data was originally generated into a RECORD
+    structure that contains the nested child DATASET field (Accounts) in
+    preparation for creating the third file. The PROJECT eliminates that empty
     Accounts field from the output for this dataset.</para>
 
-    <!-- DNT-Start --><programlisting>D1 := DATASET('~PROGGUIDE::EXAMPLEDATA::People',
+    <programlisting>D1 := DATASET('~PROGGUIDE::EXAMPLEDATA::People',
               {Layout_Person,UNSIGNED8 RecPos{virtual(fileposition)}}, THOR);
 
 D2 := DATASET('~PROGGUIDE::EXAMPLEDATA::Accounts',
@@ -424,15 +424,15 @@ D2 := DATASET('~PROGGUIDE::EXAMPLEDATA::Accounts',
 
 D3 := DATASET('~PROGGUIDE::EXAMPLEDATA::PeopleAccts',
               {,MAXLENGTH(1000) Layout_Combined,UNSIGNED8 RecPos{virtual(fileposition)}},THOR);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>These <!-- DNT-Start -->DATASET<!-- DNT-End --> declarations are needed to be able to build indexes.
-    The <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->8 RecPos fields are the virtual fields (they only exist at
+    <para>These DATASET declarations are needed to be able to build indexes.
+    The UNSIGNED8 RecPos fields are the virtual fields (they only exist at
     runtime and not on disk) that are the internal record pointers. They're
-    declared here to be able to reference them in the subsequent <!-- DNT-Start -->INDEX<!-- DNT-End -->
+    declared here to be able to reference them in the subsequent INDEX
     declarations.</para>
 
-    <!-- DNT-Start --><programlisting>I1 := INDEX(D1,{PersonID,RecPos},'~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID');
+    <programlisting>I1 := INDEX(D1,{PersonID,RecPos},'~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID');
 
 I2 := INDEX(D2,{PersonID,RecPos},'~PROGGUIDE::EXAMPLEDATA::KEYS::Accounts.PersonID');
 
@@ -443,42 +443,42 @@ B2 := BUILD(I2,OVERWRITE);
 B3 := BUILD(I3,OVERWRITE);
 
 P2 := PARALLEL(B1,B2,B3);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>These <!-- DNT-Start -->INDEX<!-- DNT-End --> declarations allow the <!-- DNT-Start -->BUILD<!-- DNT-End --> actions to use the
-    single-parameter form. Once again, the <!-- DNT-Start -->PARALLEL<!-- DNT-End --> action attribute indicates
+    <para>These INDEX declarations allow the BUILD actions to use the
+    single-parameter form. Once again, the PARALLEL action attribute indicates
     the index build may be done all at the same time.</para>
 
-    <!-- DNT-Start --><programlisting>SEQUENTIAL(P1,P2);</programlisting><!-- DNT-End -->
+    <programlisting>SEQUENTIAL(P1,P2);</programlisting>
 
-    <para>This <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --> action simply says, "write all the data files to
+    <para>This SEQUENTIAL action simply says, "write all the data files to
     disk, and then build the indexes."</para>
   </sect2>
 
   <sect2 id="Adding_the_Files-to_the_Repository">
-    <!-- DNT-Start --><title>Defining the Files</title><!-- DNT-End -->
+    <title>Defining the Files</title>
 
     <para>Once the datasets and indexes have been written to disk you must
-    declare the files in order to use them in the example <!-- DNT-Start -->ECL<!-- DNT-End --> code in the rest
-    of the articles. These declarations are contained in the DeclareData.<!-- DNT-Start -->ECL<!-- DNT-End -->
+    declare the files in order to use them in the example ECL code in the rest
+    of the articles. These declarations are contained in the DeclareData.ECL
     file. To make them available to the rest of the example code you simply
-    need to <!-- DNT-Start -->IMPORT<!-- DNT-End --> it. Therefore, at the beginning of each example you will
+    need to IMPORT it. Therefore, at the beginning of each example you will
     find this line of code:</para>
 
-    <!-- DNT-Start --><programlisting>IMPORT $;</programlisting><!-- DNT-End -->
+    <programlisting>IMPORT $;</programlisting>
 
-    <para>This <!-- DNT-Start -->IMPORTs<!-- DNT-End --> all the files in the ProgrammersGuide folder (including
-    the DeclareData <!-- DNT-Start -->MODULE<!-- DNT-End --> structure definition). Referencing anything from
-    DeclareData is done by prepending $.DeclareData to the name of the <!-- DNT-Start -->EXPORT<!-- DNT-End -->
+    <para>This IMPORTs all the files in the ProgrammersGuide folder (including
+    the DeclareData MODULE structure definition). Referencing anything from
+    DeclareData is done by prepending $.DeclareData to the name of the EXPORT
     definition you need to use, like this:</para>
 
-    <!-- DNT-Start --><programlisting>MyFile := $.DeclareData.Person.File;  //rename $DeclareData.Person.File to MyFile to make 
-                                      //subsequent code simpler</programlisting><!-- DNT-End -->
+    <programlisting>MyFile := $.DeclareData.Person.File;  //rename $DeclareData.Person.File to MyFile to make 
+                                      //subsequent code simpler</programlisting>
 
-    <para>Here is some of the code contained in the DeclareData.<!-- DNT-Start -->ECL<!-- DNT-End -->
+    <para>Here is some of the code contained in the DeclareData.ECL
     file:</para>
 
-    <!-- DNT-Start --><programlisting>EXPORT DeclareData := MODULE
+    <programlisting>EXPORT DeclareData := MODULE
 
   EXPORT Layout_Person := RECORD
     UNSIGNED3 PersonID;
@@ -544,10 +544,10 @@ P2 := PARALLEL(B1,B2,B3);
         '~PROGGUIDE::EXAMPLEDATA::KEYS::PeopleAccts.PersonID');
 
 END;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>By using a <!-- DNT-Start -->MODULE<!-- DNT-End --> structure as a container, all the <!-- DNT-Start -->DATASET<!-- DNT-End --> and
-    <!-- DNT-Start -->INDEX<!-- DNT-End --> declarations are in a single attribute editor window. This makes
+    <para>By using a MODULE structure as a container, all the DATASET and
+    INDEX declarations are in a single attribute editor window. This makes
     maintenance and update simple while allowing complete access to them
     all.</para>
   </sect2>

@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Scope_and_Logical_Filenames">
-  <!-- DNT-Start --><title>Scope<indexterm>
+  <title>Scope<indexterm>
       <primary>SCOPE</primary>
     </indexterm> and Logical Filenames<indexterm>
       <primary>LOGICAL Filenames</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
   <sect2 id="File_Scope">
-    <!-- DNT-Start --><title>File Scope<indexterm>
+    <title>File Scope<indexterm>
         <primary>File Scope</primary>
-      </indexterm></title><!-- DNT-End -->
+      </indexterm></title>
 
-    <para>The logical filenames used in <!-- DNT-Start -->DATASET<!-- DNT-End --> and <!-- DNT-Start -->INDEX<!-- DNT-End --> attribute
-    definitions and the <!-- DNT-Start -->OUTPUT<!-- DNT-End --> and <!-- DNT-Start -->BUILD<!-- DNT-End --> (or <!-- DNT-Start -->BUILDINDEX<!-- DNT-End -->) actions can
+    <para>The logical filenames used in DATASET and INDEX attribute
+    definitions and the OUTPUT and BUILD (or BUILDINDEX) actions can
     optionally begin with a ~ meaning it is absolute, otherwise it is relative
     (the platform configured scope prefix is prepended). It may contain scopes
     delimited by double colons (::) with the final portion being the filename.
     It cannot have a trailing double colons (::). A cluster qualifier can be
     specified. For example, ~myfile@mythor2 points to one file where the file
     is on multiple clusters in the same scope. Valid characters of a scope or
-    filename are <!-- DNT-Start -->ASCII<!-- DNT-End --> &gt;32 &lt; 127 except * " / : &lt; &gt; ? and
+    filename are ASCII &gt;32 &lt; 127 except * " / : &lt; &gt; ? and
     |.</para>
 
     <para>To reference uppercase characters in physical file paths and
@@ -31,45 +31,45 @@
     <para>The presence of a scope in the filename allows you to override the
     default scope name for the cluster. For example, assuming you are
     operating on a cluster whose default scope name is "Training" then the
-    following two <!-- DNT-Start -->OUTPUT<!-- DNT-End --> actions result in the same scope:</para>
+    following two OUTPUT actions result in the same scope:</para>
 
-    <!-- DNT-Start --><programlisting>OUTPUT(SomeFile,,'SomeDir::SomeFileOut1');
-OUTPUT(SomeFile,,'~Training::SomeDir::SomeFileOut2');</programlisting><!-- DNT-End -->
+    <programlisting>OUTPUT(SomeFile,,'SomeDir::SomeFileOut1');
+OUTPUT(SomeFile,,'~Training::SomeDir::SomeFileOut2');</programlisting>
 
     <para>The presence of the leading tilde in the filename only defines the
     scope name and does not change the set of disks to which the data is
     written (<emphasis role="bold">files are </emphasis><emphasis
     role="bold">always</emphasis><emphasis role="bold"> written to the disks
-    of the cluster on which the code executes</emphasis>). The <!-- DNT-Start -->DATASET<!-- DNT-End -->
+    of the cluster on which the code executes</emphasis>). The DATASET
     declaration<indexterm>
-        <primary><!-- DNT-Start -->DATASET<!-- DNT-End --> declaration</primary>
+        <primary>DATASET declaration</primary>
       </indexterm>s for these files might look like this:</para>
 
-    <!-- DNT-Start --><programlisting>RecStruct := {STRING line};
+    <programlisting>RecStruct := {STRING line};
 ds1 := DATASET('SomeDir::SomeFileOut1',RecStruct,THOR);
-ds2 := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisting><!-- DNT-End -->
+ds2 := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisting>
 
     <para>These two files are in the same scope, so that when you use the
-    <!-- DNT-Start -->DATASETs<!-- DNT-End --> in a workunit the Distributed File Utility (<!-- DNT-Start -->DFU<!-- DNT-End -->) will look for
+    DATASETs in a workunit the Distributed File Utility (DFU) will look for
     both files in the Training scope.</para>
 
     <para>However, once you know the scope name you can reference files from
     any other cluster within the same environment. For example, assuming you
     are operating on a cluster whose default scope name is "Production" and
     you want to use the data in the above two files. Then the following two
-    <!-- DNT-Start -->DATASET<!-- DNT-End --> definitions allow you to access that data:</para>
+    DATASET definitions allow you to access that data:</para>
 
-    <!-- DNT-Start --><programlisting>FileX := DATASET('~Training::SomeDir::SomeFileOut1',RecStruct,THOR);
-FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisting><!-- DNT-End -->
+    <programlisting>FileX := DATASET('~Training::SomeDir::SomeFileOut1',RecStruct,THOR);
+FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisting>
 
     <para>Notice the presence of the scope name in both of these definitions.
     This is required because the files are in another scope.</para>
   </sect2>
 
   <sect2 id="Foreign_Files">
-    <!-- DNT-Start --><title>Foreign Files<indexterm>
+    <title>Foreign Files<indexterm>
         <primary>Foreign files</primary>
-      </indexterm></title><!-- DNT-End -->
+      </indexterm></title>
 
     <para>Similar to the scoping rules described above, you can also reference
     files in separate environments serviced by a different Dali. This allows a
@@ -81,9 +81,9 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
           <term>NOTE:</term>
 
           <listitem>
-            <para>If <!-- DNT-Start -->LDAP<!-- DNT-End --> authentication is enabled on the foreign Dali, the
+            <para>If LDAP authentication is enabled on the foreign Dali, the
             user's credentials are verified before processing the file access
-            request. If <!-- DNT-Start -->LDAP<!-- DNT-End --> file scope security is enabled on the foreign
+            request. If LDAP file scope security is enabled on the foreign
             Dali, the user's file access permissions are also verified.</para>
           </listitem>
         </varlistentry>
@@ -96,8 +96,8 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
 
     <para>For example,</para>
 
-    <!-- DNT-Start --><programlisting>MyFile :=DATASET('~foreign::10.150.50.11::training::thor::myfile',
-                 RecStruct,FLAT);</programlisting><!-- DNT-End -->
+    <programlisting>MyFile :=DATASET('~foreign::10.150.50.11::training::thor::myfile',
+                 RecStruct,FLAT);</programlisting>
 
     <para>gives read-only access to the remote
     <emphasis>training::thor::myfile</emphasis> file in the
@@ -105,35 +105,35 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
   </sect2>
 
   <sect2 id="Landing_Zone_Files">
-    <!-- DNT-Start --><title>Landing Zone Files<indexterm>
+    <title>Landing Zone Files<indexterm>
         <primary>Landing Zone files</primary>
-      </indexterm></title><!-- DNT-End -->
+      </indexterm></title>
 
     <para>You can also directly read and write files on a landing zone (or any
-    other <!-- DNT-Start -->IP<!-- DNT-End -->-addressable box) that have not been sprayed to Thor. The landing
+    other IP-addressable box) that have not been sprayed to Thor. The landing
     zone must be running the dafileserv utility program. If the box is a
     Windows box, dafileserv must be installed as a service.</para>
 
     <para>The syntax looks like this:</para>
 
     <para><emphasis
-    role="bold">'~file::&lt;<!-- DNT-Start -->LZ<!-- DNT-End -->-ip&gt;::&lt;path&gt;::&lt;filename&gt;'</emphasis></para>
+    role="bold">'~file::&lt;LZ-ip&gt;::&lt;path&gt;::&lt;filename&gt;'</emphasis></para>
 
     <para>For example,</para>
 
-    <!-- DNT-Start --><programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::training::import::myfile',RecStruct,FLAT);</programlisting><!-- DNT-End -->
+    <programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::training::import::myfile',RecStruct,FLAT);</programlisting>
 
     <para>gives access to the remote
     <emphasis>c$/training/import/myfile</emphasis> file on the linux-based
     <emphasis>10.150.50.12</emphasis> landing zone.</para>
 
-    <para><!-- DNT-Start -->ECL<!-- DNT-End --> logical filenames are case insensitive and physical names
+    <para>ECL logical filenames are case insensitive and physical names
     default to lower case, which can cause problems when the landing zone is a
     Linux box (Linux is case sensitive). The case of characters can be
     explicitly uppercased by escaping them with a leading caret (^), as in
     this example:</para>
 
-    <!-- DNT-Start --><programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::^Advanced^E^C^L::myfile',RecStruct,FLAT);</programlisting><!-- DNT-End -->
+    <programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::^Advanced^E^C^L::myfile',RecStruct,FLAT);</programlisting>
 
     <para>gives access to the remote
     <emphasis>c$/AdvancedECL/myfile</emphasis> file on the linux-based
@@ -141,30 +141,30 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
   </sect2>
 
   <sect2 id="Dynamic_Files">
-    <!-- DNT-Start --><title>Dynamic Files<indexterm>
+    <title>Dynamic Files<indexterm>
         <primary>Dynamic Files</primary>
-      </indexterm></title><!-- DNT-End -->
+      </indexterm></title>
 
     <para>In Roxie queries (only) you can also read files that may not exist
     at query deployment time, but that will exist at query runtime by making
-    the filename <!-- DNT-Start -->DYNAMIC<!-- DNT-End -->.</para>
+    the filename DYNAMIC.</para>
 
     <para>The syntax looks like this:</para>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->DYNAMIC<!-- DNT-End -->('&lt;filename&gt;' )</emphasis></para>
+    <para><emphasis role="bold">DYNAMIC('&lt;filename&gt;' )</emphasis></para>
 
     <para>For example,</para>
 
-    <!-- DNT-Start --><programlisting>MyFile :=DATASET(DYNAMIC('~training::import::myfile'),RecStruct,FLAT);</programlisting><!-- DNT-End -->
+    <programlisting>MyFile :=DATASET(DYNAMIC('~training::import::myfile'),RecStruct,FLAT);</programlisting>
 
     <para>This causes the file to be resolved when the query is executed
     instead of when it is deployed.</para>
   </sect2>
 
   <sect2 id="Temporary_SuperFiles">
-    <!-- DNT-Start --><title>Temporary SuperFile<indexterm>
+    <title>Temporary SuperFile<indexterm>
         <primary>Temporary SuperFile</primary>
-      </indexterm>s</title><!-- DNT-End -->
+      </indexterm>s</title>
 
     <para>A SuperFile<indexterm>
         <primary>SuperFile</primary>
@@ -172,14 +172,14 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
     (see the <emphasis role="bold">SuperFile Overview</emphasis> article in
     the <emphasis>Programmer's Guide</emphasis>). You can specify a temporary
     SuperFile by naming the set of sub-files within curly braces in the string
-    that names the logical file for the <!-- DNT-Start -->DATASET<!-- DNT-End --> declaration<indexterm>
-        <primary><!-- DNT-Start -->DATASET<!-- DNT-End --> declaration</primary>
+    that names the logical file for the DATASET declaration<indexterm>
+        <primary>DATASET declaration</primary>
       </indexterm>. The syntax looks like this:</para>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->DATASET<!-- DNT-End --></primary>
+    <para><emphasis role="bold">DATASET<indexterm>
+        <primary>DATASET</primary>
       </indexterm>( '{</emphasis><emphasis> listoffiles </emphasis><emphasis
-    role="bold">} '</emphasis>, recstruct, <!-- DNT-Start -->THOR<!-- DNT-End -->);</para>
+    role="bold">} '</emphasis>, recstruct, THOR);</para>
 
     <para><emphasis>listoffiles</emphasis> A comma-delimited list of the set
     of logical files to treat as a single SuperFile. The logical filenames
@@ -191,7 +191,7 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
     <para>For example, assuming the default scope name is "thor," the
     following examples both define the same SuperFile:</para>
 
-    <!-- DNT-Start --><programlisting>MyFile :=DATASET('{in::file1,
+    <programlisting>MyFile :=DATASET('{in::file1,
                    in::file2,
                   ~train::in::file3}'),
                  RecStruct,THOR);
@@ -199,9 +199,9 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
 MyFile :=DATASET('~{thor::in::file1,
                    thor::in::file2,
                    train::in::file3}'),
-                 RecStruct,THOR);</programlisting><!-- DNT-End -->
+                 RecStruct,THOR);</programlisting>
 
-    <para>You cannot use this form of logical filename to do an <!-- DNT-Start -->OUTPUT<!-- DNT-End --> or
-    <!-- DNT-Start -->PERSIST<!-- DNT-End -->; this form is read-only.</para>
+    <para>You cannot use this form of logical filename to do an OUTPUT or
+    PERSIST; this form is read-only.</para>
   </sect2>
 </sect1>

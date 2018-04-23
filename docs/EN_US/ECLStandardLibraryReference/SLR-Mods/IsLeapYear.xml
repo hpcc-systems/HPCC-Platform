@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="IsLeapYear">
-  <!-- DNT-Start --><title>IsLeapYear</title><!-- DNT-End -->
+  <title>IsLeapYear</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.IsLeapYear<indexterm>
+  <para><emphasis role="bold">STD.Date.IsLeapYear<indexterm>
       <primary>STD.Date.IsLeapYear</primary>
     </indexterm><indexterm>
       <primary>Date.IsLeapYear</primary>
     </indexterm><indexterm>
       <primary>IsLeapYear</primary>
     </indexterm>(</emphasis> <emphasis>year</emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,32 +21,32 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>year</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>year</emphasis></entry>
 
-          <entry>A year value in the <!-- DNT-Start -->INTEGER<!-- DNT-End -->2 format.</entry>
+          <entry>A year value in the INTEGER2 format.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->IsLeapYear<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
+          <entry>IsLeapYear returns a BOOLEAN value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->IsLeapYear<!-- DNT-End --></emphasis> function returns <!-- DNT-Start -->TRUE<!-- DNT-End -->
+  <para>The <emphasis role="bold">IsLeapYear</emphasis> function returns TRUE
   if the <emphasis>year</emphasis> is a leap year in the Gregorian (or
   proleptic Gregorian) calendar.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 INTEGER2 MyYear := 2012;   //2012
   
 D := STD.Date.IsLeapYear(MyYear);
     //D contains TRUE, 2012 is a leap year
-  </programlisting><!-- DNT-End -->
+  </programlisting>
 
   <para></para>
 </sect1>

@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <!-- DNT-Start --><title>HPCC Data Tutorial</title><!-- DNT-End -->
+  <title>HPCC Data Tutorial</title>
 
   <bookinfo>
-    <!-- DNT-Start --><title>HPCC Data Tutorial</title><!-- DNT-End -->
+    <title>HPCC Data Tutorial</title>
 
     <mediaobject>
       <imageobject>
@@ -29,7 +29,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
+      <para>HPCC Systems<superscript>Â®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products and services may be trademarks or registered
@@ -45,21 +45,21 @@
     <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <!-- DNT-Start --><!--Release Info makes a running page footer: now an include! --><!-- DNT-End -->
+    <!--Release Info makes a running page footer: now an include! -->
 
-    <!-- DNT-Start --><!--The following include statement pulls in the date_ver from version.xml--><!-- DNT-End -->
+    <!--The following include statement pulls in the date_ver from version.xml-->
 
     <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems<superscript>Â®</superscript></corpname>
 
-    <!-- DNT-Start --><!--corpname never prints--><!-- DNT-End -->
+    <!--corpname never prints-->
 
     <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <!-- DNT-Start --><!--Copyright tag inserts the symbol automatically: Now an Include!--><!-- DNT-End -->
+    <!--Copyright tag inserts the symbol automatically: Now an Include!-->
 
     <mediaobject role="logo">
       <imageobject>
@@ -69,27 +69,27 @@
   </bookinfo>
 
   <chapter id="DataTutorialIntroduction">
-    <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
+    <title>Introduction</title>
 
     <sect1 id="Introduction_Case-Study-and-Tutorial" role="nobrk">
-      <!-- DNT-Start --><title>The ECL Development Process</title><!-- DNT-End -->
+      <title>The ECL Development Process</title>
 
       <para>This tutorial provides a walk-through of the development process,
       from beginning to end, and is designed to be an introduction to working
-      with data on any HPCCSystems <!-- DNT-Start -->HPCC<!-- DNT-End --><footnote>
+      with data on any HPCCSystems HPCC<footnote>
           <para><emphasis role="bold">H</emphasis>igh <emphasis
           role="bold">P</emphasis>erformance <emphasis
           role="bold">C</emphasis>omputing <emphasis
-          role="bold">C</emphasis>luster (<!-- DNT-Start -->HPCC<!-- DNT-End -->) is a massively parallel
+          role="bold">C</emphasis>luster (HPCC) is a massively parallel
           processing computing platform that solves Big Data problems. See
-          http://www.hpccsystems.com/Why-<!-- DNT-Start -->HPCC<!-- DNT-End -->/How-it-works for more
+          http://www.hpccsystems.com/Why-HPCC/How-it-works for more
           details.</para>
         </footnote>. We will write code in ECL<footnote>
           <para><emphasis role="bold">E</emphasis>nterprise <emphasis
           role="bold">C</emphasis>ontrol <emphasis
-          role="bold">L</emphasis>anguage (<!-- DNT-Start -->ECL<!-- DNT-End -->) is a declarative, data centric
+          role="bold">L</emphasis>anguage (ECL) is a declarative, data centric
           programming language used to manage all aspects of the massive data
-          joins, sorts, and builds that truly differentiate <!-- DNT-Start -->HPCC<!-- DNT-End --> (High
+          joins, sorts, and builds that truly differentiate HPCC (High
           Performance Computing Cluster) from other technologies in its
           ability to provide flexible data analysis on a massive scale.</para>
         </footnote>to process our data and query it.</para>
@@ -98,14 +98,14 @@
 
       <itemizedlist>
         <listitem>
-          <para>You have a running <!-- DNT-Start -->HPCC<!-- DNT-End -->. This can be a <!-- DNT-Start -->VM<!-- DNT-End --> Edition or a single
-          or multinode <!-- DNT-Start -->HPCC<!-- DNT-End --> platform</para>
+          <para>You have a running HPCC. This can be a VM Edition or a single
+          or multinode HPCC platform</para>
         </listitem>
       </itemizedlist>
 
-      <para>You have the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --><footnote>
-          <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> (Integrated Development Environment) is the tool
-          used to create queries into your data and <!-- DNT-Start -->ECL<!-- DNT-End --> files with which to
+      <para>You have the ECL IDE<footnote>
+          <para>The ECL IDE (Integrated Development Environment) is the tool
+          used to create queries into your data and ECL files with which to
           build your queries.</para>
         </footnote> installed and configured</para>
 
@@ -118,17 +118,17 @@
           <para>There are links to data file available at <ulink
           url="http://hpccsystems.com/community/docs/data-tutorial-guide">http://hpccsystems.com/community/docs/data-tutorial-guide</ulink></para>
 
-          <para>The download is approximately 30 <!-- DNT-Start -->MB<!-- DNT-End --> (compressed) and is
-          available in either <!-- DNT-Start -->ZIP<!-- DNT-End --> or .tar.gz format. Choose the appropriate
+          <para>The download is approximately 30 MB (compressed) and is
+          available in either ZIP or .tar.gz format. Choose the appropriate
           link.</para>
         </listitem>
 
         <listitem>
-          <para>Spray the file to a Data Refinery cluster <!-- DNT-Start -->HPCC<!-- DNT-End --> clusters
+          <para>Spray the file to a Data Refinery cluster HPCC clusters
           "spray" data into file parts on each node.</para>
 
           <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is
-          the relocation of a data file from one location to an <!-- DNT-Start -->HPCC<!-- DNT-End --> cluster.
+          the relocation of a data file from one location to an HPCC cluster.
           The term spray was adopted due to the nature of the file movement --
           the file is partitioned across all nodes within a cluster.</para>
         </listitem>
@@ -155,7 +155,7 @@
         </listitem>
 
         <listitem>
-          <para>Deploy them to a Rapid Data Delivery Engine (<!-- DNT-Start -->RDDE<!-- DNT-End -->) cluster,
+          <para>Deploy them to a Rapid Data Delivery Engine (RDDE) cluster,
           also know as a Roxie cluster.</para>
         </listitem>
       </itemizedlist>
@@ -163,13 +163,13 @@
   </chapter>
 
   <chapter id="Working_with_Data">
-    <!-- DNT-Start --><title>Working with Data</title><!-- DNT-End -->
+    <title>Working with Data</title>
 
     <sect1 id="The_Original_Data" role="nobrk">
-      <!-- DNT-Start --><title>The Original Data</title><!-- DNT-End -->
+      <title>The Original Data</title>
 
       <para>In this scenario, we receive a structured data file containing
-      records with people's names and addresses. The <!-- DNT-Start -->HPCC<!-- DNT-End --> also supports
+      records with people's names and addresses. The HPCC also supports
       unstructured data, but this example is simpler. This file is documented
       in the following table:</para>
 
@@ -185,7 +185,7 @@
 
             <thead>
               <row>
-                <entry align="left"><!-- DNT-Start -->Field Name<!-- DNT-End --></entry>
+                <entry align="left">Field Name</entry>
 
                 <entry align="left">Type</entry>
 
@@ -195,7 +195,7 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start -->FirstName<!-- DNT-End --></entry>
+                <entry>FirstName</entry>
 
                 <entry>15 Character String</entry>
 
@@ -203,7 +203,7 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->LastName<!-- DNT-End --></entry>
+                <entry>LastName</entry>
 
                 <entry>25 Character String</entry>
 
@@ -211,7 +211,7 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->MiddleName<!-- DNT-End --></entry>
+                <entry>MiddleName</entry>
 
                 <entry>15 Character String</entry>
 
@@ -219,15 +219,15 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->Zip<!-- DNT-End --></entry>
+                <entry>Zip</entry>
 
                 <entry>5 Character String</entry>
 
-                <entry><!-- DNT-Start -->ZIP<!-- DNT-End --> Code</entry>
+                <entry>ZIP Code</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->Street<!-- DNT-End --></entry>
+                <entry>Street</entry>
 
                 <entry>42 Character String</entry>
 
@@ -235,7 +235,7 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->City<!-- DNT-End --></entry>
+                <entry>City</entry>
 
                 <entry>20 Character String</entry>
 
@@ -243,7 +243,7 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->State<!-- DNT-End --></entry>
+                <entry>State</entry>
 
                 <entry>2 Character String</entry>
 
@@ -260,25 +260,25 @@
       <para></para>
 
       <sect2 id="Uploading_a_file">
-        <!-- DNT-Start --><title>Load the Incoming Data File to your Landing Zone</title><!-- DNT-End -->
+        <title>Load the Incoming Data File to your Landing Zone</title>
 
         <para>A Landing Zone (or Drop Zone) is a physical storage location
-        defined in your <!-- DNT-Start -->HPCC<!-- DNT-End -->'s environment. A daemon (DaFileSrv) must be
+        defined in your HPCC's environment. A daemon (DaFileSrv) must be
         running on that server to enable file sprays and desprays.</para>
 
         <para>For smaller data files, you can use the upload/download file
-        utility in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch (a Web-based interface to your <!-- DNT-Start -->HPCC<!-- DNT-End --> platform).
+        utility in ECL Watch (a Web-based interface to your HPCC platform).
         The sample data file is ~100 mb.</para>
 
         <orderedlist>
           <listitem>
-            <para>Download the sample data file from the <!-- DNT-Start -->HPCC<!-- DNT-End -->
-            Systems<superscript>®</superscript> portal.</para>
+            <para>Download the sample data file from the HPCC
+            Systems<superscript>Â®</superscript> portal.</para>
 
             <para>The data file is available from links found on <ulink
             url="http://hpccsystems.com/community/docs/data-tutorial-guide">http://hpccsystems.com/community/docs/data-tutorial-guide</ulink>.
-            The download is approximately 30 <!-- DNT-Start -->MB<!-- DNT-End --> (compressed) and is available
-            in either <!-- DNT-Start -->ZIP<!-- DNT-End --> or tar.gz format (<emphasis
+            The download is approximately 30 MB (compressed) and is available
+            in either ZIP or tar.gz format (<emphasis
             role="bold">OriginalPerson.tar.gz</emphasis> or <emphasis
             role="bold">OriginalPerson.zip</emphasis>)</para>
           </listitem>
@@ -288,11 +288,11 @@
           </listitem>
 
           <listitem>
-            <para>In your browser, go to the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
-            Watch</emphasis> <!-- DNT-Start -->URL<!-- DNT-End -->. For example, http://nnn.nnn.nnn.nnn:8010,
-            where nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End --><footnote>
-                <para>The <!-- DNT-Start -->ESP<!-- DNT-End --> (Enterprise Services Platform) Server is the
-                communication layer server in you <!-- DNT-Start -->HPCC<!-- DNT-End --> environment.</para>
+            <para>In your browser, go to the <emphasis role="bold">ECL
+            Watch</emphasis> URL. For example, http://nnn.nnn.nnn.nnn:8010,
+            where nnn.nnn.nnn.nnn is your ESP<footnote>
+                <para>The ESP (Enterprise Services Platform) Server is the
+                communication layer server in you HPCC environment.</para>
               </footnote> Server's IP address.</para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -308,8 +308,8 @@
                       <entry><inlinegraphic
                       fileref="images/caution.png" /></entry>
 
-                      <entry>Your <!-- DNT-Start -->IP<!-- DNT-End --> address could be different from the ones
-                      provided in the example images. Please use the <!-- DNT-Start -->IP<!-- DNT-End -->
+                      <entry>Your IP address could be different from the ones
+                      provided in the example images. Please use the IP
                       address provided by <emphasis
                       role="bold">your</emphasis> installation.</entry>
                     </row>
@@ -321,7 +321,7 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>From the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch home page, click on the <emphasis
+            <para>From the ECL Watch home page, click on the <emphasis
             role="bold">Files</emphasis> icon, then click the <emphasis
             role="bold">Landing Zones</emphasis> link from the navigation
             sub-menu.</para>
@@ -381,9 +381,9 @@
       </sect2>
 
       <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
-        <!-- DNT-Start --><title>Spray the Data File to your Thor Cluster</title><!-- DNT-End -->
+        <title>Spray the Data File to your Thor Cluster</title>
 
-        <para>To use the data file in our <!-- DNT-Start -->HPCC<!-- DNT-End --> cluster, we must first "spray"
+        <para>To use the data file in our HPCC cluster, we must first "spray"
         it to a Thor cluster. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location to a Thor cluster. The term spray was adopted due to the
@@ -395,27 +395,27 @@
 
         <para>We are going to spray it to our Thor cluster and give it a
         logical name of <emphasis role="bold">tutorial::</emphasis><emphasis
-        role="bold"><!-- DNT-Start -->YN<!-- DNT-End --></emphasis><emphasis
+        role="bold">YN</emphasis><emphasis
         role="bold">::OriginalPerson</emphasis><emphasis role="bold">
-        </emphasis>where <emphasis role="bold"><!-- DNT-Start -->YN<!-- DNT-End --></emphasis> are your
+        </emphasis>where <emphasis role="bold">YN</emphasis> are your
         initials. The Distributed File Utility maintains a list of logical
         files and their corresponding physical file locations.</para>
 
         <orderedlist>
           <listitem>
-            <para>Open <!-- DNT-Start -->ECL<!-- DNT-End --> Watch in your browser using the following
-            <!-- DNT-Start -->URL<!-- DNT-End -->:</para>
+            <para>Open ECL Watch in your browser using the following
+            URL:</para>
 
             <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
             </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your
-            <!-- DNT-Start -->ESP<!-- DNT-End --> Server's <!-- DNT-Start -->IP<!-- DNT-End --> Address and pppp is the port. The default port is
+            ESP Server's IP Address and pppp is the port. The default port is
             8010)</emphasis></para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>From the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch home page, click on the <emphasis
+            <para>From the ECL Watch home page, click on the <emphasis
             role="bold">Files</emphasis> icon, then click the <emphasis
             role="bold">Landing Zones</emphasis> link from the navigation
             sub-menu.</para>
@@ -486,8 +486,8 @@
             <para>Fill in the <emphasis role="bold">Target Scope</emphasis>
             using the naming convention described earlier: <emphasis
             role="bold">tutorial::</emphasis><emphasis
-            role="bold"><!-- DNT-Start -->YN<!-- DNT-End --></emphasis> (remember, <emphasis
-            role="bold"><!-- DNT-Start -->YN<!-- DNT-End --></emphasis> are your initials).</para>
+            role="bold">YN</emphasis> (remember, <emphasis
+            role="bold">YN</emphasis> are your initials).</para>
           </listitem>
 
           <listitem>
@@ -530,16 +530,16 @@
     </sect1>
 
     <sect1 id="Begin_Coding">
-      <!-- DNT-Start --><title>Begin Coding</title><!-- DNT-End -->
+      <title>Begin Coding</title>
 
-      <para>In this portion of the tutorial, we will write <!-- DNT-Start -->ECL<!-- DNT-End --> code to define
+      <para>In this portion of the tutorial, we will write ECL code to define
       the data file and execute simple queries on it so we can evaluate it and
       determine any necessary pre-processing.</para>
 
       <orderedlist>
         <listitem>
-          <para>Start the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> (Start &gt;&gt; All Programs &gt;&gt; <!-- DNT-Start -->HPCC<!-- DNT-End -->
-          Systems &gt;&gt; <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> )</para>
+          <para>Start the ECL IDE (Start &gt;&gt; All Programs &gt;&gt; HPCC
+          Systems &gt;&gt; ECL IDE )</para>
         </listitem>
 
         <listitem>
@@ -574,7 +574,7 @@
 
           <para>Enter <emphasis role="bold">Tutorial</emphasis><emphasis
           role="bold">YourName</emphasis>(where <emphasis>YourName</emphasis>
-          is your name)<emphasis> </emphasis>for the label, then press the <!-- DNT-Start -->OK<!-- DNT-End -->
+          is your name)<emphasis> </emphasis>for the label, then press the OK
           button.</para>
 
           <para><figure>
@@ -599,7 +599,7 @@
           <?dbfo keep-together="always"?>
 
           <para>Enter <emphasis role="bold">Layout_People</emphasis> for the
-          label, then press the <!-- DNT-Start -->OK<!-- DNT-End --> button.</para>
+          label, then press the OK button.</para>
 
           <para><figure>
               <title>Insert File</title>
@@ -626,8 +626,8 @@
           <para>Notice that some text has been written for you in the window.
           This helps you to remember that the name of the file (Layout_People)
           <emphasis>must always exactly match</emphasis> the name of the
-          single <!-- DNT-Start -->EXPORT<!-- DNT-End --> definition (Layout_People) contained in that file.
-          This is a requirement -- one <!-- DNT-Start -->EXPORT<!-- DNT-End --> definition per file, and its
+          single EXPORT definition (Layout_People) contained in that file.
+          This is a requirement -- one EXPORT definition per file, and its
           name must match the filename.</para>
         </listitem>
 
@@ -678,7 +678,7 @@ END;    </programlisting> <figure>
       </orderedlist>
 
       <sect2 id="Examine_the_Data" role="brk">
-        <!-- DNT-Start --><title>Examine the Data</title><!-- DNT-End -->
+        <title>Examine the Data</title>
 
         <para>In this section, we will look at the data and determine if there
         is any pre-processing we want to perform on the data. This is the step
@@ -695,7 +695,7 @@ END;    </programlisting> <figure>
 
           <listitem>
             <para>Enter <emphasis role="bold">File_OriginalPerson</emphasis>
-            for the label, then press the <!-- DNT-Start -->OK<!-- DNT-End --> button.</para>
+            for the label, then press the OK button.</para>
 
             <para><figure>
                 <title>Insert File</title>
@@ -710,7 +710,7 @@ END;    </programlisting> <figure>
 
           <listitem>
             <para>Write the following code (remember to replace
-            <emphasis><!-- DNT-Start -->YN<!-- DNT-End --></emphasis> with your initials):</para>
+            <emphasis>YN</emphasis> with your initials):</para>
 
             <para><programlisting>IMPORT TutorialYourName;
 EXPORT File_OriginalPerson :=
@@ -737,13 +737,13 @@ DATASET('~tutorial::YN::OriginalPerson',TutorialYourName.Layout_People,THOR);
           </listitem>
 
           <listitem>
-            <para>Open a new Builder Window (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N) and write the following
+            <para>Open a new Builder Window (CTRL+N) and write the following
             code (remember to replace <emphasis>YourName </emphasis>with your
             name):</para>
 
-            <!-- DNT-Start --><programlisting>IMPORT TutorialYourName;
+            <programlisting>IMPORT TutorialYourName;
 COUNT(TutorialYourName.File_OriginalPerson);
-</programlisting><!-- DNT-End -->
+</programlisting>
           </listitem>
 
           <listitem>
@@ -792,7 +792,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
           </listitem>
 
           <listitem>
-            <para>Select the Builder tab and change <!-- DNT-Start -->COUNT<!-- DNT-End --> to <!-- DNT-Start -->OUTPUT<!-- DNT-End -->, as shown
+            <para>Select the Builder tab and change COUNT to OUTPUT, as shown
             below:</para>
 
             <para><programlisting>IMPORT TutorialYourName;
@@ -829,8 +829,8 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
             <para>For our purposes, it will be easier to have all the names in
             all uppercase. This demonstrates one of the steps in the basic
-            process of preparing data (Extract, Transform, and Load--<!-- DNT-Start -->ETL<!-- DNT-End -->) using
-            <!-- DNT-Start -->ECL<!-- DNT-End -->.</para>
+            process of preparing data (Extract, Transform, and Load--ETL) using
+            ECL.</para>
           </listitem>
 
           <listitem>
@@ -840,7 +840,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
       </sect2>
 
       <sect2 id="Process_the_Data" role="brk">
-        <!-- DNT-Start --><title>Process the Data</title><!-- DNT-End -->
+        <title>Process the Data</title>
 
         <para>In this section, we will write code to convert the original data
         so that all names are in uppercase. We will then write this new file
@@ -856,8 +856,8 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
           <listitem>
             <para>Name this one <emphasis
-            role="bold"><!-- DNT-Start -->BWR<!-- DNT-End -->_ProcessRawData</emphasis> and write the following
-            code (changing <!-- DNT-Start -->YN<!-- DNT-End --> and YourName as before):</para>
+            role="bold">BWR_ProcessRawData</emphasis> and write the following
+            code (changing YN and YourName as before):</para>
 
             <para><programlisting>IMPORT TutorialYourName, Std;
     TutorialYourName.Layout_People toUpperPlease(TutorialYourName.Layout_People pInput)
@@ -908,7 +908,7 @@ OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
       </sect2>
 
       <sect2 id="Using_our_Data">
-        <!-- DNT-Start --><title>Using our New Data</title><!-- DNT-End -->
+        <title>Using our New Data</title>
 
         <para></para>
 
@@ -919,8 +919,8 @@ OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
 
         <para></para>
 
-        <para>In the <!-- DNT-Start -->DATASET<!-- DNT-End --> definition, we will add a virtual field to the
-        <!-- DNT-Start -->RECORD<!-- DNT-End --> structure for the fileposition. This is required for
+        <para>In the DATASET definition, we will add a virtual field to the
+        RECORD structure for the fileposition. This is required for
         indexes.</para>
 
         <para></para>
@@ -932,7 +932,7 @@ OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
             role="bold">YourName</emphasis><emphasis role="bold">
             </emphasis>Folder. Name it <emphasis role="bold">
             File_TutorialPerson </emphasis>and write this code (changing
-            <emphasis><!-- DNT-Start -->YN<!-- DNT-End --> </emphasis>to your initials):</para>
+            <emphasis>YN </emphasis>to your initials):</para>
 
             <para></para>
 
@@ -957,15 +957,15 @@ DATASET('~tutorial::YN::TutorialPerson',
       </sect2>
 
       <sect2 id="Index_the_Data">
-        <!-- DNT-Start --><title>Index the Data</title><!-- DNT-End -->
+        <title>Index the Data</title>
 
-        <para>Next, we will define the <!-- DNT-Start -->INDEX<!-- DNT-End -->.</para>
+        <para>Next, we will define the INDEX.</para>
 
         <orderedlist>
           <listitem>
             <para>Insert a File into your Tutorial Folder. Name it <emphasis
-            role="bold"><!-- DNT-Start -->IDX<!-- DNT-End -->_PeopleByZip</emphasis><emphasis role="bold">
-            </emphasis>and write this code (changing <emphasis><!-- DNT-Start -->YN<!-- DNT-End --></emphasis>
+            role="bold">IDX_PeopleByZip</emphasis><emphasis role="bold">
+            </emphasis>and write this code (changing <emphasis>YN</emphasis>
             and <emphasis>YourName</emphasis> as before):</para>
 
             <para><programlisting>IMPORT TutorialYourName;
@@ -985,7 +985,7 @@ INDEX(TutorialYourName.File_TutorialPerson,{zip,fpos},'~tutorial::YN::PeopleByZi
             role="bold">Tutorial</emphasis><emphasis
             role="bold">YourName</emphasis><emphasis role="bold">
             </emphasis>Folder and name it <emphasis
-            role="bold"><!-- DNT-Start -->BWR<!-- DNT-End -->_BuildPeopleByZip </emphasis>and write this code
+            role="bold">BWR_BuildPeopleByZip </emphasis>and write this code
             (replacing <emphasis>YourName</emphasis> with your name):</para>
 
             <para><programlisting>IMPORT TutorialYourName;
@@ -1006,7 +1006,7 @@ BUILDINDEX(TutorialYourName.IDX_PeopleByZIP,OVERWRITE);
       </sect2>
 
       <sect2 id="Query_the_Data">
-        <!-- DNT-Start --><title>Build a Query</title><!-- DNT-End -->
+        <title>Build a Query</title>
 
         <para>Now that we have an index file, we will write a query that uses
         it.</para>
@@ -1014,7 +1014,7 @@ BUILDINDEX(TutorialYourName.IDX_PeopleByZIP,OVERWRITE);
         <orderedlist>
           <listitem>
             <para>Insert a File into your Tutorial Folder. Name it <emphasis
-            role="bold"><!-- DNT-Start -->BWR<!-- DNT-End -->_FetchPeopleByZip </emphasis>and write this code
+            role="bold">BWR_FetchPeopleByZip </emphasis>and write this code
             (changing <emphasis>YourName</emphasis> as before):</para>
 
             <para><programlisting>IMPORT TutorialYourName;
@@ -1051,14 +1051,14 @@ OUTPUT(FetchPeopleByZip);
     </sect1>
 
     <sect1 id="Publishing_your_Query">
-      <!-- DNT-Start --><title>Publishing your Thor Query</title><!-- DNT-End -->
+      <title>Publishing your Thor Query</title>
 
       <para>Now that we have created an indexed query, the next step is to
       enable access to it through a Web interface.</para>
 
-      <para>Our <!-- DNT-Start -->STORED<!-- DNT-End --> variables provide a means to pass values as query
-      parameters. In this example, the user can supply the <!-- DNT-Start -->ZIP<!-- DNT-End --> code so the
-      results are people from that <!-- DNT-Start -->ZIP<!-- DNT-End --> code.</para>
+      <para>Our STORED variables provide a means to pass values as query
+      parameters. In this example, the user can supply the ZIP code so the
+      results are people from that ZIP code.</para>
 
       <orderedlist>
         <listitem>
@@ -1092,12 +1092,12 @@ OUTPUT(resultset);
 
         <listitem>
           <para>When the workunit completes, select the Workunit<emphasis
-          role="bold"> </emphasis>tab, then select the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch tab.</para>
+          role="bold"> </emphasis>tab, then select the ECL Watch tab.</para>
         </listitem>
 
         <listitem>
           <para>Press the <emphasis role="bold">Publish</emphasis> button, on
-          the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch tab.</para>
+          the ECL Watch tab.</para>
 
           <para><figure>
               <title>Publish Workunit</title>
@@ -1129,17 +1129,17 @@ OUTPUT(resultset);
       </orderedlist>
 
       <sect2 id="Execute-using-the-Data-Delivery-Engine">
-        <!-- DNT-Start --><title>Execute using WsECL</title><!-- DNT-End -->
+        <title>Execute using WsECL</title>
 
         <para>Now that the query is published, we can run it using the WsECL
         Web service. WsECL provides a Web-based interface to your published
         query. It also automatically creates an entry form to execute the
         query.</para>
 
-        <para>Using the following <!-- DNT-Start -->URL<!-- DNT-End -->:</para>
+        <para>Using the following URL:</para>
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
-        nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End --> Server's <!-- DNT-Start -->IP<!-- DNT-End --> address and pppp is the port.
+        nnn.nnn.nnn.nnn is your ESP Server's IP address and pppp is the port.
         Default port is 8002)</emphasis></para>
 
         <para><figure>
@@ -1202,7 +1202,7 @@ OUTPUT(resultset);
     </sect1>
 
     <sect1 id="Deploy_the_Roxie_Query">
-      <!-- DNT-Start --><title>Compile and Publish the Roxie Query</title><!-- DNT-End -->
+      <title>Compile and Publish the Roxie Query</title>
 
       <para>The final step in this process is to publish the indexed query to
       a Rapid Data Delivery Engine (Roxie) Cluster.</para>
@@ -1210,7 +1210,7 @@ OUTPUT(resultset);
       <para>We will recompile the code with Roxie as the target cluster, then
       publish it to a Roxie cluster. <orderedlist>
           <listitem>
-            <para>In the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, select the Builder tab on the
+            <para>In the ECL IDE, select the Builder tab on the
             FetchPeopleByZipService file builder window.</para>
           </listitem>
 
@@ -1233,10 +1233,10 @@ OUTPUT(resultset);
             <para>In the Builder window, in the upper left corner the
             <emphasis role="bold">Submit</emphasis> button has a drop down
             arrow next to it. Select the arrow to expose the <emphasis
-            role="bold"><!-- DNT-Start -->Compile<!-- DNT-End --></emphasis> option.</para>
+            role="bold">Compile</emphasis> option.</para>
 
             <figure>
-              <!-- DNT-Start --><title>Compile</title><!-- DNT-End -->
+              <title>Compile</title>
 
               <mediaobject>
                 <imageobject>
@@ -1247,7 +1247,7 @@ OUTPUT(resultset);
           </listitem>
 
           <listitem>
-            <para>Select <emphasis role="bold"><!-- DNT-Start -->Compile<!-- DNT-End --></emphasis></para>
+            <para>Select <emphasis role="bold">Compile</emphasis></para>
           </listitem>
 
           <listitem>
@@ -1269,7 +1269,7 @@ OUTPUT(resultset);
         </orderedlist></para>
 
       <sect2 id="Deploy_the_Query_to_Roxie">
-        <!-- DNT-Start --><title>Publish the Roxie query</title><!-- DNT-End -->
+        <title>Publish the Roxie query</title>
 
         <para>Next we will publish the query to a Roxie Cluster.</para>
 
@@ -1278,7 +1278,7 @@ OUTPUT(resultset);
             <para>Select the workunit tab for the FetchPeopleByZipService that
             you just compiled.</para>
 
-            <para>This opens the workunit in an <!-- DNT-Start -->ECL<!-- DNT-End --> Watch tab.</para>
+            <para>This opens the workunit in an ECL Watch tab.</para>
           </listitem>
 
           <listitem>
@@ -1302,13 +1302,13 @@ OUTPUT(resultset);
       </sect2>
 
       <sect2 id="Run_the_Roxie_Query" role="brk">
-        <!-- DNT-Start --><title>Run the Roxie Query in WsECL</title><!-- DNT-End -->
+        <title>Run the Roxie Query in WsECL</title>
 
         <para>Now that the query is deployed to a Roxie cluster, we can run it
-        using the <!-- DNT-Start -->WS<!-- DNT-End -->-<!-- DNT-Start -->ECL<!-- DNT-End --> service Using the following <!-- DNT-Start -->URL<!-- DNT-End -->:</para>
+        using the WS-ECL service Using the following URL:</para>
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
-        nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End --> Server's <!-- DNT-Start -->IP<!-- DNT-End --> address and pppp is the port.
+        nnn.nnn.nnn.nnn is your ESP Server's IP address and pppp is the port.
         The default port is 8002)</emphasis></para>
 
         <orderedlist>
@@ -1361,12 +1361,12 @@ OUTPUT(resultset);
   </chapter>
 
   <chapter id="Summary">
-    <!-- DNT-Start --><title>Summary</title><!-- DNT-End -->
+    <title>Summary</title>
 
     <para>Now that you have successfully processed raw data, sprayed it onto a
-    cluster, and deployed it to a <!-- DNT-Start -->RDDE<!-- DNT-End --> cluster, what's next?</para>
+    cluster, and deployed it to a RDDE cluster, what's next?</para>
 
-    <!-- DNT-Start --><!-- --><!-- DNT-End -->
+    <!-- -->
 
     <para>Here is a short list of suggestions on the path you might take from
     here:</para>
@@ -1380,8 +1380,8 @@ OUTPUT(resultset);
 
     <itemizedlist mark="bullet">
       <listitem>
-        <para>Write client applications to access your queries using <!-- DNT-Start -->JSON<!-- DNT-End --> or
-        <!-- DNT-Start -->SOAP<!-- DNT-End --> interfaces.</para>
+        <para>Write client applications to access your queries using JSON or
+        SOAP interfaces.</para>
       </listitem>
     </itemizedlist>
 
@@ -1398,7 +1398,7 @@ OUTPUT(resultset);
               </imageobject>
             </mediaobject>
           </figure>The Links tab provides easy access to a form, a Sample
-        Request, a Sample Response, the <!-- DNT-Start -->WSDL<!-- DNT-End -->, the <!-- DNT-Start -->XML<!-- DNT-End --> Schema (<!-- DNT-Start -->XSD<!-- DNT-End -->) and
+        Request, a Sample Response, the WSDL, the XML Schema (XSD) and
         more...</para>
       </listitem>
     </itemizedlist>

@@ -2,11 +2,11 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EXPORT">
-  <!-- DNT-Start --><title>EXPORT</title><!-- DNT-End -->
+  <title>EXPORT</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->EXPORT<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->EXPORT<!-- DNT-End --></primary>
-    </indexterm> </emphasis> <emphasis role="bold">[ <!-- DNT-Start -->VIRTUAL<!-- DNT-End --> ]</emphasis>
+  <para><emphasis role="bold">EXPORT<indexterm>
+      <primary>EXPORT</primary>
+    </indexterm> </emphasis> <emphasis role="bold">[ VIRTUAL ]</emphasis>
   <emphasis>definition</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -17,16 +17,16 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">VIRTUAL</emphasis><indexterm>
+            <entry><emphasis role="bold">VIRTUAL</emphasis><indexterm>
                 <primary>VIRTUAL EXPORT</primary>
-              </indexterm><!-- DNT-End --></entry>
+              </indexterm></entry>
 
             <entry>Optional. Specifies the <emphasis>definition</emphasis> is
-            <!-- DNT-Start -->VIRTUAL<!-- DNT-End -->. Valid only inside a <!-- DNT-Start -->MODULE<!-- DNT-End --> Structure.</entry>
+            VIRTUAL. Valid only inside a MODULE Structure.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>definition</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>definition</emphasis></entry>
 
             <entry>A valid definition.</entry>
           </row>
@@ -34,28 +34,28 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->EXPORT<!-- DNT-End --> </emphasis>keyword explicitly allows
+  <para>The <emphasis role="bold">EXPORT </emphasis>keyword explicitly allows
   other definitions to import the specified <emphasis>definition</emphasis>
-  for use. It may be <!-- DNT-Start -->IMPORTed<!-- DNT-End --> from code in any folder, therefore its
+  for use. It may be IMPORTed from code in any folder, therefore its
   visibility scope is global.</para>
 
-  <para><!-- DNT-Start -->ECL<!-- DNT-End --> code is stored in .ecl text files which may only contain a single
-  <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> definition. This definition may be a structure that allows
-  <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> definitions within their boundaries (such as <!-- DNT-Start -->MODULE<!-- DNT-End -->,
-  <!-- DNT-Start -->INTERFACE<!-- DNT-End -->, <!-- DNT-Start -->TYPE<!-- DNT-End -->, etc.). The name of the .ecl file containing the code must
-  exactly match the name of the single <!-- DNT-Start -->EXPORT<!-- DNT-End --> (or <!-- DNT-Start -->SHARED<!-- DNT-End -->) definition that it
+  <para>ECL code is stored in .ecl text files which may only contain a single
+  EXPORT or SHARED definition. This definition may be a structure that allows
+  EXPORT or SHARED definitions within their boundaries (such as MODULE,
+  INTERFACE, TYPE, etc.). The name of the .ecl file containing the code must
+  exactly match the name of the single EXPORT (or SHARED) definition that it
   contains. </para>
 
-  <para>Definitions without the <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> keywords are local to the
+  <para>Definitions without the EXPORT or SHARED keywords are local to the
   file within which they reside (see <link
   linkend="Attribute_Visibility">Definition Visibility</link>). A local
-  <emphasis>definition's</emphasis> scope is limited to the next <!-- DNT-Start -->SHARED<!-- DNT-End --> or
-  <!-- DNT-Start -->EXPORT<!-- DNT-End --> definition, therefore they must precede that file's <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End -->
+  <emphasis>definition's</emphasis> scope is limited to the next SHARED or
+  EXPORT definition, therefore they must precede that file's EXPORT or SHARED
   definition.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>EXPORT MyDefinition := 5;
+  <programlisting>EXPORT MyDefinition := 5;
 // allows other definitions to use MyModule.MyDefinition if they import MyModule
 // the filename must be MyDefinition.ecl
 
@@ -64,10 +64,10 @@ EXPORT AnotherDef := MODULE(x)
   EXPORT INTEGER a := c * 3;
   EXPORT INTEGER b := 2;
   EXPORT VIRTUAL INTEGER c := 3; //this def is VIRTUAL
-END;</programlisting><!-- DNT-End -->
+END;</programlisting>
 
-  <para>See Also: <link linkend="IMPORT"><!-- DNT-Start -->IMPORT<!-- DNT-End --></link>, <link
-  linkend="SHARED"><!-- DNT-Start -->SHARED<!-- DNT-End --></link>, <link
+  <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
+  linkend="SHARED">SHARED</link>, <link
   linkend="Attribute_Visibility">Definition Visibility</link>, <link
-  linkend="MODULE_Structure"><!-- DNT-Start -->MODULE<!-- DNT-End --> Structure</link></para>
+  linkend="MODULE_Structure">MODULE Structure</link></para>
 </sect1>

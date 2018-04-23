@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="HTTPCALL">
-  <!-- DNT-Start --><title>HTTPCALL<indexterm>
+  <title>HTTPCALL<indexterm>
       <primary>HTTPCALL</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
   <para><emphasis>result</emphasis><emphasis role="bold"> :=
-  <!-- DNT-Start -->HTTPCALL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->HTTPCALL<!-- DNT-End --> Function</primary>
+  HTTPCALL<indexterm>
+      <primary>HTTPCALL Function</primary>
     </indexterm>( </emphasis><emphasis> url, httpmethod, responsemimetype,
   outstructure</emphasis> <emphasis role="bold">[</emphasis><emphasis>,
   options </emphasis><emphasis role="bold"> ] );</emphasis></para>
@@ -21,42 +21,42 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>result</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>result</emphasis></entry>
 
             <entry>The definition name for the resulting recordset.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>url</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>url</emphasis></entry>
 
-            <entry>A string containing the <!-- DNT-Start -->URL<!-- DNT-End --> that hosts the service to
+            <entry>A string containing the URL that hosts the service to
             invoke. This may contain parameters to the service.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>httpmethod</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>httpmethod</emphasis></entry>
 
-            <entry>A string containing the <!-- DNT-Start -->HTTP<!-- DNT-End --> Method to invoke. Valid
+            <entry>A string containing the HTTP Method to invoke. Valid
             methods are: "GET"</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>responsemimetype</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>responsemimetype</emphasis></entry>
 
-            <entry>A string containing the Response <!-- DNT-Start -->MIME<!-- DNT-End --> type to use. Valid
+            <entry>A string containing the Response MIME type to use. Valid
             types are: "text/xml"</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outstructure</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outstructure</emphasis></entry>
 
-            <entry>A <!-- DNT-Start -->RECORD<!-- DNT-End --> structure containing the output field definitions.
-            For an <!-- DNT-Start -->XML<!-- DNT-End -->-based <emphasis>responsemimetype</emphasis> these
-            should use <!-- DNT-Start -->XPATH<!-- DNT-End --> to specify the exact data path.</entry>
+            <entry>A RECORD structure containing the output field definitions.
+            For an XML-based <emphasis>responsemimetype</emphasis> these
+            should use XPATH to specify the exact data path.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>options</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>options</emphasis></entry>
 
             <entry>A comma-delimited list of optional specifications from the
             list below.</entry>
@@ -65,9 +65,9 @@
       </tgroup>
     </informaltable></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->HTTPCALL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->HTTPCALL<!-- DNT-End --> Options</primary>
-    </indexterm> </emphasis>is a function that calls a <!-- DNT-Start -->REST<!-- DNT-End --> service.</para>
+  <para><emphasis role="bold">HTTPCALL<indexterm>
+      <primary>HTTPCALL Options</primary>
+    </indexterm> </emphasis>is a function that calls a REST service.</para>
 
   <para>Valid <emphasis>options</emphasis> are:</para>
 
@@ -79,9 +79,9 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">RETRY</emphasis><indexterm>
+            <entry><emphasis role="bold">RETRY</emphasis><indexterm>
                 <primary>RETRY</primary>
-              </indexterm>(<emphasis>count</emphasis>)<!-- DNT-End --></entry>
+              </indexterm>(<emphasis>count</emphasis>)</entry>
 
             <entry>Specifies re-attempting the call count number of times if
             non-fatal errors occur. If omitted, the default is three
@@ -89,9 +89,9 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">TIMEOUT</emphasis><indexterm>
+            <entry><emphasis role="bold">TIMEOUT</emphasis><indexterm>
                 <primary>TIMEOUT</primary>
-              </indexterm>(<emphasis>period</emphasis>)<!-- DNT-End --></entry>
+              </indexterm>(<emphasis>period</emphasis>)</entry>
 
             <entry>Specifies the amount of time to attempt the read before
             failing. The <emphasis>period</emphasis> is a real number where
@@ -101,20 +101,20 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">TIMELIMIT</emphasis><indexterm>
+            <entry><emphasis role="bold">TIMELIMIT</emphasis><indexterm>
                 <primary>TIMELIMIT</primary>
-              </indexterm>(<emphasis>period</emphasis>)<!-- DNT-End --></entry>
+              </indexterm>(<emphasis>period</emphasis>)</entry>
 
             <entry>Specifies the total amount of time allowed for the
-            <!-- DNT-Start -->HTTPCALL<!-- DNT-End -->. The <emphasis>period</emphasis> is a real number where
+            HTTPCALL. The <emphasis>period</emphasis> is a real number where
             the integer portion specifies seconds. If omitted, the default is
             zero (0) indicating no limit.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">XPATH<indexterm>
+            <entry><emphasis role="bold">XPATH<indexterm>
                 <primary>XPATH</primary>
-              </indexterm></emphasis>(<emphasis>xpath</emphasis>)<!-- DNT-End --></entry>
+              </indexterm></emphasis>(<emphasis>xpath</emphasis>)</entry>
 
             <entry>Specifies the path used to access rows in the output. If
             omitted, the default is:
@@ -122,32 +122,32 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ONFAIL<indexterm>
+            <entry><emphasis role="bold">ONFAIL<indexterm>
                 <primary>ONFAIL</primary>
-              </indexterm></emphasis>(<emphasis>transform</emphasis>)<!-- DNT-End --></entry>
+              </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
 
             <entry>Specifies either the transform function to call if the
-            service fails for a particular record, or the keyword <!-- DNT-Start -->SKIP<!-- DNT-End -->. The
-            <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function must produce a <emphasis>resultype</emphasis>
+            service fails for a particular record, or the keyword SKIP. The
+            TRANSFORM function must produce a <emphasis>resultype</emphasis>
             the same as the <emphasis>outstructure</emphasis> and may use
-            <!-- DNT-Start -->FAILCODE<!-- DNT-End --> and/or <!-- DNT-Start -->FAILMESSAGE<!-- DNT-End --><indexterm>
-                <primary><!-- DNT-Start -->FAILMESSAGE<!-- DNT-End --></primary>
+            FAILCODE and/or FAILMESSAGE<indexterm>
+                <primary>FAILMESSAGE</primary>
               </indexterm> to provide details of the failure.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">TRIM<indexterm>
+            <entry><emphasis role="bold">TRIM<indexterm>
                 <primary>TRIM</primary>
-              </indexterm></emphasis><!-- DNT-End --></entry>
+              </indexterm></emphasis></entry>
 
             <entry>Specifies all trailing spaces are removed from strings
             before output.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">HTTPHEADER<indexterm>
+            <entry><emphasis role="bold">HTTPHEADER<indexterm>
                 <primary>HTTPHEADER</primary>
-              </indexterm></emphasis><!-- DNT-End --></entry>
+              </indexterm></emphasis></entry>
 
             <entry>Specifies header information to be passed to the
             service.</entry>
@@ -158,7 +158,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>worldBankSource := RECORD
+  <programlisting>worldBankSource := RECORD
   STRING name {XPATH('name')}
 END;
 
@@ -176,5 +176,5 @@ raw2 := HTTPCALL('http://api.worldbank.org/sources', 'GET', 'text/xml',
 
 OUTPUT(raw2);
 
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

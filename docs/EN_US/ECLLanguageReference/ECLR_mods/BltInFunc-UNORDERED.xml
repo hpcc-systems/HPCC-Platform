@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="UNORDERED">
-  <!-- DNT-Start --><title>UNORDERED</title><!-- DNT-End -->
+  <title>UNORDERED</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->UNORDERED<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->UNORDERED<!-- DNT-End --></primary>
+  <para><emphasis role="bold">UNORDERED<indexterm>
+      <primary>UNORDERED</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->UNORDERED<!-- DNT-End --> function</primary>
+      <primary>UNORDERED function</primary>
     </indexterm>(</emphasis><emphasis> dataset </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,23 +19,23 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataset</emphasis></entry>
 
-            <entry>The name of the unordered <!-- DNT-Start -->DATASET<!-- DNT-End -->.</entry>
+            <entry>The name of the unordered DATASET.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->UNORDERED<!-- DNT-End --> </emphasis>function is used to
+  <para>The <emphasis role="bold">UNORDERED </emphasis>function is used to
   indicate that the order of the records in the <emphasis>dataset</emphasis>
   is not significant. This will allow the code generator in future versions to
   apply extra optimizations.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>Def1 := UNORDERED(MyDataset);
+  <programlisting>Def1 := UNORDERED(MyDataset);
 //the order of MyDataset is not significant, 
 //so the code generator can perform optimizations based on that
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="MAX">
-  <!-- DNT-Start --><title>MAX</title><!-- DNT-End -->
+  <title>MAX</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->MAX <!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->MAX<!-- DNT-End --> function</primary>
+  <para><emphasis role="bold">MAXÂ <indexterm>
+      <primary>MAX function</primary>
     </indexterm>(</emphasis><emphasis>recordset, value </emphasis><emphasis
-  role="bold">[, <!-- DNT-Start -->KEYED<!-- DNT-End --> ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  role="bold">[, KEYED ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><emphasis
-  role="bold"><!-- DNT-Start -->MAX<!-- DNT-End -->(</emphasis><emphasis>valuelist</emphasis><emphasis
+  role="bold">MAX(</emphasis><emphasis>valuelist</emphasis><emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,24 +21,24 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>recordset</emphasis></entry>
 
           <entry>The set of records to process. This may be the name of a
           dataset or a record set derived from some filter condition, or any
           expression that results in a derived record set. This also may be
-          the keyword <!-- DNT-Start -->GROUP<!-- DNT-End --> to indicate finding the maximum value of the field
-          in a group, when used in a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure to generate crosstab
+          the keyword GROUP to indicate finding the maximum value of the field
+          in a group, when used in a RECORD structure to generate crosstab
           statistics.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>value</emphasis></entry>
 
           <entry>The expression to find the maximum value of.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">KEYED</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">KEYED</emphasis></entry>
 
           <entry>Optional. Specifies the activity is part of an index read
           operation, which allows the optimizer to generate optimal code for
@@ -46,78 +46,78 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>valuelist</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>valuelist</emphasis></entry>
 
           <entry>A comma-delimited list of expressions to find the maximum
-          value of. This may also be a <!-- DNT-Start -->SET<!-- DNT-End --> of values.</entry>
+          value of. This may also be a SET of values.</entry>
         </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->MAX<!-- DNT-End --> returns a single value.</entry>
+          <entry>MAX returns a single value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->MAX<!-- DNT-End --> </emphasis>function either returns the
+  <para>The <emphasis role="bold">MAX </emphasis>function either returns the
   maximum <emphasis>value</emphasis> from the specified <emphasis>recordset
   </emphasis>or the <emphasis>valuelist</emphasis>. It is defined to return
   zero if the <emphasis>recordset</emphasis> is empty.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>MaxVal1 := MAX(Trades,Trades.trd_rate);
+  <programlisting>MaxVal1 := MAX(Trades,Trades.trd_rate);
 MaxVal2 := MAX(4,8,16,2,1); //returns 16
 SetVals := [4,8,16,2,1];
 MaxVal3 := MAX(SetVals); //returns 16
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="MIN"><!-- DNT-Start -->MIN<!-- DNT-End --></link>, <link linkend="AVE"><!-- DNT-Start -->AVE<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="MIN">MIN</link>, <link linkend="AVE">AVE</link></para>
 </sect1>

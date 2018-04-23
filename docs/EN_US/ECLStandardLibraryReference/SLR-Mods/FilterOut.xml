@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FilterOut">
-  <!-- DNT-Start --><title>FilterOut</title><!-- DNT-End -->
+  <title>FilterOut</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->FilterOut<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->FilterOut<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Str.FilterOut<indexterm>
+      <primary>STD.Str.FilterOut</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->FilterOut<!-- DNT-End --></primary>
+      <primary>STD.Str.FilterOut</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->FilterOut<!-- DNT-End --></primary>
+      <primary>FilterOut</primary>
     </indexterm>(</emphasis> <emphasis>source, filterstring</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->FilterOut<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->FilterOut<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Uni.FilterOut<indexterm>
+      <primary>STD.Uni.FilterOut</primary>
     </indexterm><indexterm>
-      <primary>Uni.<!-- DNT-Start -->FilterOut<!-- DNT-End --></primary>
+      <primary>Uni.FilterOut</primary>
     </indexterm>(</emphasis> <emphasis>source, filterstring</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
@@ -28,35 +28,35 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source</emphasis></entry>
 
           <entry>A string containing the data to filter.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>filterstring </emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>filterstring </emphasis></entry>
 
           <entry>A string containing the characters to use as the
           filter.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->FilterOut<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> value, as
+          <entry>FilterOut returns a STRING or UNICODE value, as
           appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->FilterOut<!-- DNT-End --> </emphasis>functions return the
+  <para>The <emphasis role="bold">FilterOut </emphasis>functions return the
   <emphasis>source</emphasis> string with all the characters in the
   <emphasis>filterstring </emphasis>removed.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">//all these examples result in 'Success'
+  <programlisting format="linespecific">//all these examples result in 'Success'
 
 A := IF(STD.Str.FilterOut('ABCDE', 'BD') = 'ACE',
    'Success',
@@ -73,7 +73,7 @@ C := IF(STD.Str.FilterOut('ABCDEABCDE', '') = 'ABCDEABCDE',
 D := IF(STD.Str.FilterOut('', 'BD') = '',
    'Success',
    'Failure - 4');
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para></para>
 </sect1>

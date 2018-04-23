@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <bookinfo>
-    <!-- DNT-Start --><title>Client Tools Component ESDL CLI</title><!-- DNT-End -->
+    <title>Client Tools Component ESDL CLI</title>
 
     <author>
       <firstname>Boca Raton</firstname>
@@ -19,18 +19,18 @@
   </bookinfo>
 
   <chapter id="ESDL_CLI">
-    <!-- DNT-Start --><title>ESDL Command Line Interface</title><!-- DNT-End -->
+    <title>ESDL Command Line Interface</title>
 
     <sect1 id="The_ESDL_Command_Syntax" role="nobrk">
-      <!-- DNT-Start --><title>The ESDL Command Syntax</title><!-- DNT-End -->
+      <title>The ESDL Command Syntax</title>
 
       <sect2 id="esdl_command_syntax">
-        <!-- DNT-Start --><title><emphasis role="bold">esdl [</emphasis>--version<emphasis
+        <title><emphasis role="bold">esdl [</emphasis>--version<emphasis
         role="bold">]</emphasis> &lt;command&gt; <emphasis
         role="bold">[</emphasis>&lt;options&gt;<emphasis
-        role="bold">]</emphasis></title><!-- DNT-End -->
+        role="bold">]</emphasis></title>
 
-        <!-- DNT-Start --><para></para><!-- DNT-End -->
+        <para></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -40,97 +40,97 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start --><emphasis>--version</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--version</emphasis></entry>
 
                 <entry>displays version info.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>help &lt;commmand&gt;</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>help &lt;commmand&gt;</emphasis></entry>
 
                 <entry>displays help for the specified command.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->xml<!-- DNT-End --></entry>
+                <entry>xml</entry>
 
-                <entry>Generate <!-- DNT-Start -->XML<!-- DNT-End --> from <!-- DNT-Start -->ESDL<!-- DNT-End --> definition.</entry>
+                <entry>Generate XML from ESDL definition.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->ecl<!-- DNT-End --></entry>
+                <entry>ecl</entry>
 
-                <entry>Generate <!-- DNT-Start -->ECL<!-- DNT-End --> from <!-- DNT-Start -->ESDL<!-- DNT-End --> definition.</entry>
+                <entry>Generate ECL from ESDL definition.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->xsd<!-- DNT-End --></entry>
+                <entry>xsd</entry>
 
-                <entry>Generate <!-- DNT-Start -->XSD<!-- DNT-End --> from <!-- DNT-Start -->ESDL<!-- DNT-End --> definition.</entry>
+                <entry>Generate XSD from ESDL definition.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->wsdl<!-- DNT-End --></entry>
+                <entry>wsdl</entry>
 
-                <entry>Generate <!-- DNT-Start -->WSDL<!-- DNT-End --> from <!-- DNT-Start -->ESDL<!-- DNT-End --> definition.</entry>
+                <entry>Generate WSDL from ESDL definition.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->publish<!-- DNT-End --></entry>
+                <entry>publish</entry>
 
-                <entry>Publish <!-- DNT-Start -->ESDL<!-- DNT-End --> Definition for <!-- DNT-Start -->ESP<!-- DNT-End --> use.</entry>
+                <entry>Publish ESDL Definition for ESP use.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->list-definitions<!-- DNT-End --></entry>
+                <entry>list-definitions</entry>
 
-                <entry>List all <!-- DNT-Start -->ESDL<!-- DNT-End --> definitions.</entry>
+                <entry>List all ESDL definitions.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->delete<!-- DNT-End --></entry>
+                <entry>delete</entry>
 
-                <entry>Delete <!-- DNT-Start -->ESDL<!-- DNT-End --> Definition.</entry>
+                <entry>Delete ESDL Definition.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->bind-service<!-- DNT-End --></entry>
+                <entry>bind-service</entry>
 
-                <entry>Configure <!-- DNT-Start -->ESDL<!-- DNT-End --> based service on target <!-- DNT-Start -->ESP<!-- DNT-End --> (with
-                existing <!-- DNT-Start -->ESP<!-- DNT-End --> Binding).</entry>
+                <entry>Configure ESDL based service on target ESP (with
+                existing ESP Binding).</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->list-bindings<!-- DNT-End --></entry>
+                <entry>list-bindings</entry>
 
-                <entry>List all <!-- DNT-Start -->ESDL<!-- DNT-End --> bindings.</entry>
+                <entry>List all ESDL bindings.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->unbind-service<!-- DNT-End --></entry>
+                <entry>unbind-service</entry>
 
-                <entry>Remove <!-- DNT-Start -->ESDL<!-- DNT-End --> based service binding on target
-                <!-- DNT-Start -->ESP<!-- DNT-End -->.</entry>
+                <entry>Remove ESDL based service binding on target
+                ESP.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->bind-method<!-- DNT-End --></entry>
+                <entry>bind-method</entry>
 
-                <entry>Configure method associated with existing <!-- DNT-Start -->ESDL<!-- DNT-End -->
+                <entry>Configure method associated with existing ESDL
                 binding.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->unbind-method<!-- DNT-End --></entry>
+                <entry>unbind-method</entry>
 
-                <entry>Remove method from an <!-- DNT-Start -->ESDL<!-- DNT-End --> binding on a target
-                <!-- DNT-Start -->ESP<!-- DNT-End -->.</entry>
+                <entry>Remove method from an ESDL binding on a target
+                ESP.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->get-binding<!-- DNT-End --></entry>
+                <entry>get-binding</entry>
 
-                <entry>Get <!-- DNT-Start -->ESDL<!-- DNT-End --> binding.</entry>
+                <entry>Get ESDL binding.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -140,10 +140,10 @@
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_xml" role="brk">
-        <!-- DNT-Start --><title>esdl xml</title><!-- DNT-End -->
+        <title>esdl xml</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl xml [options] filename.ecm
-        [&lt;outdir&gt;] </emphasis></para><!-- DNT-End -->
+        <para><emphasis role="bold">esdl xml [options] filename.ecm
+        [&lt;outdir&gt;] </emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -153,31 +153,31 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start --><emphasis>filename.ecm</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>filename.ecm</emphasis></entry>
 
-                <entry>The file containing the <!-- DNT-Start -->ESDL<!-- DNT-End --> definitions</entry>
+                <entry>The file containing the ESDL definitions</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-r|--recursive</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-r|--recursive</emphasis></entry>
 
                 <entry>process all includes</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-v|--verbose</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-v|--verbose</emphasis></entry>
 
                 <entry>display verbose information</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-?/-h/--help</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-?/-h/--help</emphasis></entry>
 
                 <entry>show usage page</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->Output<emphasis> </emphasis><!-- DNT-End --></entry>
+                <entry>Output<emphasis> </emphasis></entry>
 
                 <entry>(srcdir|&lt;outdir&gt;)/filename.xml</entry>
               </row>
@@ -185,21 +185,21 @@
           </tgroup>
         </informaltable>
 
-        <para>This generates <!-- DNT-Start -->XML<!-- DNT-End --> from the <!-- DNT-Start -->ESDL<!-- DNT-End --> definition. This <!-- DNT-Start -->XML<!-- DNT-End --> is an
-        intermediate entity used by the <!-- DNT-Start -->ESDL<!-- DNT-End --> Engine to create the runtime
+        <para>This generates XML from the ESDL definition. This XML is an
+        intermediate entity used by the ESDL Engine to create the runtime
         service definitions. This command is rarely used by itself.</para>
 
         <para>Examples:</para>
 
-        <!-- DNT-Start --><programlisting>esdl xml MathService.ecm .
-</programlisting><!-- DNT-End -->
+        <programlisting>esdl xml MathService.ecm .
+</programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_ecl" role="brk">
-        <!-- DNT-Start --><title>esdl ecl</title><!-- DNT-End -->
+        <title>esdl ecl</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl ecl sourcePath outputPath
-        [options].</emphasis></para><!-- DNT-End -->
+        <para><emphasis role="bold">esdl ecl sourcePath outputPath
+        [options].</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -209,62 +209,62 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start --><emphasis>sourcePath</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>sourcePath</emphasis></entry>
 
-                <entry>The absolute path to the <!-- DNT-Start -->ESDL<!-- DNT-End --> Definition file
+                <entry>The absolute path to the ESDL Definition file
                 containing the EsdlService definition for the service.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>outputPath</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>outputPath</emphasis></entry>
 
-                <entry>The absolute path to the location where <!-- DNT-Start -->ECL<!-- DNT-End --> output is
+                <entry>The absolute path to the location where ECL output is
                 to be written.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-x, --expandedxml</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-x, --expandedxml</emphasis></entry>
 
-                <entry>Output expanded <!-- DNT-Start -->XML<!-- DNT-End --> files.</entry>
+                <entry>Output expanded XML files.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--includes</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--includes</emphasis></entry>
 
                 <entry>If present, process all included files.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--rollup</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--rollup</emphasis></entry>
 
                 <entry>If present, rollup all processed includes to a single
-                <!-- DNT-Start -->ECL<!-- DNT-End --> output file.</entry>
+                ECL output file.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-cde </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-cde </emphasis></entry>
 
-                <entry>Specifies the <!-- DNT-Start -->HPCC<!-- DNT-End --> Component files directory (location
+                <entry>Specifies the HPCC Component files directory (location
                 of xslt files).</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--ecl-imports </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--ecl-imports </emphasis></entry>
 
                 <entry>Comma-delimited import list to be attached to the
-                output <!-- DNT-Start -->ECL<!-- DNT-End -->. Each entry generates a corresponding <!-- DNT-Start -->IMPORT<!-- DNT-End -->
+                output ECL. Each entry generates a corresponding IMPORT
                 statement.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--ecl-header</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--ecl-header</emphasis></entry>
 
                 <entry>Text to include in header or target (generated) file
-                (must be valid <!-- DNT-Start -->ECL<!-- DNT-End -->).</entry>
+                (must be valid ECL).</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->Output<emphasis> </emphasis><!-- DNT-End --></entry>
+                <entry>Output<emphasis> </emphasis></entry>
 
                 <entry>(sourcePath|outputPath&gt;)/filename.ecl</entry>
               </row>
@@ -272,21 +272,21 @@
           </tgroup>
         </informaltable>
 
-        <para>This generates <!-- DNT-Start -->ECL<!-- DNT-End --> structures from <!-- DNT-Start -->ESDL<!-- DNT-End --> definition. These
+        <para>This generates ECL structures from ESDL definition. These
         structures create the interface (entry and exit points) to the Roxie
         query.</para>
 
         <para>Examples:</para>
 
-        <!-- DNT-Start --><programlisting>esdl ecl MathService.ecm .
-</programlisting><!-- DNT-End -->
+        <programlisting>esdl ecl MathService.ecm .
+</programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_xsd" role="brk">
-        <!-- DNT-Start --><title>esdl xsd</title><!-- DNT-End -->
+        <title>esdl xsd</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl xsd sourcePath serviceName
-        [options]</emphasis></para><!-- DNT-End -->
+        <para><emphasis role="bold">esdl xsd sourcePath serviceName
+        [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -296,52 +296,52 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start --><emphasis>sourcePath</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>sourcePath</emphasis></entry>
 
-                <entry>The absolute path to the <!-- DNT-Start -->ESDL<!-- DNT-End --> Definition file
+                <entry>The absolute path to the ESDL Definition file
                 containing the EsdlService definition for the service.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>serviceName</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>serviceName</emphasis></entry>
 
-                <entry>Name of <!-- DNT-Start -->ESDL<!-- DNT-End --> Service defined in the given <!-- DNT-Start -->ESDL<!-- DNT-End -->
+                <entry>Name of ESDL Service defined in the given ESDL
                 file.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis> --version &lt;version
-                number&gt;</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis> --version &lt;version
+                number&gt;</emphasis></entry>
 
                 <entry>Constrain to interface version</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--method &lt;method name&gt;[;&lt;method
-                name&gt;]* </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--method &lt;method name&gt;[;&lt;method
+                name&gt;]* </emphasis></entry>
 
                 <entry>Constrain to list of specific method(s)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--xslt &lt;xslt file path&gt;
-                </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--xslt &lt;xslt file path&gt;
+                </emphasis></entry>
 
                 <entry>Path to '/xslt/esxdl2xsd.xslt' file to transform
-                EsdlDef to <!-- DNT-Start -->XSD<!-- DNT-End --></entry>
+                EsdlDef to XSD</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--preprocess-output &lt;raw output
-                directory&gt; : </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--preprocess-output &lt;raw output
+                directory&gt; : </emphasis></entry>
 
-                <entry>Output preprocessed <!-- DNT-Start -->XML<!-- DNT-End --> file to specified directory
-                before applying <!-- DNT-Start -->XSLT<!-- DNT-End --> transform</entry>
+                <entry>Output preprocessed XML file to specified directory
+                before applying XSLT transform</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--annotate &lt;all | none&gt;
-                </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--annotate &lt;all | none&gt;
+                </emphasis></entry>
 
                 <entry>Flag turning on either all annotations or none. By
                 default, annotations are generated for Enumerations. Setting
@@ -351,7 +351,7 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis> --noopt </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis> --noopt </emphasis></entry>
 
                 <entry>Turns off the enforcement of 'optional' attributes on
                 elements. If no -noopt is specified then all elements with an
@@ -360,47 +360,47 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-opt,--optional &lt;param value&gt;
-                </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-opt,--optional &lt;param value&gt;
+                </emphasis></entry>
 
                 <entry>Value to use for optional tag filter when gathering
-                dependencies. For example, passing 'internal' when some <!-- DNT-Start -->ESDL<!-- DNT-End -->
+                dependencies. For example, passing 'internal' when some ESDL
                 definition objects have the attribute optional("internal")
-                ensures they appear in the <!-- DNT-Start -->XSD<!-- DNT-End -->, otherwise they'd be filtered
+                ensures they appear in the XSD, otherwise they'd be filtered
                 out</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-tns,--target-namespace &lt;target
-                namespace&gt; </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-tns,--target-namespace &lt;target
+                namespace&gt; </emphasis></entry>
 
                 <entry>The target namespace passed to the transform via the
                 parameter 'tnsParam' used for the final output of the
-                <!-- DNT-Start -->XSD<!-- DNT-End -->.</entry>
+                XSD.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-n &lt;int&gt; .</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-n &lt;int&gt; .</emphasis></entry>
 
-                <entry>Number of times to run transform after loading <!-- DNT-Start -->XSLT<!-- DNT-End -->.
+                <entry>Number of times to run transform after loading XSLT.
                 Defaults to 1</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--show-inheritance</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--show-inheritance</emphasis></entry>
 
                 <entry>Turns off the collapse feature. Collapsing optimizes
-                the <!-- DNT-Start -->XML<!-- DNT-End --> output to strip out structures only used for
+                the XML output to strip out structures only used for
                 inheritance, and collapses their elements into their child.
                 That simplifies the stylesheet. By default this option is
                 on</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--no-arrayof</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--no-arrayof</emphasis></entry>
 
                 <entry>Supresses the use of the arrrayof element. arrayof
-                optimizes the <!-- DNT-Start -->XML<!-- DNT-End --> output to include 'ArrayOf...' structure
+                optimizes the XML output to include 'ArrayOf...' structure
                 definitions for those EsdlArray elements with no item_tag
                 attribute. Works in conjunction with an optimized stylesheet
                 that doesn't generate these itself. This defaults to
@@ -408,19 +408,19 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-v|--verbose</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-v|--verbose</emphasis></entry>
 
                 <entry>display verbose information</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-?/-h/--help</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-?/-h/--help</emphasis></entry>
 
                 <entry>show usage page</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->Output<emphasis> </emphasis><!-- DNT-End --></entry>
+                <entry>Output<emphasis> </emphasis></entry>
 
                 <entry>(srcdir|&lt;outdir&gt;)/filename.ecl</entry>
               </row>
@@ -428,19 +428,19 @@
           </tgroup>
         </informaltable>
 
-        <para>This generates <!-- DNT-Start -->XSD<!-- DNT-End --> from the <!-- DNT-Start -->ESDL<!-- DNT-End --> definition.</para>
+        <para>This generates XSD from the ESDL definition.</para>
 
         <para>Examples:</para>
 
-        <!-- DNT-Start --><programlisting>esdl xsd MathService.ecm MathService
-</programlisting><!-- DNT-End -->
+        <programlisting>esdl xsd MathService.ecm MathService
+</programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_wsdl" role="brk">
-        <!-- DNT-Start --><title>esdl wsdl</title><!-- DNT-End -->
+        <title>esdl wsdl</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl wsdl sourcePath serviceName
-        [options]</emphasis></para><!-- DNT-End -->
+        <para><emphasis role="bold">esdl wsdl sourcePath serviceName
+        [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -450,52 +450,52 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start --><emphasis>sourcePath</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>sourcePath</emphasis></entry>
 
-                <entry>The absolute path to the <!-- DNT-Start -->ESDL<!-- DNT-End --> Definition file
+                <entry>The absolute path to the ESDL Definition file
                 containing the EsdlService definition for the service.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>serviceName</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>serviceName</emphasis></entry>
 
-                <entry>Name of <!-- DNT-Start -->ESDL<!-- DNT-End --> Service defined in the given <!-- DNT-Start -->ESDL<!-- DNT-End -->
+                <entry>Name of ESDL Service defined in the given ESDL
                 file.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis> --version &lt;version
-                number&gt;</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis> --version &lt;version
+                number&gt;</emphasis></entry>
 
                 <entry>Constrain to interface version</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--method &lt;method name&gt;[;&lt;method
-                name&gt;]* </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--method &lt;method name&gt;[;&lt;method
+                name&gt;]* </emphasis></entry>
 
                 <entry>Constrain to list of specific method(s)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--xslt &lt;xslt file path&gt;
-                </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--xslt &lt;xslt file path&gt;
+                </emphasis></entry>
 
                 <entry>Path to '/xslt/esxdl2xsd.xslt' file to transform
-                EsdlDef to <!-- DNT-Start -->XSD<!-- DNT-End --></entry>
+                EsdlDef to XSD</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--preprocess-output &lt;raw output
-                directory&gt; : </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--preprocess-output &lt;raw output
+                directory&gt; : </emphasis></entry>
 
-                <entry>Output preprocessed <!-- DNT-Start -->XML<!-- DNT-End --> file to specified directory
-                before applying <!-- DNT-Start -->XSLT<!-- DNT-End --> transform</entry>
+                <entry>Output preprocessed XML file to specified directory
+                before applying XSLT transform</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--annotate &lt;all | none&gt;
-                </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--annotate &lt;all | none&gt;
+                </emphasis></entry>
 
                 <entry>Flag turning on either all annotations or none. By
                 default, annotations are generated for Enumerations. Setting
@@ -505,7 +505,7 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis> --noopt </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis> --noopt </emphasis></entry>
 
                 <entry>Turns off the enforcement of 'optional' attributes on
                 elements. If no -noopt is specified then all elements with an
@@ -514,47 +514,47 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-opt,--optional &lt;param value&gt;
-                </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-opt,--optional &lt;param value&gt;
+                </emphasis></entry>
 
                 <entry>Value to use for optional tag filter when gathering
-                dependencies. For example, passing 'internal' when some <!-- DNT-Start -->ESDL<!-- DNT-End -->
+                dependencies. For example, passing 'internal' when some ESDL
                 definition objects have the attribute optional("internal")
-                ensures they appear in the <!-- DNT-Start -->XSD<!-- DNT-End -->, otherwise they'd be filtered
+                ensures they appear in the XSD, otherwise they'd be filtered
                 out</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-tns,--target-namespace &lt;target
-                namespace&gt; </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-tns,--target-namespace &lt;target
+                namespace&gt; </emphasis></entry>
 
                 <entry>The target namespace passed to the transform via the
                 parameter 'tnsParam' used for the final output of the
-                <!-- DNT-Start -->XSD<!-- DNT-End -->.</entry>
+                XSD.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-n &lt;int&gt; .</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-n &lt;int&gt; .</emphasis></entry>
 
-                <entry>Number of times to run transform after loading <!-- DNT-Start -->XSLT<!-- DNT-End -->.
+                <entry>Number of times to run transform after loading XSLT.
                 Defaults to 1</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--show-inheritance</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--show-inheritance</emphasis></entry>
 
                 <entry>Turns off the collapse feature. Collapsing optimizes
-                the <!-- DNT-Start -->XML<!-- DNT-End --> output to strip out structures only used for
+                the XML output to strip out structures only used for
                 inheritance, and collapses their elements into their child.
                 That simplifies the stylesheet. By default this option is
                 on</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--no-arrayof</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--no-arrayof</emphasis></entry>
 
                 <entry>Supresses the use of the arrrayof element. arrayof
-                optimizes the <!-- DNT-Start -->XML<!-- DNT-End --> output to include 'ArrayOf...' structure
+                optimizes the XML output to include 'ArrayOf...' structure
                 definitions for those EsdlArray elements with no item_tag
                 attribute. Works in conjunction with an optimized stylesheet
                 that doesn't generate these itself. This defaults to
@@ -562,25 +562,25 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>--wsdladdress </emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--wsdladdress </emphasis></entry>
 
-                <entry>Defines the output <!-- DNT-Start -->WSDL<!-- DNT-End --> file's location address</entry>
+                <entry>Defines the output WSDL file's location address</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-v|--verbose</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-v|--verbose</emphasis></entry>
 
                 <entry>display verbose information</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>-?/-h/--help</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>-?/-h/--help</emphasis></entry>
 
                 <entry>show usage page</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->Output<emphasis> </emphasis><!-- DNT-End --></entry>
+                <entry>Output<emphasis> </emphasis></entry>
 
                 <entry>(srcdir|&lt;outdir&gt;)/filename.ecl</entry>
               </row>
@@ -588,16 +588,16 @@
           </tgroup>
         </informaltable>
 
-        <para>This generates <!-- DNT-Start -->WSDL<!-- DNT-End --> from <!-- DNT-Start -->ESDL<!-- DNT-End --> definition.</para>
+        <para>This generates WSDL from ESDL definition.</para>
 
         <para>Examples:</para>
 
-        <!-- DNT-Start --><programlisting>esdl wsdl MathService.ecm MathService
-</programlisting><!-- DNT-End -->
+        <programlisting>esdl wsdl MathService.ecm MathService
+</programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_publish" role="brk">
-        <!-- DNT-Start --><title>esdl publish</title><!-- DNT-End -->
+        <title>esdl publish</title>
 
         <para><emphasis role="bold">esdl publish
         &lt;filename.(ecm|esdl|xml)&gt; &lt;servicename&gt;
@@ -611,60 +611,60 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start -->filename<!-- DNT-End --></entry>
+                  <entry>filename</entry>
 
-                  <entry>The <!-- DNT-Start -->ESDL<!-- DNT-End --> (*.ecm, *.esdl, or *.xml) file containing
+                  <entry>The ESDL (*.ecm, *.esdl, or *.xml) file containing
                   the service definitions.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->servicename<!-- DNT-End --></entry>
+                  <entry>servicename</entry>
 
                   <entry>The name of the service to publish. Optional if the
-                  <!-- DNT-Start -->ESDL<!-- DNT-End --> definition contains only one service.</entry>
+                  ESDL definition contains only one service.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->--overwrite<!-- DNT-End --></entry>
+                  <entry>--overwrite</entry>
 
-                  <entry>Overwrite the latest version of this <!-- DNT-Start -->ESDL<!-- DNT-End -->
+                  <entry>Overwrite the latest version of this ESDL
                   Definition</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-s, --server<!-- DNT-End --></entry>
+                  <entry>-s, --server</entry>
 
-                  <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> Address or hostname of <!-- DNT-Start -->ESP<!-- DNT-End --> server running <!-- DNT-Start -->ECL<!-- DNT-End -->
+                  <entry>The IP Address or hostname of ESP server running ECL
                   Watch services</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->--port<!-- DNT-End --></entry>
+                  <entry>--port</entry>
 
-                  <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-u, --username<!-- DNT-End --></entry>
+                  <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-pw, --password<!-- DNT-End --></entry>
+                  <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->--help<!-- DNT-End --></entry>
+                  <entry>--help</entry>
 
                   <entry>display usage information for the given
                   command</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-v, --verbose<!-- DNT-End --></entry>
+                  <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
                 </row>
@@ -672,20 +672,20 @@
             </tgroup>
           </informaltable></para>
 
-        <para>Publishes an <!-- DNT-Start -->ESDL<!-- DNT-End --> service definition to the system
+        <para>Publishes an ESDL service definition to the system
         datastore.</para>
 
         <para>Examples:</para>
 
-        <!-- DNT-Start --><programlisting>esdl publish mathservice.ecm mathservice -s nnn.nnn.nnn.nnn --port 8010
-</programlisting><!-- DNT-End -->
+        <programlisting>esdl publish mathservice.ecm mathservice -s nnn.nnn.nnn.nnn --port 8010
+</programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_list-definitions" role="brk">
-        <!-- DNT-Start --><title>esdl list-definitions</title><!-- DNT-End -->
+        <title>esdl list-definitions</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl list-definitions
-        [<emphasis>options</emphasis>]</emphasis></para><!-- DNT-End -->
+        <para><emphasis role="bold">esdl list-definitions
+        [<emphasis>options</emphasis>]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -695,44 +695,44 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start -->-s, --server<!-- DNT-End --></entry>
+                <entry>-s, --server</entry>
 
-                <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> Address or hostname of <!-- DNT-Start -->ESP<!-- DNT-End --> server running <!-- DNT-Start -->ECL<!-- DNT-End -->
+                <entry>The IP Address or hostname of ESP server running ECL
                 Watch services</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--port<!-- DNT-End --></entry>
+                <entry>--port</entry>
 
-                <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch services port (Default is 8010)</entry>
+                <entry>The ECL Watch services port (Default is 8010)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-u, --username<!-- DNT-End --></entry>
+                <entry>-u, --username</entry>
 
                 <entry>The username (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-pw, --password<!-- DNT-End --></entry>
+                <entry>-pw, --password</entry>
 
                 <entry>The password (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--version &lt;ver&gt;<!-- DNT-End --></entry>
+                <entry>--version &lt;ver&gt;</entry>
 
-                <entry><!-- DNT-Start -->ESDL<!-- DNT-End --> service version</entry>
+                <entry>ESDL service version</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--help<!-- DNT-End --></entry>
+                <entry>--help</entry>
 
                 <entry>display usage information for the given command</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-v, --verbose<!-- DNT-End --></entry>
+                <entry>-v, --verbose</entry>
 
                 <entry>Output additional tracing information</entry>
               </row>
@@ -744,18 +744,18 @@
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <!-- DNT-Start --><programlisting>esdl list-definitions -s nnn.nnn.nnn.nnn --port 8010
-</programlisting><!-- DNT-End -->
+        <programlisting>esdl list-definitions -s nnn.nnn.nnn.nnn --port 8010
+</programlisting>
 
         <para></para>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_delete" role="brk">
-        <!-- DNT-Start --><title>esdl delete</title><!-- DNT-End -->
+        <title>esdl delete</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl delete
+        <para><emphasis role="bold">esdl delete
         &lt;ESDLServiceDefinitionName&gt; &lt;ESDLServiceDefinitionVersion&gt;
-        [<emphasis>options</emphasis>]</emphasis></para><!-- DNT-End -->
+        [<emphasis>options</emphasis>]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -765,58 +765,58 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start -->ESDLServiceDefinitionName<!-- DNT-End --></entry>
+                <entry>ESDLServiceDefinitionName</entry>
 
-                <entry>The name of the <!-- DNT-Start -->ESDL<!-- DNT-End --> service definition to
+                <entry>The name of the ESDL service definition to
                 delete</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->ESDLServiceDefinitionVersion<!-- DNT-End --></entry>
+                <entry>ESDLServiceDefinitionVersion</entry>
 
-                <entry>The version of the <!-- DNT-Start -->ESDL<!-- DNT-End --> service definition to
+                <entry>The version of the ESDL service definition to
                 delete</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-s, --server<!-- DNT-End --></entry>
+                <entry>-s, --server</entry>
 
-                <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> Address or hostname of <!-- DNT-Start -->ESP<!-- DNT-End --> server running <!-- DNT-Start -->ECL<!-- DNT-End -->
+                <entry>The IP Address or hostname of ESP server running ECL
                 Watch services</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--port<!-- DNT-End --></entry>
+                <entry>--port</entry>
 
-                <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch services port (Default is 8010)</entry>
+                <entry>The ECL Watch services port (Default is 8010)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-u, --username<!-- DNT-End --></entry>
+                <entry>-u, --username</entry>
 
                 <entry>The username (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-pw, --password<!-- DNT-End --></entry>
+                <entry>-pw, --password</entry>
 
                 <entry>The password (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--version &lt;ver&gt;<!-- DNT-End --></entry>
+                <entry>--version &lt;ver&gt;</entry>
 
-                <entry><!-- DNT-Start -->ESDL<!-- DNT-End --> service version</entry>
+                <entry>ESDL service version</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--help<!-- DNT-End --></entry>
+                <entry>--help</entry>
 
                 <entry>display usage information for the given command</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-v, --verbose<!-- DNT-End --></entry>
+                <entry>-v, --verbose</entry>
 
                 <entry>Output additional tracing information</entry>
               </row>
@@ -824,24 +824,24 @@
           </tgroup>
         </informaltable>
 
-        <para>Use this command to delete an <!-- DNT-Start -->ESDL<!-- DNT-End --> Service definition. If the
+        <para>Use this command to delete an ESDL Service definition. If the
         Service definition is bound, you must first unbind it.</para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <!-- DNT-Start --><programlisting>esdl delete mathservice 2 -s nnn.nnn.nnn.nnn --port 8010
-</programlisting><!-- DNT-End -->
+        <programlisting>esdl delete mathservice 2 -s nnn.nnn.nnn.nnn --port 8010
+</programlisting>
 
         <para><emphasis role="bold"></emphasis></para>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_bind-service" role="brk">
-        <!-- DNT-Start --><title>esdl bind-service</title><!-- DNT-End -->
+        <title>esdl bind-service</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl bind-service
+        <para><emphasis role="bold">esdl bind-service
         &lt;TargetESPProcessName&gt; &lt;TargetESPBindingPort |
         TargetESPServiceName&gt; &lt;ESDLDefinitionId&gt;
-        (&lt;ESDLServiceName&gt;) [command options]</emphasis></para><!-- DNT-End -->
+        (&lt;ESDLServiceName&gt;) [command options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -851,86 +851,86 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start -->TargetESPProcessName<!-- DNT-End --></entry>
+                <entry>TargetESPProcessName</entry>
 
-                <entry>The target <!-- DNT-Start -->ESP<!-- DNT-End --> Process name</entry>
+                <entry>The target ESP Process name</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->TargetESPBindingPort | TargetESPServiceName<!-- DNT-End --></entry>
+                <entry>TargetESPBindingPort | TargetESPServiceName</entry>
 
-                <entry>Either target <!-- DNT-Start -->ESP<!-- DNT-End --> binding port or the target <!-- DNT-Start -->ESP<!-- DNT-End -->
+                <entry>Either target ESP binding port or the target ESP
                 service name</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->ESDLDefinitionId<!-- DNT-End --></entry>
+                <entry>ESDLDefinitionId</entry>
 
-                <entry>The Name and version of the <!-- DNT-Start -->ESDL<!-- DNT-End --> definition to bind to
+                <entry>The Name and version of the ESDL definition to bind to
                 this service (must already be defined in Dali)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->ESDLServiceName<!-- DNT-End --></entry>
+                <entry>ESDLServiceName</entry>
 
-                <entry>The Name of the <!-- DNT-Start -->ESDL<!-- DNT-End --> Service (as defined in the <!-- DNT-Start -->ESDL<!-- DNT-End -->
-                Definition) Required if <!-- DNT-Start -->ESDL<!-- DNT-End --> definition contains multiple
+                <entry>The Name of the ESDL Service (as defined in the ESDL
+                Definition) Required if ESDL definition contains multiple
                 services</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--config &lt;file | XML&gt;<!-- DNT-End --></entry>
+                <entry>--config &lt;file | XML&gt;</entry>
 
-                <entry>Configuration <!-- DNT-Start -->XML<!-- DNT-End --> (either inline or as a file
+                <entry>Configuration XML (either inline or as a file
                 reference)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--overwrite<!-- DNT-End --></entry>
+                <entry>--overwrite</entry>
 
-                <entry>Overwrite the latest version of this <!-- DNT-Start -->ESDL<!-- DNT-End -->
+                <entry>Overwrite the latest version of this ESDL
                 Definition</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-s, --server<!-- DNT-End --></entry>
+                <entry>-s, --server</entry>
 
-                <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> Address or hostname of <!-- DNT-Start -->ESP<!-- DNT-End --> server running <!-- DNT-Start -->ECL<!-- DNT-End -->
+                <entry>The IP Address or hostname of ESP server running ECL
                 Watch services</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--port<!-- DNT-End --></entry>
+                <entry>--port</entry>
 
-                <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch services port (Default is 8010)</entry>
+                <entry>The ECL Watch services port (Default is 8010)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-u, --username<!-- DNT-End --></entry>
+                <entry>-u, --username</entry>
 
                 <entry>The username (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-pw, --password<!-- DNT-End --></entry>
+                <entry>-pw, --password</entry>
 
                 <entry>The password (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--version &lt;ver&gt;<!-- DNT-End --></entry>
+                <entry>--version &lt;ver&gt;</entry>
 
-                <entry><!-- DNT-Start -->ESDL<!-- DNT-End --> service version</entry>
+                <entry>ESDL service version</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--help<!-- DNT-End --></entry>
+                <entry>--help</entry>
 
                 <entry>display usage information for the given command</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-v, --verbose<!-- DNT-End --></entry>
+                <entry>-v, --verbose</entry>
 
                 <entry>Output additional tracing information</entry>
               </row>
@@ -940,52 +940,52 @@
 
         <para><emphasis role="bold"></emphasis></para>
 
-        <para>Use this command to bind a Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End -->-based <!-- DNT-Start -->ESP<!-- DNT-End --> service to an
-        <!-- DNT-Start -->ESDL<!-- DNT-End --> definition.</para>
+        <para>Use this command to bind a Dynamic ESDL-based ESP service to an
+        ESDL definition.</para>
 
-        <para>To bind an <!-- DNT-Start -->ESDL<!-- DNT-End --> Service, provide the target <!-- DNT-Start -->ESP<!-- DNT-End --> process name
-        (<!-- DNT-Start -->ESP<!-- DNT-End --> Process which will host the <!-- DNT-Start -->ESP<!-- DNT-End --> Service as defined in the <!-- DNT-Start -->ESDL<!-- DNT-End -->
+        <para>To bind an ESDL Service, provide the target ESP process name
+        (ESP Process which will host the ESP Service as defined in the ESDL
         Definition.)</para>
 
         <para>You must also provide either the port on which this service is
-        configured to run (<!-- DNT-Start -->ESP<!-- DNT-End --> Binding) or the name of the service you are
+        configured to run (ESP Binding) or the name of the service you are
         binding.</para>
 
         <para>Optionally provide configuration information either directly
-        inline or using a configuration file <!-- DNT-Start -->XML<!-- DNT-End --> in the following
+        inline or using a configuration file XML in the following
         syntax:</para>
 
-        <!-- DNT-Start --><programlisting format="linespecific">&lt;Methods&gt;
+        <programlisting format="linespecific">&lt;Methods&gt;
   &lt;Method name="myMthd1" url="&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
   &lt;Method name="myMthd2" url="&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
-&lt;/Methods&gt;</programlisting><!-- DNT-End -->
+&lt;/Methods&gt;</programlisting>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <!-- DNT-Start --><programlisting format="linespecific">esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml 
-                  -s nnn.nnn.nnn.nnn -p 8010</programlisting><!-- DNT-End -->
+        <programlisting format="linespecific">esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml 
+                  -s nnn.nnn.nnn.nnn -p 8010</programlisting>
 
         <sect3>
-          <!-- DNT-Start --><title>Configuring ESDL binding methods</title><!-- DNT-End -->
+          <title>Configuring ESDL binding methods</title>
 
-          <para>The <!-- DNT-Start -->DESDL<!-- DNT-End --> binding methods can optionally provide context
-          information to the target <!-- DNT-Start -->ECL<!-- DNT-End --> query. The way this information is
+          <para>The DESDL binding methods can optionally provide context
+          information to the target ECL query. The way this information is
           configured, is by appending child elements to the Method
-          (&lt;Method&gt;...&lt;/Method&gt;) portion of the <!-- DNT-Start -->ESDL<!-- DNT-End -->
+          (&lt;Method&gt;...&lt;/Method&gt;) portion of the ESDL
           Binding.</para>
 
-          <para>For example, the following <!-- DNT-Start -->XML<!-- DNT-End --> provides a sample <!-- DNT-Start -->ESDL<!-- DNT-End -->
+          <para>For example, the following XML provides a sample ESDL
           Binding.</para>
 
-          <!-- DNT-Start --><programlisting>&lt;Methods&gt; 
+          <programlisting>&lt;Methods&gt; 
   &lt;Method name="AddThis" url="&lt;RoxieIPRange&gt;:9876" querytype="roxie" queryname="AddThis"/&gt; 
-&lt;/Methods&gt;</programlisting><!-- DNT-End -->
+&lt;/Methods&gt;</programlisting>
 
           <para>If this Method requires context information, for example about
           gateways, then you could include the Gateways Structure
           (&lt;Gateways&gt;...&lt;/Gateways&gt;) depicted as follows.</para>
 
-          <!-- DNT-Start --><programlisting>&lt;Methods&gt;
+          <programlisting>&lt;Methods&gt;
   &lt;Method name="AddThis" url="&lt;RoxieIPRange&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
     &lt;!--Optional Method Context Information start--&gt;
     &lt;Gateways&gt;
@@ -994,23 +994,23 @@
     &lt;/Gateways&gt;
     &lt;!--Optional Method Context Information end--&gt;
   &lt;/Method&gt;
-&lt;/Methods&gt;</programlisting><!-- DNT-End -->
+&lt;/Methods&gt;</programlisting>
 
-          <para>The <!-- DNT-Start -->DESDL<!-- DNT-End --> <!-- DNT-Start -->ESP<!-- DNT-End --> does not pose any restrictions on the layout of
-          this information, only that it is valid <!-- DNT-Start -->XML<!-- DNT-End -->. This provides the
-          flexibility to include context information in any valid <!-- DNT-Start -->XML<!-- DNT-End -->
+          <para>The DESDL ESP does not pose any restrictions on the layout of
+          this information, only that it is valid XML. This provides the
+          flexibility to include context information in any valid XML
           format.</para>
 
-          <para>Roxie (query) <!-- DNT-Start -->ECL<!-- DNT-End --> developers need to decide what information
-          they will need from the <!-- DNT-Start -->ESP<!-- DNT-End --> request and design how that information
-          is laid-out in the <!-- DNT-Start -->ESP<!-- DNT-End --> request and <!-- DNT-Start -->ESDL<!-- DNT-End --> binding
+          <para>Roxie (query) ECL developers need to decide what information
+          they will need from the ESP request and design how that information
+          is laid-out in the ESP request and ESDL binding
           configuration.</para>
 
           <para>In the following example, every "AddThis" request processed by
-          the <!-- DNT-Start -->ESP<!-- DNT-End --> and sent to Roxie would contain the sample gateway
+          the ESP and sent to Roxie would contain the sample gateway
           information in the request context.</para>
 
-          <!-- DNT-Start --><programlisting>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+          <programlisting>&lt;?xml version="1.0" encoding="utf-8"?&gt;
 &lt;soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"&gt;
 &lt;soap:Body&gt;
   &lt;roxie.AddThis&gt;
@@ -1040,9 +1040,9 @@
    &lt;/AddThisRequest&gt;
   &lt;/roxie.AddThis&gt;
 &lt;/soap:Body&gt;
-&lt;/soap:Envelope&gt;</programlisting><!-- DNT-End -->
+&lt;/soap:Envelope&gt;</programlisting>
 
-          <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> query consumes this information and is free to do
+          <para>The ECL query consumes this information and is free to do
           whatever it needs to with it. In some instances, the query needs to
           send a request to a gateway in order to properly process the current
           request. It can interrogate the context information for the
@@ -1052,7 +1052,7 @@
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_list-bindings" role="brk">
-        <!-- DNT-Start --><title>esdl list-bindings</title><!-- DNT-End -->
+        <title>esdl list-bindings</title>
 
         <para><emphasis role="bold">esdl list-bindings
         [options]</emphasis></para>
@@ -1066,45 +1066,45 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start -->-s, --server<!-- DNT-End --></entry>
+                  <entry>-s, --server</entry>
 
-                  <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> Address or hostname of <!-- DNT-Start -->ESP<!-- DNT-End --> server running <!-- DNT-Start -->ECL<!-- DNT-End -->
+                  <entry>The IP Address or hostname of ESP server running ECL
                   Watch services</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->--port<!-- DNT-End --></entry>
+                  <entry>--port</entry>
 
-                  <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-u, --username<!-- DNT-End --></entry>
+                  <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-pw, --password<!-- DNT-End --></entry>
+                  <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->--version &lt;ver&gt;<!-- DNT-End --></entry>
+                  <entry>--version &lt;ver&gt;</entry>
 
-                  <entry><!-- DNT-Start -->ESDL<!-- DNT-End --> service version</entry>
+                  <entry>ESDL service version</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->--help<!-- DNT-End --></entry>
+                  <entry>--help</entry>
 
                   <entry>display usage information for the given
                   command</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-v, --verbose<!-- DNT-End --></entry>
+                  <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
                 </row>
@@ -1116,14 +1116,14 @@
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <!-- DNT-Start --><programlisting>esdl list-bindings -s nnn.nnn.nnn.nnn -p 8010</programlisting><!-- DNT-End -->
+        <programlisting>esdl list-bindings -s nnn.nnn.nnn.nnn -p 8010</programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_unbind-service" role="brk">
-        <!-- DNT-Start --><title>esdl unbind-service</title><!-- DNT-End -->
+        <title>esdl unbind-service</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl unbind-service &lt;ESPProcessName&gt;
-        &lt;ESPBindingName&gt; [options]</emphasis></para><!-- DNT-End -->
+        <para><emphasis role="bold">esdl unbind-service &lt;ESPProcessName&gt;
+        &lt;ESPBindingName&gt; [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1133,56 +1133,56 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start -->ESPProcessName<!-- DNT-End --></entry>
+                <entry>ESPProcessName</entry>
 
-                <entry>The <!-- DNT-Start -->ESP<!-- DNT-End --> Process name</entry>
+                <entry>The ESP Process name</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->ESPBindingName<!-- DNT-End --></entry>
+                <entry>ESPBindingName</entry>
 
-                <entry>The <!-- DNT-Start -->ESP<!-- DNT-End --> Binding name</entry>
+                <entry>The ESP Binding name</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-s, --server<!-- DNT-End --></entry>
+                <entry>-s, --server</entry>
 
-                <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> Address or hostname of <!-- DNT-Start -->ESP<!-- DNT-End --> server running <!-- DNT-Start -->ECL<!-- DNT-End -->
+                <entry>The IP Address or hostname of ESP server running ECL
                 Watch services</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--port<!-- DNT-End --></entry>
+                <entry>--port</entry>
 
-                <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch services port (Default is 8010)</entry>
+                <entry>The ECL Watch services port (Default is 8010)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-u, --username<!-- DNT-End --></entry>
+                <entry>-u, --username</entry>
 
                 <entry>The username (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-pw, --password<!-- DNT-End --></entry>
+                <entry>-pw, --password</entry>
 
                 <entry>The password (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--version &lt;ver&gt;<!-- DNT-End --></entry>
+                <entry>--version &lt;ver&gt;</entry>
 
-                <entry><!-- DNT-Start -->ESDL<!-- DNT-End --> service version</entry>
+                <entry>ESDL service version</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--help<!-- DNT-End --></entry>
+                <entry>--help</entry>
 
                 <entry>display usage information for the given command</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-v, --verbose<!-- DNT-End --></entry>
+                <entry>-v, --verbose</entry>
 
                 <entry>Output additional tracing information</entry>
               </row>
@@ -1190,26 +1190,26 @@
           </tgroup>
         </informaltable>
 
-        <para>Use this command to unbind <!-- DNT-Start -->ESDL<!-- DNT-End --> service based bindings. </para>
+        <para>Use this command to unbind ESDL service based bindings. </para>
 
-        <para>To unbind a given <!-- DNT-Start -->ESDL<!-- DNT-End --> binding, provide the <!-- DNT-Start -->ESP<!-- DNT-End --> process name and
-        the <!-- DNT-Start -->ESP<!-- DNT-End --> binding which make up this <!-- DNT-Start -->ESDL<!-- DNT-End --> binding. </para>
+        <para>To unbind a given ESDL binding, provide the ESP process name and
+        the ESP binding which make up this ESDL binding. </para>
 
-        <para>Available <!-- DNT-Start -->ESDL<!-- DNT-End --> bindings to unbind can be found using the "esdl
+        <para>Available ESDL bindings to unbind can be found using the "esdl
         list-bindings" command </para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <!-- DNT-Start --><programlisting>esdl unbind-service myesp myServiceBinding </programlisting><!-- DNT-End -->
+        <programlisting>esdl unbind-service myesp myServiceBinding </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esd_bind-method" role="brk">
-        <!-- DNT-Start --><title>esdl bind-method</title><!-- DNT-End -->
+        <title>esdl bind-method</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl bind-method
+        <para><emphasis role="bold">esdl bind-method
         &lt;TargetESPProcessName&gt; &lt;TargetESPBindingName&gt;
         &lt;TargetServiceName&gt; &lt;TargetServiceDefVersion&gt;
-        &lt;TargetMethodName&gt; [options]</emphasis></para><!-- DNT-End -->
+        &lt;TargetMethodName&gt; [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1219,91 +1219,91 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start -->TargetESPProcessName<!-- DNT-End --></entry>
+                <entry>TargetESPProcessName</entry>
 
-                <entry>The target <!-- DNT-Start -->ESP<!-- DNT-End --> Process name</entry>
+                <entry>The target ESP Process name</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->TargetESPBindingName<!-- DNT-End --></entry>
+                <entry>TargetESPBindingName</entry>
 
-                <entry>Either target <!-- DNT-Start -->ESP<!-- DNT-End --> binding name</entry>
+                <entry>Either target ESP binding name</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->TargetServiceName<!-- DNT-End --></entry>
+                <entry>TargetServiceName</entry>
 
                 <entry>The name of the Service to bind (must already be
                 defined in dali.)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->TargetServiceDefVersion<!-- DNT-End --></entry>
+                <entry>TargetServiceDefVersion</entry>
 
-                <entry>The version of the target service <!-- DNT-Start -->ESDL<!-- DNT-End --> definition (must
+                <entry>The version of the target service ESDL definition (must
                 exist in dali)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->TargetMethodName<!-- DNT-End --></entry>
+                <entry>TargetMethodName</entry>
 
                 <entry>The name of the target method (must exist in the
-                service <!-- DNT-Start -->ESDL<!-- DNT-End --> definition)</entry>
+                service ESDL definition)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--config &lt;file | XML&gt;<!-- DNT-End --></entry>
+                <entry>--config &lt;file | XML&gt;</entry>
 
-                <entry>Configuration <!-- DNT-Start -->XML<!-- DNT-End --> (either inline or as a file
+                <entry>Configuration XML (either inline or as a file
                 reference)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--overwrite<!-- DNT-End --></entry>
+                <entry>--overwrite</entry>
 
-                <entry>Overwrite the latest version of this <!-- DNT-Start -->ESDL<!-- DNT-End -->
+                <entry>Overwrite the latest version of this ESDL
                 Definition</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-s, --server<!-- DNT-End --></entry>
+                <entry>-s, --server</entry>
 
-                <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> Address or hostname of <!-- DNT-Start -->ESP<!-- DNT-End --> server running <!-- DNT-Start -->ECL<!-- DNT-End -->
+                <entry>The IP Address or hostname of ESP server running ECL
                 Watch services</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--port<!-- DNT-End --></entry>
+                <entry>--port</entry>
 
-                <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch services port (Default is 8010)</entry>
+                <entry>The ECL Watch services port (Default is 8010)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-u, --username<!-- DNT-End --></entry>
+                <entry>-u, --username</entry>
 
                 <entry>The username (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-pw, --password<!-- DNT-End --></entry>
+                <entry>-pw, --password</entry>
 
                 <entry>The password (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--version &lt;ver&gt;<!-- DNT-End --></entry>
+                <entry>--version &lt;ver&gt;</entry>
 
-                <entry><!-- DNT-Start -->ESDL<!-- DNT-End --> service version</entry>
+                <entry>ESDL service version</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--help<!-- DNT-End --></entry>
+                <entry>--help</entry>
 
                 <entry>display usage information for the given command</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-v, --verbose<!-- DNT-End --></entry>
+                <entry>-v, --verbose</entry>
 
                 <entry>Output additional tracing information</entry>
               </row>
@@ -1311,36 +1311,36 @@
           </tgroup>
         </informaltable>
 
-        <para>Use this command to publish <!-- DNT-Start -->ESDL<!-- DNT-End --> Service based bindings.</para>
+        <para>Use this command to publish ESDL Service based bindings.</para>
 
-        <para>To bind an <!-- DNT-Start -->ESDL<!-- DNT-End --> Service, provide the target <!-- DNT-Start -->ESP<!-- DNT-End --> process name
-        (<!-- DNT-Start -->ESP<!-- DNT-End --> Process which will host the <!-- DNT-Start -->ESP<!-- DNT-End --> Service as defined in the <!-- DNT-Start -->ESDL<!-- DNT-End -->
+        <para>To bind an ESDL Service, provide the target ESP process name
+        (ESP Process which will host the ESP Service as defined in the ESDL
         Definition.)</para>
 
         <para>You must also provide the port on which this service is
-        configured to run (<!-- DNT-Start -->ESP<!-- DNT-End --> Binding), and the name of the service you are
+        configured to run (ESP Binding), and the name of the service you are
         binding.</para>
 
         <para>Optionally provide configuration information either directly
-        inline or using a configuration file <!-- DNT-Start -->XML<!-- DNT-End --> in the following
+        inline or using a configuration file XML in the following
         syntax:</para>
 
-        <!-- DNT-Start --><programlisting>&lt;Methods&gt;
+        <programlisting>&lt;Methods&gt;
   &lt;Method name="myMthd1" url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
   &lt;Method name="myMthd2" url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
-&lt;/Methods&gt;</programlisting><!-- DNT-End -->
+&lt;/Methods&gt;</programlisting>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <!-- DNT-Start --><programlisting>esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting><!-- DNT-End -->
+        <programlisting>esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_unbind-method" role="brk">
-        <!-- DNT-Start --><title>esdl unbind-method</title><!-- DNT-End -->
+        <title>esdl unbind-method</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl unbind-method &lt;ESPProcessName&gt;
+        <para><emphasis role="bold">esdl unbind-method &lt;ESPProcessName&gt;
         &lt;ESPBindingName&gt; &lt;ESDLServiceName&gt; &lt;MethodName&gt;
-        [options]</emphasis></para><!-- DNT-End -->
+        [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1350,71 +1350,71 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start -->ESPProcessName<!-- DNT-End --></entry>
+                <entry>ESPProcessName</entry>
 
-                <entry>The target <!-- DNT-Start -->ESP<!-- DNT-End --> Process name</entry>
+                <entry>The target ESP Process name</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->ESPBindingName<!-- DNT-End --></entry>
+                <entry>ESPBindingName</entry>
 
-                <entry>The target <!-- DNT-Start -->ESP<!-- DNT-End --> binding name associated with this
+                <entry>The target ESP binding name associated with this
                 service</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->ESDLServiceName<!-- DNT-End --></entry>
+                <entry>ESDLServiceName</entry>
 
                 <entry>The name of the ESDLService associated with the target
                 method. </entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->MethodName<!-- DNT-End --></entry>
+                <entry>MethodName</entry>
 
                 <entry>The name of the target method (must exist in the
-                service <!-- DNT-Start -->ESDL<!-- DNT-End --> definition)</entry>
+                service ESDL definition)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-s, --server<!-- DNT-End --></entry>
+                <entry>-s, --server</entry>
 
-                <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> Address or hostname of <!-- DNT-Start -->ESP<!-- DNT-End --> server running <!-- DNT-Start -->ECL<!-- DNT-End -->
+                <entry>The IP Address or hostname of ESP server running ECL
                 Watch services</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--port<!-- DNT-End --></entry>
+                <entry>--port</entry>
 
-                <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch services port (Default is 8010)</entry>
+                <entry>The ECL Watch services port (Default is 8010)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-u, --username<!-- DNT-End --></entry>
+                <entry>-u, --username</entry>
 
                 <entry>The username (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-pw, --password<!-- DNT-End --></entry>
+                <entry>-pw, --password</entry>
 
                 <entry>The password (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--version &lt;ver&gt;<!-- DNT-End --></entry>
+                <entry>--version &lt;ver&gt;</entry>
 
-                <entry><!-- DNT-Start -->ESDL<!-- DNT-End --> service version</entry>
+                <entry>ESDL service version</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--help<!-- DNT-End --></entry>
+                <entry>--help</entry>
 
                 <entry>display usage information for the given command</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-v, --verbose<!-- DNT-End --></entry>
+                <entry>-v, --verbose</entry>
 
                 <entry>Output additional tracing information</entry>
               </row>
@@ -1423,25 +1423,25 @@
         </informaltable>
 
         <para>Use this command to unbind a method configuration associated
-        with a given <!-- DNT-Start -->ESDL<!-- DNT-End --> binding0.</para>
+        with a given ESDL binding0.</para>
 
-        <para>To unbind a method, provide the target <!-- DNT-Start -->ESP<!-- DNT-End --> process name (the <!-- DNT-Start -->ESP<!-- DNT-End -->
+        <para>To unbind a method, provide the target ESP process name (the ESP
         which hosts the service.)</para>
 
-        <para>You must also provide the <!-- DNT-Start -->ESP<!-- DNT-End --> binding on which this service is
-        configured to run, the name of the <!-- DNT-Start -->ESDL<!-- DNT-End --> service, and the name of the
+        <para>You must also provide the ESP binding on which this service is
+        configured to run, the name of the ESDL service, and the name of the
         method you are unbinding.</para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <!-- DNT-Start --><programlisting>esdl unbind-method myesp myespbinding WsMyService mymethod </programlisting><!-- DNT-End -->
+        <programlisting>esdl unbind-method myesp myespbinding WsMyService mymethod </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_get-binding" role="brk">
-        <!-- DNT-Start --><title>esdl get-binding</title><!-- DNT-End -->
+        <title>esdl get-binding</title>
 
-        <!-- DNT-Start --><para><emphasis role="bold">esdl get-binding &lt;ESDLBindingId&gt;
-        [options]</emphasis></para><!-- DNT-End -->
+        <para><emphasis role="bold">esdl get-binding &lt;ESDLBindingId&gt;
+        [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1451,51 +1451,51 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start -->ESDLBindingId<!-- DNT-End --></entry>
+                <entry>ESDLBindingId</entry>
 
-                <entry>The target <!-- DNT-Start -->ESDL<!-- DNT-End --> binding id
+                <entry>The target ESDL binding id
                 &lt;espprocessname&gt;.&lt;espbindingname&gt;</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-s, --server<!-- DNT-End --></entry>
+                <entry>-s, --server</entry>
 
-                <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> Address or hostname of <!-- DNT-Start -->ESP<!-- DNT-End --> server running <!-- DNT-Start -->ECL<!-- DNT-End -->
+                <entry>The IP Address or hostname of ESP server running ECL
                 Watch services</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--port<!-- DNT-End --></entry>
+                <entry>--port</entry>
 
-                <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch services port (Default is 8010)</entry>
+                <entry>The ECL Watch services port (Default is 8010)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-u, --username<!-- DNT-End --></entry>
+                <entry>-u, --username</entry>
 
                 <entry>The username (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-pw, --password<!-- DNT-End --></entry>
+                <entry>-pw, --password</entry>
 
                 <entry>The password (if necessary)</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--version &lt;ver&gt;<!-- DNT-End --></entry>
+                <entry>--version &lt;ver&gt;</entry>
 
-                <entry><!-- DNT-Start -->ESDL<!-- DNT-End --> service version</entry>
+                <entry>ESDL service version</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->--help<!-- DNT-End --></entry>
+                <entry>--help</entry>
 
                 <entry>display usage information for the given command</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->-v, --verbose<!-- DNT-End --></entry>
+                <entry>-v, --verbose</entry>
 
                 <entry>Output additional tracing information</entry>
               </row>
@@ -1503,10 +1503,10 @@
           </tgroup>
         </informaltable>
 
-        <para>Use this command to get <!-- DNT-Start -->DESDL<!-- DNT-End --> Service based bindings.</para>
+        <para>Use this command to get DESDL Service based bindings.</para>
 
-        <para>To specify the target <!-- DNT-Start -->DESDL<!-- DNT-End --> based service configuration, provide
-        the target <!-- DNT-Start -->ESP<!-- DNT-End --> process (esp process name or machine <!-- DNT-Start -->IP<!-- DNT-End --> Address) which
+        <para>To specify the target DESDL based service configuration, provide
+        the target ESP process (esp process name or machine IP Address) which
         hosts the service.</para>
 
         <para>You must also provide the Port on which this service is
@@ -1514,7 +1514,7 @@
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <!-- DNT-Start --><programlisting>esdl get-binding  myesp.dESDL_Service -s nnn.nnn.nnn.nnn -p 8010</programlisting><!-- DNT-End -->
+        <programlisting>esdl get-binding  myesp.dESDL_Service -s nnn.nnn.nnn.nnn -p 8010</programlisting>
 
         <para></para>
       </sect2>

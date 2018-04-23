@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FindWord">
-  <!-- DNT-Start --><title>FindWord</title><!-- DNT-End -->
+  <title>FindWord</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->FindWord<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->FindWord<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Str.FindWord<indexterm>
+      <primary>STD.Str.FindWord</primary>
     </indexterm><indexterm>
-      <primary>Str.<!-- DNT-Start -->FindWord<!-- DNT-End --></primary>
+      <primary>Str.FindWord</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->FindWord<!-- DNT-End --></primary>
+      <primary>FindWord</primary>
     </indexterm>(</emphasis> <emphasis>src, word, ignore_case</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->FindWord<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->FindWord<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Uni.FindWord<indexterm>
+      <primary>STD.Uni.FindWord</primary>
     </indexterm><indexterm>
-      <primary>Uni.<!-- DNT-Start -->FindWord<!-- DNT-End --></primary>
+      <primary>Uni.FindWord</primary>
     </indexterm>(</emphasis> <emphasis>src, word, ignore_case</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
@@ -28,45 +28,45 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>src</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>word </emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>word </emphasis></entry>
 
           <entry>A string containing the substring to search for.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>ignore_case </emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>ignore_case </emphasis></entry>
 
           <entry>A boolean true or false to indicate whether to ignore the
           case.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->FindWord<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
+          <entry>FindWord returns a BOOLEAN value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->FindWord<!-- DNT-End --> </emphasis>functions return <!-- DNT-Start -->TRUE<!-- DNT-End --> if
+  <para>The <emphasis role="bold">FindWord </emphasis>functions return TRUE if
   the <emphasis>word</emphasis> string is found in <emphasis>src</emphasis>
   string. </para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 src := 'Now is the winter of our discontent';
 word := 'now';
 
 STD.Str.FindWord(src,word);      // false - case not ignored
-STD.Str.FindWord(src,word,TRUE); // true  - with case ignored word is found</programlisting><!-- DNT-End -->
+STD.Str.FindWord(src,word,TRUE); // true  - with case ignored word is found</programlisting>
 
   <para></para>
 </sect1>

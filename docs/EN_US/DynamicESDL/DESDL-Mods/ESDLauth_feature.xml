@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_auth_feature">
-  <!-- DNT-Start --><title>auth_feature</title><!-- DNT-End -->
+  <title>auth_feature</title>
 
   <para><indexterm>
       <primary>auth_feature</primary>
@@ -11,11 +11,11 @@
   execute a method.</para>
 
   <para>In order to enable this feature, your system must be configured to use
-  a form of security that supports feature level authentication, such as <!-- DNT-Start -->LDAP<!-- DNT-End -->
-  security included in the Community edition of the platform. Once <!-- DNT-Start -->LDAP<!-- DNT-End --> is
+  a form of security that supports feature level authentication, such as LDAP
+  security included in the Community edition of the platform. Once LDAP is
   configured, you would add the tag name provided as the value for the
   <emphasis role="bold">authFeature</emphasis> attribute to the feature level
-  authentication list in the Security section of <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. Then you would set
+  authentication list in the Security section of ECL Watch. Then you would set
   permissions for users and/or groups.</para>
 
   <para>If you are using a third-party Security Manager plugin, consult their
@@ -29,11 +29,11 @@
 
   <para>Setting auth_feature("NONE") means no authentication is needed.
   Setting auth_feature("DEFERRED") defers the authentication to the business
-  logic in the <!-- DNT-Start -->ESP<!-- DNT-End --> developer's method implementation logic.</para>
+  logic in the ESP developer's method implementation logic.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting> ESPservice MyService [auth_feature("NONE")]
+  <programlisting> ESPservice MyService [auth_feature("NONE")]
  {
    ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
    ESPmethod 
@@ -44,5 +44,5 @@
      min_ver("1.2")
     ]
    MyMethod2(MyMethod2Request, MyMethod2Response);
- };</programlisting><!-- DNT-End -->
+ };</programlisting>
 </sect1>

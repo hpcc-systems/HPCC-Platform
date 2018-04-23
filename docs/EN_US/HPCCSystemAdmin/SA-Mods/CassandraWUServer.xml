@@ -2,25 +2,25 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CassandraWUStorage">
-  <!-- DNT-Start --><title>Using Cassandra for Workunit Storage</title><!-- DNT-End -->
+  <title>Using Cassandra for Workunit Storage</title>
 
   <para>Beginning with version 6.0.0, you can configure your system to use
   Apache <trademark>Cassandra</trademark> database for Workunit storage.
   Apache's Cassandra NoSQL data store is a software framework that supports
   data-intensive distributed applications under a free license.</para>
 
-  <para>The default <!-- DNT-Start -->HPCC<!-- DNT-End --> configuration continues to be the same--Workunits are
+  <para>The default HPCC configuration continues to be the same--Workunits are
   stored in Dali's data store and Sasha is typically configured to archive
   workunits to disk to save memory usage.</para>
 
   <para>Switching to Cassandra Workunit storage eliminates the need to archive
   workunits and allows you to manage your data independently.</para>
 
-  <para>This section details the steps to configure your <!-- DNT-Start -->HPCC<!-- DNT-End --> platform to use
+  <para>This section details the steps to configure your HPCC platform to use
   Cassandra as a Workunit server.</para>
 
   <sect2 id="CassandraWorkunitServer">
-    <!-- DNT-Start --><title>Cassandra as a Workunit Server</title><!-- DNT-End -->
+    <title>Cassandra as a Workunit Server</title>
 
     <para><emphasis role="bold">Pros and Cons</emphasis></para>
 
@@ -32,7 +32,7 @@
 
           <thead>
             <row>
-              <entry align="left"><!-- DNT-Start -->Dali<!-- DNT-End --></entry>
+              <entry align="left">Dali</entry>
 
               <entry align="left">Cassandra</entry>
             </row>
@@ -40,40 +40,40 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start -->Storing in Dali requires no additional software or
-              work<!-- DNT-End --></entry>
+              <entry>Storing in Dali requires no additional software or
+              work</entry>
 
               <entry>Must install and configure a Cassandra server</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->Sasha provides simple housekeeping<!-- DNT-End --></entry>
+              <entry>Sasha provides simple housekeeping</entry>
 
               <entry>Requires its own housekeeping and maintenance</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->Limited by Dali memory<!-- DNT-End --></entry>
+              <entry>Limited by Dali memory</entry>
 
               <entry>Unlimited (elastic scalability)</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->Archived Workunits are harder to access, must be restored
-              before results can be seen<!-- DNT-End --></entry>
+              <entry>Archived Workunits are harder to access, must be restored
+              before results can be seen</entry>
 
               <entry>No need to archive so all Workunits can remain
               "Live"</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->Single location<!-- DNT-End --></entry>
+              <entry>Single location</entry>
 
               <entry>Distributed, scalable, highly available.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->Single backup of data supported. Manual Fail over<!-- DNT-End --></entry>
+              <entry>Single backup of data supported. Manual Fail over</entry>
 
               <entry>Inherent fault tolerance with data replication, designed
               for high availability.</entry>
@@ -84,12 +84,12 @@
   </sect2>
 
   <sect2 id="CassandraInstallationandconfigOverview" role="brk">
-    <!-- DNT-Start --><title>Installation and Configuration Overview</title><!-- DNT-End -->
+    <title>Installation and Configuration Overview</title>
 
     <para><orderedlist>
         <listitem>
           <para>Install Cassandra and configure it as you wish. The only
-          requirements to work with an <!-- DNT-Start -->HPCC<!-- DNT-End --> platform are:</para>
+          requirements to work with an HPCC platform are:</para>
 
           <para><orderedlist numeration="loweralpha">
               <listitem>
@@ -99,38 +99,38 @@
 
               <listitem>
                 <para>If you want security, you should set up Cassandra's
-                authentication and create a superuser for <!-- DNT-Start -->HPCC<!-- DNT-End --> to use. These
+                authentication and create a superuser for HPCC to use. These
                 credentials must then be entered in the DaliPlugin
                 configuration in Configuration Manager.</para>
               </listitem>
 
               <listitem>
-                <para>Ensure your Cassandra server can be reached by your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+                <para>Ensure your Cassandra server can be reached by your HPCC
                 nodes. (listen_address and rpc_address)</para>
               </listitem>
 
               <listitem>
-                <para>Know your Cassandra settings (<!-- DNT-Start -->IP<!-- DNT-End -->, Port, keyspace, user
+                <para>Know your Cassandra settings (IP, Port, keyspace, user
                 credentials, etc.)</para>
               </listitem>
             </orderedlist></para>
         </listitem>
 
         <listitem>
-          <para>Use Configuration Manager to configure your <!-- DNT-Start -->HPCC<!-- DNT-End --> platform to
+          <para>Use Configuration Manager to configure your HPCC platform to
           use Cassandra for Workunit storage.</para>
         </listitem>
 
         <listitem>
           <para>Make sure Cassandra is running.</para>
 
-          <para>Once you have configured your <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform to use Cassandra
+          <para>Once you have configured your HPCC Platform to use Cassandra
           for Workunit storage, you must make sure Cassandra is running before
           starting your system.</para>
         </listitem>
 
         <listitem>
-          <para>Push out your environment.xml and restart your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          <para>Push out your environment.xml and restart your HPCC
           Platform.</para>
         </listitem>
 
@@ -161,21 +161,21 @@
   </sect2>
 
   <sect2 id="cfgCassandraWuStorage" role="brk">
-    <!-- DNT-Start --><title>Configure your HPCC platform to use Cassandra for Workunit
-    storage</title><!-- DNT-End -->
+    <title>Configure your HPCC platform to use Cassandra for Workunit
+    storage</title>
 
     <para>This option is configured by adding a DaliPlugin component to your
     system.</para>
 
     <sect3 id="cassandra_ConnectToConfigMgr">
-      <!-- DNT-Start --><title>Connect to Configuration Manager</title><!-- DNT-End -->
+      <title>Connect to Configuration Manager</title>
 
-      <para>In order to change the configuration for <!-- DNT-Start -->HPCC<!-- DNT-End --> components, connect
+      <para>In order to change the configuration for HPCC components, connect
       to the Configuration Manager.</para>
 
       <orderedlist numeration="arabic">
         <listitem>
-          <para>Stop all <!-- DNT-Start -->HPCC<!-- DNT-End --> Components, if they are running.</para>
+          <para>Stop all HPCC Components, if they are running.</para>
         </listitem>
 
         <listitem>
@@ -194,8 +194,8 @@
           interface.</para>
 
           <para>(using the url of
-          http://<emphasis>&lt;configmgr_<!-- DNT-Start -->IP<!-- DNT-End -->_Address&gt;</emphasis>:8015, where
-          <emphasis>&lt;configmgr_<!-- DNT-Start -->IP<!-- DNT-End -->_Address&gt;</emphasis> is the <!-- DNT-Start -->IP<!-- DNT-End --> address
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address
           of the node running Configuration Manager)</para>
         </listitem>
 
@@ -205,7 +205,7 @@
         </listitem>
 
         <listitem>
-          <para>Use the drop list to select the <!-- DNT-Start -->XML<!-- DNT-End --> configuration file.
+          <para>Use the drop list to select the XML configuration file.
           <variablelist>
               <varlistentry>
                 <term>Note:</term>
@@ -234,7 +234,7 @@
     </sect3>
 
     <sect3 id="addDaliPlugin_component" role="brk">
-      <!-- DNT-Start --><title>Adding the DaliServerPlugin component</title><!-- DNT-End -->
+      <title>Adding the DaliServerPlugin component</title>
 
       <para>The DaliServerPlugin controls your Cassandra Workunit storage
       options.</para>
@@ -306,8 +306,8 @@
           <para>Copy the new xml file from the source directory to the
           /etc/HPCCSystems and rename the file to environment.xml</para>
 
-          <!-- DNT-Start --><programlisting># for example
-sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting><!-- DNT-End -->
+          <programlisting># for example
+sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -339,16 +339,16 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           role="bold">/etc/HPCCSystems/</emphasis> on <emphasis
           role="bold">every</emphasis> node.</para>
 
-          <para>You may want to create a script to push out the <!-- DNT-Start -->XML<!-- DNT-End --> file to
-          all nodes. A sample script is provided with <!-- DNT-Start -->HPCC<!-- DNT-End -->. The following
-          command copies the <!-- DNT-Start -->XML<!-- DNT-End --> files out to all nodes as required:</para>
+          <para>You may want to create a script to push out the XML file to
+          all nodes. A sample script is provided with HPCC. The following
+          command copies the XML files out to all nodes as required:</para>
 
           <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;
 </programlisting></para>
         </listitem>
 
         <listitem>
-          <para>Restart the <!-- DNT-Start -->HPCC<!-- DNT-End --> system on <emphasis
+          <para>Restart the HPCC system on <emphasis
           role="bold">every</emphasis> node.</para>
         </listitem>
       </orderedlist>
@@ -356,13 +356,13 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
   </sect2>
 
   <sect2 id="wutool" role="brk">
-    <!-- DNT-Start --><title><emphasis role="bold">Using wutool </emphasis></title><!-- DNT-End -->
+    <title><emphasis role="bold">Using wutool </emphasis></title>
 
     <para><emphasis role="bold">wutool <indexterm>
         <primary>wutool</primary>
       </indexterm></emphasis><emphasis>action </emphasis><emphasis
-    role="bold">[<!-- DNT-Start -->WUID<!-- DNT-End -->=nnn </emphasis><emphasis role="bold">] [ <!-- DNT-Start -->DALISERVER<!-- DNT-End -->=ip |
-    <!-- DNT-Start -->CASSANDRASERVER<!-- DNT-End -->=ip] [option=value]</emphasis></para>
+    role="bold">[WUID=nnn </emphasis><emphasis role="bold">] [ DALISERVER=ip |
+    CASSANDRASERVER=ip] [option=value]</emphasis></para>
 
     <para>The wutool is a command line utility used to maintain your Workunit
     store. It can be found in /opt/HPCCSystems/bin/ on any server where the
@@ -384,72 +384,72 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->list &lt;workunits&gt;<!-- DNT-End --></entry>
+            <entry>list &lt;workunits&gt;</entry>
 
             <entry>List workunits.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->dump &lt;workunits&gt;<!-- DNT-End --></entry>
+            <entry>dump &lt;workunits&gt;</entry>
 
             <entry>Dump xml for specified workunits.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->delete &lt;workunits&gt;<!-- DNT-End --></entry>
+            <entry>delete &lt;workunits&gt;</entry>
 
             <entry>Delete workunits.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->results &lt;workunits&gt;<!-- DNT-End --></entry>
+            <entry>results &lt;workunits&gt;</entry>
 
             <entry>Dump results from specified workunits.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->archive &lt;workunits&gt;<!-- DNT-End --></entry>
+            <entry>archive &lt;workunits&gt;</entry>
 
             <entry>Archive specified Workunits to xml files. The following
-            options are supported: <para>[<!-- DNT-Start -->TO<!-- DNT-End -->=&lt;directory&gt;]
-            </para><para>[<!-- DNT-Start -->DEL<!-- DNT-End -->=1] </para><para>[<!-- DNT-Start -->DELETERESULTS<!-- DNT-End -->=1]
-            </para><para>[<!-- DNT-Start -->INCLUDEFILES<!-- DNT-End -->=1]</para></entry>
+            options are supported: <para>[TO=&lt;directory&gt;]
+            </para><para>[DEL=1] </para><para>[DELETERESULTS=1]
+            </para><para>[INCLUDEFILES=1]</para></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->restore &lt;filenames&gt;<!-- DNT-End --></entry>
+            <entry>restore &lt;filenames&gt;</entry>
 
-            <entry>Restore from xml files. [<!-- DNT-Start -->INCLUDEFILES<!-- DNT-End -->=1]</entry>
+            <entry>Restore from xml files. [INCLUDEFILES=1]</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->orphans<!-- DNT-End --></entry>
+            <entry>orphans</entry>
 
             <entry>Delete orphaned information from store</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->cleanup [days=NN]<!-- DNT-End --></entry>
+            <entry>cleanup [days=NN]</entry>
 
-            <entry>Delete workunits older than <!-- DNT-Start -->NN<!-- DNT-End --> days</entry>
+            <entry>Delete workunits older than NN days</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->validate<!-- DNT-End --></entry>
+            <entry>validate</entry>
 
-            <entry>Check contents of workunit repository for errors. [<!-- DNT-Start -->FIX<!-- DNT-End -->=1]
+            <entry>Check contents of workunit repository for errors. [FIX=1]
             will try to repair any issues found.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->clear<!-- DNT-End --></entry>
+            <entry>clear</entry>
 
             <entry>Delete entire workunit repository (requires entire=1
             repository=1)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->initialize<!-- DNT-End --></entry>
+            <entry>initialize</entry>
 
             <entry>Initialize new workunit repository</entry>
           </row>
@@ -458,7 +458,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
     </informaltable>
 
     <para>&lt;workunits&gt; can be specified on the command line or can be
-    specified using a filter owner=<!-- DNT-Start -->XXXX<!-- DNT-End -->. If omitted, all workunits are
+    specified using a filter owner=XXXX. If omitted, all workunits are
     selected.</para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -470,32 +470,32 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           <tbody>
             <row>
               <entry><emphasis role="bold">Options </emphasis><para>(These
-              options are valid if <!-- DNT-Start -->CASSANDRASERVER<!-- DNT-End --> is
+              options are valid if CASSANDRASERVER is
               specified)</para></entry>
 
               <entry></entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->CASSANDRA_KEYSPACE<para></para><!-- DNT-End --></entry>
+              <entry>CASSANDRA_KEYSPACE<para></para></entry>
 
               <entry>Cassandra keyspace. default is hpcc.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->CASSANDRA_USER<!-- DNT-End --></entry>
+              <entry>CASSANDRA_USER</entry>
 
               <entry>Cassandra username to use (if needed).</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->CASSANDRA_PASSWORD<!-- DNT-End --></entry>
+              <entry>CASSANDRA_PASSWORD</entry>
 
               <entry>Cassandra password to use (if needed).</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->TRACELEVEL<!-- DNT-End --></entry>
+              <entry>TRACELEVEL</entry>
 
               <entry>Trace level (1-10)</entry>
             </row>

@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_get_data_from">
-  <!-- DNT-Start --><title>get_data_from</title><!-- DNT-End -->
+  <title>get_data_from</title>
 
   <para><indexterm>
       <primary>get_data_from</primary>
@@ -12,13 +12,13 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>ESPresponse RoxieEchoPersonInfoResponse
+  <programlisting>ESPresponse RoxieEchoPersonInfoResponse
 {
   ESPstruct NameInfo Name;
   string Var1;
   [get_data_from("Var1")] string Var2;
 };
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para>In the example above, the query returns the data in Var1 then the
   service puts the data into the Var2 field and sends that in the response to

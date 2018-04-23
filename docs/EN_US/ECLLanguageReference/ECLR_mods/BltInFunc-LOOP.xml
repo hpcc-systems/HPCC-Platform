@@ -2,52 +2,52 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LOOP">
-  <!-- DNT-Start --><title>LOOP</title><!-- DNT-End -->
+  <title>LOOP</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->LOOP<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->LOOP<!-- DNT-End --></primary>
+  <para><emphasis role="bold">LOOP<indexterm>
+      <primary>LOOP</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->LOOP<!-- DNT-End --> function</primary>
+      <primary>LOOP function</primary>
     </indexterm>(</emphasis><emphasis> dataset,</emphasis><emphasis
   role="bold"> </emphasis><emphasis>loopcount, loopbody </emphasis><emphasis
-  role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool
-  </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [
+  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
   (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
-  <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ][,
-  <!-- DNT-Start -->FEW<!-- DNT-End -->] )</emphasis></para>
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ][,
+  FEW] )</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->LOOP<!-- DNT-End -->(</emphasis><emphasis>
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
   dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopcount,
-  loopfilter, loopbody </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> |
-  <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis>
+  loopfilter, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ] [,
-  <!-- DNT-Start -->FEW<!-- DNT-End -->])</emphasis></para>
+  FEW])</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->LOOP<!-- DNT-End -->(</emphasis><emphasis>
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
   dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopfilter,
-  loopbody </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis>
-  <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ]
-  [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name
-  </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->FEW<!-- DNT-End -->])</emphasis></para>
+  loopbody </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  </emphasis><emphasis role="bold">) ] [, FEW])</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->LOOP<!-- DNT-End -->(</emphasis><emphasis> dataset, rowfilter,
-  loopcondition, loopbody </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> |
-  <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ][, <!-- DNT-Start -->FEW<!-- DNT-End -->]
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis> dataset, rowfilter,
+  loopcondition, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ][, FEW]
   )</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->LOOP<!-- DNT-End -->(</emphasis><emphasis>
+  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
   dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopfilter,
-  loopcondition, loopbody </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> |
-  <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ][, <!-- DNT-Start -->FEW<!-- DNT-End -->]
+  loopcondition, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ][, FEW]
   )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -58,35 +58,35 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>dataset</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>dataset</emphasis></entry>
 
           <entry>The record set to process.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>loopcount<indexterm>
+          <entry><emphasis>loopcount<indexterm>
               <primary>loopcount</primary>
-            </indexterm></emphasis><!-- DNT-End --></entry>
+            </indexterm></emphasis></entry>
 
           <entry>An integer expression specifying the number of times to
           iterate .</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>loopbody<indexterm>
+          <entry><emphasis>loopbody<indexterm>
               <primary>loopbody</primary>
-            </indexterm></emphasis><!-- DNT-End --></entry>
+            </indexterm></emphasis></entry>
 
-          <entry>The operation to iteratively perform. This may be a <!-- DNT-Start -->PROJECT<!-- DNT-End -->,
-          <!-- DNT-Start -->JOIN<!-- DNT-End -->, or other such operation. <!-- DNT-Start -->ROWS<!-- DNT-End -->(<!-- DNT-Start -->LEFT<!-- DNT-End -->) is always used as the
+          <entry>The operation to iteratively perform. This may be a PROJECT,
+          JOIN, or other such operation. ROWS(LEFT) is always used as the
           operation's first parameter, indicating the specified dataset is the
           input parameter.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>loopfilter<indexterm>
+          <entry><emphasis>loopfilter<indexterm>
               <primary>loopfilter</primary>
-            </indexterm></emphasis><!-- DNT-End --></entry>
+            </indexterm></emphasis></entry>
 
           <entry>A logical expression that specifies the set of records whose
           processing is not yet complete. The set of records not meeting the
@@ -96,16 +96,16 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>loopcondition<indexterm>
+          <entry><emphasis>loopcondition<indexterm>
               <primary>loopcondition</primary>
-            </indexterm></emphasis><!-- DNT-End --></entry>
+            </indexterm></emphasis></entry>
 
           <entry>A logical expression specifying continuing
-          <emphasis>loopbody</emphasis> iteration while <!-- DNT-Start -->TRUE<!-- DNT-End -->.</entry>
+          <emphasis>loopbody</emphasis> iteration while TRUE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>rowfilter</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>rowfilter</emphasis></entry>
 
           <entry>A logical expression that specifies a single record whose
           processing is complete. The record meeting the condition is no
@@ -115,21 +115,21 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
           <entry>Optional. Specifies the output record order is not
           significant.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
           <entry>Specifies the significance of the output record
           order.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>bool</emphasis></entry>
 
           <entry>When False, specifies the output record order is not
           significant. When True, specifies the default output record
@@ -137,83 +137,83 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">STABLE</emphasis></entry>
 
           <entry>Optional. Specifies the input record order is
           significant.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
           <entry>Optional. Specifies the input record order is not
           significant.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
           <entry>Optional. Try to evaluate this activity in parallel.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>numthreads</emphasis></entry>
 
           <entry>Optional. Try to evaluate this activity using
           <emphasis>numthreads</emphasis> threads.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
           <entry>Optional. Override the algorithm used for this
           activity.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>name</emphasis></entry>
 
           <entry>The algorithm to use for this activity. Must be from the list
-          of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End -->
+          of supported algorithms for the SORT function's STABLE and UNSTABLE
           options.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">FEW</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">FEW</emphasis></entry>
 
           <entry>Optional. Indicates that activities will not require a large
           amount of memory. This may reduce the number of subgraphs generated
-          within a <!-- DNT-Start -->LOOP<!-- DNT-End --> which reduces overhead. Use only on Thor
+          within a LOOP which reduces overhead. Use only on Thor
           queries.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->LOOP<!-- DNT-End --> returns a record set.</entry>
+          <entry>LOOP returns a record set.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->LOOP<!-- DNT-End --> </emphasis>function iteratively
-  performs the <emphasis>loopbody</emphasis> operation. The <!-- DNT-Start -->COUNTER<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->COUNTER<!-- DNT-End --></primary>
+  <para>The <emphasis role="bold">LOOP </emphasis>function iteratively
+  performs the <emphasis>loopbody</emphasis> operation. The COUNTER<indexterm>
+      <primary>COUNTER</primary>
     </indexterm> is implicit and available for use to return the current
   iteration.</para>
 
   <sect2 id="The_PARALLEL_Option">
-    <!-- DNT-Start --><title>The PARALLEL Option</title><!-- DNT-End -->
+    <title>The PARALLEL Option</title>
 
-    <para>The <!-- DNT-Start -->PARALLEL<!-- DNT-End --> option allows multiple loop iterations to be executed
+    <para>The PARALLEL option allows multiple loop iterations to be executed
     in parallel.</para>
 
-    <para>There is a restriction: <!-- DNT-Start -->ROWS<!-- DNT-End -->(<!-- DNT-Start -->LEFT<!-- DNT-End -->) cannot be directly used in a
+    <para>There is a restriction: ROWS(LEFT) cannot be directly used in a
     sub-query of the <emphasis>loopbody</emphasis>.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>namesRec := RECORD  
+    <programlisting>namesRec := RECORD  
 STRING20 lname;
 STRING10 fname;
   UNSIGNED2 age := 25;
@@ -262,6 +262,6 @@ OUTPUT(LOOP(namesTable2,
   LEFT.age &lt; 100,
   EXISTS(ROWS(LEFT)) and SUM(ROWS(LEFT), age) &lt; 1000,
   loopBody(ROWS(LEFT), COUNTER)));
-</programlisting><!-- DNT-End -->
+</programlisting>
   </sect2>
 </sect1>

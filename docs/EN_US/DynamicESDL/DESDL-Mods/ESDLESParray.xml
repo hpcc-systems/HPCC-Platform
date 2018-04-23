@@ -2,16 +2,16 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESParray">
-  <!-- DNT-Start --><title>ESParray</title><!-- DNT-End -->
+  <title>ESParray</title>
 
   <para><indexterm>
-      <primary><!-- DNT-Start -->ESParray<!-- DNT-End --></primary>
+      <primary>ESParray</primary>
     </indexterm>A structure for unbounded arrays. Arrays support inheritance
   and can be nested.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>
+  <programlisting>
  ESPstruct NameBlock
    
  {
@@ -24,7 +24,7 @@
   
  ESParray&lt;ESPstruct NameBlock, Name&gt; Names;
 
-   </programlisting><!-- DNT-End -->
+   </programlisting>
 
   <para>This results in something like:</para>
 

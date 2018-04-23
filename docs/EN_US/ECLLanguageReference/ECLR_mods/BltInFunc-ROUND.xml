@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ROUND">
-  <!-- DNT-Start --><title>ROUND</title><!-- DNT-End -->
+  <title>ROUND</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->ROUND<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->ROUND<!-- DNT-End --></primary>
+  <para><emphasis role="bold">ROUND<indexterm>
+      <primary>ROUND</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->ROUND<!-- DNT-End --> function</primary>
+      <primary>ROUND function</primary>
     </indexterm>(</emphasis><emphasis>realvalue</emphasis><emphasis
   role="bold">[</emphasis><emphasis>, decimals</emphasis><emphasis
   role="bold"> ] )</emphasis></para>
@@ -20,13 +20,13 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>realvalue</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>realvalue</emphasis></entry>
 
             <entry>The floating-point value to round.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>decimals</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>decimals</emphasis></entry>
 
             <entry>Optional. An integer specifying the number of decimal
             places to round to. If omitted, the default is zero (integer
@@ -34,22 +34,22 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->ROUND<!-- DNT-End --> returns a single numeric value.</entry>
+            <entry>ROUND returns a single numeric value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ROUND<!-- DNT-End --> </emphasis>function returns the
+  <para>The <emphasis role="bold">ROUND </emphasis>function returns the
   rounded <emphasis>realvalue</emphasis> by using standard arithmetic rounding
   (decimal portions less than .5 round down and decimal portions greater than
   or equal to .5 round up).</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>SomeRealValue1 := 3.14159;
+  <programlisting>SomeRealValue1 := 3.14159;
 INTEGER4 MyVal1 := ROUND(SomeRealValue1);   // MyVal1 is 3
 INTEGER4 MyVal2 := ROUND(SomeRealValue1,2); // MyVal2 is 3.14
 
@@ -61,8 +61,8 @@ INTEGER4 MyVal4 := ROUND(SomeRealValue3); // MyVal is -1
 
 SomeRealValue4 := -1.8;
 INTEGER4 MyVal5 := ROUND(SomeRealValue4); // MyVal is -2
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="ROUNDUP"><!-- DNT-Start -->ROUNDUP<!-- DNT-End --></link>, <link
-  linkend="TRUNCATE"><!-- DNT-Start -->TRUNCATE<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="ROUNDUP">ROUNDUP</link>, <link
+  linkend="TRUNCATE">TRUNCATE</link></para>
 </sect1>

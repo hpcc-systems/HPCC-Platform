@@ -2,10 +2,10 @@
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect2 id="get_hpcc">
-  <!-- DNT-Start --><title>Get the latest HPCC Virtual Image File</title><!-- DNT-End -->
+  <title>Get the latest HPCC Virtual Image File</title>
 
-  <para>The complete details for installing and running <!-- DNT-Start -->HPCC<!-- DNT-End --> in a virtual
-  machine are available in the document: <emphasis role="bold">Running <!-- DNT-Start -->HPCC<!-- DNT-End --> in
+  <para>The complete details for installing and running HPCC in a virtual
+  machine are available in the document: <emphasis role="bold">Running HPCC in
   a Virtual Machine</emphasis>, available from <ulink
   url="hpccsystems.com/download/docs">http://hpccsystems.com/download/docs</ulink>
   .</para>
@@ -15,7 +15,7 @@
 
   <para><orderedlist>
       <listitem>
-        <para>Download the latest <!-- DNT-Start -->HPCC<!-- DNT-End --> Virtual Machine image file from:</para>
+        <para>Download the latest HPCC Virtual Machine image file from:</para>
 
         <para><ulink
         url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
@@ -33,11 +33,11 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Once the <!-- DNT-Start -->VM<!-- DNT-End --> initialization completes, you will see a window
+        <para>Once the VM initialization completes, you will see a window
         similar to the following:</para>
 
         <figure>
-          <!-- DNT-Start --><title>VM Welcome Screen</title><!-- DNT-End -->
+          <title>VM Welcome Screen</title>
 
           <mediaobject>
             <imageobject>
@@ -60,8 +60,8 @@
                   <entry><inlinegraphic
                   fileref="../../images/caution.png" /></entry>
 
-                  <entry>Your virtual <!-- DNT-Start -->IP<!-- DNT-End --> address could be different from the
-                  ones provided in the example images. Please use the <!-- DNT-Start -->IP<!-- DNT-End -->
+                  <entry>Your virtual IP address could be different from the
+                  ones provided in the example images. Please use the IP
                   address provided by <emphasis role="bold">your</emphasis>
                   installation.</entry>
                 </row>
@@ -69,28 +69,28 @@
             </tgroup>
           </informaltable></para>
 
-        <para>Note the <!-- DNT-Start -->IP<!-- DNT-End --> Address of your <!-- DNT-Start -->VM<!-- DNT-End --> Instance.</para>
+        <para>Note the IP Address of your VM Instance.</para>
       </listitem>
 
       <listitem>
-        <para>In your browser, enter the <!-- DNT-Start -->URL<!-- DNT-End --> displayed (circled in red above)
+        <para>In your browser, enter the URL displayed (circled in red above)
         in the previous image (without the :8010)</para>
 
-        <para>For Ganglia enter the <emphasis><!-- DNT-Start -->IP<!-- DNT-End --> Address</emphasis>/ganglia.
-        For Nagios enter the <emphasis><!-- DNT-Start -->IP<!-- DNT-End --> Address</emphasis>/nagios3.</para>
+        <para>For Ganglia enter the <emphasis>IP Address</emphasis>/ganglia.
+        For Nagios enter the <emphasis>IP Address</emphasis>/nagios3.</para>
 
         <para>For example,
         <emphasis>http://nnn.nnn.nnn.nnn/nagios3</emphasis>, where
-        nnn.nnn.nnn.nnn is your Virtual Machine's <!-- DNT-Start -->IP<!-- DNT-End --> address displayed at the
-        <!-- DNT-Start -->VM<!-- DNT-End --> welcome screen.</para>
+        nnn.nnn.nnn.nnn is your Virtual Machine's IP address displayed at the
+        VM welcome screen.</para>
       </listitem>
     </orderedlist></para>
 
-  <para>We encourage experienced users to use <!-- DNT-Start -->SSH<!-- DNT-End --> and log into the <!-- DNT-Start -->VM<!-- DNT-End --> and
+  <para>We encourage experienced users to use SSH and log into the VM and
   further examine the configuration of a 1-node monitoring solution.</para>
 
   <sect3 role="brk">
-    <!-- DNT-Start --><title>Viewing the Metrics</title><!-- DNT-End -->
+    <title>Viewing the Metrics</title>
 
     <para>To view the metrics page, go to the following page(s) in your
     browser.</para>
@@ -100,15 +100,15 @@
     <para><programlisting> 
 <emphasis>http://nnn.nnn.nnn.nnn/ganglia</emphasis></programlisting></para>
 
-    <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your <!-- DNT-Start -->ESP<!-- DNT-End --> server
-    running <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+    <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your ESP server
+    running ECL Watch.</para>
 
     <para><emphasis role="bold">Nagios:</emphasis></para>
 
     <para><programlisting> 
 <emphasis>http://nnn.nnn.nnn.nnn/nagios3</emphasis></programlisting></para>
 
-    <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your <!-- DNT-Start -->ESP<!-- DNT-End --> server
-    running <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+    <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your ESP server
+    running ECL Watch.</para>
   </sect3>
 </sect2>

@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Attribute_Creation" role="nobrk">
-  <!-- DNT-Start --><title>Attribute Creation</title><!-- DNT-End -->
+  <title>Attribute Creation</title>
 
   <sect2 id="Similarities_and_Differences">
-    <!-- DNT-Start --><title>Similarities and Differences</title><!-- DNT-End -->
+    <title>Similarities and Differences</title>
 
     <para>The similarities come from the fundamental requirement of solving
     any data processing problem: First, understand the problem.</para>
@@ -13,18 +13,18 @@
     <para>After that, in many programming environments, you use a "top-down"
     approach to map out the most direct line of logic to get your input
     transformed into the desired output. This is where the process diverges in
-    <!-- DNT-Start -->ECL<!-- DNT-End -->, because the tool itself requires a different way of thinking about
-    forming the solution, and the direct route is not always the fastest. <!-- DNT-Start -->ECL<!-- DNT-End -->
+    ECL, because the tool itself requires a different way of thinking about
+    forming the solution, and the direct route is not always the fastest. ECL
     requires a "bottom-up" approach to problem solving.</para>
   </sect2>
 
   <sect2 id="Atomic_Programming">
-    <!-- DNT-Start --><title>"Atomic" Programming</title><!-- DNT-End -->
+    <title>"Atomic" Programming</title>
 
-    <para>In <!-- DNT-Start -->ECL<!-- DNT-End -->, once you understand what the end result needs to be, you
+    <para>In ECL, once you understand what the end result needs to be, you
     ignore the direct line from problem input to end result and instead start
     by breaking the issue into as many pieces as possible--the smaller the
-    better. By creating "atomic" bits of <!-- DNT-Start -->ECL<!-- DNT-End --> code, you've done all the known
+    better. By creating "atomic" bits of ECL code, you've done all the known
     and easy bits of the problem. This usually gets you 80% of the way to the
     solution without having to do anything terribly difficult.</para>
 
@@ -37,9 +37,9 @@
   </sect2>
 
   <sect2 id="Growing_Solutions">
-    <!-- DNT-Start --><title>Growing Solutions</title><!-- DNT-End -->
+    <title>Growing Solutions</title>
 
-    <para>The basic Attribute building blocks in <!-- DNT-Start -->ECL<!-- DNT-End --> are the Set, Boolean,
+    <para>The basic Attribute building blocks in ECL are the Set, Boolean,
     Recordset, and Value Attribute types. Each of these can be made as
     "atomic" as needed so that they may be used in combination to produce
     "molecules" of more complex logic that may then be further combined to
@@ -51,22 +51,22 @@
     languages, the pseudo-code to produce that output would look something
     like this:</para>
 
-    <!-- DNT-Start --><programlisting>Start at top of MyFile
+    <programlisting>Start at top of MyFile
 Loop through MyFile records
  If MyField = 1 or MyField = 3 or MyField = 4 or MyField = 7 
   Include record in output set
  Else
   Throw out record and go back to top of loop
 end if and loop
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>While in <!-- DNT-Start -->ECL<!-- DNT-End -->, the actual code would be:</para>
+    <para>While in ECL, the actual code would be:</para>
 
-    <!-- DNT-Start --><programlisting>SetValidValues := [1,3,4,7];                    //Set Definition
+    <programlisting>SetValidValues := [1,3,4,7];                    //Set Definition
 IsValidRec := MyFile.MyField IN SetValidValues; //Boolean
 ValRecsMyFile := MyFile(IsValidRec);            //filtered Recordset 
 OUTPUT(ValRecsMyFile);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
     <para>The thought process behind writing this code is:</para>
 
@@ -86,12 +86,12 @@ OUTPUT(ValRecsMyFile);
   </sect2>
 
   <sect2 id="Ugly_ECL_is_Possible_Too">
-    <title>"Ugly" <!-- DNT-Start -->ECL<!-- DNT-End --> is Possible, Too</title>
+    <title>"Ugly" ECL is Possible, Too</title>
 
-    <para>Of course, that particular set of <!-- DNT-Start -->ECL<!-- DNT-End --> could have been written like
+    <para>Of course, that particular set of ECL could have been written like
     this (following a more top down thinking process):</para>
 
-    <!-- DNT-Start --><programlisting>OUTPUT(MyFile(MyField IN [1,3,4,7]));</programlisting><!-- DNT-End -->
+    <programlisting>OUTPUT(MyFile(MyField IN [1,3,4,7]));</programlisting>
 
     <para>The end result, in this case, would be the same.</para>
 
@@ -103,14 +103,14 @@ OUTPUT(ValRecsMyFile);
   </sect2>
 
   <sect2 id="Easy_Optimization">
-    <!-- DNT-Start --><title>Easy Optimization</title><!-- DNT-End -->
+    <title>Easy Optimization</title>
 
-    <para>Most importantly, by breaking your <!-- DNT-Start -->ECL<!-- DNT-End --> code into its smallest
-    possible components, you allow <!-- DNT-Start -->ECL<!-- DNT-End -->'s optimizing compiler to do the best
+    <para>Most importantly, by breaking your ECL code into its smallest
+    possible components, you allow ECL's optimizing compiler to do the best
     job possible of determining how to accomplish your desired result. This
-    leads to another dichotomy between <!-- DNT-Start -->ECL<!-- DNT-End --> and other programming languages:
+    leads to another dichotomy between ECL and other programming languages:
     usually, the less code you write, the more "elegant" the solution; but in
-    <!-- DNT-Start -->ECL<!-- DNT-End -->, the <emphasis role="underline">more</emphasis> code you write, the
+    ECL, the <emphasis role="underline">more</emphasis> code you write, the
     better and more elegant the solution is generated for you. Remember, your
     Attributes are just <emphasis role="bold">definitions</emphasis> telling
     the compiler <emphasis role="underline">what</emphasis> to do, not

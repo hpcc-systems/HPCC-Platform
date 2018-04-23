@@ -2,38 +2,38 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="UNICODE">
-  <!-- DNT-Start --><title>UNICODE</title><!-- DNT-End -->
+  <title>UNICODE</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->UNICODE<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->UNICODE<!-- DNT-End --></primary>
+  <para><emphasis role="bold">UNICODE<indexterm>
+      <primary>UNICODE</primary>
     </indexterm>[</emphasis><emphasis>_locale</emphasis><emphasis
   role="bold">][</emphasis><emphasis>n</emphasis><emphasis
   role="bold">]<indexterm>
-      <primary><!-- DNT-Start -->UNICODE<!-- DNT-End --> value type</primary>
+      <primary>UNICODE value type</primary>
     </indexterm></emphasis></para>
 
-  <para>A <!-- DNT-Start -->UTF<!-- DNT-End -->-16 encoded unicode character string of <emphasis>n</emphasis>
-  characters, space-padded just as <!-- DNT-Start -->STRING<!-- DNT-End --> is. If <emphasis>n </emphasis>is
+  <para>A UTF-16 encoded unicode character string of <emphasis>n</emphasis>
+  characters, space-padded just as STRING is. If <emphasis>n </emphasis>is
   omitted, the string is variable length to the size needed to contain the
   result of the cast or passed parameter. The optional <emphasis>locale
-  </emphasis>specifies a valid unicode locale code, as specified in <!-- DNT-Start -->ISO<!-- DNT-End -->
-  standards 639 and 3166 (not needed if <!-- DNT-Start -->LOCALE<!-- DNT-End --> is specified on the <!-- DNT-Start -->RECORD<!-- DNT-End -->
+  </emphasis>specifies a valid unicode locale code, as specified in ISO
+  standards 639 and 3166 (not needed if LOCALE is specified on the RECORD
   structure containing the field definition).</para>
 
-  <para>Type casting <!-- DNT-Start -->UNICODE<!-- DNT-End --> to <!-- DNT-Start -->VARUNICODE<!-- DNT-End -->, <!-- DNT-Start -->STRING<!-- DNT-End -->, or <!-- DNT-Start -->DATA<!-- DNT-End --> is allowed, while
-  casting to any other type will first implicitly cast to <!-- DNT-Start -->STRING<!-- DNT-End --> and then cast
+  <para>Type casting UNICODE to VARUNICODE, STRING, or DATA is allowed, while
+  casting to any other type will first implicitly cast to STRING and then cast
   to the target value type.</para>
 
-  <para>The upper size limit for any <!-- DNT-Start -->UNICODE<!-- DNT-End --> value is 4<!-- DNT-Start -->GB<!-- DNT-End -->.</para>
+  <para>The upper size limit for any UNICODE value is 4GB.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>UNICODE16 MyUNIString := U'1234567890ABCDEF';
+  <programlisting>UNICODE16 MyUNIString := U'1234567890ABCDEF';
         // utf-16-encoded string
 UNICODE4 MyUnicodeString := U'abcd';
         // same as: (UNICODE)'abcd'
 UNICODE_de5 MyUnicodeString := U'abcd\353';
-        // becomes 'abcdÃ«' with a German locale
-UNICODE_de5 MyUnicodeString := U'abcdÃ«';
-        // same as previous example</programlisting><!-- DNT-End -->
+        // becomes 'abcdÃÂ«' with a German locale
+UNICODE_de5 MyUnicodeString := U'abcdÃÂ«';
+        // same as previous example</programlisting>
 </sect1>

@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DICTIONARY">
-  <!-- DNT-Start --><title>DICTIONARY<indexterm>
+  <title>DICTIONARY<indexterm>
       <primary>DICTIONARY</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
   <para><emphasis>attr</emphasis> <emphasis role="bold">:=
-  <!-- DNT-Start -->DICTIONARY<!-- DNT-End -->(</emphasis> <emphasis>dataset, structure</emphasis> <emphasis
+  DICTIONARY(</emphasis> <emphasis>dataset, structure</emphasis> <emphasis
   role="bold">);</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->DICTIONARY<!-- DNT-End -->(</emphasis>
+  <para><emphasis role="bold">DICTIONARY(</emphasis>
   <emphasis>structure</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,27 +21,27 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>attr</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>attr</emphasis></entry>
 
-          <entry>The name of the <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> for later use in other
+          <entry>The name of the DICTIONARY for later use in other
           definitions.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>dataset</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>dataset</emphasis></entry>
 
-          <entry>The name of a <!-- DNT-Start -->DATASET<!-- DNT-End --> or recordset from which to derive the
-          <!-- DNT-Start -->DICTIONARY<!-- DNT-End -->. This may be defined inline (similar to an inline
-          <!-- DNT-Start -->DATASET<!-- DNT-End -->).</entry>
+          <entry>The name of a DATASET or recordset from which to derive the
+          DICTIONARY. This may be defined inline (similar to an inline
+          DATASET).</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>structure</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>structure</emphasis></entry>
 
-          <entry>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure (often defined inline) specifying the
+          <entry>The RECORD structure (often defined inline) specifying the
           layout of the fields. The first field(s) are key fields, optionally
           followed the "results in" operator (=&gt;) and additional payload
-          fields. This is similar to the payload version of an <!-- DNT-Start -->INDEX<!-- DNT-End -->. The
+          fields. This is similar to the payload version of an INDEX. The
           payload may specify individual fields or may use the name of the
           <emphasis>dataset </emphasis> to payload all the non-key
           fields.</entry>
@@ -50,36 +50,36 @@
     </tgroup>
   </informaltable>
 
-  <para>A <emphasis role="bold"><!-- DNT-Start -->DICTIONARY<!-- DNT-End --></emphasis> allows you to
-  efficiently check whether a particular data value is in a list (using the <!-- DNT-Start -->IN<!-- DNT-End -->
-  operator), or to simply map data. It is similar to a <!-- DNT-Start -->LOOKUP<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End --> that can be
+  <para>A <emphasis role="bold">DICTIONARY</emphasis> allows you to
+  efficiently check whether a particular data value is in a list (using the IN
+  operator), or to simply map data. It is similar to a LOOKUP JOIN that can be
   used in any context.</para>
 
   <sect2 id="DICTIONARY_Definition">
-    <!-- DNT-Start --><title>DICTIONARY Definition</title><!-- DNT-End -->
+    <title>DICTIONARY Definition</title>
 
-    <para>The <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> declaration defines a set of unique records derived
+    <para>The DICTIONARY declaration defines a set of unique records derived
     from the <emphasis>dataset</emphasis> parameter and indexed by the first
     field(s) named in the <emphasis>structure</emphasis> parameter. The
-    <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> will contain one record for each unique value(s) in the key
+    DICTIONARY will contain one record for each unique value(s) in the key
     field(s). You can access an individual record by appending square brackets
-    ( [ ] ) to the <emphasis>attr</emphasis> name of the <!-- DNT-Start -->DICTIONARY<!-- DNT-End -->, which
+    ( [ ] ) to the <emphasis>attr</emphasis> name of the DICTIONARY, which
     contain the key field value(s) that identify the specific record to
     access.</para>
   </sect2>
 
   <sect2 id="Child_DICTIONARY">
-    <!-- DNT-Start --><title>DICTIONARY as a Value Type</title><!-- DNT-End -->
+    <title>DICTIONARY as a Value Type</title>
 
-    <para>The second form of <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> is a value type with the
-    <emphasis>structure</emphasis> parameter specifying the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure
-    of the data. This data type usage allows you to specify a <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> as a
-    child dataset, similar to the way <!-- DNT-Start -->DATASET<!-- DNT-End --> may be used to define a child
-    dataset. This may also be used to pass a <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> as a parameter.</para>
+    <para>The second form of DICTIONARY is a value type with the
+    <emphasis>structure</emphasis> parameter specifying the RECORD structure
+    of the data. This data type usage allows you to specify a DICTIONARY as a
+    child dataset, similar to the way DATASET may be used to define a child
+    dataset. This may also be used to pass a DICTIONARY as a parameter.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>ColorCodes := DATASET([{'Black' ,0 },
+    <programlisting>ColorCodes := DATASET([{'Black' ,0 },
                        {'Brown' ,1 },
                        {'Red'   ,2 },
                        {'Orange',3 },
@@ -140,11 +140,11 @@ MyDCTfunc(DICTIONARY({STRING10 color =&gt; UNSIGNED1 code,STRING10 name}) DCT,
           STRING10 key) := DCT[key].name;
 MyDCTfunc(InlineDCT,'White');  //Jo
 MyDCTfunc(DsDCT,'Brown');      //Seth
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link>, <link
-    linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>, <link
-    linkend="INDEX_record_structure"><!-- DNT-Start -->INDEX<!-- DNT-End --></link>, <link
-    linkend="IN_Operator"><!-- DNT-Start -->IN<!-- DNT-End --> Operator</link></para>
+    <para>See Also: <link linkend="DATASET">DATASET</link>, <link
+    linkend="RECORD_Structure">RECORD Structure</link>, <link
+    linkend="INDEX_record_structure">INDEX</link>, <link
+    linkend="IN_Operator">IN Operator</link></para>
   </sect2>
 </sect1>

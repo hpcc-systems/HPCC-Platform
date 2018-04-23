@@ -2,12 +2,12 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_ecl_keep">
-  <!-- DNT-Start --><title>ecl_keep</title><!-- DNT-End -->
+  <title>ecl_keep</title>
 
   <para><indexterm>
       <primary>ecl_keep</primary>
     </indexterm>The <emphasis>ecl_keep</emphasis> attribute keeps the field in
-  the generated <!-- DNT-Start -->ECL<!-- DNT-End --> even though this field would have been hidden without this
+  the generated ECL even though this field would have been hidden without this
   attribute.</para>
 
   <para></para>

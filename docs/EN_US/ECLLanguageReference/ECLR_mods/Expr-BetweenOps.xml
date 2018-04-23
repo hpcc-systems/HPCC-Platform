@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="BETWEEN_Operator">
-  <!-- DNT-Start --><title>BETWEEN Operator<indexterm>
+  <title>BETWEEN Operator<indexterm>
       <primary>Between Operator</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <!-- DNT-Start --><para><emphasis>SeekVal </emphasis><emphasis role="bold">BETWEEN<indexterm>
+  <para><emphasis>SeekVal </emphasis><emphasis role="bold">BETWEEN<indexterm>
       <primary>BETWEEN</primary>
     </indexterm> </emphasis><emphasis>LoVal </emphasis><emphasis
   role="bold">AND<indexterm>
       <primary>AND</primary>
-    </indexterm> </emphasis><emphasis>HiVal </emphasis></para><!-- DNT-End -->
+    </indexterm> </emphasis><emphasis>HiVal </emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,19 +21,19 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>SeekVal</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>SeekVal</emphasis></entry>
 
           <entry>The value to find in the inclusive range.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>LoVal</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>LoVal</emphasis></entry>
 
           <entry>The low value in the inclusive range.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>HiVal</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>HiVal</emphasis></entry>
 
           <entry>The high value in the inclusive range.</entry>
         </row>
@@ -41,15 +41,15 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->BETWEEN<!-- DNT-End --></emphasis> operator is shorthand for
+  <para>The <emphasis role="bold">BETWEEN</emphasis> operator is shorthand for
   an inclusive range check using standard comparison operators
-  (<emphasis>SeekVal </emphasis>&gt;= <emphasis>LoVal </emphasis><!-- DNT-Start -->AND<!-- DNT-End -->
+  (<emphasis>SeekVal </emphasis>&gt;= <emphasis>LoVal </emphasis>AND
   <emphasis>SeekVal </emphasis>&lt;= <emphasis>HiVal). </emphasis>It may be
-  combined with <!-- DNT-Start -->NOT<!-- DNT-End --> to reverse the logic.</para>
+  combined with NOT to reverse the logic.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>X := 10;
+  <programlisting>X := 10;
 Y := 20;
 Z := 15;
 
@@ -59,7 +59,7 @@ IsInRange := Z BETWEEN X AND Y;
 
 IsNotInRange := Z NOT BETWEEN X AND Y;
    //This code is directly equivalent to: 
-   // IsInNotRange := NOT (Z &gt;= X AND Z &lt;= Y);</programlisting><!-- DNT-End -->
+   // IsInNotRange := NOT (Z &gt;= X AND Z &lt;= Y);</programlisting>
 
   <para>See Also: <link linkend="Logical_Operators">Logical Operators</link>, <link linkend="Comparison_Operators">Comparison Operators</link></para>
 </sect1>

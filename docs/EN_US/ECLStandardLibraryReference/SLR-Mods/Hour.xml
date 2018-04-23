@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Hour">
-  <!-- DNT-Start --><title>Hour</title><!-- DNT-End -->
+  <title>Hour</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.Hour<indexterm>
+  <para><emphasis role="bold">STD.Date.Hour<indexterm>
       <primary>STD.Date.Hour</primary>
     </indexterm><indexterm>
       <primary>Date.Hour</primary>
     </indexterm><indexterm>
       <primary>Hour</primary>
     </indexterm>(</emphasis> <emphasis>time</emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,32 +21,32 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>time</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>time</emphasis></entry>
 
           <entry>A time value in the Time_ format.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->Hour<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value representing the hour in the
+          <entry>Hour returns an INTEGER value representing the hour in the
           range of 0-23.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->Hour<!-- DNT-End --></emphasis> function returns the hour
+  <para>The <emphasis role="bold">Hour</emphasis> function returns the hour
   from the <emphasis>time</emphasis> value.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 MyTime:= STD.Date.CurrentTime(TRUE);   //Local Time
   
 t1 := STD.Date.Hour(MyTime);
     //t1 contains the hour of the current local time
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para></para>
 </sect1>

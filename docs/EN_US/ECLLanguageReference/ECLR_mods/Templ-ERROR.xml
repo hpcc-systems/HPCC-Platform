@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_ERROR">
-  <!-- DNT-Start --><title>#ERROR</title><!-- DNT-End -->
+  <title>#ERROR</title>
 
-  <para><emphasis role="bold">#<!-- DNT-Start -->ERROR<!-- DNT-End --><indexterm>
-      <primary>#<!-- DNT-Start -->ERROR<!-- DNT-End --></primary>
+  <para><emphasis role="bold">#ERROR<indexterm>
+      <primary>#ERROR</primary>
     </indexterm>( </emphasis><emphasis>errormessage</emphasis> <emphasis
   role="bold">);</emphasis></para>
 
@@ -17,7 +17,7 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>errormessage</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>errormessage</emphasis></entry>
 
             <entry>A string expression containing the message to
             display.</entry>
@@ -26,22 +26,22 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#<!-- DNT-Start -->ERROR<!-- DNT-End --> </emphasis>statement immediately
+  <para>The <emphasis role="bold">#ERROR </emphasis>statement immediately
   halts processing on the workunit and displays the
-  <emphasis>errormessage</emphasis>. This statement may be used outside an <!-- DNT-Start -->XML<!-- DNT-End -->
-  scope and does not require a previous <!-- DNT-Start -->LOADXML<!-- DNT-End --> to instantiate an <!-- DNT-Start -->XML<!-- DNT-End -->
+  <emphasis>errormessage</emphasis>. This statement may be used outside an XML
+  scope and does not require a previous LOADXML to instantiate an XML
   scope.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  #IF(TRUE)
+  <programlisting>  #IF(TRUE)
     #ERROR('broken');
     OUTPUT('broken');
   #ELSE
     #WARNING('maybe broken');
     OUTPUT('maybe broken');
   #END;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="_WARNING">#<!-- DNT-Start -->WARNING<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="_WARNING">#WARNING</link></para>
 </sect1>

@@ -2,18 +2,18 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SERVICE_Structure" role="nobrk">
-  <!-- DNT-Start --><title>SERVICE Structure<indexterm>
+  <title>SERVICE Structure<indexterm>
       <primary>SERVICE Structure</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <para><emphasis>servicename </emphasis><emphasis role="bold">:= <!-- DNT-Start -->SERVICE<!-- DNT-End --> [ :
+  <para><emphasis>servicename </emphasis><emphasis role="bold">:= SERVICE [ :
   </emphasis><emphasis>defaultkeywords</emphasis><emphasis role="bold">
   ]</emphasis><emphasis role="bold"> </emphasis><emphasis></emphasis></para>
 
   <para><emphasis> prototype </emphasis>:
   <emphasis>keywordlist</emphasis>;<emphasis role="bold"> </emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->END<!-- DNT-End -->;</emphasis></para>
+  <para><emphasis role="bold">END;</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -23,14 +23,14 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>servicename</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>servicename</emphasis></entry>
 
-            <entry>The name of the service the <!-- DNT-Start -->SERVICE<!-- DNT-End --> structure
+            <entry>The name of the service the SERVICE structure
             provides.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>defaultkeywords</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>defaultkeywords</emphasis></entry>
 
             <entry>Optional. A comma-delimited list of default keywords and
             their values shared by all prototypes in the external
@@ -38,31 +38,31 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>prototype</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>prototype</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> name and prototype of a specific function.</entry>
+            <entry>The ECL name and prototype of a specific function.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>keywordlist</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>keywordlist</emphasis></entry>
 
             <entry>A comma-delimited list of keywords and their values that
-            tell the <!-- DNT-Start -->ECL<!-- DNT-End --> compiler how to access the external service.</entry>
+            tell the ECL compiler how to access the external service.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->SERVICE<!-- DNT-End --> </emphasis>structure makes it
-  possible to create external services to extend the capabilities of <!-- DNT-Start -->ECL<!-- DNT-End --> to
+  <para>The <emphasis role="bold">SERVICE </emphasis>structure makes it
+  possible to create external services to extend the capabilities of ECL to
   perform any desired functionality. These external system services are
-  implemented as exported functions in a .<!-- DNT-Start -->SO<!-- DNT-End --> (Shared Object). An <!-- DNT-Start -->ECL<!-- DNT-End --> system
-  service .<!-- DNT-Start -->SO<!-- DNT-End --> can contain one or more services and (possibly) a single .<!-- DNT-Start -->SO<!-- DNT-End -->
+  implemented as exported functions in a .SO (Shared Object). An ECL system
+  service .SO can contain one or more services and (possibly) a single .SO
   initialization routine.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  email := SERVICE
+  <programlisting>  email := SERVICE
     simpleSend( STRING address,
             STRING template,
             STRING subject) : LIBRARY='ecl2cw',
@@ -120,7 +120,7 @@
     takesContext2() : entrypoint='takesContext2',context;
     STRING takesContext3() : entrypoint='takesContext3',context;
   END;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="External_Service_Implementation">External Service Implementation</link>, <link linkend="CONST"><!-- DNT-Start -->CONST<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="External_Service_Implementation">External Service Implementation</link>, <link linkend="CONST">CONST</link></para>
 </sect1>

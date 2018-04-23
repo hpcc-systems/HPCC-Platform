@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LogicalFileSuperSubList">
-  <!-- DNT-Start --><title>LogicalFileSuperSubList</title><!-- DNT-End -->
+  <title>LogicalFileSuperSubList</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.File.<!-- DNT-Start -->LogicalFileSuperSubList<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.File.<!-- DNT-Start -->LogicalFileSuperSubList<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.File.LogicalFileSuperSubList<indexterm>
+      <primary>STD.File.LogicalFileSuperSubList</primary>
     </indexterm><indexterm>
-      <primary>File.<!-- DNT-Start -->LogicalFileSuperSubList<!-- DNT-End --></primary>
+      <primary>File.LogicalFileSuperSubList</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->LogicalFileSuperSubList<!-- DNT-End --></primary>
+      <primary>LogicalFileSuperSubList</primary>
     </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
   role="bold">)</emphasis></para>
 
-  <para>Return:<emphasis> </emphasis><!-- DNT-Start -->LogicalFileSuperSubList<!-- DNT-End --> returns a dataset
+  <para>Return:<emphasis> </emphasis>LogicalFileSuperSubList returns a dataset
   in the following format:</para>
 
-  <!-- DNT-Start --><programlisting>EXPORT FsLogicalSuperSubRecord := RECORD 
+  <programlisting>EXPORT FsLogicalSuperSubRecord := RECORD 
   STRING supername{MAXLENGTH(255)};  
   STRING subname{MAXLENGTH(255)}; 
-END;</programlisting><!-- DNT-End -->
+END;</programlisting>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->LogicalFileSuperSubList<!-- DNT-End --> </emphasis>function
+  <para>The <emphasis role="bold">LogicalFileSuperSubList </emphasis>function
   returns a list of the logical filenames of all the SuperFiles and their
   component sub-files.</para>
 
@@ -29,6 +29,6 @@ END;</programlisting><!-- DNT-End -->
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.File.LogicalFileSuperSubList());
-  //returns all SuperFiles and their sub-files</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">OUTPUT(STD.File.LogicalFileSuperSubList());
+  //returns all SuperFiles and their sub-files</programlisting>
 </sect1>

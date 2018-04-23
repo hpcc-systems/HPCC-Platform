@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="IFF">
-  <!-- DNT-Start --><title>IFF<indexterm>
+  <title>IFF<indexterm>
       <primary>IFF</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->IFF<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->IFF<!-- DNT-End --> function</primary>
+  <para><emphasis role="bold">IFF<indexterm>
+      <primary>IFF function</primary>
     </indexterm>(</emphasis><emphasis>expression, trueresult
   </emphasis><emphasis role="bold">[</emphasis><emphasis>, falseresult
   </emphasis><emphasis role="bold">])</emphasis></para>
@@ -20,20 +20,20 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>A conditional expression.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>trueresult</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>trueresult</emphasis></entry>
 
             <entry>The result to return when the expression is true. This may
             be any expression or action.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>falseresult</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>falseresult</emphasis></entry>
 
             <entry>The result to return when the expression is false. This may
             be any expression or action. This may be omitted only if the
@@ -41,20 +41,20 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->IF<!-- DNT-End --> returns a single value, set, recordset, or
+            <entry>IF returns a single value, set, recordset, or
             action.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-   <para>The <emphasis role="bold"><!-- DNT-Start -->IFF<!-- DNT-End --></emphasis> function performs the same
-  functionality as <!-- DNT-Start -->IF<!-- DNT-End -->, but ensures that an <emphasis>expression</emphasis>
+   <para>The <emphasis role="bold">IFF</emphasis> function performs the same
+  functionality as IF, but ensures that an <emphasis>expression</emphasis>
   containing complex boolean logic is evaluated exactly as it appears.</para>
 
-  <para>See Also: <link linkend="IF"><!-- DNT-Start -->IF<!-- DNT-End --></link>, <link linkend="MAP"><!-- DNT-Start -->MAP<!-- DNT-End --></link>,
-  <link linkend="EVALUATE"><!-- DNT-Start -->EVALUATE<!-- DNT-End --></link>, <link linkend="CASE"><!-- DNT-Start -->CASE<!-- DNT-End --></link>,
-  <link linkend="CHOOSE"><!-- DNT-Start -->CHOOSE<!-- DNT-End --></link>, <link linkend="SET"><!-- DNT-Start -->SET<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="IF">IF</link>, <link linkend="MAP">MAP</link>,
+  <link linkend="EVALUATE">EVALUATE</link>, <link linkend="CASE">CASE</link>,
+  <link linkend="CHOOSE">CHOOSE</link>, <link linkend="SET">SET</link></para>
 </sect1>

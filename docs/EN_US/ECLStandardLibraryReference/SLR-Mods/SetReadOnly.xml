@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SetReadOnly">
-  <!-- DNT-Start --><title>SetReadOnly</title><!-- DNT-End -->
+  <title>SetReadOnly</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.SetReadOnly<indexterm>
+  <para><emphasis role="bold">STD.File.SetReadOnly<indexterm>
       <primary>STD.File.SetReadOnly</primary>
     </indexterm><indexterm>
       <primary>File.SetReadOnly</primary>
@@ -12,7 +12,7 @@
       <primary>SetReadOnly</primary>
     </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
   role="bold">, </emphasis> <emphasis>flag </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,14 +22,14 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>filename</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>flag</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>flag</emphasis></entry>
 
           <entry>A boolean value indicating which way to set the read-only
           attribute of the <emphasis>filename</emphasis>.</entry>
@@ -38,13 +38,13 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->SetReadOnly<!-- DNT-End --> </emphasis>function toggles the
+  <para>The <emphasis role="bold">SetReadOnly </emphasis>function toggles the
   read-only attribute of the filename. If the <emphasis>flag</emphasis> is
-  <!-- DNT-Start -->TRUE<!-- DNT-End -->, read-only is set on.</para>
+  TRUE, read-only is set on.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.File.SetReadOnly('Fred',TRUE);
+  <programlisting format="linespecific">A := STD.File.SetReadOnly('Fred',TRUE);
  //set read only flag on
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

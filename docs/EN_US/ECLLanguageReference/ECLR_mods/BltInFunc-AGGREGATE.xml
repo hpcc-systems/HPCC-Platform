@@ -2,27 +2,27 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="AGGREGATE">
-  <!-- DNT-Start --><title>AGGREGATE</title><!-- DNT-End -->
+  <title>AGGREGATE</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->AGGREGATE<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->AGGREGATE<!-- DNT-End --></primary>
+  <para><emphasis role="bold">AGGREGATE<indexterm>
+      <primary>AGGREGATE</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->AGGREGATE<!-- DNT-End --> function</primary>
+      <primary>AGGREGATE function</primary>
     </indexterm>(</emphasis> <emphasis>recordset,
   resultrec,maintransform</emphasis> <emphasis role="bold">[</emphasis>
   <emphasis>, mergetransform</emphasis> <emphasis
-  role="bold">(<!-- DNT-Start -->RIGHT<!-- DNT-End -->1<indexterm>
-      <primary><!-- DNT-Start -->RIGHT<!-- DNT-End -->1</primary>
-    </indexterm>,<!-- DNT-Start -->RIGHT<!-- DNT-End -->2<indexterm>
-      <primary><!-- DNT-Start -->RIGHT<!-- DNT-End -->2</primary>
+  role="bold">(RIGHT1<indexterm>
+      <primary>RIGHT1</primary>
+    </indexterm>,RIGHT2<indexterm>
+      <primary>RIGHT2</primary>
     </indexterm>) ] [,</emphasis> <emphasis>groupingfields</emphasis>
-  <emphasis role="bold">] [, <!-- DNT-Start -->LOCAL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --></primary>
-    </indexterm> | <!-- DNT-Start -->FEW<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->FEW<!-- DNT-End --></primary>
-    </indexterm> | <!-- DNT-Start -->MANY<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->MANY<!-- DNT-End --></primary>
-    </indexterm>] [, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  <emphasis role="bold">] [, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> | FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm> | MANY<indexterm>
+      <primary>MANY</primary>
+    </indexterm>] [, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -32,55 +32,55 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>recordset</emphasis></entry>
 
             <entry>The set of records to process.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>resultrec</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>resultrec</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure of the result record set.</entry>
+            <entry>The RECORD structure of the result record set.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>maintransform</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>maintransform</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call for each matching pair of
+            <entry>The TRANSFORM function to call for each matching pair of
             records in the <emphasis>recordset</emphasis>. This is implicitly
             a local operation on each node.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mergetransform</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mergetransform</emphasis></entry>
 
-            <entry>Optional. The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call to globally merge
+            <entry>Optional. The TRANSFORM function to call to globally merge
             the result records from the <emphasis>maintransform</emphasis>. If
             omitted, the compiler will attempt to deduce the merge from the
             <emphasis>maintransform</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>groupingfields</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>groupingfields</emphasis></entry>
 
             <entry>Optional. A comma-delimited list of fields in the
             <emphasis>recordset</emphasis> to group by. Each field must be
-            prefaced with the keyword <!-- DNT-Start -->LEFT<!-- DNT-End -->. If omitted, then all records
+            prefaced with the keyword LEFT. If omitted, then all records
             match.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">LOCAL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
             <entry>Optional. Specifies the operation is performed on each
             supercomputer node independently, without requiring interaction
             with all other nodes to acquire data; the operation maintains the
-            distribution of any previous <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->. Valid only if the
+            distribution of any previous DISTRIBUTE. Valid only if the
             <emphasis>mergetransform</emphasis> is omitted.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">FEW</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
 
             <entry>Optional. Indicates that the expression will result in
             fewer than 10,000 records. This allows optimization to produce a
@@ -88,69 +88,69 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">MANY</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">MANY</emphasis></entry>
 
             <entry>Optional. Indicates that the expression will result in more
             than 10,000 records.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->AGGREGATE<!-- DNT-End --> returns a record set.</entry>
+            <entry>AGGREGATE returns a record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->AGGREGATE<!-- DNT-End --> </emphasis>function is similar to
-  <!-- DNT-Start -->ROLLUP<!-- DNT-End --> except its output format does not need to match the input format. It
-  also has similarity to <!-- DNT-Start -->TABLE<!-- DNT-End --> in that the <emphasis>groupingfields</emphasis>
+  <para>The <emphasis role="bold">AGGREGATE </emphasis>function is similar to
+  ROLLUP except its output format does not need to match the input format. It
+  also has similarity to TABLE in that the <emphasis>groupingfields</emphasis>
   (if present) determine the matching records such that you will get one
   result for each unique value of the <emphasis>groupingfields</emphasis>. The
   input <emphasis>recordset</emphasis> does not need to have been sorted by
@@ -162,36 +162,36 @@
   the global result. </para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Aggregate">
-    <!-- DNT-Start --><title>TRANSFORM Function Requirements - AGGREGATE</title><!-- DNT-End -->
+    <title>TRANSFORM Function Requirements - AGGREGATE</title>
 
     <para>The <emphasis>maintransform</emphasis> must take at least two
-    parameters: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record of the same format as the input
-    <emphasis>recordset </emphasis>and a <!-- DNT-Start -->RIGHT<!-- DNT-End --> record of the same format as
+    parameters: a LEFT record of the same format as the input
+    <emphasis>recordset </emphasis>and a RIGHT record of the same format as
     the <emphasis>resultrec</emphasis>. The format of the resulting record set
-    must be the <emphasis>resultrec</emphasis>. <!-- DNT-Start -->LEFT<!-- DNT-End --> refers to the next input
-    record and <!-- DNT-Start -->RIGHT<!-- DNT-End --> the result of the previous transform.</para>
+    must be the <emphasis>resultrec</emphasis>. LEFT refers to the next input
+    record and RIGHT the result of the previous transform.</para>
 
     <para>The <emphasis>mergetransform</emphasis> must take at least two
-    parameters: <!-- DNT-Start -->RIGHT<!-- DNT-End -->1 and <!-- DNT-Start -->RIGHT<!-- DNT-End -->2 records of the same format as the
+    parameters: RIGHT1 and RIGHT2 records of the same format as the
     <emphasis>resultrec</emphasis>. The format of the resulting record set
-    must be the <emphasis>resultrec</emphasis>. <!-- DNT-Start -->RIGHT<!-- DNT-End -->1 refers to the result of
-    the <emphasis>maintransform</emphasis> on one node and <!-- DNT-Start -->RIGHT<!-- DNT-End -->2 the result
+    must be the <emphasis>resultrec</emphasis>. RIGHT1 refers to the result of
+    the <emphasis>maintransform</emphasis> on one node and RIGHT2 the result
     of the <emphasis>maintransform</emphasis> on another.</para>
 
     <para>The <emphasis>mergetransform</emphasis> is generated for expressions
     of the form:</para>
 
-    <!-- DNT-Start --><programlisting>  SELF.x := &lt;RIGHT.x &lt;op&gt; f(LEFT)
-  SELF.x := f(LEFT)  &lt;op&gt; RIGHT.x</programlisting><!-- DNT-End -->
+    <programlisting>  SELF.x := &lt;RIGHT.x &lt;op&gt; f(LEFT)
+  SELF.x := f(LEFT)  &lt;op&gt; RIGHT.x</programlisting>
 
-    <para>where the &lt;op&gt; is: <!-- DNT-Start -->MAX<!-- DNT-End -->, <!-- DNT-Start -->MIN<!-- DNT-End -->, <!-- DNT-Start -->SUM<!-- DNT-End -->, +, &amp;, |, ^, *</para>
+    <para>where the &lt;op&gt; is: MAX, MIN, SUM, +, &amp;, |, ^, *</para>
   </sect2>
 
   <sect2 id="How_Aggregate_Works">
-    <!-- DNT-Start --><title>How AGGREGATE Works</title><!-- DNT-End -->
+    <title>How AGGREGATE Works</title>
 
-    <para>In the <emphasis>maintransform</emphasis>, <!-- DNT-Start -->LEFT<!-- DNT-End --> refers to the next
-    input record and <!-- DNT-Start -->RIGHT<!-- DNT-End --> the result of the previous transform.</para>
+    <para>In the <emphasis>maintransform</emphasis>, LEFT refers to the next
+    input record and RIGHT the result of the previous transform.</para>
 
     <para>There are 4 interesting cases:</para>
 
@@ -204,19 +204,19 @@
     <para>(c) If multiple records match on a single node, subsequent records
     that match call the <emphasis>maintransform</emphasis> but any field
     expression in the <emphasis>maintransform</emphasis> that does not
-    reference the <!-- DNT-Start -->RIGHT<!-- DNT-End --> record is not processed. Therefore the value for that
+    reference the RIGHT record is not processed. Therefore the value for that
     field is set by the first matching record matched instead of the
     last.</para>
 
     <para>(d) If multiple records match on multiple nodes, then step (c)
     performs on each node, and then the summary records are merged. This
     requires a <emphasis>mergetransform</emphasis> that takes two records of
-    type <!-- DNT-Start -->RIGHT<!-- DNT-End -->. Whenever possible the code generator tries to deduce the
+    type RIGHT. Whenever possible the code generator tries to deduce the
     <emphasis>mergetransform</emphasis> from the
     <emphasis>maintransform</emphasis>. If it can't, then the user will need
     to specify one.</para>
 
-    <!-- DNT-Start --><programlisting>inRecord := RECORD 
+    <programlisting>inRecord := RECORD 
   UNSIGNED box; 
   STRING text{MAXLENGTH(10)}; 
 END; 
@@ -256,11 +256,11 @@ outRecord2 t3(inRecord l, outRecord2 r) := TRANSFORM
   SELF.box := l.box; 
   SELF.items:= r.items + l; 
 END; 
-OUTPUT(AGGREGATE(inTable, outRecord2, t3(LEFT, RIGHT), LEFT.box));</programlisting><!-- DNT-End -->
+OUTPUT(AGGREGATE(inTable, outRecord2, t3(LEFT, RIGHT), LEFT.box));</programlisting>
 
-    <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
-    Structure</link>, <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End -->
-    Structure</link>, <link linkend="ROLLUP"><!-- DNT-Start -->ROLLUP<!-- DNT-End --></link>, <link
-    linkend="TABLE"><!-- DNT-Start -->TABLE<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+    Structure</link>, <link linkend="RECORD_Structure">RECORD
+    Structure</link>, <link linkend="ROLLUP">ROLLUP</link>, <link
+    linkend="TABLE">TABLE</link></para>
   </sect2>
 </sect1>

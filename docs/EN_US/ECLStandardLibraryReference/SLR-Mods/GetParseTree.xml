@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetParseTree">
-  <!-- DNT-Start --><title>GetParseTree</title><!-- DNT-End -->
+  <title>GetParseTree</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Debug.GetParseTree<indexterm>
+  <para><emphasis role="bold">STD.System.Debug.GetParseTree<indexterm>
       <primary>STD.System.Debug.GetParseTree</primary>
     </indexterm> <indexterm>
       <primary>System.Debug.GetParseTree</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>GetParseTree</primary>
     </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,23 +23,23 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->GetParseTree<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> value.</entry>
+          <entry>GetParseTree returns a STRING value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->GetParseTree<!-- DNT-End --> </emphasis>function returns a
+  <para>The <emphasis role="bold">GetParseTree </emphasis>function returns a
   textual representation of the match that occurred, using square brackets
   (such as: a[b[c]d] ) to indicate nesting. This function is only used within
-  the <!-- DNT-Start -->RECORD<!-- DNT-End --> or <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> structure that defines the result of a <!-- DNT-Start -->PARSE<!-- DNT-End -->
-  operation. This function is useful for debugging <!-- DNT-Start -->PARSE<!-- DNT-End --> operations.</para>
+  the RECORD or TRANSFORM structure that defines the result of a PARSE
+  operation. This function is useful for debugging PARSE operations.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 
 r := {string150 line};
 d := dataset([
@@ -71,5 +71,5 @@ END;
 outfile1 := PARSE(d,line,progeny,results,SCAN ALL);
 /* the Tree field output looks like this:
 Tree: [namet[name"Shechem"] ws" " produced_by"the son of" ws" " namet[name"Hamor"]]
-*/</programlisting><!-- DNT-End -->
+*/</programlisting>
 </sect1>

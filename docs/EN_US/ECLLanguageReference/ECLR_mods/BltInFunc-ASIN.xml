@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ASIN">
-  <!-- DNT-Start --><title>ASIN</title><!-- DNT-End -->
+  <title>ASIN</title>
 
   <para role="syntax"><emphasis role="bold">ASIN<indexterm>
       <primary>ASIN</primary>
@@ -19,26 +19,26 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>sine</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>sine</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->REAL<!-- DNT-End --> sine value for which to find the arcsine.</entry>
+            <entry>The REAL sine value for which to find the arcsine.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->ASIN<!-- DNT-End --> returns a single <!-- DNT-Start -->REAL<!-- DNT-End --> value.</entry>
+            <entry>ASIN returns a single REAL value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ASIN<!-- DNT-End --> </emphasis>function returns the arcsine
+  <para>The <emphasis role="bold">ASIN </emphasis>function returns the arcsine
   (inverse) of the <emphasis>sine</emphasis>, in radians.</para>
 
   <para>Example:</para>
 
   <para><programlisting>ArcSine := ASIN(SineAngle);</programlisting></para>
 
-  <para>See Also: <link linkend="ACOS"><!-- DNT-Start -->ACOS<!-- DNT-End --></link>, <link linkend="COS"><!-- DNT-Start -->COS<!-- DNT-End --></link>, <link linkend="SIN"><!-- DNT-Start -->SIN<!-- DNT-End --></link>, <link linkend="TAN"><!-- DNT-Start -->TAN<!-- DNT-End --></link>, <link linkend="ATAN"><!-- DNT-Start -->ATAN<!-- DNT-End --></link>, <link linkend="COSH"><!-- DNT-Start -->COSH<!-- DNT-End --></link>, <link linkend="SINH"><!-- DNT-Start -->SINH<!-- DNT-End --></link>, <link linkend="TANH"><!-- DNT-Start -->TANH<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="ATAN">ATAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
 </sect1>

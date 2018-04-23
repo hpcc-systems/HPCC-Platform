@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <!-- DNT-Start --><title>Client Tools Overview</title><!-- DNT-End -->
+    <title>Client Tools Overview</title>
 
     <author>
       <firstname>Boca Raton</firstname>
@@ -19,13 +19,13 @@
   </bookinfo>
 
   <chapter id="Command_Line_ECL">
-    <!-- DNT-Start --><title>ECL Plus</title><!-- DNT-End -->
+    <title>ECL Plus</title>
 
     <sect1 id="Command_Line_Interface" role="nobrk">
-      <!-- DNT-Start --><title>Command Line Interface</title><!-- DNT-End -->
+      <title>Command Line Interface</title>
 
       <sect2 id="ECLPlus_exe">
-        <!-- DNT-Start --><title><emphasis>eclplus.exe</emphasis></title><!-- DNT-End -->
+        <title><emphasis>eclplus.exe</emphasis></title>
 
         <para><emphasis role="bold">eclplus </emphasis><emphasis> action=
         owner= user= password= cluster= server= queue= graph= timeout=
@@ -41,7 +41,7 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>action=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>action=</emphasis></entry>
 
                   <entry>One of the following options:
                   list|view|dump|delete|abort|query|graph(the default option
@@ -49,65 +49,65 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>owner=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>owner=</emphasis></entry>
 
                   <entry>The workunit owner.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>user=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>user=</emphasis></entry>
 
                   <entry>The userid.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>password=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>password=</emphasis></entry>
 
                   <entry>The password authorizing access for the user.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>cluster=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>cluster=</emphasis></entry>
 
                   <entry>The name of the cluster to use.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>server=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>server=</emphasis></entry>
 
-                  <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> address or <!-- DNT-Start -->DNS<!-- DNT-End --> name of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
+                  <entry>The IP address or DNS name of the ECL Watch
                   server.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>queue=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>queue=</emphasis></entry>
 
                   <entry>The name of the job queue.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>graph=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>graph=</emphasis></entry>
 
                   <entry>The name of graph.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>timeout=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>timeout=</emphasis></entry>
 
                   <entry>Query timeout in seconds (0 for
                   asynchronous).</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>ecl=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>ecl=</emphasis></entry>
 
-                  <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> code to execute. Optionally, this may be
-                  replaced by the name of an input file containing the <!-- DNT-Start -->ECL<!-- DNT-End --> to
+                  <entry>The ECL code to execute. Optionally, this may be
+                  replaced by the name of an input file containing the ECL to
                   execute (in the form: @inputfile).</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>file=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>file=</emphasis></entry>
 
                   <entry>The logical name of the file, or the logical name
                   with the starting and ending rows specified (in the form:
@@ -115,67 +115,67 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>format=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>format=</emphasis></entry>
 
-                  <entry>One of the following options: default | <!-- DNT-Start -->csv<!-- DNT-End --> | <!-- DNT-Start -->csvh<!-- DNT-End --> |
-                  xml | <!-- DNT-Start -->runecl<!-- DNT-End --> | bin(ary)</entry>
+                  <entry>One of the following options: default | csv | csvh |
+                  xml | runecl | bin(ary)</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>output=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>output=</emphasis></entry>
 
                   <entry>The name of the file to output.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>jobname=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>jobname=</emphasis></entry>
 
                   <entry>The name to give the job.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>pagesize=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>pagesize=</emphasis></entry>
 
                   <entry>The number of rows per page. If omitted, the default
                   is 500.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>-debugparam=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>-debugparam=</emphasis></entry>
 
                   <entry>Debug parameters to pass on the command line, in the
                   form: -debugparam=debugvalue</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>_applicationparam=</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>_applicationparam=</emphasis></entry>
 
                   <entry>Parameters to pass on the command line, in the form:
                   _applicationparam=applicationvalue</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>/variablename= </emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>/variablename= </emphasis></entry>
 
                   <entry>Variables to pass on the command line, in the form:
                   /variablename=[(int)|(bool)] valueThe default value type is
                   string unless int or bool is specified (in parentheses
                   preceding the value). The <emphasis>variablename</emphasis>
-                  is the <!-- DNT-Start -->STORED<!-- DNT-End --> name of an <!-- DNT-Start -->EXL<!-- DNT-End --> file in your <!-- DNT-Start -->ECL<!-- DNT-End --> code.</entry>
+                  is the STORED name of an EXL file in your ECL code.</entry>
                 </row>
               </tbody>
             </tgroup>
           </informaltable></para>
 
         <para>The <emphasis role="bold">eclplus</emphasis> executable accepts
-        command line parameters to send directly to an <!-- DNT-Start -->ECL<!-- DNT-End --> execution engine.
+        command line parameters to send directly to an ECL execution engine.
         These options can be typed directly on the command line, sent using a
         script or batch file, through an <emphasis role="bold">ini</emphasis>
         file in the same directory as the executable, or any
         combination.</para>
 
         <sect3 id="CT_CLI_eclplus.ini" role="brk">
-          <!-- DNT-Start --><title>eclplus.ini</title><!-- DNT-End -->
+          <title>eclplus.ini</title>
 
           <para>All the options can be put directly on the command line, or
           placed in a file called eclplus.ini in the same directory as the
@@ -183,11 +183,11 @@
           the filename is in lowercase. Options that do not change very often
           can be put in the ini file. For example:</para>
 
-          <!-- DNT-Start --><programlisting>server=10.150.50.12
+          <programlisting>server=10.150.50.12
 cluster=training
 queue=trainingQueue
 user=rtor
-password=password</programlisting><!-- DNT-End -->
+password=password</programlisting>
 
           <para>In all the examples below, we'll assume eclplus.ini has the
           above content.</para>
@@ -214,31 +214,31 @@ password=password</programlisting><!-- DNT-End -->
         </sect3>
 
         <sect3 id="CT_RunningQueriesBatchMode">
-          <!-- DNT-Start --><title>Running queries in batch mode</title><!-- DNT-End -->
+          <title>Running queries in batch mode</title>
 
           <para>Batch mode queries are executed using the
           <emphasis>ecl=</emphasis> option, in any of its three forms. In the
-          first form you simply put your <!-- DNT-Start -->ECL<!-- DNT-End --> code on the command line
+          first form you simply put your ECL code on the command line
           itself:</para>
 
-          <!-- DNT-Start --><programlisting>eclplus ecl=1+1
-            // Result = 2</programlisting><!-- DNT-End -->
+          <programlisting>eclplus ecl=1+1
+            // Result = 2</programlisting>
 
-          <para>In the second form, your <!-- DNT-Start -->ECL<!-- DNT-End --> code is in an input file. For
+          <para>In the second form, your ECL code is in an input file. For
           example, assume you have a text file called dataset.txt, which
-          contains the following <!-- DNT-Start -->ECL<!-- DNT-End --> code:</para>
+          contains the following ECL code:</para>
 
-          <!-- DNT-Start --><programlisting>myrec := record
+          <programlisting>myrec := record
 string10 firstname,
 string10 lastname
 end;
 ds := dataset([{'Yanrui', 'Ma'}, {'Richard', 'Taylor'},
 {'Richard', 'Chapman'}], myrec);
-output(ds, ,'testdata::namesdb');</programlisting><!-- DNT-End -->
+output(ds, ,'testdata::namesdb');</programlisting>
 
           <para>Then if you run:</para>
 
-          <!-- DNT-Start --><programlisting>eclplus @dataset.txt</programlisting><!-- DNT-End -->
+          <programlisting>eclplus @dataset.txt</programlisting>
 
           <para>A dataset will be created and the result will be written to
           the thor file testdata::namesdb.</para>
@@ -246,27 +246,27 @@ output(ds, ,'testdata::namesdb');</programlisting><!-- DNT-End -->
           <para>If also have a text file called datasetquery.txt
           containing:</para>
 
-          <!-- DNT-Start --><programlisting>myrec := record
+          <programlisting>myrec := record
 string10 firstname,
 string10 lastname
 end;
 ds1 := dataset('testdata::namesdb', myrec, thor);
-output(ds1);</programlisting><!-- DNT-End -->
+output(ds1);</programlisting>
 
           <para>then run:</para>
 
-          <!-- DNT-Start --><programlisting>eclplus @datasetquery.txt</programlisting><!-- DNT-End -->
+          <programlisting>eclplus @datasetquery.txt</programlisting>
 
           <para>You'll get:</para>
 
-          <!-- DNT-Start --><programlisting>firstname lastname
+          <programlisting>firstname lastname
 Yanrui Ma
 Richard Taylor
-Richard Chapman</programlisting><!-- DNT-End -->
+Richard Chapman</programlisting>
         </sect3>
 
         <sect3 id="CT_CLI_WorkunitManipulation">
-          <!-- DNT-Start --><title>Workunit manipulation</title><!-- DNT-End -->
+          <title>Workunit manipulation</title>
 
           <para>A workunit is a data structure that is passed among eclplus,
           daliserver, and eclccserver. It contains real-time information about
@@ -275,84 +275,84 @@ Richard Chapman</programlisting><!-- DNT-End -->
         </sect3>
 
         <sect3 id="CT_CLI_ListAllWorkunits">
-          <!-- DNT-Start --><title>List all work units</title><!-- DNT-End -->
+          <title>List all work units</title>
 
           <para>To list all work units:</para>
 
-          <!-- DNT-Start --><programlisting>eclplus action=list</programlisting><!-- DNT-End -->
+          <programlisting>eclplus action=list</programlisting>
 
           <para></para>
 
           <para>The output looks like:</para>
 
-          <!-- DNT-Start --><programlisting>WUID OWNER JOBNAME STATUS
+          <programlisting>WUID OWNER JOBNAME STATUS
 W20090226-100258-85132143 yma dataset.txt completed
-W20090226-100958-85552898 yma datasetquery.txt completed</programlisting><!-- DNT-End -->
+W20090226-100958-85552898 yma datasetquery.txt completed</programlisting>
 
           <para></para>
 
           <para></para>
 
-          <para>Each workunit has a <!-- DNT-Start -->WUID<!-- DNT-End --> (WorkUnit IDentifier), owner, jobname
+          <para>Each workunit has a WUID (WorkUnit IDentifier), owner, jobname
           and status. You can see that the jobname is simply the filename that
           contains the query, but you can specify the jobname by your self,
           like this:</para>
 
-          <!-- DNT-Start --><programlisting>eclplus jobname=myquery1 @datasetquery.txt</programlisting><!-- DNT-End -->
+          <programlisting>eclplus jobname=myquery1 @datasetquery.txt</programlisting>
         </sect3>
 
         <sect3 id="CT_CLI_ViewResultofWorkunit">
-          <!-- DNT-Start --><title>View the result of a certain workunit</title><!-- DNT-End -->
+          <title>View the result of a certain workunit</title>
 
           <para>You can look at specific workunit results, like this:</para>
 
-          <!-- DNT-Start --><programlisting>eclplus action=view wuid=
-          W20090226-100958-85552898</programlisting><!-- DNT-End -->
+          <programlisting>eclplus action=view wuid=
+          W20090226-100958-85552898</programlisting>
 
           <para>The output will look like:</para>
 
-          <!-- DNT-Start --><programlisting>firstname lastname
+          <programlisting>firstname lastname
 Yanrui Ma
 Richard Taylor
-Richard Chapman</programlisting><!-- DNT-End -->
+Richard Chapman</programlisting>
         </sect3>
 
         <sect3 id="CT_CLI_DumpWorkunit">
-          <!-- DNT-Start --><title>Dump a workunit</title><!-- DNT-End -->
+          <title>Dump a workunit</title>
 
           <para>If you want to get all the details describing a workunit, use
           the dump option for the action parameter:</para>
 
-          <!-- DNT-Start --><programlisting>eclplus action=dump wuid= W20090226-100958-85552898</programlisting><!-- DNT-End -->
+          <programlisting>eclplus action=dump wuid= W20090226-100958-85552898</programlisting>
 
           <para>See the Workunit Dump section below for the result.</para>
         </sect3>
 
         <sect3 id="CT_CLI_SeeTheThorGraph">
-          <!-- DNT-Start --><title>See the thor graph of a workunit:</title><!-- DNT-End -->
+          <title>See the thor graph of a workunit:</title>
 
-          <para>This action returns the <!-- DNT-Start -->XML<!-- DNT-End --> data for one or more workunit
+          <para>This action returns the XML data for one or more workunit
           graphs.</para>
 
-          <!-- DNT-Start --><programlisting>eclplus action=graph graph=graph1 wuid=W20090226-100958-85552898</programlisting><!-- DNT-End -->
+          <programlisting>eclplus action=graph graph=graph1 wuid=W20090226-100958-85552898</programlisting>
 
           <para>Graph name must be supplied in the graph= parameter.</para>
         </sect3>
 
         <sect3 id="CT_CLI_AbortWorkunit">
-          <!-- DNT-Start --><title>Aborting a workunit</title><!-- DNT-End -->
+          <title>Aborting a workunit</title>
 
           <para>If a query is taking an usually long time and you doubt
           something is wrong, you can abort it by:</para>
 
-          <!-- DNT-Start --><programlisting>eclplus action=abort wuid= W20090226-100958-85552898</programlisting><!-- DNT-End -->
+          <programlisting>eclplus action=abort wuid= W20090226-100958-85552898</programlisting>
 
           <para>You can use list to find out the wuid the workunit and use
           abort to abort it.</para>
         </sect3>
 
         <sect3 id="CT_CLI_Timeout">
-          <!-- DNT-Start --><title>Timeout</title><!-- DNT-End -->
+          <title>Timeout</title>
 
           <para>Before you run a query, if you know the query is going to take
           a long time, you can specify a timeout, then your eclplus will
@@ -361,11 +361,11 @@ Richard Chapman</programlisting><!-- DNT-End -->
 
           <para>For example:</para>
 
-          <!-- DNT-Start --><programlisting>eclplus @datasetquery.txt timeout=0</programlisting><!-- DNT-End -->
+          <programlisting>eclplus @datasetquery.txt timeout=0</programlisting>
 
           <para>eclplus will return immediately.</para>
 
-          <!-- DNT-Start --><programlisting>eclplus @datasetquery.txt timeout=2</programlisting><!-- DNT-End -->
+          <programlisting>eclplus @datasetquery.txt timeout=2</programlisting>
 
           <para>eclplus will return in 2 seconds.</para>
 
@@ -374,55 +374,55 @@ Richard Chapman</programlisting><!-- DNT-End -->
         </sect3>
 
         <sect3 id="CT_CLI_OutputFormat">
-          <!-- DNT-Start --><title>Output format</title><!-- DNT-End -->
+          <title>Output format</title>
 
           <para>By default, the result displays on the screen. You can direct
           it to a file, by using the output option:</para>
 
-          <!-- DNT-Start --><programlisting>eclplus @datasetquery.txt output=o1.txt
+          <programlisting>eclplus @datasetquery.txt output=o1.txt
 cat o1.txt
 firstname lastname
 Yanrui Ma
 Richard Taylor
-Richard Chapman</programlisting><!-- DNT-End -->
+Richard Chapman</programlisting>
 
           <para>Also, you may specify the following output formats:</para>
         </sect3>
 
         <sect3 id="CT_CLI_CSV">
-          <!-- DNT-Start --><title>csv</title><!-- DNT-End -->
+          <title>csv</title>
 
-          <!-- DNT-Start --><programlisting>eclplus @datasetquery.txt format=csv
+          <programlisting>eclplus @datasetquery.txt format=csv
 [QUERY 0]
 "Yanrui ","Ma "
 "Richard ","Taylor "
-"Richard ","Chapman "</programlisting><!-- DNT-End -->
+"Richard ","Chapman "</programlisting>
         </sect3>
 
         <sect3 id="CT_CLI_CSVH">
-          <!-- DNT-Start --><title>csvh</title><!-- DNT-End -->
+          <title>csvh</title>
 
-          <!-- DNT-Start --><programlisting>eclplus @datasetquery.txt format=csvh
+          <programlisting>eclplus @datasetquery.txt format=csvh
 [QUERY 0]
 "firstname","lastname"
 "Yanrui ","Ma "
 "Richard ","Taylor "
-"Richard ","Chapman "</programlisting><!-- DNT-End -->
+"Richard ","Chapman "</programlisting>
         </sect3>
 
         <sect3 id="CT_CLI_RAW">
-          <!-- DNT-Start --><title>raw</title><!-- DNT-End -->
+          <title>raw</title>
 
-          <!-- DNT-Start --><programlisting>eclplus @datasetquery.txt format=raw
+          <programlisting>eclplus @datasetquery.txt format=raw
 Yanrui     Ma
 Richard    Taylor
-Richard    Chapman</programlisting><!-- DNT-End -->
+Richard    Chapman</programlisting>
         </sect3>
 
         <sect3 id="CT_CLI_RUNECL">
-          <!-- DNT-Start --><title>runecl</title><!-- DNT-End -->
+          <title>runecl</title>
 
-          <!-- DNT-Start --><programlisting>eclplus @datasetquery.txt format=runecl
+          <programlisting>eclplus @datasetquery.txt format=runecl
 [QUERY 0]
 [0]
 firstname -&gt; Yanrui
@@ -432,27 +432,27 @@ firstname -&gt; Richard
 lastname -&gt; Taylor
 [2]
 firstname -&gt; Richard
-lastname -&gt; Chapman</programlisting><!-- DNT-End -->
+lastname -&gt; Chapman</programlisting>
         </sect3>
 
         <sect3 id="CT_CLI_Bin-ary-">
-          <!-- DNT-Start --><title>bin(ary)</title><!-- DNT-End -->
+          <title>bin(ary)</title>
 
-          <!-- DNT-Start --><programlisting>eclplus @datasetquery.txt format=bin
-Yanrui Ma Richard Taylor Richard Chapman</programlisting><!-- DNT-End -->
+          <programlisting>eclplus @datasetquery.txt format=bin
+Yanrui Ma Richard Taylor Richard Chapman</programlisting>
         </sect3>
 
         <sect3 id="CT_CLI_WorkUnitDump">
-          <!-- DNT-Start --><title>Workunit Dump</title><!-- DNT-End -->
+          <title>Workunit Dump</title>
 
-          <para>A Workunit dump is an <!-- DNT-Start -->XML<!-- DNT-End --> representation of every piece of
+          <para>A Workunit dump is an XML representation of every piece of
           data in the workunit. This contains all the information that you
-          could discover about the workunit by using <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+          could discover about the workunit by using ECL Watch.</para>
 
-          <para>The following workunit dump came from a simple <!-- DNT-Start -->COUNT<!-- DNT-End -->(person)
+          <para>The following workunit dump came from a simple COUNT(person)
           query in the Training environment:</para>
 
-          <!-- DNT-Start --><programlisting>&lt;W20110615-160604 agentPID="4162" agentSession="4296042782" cloneable="1" 
+          <programlisting>&lt;W20110615-160604 agentPID="4162" agentSession="4296042782" cloneable="1" 
  clusterName="thor" codeVersion="138"  isClone="1" scope="hpccdemo" 
  state="completed" submitID="hpccdemo" 
  token="X1lUMJ6oacON/1anTHTQW1JVHr1bbY8EWTSJhlDOrtYxmD13Z5ly4Qd26sEYVtxhW"&gt;
@@ -508,7 +508,7 @@ Yanrui Ma Richard Taylor Richard Chapman</programlisting><!-- DNT-End -->
       &lt;Schedule/&gt;
     &lt;/Item&gt;
   &lt;/Workflow&gt;
-&lt;/W20110615-160604&gt;</programlisting><!-- DNT-End -->
+&lt;/W20110615-160604&gt;</programlisting>
         </sect3>
       </sect2>
     </sect1>

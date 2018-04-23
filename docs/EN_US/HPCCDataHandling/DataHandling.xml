@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <bookinfo>
-    <!-- DNT-Start --><title>HPCC Data Handling</title><!-- DNT-End -->
+    <title>HPCC Data Handling</title>
 
     <mediaobject>
       <imageobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
+      <para>HPCC Systems<superscript>Â®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -46,7 +46,7 @@
     <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems<superscript>Â®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -59,18 +59,18 @@
   </bookinfo>
 
   <chapter id="Data_Handling">
-    <!-- DNT-Start --><title><emphasis>HPCC Data Handling</emphasis></title><!-- DNT-End -->
+    <title><emphasis>HPCC Data Handling</emphasis></title>
 
     <sect1 id="Introduction" role="nobrk">
-      <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
+      <title>Introduction</title>
 
       <para>There are a number of different ways in which data may be
-      transferred to, from, or within an <!-- DNT-Start -->HPCC<!-- DNT-End --> system. For each of these data
+      transferred to, from, or within an HPCC system. For each of these data
       transfers, there are a few key parameters that must be known.</para>
 
       <sect2 id="Prerequisites-for-most-file-movements">
-        <!-- DNT-Start --><title><emphasis role="bold">Prerequisites for most file
-        movements:</emphasis></title><!-- DNT-End -->
+        <title><emphasis role="bold">Prerequisites for most file
+        movements:</emphasis></title>
 
         <itemizedlist>
           <listitem>
@@ -94,11 +94,11 @@
           </listitem>
 
           <listitem>
-            <para>Dali <!-- DNT-Start -->IP<!-- DNT-End --> address (source and/or destination)</para>
+            <para>Dali IP address (source and/or destination)</para>
           </listitem>
 
           <listitem>
-            <para>Landing Zone <!-- DNT-Start -->IP<!-- DNT-End --> address</para>
+            <para>Landing Zone IP address</para>
           </listitem>
         </itemizedlist>
 
@@ -145,10 +145,10 @@
   </chapter>
 
   <chapter id="HPCC_DataBackups">
-    <!-- DNT-Start --><title><emphasis>HPCC Data Backups</emphasis></title><!-- DNT-End -->
+    <title><emphasis>HPCC Data Backups</emphasis></title>
 
     <sect1 id="Introduction2DataBackup" role="nobrk">
-      <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
+      <title>Introduction</title>
 
       <para>This section covers critical system data that requires regular
       backup procedures to prevent data loss.</para>
@@ -183,7 +183,7 @@
     </sect1>
 
     <sect1 id="DaliData">
-      <!-- DNT-Start --><title>Dali data</title><!-- DNT-End -->
+      <title>Dali data</title>
 
       <para>The Dali Server data is typically mirrored to its backup node.
       This location is specified in the environment configuration file using
@@ -194,7 +194,7 @@
     </sect1>
 
     <sect1 id="EnvironmentConfigurationFiles">
-      <!-- DNT-Start --><title>Environment Configuration files</title><!-- DNT-End -->
+      <title>Environment Configuration files</title>
 
       <para>There is only one active environment file, but you may have many
       alternative configurations.</para>
@@ -208,7 +208,7 @@
     </sect1>
 
     <sect1 id="DH_ThorDataFiles">
-      <!-- DNT-Start --><title>Thor data files</title><!-- DNT-End -->
+      <title>Thor data files</title>
 
       <para>Thor clusters are normally configured to automatically replicate
       data to a secondary location known as the mirror location. Usually, this
@@ -224,7 +224,7 @@
       basis and on-demand after a node swap.</para>
 
       <sect2 id="Thor_ManualBackup">
-        <!-- DNT-Start --><title>Manual backup</title><!-- DNT-End -->
+        <title>Manual backup</title>
 
         <para>To run a backup manually, follow these steps:</para>
 
@@ -233,14 +233,14 @@
             <para>Login to the Thor Master node.</para>
 
             <para>If you don't know which node is your Thor Master node, you
-            can look it up using <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+            can look it up using ECL Watch.</para>
           </listitem>
 
           <listitem>
             <para>Run this command:</para>
 
-            <!-- DNT-Start --><programlisting>sudo su hpcc
-/opt/HPCCSystems/bin/start_backupnode &lt;thor_cluster_name&gt; </programlisting><!-- DNT-End -->
+            <programlisting>sudo su hpcc
+/opt/HPCCSystems/bin/start_backupnode &lt;thor_cluster_name&gt; </programlisting>
 
             <para>This starts the backup process.</para>
 
@@ -253,23 +253,23 @@
           </listitem>
 
           <listitem>
-            <para>Run the <!-- DNT-Start -->XREF<!-- DNT-End --> utility in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch to verify that there are
+            <para>Run the XREF utility in ECL Watch to verify that there are
             no orphan files or lost files.</para>
           </listitem>
         </orderedlist>
       </sect2>
 
       <sect2 id="Thor_ScheduledBackup" role="brk">
-        <!-- DNT-Start --><title>Scheduled backup</title><!-- DNT-End -->
+        <title>Scheduled backup</title>
 
         <para>The easiest way to schedule the backup process is to create a
         cron job. Cron is a daemon that serves as a task scheduler.</para>
 
-        <para>Cron tab (short for <!-- DNT-Start -->CRON<!-- DNT-End --> <!-- DNT-Start -->TABle<!-- DNT-End -->) is a text file that contains a
+        <para>Cron tab (short for CRON TABle) is a text file that contains a
         the task list. To edit with the default editor, use the
         command:</para>
 
-        <!-- DNT-Start --><programlisting>sudo crontab -e</programlisting><!-- DNT-End -->
+        <programlisting>sudo crontab -e</programlisting>
 
         <para>Here is a sample cron tab entry:</para>
 
@@ -285,14 +285,14 @@
 
         <para>To list the tasks scheduled, use the command:</para>
 
-        <!-- DNT-Start --><programlisting>sudo crontab -l</programlisting><!-- DNT-End -->
+        <programlisting>sudo crontab -l</programlisting>
 
         <para></para>
       </sect2>
     </sect1>
 
     <sect1 id="Roxie-Data-Backup">
-      <!-- DNT-Start --><title>Roxie data files</title><!-- DNT-End -->
+      <title>Roxie data files</title>
 
       <para>Roxie data is protected by three forms of redundancy:</para>
 
@@ -324,16 +324,16 @@
     </sect1>
 
     <sect1 id="DHan_AttributeRepositories">
-      <!-- DNT-Start --><title>Attribute Repositories</title><!-- DNT-End -->
+      <title>Attribute Repositories</title>
 
-      <para>Attribute repositories are stored on <!-- DNT-Start -->ECL<!-- DNT-End --> developer's local hard
+      <para>Attribute repositories are stored on ECL developer's local hard
       drives. They can contain a significant number of hours of work and
       therefore should be regularly backed up. In addition, we suggest using
       some form of source version control, too.</para>
     </sect1>
 
     <sect1 id="DHan_LandingZoneFiles">
-      <!-- DNT-Start --><title>Landing Zone files</title><!-- DNT-End -->
+      <title>Landing Zone files</title>
 
       <para>Landing Zones contain raw data for input. They can also contain
       output files. Depending on the size or complexity of these files, you

@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="AdjustDate">
-  <!-- DNT-Start --><title>AdjustDate</title><!-- DNT-End -->
+  <title>AdjustDate</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.AdjustDate<indexterm>
+  <para><emphasis role="bold">STD.Date.AdjustDate<indexterm>
       <primary>STD.Date.AdjustDate</primary>
     </indexterm><indexterm>
       <primary>Date.AdjustDate</primary>
@@ -12,7 +12,7 @@
       <primary>AdjustDate</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> ,
   [<emphasis>year_delta</emphasis>],[<emphasis>month_delta</emphasis>]
-  ,[<emphasis>day_delta</emphasis>] <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
+  ,[<emphasis>day_delta</emphasis>] <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,43 +22,43 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>date</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>date</emphasis></entry>
 
           <entry>A date value in the Date_t format.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>year_delta</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>year_delta</emphasis></entry>
 
           <entry>The minimum acceptable year. Optional; defaults to
           zero.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>month_delta</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>month_delta</emphasis></entry>
 
           <entry>The minimum acceptable year. Optional; defaults to
           zero.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>day_delta</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>day_delta</emphasis></entry>
 
           <entry>The maximum acceptable year. Optional; defaults to
           zero.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->AdjustDate<!-- DNT-End --> returns date_t representing the adjusted
+          <entry>AdjustDate returns date_t representing the adjusted
           date.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->AdjustDate<!-- DNT-End --></emphasis> function adjusts a
+  <para>The <emphasis role="bold">AdjustDate</emphasis> function adjusts a
   date by incrementing or decrementing year, month, and/or day values. The
   date must be in the Gregorian calendar after the year 1600.</para>
 
@@ -68,10 +68,10 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT std;
+  <programlisting format="linespecific">IMPORT std;
 inDate :=19631123;
 Std.Date.AdjustDate(inDate,5,1,3);  //returns 19681226
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para>See Also: <link linkend="AdjustCalendar">AdjustCalendar</link></para>
 </sect1>

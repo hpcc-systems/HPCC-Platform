@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ONWARNING">
-  <!-- DNT-Start --><title>ONWARNING</title><!-- DNT-End -->
+  <title>ONWARNING</title>
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
-  </emphasis><emphasis role="bold">: <!-- DNT-Start -->ONWARNING<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->ONWARNING<!-- DNT-End --></primary>
+  </emphasis><emphasis role="bold">: ONWARNING<indexterm>
+      <primary>ONWARNING</primary>
     </indexterm>(</emphasis><emphasis>code, action</emphasis><emphasis
   role="bold">) <indexterm>
-      <primary><!-- DNT-Start -->ONWARNING<!-- DNT-End --> workflow service</primary>
+      <primary>ONWARNING workflow service</primary>
     </indexterm></emphasis>;</para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -20,26 +20,26 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>attribute</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>attribute</emphasis></entry>
 
             <entry>The name of the Attribute.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>The definition of the attribute.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>code</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>code</emphasis></entry>
 
-            <entry>The number displayed in the "Code" column of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->'s
+            <entry>The number displayed in the "Code" column of the ECL IDE's
             Syntax Errors toolbox.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>action</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>action</emphasis></entry>
 
             <entry>One of these actions: ignore, error, or warning.</entry>
           </row>
@@ -47,20 +47,20 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ONWARNING<!-- DNT-End --> </emphasis>service allows you to
+  <para>The <emphasis role="bold">ONWARNING </emphasis>service allows you to
   specify how to handle specific warnings for a given attribute. You may have
   it treated as a warning, promote it to an error, or ignore it. Useful
   warnings can get lost in a sea of less-useful ones. This feature allows you
   to get rid of the "clutter."</para>
 
   <para>This service overrides any global warning handling specified by
-  #<!-- DNT-Start -->ONWARNING<!-- DNT-End -->.</para>
+  #ONWARNING.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>rec := { STRING x } : ONWARNING(1041, ignore);
+  <programlisting>rec := { STRING x } : ONWARNING(1041, ignore);
      //ignore "Record doesn't have an explicit maximum record size" warning
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="_ONWARNING">#<!-- DNT-Start -->ONWARNING<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="_ONWARNING">#ONWARNING</link></para>
 </sect1>

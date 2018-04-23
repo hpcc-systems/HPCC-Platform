@@ -2,10 +2,10 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
-  <!-- DNT-Start --><title>Wrapper</title><!-- DNT-End -->
+  <title>Wrapper</title>
 
   <bookinfo>
-    <!-- DNT-Start --><title>Wrapper</title><!-- DNT-End -->
+    <title>Wrapper</title>
 
     <mediaobject>
       <imageobject>
@@ -52,7 +52,7 @@
      </xi:include>
 		
 
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems<superscript>Â®</superscript></corpname>
 
     
        
@@ -73,19 +73,19 @@
   </bookinfo>
 
   <chapter id="WrapperECLWatchQueries">
-    <!-- DNT-Start --><title>Wrapper</title><!-- DNT-End -->
+    <title>Wrapper</title>
 
     <para>wrapper</para>
 
     <sect1 id="Queries_Page" role="nobrk">
-      <!-- DNT-Start --><title>Queries Page in ECL Watch</title><!-- DNT-End -->
+      <title>Queries Page in ECL Watch</title>
 
       <para>The Queries page lists published queries for each target cluster.
       On this page you can see the published queries . You can also perform
       some actions on the selected queries.</para>
 
       <figure>
-        <!-- DNT-Start --><title>Browse Query Sets</title><!-- DNT-End -->
+        <title>Browse Query Sets</title>
 
         <mediaobject>
           <imageobject>
@@ -98,9 +98,9 @@
       are three columns on the left side of each listed query. These three
       columns provide information about these queries.</para>
 
-      <!-- DNT-Start --><!--Per Miguel: The Icons are very likely to be removed from the Main Queries page, 
+      <!--Per Miguel: The Icons are very likely to be removed from the Main Queries page, 
 can probably just move the table here to the query detail page... 
-depending on where they wind up.--><!-- DNT-End -->
+depending on where they wind up.-->
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -143,7 +143,7 @@ depending on where they wind up.--><!-- DNT-End -->
 
       <para><itemizedlist>
           <listitem>
-            <para>the query <!-- DNT-Start -->ID<!-- DNT-End --></para>
+            <para>the query ID</para>
           </listitem>
 
           <listitem>
@@ -155,7 +155,7 @@ depending on where they wind up.--><!-- DNT-End -->
           </listitem>
 
           <listitem>
-            <para>the workunit id (<!-- DNT-Start -->WUID<!-- DNT-End -->)</para>
+            <para>the workunit id (WUID)</para>
           </listitem>
 
           <listitem>
@@ -171,7 +171,7 @@ depending on where they wind up.--><!-- DNT-End -->
       column heading. Click once for ascending, click again to toggle to
       descending. The direction of the arrow indicates the sort order.</para>
 
-      <!-- DNT-Start --><!--VERIFY THAT THIS BEHAVIOR APPLIES HERE: YES, was not implemented but added when I brought this up.***--><!-- DNT-End -->
+      <!--VERIFY THAT THIS BEHAVIOR APPLIES HERE: YES, was not implemented but added when I brought this up.***-->
 
       <para>To see the details page for a particular query, or to perform some
       action on it you must select it. You can select a query or queries by
@@ -179,7 +179,7 @@ depending on where they wind up.--><!-- DNT-End -->
       clicking on it.</para>
 
       <sect2 id="Queries_Tab" role="brk">
-        <!-- DNT-Start --><title>Queries Tab</title><!-- DNT-End -->
+        <title>Queries Tab</title>
 
         <para>When you select the Published Queries hyperlink you open the
         Queries tab. This tab displays published queries on the system. The
@@ -266,7 +266,7 @@ depending on where they wind up.--><!-- DNT-End -->
 
                 <itemizedlist>
                   <listitem>
-                    <para><!-- DNT-Start -->ID<!-- DNT-End --></para>
+                    <para>ID</para>
                   </listitem>
 
                   <listitem>
@@ -278,7 +278,7 @@ depending on where they wind up.--><!-- DNT-End -->
                   </listitem>
 
                   <listitem>
-                    <para><!-- DNT-Start -->WUID<!-- DNT-End --></para>
+                    <para>WUID</para>
                   </listitem>
 
                   <listitem>
@@ -319,7 +319,7 @@ depending on where they wind up.--><!-- DNT-End -->
       </sect2>
 
       <sect2 id="QueryDetails" role="brk">
-        <!-- DNT-Start --><title>Query Details</title><!-- DNT-End -->
+        <title>Query Details</title>
 
         <para>To examine the Query Details page, you select and open the query
         or queries. This opens a tab containing the query details. From the
@@ -329,7 +329,7 @@ depending on where they wind up.--><!-- DNT-End -->
         query.</para>
 
         <sect3 id="QuerySummaryTab">
-          <!-- DNT-Start --><title>Query Summary Tab</title><!-- DNT-End -->
+          <title>Query Summary Tab</title>
 
           <para>The default query tab opened when you select a query is the
           Summary tab. The summary tab shows you some detail information about
@@ -377,7 +377,7 @@ depending on where they wind up.--><!-- DNT-End -->
         </sect3>
 
         <sect3 id="ErrorsTab">
-          <!-- DNT-Start --><title>Errors Tab</title><!-- DNT-End -->
+          <title>Errors Tab</title>
 
           <para>For each selected query there is an Errors tab. The Errors tab
           displays any errors that may have been encountered during the
@@ -399,7 +399,7 @@ depending on where they wind up.--><!-- DNT-End -->
         </sect3>
 
         <sect3 id="GraphsTab">
-          <!-- DNT-Start --><title>Graphs Tab</title><!-- DNT-End -->
+          <title>Graphs Tab</title>
 
           <para>The graphs tab provides access to graphical interpretations of
           the query. This can be helpful in visualizing how the query ran. The
@@ -409,7 +409,7 @@ depending on where they wind up.--><!-- DNT-End -->
           or you can double click on listed graph.</para>
 
           <figure>
-            <!-- DNT-Start --><title>Graphs list</title><!-- DNT-End -->
+            <title>Graphs list</title>
 
             <mediaobject>
               <imageobject>
@@ -440,7 +440,7 @@ depending on where they wind up.--><!-- DNT-End -->
         </sect3>
 
         <sect3 id="ECLWatch_Queries_LogicalFiles">
-          <!-- DNT-Start --><title>Logical Files Tab</title><!-- DNT-End -->
+          <title>Logical Files Tab</title>
 
           <para>The Published queries details page provides a link to the
           queries Logical Files tab. The Logical Files tab shows all logical
@@ -451,7 +451,7 @@ depending on where they wind up.--><!-- DNT-End -->
           without the need to go back to the logical files page.</para>
 
           <figure>
-            <!-- DNT-Start --><title>Queries:Logical Files Tab</title><!-- DNT-End -->
+            <title>Queries:Logical Files Tab</title>
 
             <mediaobject>
               <imageobject>
@@ -467,11 +467,11 @@ depending on where they wind up.--><!-- DNT-End -->
           click on the logical file you want to view.</para>
 
           <para>Once open, you can select any of the tabs to see Summary,
-          Contents, <!-- DNT-Start -->ECL<!-- DNT-End -->, <!-- DNT-Start -->DEF<!-- DNT-End -->, <!-- DNT-Start -->XML<!-- DNT-End -->, File Parts, Queries, or the
+          Contents, ECL, DEF, XML, File Parts, Queries, or the
           Workunit.</para>
 
           <figure>
-            <!-- DNT-Start --><title>Queries:Logical Files:Contents Tab</title><!-- DNT-End -->
+            <title>Queries:Logical Files:Contents Tab</title>
 
             <mediaobject>
               <imageobject>
@@ -484,10 +484,10 @@ depending on where they wind up.--><!-- DNT-End -->
         </sect3>
 
         <sect3 id="Test_Pages">
-          <!-- DNT-Start --><title>Test Pages</title><!-- DNT-End -->
+          <title>Test Pages</title>
 
           <para>The Test Pages tab provides a number of resources you can use
-          to test your query including <!-- DNT-Start -->SOAP<!-- DNT-End -->/<!-- DNT-Start -->JSON<!-- DNT-End -->/<!-- DNT-Start -->WSDL<!-- DNT-End --> and the legacy <!-- DNT-Start -->WS<!-- DNT-End -->-<!-- DNT-Start -->ECL<!-- DNT-End -->
+          to test your query including SOAP/JSON/WSDL and the legacy WS-ECL
           form, as well as other tabs showing useful information or sample
           details about the query.</para>
 
@@ -505,50 +505,50 @@ depending on where they wind up.--><!-- DNT-End -->
 
           <itemizedlist>
             <listitem>
-              <para><emphasis role="bold"><!-- DNT-Start -->SOAP<!-- DNT-End --></emphasis> This tab provides an
+              <para><emphasis role="bold">SOAP</emphasis> This tab provides an
               interactive interface to submit the query (with input data) and
-              see the response in <!-- DNT-Start -->XML<!-- DNT-End --> format.</para>
+              see the response in XML format.</para>
             </listitem>
 
             <listitem>
-              <para><emphasis role="bold"><!-- DNT-Start -->JSON<!-- DNT-End --></emphasis> This tab provides an
+              <para><emphasis role="bold">JSON</emphasis> This tab provides an
               interactive interface to submit the query (with input data) and
-              see the response in <!-- DNT-Start -->JSON<!-- DNT-End --> format.</para>
+              see the response in JSON format.</para>
             </listitem>
 
             <listitem>
-              <para><emphasis role="bold"><!-- DNT-Start -->WSDL<!-- DNT-End --></emphasis> This tab provides a
-              <!-- DNT-Start -->WSDL<!-- DNT-End --> definition describing the functionality offered by the
+              <para><emphasis role="bold">WSDL</emphasis> This tab provides a
+              WSDL definition describing the functionality offered by the
               query (web service).</para>
             </listitem>
 
             <listitem>
               <para><emphasis role="bold">Request Schema </emphasis>This tab
-              provides a schema in <!-- DNT-Start -->XSD<!-- DNT-End --> format describing a request for the
+              provides a schema in XSD format describing a request for the
               query (web service).</para>
             </listitem>
 
             <listitem>
               <para><emphasis role="bold">Response Schema</emphasis> This tab
-              provides a schema in <!-- DNT-Start -->XSD<!-- DNT-End --> format describing a response from the
+              provides a schema in XSD format describing a response from the
               query (web service).</para>
             </listitem>
 
             <listitem>
               <para><emphasis role="bold">Sample Request </emphasis>This tab
-              provides a sample request for the query (web service) in <!-- DNT-Start -->XML<!-- DNT-End -->
+              provides a sample request for the query (web service) in XML
               Format.</para>
             </listitem>
 
             <listitem>
               <para><emphasis role="bold">Sample Response</emphasis> This tab
-              provides a sample response from the query (web service) in <!-- DNT-Start -->XML<!-- DNT-End -->
+              provides a sample response from the query (web service) in XML
               Format.</para>
             </listitem>
 
             <listitem>
-              <para><emphasis role="bold">Parameter <!-- DNT-Start -->XML<!-- DNT-End --></emphasis> This tab
-              provides Parameterized <!-- DNT-Start -->XML<!-- DNT-End --> representation of the query
+              <para><emphasis role="bold">Parameter XML</emphasis> This tab
+              provides Parameterized XML representation of the query
               interface.</para>
             </listitem>
 
@@ -560,22 +560,22 @@ depending on where they wind up.--><!-- DNT-End -->
 
             <listitem>
               <para><emphasis role="bold">Links</emphasis> Provides a list of
-              useful links such as: the Form, a sample <!-- DNT-Start -->REST<!-- DNT-End --> <!-- DNT-Start -->URL<!-- DNT-End -->, sample
-              request, sample response, parameter <!-- DNT-Start -->XML<!-- DNT-End -->, <!-- DNT-Start -->SOAP<!-- DNT-End --> <!-- DNT-Start -->POST<!-- DNT-End -->, <!-- DNT-Start -->WSDL<!-- DNT-End -->, <!-- DNT-Start -->XSD<!-- DNT-End -->,
+              useful links such as: the Form, a sample REST URL, sample
+              request, sample response, parameter XML, SOAP POST, WSDL, XSD,
               and the result schema.</para>
             </listitem>
           </itemizedlist>
         </sect3>
 
         <sect3 id="QueriesWorkUnits">
-          <!-- DNT-Start --><title>The Workunits link</title><!-- DNT-End -->
+          <title>The Workunits link</title>
 
           <para>The Published queries details page provides a link to to the
           workunits, page. This tab is a shortcut that takes you to the same
-          workunits tab you can get to through the <!-- DNT-Start -->ECL<!-- DNT-End --> workunits menu.</para>
+          workunits tab you can get to through the ECL workunits menu.</para>
 
           <figure>
-            <!-- DNT-Start --><title>Queries Workunit</title><!-- DNT-End -->
+            <title>Queries Workunit</title>
 
             <mediaobject>
               <imageobject>
@@ -584,7 +584,7 @@ depending on where they wind up.--><!-- DNT-End -->
             </mediaobject>
           </figure>
 
-          <para>This is the same as the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
+          <para>This is the same as the <emphasis role="bold">ECL
           Workunits</emphasis> page from the navigation sub-menu Workunits
           link. You can perform the same operations here. Notice that there
           are some other familiar tabs here as well, for example the Graphs
@@ -594,7 +594,7 @@ depending on where they wind up.--><!-- DNT-End -->
       </sect2>
 
       <sect2 id="Package_Maps" role="brk">
-        <!-- DNT-Start --><title>Package Maps</title><!-- DNT-End -->
+        <title>Package Maps</title>
 
         <para>A package map provides a reference to the contents of a superkey
         used in queries that overrides the original definition. Package map
@@ -630,19 +630,19 @@ depending on where they wind up.--><!-- DNT-End -->
           <title id="Packagemap_Actions">Package Map Actions</title>
 
           <para>You can perform actions on your package maps from the Package
-          Maps tab in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+          Maps tab in ECL Watch.</para>
 
           <sect4 id="Open_Pkg_Map">
-            <!-- DNT-Start --><title>Package Map Open</title><!-- DNT-End -->
+            <title>Package Map Open</title>
 
             <para>To examine a package map, select the package map and press
             the <emphasis role="bold">Open</emphasis> action button. This
             opens a new tab where you can access additional tabs with the
-            package information, the <!-- DNT-Start -->XML<!-- DNT-End -->, and validate the package map.</para>
+            package information, the XML, and validate the package map.</para>
           </sect4>
 
           <sect4 id="Add_PKG_Map">
-            <!-- DNT-Start --><title>Package Map Add</title><!-- DNT-End -->
+            <title>Package Map Add</title>
 
             <para>To Add a package map to the target cluster:</para>
 
@@ -687,9 +687,9 @@ depending on where they wind up.--><!-- DNT-End -->
               </listitem>
 
               <listitem>
-                <para>Enter the <!-- DNT-Start -->IP<!-- DNT-End --> address or hostname of the remote Dali to
+                <para>Enter the IP address or hostname of the remote Dali to
                 use for logical file lookups for the <emphasis
-                role="bold">Remote Dali <!-- DNT-Start -->IP<!-- DNT-End --> Address</emphasis> field.</para>
+                role="bold">Remote Dali IP Address</emphasis> field.</para>
               </listitem>
 
               <listitem>
@@ -700,7 +700,7 @@ depending on where they wind up.--><!-- DNT-End -->
           </sect4>
 
           <sect4 id="Activate_Package_Map">
-            <!-- DNT-Start --><title>Activate Package Map</title><!-- DNT-End -->
+            <title>Activate Package Map</title>
 
             <para>Press the <emphasis role="bold">Activate</emphasis> button
             to deactivate the currently active package map and make the
@@ -708,14 +708,14 @@ depending on where they wind up.--><!-- DNT-End -->
           </sect4>
 
           <sect4 id="Deactivate_Package_Map">
-            <!-- DNT-Start --><title>Deactivate Package Map</title><!-- DNT-End -->
+            <title>Deactivate Package Map</title>
 
             <para>Press the <emphasis role="bold">Deactivate</emphasis> button
             to deactivate the currently active package map.</para>
           </sect4>
 
           <sect4 id="PackageMap_Delete">
-            <!-- DNT-Start --><title>Package Map Delete</title><!-- DNT-End -->
+            <title>Package Map Delete</title>
 
             <para>To delete a package map:</para>
 
@@ -731,7 +731,7 @@ depending on where they wind up.--><!-- DNT-End -->
               </listitem>
 
               <listitem>
-                <para>Press <emphasis role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> when prompted
+                <para>Press <emphasis role="bold">OK</emphasis> when prompted
                 to confirm.</para>
               </listitem>
             </orderedlist>
@@ -739,7 +739,7 @@ depending on where they wind up.--><!-- DNT-End -->
         </sect3>
 
         <sect3 id="Pacakge_Map_Parts">
-          <!-- DNT-Start --><title>Package Map Parts</title><!-- DNT-End -->
+          <title>Package Map Parts</title>
 
           <para>You can see more information and perform some action on
           package map parts. Open the package map to see the package parts
@@ -760,7 +760,7 @@ depending on where they wind up.--><!-- DNT-End -->
           parts through this interface in ECLWatch.</para>
 
           <sect4 id="Add_Part">
-            <!-- DNT-Start --><title>Add Part</title><!-- DNT-End -->
+            <title>Add Part</title>
 
             <para>To add a part to the package map:</para>
 
@@ -786,7 +786,7 @@ depending on where they wind up.--><!-- DNT-End -->
           </sect4>
 
           <sect4 id="RemovePart">
-            <!-- DNT-Start --><title>Remove Part</title><!-- DNT-End -->
+            <title>Remove Part</title>
 
             <para>To remove a part from the package map:</para>
 
@@ -806,14 +806,14 @@ depending on where they wind up.--><!-- DNT-End -->
               </listitem>
 
               <listitem>
-                <para>Press <emphasis role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> when prompted
+                <para>Press <emphasis role="bold">OK</emphasis> when prompted
                 to confirm.</para>
               </listitem>
             </orderedlist>
           </sect4>
 
           <sect4 id="GetPart">
-            <!-- DNT-Start --><title>Get Part</title><!-- DNT-End -->
+            <title>Get Part</title>
 
             <para><figure>
                 <title>Get Part</title>
@@ -841,7 +841,7 @@ depending on where they wind up.--><!-- DNT-End -->
         </sect3>
 
         <sect3 id="Packagemap_Validation">
-          <!-- DNT-Start --><title>Validate Package Map</title><!-- DNT-End -->
+          <title>Validate Package Map</title>
 
           <para>The <emphasis role="bold">Validate Package Map</emphasis> tab
           is used to validate active package maps. The <emphasis

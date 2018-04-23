@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SORTED">
-  <!-- DNT-Start --><title>SORTED</title><!-- DNT-End -->
+  <title>SORTED</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->SORTED<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->SORTED<!-- DNT-End --> function</primary>
+  <para><emphasis role="bold">SORTED<indexterm>
+      <primary>SORTED function</primary>
     </indexterm>(</emphasis><emphasis>recordset,value</emphasis><emphasis
   role="bold">)</emphasis><emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->SORTED<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->SORTED<!-- DNT-End --></primary>
+  <para><emphasis role="bold">SORTED<indexterm>
+      <primary>SORTED</primary>
     </indexterm>(</emphasis><emphasis>index</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -22,7 +22,7 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>recordset</emphasis></entry>
 
             <entry>The set of sorted records. This may be the name of a
             dataset or a record set derived from some filter condition, or any
@@ -30,48 +30,48 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>value</emphasis></entry>
 
             <entry>A comma-delimited list of expressions or key fields in the
             recordset on which the recordset has been sorted, with the
             leftmost being the most significant sort criteria. A leading minus
             sign (-) indicates a descending-order sort on that element. You
             may have multiple value parameters to indicate sorts within sorts.
-            You may use the keyword <!-- DNT-Start -->RECORD<!-- DNT-End --> to indicate an ascending sort on
-            all fields, and/or you may use the keyword <!-- DNT-Start -->EXCEPT<!-- DNT-End --> to list non-sort
+            You may use the keyword RECORD to indicate an ascending sort on
+            all fields, and/or you may use the keyword EXCEPT to list non-sort
             fields in the recordset.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>index</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>index</emphasis></entry>
 
-            <entry>The attribute name of an <!-- DNT-Start -->INDEX<!-- DNT-End --> definition. This is
-            equivalent to adding the <!-- DNT-Start -->SORTED<!-- DNT-End --> option to the <!-- DNT-Start -->INDEX<!-- DNT-End -->
+            <entry>The attribute name of an INDEX definition. This is
+            equivalent to adding the SORTED option to the INDEX
             definition.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->SORTED<!-- DNT-End --> is a compiler directive that returns
+            <entry>SORTED is a compiler directive that returns
             nothing.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->SORTED<!-- DNT-End --> </emphasis>function indicates to the
-  <!-- DNT-Start -->ECL<!-- DNT-End --> compiler that the <emphasis>recordset</emphasis> is already sorted
+  <para>The <emphasis role="bold">SORTED </emphasis>function indicates to the
+  ECL compiler that the <emphasis>recordset</emphasis> is already sorted
   according to the <emphasis>values</emphasis> specified. Any number of
   <emphasis>value</emphasis> parameters may be supplied, with the leftmost
   being the most significant sort criteria. A leading minus sign (-) on any
   <emphasis>value</emphasis> parameter indicates a descending sort for that
-  one parameter. <!-- DNT-Start -->SORTED<!-- DNT-End --> typically refers to a <!-- DNT-Start -->DATASET<!-- DNT-End --> to indicate the order in
+  one parameter. SORTED typically refers to a DATASET to indicate the order in
   which the data is already sorted.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>InputRec := RECORD
+  <programlisting>InputRec := RECORD
 INTEGER4 Attr1;
 STRING20 Attr2;
 INTEGER8 Cid;
@@ -79,10 +79,10 @@ END;
 MyFile := DATASET('filename',InputRec,FLAT)
 MySortedFile := SORTED(MyFile,MyFile.Cid)
 // Input file already sorted by Cid
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="SORT"><!-- DNT-Start -->SORT<!-- DNT-End --></link>, <link
-  linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link>, <link linkend="RANK"><!-- DNT-Start -->RANK<!-- DNT-End --></link>, <link
-  linkend="RANKED"><!-- DNT-Start -->RANKED<!-- DNT-End --></link>, <link
-  linkend="INDEX_record_structure"><!-- DNT-Start -->INDEX<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="SORT">SORT</link>, <link
+  linkend="DATASET">DATASET</link>, <link linkend="RANK">RANK</link>, <link
+  linkend="RANKED">RANKED</link>, <link
+  linkend="INDEX_record_structure">INDEX</link></para>
 </sect1>

@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
-  <!-- DNT-Start --><title>The ECL Scheduler</title><!-- DNT-End -->
+  <title>The ECL Scheduler</title>
 
   <bookinfo>
-    <!-- DNT-Start --><title>ECL Scheduler</title><!-- DNT-End -->
+    <title>ECL Scheduler</title>
 
     <mediaobject>
       <imageobject>
@@ -29,7 +29,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems is a registered trademark of LexisNexis Risk Data
+      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -61,16 +61,16 @@
   </bookinfo>
 
   <chapter>
-    <!-- DNT-Start --><title>The Ecl Scheduler</title><!-- DNT-End -->
+    <title>The Ecl Scheduler</title>
 
     <sect1 role="nobrk">
-      <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
+      <title>Introduction</title>
 
-      <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler is a component process installed with the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      <para>The ECL Scheduler is a component process installed with the HPCC
       system platform. It typically starts with the platform.</para>
 
-      <para>An interface to the scheduler is available through <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. The
-      <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler interface allows you to see a list of scheduled workunits.
+      <para>An interface to the scheduler is available through ECL Watch. The
+      ECL Scheduler interface allows you to see a list of scheduled workunits.
       It can also trigger an event. An Event is a case-insensitive string
       constant naming the event to trap.</para>
 
@@ -78,34 +78,34 @@
       available on the server installed in /opt/HPCCSystems/bin.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>ECL Scheduling</title><!-- DNT-End -->
+        <title>ECL Scheduling</title>
 
-        <para><!-- DNT-Start -->ECL<!-- DNT-End --> Scheduling provides a means of automating processes within
-        <!-- DNT-Start -->ECL<!-- DNT-End --> code or to chain processes together to work in sequence. For
-        example, you can write <!-- DNT-Start -->ECL<!-- DNT-End --> code that watches a landing zone for the
+        <para>ECL Scheduling provides a means of automating processes within
+        ECL code or to chain processes together to work in sequence. For
+        example, you can write ECL code that watches a landing zone for the
         arrival of a file, and when it arrives, sprays it to Thor, processes
         it, builds an index, and then adds it to a superfile.</para>
       </sect2>
 
       <sect2>
-        <!-- DNT-Start --><title>How it Works</title><!-- DNT-End -->
+        <title>How it Works</title>
 
-        <para><!-- DNT-Start -->ECL<!-- DNT-End --> Scheduling is event-based. The <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler monitors a
+        <para>ECL Scheduling is event-based. The ECL Scheduler monitors a
         Schedule list containing registered Workunits and Events and executes
         any Workunits associated with an Event when that Event is
         triggered.</para>
 
-        <para>Your <!-- DNT-Start -->ECL<!-- DNT-End --> Code can execute when an Event is triggered, or can
+        <para>Your ECL Code can execute when an Event is triggered, or can
         trigger an Event. If you submit code containing a <emphasis
-        role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End --> </emphasis>clause, the Event and Workunit registers
+        role="bold">WHEN </emphasis>clause, the Event and Workunit registers
         in the Schedule list. When that Event triggers, the Workunit compiles
-        and executes. When the Workunit completes, <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler removes it
+        and executes. When the Workunit completes, ECL Scheduler removes it
         from the Schedule list.</para>
 
         <para>For example, if you submit a Workunit using <emphasis
-        role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End -->('Event1','MyEvent', <!-- DNT-Start -->COUNT<!-- DNT-End -->(2)) </emphasis>in the
+        role="bold">WHEN('Event1','MyEvent', COUNT(2)) </emphasis>in the
         appropriate place, it will execute twice (the value of <emphasis
-        role="bold"><!-- DNT-Start -->COUNT<!-- DNT-End --></emphasis>) before the <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler removes it from
+        role="bold">COUNT</emphasis>) before the ECL Scheduler removes it from
         the Schedule list and the Workunit is marked as completed.</para>
       </sect2>
     </sect1>
@@ -120,14 +120,14 @@
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <chapter>
-    <!-- DNT-Start --><title>ECL Usage</title><!-- DNT-End -->
+    <title>ECL Usage</title>
 
-    <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler is a tool that can perform a specific action based
+    <para>The ECL Scheduler is a tool that can perform a specific action based
     on a specific event. The following functions can be viewed or manipulated
     in the scheduler.</para>
 
     <sect1 id="WHEN">
-      <!-- DNT-Start --><title>WHEN</title><!-- DNT-End -->
+      <title>WHEN</title>
 
       <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WHEN.xml"
                   xpointer="xpointer(//*[@id='SchWhen'])"
@@ -135,7 +135,7 @@
     </sect1>
 
     <sect1 id="NOTIFY">
-      <!-- DNT-Start --><title>NOTIFY</title><!-- DNT-End -->
+      <title>NOTIFY</title>
 
       <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOTIFY.xml"
                   xpointer="xpointer(//*[@id='SchNOTIFY'])"
@@ -143,7 +143,7 @@
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>EVENT</title><!-- DNT-End -->
+      <title>EVENT</title>
 
       <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVENT.xml"
                   xpointer="xpointer(//*[@id='SchEvent'])"
@@ -151,7 +151,7 @@
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>CRON</title><!-- DNT-End -->
+      <title>CRON</title>
 
       <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CRON.xml"
                   xpointer="xpointer(//*[@id='SchCRON'])"
@@ -159,7 +159,7 @@
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>WAIT</title><!-- DNT-End -->
+      <title>WAIT</title>
 
       <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WAIT.xml"
                   xpointer="xpointer(//*[@id='SchWAIT'])"
@@ -168,10 +168,10 @@
   </chapter>
 
   <chapter>
-    <!-- DNT-Start --><title>DFU Monitoring and Events</title><!-- DNT-End -->
+    <title>DFU Monitoring and Events</title>
 
-    <para>The following are supported methods for the <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler included
-    in the <!-- DNT-Start -->ECL<!-- DNT-End --> Standard Library Reference.</para>
+    <para>The following are supported methods for the ECL Scheduler included
+    in the ECL Standard Library Reference.</para>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/MonitorFile.xml"
                 xpointer="xpointer(//*[@id='MonitorFile'])"

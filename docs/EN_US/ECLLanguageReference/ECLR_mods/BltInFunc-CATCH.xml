@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CATCH">
-  <!-- DNT-Start --><title>CATCH</title><!-- DNT-End -->
+  <title>CATCH</title>
 
-  <para><emphasis>result</emphasis><emphasis role="bold"> := <!-- DNT-Start -->CATCH<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->CATCH<!-- DNT-End --></primary>
+  <para><emphasis>result</emphasis><emphasis role="bold"> := CATCH<indexterm>
+      <primary>CATCH</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->CATCH<!-- DNT-End --> Function</primary>
-    </indexterm>(</emphasis> <emphasis>recset, action</emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis><emphasis
+      <primary>CATCH Function</primary>
+    </indexterm>(</emphasis> <emphasis>recset, action</emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis><emphasis
   role="bold"> );</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -19,80 +19,80 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>result</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>result</emphasis></entry>
 
             <entry>The definition name for the resulting recordset.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>recset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>recset</emphasis></entry>
 
             <entry>The recordset expression that, if it fails, causes the
             <emphasis>action</emphasis> to launch.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>action</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>action</emphasis></entry>
 
             <entry>One of the three valid actions below.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->CATCH<!-- DNT-End --> returns a set of records (which may be
+            <entry>CATCH returns a set of records (which may be
             empty).</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->CATCH<!-- DNT-End --> </emphasis>function executes the
+  <para>The <emphasis role="bold">CATCH </emphasis>function executes the
   <emphasis>action</emphasis> if the <emphasis>recset</emphasis> expression
   fails for any reason.</para>
 
@@ -106,34 +106,34 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">SKIP<indexterm>
+            <entry><emphasis role="bold">SKIP<indexterm>
                 <primary>SKIP</primary>
-              </indexterm></emphasis><!-- DNT-End --></entry>
+              </indexterm></emphasis></entry>
 
             <entry>Specifies ignoring the error and continuing, returning an
             empty dataset.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ONFAIL<indexterm>
+            <entry><emphasis role="bold">ONFAIL<indexterm>
                 <primary>ONFAIL</primary>
-              </indexterm></emphasis>(<emphasis>transform</emphasis>)<!-- DNT-End --></entry>
+              </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
 
             <entry>Specifies returning a single record from the
-            <emphasis>transform</emphasis> function. The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function
-            may use <!-- DNT-Start -->FAILCODE<!-- DNT-End --> and/or <!-- DNT-Start -->FAILMESSAGE<!-- DNT-End --><indexterm>
-                <primary><!-- DNT-Start -->FAILMESSAGE<!-- DNT-End --></primary>
+            <emphasis>transform</emphasis> function. The TRANSFORM function
+            may use FAILCODE and/or FAILMESSAGE<indexterm>
+                <primary>FAILMESSAGE</primary>
               </indexterm> to provide details of the failure and must result
-            in a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure the same format as the
+            in a RECORD structure the same format as the
             <emphasis>recset</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">FAIL<indexterm>
+            <entry><emphasis role="bold">FAIL<indexterm>
                 <primary>FAIL</primary>
-              </indexterm></emphasis><!-- DNT-End --></entry>
+              </indexterm></emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->FAIL<!-- DNT-End --> action, which specifies the error message to
+            <entry>The FAIL action, which specifies the error message to
             produce. This is meant to provide more useful information to the
             end user about why the job failed.</entry>
           </row>
@@ -143,7 +143,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>MyRec := RECORD
+  <programlisting>MyRec := RECORD
     STRING50 Value1;
     UNSIGNED Value2;
 END;
@@ -167,9 +167,9 @@ recovered3 := CATCH(CATCH(limited3, FAIL(1, 'Failed, dude')), ONFAIL(FailTransfo
 OUTPUT(recovered1);  //empty recordset 
 OUTPUT(recovered2);  //
 OUTPUT(recovered3);  //
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
-  Structure</link>, <link linkend="FAIL"><!-- DNT-Start -->FAIL<!-- DNT-End --></link>, <link linkend="FAILCODE"><!-- DNT-Start -->FAILCODE<!-- DNT-End --></link>, <link
-  linkend="FAILMESSAGE"><!-- DNT-Start -->FAILMESSAGE<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+  Structure</link>, <link linkend="FAIL">FAIL</link>, <link linkend="FAILCODE">FAILCODE</link>, <link
+  linkend="FAILMESSAGE">FAILMESSAGE</link></para>
 </sect1>

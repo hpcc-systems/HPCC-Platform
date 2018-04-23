@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="COSH">
-  <!-- DNT-Start --><title>COSH</title><!-- DNT-End -->
+  <title>COSH</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->COSH<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->COSH<!-- DNT-End --></primary>
+  <para><emphasis role="bold">COSH<indexterm>
+      <primary>COSH</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->COSH<!-- DNT-End --> function</primary>
+      <primary>COSH function</primary>
     </indexterm>(</emphasis><emphasis>angle</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,27 +19,27 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>angle</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>angle</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->REAL<!-- DNT-End --> radian value for which to find the hyperbolic
+            <entry>The REAL radian value for which to find the hyperbolic
             cosine.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->COSH<!-- DNT-End --> returns a single <!-- DNT-Start -->REAL<!-- DNT-End --> value.</entry>
+            <entry>COSH returns a single REAL value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->COSH<!-- DNT-End --> </emphasis>function returns the
+  <para>The <emphasis role="bold">COSH </emphasis>function returns the
   hyperbolic cosine of the <emphasis>angle</emphasis>.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>Rad2Deg := 57.295779513082; //number of degrees in a radian
+  <programlisting>Rad2Deg := 57.295779513082; //number of degrees in a radian
 
 Deg2Rad := 0.0174532925199; //number of radians in a degree
 
@@ -47,11 +47,11 @@ Angle45 := 45 * Deg2Rad;    //translate 45 degrees into radians
 
 HyperbolicCosine45 := COSH(Angle45);
                             //get hyperbolic cosine of the 45 degree angle
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="ACOS"><!-- DNT-Start -->ACOS<!-- DNT-End --></link>, <link
-  linkend="SIN"><!-- DNT-Start -->SIN<!-- DNT-End --></link>, <link linkend="TAN"><!-- DNT-Start -->TAN<!-- DNT-End --></link>, <link
-  linkend="ASIN"><!-- DNT-Start -->ASIN<!-- DNT-End --></link>, <link linkend="ATAN"><!-- DNT-Start -->ATAN<!-- DNT-End --></link>, <link
-  linkend="COS"><!-- DNT-Start -->COS<!-- DNT-End --></link>, <link linkend="SINH"><!-- DNT-Start -->SINH<!-- DNT-End --></link>, <link
-  linkend="TANH"><!-- DNT-Start -->TANH<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="ACOS">ACOS</link>, <link
+  linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link
+  linkend="ASIN">ASIN</link>, <link linkend="ATAN">ATAN</link>, <link
+  linkend="COS">COS</link>, <link linkend="SINH">SINH</link>, <link
+  linkend="TANH">TANH</link></para>
 </sect1>

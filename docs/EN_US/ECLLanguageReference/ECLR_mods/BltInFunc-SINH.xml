@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SINH">
-  <!-- DNT-Start --><title>SINH</title><!-- DNT-End -->
+  <title>SINH</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->SINH<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->SINH<!-- DNT-End --></primary>
+  <para><emphasis role="bold">SINH<indexterm>
+      <primary>SINH</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->SINH<!-- DNT-End --> function</primary>
+      <primary>SINH function</primary>
     </indexterm>(</emphasis><emphasis>angle</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,38 +19,38 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>angle</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>angle</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->REAL<!-- DNT-End --> radian value for which to find the hyperbolic
+            <entry>The REAL radian value for which to find the hyperbolic
             sine.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->SINH<!-- DNT-End --> returns a single <!-- DNT-Start -->REAL<!-- DNT-End --> value.</entry>
+            <entry>SINH returns a single REAL value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->SINH<!-- DNT-End --> </emphasis>function returns the
+  <para>The <emphasis role="bold">SINH </emphasis>function returns the
   hyperbolic sine of the <emphasis>angle</emphasis>.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>Rad2Deg := 57.295779513082; //number of degrees in a radian
+  <programlisting>Rad2Deg := 57.295779513082; //number of degrees in a radian
 
 Deg2Rad := 0.0174532925199; //number of radians in a degree
 
 Angle45 := 45 * Deg2Rad;    //translate 45 degrees into radians
 
 HyperbolicSine45 := SINH(Angle45); //get hyperbolic sine of the angle
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="ACOS"><!-- DNT-Start -->ACOS<!-- DNT-End --></link>, <link
-  linkend="COS"><!-- DNT-Start -->COS<!-- DNT-End --></link>, <link linkend="ASIN"><!-- DNT-Start -->ASIN<!-- DNT-End --></link>, <link
-  linkend="TAN"><!-- DNT-Start -->TAN<!-- DNT-End --></link>, <link linkend="ATAN"><!-- DNT-Start -->ATAN<!-- DNT-End --></link>, <link
-  linkend="COSH"><!-- DNT-Start -->COSH<!-- DNT-End --></link>, <link linkend="SIN"><!-- DNT-Start -->SIN<!-- DNT-End --></link>, <link
-  linkend="TANH"><!-- DNT-Start -->TANH<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="ACOS">ACOS</link>, <link
+  linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link
+  linkend="TAN">TAN</link>, <link linkend="ATAN">ATAN</link>, <link
+  linkend="COSH">COSH</link>, <link linkend="SIN">SIN</link>, <link
+  linkend="TANH">TANH</link></para>
 </sect1>

@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ExternalLogicalFileName">
-  <!-- DNT-Start --><title>ExternalLogicalFileName</title><!-- DNT-End -->
+  <title>ExternalLogicalFileName</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.ExternalLogicalFileName<indexterm>
+  <para><emphasis role="bold">STD.File.ExternalLogicalFileName<indexterm>
       <primary>STD.File.ExternalLogicalFileName</primary>
     </indexterm><indexterm>
       <primary>File.ExternalLogicalFileName</primary>
     </indexterm><indexterm>
       <primary>ExternalLogicalFileName</primary>
     </indexterm>(</emphasis> <emphasis> machineIP, filename </emphasis>
-  <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
+  <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,30 +21,30 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>machineIP</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>machineIP</emphasis></entry>
 
-          <entry>A null-terminated string containing the <!-- DNT-Start -->IP<!-- DNT-End --> address of the
+          <entry>A null-terminated string containing the IP address of the
           remote machine.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>filename</emphasis></entry>
 
           <entry>A null-terminated string containing the path/name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->ExternalLogicalFileName<!-- DNT-End --> returns returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End -->
+          <entry>ExternalLogicalFileName returns returns a VARSTRING
           (null-terminated) value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ExternalLogicalFileName<!-- DNT-End --> </emphasis>function
+  <para>The <emphasis role="bold">ExternalLogicalFileName </emphasis>function
   returns an appropriately encoded external logical file name that can be used
   to directly read a file from any node that is running the dafilesrv utility
   (typically a landing zone). It handles upper case characters by escaping
@@ -52,7 +52,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IP   := '10.150.254.6';
+  <programlisting format="linespecific">IP   := '10.150.254.6';
 file := '/c$/training/import/AdvancedECL/people';
 DS1  := DATASET(STD.File.ExternalLogicalFileName(IP,file),
         Training_Advanced.Layout_PeopleFile, FLAT);
@@ -61,5 +61,5 @@ OUTPUT(STD.File.ExternalLogicalFileName(IP,file));
 //~file::10.150.254.6::c$::training::import::^advanced^e^c^l::people
 OUTPUT(DS1);
 //returns records from the external file
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

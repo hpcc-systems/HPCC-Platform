@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TRANSFER">
-  <!-- DNT-Start --><title>TRANSFER</title><!-- DNT-End -->
+  <title>TRANSFER</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->TRANSFER<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->TRANSFER<!-- DNT-End --></primary>
+  <para><emphasis role="bold">TRANSFER<indexterm>
+      <primary>TRANSFER</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->TRANSFER<!-- DNT-End --> Function</primary>
+      <primary>TRANSFER Function</primary>
     </indexterm>(</emphasis><emphasis>value,type</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,39 +19,39 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>value</emphasis></entry>
 
             <entry>An expression containing the bitmap to return.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>type</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>type</emphasis></entry>
 
             <entry>The value type to return.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->TRANSFER<!-- DNT-End --> returns a single value.</entry>
+            <entry>TRANSFER returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->TRANSFER<!-- DNT-End --> </emphasis>function returns the
+  <para>The <emphasis role="bold">TRANSFER </emphasis>function returns the
   <emphasis>value </emphasis>in the requested <emphasis>type</emphasis>. This
   is not a type cast because the bit-pattern stays the same.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
+  <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
   
 STRING1 MyVal := TRANSFER(MyInt,STRING1); //MyVal is "A" (ASCII 65)
   
 INTEGER1 MyVal2 := (INTEGER)MyVal; //MyVal2 is 0 (zero) because
           "A" is not a numeric character
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para>See Also: <link linkend="Type_Casting">Type Casting</link></para>
 </sect1>

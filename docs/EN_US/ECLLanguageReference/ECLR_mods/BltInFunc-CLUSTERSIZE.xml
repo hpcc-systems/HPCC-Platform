@@ -2,11 +2,11 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CLUSTERSIZE">
-  <!-- DNT-Start --><title>CLUSTERSIZE<indexterm>
+  <title>CLUSTERSIZE<indexterm>
       <primary>CLUSTERSIZE</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->CLUSTERSIZE<!-- DNT-End --></emphasis></para>
+  <para><emphasis role="bold">CLUSTERSIZE</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -16,19 +16,19 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->CLUSTERSIZE<!-- DNT-End --> returns a single <!-- DNT-Start -->INTEGER<!-- DNT-End --> value.</entry>
+            <entry>CLUSTERSIZE returns a single INTEGER value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->CLUSTERSIZE<!-- DNT-End --> </emphasis>compile time constant
+  <para>The <emphasis role="bold">CLUSTERSIZE </emphasis>compile time constant
   returns the number of nodes in the cluster. This is the same value as
   returned by the Std.System.ThorLib.Nodes() function..</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>OUTPUT(CLUSTERSIZE)</programlisting><!-- DNT-End -->
+  <programlisting>OUTPUT(CLUSTERSIZE)</programlisting>
 </sect1>

@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="NOTHOR">
-  <!-- DNT-Start --><title>NOTHOR<indexterm>
+  <title>NOTHOR<indexterm>
       <primary>NOTHOR action</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
   <para><emphasis role="bold">[</emphasis><emphasis>name</emphasis>
-  :=<emphasis role="bold"> ] <!-- DNT-Start -->NOTHOR<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->NOTHOR<!-- DNT-End --></primary>
+  :=<emphasis role="bold"> ] NOTHOR<indexterm>
+      <primary>NOTHOR</primary>
     </indexterm>(</emphasis><emphasis> action </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -20,13 +20,13 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
             <entry>Optional. The identifier for this action.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->action<!-- DNT-End --></entry>
+            <entry>action</entry>
 
             <entry>The action to execute.</entry>
           </row>
@@ -34,19 +34,19 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->NOTHOR<!-- DNT-End --> </emphasis>compiler directive
+  <para>The <emphasis role="bold">NOTHOR </emphasis>compiler directive
   indicates the <emphasis>action</emphasis> should not execute on thor, but
   inline instead, in a global context. You can only do very simple dataset
-  operations within a <!-- DNT-Start -->NOTHOR<!-- DNT-End -->, like filtering records or a simple
-  <!-- DNT-Start -->PROJECT<!-- DNT-End -->.</para>
+  operations within a NOTHOR, like filtering records or a simple
+  PROJECT.</para>
 
-  <para><!-- DNT-Start -->NOTHOR<!-- DNT-End --> needs to be used around operations that use the superfile
+  <para>NOTHOR needs to be used around operations that use the superfile
   transactions, (such as the example below) where the compiler does not spot
   the appropriate context.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>IMPORT STD;
+  <programlisting>IMPORT STD;
 rec := RECORD
   STRING10 S;
 END;
@@ -68,7 +68,7 @@ NOTHOR(SEQUENTIAL(
 
 F1 := DATASET('MultiSuper1', rec, THOR);
 OUTPUT(F1,,'testmulti1',OVERWRITE);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="SEQUENTIAL"><!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="SEQUENTIAL">SEQUENTIAL</link></para>
 </sect1>

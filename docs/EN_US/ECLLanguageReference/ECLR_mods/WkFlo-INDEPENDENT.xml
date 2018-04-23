@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="INDEPENDENT">
-  <!-- DNT-Start --><title>INDEPENDENT</title><!-- DNT-End -->
+  <title>INDEPENDENT</title>
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
-  </emphasis><emphasis role="bold">: <!-- DNT-Start -->INDEPENDENT<!-- DNT-End -->
+  </emphasis><emphasis role="bold">: INDEPENDENT
   [</emphasis><emphasis>(cluster)</emphasis><emphasis role="bold">]</emphasis>
   <indexterm>
-      <primary><!-- DNT-Start -->INDEPENDENT<!-- DNT-End --></primary>
+      <primary>INDEPENDENT</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->INDEPENDENT<!-- DNT-End --> workflow service</primary>
+      <primary>INDEPENDENT workflow service</primary>
     </indexterm>;</para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -21,19 +21,19 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>attribute</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>attribute</emphasis></entry>
 
             <entry>The name of the Attribute.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>The definition of the attribute.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>cluster</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>cluster</emphasis></entry>
 
             <entry>Optional. A string constant specifying the name of the Thor
             cluster on which execute. If omitted, the
@@ -44,22 +44,22 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->INDEPENDENT<!-- DNT-End --> </emphasis>service causes the
+  <para>The <emphasis role="bold">INDEPENDENT </emphasis>service causes the
   <emphasis>attribute</emphasis> to be evaluated at a global scope and forces
   the <emphasis>attribute</emphasis> evaluation into a separate workflow item.
   The new workflow item is evaluated before the first workflow item that uses
   that <emphasis>attribute</emphasis>. It executes independently from other
-  workflow items, and is only executed once (including inside <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --> where
+  workflow items, and is only executed once (including inside SEQUENTIAL where
   it should be executed the first time it is used). It will not share any code
   with any other workflow items.</para>
 
   <para>One use would be to provide a mechanism for commoning up code that is
-  shared between different arguments to a <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --> action--normally they are
+  shared between different arguments to a SEQUENTIAL action--normally they are
   evaluated completely independently.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  IMPORT STD;
+  <programlisting>  IMPORT STD;
   File1 := 'names1.txt';
   File2 := 'names2.txt';
   
@@ -81,7 +81,7 @@
                                      -1,ESPportIP))
                            : INDEPENDENT;
     SEQUENTIAL(DeleteOldFiles,SprayNewFiles);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="GLOBAL"><!-- DNT-Start -->GLOBAL<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="GLOBAL">GLOBAL</link></para>
 </sect1>

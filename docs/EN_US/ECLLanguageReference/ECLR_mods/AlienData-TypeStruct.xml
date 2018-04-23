@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TYPE_Structure" role="nobrk">
-  <!-- DNT-Start --><title>TYPE Structure</title><!-- DNT-End -->
+  <title>TYPE Structure</title>
 
-  <para><emphasis>TypeName</emphasis><emphasis role="bold"> := <!-- DNT-Start -->TYPE<!-- DNT-End --><indexterm>
-      <primary><emphasis role="bold"><!-- DNT-Start -->TYPE<!-- DNT-End --></emphasis></primary>
+  <para><emphasis>TypeName</emphasis><emphasis role="bold"> := TYPE<indexterm>
+      <primary><emphasis role="bold">TYPE</emphasis></primary>
     </indexterm></emphasis><emphasis role="bold">
   </emphasis><emphasis></emphasis></para>
 
   <para><emphasis>functions;</emphasis></para>
 
-  <para><emphasis></emphasis><emphasis role="bold"><!-- DNT-Start -->END<!-- DNT-End -->;</emphasis></para>
+  <para><emphasis></emphasis><emphasis role="bold">END;</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,15 +21,15 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>TypeName</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>TypeName</emphasis></entry>
 
-          <entry>The name of the <!-- DNT-Start -->TYPE<!-- DNT-End --> structure<indexterm>
-              <primary><!-- DNT-Start -->TYPE<!-- DNT-End --> structure</primary>
+          <entry>The name of the TYPE structure<indexterm>
+              <primary>TYPE structure</primary>
             </indexterm>.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>functions</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>functions</emphasis></entry>
 
           <entry>Function Attribute definitions. There are usually multiple
           <emphasis>functions</emphasis>.</entry>
@@ -38,24 +38,24 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->TYPE<!-- DNT-End --> </emphasis>structure defines a series
+  <para>The <emphasis role="bold">TYPE </emphasis>structure defines a series
   of <emphasis>functions</emphasis> that are implicitly invoked when the
-  <emphasis>TypeName</emphasis> is subsequently used in a <!-- DNT-Start -->RECORD<!-- DNT-End -->
+  <emphasis>TypeName</emphasis> is subsequently used in a RECORD
   structure<indexterm>
-      <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
-    </indexterm> as a value type. Parameters may be passed to the <!-- DNT-Start -->TYPE<!-- DNT-End -->
+      <primary>RECORD structure</primary>
+    </indexterm> as a value type. Parameters may be passed to the TYPE
   structure Attribute which may then be used in any of the
   <emphasis>function</emphasis> definitions. To pass the parameters, simply
-  append them to the <emphasis>TypeName</emphasis> used in the <!-- DNT-Start -->RECORD<!-- DNT-End -->
+  append them to the <emphasis>TypeName</emphasis> used in the RECORD
   structure to define the value type for the field.</para>
 
-  <para>A <!-- DNT-Start -->TYPE<!-- DNT-End --> structure may only contain function definitions from the the
-  list of available Special Functions (see <emphasis role="bold"><!-- DNT-Start -->TYPE<!-- DNT-End -->
+  <para>A TYPE structure may only contain function definitions from the the
+  list of available Special Functions (see <emphasis role="bold">TYPE
   Structure Special Functions</emphasis>).</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>STRING4 Rev(STRING4 S) := S[4] + S[3] + S[2] + S[1];
+  <programlisting>STRING4 Rev(STRING4 S) := S[4] + S[3] + S[2] + S[1];
 EXPORT ReverseString4 := TYPE
         EXPORT STRING4 LOAD(STRING4 S) := Rev(S);
         EXPORT STRING4 STORE(STRING4 S) := Rev(S);
@@ -83,9 +83,9 @@ R := RECORD
 
         // Defines a field size of 4. When R.F3 is used, the 
         //  ScaleInt.Load function returns the number / 100.
-END;</programlisting><!-- DNT-End -->
+END;</programlisting>
 
-  <para>See Also: <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>,
-  <link linkend="Type_Sturcture_Special_Functions"><!-- DNT-Start -->TYPE<!-- DNT-End --> Structure Special
+  <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
+  <link linkend="Type_Sturcture_Special_Functions">TYPE Structure Special
   Functions</link></para>
 </sect1>

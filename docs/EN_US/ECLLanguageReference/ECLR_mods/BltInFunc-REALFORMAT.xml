@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="REALFORMAT">
-  <!-- DNT-Start --><title>REALFORMAT<indexterm>
+  <title>REALFORMAT<indexterm>
       <primary>REALFORMAT</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->REALFORMAT<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->REALFORMAT<!-- DNT-End --> Function</primary>
+  <para><emphasis role="bold">REALFORMAT<indexterm>
+      <primary>REALFORMAT Function</primary>
     </indexterm>(</emphasis><emphasis>expression, width, decimals
   </emphasis><emphasis role="bold">)</emphasis></para>
 
@@ -19,44 +19,44 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
-            <entry>The expression that specifies the <!-- DNT-Start -->REAL<!-- DNT-End --> value to
+            <entry>The expression that specifies the REAL value to
             format.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>width</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>width</emphasis></entry>
 
             <entry>The size of string in which to right-justify the
             value.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>decimals</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>decimals</emphasis></entry>
 
             <entry>An integer specifying the number of decimal places.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->REALFORMAT<!-- DNT-End --> returns a single value.</entry>
+            <entry>REALFORMAT returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->REALFORMAT<!-- DNT-End --> </emphasis>function returns the
+  <para>The <emphasis role="bold">REALFORMAT </emphasis>function returns the
   value of the <emphasis>expression</emphasis> formatted as a right-justified
   string of <emphasis>width</emphasis> characters with the number of
   <emphasis>decimals</emphasis> specifed.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>REAL8 Float := 1000.0063;
+  <programlisting>REAL8 Float := 1000.0063;
 STRING12 FloatStr12 := REALFORMAT(float,12,6);
-OUTPUT(FloatStr12); //results in ' 1000.006300'</programlisting><!-- DNT-End -->
+OUTPUT(FloatStr12); //results in ' 1000.006300'</programlisting>
 
-  <para>See Also: <link linkend="INTFORMAT"><!-- DNT-Start -->INTFORMAT<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="INTFORMAT">INTFORMAT</link></para>
 </sect1>

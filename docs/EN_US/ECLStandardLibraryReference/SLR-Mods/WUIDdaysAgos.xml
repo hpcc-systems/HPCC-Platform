@@ -2,9 +2,9 @@
 <!DOCTYPE sect2
   PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect2 id="WUIDdaysAgos">
-   <!-- DNT-Start --><title>
+   <title>
       <emphasis role="bold">WUIDdaysAgos</emphasis>
-   </title><!-- DNT-End -->
+   </title>
    <para>
       <emphasis role="bold">WorkunitServices.WUIDdaysAgo(</emphasis>
       <emphasis> daysago
@@ -14,13 +14,13 @@
    <para>
       <emphasis>daysago</emphasis> An unsigned integer containing the
         number of days to go back.</para>
-   <para>Return:<emphasis> </emphasis>WUIDdaysAgo returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End -->
+   <para>Return:<emphasis> </emphasis>WUIDdaysAgo returns a VARSTRING
         value.</para>
    <para>The <emphasis role="bold">WUIDdaysAgo </emphasis>function
         returns a valid WorkUnit IDentifier for a workunit that would have run
         within the last <emphasis>daysago</emphasis> days.</para>
    <para>Example:</para>
-   <!-- DNT-Start --><programlisting format="linespecific">daysago := WorkunitServices.WUIDdaysAgo(3);
+   <programlisting format="linespecific">daysago := WorkunitServices.WUIDdaysAgo(3);
 OUTPUT(WorkunitServices.WorkunitList(daysago));
- //returns a list of workunits run in the last 72 hours</programlisting><!-- DNT-End -->
+ //returns a list of workunits run in the last 72 hours</programlisting>
 </sect2>

@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Target">
-  <!-- DNT-Start --><title>Target</title><!-- DNT-End -->
+  <title>Target</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Job.Target <indexterm>
+  <para><emphasis role="bold">STD.System.Job.Target <indexterm>
       <primary>STD.System.Job.Target</primary>
     </indexterm> <indexterm>
       <primary>Target</primary>
     </indexterm> (</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -19,21 +19,21 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->Target<!-- DNT-End --> returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value.</entry>
+          <entry>Target returns a VARSTRING value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->Target<!-- DNT-End --> </emphasis>function returns the name
+  <para>The <emphasis role="bold">Target </emphasis>function returns the name
   of the cluster running the workunit. Not supported on Roxie clusters. This
-  name is used by #<!-- DNT-Start -->WORKUNIT<!-- DNT-End -->, the ecl command line utility, or the eclplus
+  name is used by #WORKUNIT, the ecl command line utility, or the eclplus
   command line utility to specify the the target cluster for a
   workunit.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.System.Job.Target();</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := STD.System.Job.Target();</programlisting>
 </sect1>

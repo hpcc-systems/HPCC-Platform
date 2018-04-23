@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <bookinfo>
-    <!-- DNT-Start --><title>Client Tools Overview</title><!-- DNT-End -->
+    <title>Client Tools Overview</title>
 
     <author>
       <firstname>Boca Raton</firstname>
@@ -19,20 +19,20 @@
   </bookinfo>
 
   <chapter id="Command_Line_DFU">
-    <!-- DNT-Start --><title>Command Line DFU</title><!-- DNT-End -->
+    <title>Command Line DFU</title>
 
     <sect1 id="Command_Line_InterfaceDFU" role="nobrk">
-      <!-- DNT-Start --><title>Command Line Interface</title><!-- DNT-End -->
+      <title>Command Line Interface</title>
 
       <sect2 id="DFUPlusexe">
-        <!-- DNT-Start --><title><emphasis role="bold">dfuplus </emphasis><emphasis
+        <title><emphasis role="bold">dfuplus </emphasis><emphasis
         role="bold">[--version] action=</emphasis><emphasis>operation
         </emphasis><emphasis
         role="bold">[</emphasis><emphasis>@filename</emphasis><emphasis
         role="bold">|</emphasis><emphasis>options</emphasis><emphasis
-        role="bold">]</emphasis></title><!-- DNT-End -->
+        role="bold">]</emphasis></title>
 
-        <!-- DNT-Start --><para></para><!-- DNT-End -->
+        <para></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -42,13 +42,13 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start --><emphasis>--version</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>--version</emphasis></entry>
 
                 <entry>displays version info</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>operation</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>operation</emphasis></entry>
 
                 <entry>One of the following actions: spray, despray, copy,
                 remove, rename, list, add, addsuper, removesuper, listsuper,
@@ -57,7 +57,7 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>@filename</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>@filename</emphasis></entry>
 
                 <entry>Optional. The name of a file containing necessary
                 <emphasis>options</emphasis>. If omitted and no command line
@@ -67,7 +67,7 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>options</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>options</emphasis></entry>
 
                 <entry>Optional. A space-delimited list of optional items
                 (listed below) appropriate to the
@@ -82,8 +82,8 @@
         </informaltable>
 
         <para>The <emphasis role="bold">dfuplus</emphasis> executable accepts
-        command line parameters to send to the Distributed File Utility (<!-- DNT-Start -->DFU<!-- DNT-End -->)
-        engine via the <!-- DNT-Start -->ESP<!-- DNT-End --> server. These <emphasis>options</emphasis> can be
+        command line parameters to send to the Distributed File Utility (DFU)
+        engine via the ESP server. These <emphasis>options</emphasis> can be
         specified on the command line, in the <emphasis>@filename</emphasis>,
         in the dfuplus.ini file in the same directory as the executable, or
         any combination.</para>
@@ -121,18 +121,18 @@
 
                   <entry>The dfuplus utility does not upload files to a
                   landing zone. You must first upload any file(s) to your
-                  landing zone using either <!-- DNT-Start -->ECL<!-- DNT-End --> Watch or a tool that supports
-                  a secure copy protocol, such as <!-- DNT-Start -->SCP<!-- DNT-End --> or <!-- DNT-Start -->SFTP<!-- DNT-End -->.</entry>
+                  landing zone using either ECL Watch or a tool that supports
+                  a secure copy protocol, such as SCP or SFTP.</entry>
                 </row>
               </tbody>
             </tgroup>
           </informaltable></para>
 
         <sect3 id="CLI_DFU_GeneralOptions">
-          <!-- DNT-Start --><title>General Options:</title><!-- DNT-End -->
+          <title>General Options:</title>
 
-          <!-- DNT-Start --><para>The following <emphasis>options </emphasis>are common to every
-          <emphasis>operation</emphasis>:</para><!-- DNT-End -->
+          <para>The following <emphasis>options </emphasis>are common to every
+          <emphasis>operation</emphasis>:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -142,28 +142,28 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>server</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>server</emphasis></entry>
 
-                  <entry>The <!-- DNT-Start -->URL<!-- DNT-End --> (http:// or https://) and/or <!-- DNT-Start -->IP<!-- DNT-End --> address of
-                  the <!-- DNT-Start -->ESP<!-- DNT-End --> server. The port may also be included.</entry>
+                  <entry>The URL (http:// or https://) and/or IP address of
+                  the ESP server. The port may also be included.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>username</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>username</emphasis></entry>
 
                   <entry>A userid with authorized access to the
                   <emphasis>server</emphasis>.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>password</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>password</emphasis></entry>
 
                   <entry>The password authorizing access for the
                   <emphasis>username</emphasis>.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>overwrite</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>overwrite</emphasis></entry>
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to overwrite any existing file of the same name. If omitted,
@@ -171,7 +171,7 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>replicate</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>replicate</emphasis></entry>
 
                   <entry><para>Optional. A boolean flag (1 | 0) indicating
                   whether to replicate the file. If omitted, the default is
@@ -181,7 +181,7 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>autorecover</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>autorecover</emphasis></entry>
 
                   <entry>Optional. The number of times to attempt recovery of
                   a failed <emphasis>operation</emphasis>. If omitted, the
@@ -189,7 +189,7 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>nowait</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>nowait</emphasis></emphasis></entry>
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to return immediately without waiting for completion of the
@@ -198,7 +198,7 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>connect</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>connect</emphasis></emphasis></entry>
 
                   <entry>Optional. The number of simultaneous connections to
                   limit the <emphasis>operation </emphasis>to. If omitted, the
@@ -206,18 +206,18 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>throttle</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>throttle</emphasis></emphasis></entry>
 
                   <entry>Optional. The transfer speed (in Mbits/second) to
                   restrict the <emphasis>operation</emphasis> to. If omitted,
                   the default is the best system speed in Linux and
-                  multiple-destination Windows, or the <!-- DNT-Start -->NIC<!-- DNT-End --> speed of a
+                  multiple-destination Windows, or the NIC speed of a
                   single-destination Windows box.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis><emphasis>norecover</emphasis>
-                  </emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis><emphasis>norecover</emphasis>
+                  </emphasis></emphasis></entry>
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to create or recover the <emphasis>operation</emphasis> from
@@ -225,8 +225,8 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis><emphasis>nosplit</emphasis>
-                  </emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis><emphasis>nosplit</emphasis>
+                  </emphasis></emphasis></entry>
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to split file parts to multiple target parts. If omitted,
@@ -234,44 +234,44 @@
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->compress<!-- DNT-End --></entry>
+                  <entry>compress</entry>
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to compress the target file.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->push<!-- DNT-End --></entry>
+                  <entry>push</entry>
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to override push/pull default.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->encrypt=&lt;password&gt;<!-- DNT-End --></entry>
+                  <entry>encrypt=&lt;password&gt;</entry>
 
                   <entry>Optional. Specifies to encrypt the target filename
                   using the supplied password.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->decrypt=&lt;password&gt;<!-- DNT-End --></entry>
+                  <entry>decrypt=&lt;password&gt;</entry>
 
                   <entry>Optional. Specifies to decrypt the source filename
                   using the supplied password.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->jobname=&lt;jobname&gt;<!-- DNT-End --></entry>
+                  <entry>jobname=&lt;jobname&gt;</entry>
 
-                  <entry>Specify a jobname for the <!-- DNT-Start -->DFU<!-- DNT-End --> operation's
+                  <entry>Specify a jobname for the DFU operation's
                   workunit.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->transferbuffersize=nnn<!-- DNT-End --></entry>
+                  <entry>transferbuffersize=nnn</entry>
 
-                  <entry>Optional. Overrides the <!-- DNT-Start -->DFU<!-- DNT-End --> Server's buffer size
+                  <entry>Optional. Overrides the DFU Server's buffer size
                   value (default is 64k)</entry>
                 </row>
               </tbody>
@@ -282,7 +282,7 @@
         <?hard-pagebreak ?>
 
         <sect3 id="CLI_DFU_dfuplus.ini">
-          <!-- DNT-Start --><title>dfuplus.ini</title><!-- DNT-End -->
+          <title>dfuplus.ini</title>
 
           <para>Any <emphasis>options</emphasis> can be specified in a file
           called dfuplus.ini in the same directory as the executable. If your
@@ -290,11 +290,11 @@
           lowercase. Options that rarely change can be put in the dfuplus.ini
           file. For example:</para>
 
-          <!-- DNT-Start --><programlisting>server=http://10.150.50.12:8010
+          <programlisting>server=http://10.150.50.12:8010
 username=rlor
 password=password
 overwrite=1
-replicate=1</programlisting><!-- DNT-End -->
+replicate=1</programlisting>
 
           <para>In all the examples below, we'll assume dfuplus.ini has the
           above content.</para>
@@ -321,11 +321,11 @@ replicate=1</programlisting><!-- DNT-End -->
         </sect3>
 
         <sect3 id="CLI_DFU_SprayOperations">
-          <!-- DNT-Start --><title>Spray Operations:</title><!-- DNT-End -->
+          <title>Spray Operations:</title>
 
           <para>The <emphasis role="bold">spray</emphasis>
           <emphasis>operation</emphasis> copies a file from the landing zone,
-          distributing it across all the nodes of the destination <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
+          distributing it across all the nodes of the destination HPCC.</para>
 
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">spray</emphasis> <emphasis>operation</emphasis>:</para>
@@ -338,15 +338,15 @@ replicate=1</programlisting><!-- DNT-End -->
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start -->srcip<!-- DNT-End --></entry>
+                    <entry>srcip</entry>
 
-                    <entry>Optional. The <!-- DNT-Start -->IP<!-- DNT-End --> address of the source machine. If
+                    <entry>Optional. The IP address of the source machine. If
                     omitted, the information must be supplied by the
                     <emphasis>srcxml</emphasis> parameter.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->srcfile<!-- DNT-End --></entry>
+                    <entry>srcfile</entry>
 
                     <entry>Optional. The path to the source file. This may
                     contain wildcard characters (* and ?) to include multiple
@@ -357,40 +357,40 @@ replicate=1</programlisting><!-- DNT-End -->
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->srcxml<!-- DNT-End --></entry>
+                    <entry>srcxml</entry>
 
-                    <entry>The name of the <!-- DNT-Start -->XML<!-- DNT-End --> file containing the information
+                    <entry>The name of the XML file containing the information
                     required for the <emphasis>srcip</emphasis> and
                     <emphasis>srcfile</emphasis> parameters. This file may
                     have been obtained by previous use of the savexml
                     <emphasis>operation</emphasis>. This option provides the
                     feature of combining multiple source files into a single
-                    resulting logical file in the <!-- DNT-Start -->HPCC<!-- DNT-End -->.</entry>
+                    resulting logical file in the HPCC.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->dstname<!-- DNT-End --></entry>
+                    <entry>dstname</entry>
 
                     <entry>The logical name of the destination file.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->dstcluster<!-- DNT-End --></entry>
+                    <entry>dstcluster</entry>
 
                     <entry>The name of the destination cluster.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->prefix<!-- DNT-End --></entry>
+                    <entry>prefix</entry>
 
                     <entry>Optional. Both of the following (separated by a
                     comma):</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis
+                    <entry><emphasis
                     role="bold">filename{:</emphasis><emphasis>length</emphasis><emphasis
-                    role="bold">}</emphasis><!-- DNT-End --></entry>
+                    role="bold">}</emphasis></entry>
 
                     <entry>Prepends the filename (optionally limited to
                     <emphasis>length</emphasis> characters) to the
@@ -398,8 +398,8 @@ replicate=1</programlisting><!-- DNT-End -->
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis
-                    role="bold">filesize{:[B|L][1-8]}</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis
+                    role="bold">filesize{:[B|L][1-8]}</emphasis></entry>
 
                     <entry>Prepends the size of the file to the data.
                     Optionally, you can specify the format of that integer
@@ -410,7 +410,7 @@ replicate=1</programlisting><!-- DNT-End -->
                     role="bold">8</emphasis> bytes). If format and size are
                     omitted, the default is L4. <para>When using wildcard
                     characters (* and ?) to spray multiple source files
-                    (srcfile) to a single dstname, you <!-- DNT-Start -->MUST<!-- DNT-End --> use both the
+                    (srcfile) to a single dstname, you MUST use both the
                     filename and filesize options if you need to be able to
                     despray the contents of each record in the dstname back to
                     the multiple source files they originally came from. If
@@ -419,7 +419,7 @@ replicate=1</programlisting><!-- DNT-End -->
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis>expireDays</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis>expireDays</emphasis></entry>
 
                     <entry>Optional. A integer value indicating the number of
                     days before automatically removing the file. If omitted,
@@ -427,7 +427,7 @@ replicate=1</programlisting><!-- DNT-End -->
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis>format</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis>format</emphasis></entry>
 
                     <entry>Optional. One of the following values: <emphasis
                     role="bold">fixed csv delimited xml recfmv
@@ -440,7 +440,7 @@ replicate=1</programlisting><!-- DNT-End -->
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><programlisting role="tab">    recordsize</programlisting><!-- DNT-End --></entry>
+                    <entry><programlisting role="tab">    recordsize</programlisting></entry>
 
                     <entry>The fixed size of each record, in bytes.</entry>
                   </row>
@@ -450,7 +450,7 @@ replicate=1</programlisting><!-- DNT-End -->
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><programlisting role="tab">    encoding</programlisting><!-- DNT-End --></entry>
+                    <entry><programlisting role="tab">    encoding</programlisting></entry>
 
                     <entry>Optional. One of the following: ascii, utf8, utf8n,
                     utf16, utf16le, utf16be, utf32, utf32le, utf32be ; If
@@ -458,21 +458,21 @@ replicate=1</programlisting><!-- DNT-End -->
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><programlisting role="tab">    maxrecordsize</programlisting><!-- DNT-End --></entry>
+                    <entry><programlisting role="tab">    maxrecordsize</programlisting></entry>
 
                     <entry>Optional. The maximum size of each record, in
                     bytes. If omitted, the default is 8192.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><programlisting role="tab">    separator</programlisting><!-- DNT-End --></entry>
+                    <entry><programlisting role="tab">    separator</programlisting></entry>
 
                     <entry>Optional. The field delimiter. If omitted, the
                     default is a comma (\,).</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><programlisting role="tab">    terminator</programlisting><!-- DNT-End --></entry>
+                    <entry><programlisting role="tab">    terminator</programlisting></entry>
 
                     <entry>Optional. The record delimiter. If omitted, the
                     default is line feed or carriage return line feed
@@ -480,7 +480,7 @@ replicate=1</programlisting><!-- DNT-End -->
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><programlisting role="tab">    quote</programlisting><!-- DNT-End --></entry>
+                    <entry><programlisting role="tab">    quote</programlisting></entry>
 
                     <entry>Optional. The string quote character. If omitted,
                     the default is single quote (').</entry>
@@ -491,14 +491,14 @@ replicate=1</programlisting><!-- DNT-End -->
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><programlisting role="tab">    rowtag</programlisting><!-- DNT-End --></entry>
+                    <entry><programlisting role="tab">    rowtag</programlisting></entry>
 
-                    <entry>The <!-- DNT-Start -->XML<!-- DNT-End --> tag identifying each record.
+                    <entry>The XML tag identifying each record.
                     Required.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><programlisting role="tab">    encoding</programlisting><!-- DNT-End --></entry>
+                    <entry><programlisting role="tab">    encoding</programlisting></entry>
 
                     <entry>Optional. One of the following: utf8 utf8n utf16
                     utf16le utf16be utf32 utf32le utf32beIf omitted, the
@@ -506,7 +506,7 @@ replicate=1</programlisting><!-- DNT-End -->
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><programlisting role="tab">    maxrecordsize</programlisting><!-- DNT-End --></entry>
+                    <entry><programlisting role="tab">    maxrecordsize</programlisting></entry>
 
                     <entry>Optional. The maximum size of each record, in
                     bytes. If omitted, the default is 8192.</entry>
@@ -517,7 +517,7 @@ replicate=1</programlisting><!-- DNT-End -->
 
           <para>Examples:</para>
 
-          <!-- DNT-Start --><programlisting>//fixed spray example:
+          <programlisting>//fixed spray example:
 dfuplus action=spray srcip=10.150.50.14
           srcfile=c:\import\timezones.txt dstname=RTTEMP::timezones.txt
           dstcluster=thor format=fixed recordsize=155
@@ -578,11 +578,11 @@ dstcluster=le_thor dstname=LE::imagedb overwrite=1
 imageRecord := RECORD
 STRING filename;
 DATA image; //first 4 bytes contain the length of the image data
-END;</programlisting><!-- DNT-End -->
+END;</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_DeSprayOperations">
-          <!-- DNT-Start --><title>Despray Operations:</title><!-- DNT-End -->
+          <title>Despray Operations:</title>
 
           <para>The <emphasis role="bold">despray</emphasis>
           <emphasis>operation</emphasis> combines file parts from all the
@@ -599,7 +599,7 @@ END;</programlisting><!-- DNT-End -->
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>srcname</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>srcname</emphasis></entry>
 
                   <entry>The logical name of the source file. This may contain
                   wildcard characters (* and ?) to include multiple source
@@ -608,15 +608,15 @@ END;</programlisting><!-- DNT-End -->
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>dstip</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>dstip</emphasis></entry>
 
-                  <entry>Optional. The <!-- DNT-Start -->IP<!-- DNT-End --> address of the destination machine.
+                  <entry>Optional. The IP address of the destination machine.
                   If omitted, the information must be supplied by the
                   <emphasis>dstxml</emphasis> parameter.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>dstfile</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>dstfile</emphasis></entry>
 
                   <entry>Optional. The path to the destination file. This may
                   contain wildcard characters (* and ?) to despray a single
@@ -627,9 +627,9 @@ END;</programlisting><!-- DNT-End -->
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>dstxml</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>dstxml</emphasis></entry>
 
-                  <entry>The name of the <!-- DNT-Start -->XML<!-- DNT-End --> file containing the information
+                  <entry>The name of the XML file containing the information
                   required for the <emphasis>dstip</emphasis> and
                   <emphasis>dstfile</emphasis> parameters. This file may have
                   been obtained by previous use of the savexml
@@ -639,16 +639,16 @@ END;</programlisting><!-- DNT-End -->
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>splitprefix</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>splitprefix</emphasis></entry>
 
                   <entry>Optional. Both of the following (separated by a
                   comma):</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis
+                  <entry><emphasis
                   role="bold">filename{:</emphasis><emphasis>length</emphasis><emphasis
-                  role="bold">}</emphasis><!-- DNT-End --></entry>
+                  role="bold">}</emphasis></entry>
 
                   <entry>Uses the prepended filename (see the
                   <emphasis>prefix</emphasis> option to the spray
@@ -657,15 +657,15 @@ END;</programlisting><!-- DNT-End -->
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis
-                  role="bold">filesize{:[B|L][1-8]}</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis
+                  role="bold">filesize{:[B|L][1-8]}</emphasis></entry>
 
                   <entry>Uses the prepended size of the file (see the
                   <emphasis>prefix</emphasis> option to the spray
                   <emphasis>operation</emphasis>) to split out the data into
                   separate files.<para>When using wildcard characters (* and
                   ?) to spray multiple source files (srcfile) to a single
-                  dstname, you <!-- DNT-Start -->MUST<!-- DNT-End --> use both the filename and filesize options
+                  dstname, you MUST use both the filename and filesize options
                   if you need to be able to despray the contents of each
                   record in the dstname back to the multiple source files they
                   originally came from. If you never need to do that, then the
@@ -677,7 +677,7 @@ END;</programlisting><!-- DNT-End -->
 
           <para>Examples:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=despray dstip=10.150.50.14
+          <programlisting>dfuplus action=despray dstip=10.150.50.14
    dstfile=c:\import\despray\timezones.txt srcname=RTTEMP::timezones.txt
 //the spray.xml file contains:
 &lt;File directory="c:\import\"
@@ -717,11 +717,11 @@ DATA image; //first 4 bytes contain the length of the image data
 dfuplus action=dspray srcname=le::imagedb
           dstip=10.150.51.26 dstfile=c:\export\
           splitprefix=FILENAME,FILESIZE
-</programlisting><!-- DNT-End -->
+</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_CopyOps">
-          <!-- DNT-Start --><title>Copy Operations:</title><!-- DNT-End -->
+          <title>Copy Operations:</title>
 
           <para>The <emphasis role="bold">copy</emphasis>
           <emphasis>operation</emphasis> copies a logical file (all file parts
@@ -731,7 +731,7 @@ dfuplus action=dspray srcname=le::imagedb
           nodes.</para>
 
           <para>The copy operation can also be used to copy files from other
-          <!-- DNT-Start -->HPCC<!-- DNT-End --> environments (using the <emphasis>srcdali</emphasis> option).
+          HPCC environments (using the <emphasis>srcdali</emphasis> option).
           This is also known as a remote copy. For a remote copy of a file
           that contains a variable length field, you must include the
           <emphasis role="bold">nosplit</emphasis> option.</para>
@@ -747,35 +747,35 @@ dfuplus action=dspray srcname=le::imagedb
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>srcname</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>srcname</emphasis></emphasis></entry>
 
                   <entry>The logical name of the source file.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>dstname</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>dstname</emphasis></entry>
 
                   <entry>The logical name of the destination file.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>dstcluster</emphasis>
-                  </emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>dstcluster</emphasis>
+                  </emphasis></entry>
 
                   <entry>The name of the destination cluster.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>srcdali</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>srcdali</emphasis></emphasis></entry>
 
-                  <entry>Optional. The <!-- DNT-Start -->IP<!-- DNT-End --> address of the source Dali server,
+                  <entry>Optional. The IP address of the source Dali server,
                   if different from the destination Dali (associated with the
-                  <!-- DNT-Start -->ESP<!-- DNT-End --> Server specified in the <emphasis>server</emphasis>
+                  ESP Server specified in the <emphasis>server</emphasis>
                   option).</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>srcusername</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>srcusername</emphasis></entry>
 
                   <entry>Optional. The username to use to access the
                   <emphasis>srcdali</emphasis>. If omitted, the General
@@ -783,8 +783,8 @@ dfuplus action=dspray srcname=le::imagedb
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>srcpassword</emphasis>
-                  </emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>srcpassword</emphasis>
+                  </emphasis></entry>
 
                   <entry>Optional. The password to use to access the
                   <emphasis>srcdali</emphasis>. If omitted, the General
@@ -792,7 +792,7 @@ dfuplus action=dspray srcname=le::imagedb
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>preservecompression</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>preservecompression</emphasis></entry>
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to preserve the compression of the source file. If omitted,
@@ -804,12 +804,12 @@ dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=copy srcname=RTTEMP::timezones.txt
-          dstname=srcname=RTTEMP::COPY::timezones.txt dstcluster=thor</programlisting><!-- DNT-End -->
+          <programlisting>dfuplus action=copy srcname=RTTEMP::timezones.txt
+          dstname=srcname=RTTEMP::COPY::timezones.txt dstcluster=thor</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_RemoveOps">
-          <!-- DNT-Start --><title>Remove Operations:</title><!-- DNT-End -->
+          <title>Remove Operations:</title>
 
           <para>The <emphasis role="bold">remove</emphasis> operation deletes
           a logical file from the system data store, optionally leaving the
@@ -826,7 +826,7 @@ dfuplus action=dspray srcname=le::imagedb
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis><emphasis><emphasis>name</emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis><emphasis><emphasis>name</emphasis></emphasis></emphasis></entry>
 
                     <entry>The logical name of the file to remove.</entry>
                   </row>
@@ -834,13 +834,13 @@ dfuplus action=dspray srcname=le::imagedb
               </tgroup>
             </informaltable> Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=remove name=RTTEMP::timezones.txt</programlisting><!-- DNT-End -->
+          <programlisting>dfuplus action=remove name=RTTEMP::timezones.txt</programlisting>
 
           <para></para>
         </sect3>
 
         <sect3 id="CLI_DFU_renameOps">
-          <!-- DNT-Start --><title>Rename Operations:</title><!-- DNT-End -->
+          <title>Rename Operations:</title>
 
           <para>The <emphasis role="bold">rename</emphasis> operation renames
           a logical file in the system data store.</para>
@@ -856,13 +856,13 @@ dfuplus action=dspray srcname=le::imagedb
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis><emphasis><emphasis>srcname</emphasis></emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis><emphasis><emphasis>srcname</emphasis></emphasis></emphasis></emphasis></entry>
 
                   <entry>The logical name of the source file.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>dstname</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>dstname</emphasis></emphasis></entry>
 
                   <entry>The logical name of the destination file.</entry>
                 </row>
@@ -872,11 +872,11 @@ dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=rename srcname=RTTEMP::timezones.txt dstname=RTTEMP::NewTimezones.txt</programlisting><!-- DNT-End -->
+          <programlisting>dfuplus action=rename srcname=RTTEMP::timezones.txt dstname=RTTEMP::NewTimezones.txt</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_ListOperations">
-          <!-- DNT-Start --><title>List Operations:</title><!-- DNT-End -->
+          <title>List Operations:</title>
 
           <para>The <emphasis role="bold">list</emphasis> operation produces a
           list of logical files in the system data store.</para>
@@ -892,7 +892,7 @@ dfuplus action=dspray srcname=le::imagedb
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis><emphasis><emphasis><emphasis>name</emphasis></emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis><emphasis><emphasis><emphasis>name</emphasis></emphasis></emphasis></emphasis></entry>
 
                     <entry>The mask defining the logical file names to
                     list.</entry>
@@ -903,11 +903,11 @@ dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=list name=*</programlisting><!-- DNT-End -->
+          <programlisting>dfuplus action=list name=*</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_AddOperations">
-          <!-- DNT-Start --><title>Add Operations:</title><!-- DNT-End -->
+          <title>Add Operations:</title>
 
           <para>The <emphasis role="bold">add</emphasis> operation adds a new
           logical file to the system data store.</para>
@@ -930,16 +930,16 @@ dfuplus action=dspray srcname=le::imagedb
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis><emphasis><emphasis><emphasis><emphasis>srcxml</emphasis>
-                    </emphasis></emphasis></emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis><emphasis><emphasis><emphasis><emphasis>srcxml</emphasis>
+                    </emphasis></emphasis></emphasis></emphasis></entry>
 
-                    <entry>The path and name of the source <!-- DNT-Start -->XML<!-- DNT-End --> file containing
+                    <entry>The path and name of the source XML file containing
                     exported logical or superfile information (typically from
                     a previous savexml operation).</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis><emphasis>dstname</emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis><emphasis>dstname</emphasis></emphasis></entry>
 
                     <entry>The logical name of the destination file.</entry>
                   </row>
@@ -959,26 +959,26 @@ dfuplus action=dspray srcname=le::imagedb
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>dstname</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>dstname</emphasis></emphasis></entry>
 
                   <entry>The logical name of the destination file.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>srcname</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>srcname</emphasis></entry>
 
                   <entry>The logical name of the source file.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>srcdali</emphasis>
-                  </emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>srcdali</emphasis>
+                  </emphasis></entry>
 
-                  <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> address of the source Dali server.</entry>
+                  <entry>The IP address of the source Dali server.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>srcusername</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>srcusername</emphasis></entry>
 
                   <entry>Optional. The username to use to access the
                   <emphasis>srcdali</emphasis>. If omitted, the General
@@ -986,8 +986,8 @@ dfuplus action=dspray srcname=le::imagedb
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>srcpassword</emphasis>
-                  </emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>srcpassword</emphasis>
+                  </emphasis></entry>
 
                   <entry>Optional. The password to use to access the
                   <emphasis>srcdali</emphasis>. If omitted, the General
@@ -999,15 +999,15 @@ dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=add srcxml=flattimezones.xml dstname=flattimezones.txt
+          <programlisting>dfuplus action=add srcxml=flattimezones.xml dstname=flattimezones.txt
 dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
-</programlisting><!-- DNT-End -->
+</programlisting>
 
           <para></para>
         </sect3>
 
         <sect3 id="CLI_DFU_AddSuperOperations">
-          <!-- DNT-Start --><title>Addsuper Operations:</title><!-- DNT-End -->
+          <title>Addsuper Operations:</title>
 
           <para>The <emphasis role="bold">addsuper</emphasis> operation adds
           subfiles to an existing superfile (see the <emphasis>SuperFile
@@ -1026,14 +1026,14 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis><emphasis>superfile</emphasis>
-                  </emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis><emphasis>superfile</emphasis>
+                  </emphasis></emphasis></entry>
 
                   <entry>The logical name of the superfile.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>subfiles</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>subfiles</emphasis></emphasis></entry>
 
                   <entry>A comma-delimited list of the logical names of files
                   to add to the superfile. There must be no spaces between the
@@ -1041,7 +1041,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>before</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>before</emphasis></entry>
 
                   <entry>Optional. The logical name of the subfile to follow
                   the added <emphasis>subfiles</emphasis>. If omitted, the
@@ -1053,11 +1053,11 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=addsuper superfile=mysuper subfiles=file1,file2</programlisting><!-- DNT-End -->
+          <programlisting>dfuplus action=addsuper superfile=mysuper subfiles=file1,file2</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_RemoveSuperOperations">
-          <!-- DNT-Start --><title>Removesuper Operations:</title><!-- DNT-End -->
+          <title>Removesuper Operations:</title>
 
           <para>The <emphasis role="bold">removesuper</emphasis> operation
           removes subfiles to an existing superfile (see the
@@ -1076,14 +1076,14 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis><emphasis>superfile</emphasis>
-                  </emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis><emphasis>superfile</emphasis>
+                  </emphasis></emphasis></entry>
 
                   <entry>The logical name of the superfile.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>subfiles</emphasis></emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>subfiles</emphasis></emphasis></entry>
 
                   <entry>Optional. A comma-delimited list of the logical names
                   of files to remove from the superfile. There must be no
@@ -1092,7 +1092,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>delete</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>delete</emphasis></entry>
 
                   <entry>Optional. A boolean flag (1 | 0) indicating whether
                   to physically delete the <emphasis>subfiles</emphasis> in
@@ -1105,11 +1105,11 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=removesuper superfile=mysuper subfiles=file1,file2</programlisting><!-- DNT-End -->
+          <programlisting>dfuplus action=removesuper superfile=mysuper subfiles=file1,file2</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_ListSuperOperations">
-          <!-- DNT-Start --><title>Listsuper Operations:</title><!-- DNT-End -->
+          <title>Listsuper Operations:</title>
 
           <para>The <emphasis role="bold">listsuper</emphasis> operation lists
           the subfiles in an existing superfile (see the <emphasis>SuperFile
@@ -1128,8 +1128,8 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis><emphasis><emphasis>superfile</emphasis>
-                    </emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis><emphasis><emphasis>superfile</emphasis>
+                    </emphasis></emphasis></entry>
 
                     <entry>The logical name of the superfile.</entry>
                   </row>
@@ -1139,11 +1139,11 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=listsuper superfile=mysuper</programlisting><!-- DNT-End -->
+          <programlisting>dfuplus action=listsuper superfile=mysuper</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_StatusOperations">
-          <!-- DNT-Start --><title>Status Operations:</title><!-- DNT-End -->
+          <title>Status Operations:</title>
 
           <para>The <emphasis role="bold">status</emphasis> operation returns
           the current operational status of a workunit.</para>
@@ -1159,8 +1159,8 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis><emphasis><emphasis>wuid</emphasis>
-                    </emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis><emphasis><emphasis>wuid</emphasis>
+                    </emphasis></emphasis></entry>
 
                     <entry>The workunit identifier of the workunit.</entry>
                   </row>
@@ -1168,13 +1168,13 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
               </tgroup>
             </informaltable>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=status wuid=W20050309-093020</programlisting><!-- DNT-End -->
+          <programlisting>dfuplus action=status wuid=W20050309-093020</programlisting>
 
           <para></para>
         </sect3>
 
         <sect3 id="CLI_DFU_AbortOperations">
-          <!-- DNT-Start --><title>Abort Operations:</title><!-- DNT-End -->
+          <title>Abort Operations:</title>
 
           <para>The <emphasis role="bold">abort</emphasis> operation aborts
           execution of a workunit.</para>
@@ -1190,8 +1190,8 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis><emphasis><emphasis>wuid</emphasis>
-                    </emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis><emphasis><emphasis>wuid</emphasis>
+                    </emphasis></emphasis></entry>
 
                     <entry>The workunit identifier of the workunit.</entry>
                   </row>
@@ -1201,13 +1201,13 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=abort wuid=W20050309-093020</programlisting><!-- DNT-End -->
+          <programlisting>dfuplus action=abort wuid=W20050309-093020</programlisting>
 
           <para></para>
         </sect3>
 
         <sect3 id="CLI_DFU_ResubmitOperations">
-          <!-- DNT-Start --><title>Resubmit Operations:</title><!-- DNT-End -->
+          <title>Resubmit Operations:</title>
 
           <para>The <emphasis role="bold">resubmit</emphasis> operation
           re-submits a workunit.</para>
@@ -1224,8 +1224,8 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis><emphasis><emphasis>wuid</emphasis>
-                    </emphasis></emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis><emphasis><emphasis>wuid</emphasis>
+                    </emphasis></emphasis></entry>
 
                     <entry>The workunit identifier of the workunit.</entry>
                   </row>
@@ -1235,16 +1235,16 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=resubmit wuid=W20050309-093020</programlisting><!-- DNT-End -->
+          <programlisting>dfuplus action=resubmit wuid=W20050309-093020</programlisting>
 
           <para></para>
         </sect3>
 
         <sect3 id="CLI_DFU_SaveXMLOperations">
-          <!-- DNT-Start --><title>Savexml Operations:</title><!-- DNT-End -->
+          <title>Savexml Operations:</title>
 
           <para>The <emphasis role="bold">savexml</emphasis> operation saves
-          the logical file map to an <!-- DNT-Start -->XML<!-- DNT-End --> file.</para>
+          the logical file map to an XML file.</para>
 
           <para>This feature also allows you to export the metadata from a
           superfile and then use it later to restore a superfile. This is
@@ -1268,18 +1268,18 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>srcname</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>srcname</emphasis></entry>
 
                   <entry>The logical name of the source file. This can be the
                   logical name of a superfile.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>dstxml</emphasis>
-                  </emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>dstxml</emphasis>
+                  </emphasis></entry>
 
-                  <entry>Optional. The logical name of the destination <!-- DNT-Start -->XML<!-- DNT-End -->
-                  file. If omitted, the <!-- DNT-Start -->XML<!-- DNT-End --> result is sent to stdout.</entry>
+                  <entry>Optional. The logical name of the destination XML
+                  file. If omitted, the XML result is sent to stdout.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1287,7 +1287,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=savexml srcname=RTTEMP::timezones.txt
+          <programlisting>dfuplus action=savexml srcname=RTTEMP::timezones.txt
           dstxml=flattimezones.xml
     // this results in the following XML file:
     &lt;File directory="c:\thordata\rttemp"
@@ -1315,14 +1315,14 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
           node="10.150.50.16"
           num="3"
           size="17205"/&gt;
-    &lt;/File&gt;</programlisting><!-- DNT-End -->
+    &lt;/File&gt;</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_MonitorOperations">
-          <!-- DNT-Start --><title>Monitor Operations:</title><!-- DNT-End -->
+          <title>Monitor Operations:</title>
 
           <para>The <emphasis role="bold">monitor</emphasis> operation
-          initiates a <!-- DNT-Start -->DFU<!-- DNT-End --> workunit to monitor the appearance of a physical or
+          initiates a DFU workunit to monitor the appearance of a physical or
           logical file and trigger an event when that file appears.</para>
 
           <para>These <emphasis>options </emphasis>are used by the <emphasis
@@ -1337,33 +1337,33 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis>event</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis>event</emphasis></entry>
 
                     <entry>The name of the user-defined event to trigger. This
-                    is used as the first parameter of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->EVENT<!-- DNT-End -->
+                    is used as the first parameter of the ECL EVENT
                     function.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis>lfn</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis>lfn</emphasis></entry>
 
-                    <entry>Optional. The name of the logical file in the <!-- DNT-Start -->DFU<!-- DNT-End -->
+                    <entry>Optional. The name of the logical file in the DFU
                     to look for. Using this option precludes using the
                     <emphasis>ip</emphasis>, <emphasis>file</emphasis>, and
                     <emphasis>sub</emphasis> options.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis>ip</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis>ip</emphasis></entry>
 
-                    <entry>Optional. The <!-- DNT-Start -->IP<!-- DNT-End --> address or name of the server on
+                    <entry>Optional. The IP address or name of the server on
                     which the physical file will reside. This may be omitted
                     if the <emphasis>file</emphasis> option contains a full
-                    <!-- DNT-Start -->URL<!-- DNT-End -->.</entry>
+                    URL.</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis>file</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis>file</emphasis></entry>
 
                     <entry>Optional. The fully qualified path of the physical
                     file to look for. This may contain wildcard characters (*
@@ -1371,7 +1371,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis>sub</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis>sub</emphasis></entry>
 
                     <entry>Optional. Specifies searching subdirectories for
                     the physical file if the <emphasis>file</emphasis> option
@@ -1379,10 +1379,10 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start --><emphasis>shotlimit</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis>shotlimit</emphasis></entry>
 
                     <entry>Optional. The number of arrival events to generate
-                    before marking the <!-- DNT-Start -->DFU<!-- DNT-End --> workunit as complete. A value of
+                    before marking the DFU workunit as complete. A value of
                     negative one (-1) indicates continuing until the workunit
                     is manually aborted. If omitted, the default value is one
                     (1).</entry>
@@ -1394,7 +1394,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
           <para><emphasis role="bold">Note the following caveats and
           restrictions:</emphasis></para>
 
-          <para>1) If a matching file already exists when the <!-- DNT-Start -->DFU<!-- DNT-End --> Monitoring
+          <para>1) If a matching file already exists when the DFU Monitoring
           job is started, that file will <emphasis
           role="underline">not</emphasis> generate an event. It will only
           generate an event once the file has been deleted and
@@ -1415,23 +1415,23 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
           'flag' file instead of the file, itself or renaming the file once it
           has been created and completely written.</para>
 
-          <para>5) The <!-- DNT-Start -->EVENT<!-- DNT-End --> function's subtype parameter (its 2nd parameter)
-          when monitoring physical files is the full <!-- DNT-Start -->URL<!-- DNT-End --> of the file, with an
-          absolute <!-- DNT-Start -->IP<!-- DNT-End --> rather than <!-- DNT-Start -->DNS<!-- DNT-End -->/netbios name of the file. This parameter
+          <para>5) The EVENT function's subtype parameter (its 2nd parameter)
+          when monitoring physical files is the full URL of the file, with an
+          absolute IP rather than DNS/netbios name of the file. This parameter
           cannot be retrieved but can only be used for matching a particular
           value in this.</para>
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=monitor event=MyEvent ip=edata10 file=/dz/arr.txt
+          <programlisting>dfuplus action=monitor event=MyEvent ip=edata10 file=/dz/arr.txt
 dfuplus action=monitor event=MyEvent ip=10.150.10.75
             file=c:\dz\* shotlimit=-1 sub=1
 dfuplus action=monitor event=MyEvent file=//10.15.13.21/dz/*.txt
-dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting><!-- DNT-End -->
+dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_ListHistory">
-          <!-- DNT-Start --><title>Listhistory Operations:</title><!-- DNT-End -->
+          <title>Listhistory Operations:</title>
 
           <para>The listhistory operation returns the history metadata in a
           logical file.</para>
@@ -1447,20 +1447,20 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting><!-
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>lfn</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>lfn</emphasis></entry>
 
                   <entry>The logical file name of the source file</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>outformat</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>outformat</emphasis></entry>
 
                   <entry>Optional. The format of the result. Valid options
                   are: csv, xml, json, or ascii. The default is xml.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>csvheader</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>csvheader</emphasis></entry>
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to include header information in the first row when
@@ -1472,7 +1472,7 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting><!-
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=listhistory lfn=progguide::exampledata::accounts 
+          <programlisting>dfuplus action=listhistory lfn=progguide::exampledata::accounts 
   // this results in the following XML file:
   &lt;History&gt;
     &lt;Origin ip="127.0.0.1"
@@ -1484,11 +1484,11 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting><!-
             workunit="W20170503-143100"/&gt;
    &lt;/History&gt;
 
-</programlisting><!-- DNT-End -->
+</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_EraseHistory">
-          <!-- DNT-Start --><title>Erasehistory Operations:</title><!-- DNT-End -->
+          <title>Erasehistory Operations:</title>
 
           <para>The erasehistory operation removes the history metadata from a
           logical file.</para>
@@ -1496,9 +1496,9 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting><!-
           <para>History metadata is created from a copy, remote copy, or spray
           operation.</para>
 
-          <para>Note: If <!-- DNT-Start -->LDAP<!-- DNT-End --> authentication is enabled on the system, you
-          must have <!-- DNT-Start -->FULL<!-- DNT-End --> permission for DFUAccess in order to erase history.
-          See the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Administrator's Guide for details.</para>
+          <para>Note: If LDAP authentication is enabled on the system, you
+          must have FULL permission for DFUAccess in order to erase history.
+          See the HPCC Systems Administrator's Guide for details.</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -1508,13 +1508,13 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting><!-
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>lfn</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>lfn</emphasis></entry>
 
                   <entry>The logical file name of the source file</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>backup</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>backup</emphasis></entry>
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to write the history to a file before erasing it. Default is
@@ -1522,10 +1522,10 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting><!-
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis><emphasis>dstxml</emphasis>
-                  </emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis><emphasis>dstxml</emphasis>
+                  </emphasis></entry>
 
-                  <entry>The logical name of the destination <!-- DNT-Start -->XML<!-- DNT-End --> file.
+                  <entry>The logical name of the destination XML file.
                   Required if backup is set to 1,</entry>
                 </row>
               </tbody>
@@ -1534,7 +1534,7 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting><!-
 
           <para>Example:</para>
 
-          <!-- DNT-Start --><programlisting>dfuplus action=erasehistory lfn=progguide::exampledata::accounts_copy dstxml=c:\temp\jim.xml
+          <programlisting>dfuplus action=erasehistory lfn=progguide::exampledata::accounts_copy dstxml=c:\temp\jim.xml
 
   // this removes the history metadata from the file and writes an XML file containing the following:
   &lt;History&gt;
@@ -1547,7 +1547,7 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting><!-
             workunit="W20170503-143100"/&gt;
    &lt;/History&gt;
 
-</programlisting><!-- DNT-End -->
+</programlisting>
         </sect3>
       </sect2>
     </sect1>

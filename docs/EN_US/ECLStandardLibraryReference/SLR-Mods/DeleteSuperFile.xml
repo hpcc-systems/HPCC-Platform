@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DeleteSuperFile">
-  <!-- DNT-Start --><title>DeleteSuperFile</title><!-- DNT-End -->
+  <title>DeleteSuperFile</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.DeleteSuperFile<indexterm>
+  <para><emphasis role="bold">STD.File.DeleteSuperFile<indexterm>
       <primary>STD.File.DeleteSuperFile</primary>
     </indexterm><indexterm>
       <primary>File.DeleteSuperFile</primary>
@@ -13,7 +13,7 @@
     </indexterm>(</emphasis> <emphasis> superfile </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>, subdeleteflag </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,23 +23,23 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>superfile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>superfile</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>subdeleteflag</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>subdeleteflag</emphasis></entry>
 
           <entry>A boolean value indicating whether to delete the sub-files.
-          If omitted, the default is <!-- DNT-Start -->FALSE<!-- DNT-End -->. <emphasis role="bold">This option
+          If omitted, the default is FALSE. <emphasis role="bold">This option
           should not be used if the superfile contains any foreign file or
           foreign superfile.</emphasis></entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>Null.</entry>
         </row>
@@ -47,12 +47,12 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->DeleteSuperFile<!-- DNT-End --> </emphasis>function deletes
+  <para>The <emphasis role="bold">DeleteSuperFile </emphasis>function deletes
   the <emphasis>superfile</emphasis>.</para>
 
   <para>This function is not included in a superfile transaction.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">STD.File.DeleteSuperFile('~CLASS::RT::IN::SF1');</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">STD.File.DeleteSuperFile('~CLASS::RT::IN::SF1');</programlisting>
 </sect1>

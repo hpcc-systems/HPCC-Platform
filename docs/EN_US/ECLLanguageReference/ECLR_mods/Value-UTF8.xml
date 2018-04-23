@@ -2,32 +2,32 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="UTF8">
-  <!-- DNT-Start --><title>UTF8</title><!-- DNT-End -->
+  <title>UTF8</title>
 
   <para><emphasis role="bold">Utf8<indexterm>
-      <primary><!-- DNT-Start -->UTF<!-- DNT-End -->8</primary>
+      <primary>UTF8</primary>
     </indexterm>[</emphasis><emphasis>_locale</emphasis><emphasis
   role="bold">]<indexterm>
-      <primary><!-- DNT-Start -->UTF<!-- DNT-End -->8 value type</primary>
+      <primary>UTF8 value type</primary>
     </indexterm></emphasis></para>
 
-  <para>A <!-- DNT-Start -->UTF<!-- DNT-End -->-8 encoded unicode character string of variable length to the
+  <para>A UTF-8 encoded unicode character string of variable length to the
   size needed to contain the result of the cast or passed parameter. The
   optional <emphasis>locale </emphasis>specifies a valid unicode locale code,
-  as specified in <!-- DNT-Start -->ISO<!-- DNT-End --> standards 639 and 3166 (not needed if <!-- DNT-Start -->LOCALE<!-- DNT-End --> is
-  specified on the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure containing the field definition).</para>
+  as specified in ISO standards 639 and 3166 (not needed if LOCALE is
+  specified on the RECORD structure containing the field definition).</para>
 
-  <para>Type casting <!-- DNT-Start -->UTF<!-- DNT-End -->8 to <!-- DNT-Start -->UNICODE<!-- DNT-End -->, <!-- DNT-Start -->VARUNICODE<!-- DNT-End -->, <!-- DNT-Start -->STRING<!-- DNT-End -->, or <!-- DNT-Start -->DATA<!-- DNT-End --> is allowed,
-  while casting to any other type will first implicitly cast to <!-- DNT-Start -->STRING<!-- DNT-End --> and
+  <para>Type casting UTF8 to UNICODE, VARUNICODE, STRING, or DATA is allowed,
+  while casting to any other type will first implicitly cast to STRING and
   then cast to the target value type.</para>
 
-  <para>The upper size limit for any <!-- DNT-Start -->UTF<!-- DNT-End -->8 value is 4<!-- DNT-Start -->GB<!-- DNT-End -->.</para>
+  <para>The upper size limit for any UTF8 value is 4GB.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>utf8 FirstName := U'NoeÌl'
+  <programlisting>utf8 FirstName := U'NoeÃÂl'
         // utf-8-encoded string
 UTF8_de MyUnicodeString := U'abcd\353';
-        // becomes 'abcdÃ«' with a German locale
-</programlisting><!-- DNT-End -->
+        // becomes 'abcdÃÂ«' with a German locale
+</programlisting>
 </sect1>

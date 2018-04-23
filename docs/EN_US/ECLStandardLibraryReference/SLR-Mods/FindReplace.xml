@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FindReplace">
-  <!-- DNT-Start --><title>FindReplace</title><!-- DNT-End -->
+  <title>FindReplace</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->FindReplace<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->FindReplace<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Str.FindReplace<indexterm>
+      <primary>STD.Str.FindReplace</primary>
     </indexterm><indexterm>
-      <primary>Str.<!-- DNT-Start -->FindReplace<!-- DNT-End --></primary>
+      <primary>Str.FindReplace</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->FindReplace<!-- DNT-End --></primary>
+      <primary>FindReplace</primary>
     </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->FindReplace<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->FindReplace<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Uni.FindReplace<indexterm>
+      <primary>STD.Uni.FindReplace</primary>
     </indexterm><indexterm>
-      <primary>Uni.<!-- DNT-Start -->FindReplace<!-- DNT-End --></primary>
+      <primary>Uni.FindReplace</primary>
     </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleFindReplace<indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleFindReplace</primary>
+  <para><emphasis role="bold">STD.Uni.LocaleFindReplace<indexterm>
+      <primary>STD.Uni.LocaleFindReplace</primary>
     </indexterm><indexterm>
       <primary>Uni.LocaleFindReplace</primary>
     </indexterm><indexterm>
@@ -37,25 +37,25 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source</emphasis></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>target </emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>target </emphasis></entry>
 
           <entry>A string containing the substring to search for.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>replacement </emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>replacement </emphasis></entry>
 
           <entry>A string containing the replacement data.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>locale</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -63,16 +63,16 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->FindReplace<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> value, as
+          <entry>FindReplace returns a STRING or UNICODE value, as
           appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->FindReplace<!-- DNT-End --> </emphasis>functions return the
+  <para>The <emphasis role="bold">FindReplace </emphasis>functions return the
   <emphasis>source</emphasis> string with the <emphasis>replacement</emphasis>
   string substituted for all instances of the <emphasis>target
   </emphasis>string . If the <emphasis>target</emphasis> string is not in the
@@ -81,7 +81,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.FindReplace('ABCDEABCDE', 'BC','XY');
+  <programlisting format="linespecific">A := STD.Str.FindReplace('ABCDEABCDE', 'BC','XY');
    //A contains 'AXYDEAXYDE'
 A := STD.Uni.FindReplace(u'abcde', u'a', u'AAAAA');
    //A contains u'AAAAAbcde'
@@ -93,7 +93,7 @@ A := STD.Uni.LocaleFindReplace(u'gh\u0131klm', u'hyk', u'XxXxX', 'lt');
    //A contains u'gXxXxXlm'
 A := STD.Uni.LocaleFindReplace(u'gh\u0131klm', u'hyk', u'X', 'lt');
    //A contains u'gXlm'
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para></para>
 </sect1>

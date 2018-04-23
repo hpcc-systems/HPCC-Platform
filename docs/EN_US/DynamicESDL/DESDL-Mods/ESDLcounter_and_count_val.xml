@@ -2,13 +2,13 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_counter-count_val">
-  <!-- DNT-Start --><title>counter <indexterm>
+  <title>counter <indexterm>
       <primary>counter</primary>
-    </indexterm>and count_val</title><!-- DNT-End -->
+    </indexterm>and count_val</title>
 
   <para><indexterm>
       <primary>count_val</primary>
-    </indexterm>These two attributes are used to help <!-- DNT-Start -->ESP<!-- DNT-End --> calculate the record
+    </indexterm>These two attributes are used to help ESP calculate the record
   count of the response.</para>
 
   <para><emphasis>counter</emphasis> counts the number of children of the
@@ -24,6 +24,6 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>[counter] ESParray&lt;MyRecord, Record&gt; Records;
-[count_val] int TotalFound;   </programlisting><!-- DNT-End -->
+  <programlisting>[counter] ESParray&lt;MyRecord, Record&gt; Records;
+[count_val] int TotalFound;   </programlisting>
 </sect1>

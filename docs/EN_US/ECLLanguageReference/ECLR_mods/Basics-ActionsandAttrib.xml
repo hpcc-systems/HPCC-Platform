@@ -2,81 +2,81 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Actions_and_Attributes">
-  <!-- DNT-Start --><title>Actions and Definitions</title><!-- DNT-End -->
+  <title>Actions and Definitions</title>
 
   <para>While Definitions define expressions that may be evaluated, Actions
   trigger execution of a workunit that produces results that may be viewed. An
   Action may evaluate Definitions to produce its result. There are a number of
-  built-in Actions in <!-- DNT-Start -->ECL<!-- DNT-End --> (such as <!-- DNT-Start -->OUTPUT<!-- DNT-End -->), and any expression (without a
+  built-in Actions in ECL (such as OUTPUT), and any expression (without a
   Definition name) is implicitly treated as an Action to produce the result of
   the expression.</para>
 
   <sect2 id="Functions_as_ActionsFunctions_as_Actions">
-    <!-- DNT-Start --><title>Expressions as Actions<indexterm>
+    <title>Expressions as Actions<indexterm>
         <primary>Expressions as Actions</primary>
-      </indexterm></title><!-- DNT-End -->
+      </indexterm></title>
 
     <para>Fundamentally, any expression in can be treated as an Action. For
     example,</para>
 
-    <!-- DNT-Start --><programlisting>Attr1 := COUNT(Trades);     
+    <programlisting>Attr1 := COUNT(Trades);     
 Attr2 := MAX(Trades,trd_bal);
-Attr3 := IF (1 = 0, 'A', 'B');</programlisting><!-- DNT-End -->
+Attr3 := IF (1 = 0, 'A', 'B');</programlisting>
 
     <para>are all definitions, but without a definition name, they are simply
     expressions</para>
 
-    <!-- DNT-Start --><programlisting>COUNT(Trades);       //execute these expressions as Actions
+    <programlisting>COUNT(Trades);       //execute these expressions as Actions
 MAX(Trades,trd_bal);
-IF (1 = 0, 'A', 'B');</programlisting><!-- DNT-End -->
+IF (1 = 0, 'A', 'B');</programlisting>
 
     <para>that are treated as actions, and as such, can directly generate
     result values by simply submitting them as queries to the supercomputer.
-    Basically, any <!-- DNT-Start -->ECL<!-- DNT-End --> expression can be used as an Action to instigate a
+    Basically, any ECL expression can be used as an Action to instigate a
     workunit.</para>
   </sect2>
 
   <sect2 id="Attributes_as_ActionsAttributes_as_Actions">
-    <!-- DNT-Start --><title>Definitions as Actions<indexterm>
+    <title>Definitions as Actions<indexterm>
         <primary>Definitions as Actions</primary>
-      </indexterm></title><!-- DNT-End -->
+      </indexterm></title>
 
     <para>These same expression definitions can be executed by submitting the
     names of the Definitions as queries, like this:</para>
 
-    <!-- DNT-Start --><programlisting>Attr1; //These all generate the same result values
+    <programlisting>Attr1; //These all generate the same result values
 Attr2; // as the previous examples
-Attr3;</programlisting><!-- DNT-End -->
+Attr3;</programlisting>
   </sect2>
 
   <sect2 id="Actions_as_Attributes">
-    <!-- DNT-Start --><title>Actions as Definitions<indexterm>
+    <title>Actions as Definitions<indexterm>
         <primary>Actions as Definitions</primary>
-      </indexterm></title><!-- DNT-End -->
+      </indexterm></title>
 
     <para>Conversely, by simply giving any Action a Definition name it becomes
     a definition, therefore no longer a directly executable action. For
     example,</para>
 
-    <!-- DNT-Start --><programlisting>OUTPUT(Person);</programlisting><!-- DNT-End -->
+    <programlisting>OUTPUT(Person);</programlisting>
 
     <para>is an action, but</para>
 
-    <!-- DNT-Start --><programlisting>Attr4 := OUTPUT(Person);</programlisting><!-- DNT-End -->
+    <programlisting>Attr4 := OUTPUT(Person);</programlisting>
 
     <para>is a definition and does not immediately execute when submitted as
     part of a query. To execute the action inherent in the definition, you
     must execute the Definition name you've given to the Action, like
     this:</para>
 
-    <!-- DNT-Start --><programlisting>Attr4;    // run the previously defined OUTPUT(Person) action </programlisting><!-- DNT-End -->
+    <programlisting>Attr4;    // run the previously defined OUTPUT(Person) action </programlisting>
   </sect2>
 
   <sect2 id="Debugging_Uses">
-    <!-- DNT-Start --><title>Debugging Uses</title><!-- DNT-End -->
+    <title>Debugging Uses</title>
 
     <para>This technique of directly executing a Definition as an Action is
-    useful when debugging complex <!-- DNT-Start -->ECL<!-- DNT-End --> code. You can send the Definition as a
+    useful when debugging complex ECL code. You can send the Definition as a
     query to determine if intermediate values are correctly calculated before
     continuing on with more complex code.</para>
   </sect2>

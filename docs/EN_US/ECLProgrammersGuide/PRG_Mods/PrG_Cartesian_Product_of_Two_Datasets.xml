@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Cartesian_Product_of_Two_Datasets" role="nobrk">
-  <!-- DNT-Start --><title>Cartesian Product of Two Datasets</title><!-- DNT-End -->
+  <title>Cartesian Product of Two Datasets</title>
 
   <para>A Cartesian Product is the product of two non-empty sets in terms of
   ordered pairs. As an example, if we take the set of values, A, B and C, and
@@ -10,10 +10,10 @@
   would be the set of ordered pairs, A1, A2, A3, B1, B2, B3, C1, C2,
   C3.</para>
 
-  <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> code to produce this kind of result from any two input
-  datasets would look like this (contained in Cartesian.<!-- DNT-Start -->ECL<!-- DNT-End -->):</para>
+  <para>The ECL code to produce this kind of result from any two input
+  datasets would look like this (contained in Cartesian.ECL):</para>
 
-  <!-- DNT-Start --><programlisting>OutFile1 := '~PROGGUIDE::OUT::CP1';
+  <programlisting>OutFile1 := '~PROGGUIDE::OUT::CP1';
 
 rec := RECORD
   STRING1 Letter;
@@ -47,27 +47,27 @@ END;
 //Run the small datasets
 CP1 := NORMALIZE(Inds1,CntInDS2,CartProd(LEFT,COUNTER));
 OUTPUT(CP1,,OutFile1,OVERWRITE);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>The core structure of this code is the <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> that will produce the
+  <para>The core structure of this code is the NORMALIZE that will produce the
   Cartesian Product. The two input datasets each have twenty-five records, so
   the number of result records will be six hundred twenty-five (twenty-five
   squared).</para>
 
-  <para>Each record in the <!-- DNT-Start -->LEFT<!-- DNT-End --> input dataset to the <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> will execute
-  the <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> once for each entry in the <!-- DNT-Start -->SET<!-- DNT-End --> of values. Making the values a
-  <!-- DNT-Start -->SET<!-- DNT-End --> is the key to allowing <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> to perform this operation, otherwise
-  you would need to do a <!-- DNT-Start -->JOIN<!-- DNT-End --> where the join condition is the keyword <!-- DNT-Start -->TRUE<!-- DNT-End --> to
+  <para>Each record in the LEFT input dataset to the NORMALIZE will execute
+  the TRANSFORM once for each entry in the SET of values. Making the values a
+  SET is the key to allowing NORMALIZE to perform this operation, otherwise
+  you would need to do a JOIN where the join condition is the keyword TRUE to
   accomplish this task. However, in testing this with sizable datasets (as in
-  the next instance of this code below), the <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> version was about 25%
-  faster than using <!-- DNT-Start -->JOIN<!-- DNT-End -->. If there is more than one field, then multiple SETs
+  the next instance of this code below), the NORMALIZE version was about 25%
+  faster than using JOIN. If there is more than one field, then multiple SETs
   may be defined and the process stays the same.</para>
 
   <para>This next example does the same operation as above, but first
   generates two sizeable datasets to work with (also contained in
-  Cartesian.<!-- DNT-Start -->ECL<!-- DNT-End -->):</para>
+  Cartesian.ECL):</para>
 
-  <!-- DNT-Start --><programlisting>InFile1 := '~PROGGUIDE::IN::CP1';
+  <programlisting>InFile1 := '~PROGGUIDE::IN::CP1';
 InFile2 := '~PROGGUIDE::IN::CP2';
 OutFile2 := '~PROGGUIDE::OUT::CP2';
 
@@ -93,22 +93,22 @@ SetDS2 := SET(ds2,letter);
 
 CP2  := NORMALIZE(ds1,CntDS2,CartProd(LEFT,COUNTER));
 Out3 := OUTPUT(CP2,,OutFile2,OVERWRITE);
-SEQUENTIAL(Out1,Out2,Out3) </programlisting><!-- DNT-End -->
+SEQUENTIAL(Out1,Out2,Out3) </programlisting>
 
-  <para>Using <!-- DNT-Start -->NORMALIZE<!-- DNT-End --> in this case to generate the datasets is the same type
+  <para>Using NORMALIZE in this case to generate the datasets is the same type
   of usage previously described in the Creating Example Data article. After
   that, the process to achieve the Cartesian Product is exactly the same as
   the previous example.</para>
 
-  <para>Here's an example of how this same operation can be done using <!-- DNT-Start -->JOIN<!-- DNT-End -->
-  (also contained in Cartesian.<!-- DNT-Start -->ECL<!-- DNT-End -->):</para>
+  <para>Here's an example of how this same operation can be done using JOIN
+  (also contained in Cartesian.ECL):</para>
 
-  <!-- DNT-Start --><programlisting>// outrec joinEm(rec L, rec R) := TRANSFORM
+  <programlisting>// outrec joinEm(rec L, rec R) := TRANSFORM
     // SELF.LeftLetter := L.Letter;
     // SELF.RightLetter := R.Letter;
 // END;
 
 // ds4 := JOIN(ds1, ds2, TRUE, joinEM(LEFT, RIGHT), ALL);
 // OUTPUT(ds4);
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

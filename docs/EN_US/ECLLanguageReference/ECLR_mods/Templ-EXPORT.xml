@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_EXPORT">
-  <!-- DNT-Start --><title>#EXPORT</title><!-- DNT-End -->
+  <title>#EXPORT</title>
 
-  <para><emphasis role="bold">#<!-- DNT-Start -->EXPORT<!-- DNT-End -->( </emphasis><emphasis>symbol,
+  <para><emphasis role="bold">#EXPORT( </emphasis><emphasis>symbol,
   data</emphasis> <emphasis role="bold">);</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -15,31 +15,31 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>symbol</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>symbol</emphasis></entry>
 
             <entry>The name of a previously declared template
             variable.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>data</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>data</emphasis></entry>
 
-            <entry>The name of a field, <!-- DNT-Start -->RECORD<!-- DNT-End --> structure, or dataset.</entry>
+            <entry>The name of a field, RECORD structure, or dataset.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#<!-- DNT-Start -->EXPORT<!-- DNT-End --> </emphasis><indexterm>
-      <primary>#<!-- DNT-Start -->EXPORT<!-- DNT-End --></primary>
-    </indexterm>statement produces <!-- DNT-Start -->XML<!-- DNT-End --> text from the specified
+  <para>The <emphasis role="bold">#EXPORT </emphasis><indexterm>
+      <primary>#EXPORT</primary>
+    </indexterm>statement produces XML text from the specified
   <emphasis>data</emphasis> and places it in the <emphasis>symbol</emphasis>.
-  This allows the <!-- DNT-Start -->LOADXML<!-- DNT-End -->(symbol,name) form to instantiate an <!-- DNT-Start -->XML<!-- DNT-End --> scope on the
+  This allows the LOADXML(symbol,name) form to instantiate an XML scope on the
   information from the <emphasis>data</emphasis> to process.</para>
 
-  <para>The <!-- DNT-Start -->XML<!-- DNT-End --> output is generated with the following format:</para>
+  <para>The XML output is generated with the following format:</para>
 
-  <!-- DNT-Start --><programlisting>  &lt;Data&gt;
+  <programlisting>  &lt;Data&gt;
     &lt;Field label="&lt;label-of-field&gt;"
            name="&lt;name-of-field&gt;"
            position="&lt;n&gt;"
@@ -48,18 +48,18 @@
            type="&lt;ecl-type-without-size&gt;" /&gt;
     ...
   &lt;/Data&gt;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para><!-- DNT-Start -->IFBLOCKs<!-- DNT-End --> are simply expanded out in the <!-- DNT-Start -->XML<!-- DNT-End -->. Nested <!-- DNT-Start -->RECORD<!-- DNT-End --> types have
+  <para>IFBLOCKs are simply expanded out in the XML. Nested RECORD types have
   an isRecord attribute that is set to 1, and are followed by the fields they
   contain, and then a Field tag with no name and the isEnd attribute set to 1.
   This representation is used rather than nested objects so it can be
-  processed by a #<!-- DNT-Start -->FOR<!-- DNT-End --> statement. Child dataset types are also expanded out in
+  processed by a #FOR statement. Child dataset types are also expanded out in
   a similar way, and have an isDataset attribute set to 1 on the field.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  NamesRecord := RECORD
+  <programlisting>  NamesRecord := RECORD
     STRING10 first;
     STRING20 last;
   END;
@@ -173,9 +173,9 @@
    #END
   #END
   OUTPUT('Done');
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="LOADXML"><!-- DNT-Start -->LOADXML<!-- DNT-End --></link>, <link
-  linkend="_EXPORTXML">#<!-- DNT-Start -->EXPORTXML<!-- DNT-End --></link>, <link
-  linkend="_DECLARE">#<!-- DNT-Start -->DECLARE<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="LOADXML">LOADXML</link>, <link
+  linkend="_EXPORTXML">#EXPORTXML</link>, <link
+  linkend="_DECLARE">#DECLARE</link></para>
 </sect1>

@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_WARNING">
-  <!-- DNT-Start --><title>#WARNING</title><!-- DNT-End -->
+  <title>#WARNING</title>
 
-  <para><emphasis role="bold">#<!-- DNT-Start -->WARNING<!-- DNT-End --><indexterm>
-      <primary>#<!-- DNT-Start -->WARNING<!-- DNT-End --></primary>
+  <para><emphasis role="bold">#WARNING<indexterm>
+      <primary>#WARNING</primary>
     </indexterm>( </emphasis><emphasis>message</emphasis> <emphasis
   role="bold">);</emphasis></para>
 
@@ -17,7 +17,7 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>message</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>message</emphasis></entry>
 
             <entry>A string expression containing the warning message to
             display.</entry>
@@ -26,21 +26,21 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#<!-- DNT-Start -->WARNING<!-- DNT-End --> </emphasis>statement displays the
+  <para>The <emphasis role="bold">#WARNING </emphasis>statement displays the
   <emphasis>message </emphasis>in the workunit and/or syntax check. This
-  statement may be used outside an <!-- DNT-Start -->XML<!-- DNT-End --> scope and does not require a previous
-  <!-- DNT-Start -->LOADXML<!-- DNT-End --> to instantiate an <!-- DNT-Start -->XML<!-- DNT-End --> scope.</para>
+  statement may be used outside an XML scope and does not require a previous
+  LOADXML to instantiate an XML scope.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  #IF(TRUE)
+  <programlisting>  #IF(TRUE)
     #ERROR('broken');
     OUTPUT('broken');
   #ELSE
     #WARNING('maybe broken');
     OUTPUT('maybe broken');
   #END;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="_ERROR">#<!-- DNT-Start -->ERROR<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="_ERROR">#ERROR</link></para>
 </sect1>

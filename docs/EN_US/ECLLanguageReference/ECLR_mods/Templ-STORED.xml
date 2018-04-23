@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_STORED">
-  <!-- DNT-Start --><title>#STORED</title><!-- DNT-End -->
+  <title>#STORED</title>
 
-  <para><emphasis role="bold">#<!-- DNT-Start -->STORED<!-- DNT-End --><indexterm>
-      <primary>#<!-- DNT-Start -->STORED<!-- DNT-End --></primary>
+  <para><emphasis role="bold">#STORED<indexterm>
+      <primary>#STORED</primary>
     </indexterm>( </emphasis><emphasis> storedname , value
   </emphasis><emphasis role="bold"> );</emphasis></para>
 
@@ -17,14 +17,14 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>storedname</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>storedname</emphasis></entry>
 
             <entry>A string constant containing the name of the stored
             attribute result.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>value</emphasis></entry>
 
             <entry>An expression for the new value to assign to the stored
             attribute.</entry>
@@ -33,19 +33,19 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#<!-- DNT-Start -->STORED<!-- DNT-End --> </emphasis>statement assigns the
+  <para>The <emphasis role="bold">#STORED </emphasis>statement assigns the
   <emphasis>value</emphasis> to the <emphasis>storedname</emphasis>,
   overwriting any previous value the stored attribute had contained. This
-  statement may be used outside an <!-- DNT-Start -->XML<!-- DNT-End --> scope and does not require a previous
-  <!-- DNT-Start -->LOADXML<!-- DNT-End --> to instantiate an <!-- DNT-Start -->XML<!-- DNT-End --> scope.</para>
+  statement may be used outside an XML scope and does not require a previous
+  LOADXML to instantiate an XML scope.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  PersonCount := COUNT(person) : STORED('myname');
+  <programlisting>  PersonCount := COUNT(person) : STORED('myname');
   #STORED('myname',100);  
        //change stored PersonCount attribute value to 100
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="STORED"><!-- DNT-Start -->STORED<!-- DNT-End --></link>, <link
-  linkend="_CONSTANT">#<!-- DNT-Start -->CONSTANT<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="STORED">STORED</link>, <link
+  linkend="_CONSTANT">#CONSTANT</link></para>
 </sect1>

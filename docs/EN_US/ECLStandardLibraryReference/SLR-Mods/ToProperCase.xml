@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ToProperCase">
-  <!-- DNT-Start --><title>ToTitleCase</title><!-- DNT-End -->
+  <title>ToTitleCase</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->ToTitleCase<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->ToTitleCase<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Str.ToTitleCase<indexterm>
+      <primary>STD.Str.ToTitleCase</primary>
     </indexterm><indexterm>
-      <primary>Str.<!-- DNT-Start -->ToTitleCase<!-- DNT-End --></primary>
+      <primary>Str.ToTitleCase</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->ToTitleCase<!-- DNT-End --></primary>
+      <primary>ToTitleCase</primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->ToTitleCase<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->ToTitleCase<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Uni.ToTitleCase<indexterm>
+      <primary>STD.Uni.ToTitleCase</primary>
     </indexterm><indexterm>
-      <primary>Uni.<!-- DNT-Start -->ToTitleCase<!-- DNT-End --></primary>
+      <primary>Uni.ToTitleCase</primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleToTitleCase<indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleToTitleCase</primary>
+  <para><emphasis role="bold">STD.Uni.LocaleToTitleCase<indexterm>
+      <primary>STD.Uni.LocaleToTitleCase</primary>
     </indexterm><indexterm>
       <primary>Uni.LocaleToTitleCase</primary>
     </indexterm><indexterm>
@@ -37,13 +37,13 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source</emphasis></entry>
 
           <entry>A string containing the data to change case.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>locale</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -51,25 +51,25 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->ToTitleCase<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> value, as
+          <entry>ToTitleCase returns a STRING or UNICODE value, as
           appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ToTitleCase<!-- DNT-End --> </emphasis>functions return the
+  <para>The <emphasis role="bold">ToTitleCase </emphasis>functions return the
   <emphasis>source</emphasis> string with the first letter of each word in
   upper case and all other letters lower cased.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.ToTitleCase('ABCDE ABCDE ');  //A contains 'Abcde Abcde'
+  <programlisting format="linespecific">A := STD.Str.ToTitleCase('ABCDE ABCDE ');  //A contains 'Abcde Abcde'
 B := STD.Str.ToTitleCase('john smith-jones');  //B contains 'John Smith-Jones'
 
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para></para>
 </sect1>

@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Filter">
-  <!-- DNT-Start --><title>Filter</title><!-- DNT-End -->
+  <title>Filter</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->Filter<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->Filter<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Str.Filter<indexterm>
+      <primary>STD.Str.Filter</primary>
     </indexterm><indexterm>
-      <primary>Str.<!-- DNT-Start -->Filter<!-- DNT-End --></primary>
+      <primary>Str.Filter</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->Filter<!-- DNT-End --></primary>
+      <primary>Filter</primary>
     </indexterm>(</emphasis> <emphasis>source, filterstring</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->Filter<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->Filter<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Uni.Filter<indexterm>
+      <primary>STD.Uni.Filter</primary>
     </indexterm><indexterm>
-      <primary>Uni.<!-- DNT-Start -->Filter<!-- DNT-End --></primary>
+      <primary>Uni.Filter</primary>
     </indexterm>(</emphasis> <emphasis>source, filterstring</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
@@ -28,22 +28,22 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source</emphasis></entry>
 
           <entry>A string containing the data to filter.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>filterstring </emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>filterstring </emphasis></entry>
 
           <entry>A string containing the characters to use as the
           filter.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->Filter<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> value, as
+          <entry>Filter returns a STRING or UNICODE value, as
           appropriate.</entry>
         </row>
       </tbody>
@@ -56,7 +56,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">//all these examples result in 'Success'
+  <programlisting format="linespecific">//all these examples result in 'Success'
 
 A := IF(STD.Str.Filter('ADCBE', 'BD') = 'DB',
    'Success',
@@ -77,5 +77,5 @@ D := IF(STD.Str.Filter('', 'BD') = '',
 E := IF(STD.Str.Filter('ABCDE', 'EDCBA') = 'ABCDE',
    'Success',
    'Failure - 5');
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

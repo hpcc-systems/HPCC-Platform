@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ALLNODES">
-  <!-- DNT-Start -->
+  
 
   <title>ALLNODES</title>
 
-  <!-- DNT-End -->
+  
 
-  <para><emphasis role="bold"><!-- DNT-Start -->ALLNODES<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->ALLNODES<!-- DNT-End --></primary>
+  <para><emphasis role="bold">ALLNODES<indexterm>
+      <primary>ALLNODES</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->ALLNODES<!-- DNT-End --> function</primary>
+      <primary>ALLNODES function</primary>
     </indexterm>(</emphasis><emphasis>operation</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -23,38 +23,38 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>operation</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>operation</emphasis></entry>
 
             <entry>The name of an attribute or in-line code that results in a
-            <!-- DNT-Start -->DATASET<!-- DNT-End --> or <!-- DNT-Start -->INDEX<!-- DNT-End -->.</entry>
+            DATASET or INDEX.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->ALLNODES<!-- DNT-End --> returns a record
+            <entry>ALLNODES returns a record
             set or index.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ALLNODES<!-- DNT-End -->
+  <para>The <emphasis role="bold">ALLNODES
   </emphasis>function specifies that the <emphasis>operation</emphasis> is
   performed on all nodes in parallel. <emphasis role="bold">Available for use
   only in Roxie.</emphasis></para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start -->
+  
 
   <programlisting>ds := ALLNODES(JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID));
 </programlisting>
 
-  <!-- DNT-End -->
+  
 
-  <para>See Also: <!-- DNT-Start --><link
-  linkend="THISNODE">THISNODE</link><!-- DNT-End -->, <!-- DNT-Start --><link
-  linkend="LOCAL">LOCAL</link><!-- DNT-End -->, <!-- DNT-Start --><link
-  linkend="NOLOCAL">NOLOCAL</link><!-- DNT-End --></para>
+  <para>See Also: <link
+  linkend="THISNODE">THISNODE</link>, <link
+  linkend="LOCAL">LOCAL</link>, <link
+  linkend="NOLOCAL">NOLOCAL</link></para>
 </sect1>

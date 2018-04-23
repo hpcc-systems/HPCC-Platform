@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PARALLEL_function">
-  <!-- DNT-Start --><title>PARALLEL<indexterm>
+  <title>PARALLEL<indexterm>
       <primary>PARALLEL function</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
   <para><emphasis role="bold">[</emphasis><emphasis>definitionname</emphasis>
-  :=<emphasis role="bold"> ] <!-- DNT-Start -->PARALLEL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->PARALLEL<!-- DNT-End --></primary>
+  :=<emphasis role="bold"> ] PARALLEL<indexterm>
+      <primary>PARALLEL</primary>
     </indexterm>(</emphasis><emphasis> actionlist </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -20,7 +20,7 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>definitionname</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>definitionname</emphasis></entry>
 
             <entry>Optional. The action name, which turns the action into a
             definition, therefore not executed until the
@@ -28,25 +28,25 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>actionlist</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>actionlist</emphasis></entry>
 
             <entry>A comma-delimited list of the actions to execute
-            simultaneously. These may be <!-- DNT-Start -->ECL<!-- DNT-End --> actions or external
+            simultaneously. These may be ECL actions or external
             actions.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->PARALLEL<!-- DNT-End --></emphasis> action allows the items
-  in the actionlist to execute simultaneously. It does not force parallel
+  <para>TheÂ <emphasis role="bold">PARALLEL</emphasis>Â action allows the items
+  in theÂ actionlist to execute simultaneously. It does not force parallel
   execution, only allows it -- the compiler determines the actual execution
-  order. This is already the default operative mode, so <!-- DNT-Start -->PARALLEL<!-- DNT-End --> is only
-  useful within the action list of a <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --> set of actions.</para>
+  order. This is already the default operative mode, so PARALLEL is only
+  useful within the action list of a SEQUENTIAL set of actions.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>Act1 :=
+  <programlisting>Act1 :=
 OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
 Act2 :=
 OUTPUT(Person,{Person.per_first_name,Person.per_last_name});
@@ -60,8 +60,8 @@ SEQUENTIAL(Act1,PARALLEL(Act2,Act3));
 
 //executes Act1 alone, and only when it's finished, 
 // executes Act2 and Act3 together
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="ORDERED"><!-- DNT-Start -->ORDERED<!-- DNT-End --></link> , <link
-  linkend="SEQUENTIAL"><!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="ORDERED">ORDERED</link> , <link
+  linkend="SEQUENTIAL">SEQUENTIAL</link></para>
 </sect1>

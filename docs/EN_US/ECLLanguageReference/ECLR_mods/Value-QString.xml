@@ -2,35 +2,35 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="QSTRING">
-  <!-- DNT-Start --><title>QSTRING<indexterm>
+  <title>QSTRING<indexterm>
       <primary>QSTRING</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
   <para><emphasis
-  role="bold"><!-- DNT-Start -->QSTRING<!-- DNT-End -->[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">QSTRING[</emphasis><emphasis>n</emphasis><emphasis
   role="bold">]<indexterm>
-      <primary><!-- DNT-Start -->QSTRING<!-- DNT-End --> value type</primary>
+      <primary>QSTRING value type</primary>
     </indexterm></emphasis></para>
 
-  <para>A data-compressed variation of <!-- DNT-Start -->STRING<!-- DNT-End --> that uses only 6-bits per
+  <para>A data-compressed variation of STRING that uses only 6-bits per
   character to reduce storage requirements for large strings. The character
   set is limited to capital letters A-Z, the numbers 0-9, the blank space, and
   the following set of special characters:</para>
 
-  <!-- DNT-Start --><programlisting>! " # $ % &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @ [ \ ] ^ _</programlisting><!-- DNT-End -->
+  <programlisting>! " # $ % &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @ [ \ ] ^ _</programlisting>
 
-  <para>If <emphasis>n</emphasis> is omitted, the <!-- DNT-Start -->QSTRING<!-- DNT-End --> is variable length
+  <para>If <emphasis>n</emphasis> is omitted, the QSTRING is variable length
   to the size needed to contain the result of a cast or passed parameter. You
-  may use set indexing into any <!-- DNT-Start -->QSTRING<!-- DNT-End --> to parse out a substring.</para>
+  may use set indexing into any QSTRING to parse out a substring.</para>
 
-  <para>The upper size limit for any <!-- DNT-Start -->QSTRING<!-- DNT-End --> value is 4<!-- DNT-Start -->GB<!-- DNT-End -->.</para>
+  <para>The upper size limit for any QSTRING value is 4GB.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>QSTRING12 CompanyName := 'LEXISNEXIS';
-        // uses only 9 bytes of storage instead of 12</programlisting><!-- DNT-End -->
+  <programlisting>QSTRING12 CompanyName := 'LEXISNEXIS';
+        // uses only 9 bytes of storage instead of 12</programlisting>
 
-  <para>See Also: <link linkend="STRING"><!-- DNT-Start -->STRING<!-- DNT-End --></link>, <link
-  linkend="LENGTH"><!-- DNT-Start -->LENGTH<!-- DNT-End --></link>, <link linkend="TRIM"><!-- DNT-Start -->TRIM<!-- DNT-End --></link>, <link
+  <para>See Also: <link linkend="STRING">STRING</link>, <link
+  linkend="LENGTH">LENGTH</link>, <link linkend="TRIM">TRIM</link>, <link
   linkend="Set_Ordering_and_Indexing">Set Ordering and Indexing</link>.</para>
 </sect1>

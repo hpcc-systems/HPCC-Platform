@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ExcludeFirstWord">
-  <!-- DNT-Start --><title>ExcludeFirstWord</title><!-- DNT-End -->
+  <title>ExcludeFirstWord</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.ExcludeFirstWord<indexterm>
+  <para><emphasis role="bold">STD.Str.ExcludeFirstWord<indexterm>
       <primary>STD.Str.ExcludeFirstWord</primary>
     </indexterm><indexterm>
       <primary>Str.ExcludeFirstWord</primary>
     </indexterm><indexterm>
       <primary>ExcludeFirstWord</primary>
     </indexterm>(</emphasis> <emphasis>text</emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,28 +21,28 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>text</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>text</emphasis></entry>
 
           <entry>A string containing words separated by whitespace.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->ExcludeFirstWord<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> value.</entry>
+          <entry>ExcludeFirstWord returns a STRING value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ExcludeFirstWord<!-- DNT-End --> </emphasis>function returns
+  <para>The <emphasis role="bold">ExcludeFirstWord </emphasis>function returns
   the <emphasis>text</emphasis> string with the first word removed. Words are
   separated by one or more whitespace characters. Whitespace before the first
   word is also removed.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.ExcludeFirstWord('The quick brown fox');
+  <programlisting format="linespecific">A := STD.Str.ExcludeFirstWord('The quick brown fox');
  //A contains 'quick brown fox'
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

@@ -2,15 +2,15 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESPrequest">
-  <!-- DNT-Start --><title>ESPrequest</title><!-- DNT-End -->
+  <title>ESPrequest</title>
 
   <para><indexterm>
-      <primary><!-- DNT-Start -->ESPrequest<!-- DNT-End --></primary>
+      <primary>ESPrequest</primary>
     </indexterm>The request structure for a method.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>
+  <programlisting>
 ESPrequest  MyQueryRequest
 
 {
@@ -21,5 +21,5 @@ ESPrequest  MyQueryRequest
  
     bool Descending(false);
 };
-   </programlisting><!-- DNT-End -->
+   </programlisting>
 </sect1>
