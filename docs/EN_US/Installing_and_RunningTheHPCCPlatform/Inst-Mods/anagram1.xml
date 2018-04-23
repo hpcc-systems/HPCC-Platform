@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ECLExample_Anagram1" role="nobrk">
+  <!-- DNT-Start -->
+
+  <title>ECL Example: Anagram1</title>
+
+  <!-- DNT-End -->
+
+  <para>This example takes a <!-- DNT-Start -->STRING<!-- DNT-End --> and
+  produces every possible anagram from it. This code is the basis for a second
+  example which evaluates which of these are actual words using a word list
+  data file.</para>
+
+  <para><orderedlist>
+      <listitem>
+        <para>Open the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
+        (Start <emphasis role="bold">&gt;&gt;</emphasis> All Programs
+        <emphasis role="bold">&gt;&gt;</emphasis> <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        Systems <emphasis role="bold"> &gt;&gt;</emphasis> <!-- DNT-Start -->ECL<!-- DNT-End -->
+        <!-- DNT-Start -->IDE<!-- DNT-End --> ) and login to your <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
+      </listitem>
+
+      <listitem>
+        <para>Open a new <emphasis role="bold">Builder Window</emphasis> (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N)
+        and write the following code:<programlisting>STRING Word := 'FRED' :STORED('Word');
+R := RECORD
+        STRING SoFar {MAXLENGTH(200)};
+        STRING Rest {MAXLENGTH(200)};
+     END;
+Init := DATASET([{'',Word}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+                SELF.SoFar := le.SoFar + le.Rest[c];
+                SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..]; 
+// Boundary Conditions handled automatically
+  END;
+RETURN NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER));
+  END;
+L := LOOP(Init,LENGTH(TRIM(Word)),Pluck1(ROWS(LEFT)));
+OUTPUT(L);</programlisting></para>
+      </listitem>
+
+      <listitem>
+        <para>Select <emphasis role="bold">thor</emphasis> as your target
+        cluster.</para>
+      </listitem>
+
+      <listitem>
+        <para>Press the syntax check button on the main toolbar (or press
+        F7)</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Press the <emphasis role="bold">Submit</emphasis> button (or
+        press ctrl+enter).</para>
+
+        <para><figure>
+            <title>Completed job</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/vmimg11a.JPG" />
+              </imageobject>
+            </mediaobject>
+          </figure>The green check mark indicates successful
+        completion.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Click on the workunit number tab and then on the Result 1 tab to
+        see the output.</para>
+
+        <para><figure>
+            <title>Completed job output</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/vmimg11b.JPG" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+    </orderedlist></para>
+
+  <?hard-pagebreak ?>
+</sect2>
