@@ -215,7 +215,10 @@ interface THORHELPER_API IDiskMerger : extends IInterface
 extern THORHELPER_API IDiskMerger *createDiskMerger(IRowInterfaces *rowInterfaces, IRowLinkCounter *linker, const char *tempnamebase);
 
 
-#define TIME_ACTIVITIES
+#ifdef HAS_GOOD_CYCLE_COUNTER
+ #define TIME_ACTIVITIES
+#endif
+
 class THORHELPER_API ActivityTimeAccumulator
 {
     friend class ActivityTimer;
@@ -252,7 +255,6 @@ public:
 };
 
 #ifdef TIME_ACTIVITIES
-#include "jdebug.hpp"
 
 class ActivityTimer
 {
