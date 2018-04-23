@@ -425,10 +425,6 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             expectedFormat.set(activityCtx->queryHelper()->queryDiskRecordSize());
             expectedFormatCrc = activityCtx->queryHelper()->getDiskFormatCrc();
         }
-        ~CFetchContext()
-        {
-
-        }
         const void *queryFindParam() const { return &key; } // for SimpleHashTableOf
         unsigned queryHandle() const { return handle; }
         const FetchKey &queryKey() const { return key; }
@@ -1156,6 +1152,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         if (0 == kme->count())
             verifyex(cachedKMs.removeExact(kme));
         verifyex(cachedKMsByHandle.removeExact(kmc));
+        verifyex(cachedKMsMRU.zap(*kmc));
+        --numCached;
         return kmc;
     }
     CKMContainer *ensureKeyManager(CKeyLookupContext *keyLookupContext)
@@ -1217,8 +1215,7 @@ public:
         if (numCached == maxCachedKJManagers)
         {
             CKMContainer &oldest = cachedKMsMRU.item(0);
-            cachedKMsMRU.remove(0);
-            verifyex(removeKeyManager(oldest.queryHandle()));
+            verifyex(removeKeyManager(oldest.queryHandle())); // also removes from cachedKMsMRU
         }
         CKMKeyEntry *kme = cachedKMs.find(kmc->queryCtx().queryKey());
         if (!kme)
