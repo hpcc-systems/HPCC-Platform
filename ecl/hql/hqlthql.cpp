@@ -3108,6 +3108,8 @@ void HqltHql::doFunctionDefinition(StringBuffer & newdef, IHqlExpression * funcd
     newdef.append(name).append('(');
 
     IHqlExpression * formals = funcdef->queryChild(1);
+    IHqlExpression * defaults = funcdef->queryChild(2);
+    assertex( !defaults || formals->numChildren() ==defaults->numChildren());
     bool first = true;
     ForEachChild(idx, formals)
     {
@@ -3119,6 +3121,16 @@ void HqltHql::doFunctionDefinition(StringBuffer & newdef, IHqlExpression * funcd
             else
                 newdef.append(", ");
             toECL(curParam, newdef, false, hasNamedSymbol(curParam) ? inType : true);
+            if (defaults)
+            {
+                IHqlExpression * defexpr = defaults->queryChild(idx);
+                if (defexpr->getOperator() != no_omitted)
+                {
+                    newdef.append("=");
+                    toECL(defexpr, newdef, false, false);
+                }
+            }
+
         }
     }
     newdef.append(')');
