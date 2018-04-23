@@ -142,6 +142,7 @@ interface IHpccProtocolPlugin : extends IInterface
 };
 
 extern IHpccProtocolPlugin *loadHpccProtocolPlugin(IHpccProtocolPluginContext *ctx, IActiveQueryLimiterFactory *limiterFactory);
+extern void unloadHpccProtocolPlugin();
 typedef IHpccProtocolPlugin *(HpccProtocolInstallFunction)(IHpccProtocolPluginContext *ctx, IActiveQueryLimiterFactory *limiterFactory);
 
 
