@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 #include "jliball.hpp"
-#ifdef _USE_OPENSSL
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -23,6 +23,9 @@
 #include "jencrypt.hpp"
 #include "digisign.hpp"
 #include <mutex>
+
+
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
 
 #define EVP_CLEANUP(key,ctx) EVP_PKEY_free(key);       \
                              EVP_MD_CTX_destroy(ctx);
@@ -42,7 +45,6 @@ private:
     bool         signingConfigured;
     bool         verifyingConfigured;
 
-#ifdef _USE_OPENSSL
     bool digiInit(bool isSigning, const char * passphraseEnc, EVP_MD_CTX * * ctx, EVP_PKEY * * PKey)
     {
         //To avoid threading issues, the keys are created on each call. Otherwise would require
@@ -108,27 +110,18 @@ private:
         *PKey = pKey;
         return true;
     }
-#endif
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDigitalSignatureManager(StringBuffer & _pubKeyBuff, StringBuffer & _privKeyBuff, const char * _passPhrase)
+    CDigitalSignatureManager(const char * _pubKeyBuff, const char * _privKeyBuff, const char * _passPhrase)
         : signingConfigured(false), verifyingConfigured(false)
     {
-#ifdef _USE_OPENSSL
-        publicKeyBuff.set(_pubKeyBuff.str());
-        privateKeyBuff.set(_privKeyBuff.str());
+        publicKeyBuff.set(_pubKeyBuff);
+        privateKeyBuff.set(_privKeyBuff);
         passphraseBuffEnc.set(_passPhrase);//MD5 encrypted passphrase
         signingConfigured = !publicKeyBuff.isEmpty();
         verifyingConfigured = !privateKeyBuff.isEmpty();
-#else
-        WARNLOG("CDigitalSignatureManager: Platform built without OPENSSL!");
-#endif
-    }
-
-    virtual ~CDigitalSignatureManager()
-    {
     }
 
     bool isDigiSignerConfigured()
@@ -147,7 +140,6 @@ public:
         if (!signingConfigured)
             throw MakeStringException(-1, "digiSign:Creating Digital Signatures not configured");
 
-#ifdef _USE_OPENSSL
         EVP_MD_CTX * signingCtx;
         EVP_PKEY *   signingKey;
         digiInit(true, passphraseBuffEnc.str(), &signingCtx, &signingKey);
@@ -196,9 +188,6 @@ public:
         free(encMsg);
         EVP_CLEANUP(signingKey, signingCtx);
         return true;//success
-#else
-        throw MakeStringException(-1, "digiSign:Platform built without OPENSSL");
-#endif
     }
 
 
@@ -208,7 +197,6 @@ public:
         if (!verifyingConfigured)
             throw MakeStringException(-1, "digiVerify:Verifying Digital Signatures not configured");
 
-#ifdef _USE_OPENSSL
         EVP_MD_CTX * verifyingCtx;
         EVP_PKEY *   verifyingKey;
         digiInit(false, passphraseBuffEnc.str(), &verifyingCtx, &verifyingKey);
@@ -226,11 +214,52 @@ public:
         int match = EVP_DigestVerifyFinal(verifyingCtx, (unsigned char *)decodedSig.str(), decodedSig.length());
         EVP_CLEANUP(verifyingKey, verifyingCtx);
         return match == 1;
-#else
-        throw MakeStringException(-1, "digiSign:Platform built without OPENSSL");
-#endif
     }
 };
+
+#else
+
+//Dummy implementation if no OPENSSL available.
+class CDigitalSignatureManager : implements IDigitalSignatureManager, public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CDigitalSignatureManager(const char * _pubKeyBuff, const char * _privKeyBuff, const char * _passPhrase)
+    {
+        WARNLOG("CDigitalSignatureManager: Platform built without OPENSSL!");
+    }
+
+    bool isDigiSignerConfigured()
+    {
+        return false;
+    }
+
+    bool isDigiVerifierConfigured()
+    {
+        return false;
+    }
+
+    //Create base 64 encoded digital signature of given text string
+    bool digiSign(const char * text, StringBuffer & b64Signature)
+    {
+        //convert to base64
+        JBASE64_Encode(text, strlen(text), b64Signature, false);
+        return true;//success
+    }
+
+    //Verify the given text was used to create the given digital signature
+    bool digiVerify(const char * text, StringBuffer & b64Signature)
+    {
+        //decode base64 signature
+        StringBuffer decodedSig;
+        JBASE64_Decode(b64Signature.str(), decodedSig);
+        return streq(text, decodedSig);
+    }
+};
+
+#endif
+
 
 static IDigitalSignatureManager * dsm;
 static std::once_flag dsmInitFlag;
@@ -254,7 +283,7 @@ static void createDigitalSignatureManagerInstance(IDigitalSignatureManager * * p
 
 extern "C"
 {
-	//Returns reference to singleton instance created from environment.conf key file settings
+    //Returns reference to singleton instance created from environment.conf key file settings
     DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromEnv()
     {
 #ifdef _USE_OPENSSL
@@ -304,5 +333,4 @@ extern "C"
 #endif
     }
 }
-
 
