@@ -42,6 +42,9 @@ export THORNAME=<xsl:value-of select="@name"/>
     <xsl:if test="@nodeGroup">
 export THORPRIMARY=<xsl:value-of select="@nodeGroup"/>
     </xsl:if>
+    <xsl:if test="@valgrindOptions">
+export valgrindOptions="<xsl:value-of select='@valgrindOptions'/>"
+    </xsl:if>
 export THORMASTER=<xsl:call-template name="getNetAddress">
                     <xsl:with-param name="computer" select="ThorMasterProcess/@computer"/>
                 </xsl:call-template>

@@ -32,6 +32,8 @@ hpcc_setenv=${12}
 
 export logfile="${logpth}/${hpcc_compname}/${13}"
 
+valgrindOptions=${14}
+
 source ${INSTALL_DIR}/etc/init.d/hpcc_common
 source ${INSTALL_DIR}/sbin/hpcc_setenv
 set_environmentvars
@@ -126,8 +128,14 @@ start_slaves()
         if [[ ${slaveip} = ${ip} ]]; then
             for (( slave=0; slave<${slavespernode}; slave++ )); do
                 slavenum=$(( ${clusternode} + (${slave} * ${clusternodes}) ))
-                log "$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname"
-                ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum slaveprocessnum=$slave logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
+                if [ -z ${valgrindOptions} ]; then
+                    log "$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname"
+                    ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum slaveprocessnum=$slave logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
+                else
+                    cmd="valgrind ${valgrindOptions} --log-file=$logpth/$hpcc_compname/valgrind.thorslave.${slavenum}.log ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum slaveprocessnum=$slave logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &"
+                    log "${cmd}"
+                    eval ${cmd}
+                fi
                 slavepid=$!
                 if [[ "$slavepid" -eq "0" ]]; then
                     log "failed to start"
