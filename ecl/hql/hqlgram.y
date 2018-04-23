@@ -2979,7 +2979,7 @@ buildFlag
                             }
                             $$.setExpr(ds.getClear(), $1);
                         }
-    | MERGE             {
+    | MERGE_ATTR        {
                             $$.setExpr(createAttribute(mergeAtom));
                             $$.setPosition($1);
                         }
