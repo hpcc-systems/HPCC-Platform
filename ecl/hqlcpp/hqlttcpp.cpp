@@ -14009,6 +14009,13 @@ void SemanticErrorChecker::checkBloom(IHqlExpression * bloom)
 
 void SemanticErrorChecker::checkJoin(IHqlExpression * join)
 {
+    IHqlExpression * atmost = join->queryAttribute(atmostAtom);
+    if (atmost)
+    {
+        IHqlExpression * val = atmost->queryChild(0);
+        if (matchesConstantValue(val, 0))
+            reportError(ERR_BAD_JOINFLAG, "ATMOST(0) doesn't make any sense");
+    }
     IHqlExpression * group = join->queryAttribute(groupAtom);
     if (group)
     {

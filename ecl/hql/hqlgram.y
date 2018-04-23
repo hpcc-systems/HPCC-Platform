@@ -10754,8 +10754,6 @@ JoinFlag
     | ATMOST '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_numeric, false);
-                            if ($3.isZero())
-                                parser->reportError(ERR_BAD_JOINFLAG, $3, "ATMOST(0) doesn't make any sense");
                             $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
@@ -10763,8 +10761,6 @@ JoinFlag
                         {
                             parser->normalizeExpression($3, type_boolean, false);
                             parser->normalizeExpression($5, type_numeric, false);
-                            if ($5.isZero())
-                                parser->reportError(ERR_BAD_JOINFLAG, $5, "ATMOST(0) doesn't make any sense");
                             $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
                         }
@@ -10772,16 +10768,12 @@ JoinFlag
                         {
                             parser->normalizeExpression($3, type_boolean, false);
                             parser->normalizeExpression($7, type_numeric, false);
-                            if ($7.isZero())
-                                parser->reportError(ERR_BAD_JOINFLAG, $7, "ATMOST(0) doesn't make any sense");
                             $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr(), $7.getExpr()));
                             $$.setPosition($1);
                         }
     | ATMOST '(' sortListExpr ',' expression ')'
                         {
                             parser->normalizeExpression($5, type_numeric, false);
-                            if ($5.isZero())
-                                parser->reportError(ERR_BAD_JOINFLAG, $5, "ATMOST(0) doesn't make any sense");
                             $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
                         }
