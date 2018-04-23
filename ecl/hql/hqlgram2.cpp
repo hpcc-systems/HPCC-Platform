@@ -6031,16 +6031,6 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                 joinedClause->set(&e);
             items.remove(idx);
         }
-        else if (eop == no_constant)
-        {
-            if ((op != no_hash) && (op != no_hash32) && (op != no_hash64) && (op != no_crc) && (op != no_hashmd5) && (op != no_list))
-                reportWarning(CategoryUnusual, ERR_CONSTANT_DAFT, errpos.pos, "Constant group/sort clauses make no sense");
-        }
-        else if (!containsAnyDataset(&e))
-        {
-            if ((op != no_hash) && (op != no_hash32) && (op != no_hash64) && (op != no_crc) && (op != no_hashmd5) && (op != no_list))
-                reportWarning(CategoryUnusual, WRN_SORT_INVARIANT, errpos.pos, "Sort/Group element is not related to the dataset");
-        }
         else if (e.isDatarow() && expandRows)
         {
             //Expanding the row selectors at this point generates better code if the hash is done inside a compound read activity
