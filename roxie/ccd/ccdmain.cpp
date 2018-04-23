@@ -337,11 +337,13 @@ static void roxie_common_usage(const char * progName)
     // Things that are also relevant to stand-alone executables
     printf("Usage: %s [options]\n", program.str());
     printf("\nOptions:\n");
-    printf("\t--daliServers=[host1,...]\t: List of Dali servers to use\n");
-    printf("\t--tracelevel=[integer]\t: Amount of information to dump on logs\n");
-    printf("\t--stdlog=[boolean]\t: Standard log format (based on tracelevel)\n");
-    printf("\t--logfile\t: Outputs to logfile, rather than stdout\n");
-    printf("\t--help|-h\t: This message\n");
+    printf("  -[xml|csv|raw]            : Output format (default ascii)\n");
+    printf("  --daliServers=[host1,...] : List of Dali servers to use\n");
+    printf("  --tracelevel=[integer]    : Amount of information to dump on logs\n");
+    printf("  --stdlog=[boolean]        : Standard log format (based on tracelevel)\n");
+    printf("  --logfile=[filename]      : Outputs to logfile, rather than stdout\n");
+    printf("  --topology=[filename]     : Load configuration from named xml file (default RoxieTopology.xml)\n");
+    printf("  --help|-h                 : This message\n");
     printf("\n");
 }
 
@@ -1042,7 +1044,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         Owned<IHpccProtocolPluginContext> protocolCtx = new CHpccProtocolPluginCtx();
         if (runOnce)
         {
-            if (globals->hasProp("-wu"))
+            if (globals->hasProp("--wu"))
             {
                 Owned<IHpccProtocolListener> roxieServer = createRoxieWorkUnitListener(1, false);
                 try
@@ -1063,14 +1065,14 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(getNodeAddress(myNodeIndex), 0, 1, false), 0, 0, NULL);
                 try
                 {
-                    const char *format = globals->queryProp("format");
+                    const char *format = globals->queryProp("-format");
                     if (!format)
                     {
-                        if (globals->hasProp("-xml"))
+                        if (globals->hasProp("--xml") || globals->hasProp("-xml"))  // Support - versions for compatibility
                             format = "xml";
-                        else if (globals->hasProp("-csv"))
+                        else if (globals->hasProp("--csv") || globals->hasProp("-csv"))
                             format = "csv";
-                        else if (globals->hasProp("-raw"))
+                        else if (globals->hasProp("-raw") || globals->hasProp("--raw"))
                             format = "raw";
                         else
                             format = "ascii";
