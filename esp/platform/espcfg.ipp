@@ -244,7 +244,7 @@ public:
         catch(IException* ie)
         {
             if (isDetachedFromDali())
-                ERRLOG("ERROR: Could not load ESP services while DETACHED FROM DALI! Re-attach ESP process and retry.");
+                ERRLOG("Could not load ESP service(s) while DETACHED from DALI - Consider re-attaching ESP process.");
             throw(ie);
         }
         loadProtocols();
