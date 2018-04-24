@@ -28,6 +28,7 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/PackageSourceWidget",
     "hpcc/PackageMapPartsWidget",
+    "src/Clippy",
     "src/WsPackageMaps",
 
     "dojo/text!../templates/PackageMapDetailsWidget.html",
@@ -39,7 +40,7 @@ define([
     "dijit/form/Button",
     "dijit/Toolbar"
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, topic, registry,
-    _TabContainerWidget, DelayLoadWidget, PackageSourceWidget, PackageMapPartsWidget, WsPackageMaps, template) {
+    _TabContainerWidget, DelayLoadWidget, PackageSourceWidget, PackageMapPartsWidget, Clippy, WsPackageMaps, template) {
     return declare("PackageMapDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapDetailsWidget",
@@ -96,6 +97,7 @@ define([
                     });
                 }
             });
+            Clippy.attach(this.id + "ClippyButton");
         },
 
         startup: function (args) {

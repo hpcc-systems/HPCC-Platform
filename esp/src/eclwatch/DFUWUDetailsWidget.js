@@ -36,6 +36,7 @@ define([
     "dijit/ProgressBar",
 
     "hpcc/_TabContainerWidget",
+    "src/Clippy",
     "src/FileSpray",
     "src/ESPDFUWorkunit",
     "hpcc/DelayLoadWidget",
@@ -48,7 +49,7 @@ define([
 
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domStyle, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
-                _TabContainerWidget, FileSpray, ESPDFUWorkunit, DelayLoadWidget,
+                _TabContainerWidget, Clippy, FileSpray, ESPDFUWorkunit, DelayLoadWidget,
                 template) {
     exports.fixCircularDependency = declare("DFUWUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -78,6 +79,8 @@ define([
             }
             var stateSelect = registry.byId(this.id + "StateMessage");
             stateSelect.addOption(stateOptions);
+
+            Clippy.attach(this.id + "ClippyButton");
         },
 
         getTitle: function () {
