@@ -33,7 +33,7 @@ interface IDynamicIndexReadArg
 
 extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(IPropertyTree &xgmml);
 extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projected, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit);
-extern ECLRTL_API IHThorIndexReadArg *createIndexReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit);
+extern ECLRTL_API IHThorIndexReadArg *createIndexReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projecte, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit, unsigned flags);
 extern ECLRTL_API IHThorArg *createWorkunitWriteArg(IPropertyTree &xgmml);
 extern ECLRTL_API IEclProcess* createDynamicEclProcess();
 

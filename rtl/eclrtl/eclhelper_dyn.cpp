@@ -285,19 +285,14 @@ protected:
 class ECLRTL_API CDynamicIndexReadArg : public CThorIndexReadArg, implements IDynamicIndexReadArg
 {
 public:
-    CDynamicIndexReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_out, unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit)
-        : fileName(_fileName), in(_in), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit), filters(in->queryRecordAccessor(true))
+    CDynamicIndexReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_projected, IOutputMetaData *_out, unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit, unsigned _flags)
+        : fileName(_fileName), in(_in), projected(_projected), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit), flags(_flags), filters(in->queryRecordAccessor(true))
     {
-        translator.setown(createRecordTranslator(out->queryRecordAccessor(true), in->queryRecordAccessor(true)));
-        if (!translator->canTranslate())
-        {
-            translator->describe();
-            throw makeStringException(0, "Translation not possible");
-        }
+        translator.setown(createRecordTranslator(out->queryRecordAccessor(true), projected->queryRecordAccessor(true)));
     }
     virtual bool needTransform() override
     {
-        return true;
+        return translator->needsTranslate();
     }
     virtual unsigned getFlags() override
     {
@@ -322,7 +317,7 @@ public:
     }
     virtual IOutputMetaData * queryProjectedDiskRecordSize() override final
     {
-        return in;
+        return projected;
     }
     virtual unsigned getFormatCrc() override
     {
@@ -344,6 +339,7 @@ private:
     StringAttr fileName;
     unsigned flags = 0;
     Owned<IOutputMetaData> in;
+    Owned<IOutputMetaData> projected;
     Owned<IOutputMetaData> out;
     Owned<const IDynamicTransform> translator;
     LegacyFilterSet filters;
@@ -395,9 +391,9 @@ extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(const char *fileName, IOu
     return new CDynamicDiskReadArg(fileName, in, projected, out, chooseN, skipN, rowLimit);
 }
 
-extern ECLRTL_API IHThorIndexReadArg *createIndexReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit)
+extern ECLRTL_API IHThorIndexReadArg *createIndexReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projected, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit, unsigned flags)
 {
-    return new CDynamicIndexReadArg(fileName, in, out, chooseN, skipN, rowLimit);
+    return new CDynamicIndexReadArg(fileName, in, projected, out, chooseN, skipN, rowLimit, flags);
 }
 
 
