@@ -3776,3 +3776,30 @@ jlib_decl IUserMetric *createUserMetric(const char *name, const char *matchStrin
 {
     return new UserMetricMsgHandler(name, matchString);
 }
+
+jlib_decl void incrProcessNice(int niceInc)
+{
+    if (niceInc == 0)
+        return;
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+    errno = 0;
+    int currPrio = getpriority(PRIO_PROCESS, 0);
+    if (currPrio == -1 && errno != 0)
+    {
+        ERRLOG("unable to determine current process priority");
+        return;
+    }
+
+    int newPrio = currPrio + niceInc;
+    if (newPrio < -20 || newPrio > 19)
+    {
+        WARNLOG("priority value %d not in range", newPrio);
+        return;
+    }
+    int srtn = setpriority(PRIO_PROCESS, 0, newPrio);
+    if (srtn != 0)
+        ERRLOG("priority value %d failure", newPrio);
+    else
+        PROGLOG("priority value %d applied", newPrio);
+#endif
+}

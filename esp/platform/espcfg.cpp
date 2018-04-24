@@ -278,6 +278,10 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         if (m_cfg->getProp("@daliServers", daliservers))
             initDali(daliservers.str());
 
+        int niceInc = m_cfg->getPropInt("@niceInc", 0);
+        if (niceInc)
+            incrProcessNice(niceInc);
+
 #ifndef _DEBUG
         startPerformanceMonitor(m_cfg->getPropInt("@perfReportDelay", 60)*1000);
 #endif

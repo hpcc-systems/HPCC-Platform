@@ -890,6 +890,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
         updateAffinity(affinity);
 
+        int niceInc = topology->getPropInt("@niceInc", 0);
+        if (niceInc)
+            incrProcessNice(niceInc);
+
         minFreeDiskSpace = topology->getPropInt64("@minFreeDiskSpace", (1024 * 0x100000)); // default to 1 GB
         if (topology->getPropBool("@jumboFrames", false))
         {

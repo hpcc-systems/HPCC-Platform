@@ -369,6 +369,7 @@ int main(int argc,char **argv)
     const char *    sslKeyFile;
     queryDafsSecSettings(&connectMethod, &port, &sslport, &sslCertFile, &sslKeyFile, nullptr);
 
+    int niceInc = 0;
     unsigned maxThreads = DEFAULT_THREADLIMIT;
     unsigned maxThreadsDelayMs = DEFAULT_THREADLIMITDELAYMS;
     unsigned maxAsyncCopy = DEFAULT_ASYNCCOPYMAX;
@@ -392,6 +393,7 @@ int main(int argc,char **argv)
         {
             // global DaFileSrv settings:
 
+            niceInc = daFileSrv->getPropInt("@niceInc", 0);
             maxThreads = daFileSrv->getPropInt("@maxThreads", DEFAULT_THREADLIMIT);
             maxThreadsDelayMs = daFileSrv->getPropInt("@maxThreadsDelayMs", DEFAULT_THREADLIMITDELAYMS);
             maxAsyncCopy = daFileSrv->getPropInt("@maxAsyncCopy", DEFAULT_ASYNCCOPYMAX);
@@ -414,6 +416,7 @@ int main(int argc,char **argv)
             IPropertyTree *dafileSrvInstance = daFileSrv->queryPropTree(daFileSrvPath);
             if (dafileSrvInstance)
             {
+                niceInc = dafileSrvInstance->getPropInt("@niceInc", niceInc);
                 maxThreads = dafileSrvInstance->getPropInt("@maxThreads", maxThreads);
                 maxThreadsDelayMs = dafileSrvInstance->getPropInt("@maxThreadsDelayMs", maxThreadsDelayMs);
                 maxAsyncCopy = dafileSrvInstance->getPropInt("@maxAsyncCopy", maxAsyncCopy);
@@ -773,6 +776,10 @@ int main(int argc,char **argv)
     server.setown(createRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy));
     server->setThrottle(ThrottleStd, parallelRequestLimit, throttleDelayMs, throttleCPULimit);
     server->setThrottle(ThrottleSlow, parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
+
+    if (niceInc)
+        incrProcessNice(niceInc);
+
     class CPerfHook : public CSimpleInterfaceOf<IPerfMonHook>
     {
     public:

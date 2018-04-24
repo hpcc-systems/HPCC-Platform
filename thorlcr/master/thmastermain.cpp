@@ -747,6 +747,10 @@ int main( int argc, char *argv[]  )
         globals->setProp("@query_so_dir", soPath.str());
         recursiveCreateDirectory(soPath.str());
 
+        int niceInc = globals->getPropInt("@niceInc", 10);
+        if (niceInc)
+            incrProcessNice(niceInc);
+
         startLogMsgParentReceiver();    
         connectLogMsgManagerToDali();
         if (globals->getPropBool("@cache_dafilesrv_master",false))

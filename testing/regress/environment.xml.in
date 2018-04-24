@@ -715,6 +715,7 @@
                masterport="20000"
                monitorDaliFileServer="true"
                name="mythor"
+               niceInc="10"
                numaBindLocal="false"
                pluginsPath="${PLUGINS_PATH}"
                replicateAsync="false"
