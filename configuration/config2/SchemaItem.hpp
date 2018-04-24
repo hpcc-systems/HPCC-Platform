@@ -26,6 +26,9 @@
 #include "SchemaType.hpp"
 #include "SchemaValue.hpp"
 #include "platform.h"
+#include "EnvironmentEventHandlers.hpp"
+
+class EnvironmentNode;
 
 
 class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
@@ -33,6 +36,7 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
     public:
 
         SchemaItem(const std::string &name, const std::string &className = "category", const std::shared_ptr<SchemaItem> &pParent = nullptr);
+        SchemaItem(const SchemaItem &schemaItem);
         ~SchemaItem() { }
         std::string getItemType() const;
         void setMinInstances(unsigned num) { m_minInstances = num; }
@@ -46,13 +50,13 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         void insertSchemaType(const std::shared_ptr<SchemaItem> pTypeItem);
         void addChild(const std::shared_ptr<SchemaItem> &pItem) { m_children.insert({ pItem->getProperty("name"), pItem }); }
         void addChild(const std::shared_ptr<SchemaItem> &pItem, const std::string &name) { m_children.insert({ name, pItem }); }
-        void getChildren(std::vector<std::shared_ptr<SchemaItem>> &children);
+        void getChildren(std::vector<std::shared_ptr<SchemaItem>> &children) const;
         std::shared_ptr<SchemaItem> getChild(const std::string &name);
         std::shared_ptr<SchemaItem> getChildByComponent(const std::string &name, std::string &componentName);
         void setItemSchemaValue(const std::shared_ptr<SchemaValue> &pValue) { m_pItemValue = pValue; }
         std::shared_ptr<SchemaValue> getItemSchemaValue() const { return m_pItemValue; }
         bool isItemValueDefined() { return m_pItemValue != nullptr; }
-        void findSchemaValues(const std::string &path, std::vector<std::shared_ptr<SchemaValue>> &schemaValues);
+        void fetchSchemaValues(const std::string &path, std::vector<std::shared_ptr<SchemaValue>> &schemaValues);
         void addAttribute(const std::shared_ptr<SchemaValue> &pCfgValue);
         void addAttribute(const std::vector<std::shared_ptr<SchemaValue>> &attributes);
         void addAttribute(const std::map<std::string, std::shared_ptr<SchemaValue>> &attributes);
@@ -72,6 +76,11 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         void setProperty(const std::string &name, const std::string &value) { m_properties[name] = value; }
         void setHidden(bool hidden) { m_hidden = hidden; }
         bool isHidden() const { return m_hidden; }
+
+        void setParent(const std::shared_ptr<SchemaItem> &parent) { m_pParent = parent; }
+        std::shared_ptr<const SchemaItem> getSchemaRoot() const;
+        void processEvent(const std::string &eventType, const std::shared_ptr<EnvironmentNode> &pEnvNode) const;
+        void addEventHandler(const std::shared_ptr<EnvironmentEventHandler> &pHandler) { m_eventHandlers.push_back(pHandler); }
 
 
     protected:
@@ -108,8 +117,7 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         std::map<std::string, SetInfo> m_uniqueAttributeValueSetReferences;
         std::map<std::string, SetInfo> m_uniqueAttributeValueSetDefs;
 
-        // These are the attribute value sets whose members must be unique
-        //static std::map<std::string, std::vector<std::shared_ptr<SchemaValue>>> m_uniqueAttributeValueSets;
+        std::vector<std::shared_ptr<EnvironmentEventHandler>> m_eventHandlers;
 };
 
 #endif // _CONFIG2_CONFIGITEM_HPP_

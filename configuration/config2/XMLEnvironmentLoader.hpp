@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,31 +15,29 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _CONFIG2_XMLENVIRONMENTMGR_HPP_
-#define _CONFIG2_XMLENVIRONMENTMGR_HPP_
 
-#include "EnvironmentMgr.hpp"
+#ifndef _CONFIG2_XMLENVIRONMENTLOADER_HPP_
+#define _CONFIG2_XMLENVIRONMENTLOADER_HPP_
+
+#include <string>
+#include <fstream>
+#include "SchemaItem.hpp"
+#include "EnvironmentNode.hpp"
+#include "EnvironmentLoader.hpp"
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
 namespace pt = boost::property_tree;
 
-class XMLEnvironmentMgr :   public EnvironmentMgr
+class DECL_EXPORT XMLEnvironmentLoader : public EnvironmentLoader
 {
     public:
 
-        XMLEnvironmentMgr() : EnvironmentMgr() { }
-        ~XMLEnvironmentMgr() { }
-
-
-    protected:
-
-        bool createParser() override;
-        std::vector<std::shared_ptr<EnvironmentNode>> doLoadEnvironment(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) override;
-        bool save(std::ostream &out) override;
-        void parse(const pt::ptree &envTree, const std::shared_ptr<SchemaItem> &pConfig, std::shared_ptr<EnvironmentNode> &pEnvNode);
-        void serialize(pt::ptree &envTree, std::shared_ptr<EnvironmentNode> &pEnvNode) const;
+        XMLEnvironmentLoader() { }
+        virtual ~XMLEnvironmentLoader() { }
+        virtual std::vector<std::shared_ptr<EnvironmentNode>> load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) const override;
+        void parse(const pt::ptree &envTree, const std::shared_ptr<SchemaItem> &pConfigItem, std::shared_ptr<EnvironmentNode> &pEnvNode) const;
 
 };
 

@@ -35,7 +35,7 @@ bool SchemaTypeStringLimits::doValueTest(const std::string &testValue) const
     // test patterns
     for (auto it = m_patterns.begin(); it != m_patterns.end() && isValid; ++it)
     {
-        std::regex expr (*it);
+        std::regex expr ((*it).c_str());
         isValid = std::regex_match(testValue, expr);
     }
     return isValid;

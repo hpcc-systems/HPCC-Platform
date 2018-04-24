@@ -20,6 +20,7 @@ project ( config2 )
 SET(  SRCS
       EnvironmentMgr.cpp
       XMLEnvironmentMgr.cpp
+      XMLEnvironmentLoader.cpp
       SchemaParser.cpp
       SchemaItem.cpp
       SchemaValue.cpp
@@ -32,6 +33,9 @@ SET(  SRCS
       XSDSchemaParser.cpp
       XSDValueSetParser.cpp
       Status.cpp
+      EnvironmentEventHandlers.cpp
+      Utils.cpp
+      InsertableItem.cpp
 )
 
 INCLUDE_DIRECTORIES(

@@ -55,18 +55,22 @@ class DECL_EXPORT EnvironmentMgr
         std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::string &parentNodeId, const std::string &configType, Status &status);
         bool removeEnvironmentNode(const std::string &nodeId);
         bool saveEnvironment(const std::string &qualifiedFilename);
-        void discardEnvironment() { m_pRootNode = nullptr; m_nodeIds.clear(); m_key=1; }
+        void discardEnvironment() { m_pRootNode = nullptr; m_nodeIds.clear();}
         void validate(Status &status, bool includeHiddenNodes=false) const;
+        std::string getRootNodeId() const;
+        static std::string getUniqueKey();
+        void fetchNodes(const std::string path, std::vector<std::shared_ptr<EnvironmentNode>> &nodes, const std::shared_ptr<EnvironmentNode> &pStartNode = nullptr) const;
 
 
     protected:
 
-        std::string getUniqueKey();
         void addPath(const std::shared_ptr<EnvironmentNode> pNode);
         virtual bool createParser() = 0;
-        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::shared_ptr<SchemaItem> &pNewCfgItem, Status &status);
-        virtual bool doLoadEnvironment(std::istream &in) = 0;
+        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::shared_ptr<SchemaItem> &pNewCfgItem, Status &status, const std::pair<std::string, std::string> &initAttribute);
+        virtual std::vector<std::shared_ptr<EnvironmentNode>> doLoadEnvironment(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) = 0;
         virtual bool save(std::ostream &out) = 0;
+        void assignNodeIds(const std::shared_ptr<EnvironmentNode> &pNode);
+        void insertExtraEnvironmentData(std::shared_ptr<EnvironmentNode> pNode);
 
 
     protected:
@@ -80,7 +84,7 @@ class DECL_EXPORT EnvironmentMgr
 
     private:
 
-        std::atomic_int m_key;
+        static std::atomic_int m_key;
 };
 
 #endif

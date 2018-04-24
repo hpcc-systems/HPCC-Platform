@@ -47,3 +47,22 @@ bool SchemaTypeLimits::isValidEnumeratedValue(const std::string &testValue) cons
     }
     return rc;
 }
+
+
+void SchemaTypeLimits::addDependentAttributeValue(const std::string &value, const std::string &depAttr, const std::string &depAttrVal)
+{
+    for (auto it = m_enumeratedValues.begin(); it != m_enumeratedValues.end(); ++it)
+    {
+        if ((*it).m_value == value)
+        {
+            (*it).addDependentValue(depAttr, depAttrVal);
+            break;
+        }
+    }
+}
+
+
+void AllowedValue::addDependentValue(const std::string &attribute, const std::string &value)
+{
+    m_dependencies.push_back(DependentValue(attribute, value));
+}

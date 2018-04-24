@@ -24,6 +24,7 @@
 #include "EnvironmentValue.hpp"
 #include "SchemaValue.hpp"
 #include "Status.hpp"
+#include "InsertableItem.hpp"
 #include "NameValue.hpp"
 #include "platform.h"
 
@@ -38,10 +39,11 @@ class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<Environm
         const std::string &getName() const { return m_name;  }
         void addChild(std::shared_ptr<EnvironmentNode> pNode);
         bool removeChild(std::shared_ptr<EnvironmentNode> pNode);
-        void getChildren(std::vector<std::shared_ptr<EnvironmentNode>> &children, const std::string &name="") const;
+        void getChildren(std::vector<std::shared_ptr<EnvironmentNode>> &children, const std::string &name=std::string("")) const;
         bool hasChildren() const { return m_children.size() != 0; }
         int getNumChildren() const { return m_children.size(); }
         std::shared_ptr<EnvironmentNode> getParent() const;
+        void setParent(const std::shared_ptr<EnvironmentNode> &pParent) { m_pParent = pParent; }
         bool addAttribute(const std::string &name, std::shared_ptr<EnvironmentValue> pValue);
         void setAttributeValues(const std::vector<NameValue> &values, Status &status, bool allowInvalid, bool forceCreate);
         void setAttributeValue(const std::string &name, const std::string &value, Status &status, bool allowInvalid=false, bool forceCreate=false);   // candidate for a variant?
@@ -61,8 +63,13 @@ class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<Environm
         void validate(Status &status, bool includeChildren=false, bool includeHiddenNodes=false) const;
         void getAttributeValueForAllSiblings(const std::string &attrName, std::vector<std::string> &result) const;
         const std::shared_ptr<SchemaItem> &getSchemaItem() const { return m_pSchemaItem; }
-        void getInsertableItems(std::vector<std::shared_ptr<SchemaItem>> &items) const;
+        void getInsertableItems(std::vector<InsertableItem> &items) const;
         void initialize();
+        void fetchNodes(const std::string &path, std::vector<std::shared_ptr<EnvironmentNode>> &nodes) const;
+        std::shared_ptr<const EnvironmentNode> getRoot() const;
+        void addEnvironmentInsertData(const std::string &envData) { m_insertData = envData; }
+        const std::string &getEnvironmentInsertData() const { return m_insertData; }
+        void clearEnvironmentInsertData() { m_insertData.clear();  }
 
 
     protected:
@@ -74,7 +81,7 @@ class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<Environm
         std::shared_ptr<EnvironmentValue> m_pLocalValue;   // not normal because values usually in attributes
         std::map<std::string, std::shared_ptr<EnvironmentValue>> m_attributes;
         std::string m_id;
+        std::string m_insertData;
 };
-
 
 #endif

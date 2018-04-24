@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,26 +15,43 @@
     limitations under the License.
 ############################################################################## */
 
-#include "XMLEnvironmentMgr.hpp"
-#include "XSDSchemaParser.hpp"
 #include "XMLEnvironmentLoader.hpp"
+#include "XSDSchemaParser.hpp"
 #include "Exceptions.hpp"
 
 
-bool XMLEnvironmentMgr::createParser()
-{
-    m_pSchemaParser = std::make_shared<XSDSchemaParser>(m_pSchema);
-    return true;
-}
-
-
-std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentMgr::doLoadEnvironment(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem)
+std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentLoader::load(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) const
 {
     std::vector<std::shared_ptr<EnvironmentNode>> envNodes;
+    std::shared_ptr<EnvironmentNode> pEnvNode;
+
+    pt::ptree envTree;
     try
     {
-        XMLEnvironmentLoader envLoader;
-        envNodes = envLoader.load(in, pSchemaItem);
+        pt::read_xml(in, envTree, pt::xml_parser::trim_whitespace | pt::xml_parser::no_comments);
+        //auto rootIt = envTree.begin();
+
+        // if root, want to start with rootIt, but auto match rootIt first with schemaItem, then parse on down, but want to return
+        // envNode for the root
+
+        // if not root, to through rootIt with schema item as parent for each elemement, return envNode of each item iterated
+
+        std::shared_ptr<SchemaItem> pParseRootSchemaItem;
+        for (auto envIt = envTree.begin(); envIt != envTree.end(); ++envIt)
+        {
+            if (envIt->first == pSchemaItem->getProperty("name"))
+            {
+                pParseRootSchemaItem = pSchemaItem;
+            }
+            else
+            {
+                pParseRootSchemaItem = pSchemaItem->getChild(envIt->first);
+            }
+
+            pEnvNode = std::make_shared<EnvironmentNode>(pParseRootSchemaItem, envIt->first);  // caller may need to set the parent
+            parse(envIt->second, pParseRootSchemaItem, pEnvNode);
+            envNodes.push_back(pEnvNode);
+        }
     }
     catch (const std::exception &e)
     {
@@ -46,28 +63,9 @@ std::vector<std::shared_ptr<EnvironmentNode>> XMLEnvironmentMgr::doLoadEnvironme
 }
 
 
-bool XMLEnvironmentMgr::save(std::ostream &out)
+void XMLEnvironmentLoader::parse(const pt::ptree &envTree, const std::shared_ptr<SchemaItem> &pConfigItem, std::shared_ptr<EnvironmentNode> &pEnvNode) const
 {
-    bool rc = true;
-    try
-    {
-        pt::ptree envTree, topTree;
-        serialize(envTree, m_pRootNode);
-        topTree.add_child("Environment", envTree);
-        pt::write_xml(out, topTree);
-    }
-    catch (const std::exception &e)
-    {
-        std::string xmlError = e.what();
-        m_message = "Unable to save Environment file. Error = " + xmlError;
-        rc = false;
-    }
-    return rc;
-}
 
-
-void XMLEnvironmentMgr::parse(const pt::ptree &envTree, const std::shared_ptr<SchemaItem> &pConfigItem, std::shared_ptr<EnvironmentNode> &pEnvNode)
-{
     //
     // First see if the node has a value
     std::string value;
@@ -118,37 +116,11 @@ void XMLEnvironmentMgr::parse(const pt::ptree &envTree, const std::shared_ptr<Sc
             {
                 pSchemaItem = pConfigItem->getChild(elemName);
             }
-            // todo: need to handle pSchemaitem (remant to pChildConfigItem) not found (throw exception or make a default config item)
+
+            // If no schema item is found, that's ok, the node just has no defined configuration
             std::shared_ptr<EnvironmentNode> pElementNode = std::make_shared<EnvironmentNode>(pSchemaItem, elemName, pEnvNode);
-            pElementNode->setId(getUniqueKey());
-            addPath(pElementNode);
             parse(it->second, pSchemaItem, pElementNode);
             pEnvNode->addChild(pElementNode);
         }
-    }
-}
-
-
-void XMLEnvironmentMgr::serialize(pt::ptree &envTree, std::shared_ptr<EnvironmentNode> &pEnvNode) const
-{
-    std::vector<std::shared_ptr<EnvironmentValue>> attributes;
-    pEnvNode->getAttributes(attributes);
-    for (auto attrIt = attributes.begin(); attrIt != attributes.end(); ++attrIt)
-    {
-        if ((*attrIt)->isValueSet())
-            envTree.put("<xmlattr>." + (*attrIt)->getName(), (*attrIt)->getValue());
-    }
-    std::shared_ptr<EnvironmentValue> pNodeValue = pEnvNode->getLocalEnvValue();
-    if (pNodeValue)
-    {
-        envTree.put_value(pNodeValue->getValue());
-    }
-    std::vector<std::shared_ptr<EnvironmentNode>> children;
-    pEnvNode->getChildren(children);
-    for (auto childIt = children.begin(); childIt != children.end(); ++childIt)
-    {
-        pt::ptree nodeTree;
-        serialize(nodeTree, *childIt);
-        envTree.add_child((*childIt)->getName(), nodeTree);
     }
 }

@@ -43,7 +43,6 @@ class DECL_EXPORT SchemaParser
 
         virtual bool doParse(const std::string &configPath, const std::string &masterConfigFile,  const std::vector<std::string> &cfgParms) = 0;
         SchemaParser() { };
-        std::vector<std::string> split(const std::string  &input, const std::string  &delim);
 
 
     protected:
