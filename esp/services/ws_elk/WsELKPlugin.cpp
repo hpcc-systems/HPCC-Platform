@@ -33,23 +33,23 @@ extern "C"
 
 ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-   if (strcmp(type, "ws_elk")==0)
-   {
-      Cws_elkEx* service = new Cws_elkEx;
-      service->init(cfg, process, name);
-      return service;
-   }
-   return nullptr;
+    if (strcmp(type, "ws_elk")==0)
+    {
+        Cws_elkEx* service = new Cws_elkEx;
+        service->init(cfg, process, name);
+        return service;
+    }
+    return nullptr;
 }
 
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-   if (strcmp(type, "ws_elkSoapBinding")==0)
-   {
+    if (strcmp(type, "ws_elkSoapBinding")==0)
+    {
         return new Cws_elkSoapBinding(cfg, name, process);
-   }
+    }
 
-   return nullptr;
+    return nullptr;
 }
 
 ESP_FACTORY IEspProtocol * esp_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)

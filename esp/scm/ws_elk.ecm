@@ -18,7 +18,7 @@ ESPResponse GetConfigDetailsResponse
 
 ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.0"), default_client_version("1.0"), exceptions_inline("xslt/exceptions.xslt")] ws_elk
 {
-    ESPmethod getConfigDetails(GetConfigDetailsRequest, GetConfigDetailsResponse);
+    ESPmethod GetConfigDetails(GetConfigDetailsRequest, GetConfigDetailsResponse);
 };
 
 SCMexportdef(ws_elk);

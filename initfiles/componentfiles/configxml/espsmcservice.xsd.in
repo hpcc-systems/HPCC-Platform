@@ -49,11 +49,11 @@
                 </xs:annotation>
             </xs:attribute>
                 <xs:annotation>
-              <xs:appinfo>
-              <!--DOCS_Autobuild_Code-->
-                <docid>SMC-T01</docid>
-              </xs:appinfo>
-              </xs:annotation>
+                    <xs:appinfo>
+                        <!--DOCS_Autobuild_Code-->
+                        <docid>SMC-T01</docid>
+                    </xs:appinfo>
+                </xs:annotation>
             <xs:attribute name="description" type="xs:string" use="optional" default="ESP services for SMC">
                 <xs:annotation>
                     <xs:appinfo>
@@ -231,7 +231,7 @@
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="elasticSearchPort" type="xs:string" use="optional" default="">
+        <xs:attribute name="elasticSearchPort" type="xs:string" use="optional" default="9200">
             <xs:annotation>
                 <xs:appinfo>
                     <tooltip>Declares the target LogStash nodes' port</tooltip>
@@ -241,7 +241,7 @@
     </xs:attributeGroup>
     <xs:attributeGroup name="Monitoring">
          <xs:annotation>
-        <xs:appinfo>
+            <xs:appinfo>
             <!--DOCS_Autobuild_Code-->
               <docid>SMC-T02</docid>
             </xs:appinfo>

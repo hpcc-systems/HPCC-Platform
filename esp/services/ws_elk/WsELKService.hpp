@@ -13,7 +13,7 @@ public:
     Cws_elkEx();
     virtual ~Cws_elkEx();
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
-    virtual bool ongetConfigDetails(IEspContext &context, IEspGetConfigDetailsRequest &req, IEspGetConfigDetailsResponse &resp);
+    virtual bool onGetConfigDetails(IEspContext &context, IEspGetConfigDetailsRequest &req, IEspGetConfigDetailsResponse &resp);
 };
 
 #endif // _ESPWIZ_WsELK_HPP_

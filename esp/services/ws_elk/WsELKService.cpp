@@ -24,7 +24,7 @@ void Cws_elkEx::init(IPropertyTree *cfg, const char *process, const char *servic
 #endif
 }
 
-bool Cws_elkEx::ongetConfigDetails(IEspContext &context, IEspGetConfigDetailsRequest &req, IEspGetConfigDetailsResponse &resp)
+bool Cws_elkEx::onGetConfigDetails(IEspContext &context, IEspGetConfigDetailsRequest &req, IEspGetConfigDetailsResponse &resp)
 {
     if (m_serviceCfg)
     {
