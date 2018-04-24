@@ -365,6 +365,10 @@ int main(int argc, char* argv[])
             auditDir.set(lf->queryLogDir());
         }
 
+        int niceInc = serverConfig->getPropInt("@niceInc", 0);
+        if (niceInc)
+            incrProcessNice(niceInc);
+
 // SNMP logging     
         bool enableSNMP = serverConfig->getPropBool("SDS/@enableSNMP");
         if (serverConfig->getPropBool("SDS/@enableSysLog",true))

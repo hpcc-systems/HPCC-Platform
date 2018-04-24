@@ -349,5 +349,7 @@ extern jlib_decl void printAllocationSummary();
 extern jlib_decl bool areTransparentHugePagesEnabled();
 extern jlib_decl memsize_t getHugePageSize();
 
+extern jlib_decl void incrProcessNice(int niceInc);
+
 #endif
 

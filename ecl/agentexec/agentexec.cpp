@@ -89,6 +89,10 @@ void CEclAgentExecutionServer::start()
         throwUnexpected();
     }
 
+    int niceInc = properties->getPropInt("@niceInc", 0);
+    if (niceInc)
+        incrProcessNice(niceInc);
+
     started = true;
     Thread::start();
     Thread::join();
