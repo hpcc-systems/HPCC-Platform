@@ -2,11 +2,11 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <title>HPCC Systems<superscript>Â®</superscript> Instant Cloud for
+  <title>HPCC Systems<superscript>®</superscript> Instant Cloud for
   AWS</title>
 
   <bookinfo>
-    <title>HPCC Systems<superscript>Â®</superscript> Instant Cloud for
+    <title>HPCC Systems<superscript>®</superscript> Instant Cloud for
     AWS</title>
 
     <mediaobject>
@@ -73,7 +73,7 @@
     <title>Introduction</title>
 
     <para>This guide provides details and guidance in running an HPCC
-    Systems<superscript>Â®</superscript> Platform inside an Amazon Web Services
+    Systems<superscript>®</superscript> Platform inside an Amazon Web Services
     (AWS) Elastic Cloud (EC2) using the Instant Cloud for AWS page.</para>
 
     <para>This allows you to <emphasis role="bold">instantiate</emphasis> and

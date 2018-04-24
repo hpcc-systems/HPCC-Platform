@@ -32,7 +32,7 @@
 VARUNICODE4 MyUnicodeString := U'abcd';
         // same as: (UNICODE)'abcd'
 VARUNICODE5 MyUnicodeString := U'abcd\353';
-        // becomes 'abcdÃÂ«'
-VARUNICODE5 MyUnicodeString := U'abcdÃÂ«';
+        // becomes 'abcdë'
+VARUNICODE5 MyUnicodeString := U'abcdë';
         // same as previous example</programlisting>
 </sect1>

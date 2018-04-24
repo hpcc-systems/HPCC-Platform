@@ -38,7 +38,7 @@
       of Reed Elsevier Properties Inc., used under license.</para>
 
       <para>HPCC
-      Systems<superscript>Â®</superscript> is a registered trademark of
+      Systems<superscript>®</superscript> is a registered trademark of
       LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -57,7 +57,7 @@
                 xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>Â®</superscript></corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
@@ -301,7 +301,7 @@
         the target system.</para>
 
         <para>Packages are available from the HPCC
-        Systems<superscript>Â®</superscript> website: <ulink
+        Systems<superscript>®</superscript> website: <ulink
         url="https://hpccsystems.com/download/free-community-edition">https://hpccsystems.com/download/</ulink></para>
 
         <para>To install the package, follow the appropriate installation
@@ -924,7 +924,7 @@
         <para>This section details reconfiguring a system to use multiple
         nodes. Before you start this section, you must have already downloaded
         the correct packages for your distro from the HPCC
-        Systems<superscript>Â®</superscript> website: <ulink
+        Systems<superscript>®</superscript> website: <ulink
         url="https://hpccsystems.com/download/free-community-edition">https://hpccsystems.com/download/free-community-edition</ulink>.</para>
 
         <orderedlist>
@@ -1603,7 +1603,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
       </itemizedlist></para>
 
     <para>The HPCC
-    Systems<superscript>Â®</superscript> Portal is also a valuable resource for
+    Systems<superscript>®</superscript> Portal is also a valuable resource for
     more information including:</para>
 
     <itemizedlist spacing="compact">
@@ -2708,7 +2708,7 @@ sudo /etc/init.d/hpcc-init -c esp start
 
           <listitem>
             <para>Start the HPCC
-            Systems<superscript>Â®</superscript> platform (restart if it is
+            Systems<superscript>®</superscript> platform (restart if it is
             already running) in order to read the new configuration.</para>
 
             <para>For example :</para>
@@ -2741,7 +2741,7 @@ sudo /etc/init.d/hpcc-init -c esp start
             integration.</para>
 
             <para>The HPCC
-            Systems<superscript>Â®</superscript> platform comes with a Java
+            Systems<superscript>®</superscript> platform comes with a Java
             example class. You can execute some Java
             code either in your ECL IDE
             or the ECL Playground.</para>
@@ -2784,7 +2784,7 @@ add1(10);
 
         <para>To enable JavaScript support
         within the HPCC
-        Systems<superscript>Â®</superscript> Platform:</para>
+        Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
@@ -2879,7 +2879,7 @@ add1(10);
 
         <para>To enable Python support
         within the HPCC
-        Systems<superscript>Â®</superscript> Platform:</para>
+        Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
@@ -3005,7 +3005,7 @@ split_words('Once upon a time');
         <para>The HPCC Platform supports
         embedded R code. To enable R
         support within The HPCC
-        Systems<superscript>Â®</superscript> Platform:</para>
+        Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>

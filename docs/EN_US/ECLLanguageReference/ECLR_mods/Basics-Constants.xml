@@ -88,7 +88,7 @@ STRING20 MyString3 := 'Fred\\Ginger\'s Place';
     
 
     <programlisting>MyString1 := 'abcd'; 
-MyString2 := U'abcd\353';    // becomes 'abcdÃÂ«'
+MyString2 := U'abcd\353';    // becomes 'abcdë'
 </programlisting>
 
     
@@ -129,8 +129,8 @@ MyString2 := U'abcd\353';    // becomes 'abcdÃÂ«'
     
 
     <programlisting>MyUnicodeString1 := U'abcd';        // same as: (UNICODE)'abcd'
-MyUnicodeString2 := U'abcd\353';    // becomes 'abcdÃÂ«'
-MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdÃÂ«'</programlisting>
+MyUnicodeString2 := U'abcd\353';    // becomes 'abcdë'
+MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'«'</programlisting>
 
     
 
@@ -330,7 +330,7 @@ MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
       time(&amp;timeinsecs);  
       localtime_r(&amp;timeinsecs,&amp;localt);
       char temp[15];
-      strftime(temp , 15, "%Y%m%d%H%M%S",Â &amp;amp;localt); // Formats the localtime to YYYYMMDDhhmmss 
+      strftime(temp , 15, "%Y%m%d%H%M%S", &amp;amp;localt); // Formats the localtime to YYYYMMDDhhmmss 
       strncpy(__result, temp, 14);
       ENDC++;
       RETURN fGetDimeTime();

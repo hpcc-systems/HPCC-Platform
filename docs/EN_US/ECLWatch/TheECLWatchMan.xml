@@ -38,7 +38,7 @@
       of Reed Elsevier Properties Inc., used under license.</para>
 
       <para>HPCC
-      Systems<superscript>Â®</superscript> is a registered trademark of
+      Systems<superscript>®</superscript> is a registered trademark of
       LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -59,7 +59,7 @@
                 xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>Â®</superscript></corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
@@ -1237,7 +1237,7 @@
       reference. A copy of which can be found online at <ulink
       url="http://hpccsystems.com/download/docs/learning-ecl">http://hpccsystems.com/download/docs/learning-ecl</ulink>
       on the HPCC
-      Systems<superscript>Â®</superscript> web site.</para>
+      Systems<superscript>®</superscript> web site.</para>
 
       
 
@@ -2154,7 +2154,7 @@
       
 
       <para>With the HPCC
-      Systems<superscript>Â®</superscript> Ganglia-monitoring plugin installed,
+      Systems<superscript>®</superscript> Ganglia-monitoring plugin installed,
       you can view the Ganglia statistics and graphs through the ECL
       Watch interface. The default monitoring displays several key statistics,
       but you can customize and configure the views.</para>
@@ -2251,15 +2251,15 @@
     <para>The resources link can be found under the Operations
     Icon link. The resources link in ECL
     Watch provides a link to the HPCC
-    Systems<superscript>Â®</superscript> web portal. Visit the HPCC
-    Systems<superscript>Â®</superscript> Web Portal at <ulink
+    Systems<superscript>®</superscript> web portal. Visit the HPCC
+    Systems<superscript>®</superscript> Web Portal at <ulink
     url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for software
     updates, plugins, support, documentation, and more. This is where you can
     find resources useful for running and maintaining HPCC
     on the web portal.</para>
 
     <para>You can also get to the resources link on the HPCC
-    Systems<superscript>Â®</superscript> web portal page, by clicking on the
+    Systems<superscript>®</superscript> web portal page, by clicking on the
     <emphasis role="bold">Additional Resources</emphasis>
     link found on the sub-menu of at the top right hand side of navigation
     bar.</para>

@@ -41,7 +41,7 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">UNICODE A := STD.Uni.CleanAccents(u'caf\u00E9');   //cafÃÂ© - U+00E9 is lowercase e with acute
+  <programlisting format="linespecific">UNICODE A := STD.Uni.CleanAccents(u'caf\u00E9');   //café - U+00E9 is lowercase e with acute
                                                    //a contains 'cafe'
 </programlisting>
 

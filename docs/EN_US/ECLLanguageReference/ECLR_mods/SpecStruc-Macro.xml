@@ -104,7 +104,7 @@ OUTPUT(CrossTab(Person,person.per_st,Person.per_sex))
 // The following macro takes a LeftFile and looks up a field of it in
 // the RightFile and then sets a field in the LeftFile indicating if 
 // the lookup worked.
-IsThere(OutFileÂ ,RecType,LeftFile,RightFile,LinkIdÂ ,SetFieldÂ ) := MACRO
+IsThere(OutFile ,RecType,LeftFile,RightFile,LinkId ,SetField ) := MACRO
     RecType Trans(RecType L, RecType R) := TRANSFORM
         SELF.SetField := IF(NOT R.LinkId,0,1);
         SELF := L;

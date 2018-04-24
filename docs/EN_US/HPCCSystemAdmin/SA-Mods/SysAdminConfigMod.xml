@@ -374,7 +374,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
     <title>Advanced Systems Administrator Topics</title>
 
     <para>This chapter contains information about certain advanced HPCC
-    Systems<superscript>Â®</superscript> Administrators topics.</para>
+    Systems<superscript>®</superscript> Administrators topics.</para>
 
     <sect1 id="Admin-System-Topic">
       <title>Admin System Topics</title>
@@ -549,7 +549,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         volume of data. This suggested sample sizing would be appropriate for
         a site with large volumes of data. A good policy is to set the Thor
         size to 4 times the source data on your HPCC. Typically, Roxie would
-        be about Â¼ the size of Thor. This is because the data is compressed
+        be about 1/4 the size of Thor. This is because the data is compressed
         and the system does not hold any transient data in Roxie. Remember
         that you do not want the number of Roxie nodes to exceed the number of
         Thor nodes.</para>

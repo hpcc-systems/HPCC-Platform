@@ -33,7 +33,7 @@
 UNICODE4 MyUnicodeString := U'abcd';
         // same as: (UNICODE)'abcd'
 UNICODE_de5 MyUnicodeString := U'abcd\353';
-        // becomes 'abcdÃÂ«' with a German locale
-UNICODE_de5 MyUnicodeString := U'abcdÃÂ«';
+        // becomes 'abcdë' with a German locale
+UNICODE_de5 MyUnicodeString := U'abcdë';
         // same as previous example</programlisting>
 </sect1>

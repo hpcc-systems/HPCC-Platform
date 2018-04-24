@@ -75,7 +75,7 @@ eMails:=REGEXFINDSET('\\w+@[a-zA-Z_]+?\\.[a-zA-Z]{2,3}' , sampleStr);
 OUTPUT(eMails);
 
 UNICODE sampleStr2:= 
-  U'To: janÃÂ«@example.com From john@example.com This is the winter of our discontent.';
+  U'To: janë@example.com From john@example.com This is the winter of our discontent.';
 eMails2:= REGEXFINDSET(U'\\w+@[a-zA-Z_]+?\\.[a-zA-Z]{2,3}', sampleStr2);
 OUTPUT(eMails2);
 

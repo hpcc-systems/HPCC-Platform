@@ -122,12 +122,12 @@
             <para>Files without record layout in its metadata.</para>
 
             <para>The WsSQL service <emphasis role="bold">only supports files
-            which contain the record definition in the logical fileâs
+            which contain the record definition in the logical file's
             metadata.</emphasis> Sprayed files do not contain this metadata.
             This metadata exists on any file or index which is written to the
             HPCC Distributed File System (DFS). Sprayed data files typically
             undergo some processing and an OUTPUT of the transformed data to
-            disk before use, so this should not interfere with the serviceâs
+            disk before use, so this should not interfere with the service's
             usefulness. You can use the
             <emphasis>CreateTableAndLoad</emphasis> method to produce a usable
             file from a sprayed file or one on a landing zone. See <link
@@ -277,7 +277,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <para>Access the WsSQL interface in your browser:</para>
 
               <para>Using <emphasis>http://nnn.nnn.nnn.nnn:pppp</emphasis>
-              (where nnn.nnn.nnn.nnn is your ESP Serverâs IP Address and pppp
+              (where nnn.nnn.nnn.nnn is your ESP Server's IP Address and pppp
               is the WsSQL service port. The default port is 8510)</para>
             </listitem>
 
@@ -305,12 +305,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <listitem>
             <para>The WsSQL service <emphasis role="bold">only supports files
-            which contain the record definition in the logical fileâs
+            which contain the record definition in the logical file's
             metadata.</emphasis> Sprayed files do not contain this metadata.
             This metadata exists on any file or index which is written to the
             HPCC Distributed File System (DFS). Sprayed data files typically
             undergo some processing and an OUTPUT of the transformed data to
-            disk before use, so this should not interfere with the serviceâs
+            disk before use, so this should not interfere with the service's
             usefulness. You can use the
             <emphasis>CreateTableAndLoad</emphasis> method to produce a usable
             file from a sprayed file or one on a landing zone. See <link
@@ -346,9 +346,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       possible. However, in order to take advantage of index reads, the target
       HPCC files need to be annotated with the pertinent index file names.
       This is accomplished by adding the following key/value entry on the
-      fileâs description using ECL Watch.</para>
+      file's description using ECL Watch.</para>
 
-      <para>From a logical fileâs details page, enter the information in the
+      <para>From a logical file's details page, enter the information in the
       Description entry box, then press the <emphasis role="bold">Save
       Description</emphasis> button.</para>
 
@@ -512,7 +512,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
     <sect1 id="echotest">
       <title>Echo</title>
 
-      <para>This function takes an input string and âechoesâ the value in its
+      <para>This function takes an input string and "echoes" the value in its
       result.</para>
 
       <para>This function is intended for end-to-end connectivity testing. A
@@ -2983,7 +2983,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
       <para>Example:</para>
 
-      <programlisting>Call SearchPeopleByZipService (â33024â)</programlisting>
+      <programlisting>Call SearchPeopleByZipService ('33024')</programlisting>
     </sect1>
 
     <sect1>
@@ -3217,24 +3217,24 @@ Select * from tableList Group by F1 Having Sum (F1 &gt; 100) /* IS SUPPORTED */<
       <para>Example:</para>
 
       <programlisting>Select fname, lname, state from TutorialPerson where 
-   state=âFLâ OR (lname='Smith' and fname='Joe') 
+   state='FL' OR (lname='Smith' and fname='Joe') 
 //returns data that looks like this:
 John Doe FL 
 Jim Smith FL 
 Jane Row FL
 Joe Smith CA
 
-Select fname, lname, state from TutorialPerson where state=âFLâ AND lname &lt;&gt; âSmithâ
+Select fname, lname, state from TutorialPerson where state='FL' AND lname &lt;&gt; 'Smith'
 //returns data that looks like this:
 John Doe FL 
 Jane Row FL 
 
-Select fname, lname, state from TutorialPerson where state=âFLâ AND lname like âSmi%â
+Select fname, lname, state from TutorialPerson where state='FL' AND lname like 'Smi%'
 //returns data that looks like this:
 Jim Smith FL
 
 Select fname, lname, state from TutorialPerson where 
-   state=âFLâ OR (lname='Smith' and fname='Joe') AND fname NOT LIKE 'Ji%' 
+   state='FL' OR (lname='Smith' and fname='Joe') AND fname NOT LIKE 'Ji%' 
 //returns data that looks like this:
 John Doe FL 
 Jane Row FL
@@ -3258,7 +3258,7 @@ Joe Smith CA
       <para>Example:</para>
 
       <programlisting>Select fname, lname, zip, state from TutorialPerson 
-USEINDEX(TutorialPersonByZipIndex)where zip=â33024â
+USEINDEX(TutorialPersonByZipIndex)where zip='33024'
 
 //returns data that looks like this:
 John Doe FL 33024
@@ -3517,13 +3517,13 @@ Select * from tableList Group by F1 Having Sum (F1 &gt; 100) /* IS SUPPORTED */<
       <para>For example, the table <emphasis role="bold">persons</emphasis>
       has columns lastname(String) and Zip (numeric)</para>
 
-      <para><programlisting>Select Firstname from persons where lastname = âJonesâ and zip &gt; 33445    /* works  */ 
+      <para><programlisting>Select Firstname from persons where lastname = 'Jones' and zip &gt; 33445    /* works  */ 
 
-Select Firstname from persons where lastname = âJonesâ and "zip" &gt; 33445    /* also works  */ 
+Select Firstname from persons where lastname = 'Jones' and "zip" &gt; 33445    /* also works  */ 
 
-Select Firstname from persons where lastname = Jones and zip &gt; 33445     /* doesnât work */
+Select Firstname from persons where lastname = Jones and zip &gt; 33445     /* doesn't work */
 
-Select Firstname from persons where lastname = âJonesâ and zip &gt; â33445â   /* doesnât work */</programlisting></para>
+Select Firstname from persons where lastname = 'Jones' and zip &gt; '33445'   /* doesn't work */</programlisting></para>
 
       <para></para>
     </sect1>
@@ -3667,14 +3667,14 @@ LOAD DATA INFILE 'thor::customerdata::customers' INTO TABLE newCustomerFile2
 
 CREATE  TABLE IF NOT EXISTS newCustomerFile3 (id DECIMAL( 30, 5), mytint INT(9), 
                                               mydouble DOUBLE (5,3) UNSIGNED)
-COMMENT 'wonât overwrite';
+COMMENT 'won't overwrite';
 LOAD DATA INFILE 'thor::customerdata::customers' INTO TABLE newCustomerFile3
 
 CREATE  TABLE newCustomerFile4CSV (id DECIMAL( 30, 5), mytint INT(9), 
                                    mydouble DOUBLE (5,3) UNSIGNED)
 COMMENT 'Loading CSV data';
-LOAD DATA INFILE 'somecsvfile.csv'  FIELDS TERMINATED BY â,â ENCLOSED BY âââ 
-                                    LINES TERMINATED BY â\nâ 
+LOAD DATA INFILE 'somecsvfile.csv'  FIELDS TERMINATED BY ',' ENCLOSED BY '"' 
+                                    LINES TERMINATED BY 'n' 
 INTO TABLE newCustomerFile4CSV
 
 </programlisting>
@@ -3765,7 +3765,7 @@ INTO TABLE newCustomerFile4CSV
 
       <para>Example:</para>
 
-      <para><programlisting>Select fname, lname, state, COUNT(zip) from TutorialPerson where zip=â33024â</programlisting></para>
+      <para><programlisting>Select fname, lname, state, COUNT(zip) from TutorialPerson where zip='33024'</programlisting></para>
 
       <sect2>
         <title>Supported String Modifiers</title>

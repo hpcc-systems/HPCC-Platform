@@ -18,7 +18,7 @@
           <para>Stop all HPCC Components.</para>
 
           <para>Verify that they are stopped. You can use a single command,
-          such as : <programlisting>sudoÂ /opt/HPCCSystems/sbin/hpcc-run.shÂ -aÂ hpcc-initÂ status</programlisting></para>
+          such as : <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
         </listitem>
 
         <listitem>

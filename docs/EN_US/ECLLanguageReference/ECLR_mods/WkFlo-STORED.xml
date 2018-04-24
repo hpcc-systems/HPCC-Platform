@@ -158,11 +158,11 @@
   of the ECL execution. If an <emphasis>attribute </emphasis>name is provided
   then the value of that <emphasis>attribute</emphasis> will be pulled from
   storage, if it has not yet been set it will be computed, stored and then
-  usedÂ from storage. This service implicitly causes the
+  used from storage. This service implicitly causes the
   <emphasis>attribute</emphasis> to be evaluated at a global scope instead of
   the enclosing scope.</para>
 
-  <para>STORED creates a storage space in the workunit where the interfaceÂ can
+  <para>STORED creates a storage space in the workunit where the interface can
   place the values to pass to a published query. See <emphasis>Working with
   Roxie</emphasis> in the <emphasis>Programmer's Guide</emphasis>.</para>
 

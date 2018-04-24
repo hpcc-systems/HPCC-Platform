@@ -25,9 +25,9 @@
 
   <para>Example:</para>
 
-  <programlisting>utf8 FirstName := U'NoeÃÂl'
+  <programlisting>utf8 FirstName := U'Noël';
         // utf-8-encoded string
 UTF8_de MyUnicodeString := U'abcd\353';
-        // becomes 'abcdÃÂ«' with a German locale
+        // becomes 'abcdë' with a German locale
 </programlisting>
 </sect1>

@@ -4,7 +4,7 @@
 <sect1 id="MAX">
   <title>MAX</title>
 
-  <para><emphasis role="bold">MAXÂ <indexterm>
+  <para><emphasis role="bold">MAX<indexterm>
       <primary>MAX function</primary>
     </indexterm>(</emphasis><emphasis>recordset, value </emphasis><emphasis
   role="bold">[, KEYED ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>

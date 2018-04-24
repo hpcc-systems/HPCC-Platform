@@ -4,7 +4,7 @@
 <sect1 id="code-signing">
   <title>Code Signing, Embedded languages, and Security</title>
 
-  <para>Versions of HPCC Systems<superscript>Â®</superscript> platform prior to
+  <para>Versions of HPCC Systems<superscript>®</superscript> platform prior to
   6.0.0 have always allowed some control over which operations were permitted
   in ECL code. This was done, among other reasons, as a way to ensure that
   operations like PIPE or embedded C++ could not be used to circumvent access

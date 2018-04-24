@@ -38,8 +38,8 @@
       </tgroup>
     </informaltable></para>
 
-  <para>TheÂ <emphasis role="bold">PARALLEL</emphasis>Â action allows the items
-  in theÂ actionlist to execute simultaneously. It does not force parallel
+  <para>The <emphasis role="bold">PARALLEL</emphasis> action allows the items
+  in the actionlist to execute simultaneously. It does not force parallel
   execution, only allows it -- the compiler determines the actual execution
   order. This is already the default operative mode, so PARALLEL is only
   useful within the action list of a SEQUENTIAL set of actions.</para>
