@@ -64,7 +64,7 @@
 #define TREECOPYPOLLTIME  (60*1000*5)      // for tracing that delayed
 #define TREECOPYPRUNETIME (24*60*60*1000)  // 1 day
 
-static const unsigned __int64 defaultFileStreamChooseN = I64C(0x7fffffffffffffff); // constant should be move to common place (see eclhelper.hpp)
+static const unsigned __int64 defaultFileStreamChooseNLimit = I64C(0x7fffffffffffffff); // constant should be move to common place (see eclhelper.hpp)
 static const unsigned __int64 defaultFileStreamSkipN = 0;
 static const unsigned defaultDaFSNumRecs = 100;
 enum OutputFormat:byte { outFmt_Binary, outFmt_Xml, outFmt_Json };
@@ -1783,29 +1783,26 @@ void CEndpointCS::beforeDispose()
     table.removeExact(this);
 }
 
-class CRemoteFilteredFileIO : public CRemoteBase, implements IFileIO
+class CRemoteFilteredFileIOBase : public CRemoteBase, implements IFileIO
 {
 public:
     IMPLEMENT_IINTERFACE;
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
     // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
-    CRemoteFilteredFileIO(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseNLimit)
-    : CRemoteBase(ep, filename)
+    CRemoteFilteredFileIOBase(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+        : CRemoteBase(ep, filename)
     {
-        // NB: input_grouped == output_grouped for now, but may want output to be ungrouped
-        request.appendf("{\n"
-            "\"format\" : \"binary\",\n"
+        // NB: inputGrouped == outputGrouped for now, but may want output to be ungrouped
+
+        openRequest(request);
+        request.appendf("\"format\" : \"binary\",\n"
             "\"node\" : {\n"
-            " \"kind\" : \"diskread\",\n"
-            " \"fileName\" : \"%s\",\n"
-            " \"compressed\" : \"%s\",\n"
-            " \"input_grouped\" : \"%s\",\n"
-            " \"output_grouped\" : \"%s\"", filename, boolToStr(compressed), boolToStr(grouped), boolToStr(grouped));
-        if (chooseNLimit)
-            request.appendf(",\n \"choosen\" : \"%" I64F "u\"", chooseNLimit);
+            " \"fileName\" : \"%s\"", filename);
+        if (chooseN)
+            request.appendf(",\n \"chooseN\" : \"%" I64F "u\"", chooseN);
         if (fieldFilters.numFilterFields())
         {
-            request.append(",\n \"keyfilter\" : [\n  ");
+            request.append(",\n \"keyFilter\" : [\n  ");
             for (unsigned idx=0; idx < fieldFilters.numFilterFields(); idx++)
             {
                 auto &filter = fieldFilters.queryFilter(idx);
@@ -1837,8 +1834,6 @@ public:
                 request.append("\"");
             }
         }
-        request.append("\n }\n");
-        sendRequest(0, nullptr);
         bufPos = 0;
     }
     virtual size32_t read(offset_t pos, size32_t len, void * data) override
@@ -1880,7 +1875,7 @@ public:
             handle = 0;
         }
     }
-    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
     {
         /* NB: Would need new stat. categories added for this to make sense,
          * but this class is implemented as a IFileIO for convenience for now,
@@ -1889,6 +1884,14 @@ public:
         return 0;
     }
 protected:
+    StringBuffer &openRequest(StringBuffer &request)
+    {
+        return request.append("{\n");
+    }
+    StringBuffer &closeRequest(StringBuffer &request)
+    {
+        return request.append("\n }\n");
+    }
     void refill()
     {
         size32_t cursorLength;
@@ -1949,12 +1952,31 @@ protected:
     bool eof = false;
 };
 
+class CRemoteFilteredFileIO : public CRemoteFilteredFileIOBase
+{
+public:
+    // Really a stream, but life (maybe) easier elsewhere if looks like a file
+    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    CRemoteFilteredFileIO(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
+        : CRemoteFilteredFileIOBase(ep, filename, actual, projected, fieldFilters, chooseN)
+    {
+        // NB: inputGrouped == outputGrouped for now, but may want output to be ungrouped
+        request.appendf(",\n \"kind\" : \"diskread\",\n"
+            " \"compressed\" : \"%s\",\n"
+            " \"inputGrouped\" : \"%s\",\n"
+            " \"outputGrouped\" : \"%s\"", boolToStr(compressed), boolToStr(grouped), boolToStr(grouped));
+        closeRequest(request);
+        sendRequest(0, nullptr);
+    }
+};
+
 class CRemoteFilteredRowStream : public CRemoteFilteredFileIO, implements IRowStream
 {
 public:
     CRemoteFilteredRowStream(const RtlRecord &_recInfo, SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped)
-    : CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped, 0), recInfo(_recInfo)
-    {}
+        : CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped, 0), recInfo(_recInfo)
+    {
+    }
     virtual const byte *queryNextRow()  // NOTE - rows returned must NOT be freed
     {
         if (!bufRemaining && !eof)
@@ -1975,11 +1997,11 @@ protected:
     const RtlRecord &recInfo;
 };
 
-extern IFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseNLimit)
+extern IFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
 {
     try
     {
-        return new CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped, chooseNLimit);
+        return new CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped, chooseN);
     }
     catch (IException *e)
     {
@@ -1988,6 +2010,104 @@ extern IFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filena
     }
     return nullptr;
 }
+
+class CRemoteFilteredKeyIO : public CRemoteFilteredFileIOBase
+{
+public:
+    // Really a stream, but life (maybe) easier elsewhere if looks like a file
+    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    CRemoteFilteredKeyIO(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+        : CRemoteFilteredFileIOBase(ep, filename, actual, projected, fieldFilters, chooseN)
+    {
+        request.appendf(",\n \"kind\" : \"indexread\"");
+        closeRequest(request);
+        sendRequest(0, nullptr);
+    }
+};
+
+class CRemoteFilteredKeyCountIO : public CRemoteFilteredFileIOBase
+{
+public:
+    // Really a stream, but life (maybe) easier elsewhere if looks like a file
+    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    CRemoteFilteredKeyCountIO(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, const RowFilter &fieldFilters, unsigned __int64 rowLimit)
+        : CRemoteFilteredFileIOBase(ep, filename, actual, actual, fieldFilters, rowLimit)
+    {
+        request.appendf(",\n \"kind\" : \"indexcount\"");
+        closeRequest(request);
+        sendRequest(0, nullptr);
+    }
+};
+
+class CRemoteKey : public CSimpleInterfaceOf<IIndexLookup>
+{
+    Owned<IFileIO> fileIO;
+    offset_t pos = 0;
+    Owned<ISourceRowPrefetcher> prefetcher;
+    CThorContiguousRowBuffer prefetchBuffer;
+    Owned<ISerialStream> strm;
+    bool pending = false;
+    SocketEndpoint ep;
+    StringAttr filename;
+    Linked<IOutputMetaData> actual, projected;
+    RowFilter fieldFilters;
+
+public:
+    CRemoteKey(SocketEndpoint &_ep, const char *_filename, IOutputMetaData *_actual, IOutputMetaData *_projected, const RowFilter &_fieldFilters, unsigned __int64 rowLimit)
+        : ep(_ep), filename(_filename), actual(_actual), projected(_projected)
+    {
+        for (unsigned f=0; f<_fieldFilters.numFilterFields(); f++)
+            fieldFilters.addFilter(OLINK(_fieldFilters.queryFilter(f)));
+        fileIO.setown(new CRemoteFilteredKeyIO(ep, filename, actual, projected, fieldFilters, rowLimit));
+        if (!fileIO)
+            throw MakeStringException(0, "Unable to open remote key part: '%s'", filename.get());
+        strm.setown(createFileSerialStream(fileIO));
+        prefetcher.setown(projected->createDiskPrefetcher());
+        assertex(prefetcher);
+        prefetchBuffer.setStream(strm);
+    }
+// IIndexLookup
+    virtual unsigned __int64 getCount() override
+    {
+        return checkCount(0);
+    }
+    virtual unsigned __int64 checkCount(unsigned __int64 limit) override
+    {
+        Owned<IFileIO> iFileIO = new CRemoteFilteredKeyCountIO(ep, filename, actual, fieldFilters, limit);
+        unsigned __int64 result;
+        iFileIO->read(0, sizeof(result), &result);
+        return result;
+    }
+    virtual const void *nextKey() override
+    {
+        if (pending)
+            prefetchBuffer.finishedRow();
+        if (prefetchBuffer.eos())
+            return nullptr;
+        prefetcher->readAhead(prefetchBuffer);
+        pending = true;
+        return prefetchBuffer.queryRow();
+    }
+    virtual unsigned querySeeks() const override { return 0; } // not sure how best to handle these, perhaps should log/record somewhere on server-side
+    virtual unsigned queryScans() const override { return 0; }
+    virtual unsigned querySkips() const override { return 0; }
+};
+
+
+extern IIndexLookup *createRemoteFilteredKey(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+{
+    try
+    {
+        return new CRemoteKey(ep, filename, actual, projected, fieldFilters, chooseN);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, nullptr);
+        e->Release();
+    }
+    return nullptr;
+}
+
 
 class CRemoteFile : public CRemoteBase, implements IFile
 {
@@ -3793,40 +3913,91 @@ static IOutputMetaData *getTypeInfoOutputMetaData(IPropertyTree &actNode, const 
     }
 }
 
-class CRemoteDiskReadActivity : public CSimpleInterfaceOf<IRemoteActivity>, implements IVirtualFieldCallback
+class CRemoteDiskBaseActivity : public CSimpleInterfaceOf<IRemoteActivity>, implements IVirtualFieldCallback
 {
-    StringAttr fileName;
-    Linked<IHThorDiskReadArg> helper;
-    CThorContiguousRowBuffer prefetchBuffer;
-    IArrayOf<IKeySegmentMonitor> segMonitors;
-    Owned<ISourceRowPrefetcher> prefetcher;
-    Owned<ISerialStream> inputStream;
-    Owned<IFileIO> iFileIO;
-    Linked<IOutputMetaData> outMeta;
-    Owned<const IDynamicTransform> translator;
-    unsigned __int64 chooseN = 0;
+protected:
+    StringAttr fileName; // physical filename
+    Linked<IOutputMetaData> inMeta, outMeta;
     unsigned __int64 processed = 0;
-    unsigned __int64 startPos = 0;
-    bool compressed = false;
-    bool inputGrouped = false;
+    Owned<const IDynamicTransform> translator;
     bool outputGrouped = false;
     bool opened = false;
     bool eofSeen = false;
+    const RtlRecord *record = nullptr;
+    RowFilter filters;
+
+    void initCommon(IPropertyTree &config)
+    {
+        fileName.set(config.queryProp("fileName"));
+
+        record = &inMeta->queryRecordAccessor(true);
+        translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
+        Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
+        ForEach(*filterIter)
+            filters.addFilter(*record, filterIter->query().queryProp(nullptr));
+    }
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IRemoteActivity>)
+
+    CRemoteDiskBaseActivity()
+    {
+    }
+// IRemoteActivity impl.
+    virtual unsigned __int64 queryProcessed() const override
+    {
+        return processed;
+    }
+    virtual IOutputMetaData *queryOutputMeta() const override
+    {
+        return outMeta;
+    }
+    virtual bool isGrouped() const override
+    {
+        return outputGrouped;
+    }
+    virtual void serializeCursor(MemoryBuffer &tgt) const override
+    {
+        throwUnexpected();
+    }
+    virtual void restoreCursor(MemoryBuffer &src) override
+    {
+        throwUnexpected();
+    }
+//interface IVirtualFieldCallback
+    virtual const char * queryLogicalFilename(const void * row) override
+    {
+        const char * filename = nullptr; // MORE: This needs to be passed from the client to dafilesrv
+        return filename ? filename : "";
+    }
+    virtual unsigned __int64 getFilePosition(const void * row) override
+    {
+        throwUnexpected();
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row) override
+    {
+        throwUnexpected();
+    }
+};
+
+class CRemoteDiskReadActivity : public CRemoteDiskBaseActivity
+{
+    typedef CRemoteDiskBaseActivity PARENT;
+
+    CThorContiguousRowBuffer prefetchBuffer;
+    Owned<ISourceRowPrefetcher> prefetcher;
+    Owned<ISerialStream> inputStream;
+    Owned<IFileIO> iFileIO;
+    unsigned __int64 chooseN = 0;
+    unsigned __int64 startPos = 0;
+    bool compressed = false;
+    bool inputGrouped = false;
     bool cursorDirty = false;
-    bool canMatchAny = false;
     mutable bool eogPending = false;
     mutable bool someInGroup = false;
-    const RtlRecord *record = nullptr;
     RtlDynRow *filterRow = nullptr;
-    RowFilter actualFilter;
 
     void checkOpen()
     {
-        if (!canMatchAny)
-        {
-            eofSeen = true;
-            return;
-        }
         if (opened)
         {
             if (!cursorDirty)
@@ -3841,69 +4012,69 @@ class CRemoteDiskReadActivity : public CSimpleInterfaceOf<IRemoteActivity>, impl
             cursorDirty = false;
             return;
         }
-        const char *fileName = helper->getFileName();
-
         OwnedIFile iFile = createIFile(fileName);
         if (compressed)
         {
             iFileIO.setown(createCompressedFileReader(iFile));
             if (!iFileIO)
-                throw MakeStringException(0, "Failed to open compressed file: '%s'", fileName);
+                throw MakeStringException(0, "Failed to open compressed file: '%s'", fileName.get());
         }
         else
         {
             iFileIO.setown(iFile->open(IFOread));
             if (!iFileIO)
-                throw MakeStringException(1, "Failed to open: '%s'", fileName);
+                throw MakeStringException(1, "Failed to open: '%s'", fileName.get());
         }
 
         inputStream.setown(createFileSerialStream(iFileIO, startPos));
         prefetchBuffer.setStream(inputStream);
-        prefetcher.setown(helper->queryDiskRecordSize()->createDiskPrefetcher());
+        prefetcher.setown(inMeta->createDiskPrefetcher());
 
-        chooseN = helper->getChooseNLimit();
         opened = true;
+        eofSeen = false;
     }
     void close()
     {
         iFileIO.clear();
         opened = false;
+        eofSeen = true;
     }
     inline bool fieldFilterMatch(const void * buffer)
     {
-        if (actualFilter.numFilterFields())
+        if (filters.numFilterFields())
         {
             filterRow->setRow(buffer, 0);
-            return actualFilter.matches(*filterRow);
+            return filters.matches(*filterRow);
         }
         else
             return true;
     }
 public:
-    CRemoteDiskReadActivity(IHThorDiskReadArg &_helper, bool _compressed, bool _inputGrouped, bool _outputGrouped)
-        : compressed(_compressed), inputGrouped(_inputGrouped), outputGrouped(_outputGrouped), helper(&_helper), prefetchBuffer(nullptr)
+    CRemoteDiskReadActivity(IPropertyTree &config) : prefetchBuffer(nullptr)
     {
-        outMeta.set(helper->queryOutputMeta());
-        canMatchAny = helper->canMatchAny();
-        record = &helper->queryDiskRecordSize()->queryRecordAccessor(true);
-        assertex(!helper->needTransform()); // Code assumes that we do not need to call the transform
-        translator.setown(createRecordTranslator(helper->queryProjectedDiskRecordSize()->queryRecordAccessor(true), *record));
+        compressed = config.getPropBool("compressed");
+        inputGrouped = config.getPropBool("inputGrouped", false);
+        outputGrouped = config.getPropBool("outputGrouped", false);
+        chooseN = config.getPropInt64("chooseN", defaultFileStreamChooseNLimit);
+        if (!inputGrouped && outputGrouped)
+            outputGrouped = false; // perhaps should fire error
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", inputGrouped));
+        outMeta.setown(getTypeInfoOutputMetaData(config, "output", outputGrouped));
+        if (!outMeta)
+            outMeta.set(inMeta);
+
+        initCommon(config);
+        if (config.hasProp("keyFilter"))
+            filterRow = new RtlDynRow(*record);
     }
     ~CRemoteDiskReadActivity()
     {
         delete filterRow;
     }
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IRemoteActivity>)
-    void addFilter(const char *filter)
-    {
-        actualFilter.addFilter(*record, filter);
-        if (!filterRow)
-            filterRow = new RtlDynRow(*record);
-    }
 // IRemoteActivity impl.
     virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
     {
-        if (eogPending)
+        if (eogPending || eofSeen)
         {
             eogPending = false;
             someInGroup = false;
@@ -3921,9 +4092,7 @@ public:
                 const byte *next = prefetchBuffer.queryRow();
                 size32_t rowSz; // use local var instead of reference param for efficiency
                 if (fieldFilterMatch(next))
-                {
                     rowSz = translator->translate(outBuilder, *this, next);
-                }
                 else
                     rowSz = 0;
                 prefetchBuffer.finishedRow();
@@ -3969,62 +4138,192 @@ public:
         src.read(someInGroup);
         src.read(eogPending);
     }
-    virtual unsigned __int64 queryProcessed() const override
-    {
-        return processed;
-    }
-    virtual IOutputMetaData *queryOutputMeta() const override
-    {
-        return outMeta;
-    }
     virtual StringBuffer &getInfoStr(StringBuffer &out) const override
     {
-        return out.appendf("diskread[%s]", helper->getFileName());
+        return out.appendf("diskread[%s]", fileName.get());
     }
     virtual bool isGrouped() const override
     {
         return outputGrouped;
     }
-
- //interface IVirtualFieldCallback
-    virtual const char * queryLogicalFilename(const void * row)
-    {
-        const char * filename = nullptr; // MORE: HPCC-19566 This needs to be passed from the client to dafilesrv
-        return filename ? filename : "";
-    }
-    virtual unsigned __int64 getFilePosition(const void * row)
+//interface IVirtualFieldCallback
+    virtual unsigned __int64 getFilePosition(const void * row) override
     {
         unsigned __int64 baseOffset = 0; // MORE: This needs to be passed from the client to dafilesrv
         return prefetchBuffer.tell() + baseOffset;
     }
-    virtual unsigned __int64 getLocalFilePosition(const void * row)
+    virtual unsigned __int64 getLocalFilePosition(const void * row) override
     {
         unsigned part = 0; // MORE: This needs to be passed from the client to dafilesrv
         return makeLocalFposOffset(part, prefetchBuffer.tell());
     }
 };
 
+
 IRemoteActivity *createRemoteDiskRead(IPropertyTree &actNode)
 {
-    const char *fileName = actNode.queryProp("fileName");
-    unsigned __int64 chooseN = actNode.getPropInt64("choosen", defaultFileStreamChooseN);
-    unsigned __int64 skipN = actNode.getPropInt64("skipN", defaultFileStreamSkipN);
-    bool compressed = actNode.getPropBool("compressed");
+    return new CRemoteDiskReadActivity(actNode);
+}
 
-    bool inputGrouped = actNode.getPropBool("input_grouped", false);
-    bool outputGrouped = actNode.getPropBool("output_grouped", false);
-    if (!inputGrouped && outputGrouped)
-        outputGrouped = false; // perhaps should fire error
-    Owned<IOutputMetaData> inMeta = getTypeInfoOutputMetaData(actNode, "input", inputGrouped);
-    Owned<IOutputMetaData> outMeta = getTypeInfoOutputMetaData(actNode, "output", outputGrouped);
-    if (!outMeta)
+class CRemoteIndexBaseActivity : public CRemoteDiskBaseActivity
+{
+    typedef CRemoteDiskBaseActivity PARENT;
+
+protected:
+    bool isTlk = false;
+    bool allowPreload = false;
+    Owned<IKeyIndex> keyIndex;
+    Owned<IKeyManager> keyManager;
+
+    void checkOpen()
+    {
+        if (opened)
+            return;
+        keyIndex.setown(createKeyIndex(fileName, 0, isTlk, allowPreload)); // JCSMORE crc
+        keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true));
+        filters.createSegmentMonitors(keyManager);
+        keyManager->finishSegmentMonitors();
+        keyManager->reset();
+
+        opened = true;
+    }
+    void close()
+    {
+        keyManager.clear();
+        keyIndex.clear();
+        opened = false;
+        eofSeen = true;
+    }
+public:
+    CRemoteIndexBaseActivity(IPropertyTree &config)
+    {
+        isTlk = config.getPropBool("isTlk");
+        allowPreload = config.getPropBool("allowPreload");
+    }
+};
+
+class CRemoteIndexReadActivity : public CRemoteIndexBaseActivity
+{
+    typedef CRemoteIndexBaseActivity PARENT;
+
+    unsigned __int64 chooseN = 0;
+public:
+    CRemoteIndexReadActivity(IPropertyTree &config) : PARENT(config)
+    {
+        chooseN = config.getPropInt64("chooseN", defaultFileStreamChooseNLimit);
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
+        outMeta.setown(getTypeInfoOutputMetaData(config, "output", false));
+        if (!outMeta)
+            outMeta.set(inMeta);
+
+        initCommon(config);
+    }
+// IRemoteActivity impl.
+    virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
+    {
+        if (eofSeen)
+            return nullptr;
+        checkOpen();
+        if (!eofSeen)
+        {
+            if (processed < chooseN)
+            {
+                while (keyManager->lookup(true))
+                {
+                    const byte *keyRow = keyManager->queryKeyBuffer();
+                    retSz = translator->translate(outBuilder, *this, keyRow);
+                    if (retSz)
+                    {
+                        const void *ret = outBuilder.getSelf();
+                        outBuilder.finishRow(retSz);
+                        ++processed;
+                        return ret;
+                    }
+                }
+                retSz = 0;
+            }
+            eofSeen = true;
+        }
+        close();
+        return nullptr;
+    }
+    virtual void serializeCursor(MemoryBuffer &tgt) const override
+    {
+        keyManager->serializeCursorPos(tgt);
+        tgt.append(processed);
+
+/* JCSMORE (see HPCC-19640), serialize seek/scan data to client
+        tgt.append(keyManager->querySeeks());
+        tgt.append(keyManager->queryScans());
+*/
+    }
+    virtual void restoreCursor(MemoryBuffer &src) override
+    {
+        checkOpen();
+        eofSeen = false;
+        keyManager->deserializeCursorPos(src);
+        src.read(processed);
+    }
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return out.appendf("indexread[%s]", fileName.get());
+    }
+};
+
+
+IRemoteActivity *createRemoteIndexRead(IPropertyTree &actNode)
+{
+    return new CRemoteIndexReadActivity(actNode);
+}
+
+
+class CRemoteIndexCountActivity : public CRemoteIndexBaseActivity
+{
+    typedef CRemoteIndexBaseActivity PARENT;
+
+    unsigned __int64 rowLimit = 0;
+
+public:
+    CRemoteIndexCountActivity(IPropertyTree &config) : PARENT(config)
+    {
+        rowLimit = config.getPropInt64("chooseN");
+
+        // create helper
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
         outMeta.set(inMeta);
-    Owned<IHThorDiskReadArg> helper = createDiskReadArg(fileName, LINK(inMeta), LINK(outMeta), LINK(outMeta), chooseN, skipN, (unsigned __int64)-1);
-    Owned<CRemoteDiskReadActivity> ret = new CRemoteDiskReadActivity(*helper, compressed, inputGrouped, outputGrouped);
-    Owned<IPropertyTreeIterator> filterIter = actNode.getElements("keyfilter");
-    ForEach(*filterIter)
-        ret->addFilter(filterIter->query().queryProp(nullptr));
-    return ret.getClear();
+        initCommon(config);
+    }
+// IRemoteActivity impl.
+    virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
+    {
+        if (eofSeen)
+            return nullptr;
+        checkOpen();
+        unsigned __int64 count = 0;
+        if (!eofSeen)
+        {
+            if (rowLimit)
+                count = keyManager->checkCount(rowLimit);
+            else
+                count = keyManager->getCount();
+        }
+        void *tgt = outBuilder.ensureCapacity(sizeof(count), "count");
+        const void *ret = outBuilder.getSelf();
+        memcpy(tgt, &count, sizeof(count));
+        outBuilder.finishRow(sizeof(count));
+        close();
+        return ret;
+    }
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return out.appendf("indexcount[%s]", fileName.get());
+    }
+};
+
+
+IRemoteActivity *createRemoteIndexCount(IPropertyTree &actNode)
+{
+    return new CRemoteIndexCountActivity(actNode);
 }
 
 IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
@@ -4034,12 +4333,26 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
     ThorActivityKind kind = TAKnone;
     if (strieq("diskread", kindStr))
         kind = TAKdiskread;
+    else if (strieq("indexread", kindStr))
+        kind = TAKindexread;
+    else if (strieq("indexcount", kindStr))
+        kind = TAKindexcount;
     Owned<IRemoteActivity> activity;
     switch (kind)
     {
         case TAKdiskread:
         {
             activity.setown(createRemoteDiskRead(actNode));
+            break;
+        }
+        case TAKindexread:
+        {
+            activity.setown(createRemoteIndexRead(actNode));
+            break;
+        }
+        case TAKindexcount:
+        {
+            activity.setown(createRemoteIndexCount(actNode));
             break;
         }
         default:
@@ -5746,8 +6059,9 @@ public:
          *  "node" : {
          *   "kind" : "diskread",
          *   "fileName": "examplefilename",
-         *   "keyfilter" : "f1='1    '",
-         *   "choosen" : "5",
+         *   "keyFilter" : "f1='1    '",
+         *   "chooseN" : 5,
+         *   "compressed" : "false"
          *   "input" : {
          *    "f1" : "string5",
          *    "f2" : "string5"
@@ -5756,6 +6070,39 @@ public:
          *    "f2" : "string",
          *    "f1" : "real"
          *   }
+         *  }
+         * }
+         * OR
+         * {
+         *  "format" : "xml",
+         *  "handle" : "1234",
+         *  "node" : {
+         *   "kind" : "indexread",
+         *   "fileName": "examplefilename",
+         *   "keyLilter" : "f1='1    '",
+         *   "rowLimit" : 5,
+         *   "input" : {
+         *    "f1" : "string5",
+         *    "f2" : "string5"
+         *   },
+         *   "output" : {
+         *    "f2" : "string",
+         *    "f1" : "real"
+         *   }
+         *  }
+         * }
+         * OR
+         * {
+         *  "format" : "xml",
+         *  "node" : {
+         *   "kind" : "indexcount",
+         *   "fileName": "examplefilename",
+         *   "keyFilter" : "f1='1    '",
+         *   "rowLimit" : 5
+         *   "input" : {
+         *    "f1" : "string5",
+         *    "f2" : "string5"
+         *   },
          *  }
          * }
          *

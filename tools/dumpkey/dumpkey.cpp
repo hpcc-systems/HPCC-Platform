@@ -239,7 +239,7 @@ int main(int argc, const char **argv)
                     fields.append(nullptr);
                     outRecType = new RtlRecordTypeInfo(type_record, minRecSize, fields.getArray(0));
                     outmeta.setown(new CDynamicOutputMetaData(*outRecType));
-                    helper.setown(createIndexReadArg(keyName, diskmeta.getLink(), outmeta.getLink(), count, 0, (uint64_t) -1));
+                    helper.setown(createIndexReadArg(keyName, diskmeta.getLink(), outmeta.getLink(), outmeta.getLink(), count, 0, (uint64_t) -1));
                     helper->setCallback(&callback);
                     if (filters.ordinality())
                     {
