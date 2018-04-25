@@ -32,6 +32,7 @@ define([
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
+    "src/Clippy",
     "src/ESPQuery",
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
@@ -53,7 +54,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr, all, arrayUtil,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                ESPQuery, _TabContainerWidget, DelayLoadWidget, Utility,
+                Clippy, ESPQuery, _TabContainerWidget, DelayLoadWidget, Utility,
                 template) {
     return declare("QuerySetDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -90,6 +91,8 @@ define([
             this.workunitsTab = registry.byId(this.id + "_Workunit");
             this.testPagesTab = registry.byId(this.id + "_TestPages");
             this.suspended = registry.byId(this.id + "Suspended");
+
+            Clippy.attach(this.id + "ClippyButton");
         },
 
         //  Hitched actions  ---
