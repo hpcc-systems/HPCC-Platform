@@ -1882,50 +1882,68 @@ public:
     {
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
+        if(optServer.isEmpty())
+        {
+            fprintf(stderr, "\nError: Server IP not specified\n");
+            return false;
+        }
+        if(optWuid.isEmpty())
+        {
+            fprintf(stderr, "\nError: WUID not specified\n");
+            return false;
+        }
+
         return true;
     }
     virtual int processCMD()
     {
-        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
-
-        Owned<IClientWUCreateZAPInfoRequest> zapReq = client->createWUCreateZAPInfoRequest();
-        zapReq->setWuid(optWuid.get());
-        zapReq->setIncludeThorSlaveLog(optIncThorSlave);
-        zapReq->setProblemDescription(optProblemDesc.get());
-
-        Owned<IClientWUCreateZAPInfoResponse> zapResp = client->WUCreateZAPInfo(zapReq);
-        int ret = outputMultiExceptionsEx(zapResp->getExceptions());
-        if (ret == 0)
+        //Create the file name for the output
+        StringBuffer outputFile;
+        if (!optPath.isEmpty())
         {
-            StringBuffer filePath;
-            if (optPath.length())
-            {
-                filePath.set(optPath);
-                const char *p = filePath.str();
-                p = (p + strlen(p) - 1);
-                if (!streq(p, PATHSEPSTR))
-                    filePath.append(PATHSEPSTR);
-            }
-            else
-                filePath.set(".").append(PATHSEPSTR);
+            outputFile.set(optPath.get());
+            const char *p = outputFile.str();
+            p = (p + strlen(p) - 1);
+            if (!streq(p, PATHSEPSTR))
+                outputFile.append(PATHSEPSTR);
+        }
+        else
+            outputFile.set(".").append(PATHSEPSTR);
+        outputFile.append("ZAPReport_").append(optWuid.get());
+        if (!optUsername.isEmpty())
+            outputFile.append('_').append(optUsername.get());
+        outputFile.append(".zip");
 
-            filePath.append(zapResp->getZAPFileName());
+        //Create command URL
+        StringBuffer urlTail("/WUCreateAndDownloadZAPInfo?Wuid=");
+        urlTail.append(optWuid.get());
+        if (optIncThorSlave)
+            urlTail.append("&IncludeThorSlaveLog=true");
+        if (!optProblemDesc.isEmpty())
+            urlTail.append("&ProblemDescription=").append(optProblemDesc.get());
+        EclCmdURL eclCmdURL("WsWorkunits", !streq(optServer, ".") ? optServer : "localhost", optPort, optSSL, urlTail.str());
 
-            const MemoryBuffer & zapFileData = zapResp->getThefile();
+        //Create CURL command
+        StringBuffer curlCommand = "curl";
+        if (!optUsername.isEmpty())
+        {
+            curlCommand.append(" -u ").append(optUsername.get());
+            if (!optPassword.isEmpty())
+                curlCommand.append(":").append(optPassword.get());
+        }
+        curlCommand.appendf(" -o %s %s", outputFile.str(), eclCmdURL.str());
 
-            Owned<IFile> zapFile = createIFile(filePath.str());
-            Owned<IFileIO> zapFileIo = zapFile->open(IFOcreate);
-
-            size32_t written = zapFileIo->write(0, zapFileData.length(), (const void *)zapFileData.toByteArray());
-
-            if (written != zapFileData.length())
-                throw MakeStringException(-1, "truncated write to file %s, ZAP file creation cancelled.\n", filePath.str());
-
-            fprintf(stdout, "ZAP file written into %s.\n",filePath.str());
+        Owned<IPipeProcess> pipe = createPipeProcess();
+        if (!pipe->run(optVerbose ? "EXEC" : NULL, curlCommand.str(), NULL, false, true, true))
+        {
+            fprintf(stderr, "Failed to run zapgen command %s\n", curlCommand.str());
+            return false;
         }
 
+        fprintf(stdout, "ZAP file written into %s.\n", outputFile.str());
         return 0;
     }
+
     virtual void usage()
     {
         fputs("\nUsage:\n"

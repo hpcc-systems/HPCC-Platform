@@ -208,7 +208,6 @@ public:
     bool onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEspWUInfoResponse &resp);
     bool onWUInfoDetails(IEspContext &context, IEspWUInfoRequest &req, IEspWUInfoResponse &resp);
     bool onWUFile(IEspContext &context,IEspWULogFileRequest &req, IEspWULogFileResponse &resp);
-    bool onWUDownloadFiles(IEspContext &context,IEspWUDownloadFilesRequest &req, IEspWUDownloadFilesResponse &resp);
     bool onWUResult(IEspContext &context,IEspWUResultRequest &req, IEspWUResultResponse &resp);
     bool onWUFullResult(IEspContext &context, IEspWUFullResultRequest &req, IEspWUFullResultResponse &resp);
     bool onWUResultView(IEspContext &context, IEspWUResultViewRequest &req, IEspWUResultViewResponse &resp);
@@ -276,14 +275,6 @@ public:
     bool onWUGetArchiveFile(IEspContext &context, IEspWUGetArchiveFileRequest &req, IEspWUGetArchiveFileResponse &resp);
     bool onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefinitionActionRequest &req, IEspWUEclDefinitionActionResponse &resp);
 private:
-    void addProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, const char* path);
-    void addThorSlaveLogfile(Owned<IConstWorkUnit> &cwu,WsWuInfo& winfo, const char* path);
-    void createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
-    void createZAPWUXMLFile(WsWuInfo &winfo, const char* pathNameStr);
-    void createZAPWUGraphProgressFile(const char* wuid, const char* pathNameStr);
-    void createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
-    void createZAPFile(const char* fileName, size32_t len, const void* data);
-    void cleanZAPFolder(IFile* zipDir, bool removeFolder);
     IPropertyTree* sendControlQuery(IEspContext &context, const char* target, const char* query, unsigned timeout);
     bool resetQueryStats(IEspContext &context, const char* target, IProperties* queryIds, IEspWUQuerySetQueryActionResponse& resp);
     void readGraph(IEspContext& context, const char* subGraphId, WUGraphIDType& id, bool running,
@@ -291,9 +282,6 @@ private:
     IPropertyTree* getWorkunitArchive(IEspContext &context, WsWuInfo& winfo, const char* wuid, unsigned cacheMinutes);
     void readSuperFiles(IEspContext &context, IReferencedFile* rf, const char* fileName, IReferencedFileList* wufiles, IArrayOf<IEspQuerySuperFile>* files);
     IReferencedFile* getReferencedFileByName(const char* name, IReferencedFileList* wufiles);
-    void readWUFile(const char *wuid, WsWuInfo &winfo, IConstWUFileOption &item, bool forDownload, MemoryBuffer &mb, StringBuffer &fileName, StringBuffer &fileMimeType);
-    void zipAFolderToMB(const char *folderToZIP, const char *zipFileName, bool gzip, MemoryBuffer &mb);
-    void setAttachmentFileName(IEspContext &context, const char *fileName);
     void checkEclDefinitionSyntax(IEspContext &context, const char *target, const char *eclDefinition,
         int msToWait, IArrayOf<IConstWUEclDefinitionActionResult> &results);
     bool deployEclDefinition(IEspContext &context, const char *target, const char *name, int msToWait, StringBuffer &wuid, StringBuffer &result);
@@ -330,12 +318,15 @@ public:
 
 class CWsWorkunitsSoapBindingEx : public CWsWorkunitsSoapBinding
 {
+    void createAndDownloadWUZAPFile(IEspContext &context, CHttpRequest *request, CHttpResponse *response);
+    void downloadWUFiles(IEspContext &context, CHttpRequest *request, CHttpResponse *response);
 public:
     CWsWorkunitsSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel) : CWsWorkunitsSoapBinding(cfg, name, process, llevel)
     {
         wswService = NULL;
         VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspBinding[@name=\"%s\"]/BatchWatch", process, name);
         batchWatchFeaturesOnly = cfg->getPropBool(xpath.str(), false);
+        directories.set(cfg->queryPropTree("Software/Directories"));
     }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
@@ -366,6 +357,7 @@ public:
 private:
     bool batchWatchFeaturesOnly;
     CWsWorkunitsEx *wswService;
+    Owned<IPropertyTree> directories;
 };
 
 void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);
