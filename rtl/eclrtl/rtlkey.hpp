@@ -28,7 +28,6 @@ enum KeySegmentMonitorSerializeType
     KSMST_SINGLEBIGSIGNEDKEYSEGMENTMONITOR,
     KSMST_SINGLELITTLESIGNEDKEYSEGMENTMONITOR,
     KSMST_CSINGLELITTLEKEYSEGMENTMONITOR,
-    KSMST_OVERRIDEABLEKEYSEGMENTMONITOR,
     KSMST_max
 };
 
@@ -115,11 +114,6 @@ public:
     virtual bool setOffset(unsigned _offset) = 0;  // Used by old record layout translator - to be removed at some point
 };
 
-interface IOverrideableKeySegmentMonitor  : public IKeySegmentMonitor
-{
-    virtual void setOverrideBuffer(const void *ptr) = 0;
-};
-
 interface IBlobProvider
 {
     virtual byte * lookupBlob(unsigned __int64 id) = 0;         // return reference, not freed by code generator, can dispose once transform() has returned.
@@ -165,8 +159,6 @@ ECLRTL_API IKeySegmentMonitor *createSingleKeySegmentMonitor(bool optional, unsi
 ECLRTL_API IKeySegmentMonitor *createSingleBigSignedKeySegmentMonitor(bool optional, unsigned _fieldIdx, unsigned offset, unsigned size, const void * value);
 ECLRTL_API IKeySegmentMonitor *createSingleLittleSignedKeySegmentMonitor(bool optional, unsigned _fieldIdx, unsigned offset, unsigned size, const void * value);
 ECLRTL_API IKeySegmentMonitor *createSingleLittleKeySegmentMonitor(bool optional, unsigned _fieldIdx, unsigned offset, unsigned size, const void * value);
-
-ECLRTL_API IOverrideableKeySegmentMonitor *createOverrideableKeySegmentMonitor(IKeySegmentMonitor *base);
 
 ECLRTL_API IKeySegmentMonitor *deserializeKeySegmentMonitor(MemoryBuffer &mb);
 ECLRTL_API void deserializeSet(IStringSet & set, size32_t minRecordSize, const RtlTypeInfo * fieldType, const char * filter);
