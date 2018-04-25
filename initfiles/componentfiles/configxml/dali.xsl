@@ -92,6 +92,11 @@
           <xsl:value-of select="@AuditLogDir"/>
         </xsl:attribute>
       </xsl:if>
+      <xsl:if test="string(@niceInc)!=''">
+        <xsl:attribute name="niceInc">
+          <xsl:value-of select="@niceInc"/>
+        </xsl:attribute>
+      </xsl:if>
       <xsl:if test="string(@dataPath) != ''">
         <xsl:attribute name="dataPath">
           <xsl:call-template name="makeAbsolutePath">

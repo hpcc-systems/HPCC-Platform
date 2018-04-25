@@ -96,6 +96,10 @@
         <xsl:value-of select="@traceLevel"/>
       </xsl:attribute>
 
+      <xsl:attribute name="niceInc">
+        <xsl:value-of select="@niceInc"/>
+      </xsl:attribute>
+
       <xsl:attribute name="thorConnectTimeout">
         <xsl:value-of select="@thorConnectTimeout"/>
       </xsl:attribute>
