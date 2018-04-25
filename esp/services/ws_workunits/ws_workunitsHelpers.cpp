@@ -2018,7 +2018,7 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *instanceName, const char *ipA
     if (slaveNum > 0)
     {
         if (isEmpty(instanceName))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Thor group not specified.");
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Thor instance not specified.");
 
         StringBuffer groupName;
         getClusterThorGroupName(groupName, instanceName);
