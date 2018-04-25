@@ -2383,8 +2383,11 @@ WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
 
 WuScopeFilter & WuScopeFilter::addScope(const char * scope)
 {
-    validateScope(scope);
-    scopeFilter.addScope(scope);
+    if (scope)
+    {
+        validateScope(scope);
+        scopeFilter.addScope(scope);
+    }
     return *this;
 }
 
