@@ -73,6 +73,14 @@ define([
 
         show: function (event) {
             this.unlockDialog.show();
+            domClass.add("SessionLock", "overlay");
+            dojo.removeClass(this.id + "UnlockDialog_underlay", "dijitDialogUnderlay _underlay");
+            this.unlockUserName.set("value", dojoConfig.username);
+            this._onLock();
+        },
+
+        hide: function (event) {
+            this.unlockDialog.hide();
         },
 
         _onUnlock: function (event) {
@@ -91,7 +99,8 @@ define([
                         if (status.innerHTML !== "") {
                             status.innerHTML = "";
                         }
-                        context.unlockDialog.hide();
+                        context.hide();
+                        context.unlockDialog.destroyRecursive();
                         domClass.remove("SessionLock", "overlay");
                     } else {
                         status.innerHTML = response.UnlockResponse.Message
@@ -101,24 +110,8 @@ define([
         },
 
         _onLock: function (event) {
-            var context = this;
-
-            on(this.unlockPassword, "keypress", function (event) {
-                if (event.key === "Enter") {
-                    context._onUnlock();
-                }
-            });
-
-            WsAccount.MyAccount({
-            }).then(function (response) {
-                var username = response.MyAccountResponse.username;
-                xhr("esp/lock", {
-                    method: "post",
-                }).then(function(data){
-                    context.unlockUserName.set("value", username);
-                    domClass.add("SessionLock", "overlay");
-                    context.show();
-                });
+            xhr("esp/lock", {
+                method: "post",
             });
         },
 
