@@ -96,11 +96,33 @@ public:
 
 class CWsDfuSoapBindingEx : public CWsDfuSoapBinding
 {
+private:
+    bool m_bIsAttached;
 public:
-    CWsDfuSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) : CWsDfuSoapBinding(cfg, name, process, llevel){}
+    CWsDfuSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) : CWsDfuSoapBinding(cfg, name, process, llevel)
+    {
+        m_bIsAttached = true;
+    }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
+    }
+    virtual bool canDetachFromDali() override
+    {
+      return false;
+    }
+    virtual bool subscribeBindingToDali() override
+    {
+        return true;
+    }
+    virtual bool unsubscribeBindingFromDali() override
+    {
+        return false;
+    }
+
+    bool isAttachedToDali()
+    {
+      return m_bIsAttached;
     }
 };
 

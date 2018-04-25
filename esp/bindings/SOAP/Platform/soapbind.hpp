@@ -220,6 +220,27 @@ public:
     IEspContainer* queryContainer() { return m_container; }
     virtual int HandleSoapRequest(CHttpRequest* request, CHttpResponse* response);
 
+    virtual bool subscribeBindingToDali()
+    {
+        return this->getService()->subscribeServiceToDali();
+    }
+
+    virtual bool unsubscribeBindingFromDali()
+    {
+        return this->getService()->unsubscribeServiceFromDali();
+    }
+
+    virtual bool detachBindingFromDali()
+    {
+        return this->getService()->detachServiceFromDali();
+    }
+
+    virtual bool attachBindingToDali()
+    {
+        return this->getService()->attachServiceToDali();
+    }
+
+    virtual bool canDetachFromDali() {return true;}
 };
 
 void SetHTTPErrorStatus(int ErrorCode,CHttpResponse* response);

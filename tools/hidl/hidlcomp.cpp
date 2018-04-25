@@ -5870,7 +5870,7 @@ void EspServInfo::write_esp_binding()
     }
     outs("\treturn 0;\n");
     outs("}\n");
-    
+
     //method ==> getQualifiedNames
     outf("\nint C%sSoapBinding::getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods)\n", name_);
     outs("{\n");
@@ -6173,7 +6173,6 @@ void EspServInfo::write_esp_binding()
             }
 
             writeAccessMap(servicefeatureurl.str(),name_, 3);
-
             if (bHandleExceptions)
             {
                 outf("\t\t\tsource.setf(\"%s::%%s()\", method);\n", name_);
@@ -6185,6 +6184,7 @@ void EspServInfo::write_esp_binding()
 
                 if (servicefeatureurl.length() != 0)
                     outf("\t\t\t\tif(accessmap.ordinality()>0)\n\t\t\t\t\tonFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
+
                 if (mthi->getMetaInt("do_not_log",0))
                     outf("\t\t\t\tcontext.queryRequestParameters()->setProp(\"do_not_log\",1);\n");
                 outf("\t\t\t\tiserv->on%s(context, *esp_request.get(), *resp);\n", mthi->getName());
@@ -6382,13 +6382,20 @@ void EspServInfo::write_esp_service_ipp()
     outs("public:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n\n");
     outf("\tC%s(){}\n\tvirtual ~C%s(){}\n", name_, name_);
-    
+
     outs("\tvirtual void init(IPropertyTree *cfg, const char *process, const char *service)\n\t{\n\t}\n");
     outs("\tvirtual bool init(const char * service, const char * type, IPropertyTree * cfg, const char * process)\n\t{\n\t\treturn true;\n\t}\n");
     outs("\tvirtual void setContainer(IEspContainer *c)\n\t{\n\t\tm_container = c;\n\t}\n");
     outs("\tvirtual IEspContainer *queryContainer()\n\t{\n\t\treturn m_container;\n\t}\n");
-    
+
     outf("\tvirtual const char* getServiceType(){return \"%s\";}\n\n", name_);
+
+    outf("\tvirtual bool unsubscribeServiceFromDali(){return false;}\n\n");
+    outf("\tvirtual bool subscribeServiceToDali(){return false;}\n\n");
+    outf("\tvirtual bool detachServiceFromDali(){return false;}\n\n");
+    outf("\tvirtual bool attachServiceToDali(){return false;}\n\n");
+
+    outf("\tvirtual bool canDetachFromDali(){return false;}\n\n");
 
     EspMethodInfo *mthi;
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
@@ -6428,11 +6435,13 @@ void EspServInfo::write_esp_client_ipp()
     outs("\tStringBuffer soap_url;\n");
     //dom
     
+
     outs("\tStringBuffer soap_userid;\n");
     outs("\tStringBuffer soap_password;\n");
     outs("\tStringBuffer soap_realm;\n");
     outs("\tStringBuffer soap_action;\n");
     outs("\tlong soap_reqid = 0;\n");
+
 
     outs("\npublic:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n\n");

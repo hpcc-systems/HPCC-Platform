@@ -75,6 +75,102 @@ void CWSESPControlEx::init(IPropertyTree *cfg, const char *process, const char *
     }
 }
 
+bool CWSESPControlEx::handleDaliAttachmentRequest(bool attach, bool force, StringBuffer & message)
+{
+    bool success = true;
+    CEspServer * thisESPServer = static_cast<CEspServer *>(m_container);
+    if (thisESPServer)
+    {
+        if (attach)
+        {
+            message.setf("Request to ATTACH ESP Process '%s' to Dali has been issued - ", espProcess.get());
+            success = thisESPServer->attachESPToDali();
+        }
+        else
+        {
+            message.setf("Request to DETACH ESP Process '%s' from Dali has been issued - ", espProcess.get());
+            success = thisESPServer->detachESPFromDali(force);
+        }
+
+        if (success)
+            message.append("and success reported.");
+        else
+            message.append("but failure reported.");
+    }
+    else
+    {
+        message.append("ESP/DALI Attachment request could not be issued due to internal error");
+        success = false;
+    }
+
+    return success;
+}
+
+bool CWSESPControlEx::onDetachFromDali(IEspContext& context, IEspDetachFromDaliRequest& req, IEspDetachFromDaliResponse& resp)
+{
+    StringBuffer message;
+    bool status = handleDaliAttachmentRequest(false, req.getForce_isNull() ? false : req.getForce(), message);
+    resp.setMessage(message.str());
+    resp.setStatus(status ? 0 : -1);
+    return status;
+}
+
+bool CWSESPControlEx::onAttachToDali(IEspContext& context, IEspAttachToDaliRequest& req, IEspAttachToDaliResponse& resp)
+{
+    StringBuffer message;
+    bool status = handleDaliAttachmentRequest(true, false, message);
+    resp.setMessage(message.str());
+    resp.setStatus(status ? 0 : -1);
+    return status;
+}
+
+bool CWSESPControlEx::handleDaliSubscriptionRequest(bool enable, StringBuffer & message)
+{
+    bool success = true;
+    CEspServer * thisESPServer = static_cast<CEspServer *>(m_container);
+    if (thisESPServer)
+    {
+        if (enable)
+        {
+            message.setf("Request to enable all DALI subscriptions on ESP Process '%s' issued - ", this->espProcess.get());
+            success = thisESPServer->reSubscribeESPToDali();
+        }
+        else
+        {
+            message.setf("Request to cancel all DALI subscriptions on ESP Process '%s' issued - ", this->espProcess.get());
+            success = thisESPServer->unsubscribeESPFromDali();
+        }
+
+        if (success)
+            message.append("and success reported.");
+        else
+            message.append("but failure reported.");
+    }
+    else
+    {
+        message.append("Dali subscription request could not be issued due to internal error");
+        success = false;
+    }
+
+    return success;
+}
+bool CWSESPControlEx::onDisableDaliSubscriptions(IEspContext& context, IEspDisableDaliSubscriptionsRequest& req, IEspDisableDaliSubscriptionsResponse& resp)
+{
+    StringBuffer message;
+    bool status = handleDaliSubscriptionRequest(false, message);
+    resp.setMessage(message.str());
+    resp.setStatus(status ? 0 : -1);
+    return status;
+}
+
+bool CWSESPControlEx::onEnableDaliSubscriptions(IEspContext& context, IEspEnableDaliSubscriptionsRequest& req, IEspEnableDaliSubscriptionsResponse& resp)
+{
+    StringBuffer message;
+    bool status = handleDaliSubscriptionRequest(true, message);
+    resp.setMessage(message.str());
+    resp.setStatus(status ? 0 : -1);
+    return status;
+}
 
 bool CWSESPControlEx::onSetLogging(IEspContext& context, IEspSetLoggingRequest& req, IEspSetLoggingResponse& resp)
 {

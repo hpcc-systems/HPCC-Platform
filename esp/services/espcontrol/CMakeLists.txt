@@ -47,6 +47,7 @@ include_directories (
          ./../../bindings
          ./../../bindings/SOAP/xpp
          ./../../smc/SMCLib
+         ./../../../common/environment
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

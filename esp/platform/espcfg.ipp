@@ -103,15 +103,16 @@ struct esp_option
 
 class CSessionCleaner : public Thread
 {
-    bool       stopping = false;;
+    bool       stopping = false;
     Semaphore  sem;
 
     StringAttr espSessionSDSPath;
     int        checkSessionTimeoutSeconds; //the duration to clean timed out sesssions
+    bool       m_isDetached;
 
 public:
     CSessionCleaner(const char* _espSessionSDSPath, int _checkSessionTimeoutSeconds) : Thread("CSessionCleaner"),
-        espSessionSDSPath(_espSessionSDSPath), checkSessionTimeoutSeconds(_checkSessionTimeoutSeconds) { }
+        espSessionSDSPath(_espSessionSDSPath), checkSessionTimeoutSeconds(_checkSessionTimeoutSeconds) , m_isDetached(false){ }
 
     virtual ~CSessionCleaner()
     {
@@ -120,8 +121,12 @@ public:
         join();
     }
 
+    void setIsDetached(bool isDetached) {m_isDetached = isDetached;}
+
     virtual int run();
 };
+
+static CriticalSection attachcrit;
 
 class CEspConfig : public CInterface, implements IInterface 
 {
@@ -145,6 +150,9 @@ private:
     HINSTANCE hsami_;
     CSDSServerStatus *serverstatus;
     bool useDali;
+    bool m_detachedFromDali;
+    bool m_subscribedToDali;
+    StringBuffer m_daliAttachStateFileName;
 
 private:
     CEspConfig(CEspConfig &);
@@ -153,7 +161,34 @@ public:
     IMPLEMENT_IINTERFACE;
 
     esp_option m_options;
-    
+
+    void setIsDetachedFromDali(bool isDetached)
+    {
+        CriticalBlock b(attachcrit);
+        if (m_detachedFromDali != isDetached)
+        {
+            m_detachedFromDali = isDetached;
+            if (m_sessionCleaner)
+                m_sessionCleaner->setIsDetached(m_detachedFromDali);
+        }
+    }
+
+    bool isDetachedFromDali() const
+    {
+        CriticalBlock b(attachcrit);
+        return m_detachedFromDali;
+    }
+
+    bool isSubscribedToDali() const
+    {
+        return m_subscribedToDali;
+    }
+
+    void setIsSubscribedToDali(bool issubscribed)
+    {
+        m_subscribedToDali = issubscribed;
+    }
+
     bool usesDali(){return useDali;}
     bool checkDali()
     {
@@ -202,7 +237,16 @@ public:
     void loadAll()
     {
         DBGLOG("loadServices");
-        loadServices();
+        try
+        {
+            loadServices();
+        }
+        catch(IException* ie)
+        {
+            if (isDetachedFromDali())
+                ERRLOG("Could not load ESP service(s) while DETACHED from DALI - Consider re-attaching ESP process.");
+            throw(ie);
+        }
         loadProtocols();
         loadBindings();
 
@@ -210,6 +254,11 @@ public:
             throw MakeStringException(-1, "Failed in checking ESP cache service using %s", m_cfg->queryProp("@espCacheInitString"));
     }
 
+    bool reSubscribeESPToDali();
+    bool unsubscribeESPFromDali();
+    bool detachESPFromDali(bool force);
+    bool attachESPToDali();
+    bool canAllBindingsDetachFromDali();
     bool checkESPCache();
     IEspPlugin* getPlugin(const char* name);
 
@@ -225,6 +274,7 @@ public:
     void unloadBindings();
     void unloadServices();
     void unloadProtocols();
+    void saveAttachState();
 
     void clear()
     {

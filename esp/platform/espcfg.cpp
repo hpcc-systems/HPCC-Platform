@@ -121,28 +121,32 @@ int CSessionCleaner::run()
         int checkSessionTimeoutMillSeconds = checkSessionTimeoutSeconds * 60;
         while(!stopping)
         {
-            Owned<IRemoteConnection> conn = querySDS().connect(espSessionSDSPath.get(), myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
-            if (!conn)
-                throw MakeStringException(-1, "Failed to connect to %s.", PathSessionRoot);
-
-            CDateTime now;
-            now.setNow();
-            time_t timeNow = now.getSimple();
-
-            Owned<IPropertyTreeIterator> iter1 = conn->queryRoot()->getElements(PathSessionApplication);
-            ForEach(*iter1)
+            if (!m_isDetached)
             {
-                ICopyArrayOf<IPropertyTree> toRemove;
-                Owned<IPropertyTreeIterator> iter2 = iter1->query().getElements(xpath.str());
-                ForEach(*iter2)
+                Owned<IRemoteConnection> conn = querySDS().connect(espSessionSDSPath.get(), myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+                if (!conn)
+                    throw MakeStringException(-1, "Failed to connect to %s.", PathSessionRoot);
+
+                CDateTime now;
+                now.setNow();
+                time_t timeNow = now.getSimple();
+
+                Owned<IPropertyTreeIterator> iter1 = conn->queryRoot()->getElements(PathSessionApplication);
+                ForEach(*iter1)
                 {
-                    IPropertyTree& item = iter2->query();
-                    if (timeNow >= item.getPropInt64(PropSessionTimeoutAt, 0))
-                        toRemove.append(item);
-                }
-                ForEachItemIn(i, toRemove)
-                {
-                    iter1->query().removeTree(&toRemove.item(i));
+                    ICopyArrayOf<IPropertyTree> toRemove;
+                    Owned<IPropertyTreeIterator> iter2 = iter1->query().getElements(xpath.str());
+                    ForEach(*iter2)
+                    {
+                        IPropertyTree& item = iter2->query();
+                        if (timeNow >= item.getPropInt64(PropSessionTimeoutAt, 0))
+                            toRemove.append(item);
+                    }
+
+                    ForEachItemIn(i, toRemove)
+                    {
+                        iter1->query().removeTree(&toRemove.item(i));
+                    }
                 }
             }
             sem.wait(checkSessionTimeoutMillSeconds);
@@ -242,11 +246,8 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     hsami_=0;
     serverstatus=NULL;
     useDali=false;
-    
     if(inputs)
         m_inputs.setown(inputs);
-
-
     if(!envpt || !procpt)
         return;
 
@@ -273,14 +274,57 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     {
         DBGLOG("ESP process name [%s]", m_process.str());
 
-        IPropertyTreeIterator *pt_iter = NULL;
+        setIsDetachedFromDali(false);
+        setIsSubscribedToDali(true);
+        try
+        {
+            StringBuffer procDirectory;
+            m_cfg->getProp("@directory", procDirectory);
+            if (!procDirectory.isEmpty())
+            {
+                m_daliAttachStateFileName.setf("%s%c%s-AttachState.xml",procDirectory.str(), PATHSEPCHAR, m_process.str());
+
+                try
+                {
+                    Owned<IPTree> espProcAttachState = createPTreeFromXMLFile(m_daliAttachStateFileName);
+                    if (espProcAttachState)
+                    {
+                        setIsDetachedFromDali(!(espProcAttachState->getPropBool("@attached", true)));
+                        setIsSubscribedToDali(espProcAttachState->getPropBool("@subscribed", true));
+                    }
+                    else
+                    {
+                        ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+                    }
+                }
+                catch (...)
+                {
+                    ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+                }
+
+                saveAttachState();
+            }
+            else
+                ESPLOG(LogMin, "ESP Process [%s] configuration is missing '@directory' attribute, could not read AttachState", m_process.str());
+        }
+        catch (...)
+        {
+           ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+        }
+
+        if (isDetachedFromDali())
+            WARNLOG("ESP Process [%s] loading in DALI DETACHED state - Some ESP services do not load in detached state!",  m_process.str());
+
         StringBuffer daliservers;
         if (m_cfg->getProp("@daliServers", daliservers))
-            initDali(daliservers.str());
+            initDali(daliservers.str()); //won't init if detached
 
 #ifndef _DEBUG
         startPerformanceMonitor(m_cfg->getPropInt("@perfReportDelay", 60)*1000);
 #endif
+
+        IPropertyTreeIterator *pt_iter = NULL;
+        StringBuffer xpath;
 
         if (m_inputs->hasProp("SingleUserPass"))
         {
@@ -288,7 +332,6 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
             StringBuffer encesppass;
             m_inputs->getProp("SingleUserPass", plainesppass);
             encrypt(encesppass, plainesppass.str());
-            StringBuffer xpath;
             xpath.setf("SecurityManagers/SecurityManager[@type=\"SingleUserSecurityManager\"]/SingleUserSecurityManager/");
             pt_iter = m_cfg->getElements(xpath.str());
             if (pt_iter!=NULL)
@@ -320,8 +363,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         m_cfg->getProp("@computer", m_computer);
 
         //get the local computer information:
-        StringBuffer xpath;
-        xpath.appendf("Hardware/Computer[@name=\"%s\"]", m_computer.str());
+        xpath.setf("Hardware/Computer[@name=\"%s\"]", m_computer.str());
 
         IPropertyTree *computer = m_envpt->queryPropTree(xpath.str());
         if (computer)
@@ -336,10 +378,10 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
             }
             m_address.set(address.str(), (unsigned short) port);
         }
-      
+
         xpath.clear();
         xpath.append("EspService");
- 
+
         pt_iter = m_cfg->getElements(xpath.str());
 
         if (pt_iter!=NULL)
@@ -372,7 +414,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
 
         xpath.clear();
         xpath.append("EspProtocol");
- 
+
         pt_iter = m_cfg->getElements(xpath.str());
 
         if (pt_iter!=NULL)
@@ -380,7 +422,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
             IPropertyTree *ptree = NULL;
 
             pt_iter->first();
-    
+
 
             while(pt_iter->isValid())
             {
@@ -466,7 +508,8 @@ void CEspConfig::sendAlert(int severity, char const * descr, char const * subjec
 
 void CEspConfig::initDali(const char *servers)
 {
-    if (servers!=NULL && *servers!=0 && !daliClientActive())
+    CriticalBlock b(attachcrit);
+    if (servers!=nullptr && *servers!=0 && !daliClientActive() && !isDetachedFromDali())
     {
         DBGLOG("Initializing DALI client [servers = %s]", servers);
 
@@ -829,6 +872,15 @@ void CEspConfig::bindServer(IEspServer &server, IEspContainer &container)
     }
 }
 
+void CEspConfig::saveAttachState()
+{
+    StringBuffer espProcAttachState;
+    espProcAttachState.setf( "<ESPAttachState StateSaveTimems='%d' attached='%s' subscribed='%s'/>", msTick(), isDetachedFromDali() ? "0" : "1", isSubscribedToDali() ? "1" : "0");
+
+    DBGLOG("ESP Process [%s] State to be stored: '%s'", m_process.str(), espProcAttachState.str());
+    Owned<IPropertyTree> serviceESDLDef = createPTreeFromXMLString(espProcAttachState.str(), ipt_caseInsensitive);
+    saveXML(m_daliAttachStateFileName.str(), serviceESDLDef);
+}
 
 void CEspConfig::unloadBindings()
 {
@@ -836,7 +888,7 @@ void CEspConfig::unloadBindings()
     while (iter!=m_bindings.end())
     {
         binding_cfg *bcfg = *iter;
-        
+
         if(bcfg!=NULL)
         {
             bcfg->protocol.clear();
@@ -929,3 +981,117 @@ bool CEspConfig::checkESPCache()
     return espCacheAvailable;
 }
 
+bool CEspConfig::reSubscribeESPToDali()
+{
+    list<binding_cfg*>::iterator iter = m_bindings.begin();
+    while (iter!=m_bindings.end())
+    {
+        binding_cfg& bindingConfig = **iter;
+        if (bindingConfig.bind)
+        {
+            ESPLOG(LogMin, "Requesting binding '%s' to subscribe to DALI notifications", bindingConfig.name.str());
+            bindingConfig.bind->subscribeBindingToDali();
+        }
+        iter++;
+    }
+    setIsSubscribedToDali(true);
+    return true;
+}
+
+bool CEspConfig::unsubscribeESPFromDali()
+{
+    list<binding_cfg*>::iterator iter = m_bindings.begin();
+    while (iter!=m_bindings.end())
+    {
+        binding_cfg& bindingConfig = **iter;
+        if (bindingConfig.bind)
+        {
+            ESPLOG(LogMin, "Requesting binding '%s' to un-subscribe from DALI notifications", bindingConfig.name.str());
+            bindingConfig.bind->unsubscribeBindingFromDali();
+        }
+        iter++;
+    }
+    setIsSubscribedToDali(false);
+    return true;
+}
+
+bool CEspConfig::detachESPFromDali(bool force)
+{
+    CriticalBlock b(attachcrit);
+    if (!isDetachedFromDali())
+    {
+        if(!force)
+        {
+            if (!canAllBindingsDetachFromDali())
+                return false;
+        }
+
+        if (!unsubscribeESPFromDali())
+            return false;
+
+        list<binding_cfg*>::iterator iter = m_bindings.begin();
+        while (iter!=m_bindings.end())
+        {
+            binding_cfg& xcfg = **iter;
+            ESPLOG(LogMin, "Detach ESP From DALI: requesting binding: '%s' to detach...", xcfg.name.str());
+            if (xcfg.bind)
+            {
+                xcfg.bind->detachBindingFromDali();
+            }
+
+            iter++;
+        }
+        setIsDetachedFromDali(true);
+        closedownClientProcess();
+        saveAttachState();
+    }
+    return true;
+}
+
+bool CEspConfig::attachESPToDali()
+{
+    bool success = true;
+
+    CriticalBlock b(attachcrit);
+    if (isDetachedFromDali())
+    {
+        setIsDetachedFromDali(false);
+        StringBuffer daliservers;
+        if (m_cfg->getProp("@daliServers", daliservers))
+            initDali(daliservers.str());
+
+        list<binding_cfg*>::iterator iter = m_bindings.begin();
+        while (iter!=m_bindings.end())
+        {
+            binding_cfg& xcfg = **iter;
+            ESPLOG(LogMin, "Attach ESP to DALI: requesting binding: '%s' to attach...", xcfg.name.str());
+            if (xcfg.bind)
+            {
+                map<string, srv_cfg*>::iterator sit = m_services.find(xcfg.service_name.str());
+                if(sit == m_services.end())
+                    ESPLOG(LogMin, "Warning: Service %s not found for the binding", xcfg.service_name.str());
+                else
+                    ((*sit).second->srv)->attachServiceToDali();
+            }
+            iter++;
+        }
+
+        reSubscribeESPToDali();
+
+        saveAttachState();
+    }
+    return success;
+}
+
+bool CEspConfig::canAllBindingsDetachFromDali()
+{
+    list<binding_cfg*>::iterator iter = m_bindings.begin();
+    while (iter!=m_bindings.end())
+    {
+        binding_cfg& xcfg = **iter;
+        if (!xcfg.bind->canDetachFromDali())
+            return false;
+        iter++;
+    }
+    return true;
+}

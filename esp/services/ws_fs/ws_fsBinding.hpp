@@ -71,6 +71,18 @@ public:
 
     int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
     int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me);
+    virtual bool canDetachFromDali() override
+    {
+        return false;
+    }
+    virtual bool subscribeBindingToDali() override
+    {
+        return true;
+    }
+    virtual bool unsubscribeBindingFromDali() override
+    {
+        return false;
+    }
 
 private:
     IPropertyTree* createPTreeForXslt(double clientVersion, const char* method, const char* dfuwuid);

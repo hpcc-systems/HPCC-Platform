@@ -49,12 +49,20 @@
 void SetResp(StringBuffer &resp, IConstDFUWorkUnit * wu, bool array);
 int Schedule::run()
 {
-    try
+    PROGLOG("DfuWorkunit WUSchedule Thread started.");
+    while(!stopping)
     {
-        PROGLOG("DfuWorkunit WUSchedule Thread started.");
-        while(!stopping)
+        unsigned int waitTimeMillies = 1000*60;
+        if (!detached)
         {
+            try
             {
+                if (waitTimeMillies == (unsigned)-1)
+                {
+                    PROGLOG("WS_FS WUSchedule Thread Re-started.");
+                    waitTimeMillies = 1000*60;
+                }
+
                 Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
                 Owned<IConstDFUWorkUnitIterator> itr = factory->getWorkUnitsByState(DFUstate_scheduled);
                 itr->first();
@@ -82,18 +90,23 @@ int Schedule::run()
                     itr->next();
                 }
             }
-            semSchedule.wait(1000*60);
+            catch(IException *e)
+            {
+                StringBuffer msg;
+                ERRLOG("Exception %d:%s in WS_FS Schedule::run", e->errorCode(), e->errorMessage(msg).str());
+                e->Release();
+            }
+            catch(...)
+            {
+                ERRLOG("Unknown exception in WS_FS Schedule::run");
+            }
         }
-    }
-    catch(IException *e)
-    {
-        StringBuffer msg;
-        ERRLOG("Exception %d:%s in WS_FS Schedule::run", e->errorCode(), e->errorMessage(msg).str());
-        e->Release();
-    }
-    catch(...)
-    {
-        ERRLOG("Unknown exception in WS_FS Schedule::run");
+        else
+        {
+            WARNLOG("Detached from DALI, WS_FS schedule interrupted");
+            waitTimeMillies = (unsigned)-1;
+        }
+        semSchedule.wait(waitTimeMillies);
     }
     return 0;
 }

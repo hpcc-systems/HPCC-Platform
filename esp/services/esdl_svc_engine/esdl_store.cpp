@@ -806,7 +806,6 @@ public:
         mListener->onNotify(dataptr.get());
     }
 
-private:
     void subscribe()
     {
         VStringBuffer fullBindingPath("/ESDL/Bindings/Binding[@id=\'%s.%s\']",mProcessName.str(), mBindingName.str());
@@ -842,6 +841,7 @@ private:
         else
             DBGLOG("Esdl definition subscription already exists.");
     }
+private:
 };
 
 Owned<IEsdlStore> gEsdlCentralStore;
