@@ -13,6 +13,7 @@ log=${LOG_PATH}
 user=${RUNTIME_USER}
 group=${RUNTIME_GROUP}
 #umask=022
+#nice=0
 home=${HOME_DIR}
 environment=${ENV_XML_FILE}
 sourcedir=${CONFIG_SOURCE_PATH}

@@ -260,6 +260,17 @@ set_environmentvars() {
     if [ -n "${umask}" ]; then
         umask $umask
     fi
+
+    local rc=0
+    if [ -n "${nice}" ]; then
+        if [ "${nice}" != "0" ] ; then
+            renice $nice -p $$ >/dev/null 2>&1
+            rc=$?
+            if [[ $rc -ne 0 ]]; then
+                log "Unable to set process nice value to $nice"
+            fi
+        fi
+    fi
 }
 
 
