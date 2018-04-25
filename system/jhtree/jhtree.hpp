@@ -41,19 +41,30 @@ interface jhtree_decl IDelayedFile : public IInterface
 interface jhtree_decl IKeyCursor : public IInterface
 {
     virtual bool next(char *dst) = 0;
-    virtual bool prev(char *dst) = 0;
     virtual bool first(char *dst) = 0;
     virtual bool last(char *dst) = 0;
-    virtual bool gtEqual(const char *src, char *dst, bool seekForward = false) = 0; // returns first record >= src
-    virtual bool ltEqual(const char *src, char *dst, bool seekForward = false) = 0; // returns last record <= src
-    virtual size32_t getSize() = 0;
+    virtual bool gtEqual(const char *src, char *dst) = 0; // returns first record >= src
+    virtual bool ltEqual(const char *src) = 0; // returns last record <= src
+    virtual const char *queryName() const = 0;
+    virtual size32_t getSize() = 0;  // Size of current row
+    virtual size32_t getKeyedSize() const = 0;  // Size of keyed fields
     virtual void serializeCursorPos(MemoryBuffer &mb) = 0;
-    virtual void deserializeCursorPos(MemoryBuffer &mb, char *keyBuffer) = 0;
+    virtual void deserializeCursorPos(MemoryBuffer &mb) = 0;
     virtual unsigned __int64 getSequence() = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
     virtual void releaseBlobs() = 0;
-    virtual void reset() = 0;
-    virtual bool bloomFilterReject(const SegMonitorList &segs) const = 0;  // returns true if record cannot possibly match
+    virtual void reset(unsigned sortFromSeg = 0) = 0;
+    virtual bool lookup(bool exact, unsigned lastSeg) = 0;
+    virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen) = 0;
+    virtual bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen) = 0;
+
+    virtual unsigned __int64 getCount() = 0;
+    virtual unsigned __int64 checkCount(unsigned __int64 max) = 0;
+    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount) = 0;
+    virtual bool nextRange(unsigned groupSegCount) = 0;
+    virtual const byte *queryKeyBuffer() = 0;
+
+    virtual IKeyCursor *cloneForNextRange(unsigned sortFromSeg) const = 0;
 };
 
 interface IKeyIndex;
@@ -67,7 +78,7 @@ interface jhtree_decl IKeyIndexBase : public IInterface
 
 interface jhtree_decl IKeyIndex : public IKeyIndexBase
 {
-    virtual IKeyCursor *getCursor(IContextLogger *ctx) = 0;
+    virtual IKeyCursor *getCursor(const SegMonitorList &segs, IContextLogger *ctx) = 0;
     virtual size32_t keySize() = 0;
     virtual bool isFullySorted() = 0;
     virtual bool isTopLevelKey() = 0;
@@ -211,7 +222,6 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual const byte *queryKeyBuffer() = 0; //if using RLT: fpos is the translated value, so correct in a normal row
     virtual unsigned __int64 querySequence() = 0;
     virtual size32_t queryRowSize() = 0;     // Size of current row as returned by queryKeyBuffer()
-    virtual unsigned queryRecordSize() = 0;  // Max size
 
     virtual bool lookup(bool exact) = 0;
     virtual unsigned __int64 getCount() = 0;
