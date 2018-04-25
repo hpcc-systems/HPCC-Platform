@@ -1220,7 +1220,7 @@ void EclGraph::execute(const byte * parentExtract)
             formatGraphTimerLabel(description, queryGraphName(), 0, 0);
 
             unsigned __int64 elapsedNs = milliToNano(elapsed);
-            updateWorkunitTimeStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs);
+            updateWorkunitTimeStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs, agent->getWorkflowId());
         }
 
         if (agent->queryRemoteWorkunit())
