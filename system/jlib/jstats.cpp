@@ -1375,9 +1375,9 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
     case ActivityScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, ActivityScopePrefix))
         {
-            if (isdigit(text[CONST_STRLEN(ActivityScopePrefix)]))
+            if (isdigit(text[strlen(ActivityScopePrefix)]))
             {
-                unsigned id = strtoul(text + CONST_STRLEN(ActivityScopePrefix), next, 10);
+                unsigned id = strtoul(text + strlen(ActivityScopePrefix), next, 10);
                 setActivityId(id);
                 return true;
             }
@@ -1386,9 +1386,9 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
     case GraphScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, GraphScopePrefix))
         {
-            if (isdigit(text[CONST_STRLEN(GraphScopePrefix)]))
+            if (isdigit(text[strlen(GraphScopePrefix)]))
             {
-                unsigned id = strtoul(text + CONST_STRLEN(GraphScopePrefix), next, 10);
+                unsigned id = strtoul(text + strlen(GraphScopePrefix), next, 10);
                 setId(SSTgraph, id);
                 return true;
             }
@@ -1397,9 +1397,9 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
     case SubGraphScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, SubGraphScopePrefix))
         {
-            if (isdigit(text[CONST_STRLEN(SubGraphScopePrefix)]))
+            if (isdigit(text[strlen(SubGraphScopePrefix)]))
             {
-                unsigned id = strtoul(text + CONST_STRLEN(SubGraphScopePrefix), next, 10);
+                unsigned id = strtoul(text + strlen(SubGraphScopePrefix), next, 10);
                 setSubgraphId(id);
                 return true;
             }
@@ -1411,7 +1411,7 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
             const char * underscore = strchr(text, '_');
             if (!underscore || !isdigit(underscore[1]))
                 return false;
-            unsigned id1 = atoi(text + CONST_STRLEN(EdgeScopePrefix));
+            unsigned id1 = atoi(text + strlen(EdgeScopePrefix));
             unsigned id2 = strtoul(underscore+1, next, 10);
             setEdgeId(id1, id2);
             return true;
@@ -1420,21 +1420,21 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
     case FunctionScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, FunctionScopePrefix))
         {
-            setFunctionId(text+CONST_STRLEN(FunctionScopePrefix));
+            setFunctionId(text+ strlen(FunctionScopePrefix));
             return true;
         }
         break;
     case WorkflowScopePrefix[0]:
-        if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix))
+        if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix) && isdigit(text[strlen(WorkflowScopePrefix)]))
         {
-            setWorkflowId(atoi(text+CONST_STRLEN(WorkflowScopePrefix)));
+            setWorkflowId(atoi(text+ strlen(WorkflowScopePrefix)));
             return true;
         }
         break;
     case ChildGraphScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, ChildGraphScopePrefix))
         {
-            setChildGraphId(atoi(text+CONST_STRLEN(ChildGraphScopePrefix)));
+            setChildGraphId(atoi(text+ strlen(ChildGraphScopePrefix)));
             return true;
         }
         break;

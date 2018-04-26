@@ -28,6 +28,7 @@
 #endif
 
 //The wuattribute values start from a high value - so that they do not overlap with StXXX
+//They are not currently persisted, so it is fine to modify the list for major releases
 enum WuAttr : unsigned
 {
     WaNone = 0x80000000,
@@ -41,7 +42,9 @@ enum WuAttr : unsigned
     WaIsDependency,
     WaIsChildGraph,
     WaDefinition,
+    WaDefinitionList,
     WaEclName,
+    WaEclNameList,
     WaEclText,
     WaRecordSize,
     WaPredictedCount,
@@ -85,6 +88,7 @@ enum WuAttr : unsigned
     WaMetaLocalSortOrder,
     WaMetaGroupSortOrder,
     WaSection,
+    WaSectionList,
     WaLibraryName,
     WaMatchLikelihood,
     WaSpillReason,
@@ -114,6 +118,20 @@ enum WuAttr : unsigned
     WaIsLoopBody,
     WaNumResults,
     WaWhenIndex,
+    WaIdDependency,
+    WaIdDependencyList,
+    WaIsScheduled,
+    WaIdSuccess,
+    WaIdFailure,
+    WaIdRecovery,
+    WaIdPersist,
+    WaIdScheduled,
+    WaPersistName,
+    WaType,
+    WaMode,
+    WaState,
+    WaCluster,
+    WaCriticalSection,
     WaMax
 };
 
@@ -126,5 +144,8 @@ extern WORKUNIT_API WuAttr queryGraphChildAttToWuAttr(const char * name);
 extern WORKUNIT_API void setAttributeValue(IPropertyTree & tgt, WuAttr kind, const char * value);
 extern WORKUNIT_API void setAttributeValueBool(IPropertyTree & tgt, WuAttr kind, bool value, bool alwaysAdd = false);
 extern WORKUNIT_API void setAttributeValueInt(IPropertyTree & tgt, WuAttr kind, __int64 value);
+
+extern WORKUNIT_API bool isListAttribute(WuAttr kind);
+extern WORKUNIT_API bool getListAttribute(WuAttr kind);
 
 #endif

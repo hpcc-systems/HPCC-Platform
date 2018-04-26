@@ -77,6 +77,21 @@ static int getEnum(IPropertyTree *p, const char *propname, EnumMapping *map)
     return 0;
 }
 
+const char * queryWorkflowTypeText(WFType type)
+{
+    return getEnumText(type, wftypes);
+}
+
+const char * queryWorkflowModeText(WFMode mode)
+{
+    return getEnumText(mode, wfmodes);
+}
+
+const char * queryWorkflowStateText(WFState state)
+{
+    return getEnumText(state, wfstates);
+}
+
 
 class CWorkflowDependencyIterator : implements IWorkflowDependencyIterator, public CInterface
 {
@@ -137,6 +152,7 @@ public:
     virtual unsigned     queryScheduleCount() const { assertex(tree->hasProp("Schedule/@count")); return tree->getPropInt("Schedule/@count"); }
     virtual IWorkflowDependencyIterator * getDependencies() const { return new CWorkflowDependencyIterator(tree); }
     virtual WFType       queryType() const { return static_cast<WFType>(getEnum(tree, "@type", wftypes)); }
+    virtual IStringVal & getLabel(IStringVal & val) const { val.set(tree->queryProp("@label")); return val; }
     virtual WFMode       queryMode() const { return static_cast<WFMode>(getEnum(tree, "@mode", wfmodes)); }
     virtual unsigned     querySuccess() const { return tree->getPropInt("@success", 0); }
     virtual unsigned     queryFailure() const { return tree->getPropInt("@failure", 0); }
@@ -337,6 +353,7 @@ private:
     StringAttr failmsg;
     SCMStringBuffer persistName;
     SCMStringBuffer clusterName;
+    SCMStringBuffer label;
     unsigned persistWfid;
     int persistCopies;
     bool persistRefresh;
@@ -378,6 +395,7 @@ public:
         persistRefresh = other->queryPersistRefresh();
         other->getCriticalName(criticalName);
         other->queryCluster(clusterName);
+        other->getLabel(label);
     }
     //info set at compile time
     virtual unsigned     queryWfid() const { return wfid; }
@@ -390,6 +408,7 @@ public:
     virtual IWorkflowDependencyIterator * getDependencies() const { return new CCloneIterator(dependencies); }
     virtual WFType       queryType() const { return type; }
     virtual WFMode       queryMode() const { return mode; }
+    virtual IStringVal & getLabel(IStringVal & val) const { val.set(label.str()); return val; }
     virtual unsigned     querySuccess() const { return success; }
     virtual unsigned     queryFailure() const { return failure; }
     virtual unsigned     queryRecovery() const { return recovery; }

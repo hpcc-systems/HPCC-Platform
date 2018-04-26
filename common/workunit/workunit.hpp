@@ -649,6 +649,7 @@ interface IConstWorkflowItem : extends IInterface
     virtual const char * queryEventExtra() const = 0;
     virtual unsigned queryScheduledWfid() const = 0;
     virtual IStringVal & queryCluster(IStringVal & val) const = 0;
+    virtual IStringVal & getLabel(IStringVal & val) const = 0;
 };
 inline bool isPersist(const IConstWorkflowItem & item) { return item.queryMode() == WFModePersist; }
 inline bool isCritical(const IConstWorkflowItem & item) { return item.queryMode() == WFModeCritical; }
@@ -1027,6 +1028,7 @@ enum WuScopeSourceFlags : unsigned
     SSFsearchGraphStats     = 0x0002,
     SSFsearchGraph          = 0x0004,
     SSFsearchExceptions     = 0x0008,
+    SSFsearchWorkflow       = 0x0010,
     SSFsearchAll            = 0x7fffffff,
     SSFunknown              = 0x80000000,
 };

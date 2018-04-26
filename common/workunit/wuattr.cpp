@@ -29,20 +29,25 @@ public:
     const char * overridePath;  // Alternative xpath to check 1st for some overloaded attributes
     const char * childPath;     // The name of the <atr> for setting, or matching when iterating
     const char * dft;           // default value if not present
+    WuAttr singleKind;
+    WuAttr multiKind;
 };
 
 #define CHILDPATH(x) "att[@name='" x "']/@value"
 #define CHILDMPATH(x) "att[@name='" x "'][1]/@value"
-#define ATTR(kind, measure, path)           { Wa ## kind, measure, #kind, path, nullptr, nullptr, nullptr }
-#define ALTATTR(kind, measure, path, alt)   { Wa ## kind, measure, #kind, path, alt, nullptr }
-#define CHILD(kind, measure, path)          { Wa ## kind, measure, #kind, CHILDPATH(path), nullptr, path, nullptr }
-#define CHILD_MULTI(kind, measure, path)    { Wa ## kind, measure, #kind, CHILDMPATH(path), nullptr, path, nullptr }
-#define CHILD_D(kind, measure, path, dft)   { Wa ## kind, measure, #kind, CHILDPATH(path), nullptr, path, dft }
-
+#define ATTR(kind, measure, path)           { Wa ## kind, measure, #kind, path, nullptr, nullptr, nullptr, WaNone, WaNone }
+#define ALTATTR(kind, measure, path, alt)   { Wa ## kind, measure, #kind, path, alt, nullptr, nullptr, WaNone, WaNone }
+#define CHILD(kind, measure, path)          { Wa ## kind, measure, #kind, CHILDPATH(path), nullptr, path, nullptr, WaNone, WaNone }
+#define CHILD_MULTI(kind, measure, path)    { Wa ## kind, measure, #kind, CHILDMPATH(path), nullptr, path, nullptr, Wa ## kind, Wa ## kind ## List }
+#define CHILD_LIST(kind, measure)           { Wa ## kind ## List, measure, #kind "List", nullptr, nullptr, nullptr, nullptr, Wa ## kind, Wa ## kind ## List }
+#define CHILD_D(kind, measure, path, dft)   { Wa ## kind, measure, #kind, CHILDPATH(path), nullptr, path, dft, WaNone, WaNone  }
+#define ATTRX(kind, measure)                { Wa ## kind, measure, #kind, nullptr, nullptr, nullptr, nullptr, WaNone, WaNone  }
+#define ATTRX_MULTI(kind, measure)          { Wa ## kind , measure, #kind, nullptr, nullptr, nullptr, nullptr, Wa ## kind, Wa ## kind ## List  }
+#define ATTRX_LIST(kind, measure)           { Wa ## kind ## List, measure, #kind "List", nullptr, nullptr, nullptr, nullptr, Wa ## kind, Wa ## kind ## List }
 
 const static WuAttrInfo attrInfo[] = {
-    { WaNone, SMeasureNone, "none", nullptr, nullptr, nullptr },
-    { WaAll, SMeasureNone, "all", nullptr, nullptr, nullptr },
+    { WaNone, SMeasureNone, "none", nullptr, nullptr, nullptr, nullptr, WaNone, WaNone  },
+    { WaAll, SMeasureNone, "all", nullptr, nullptr, nullptr, nullptr, WaNone, WaNone  },
     CHILD(Kind, SMeasureEnum, "_kind"),
     ALTATTR(IdSource, SMeasureId, "@source", "att[@name='_sourceActivity']/@value"),
     ALTATTR(IdTarget, SMeasureId, "@target", "att[@name='_targetActivity']/@value"),
@@ -52,7 +57,9 @@ const static WuAttrInfo attrInfo[] = {
     CHILD(IsDependency, SMeasureBool, "_dependsOn"),
     CHILD(IsChildGraph, SMeasureBool, "_childGraph"),
     CHILD_MULTI(Definition, SMeasureText, "definition"),
+    CHILD_LIST(Definition, SMeasureText),
     CHILD_MULTI(EclName, SMeasureText, "name"),
+    CHILD_LIST(EclName, SMeasureText),
     CHILD(EclText, SMeasureText, "ecl"),
     CHILD(RecordSize, SMeasureText, "recordSize"),
     CHILD(PredictedCount, SMeasureText, "predictedCount"),
@@ -96,6 +103,7 @@ const static WuAttrInfo attrInfo[] = {
     CHILD(MetaLocalSortOrder, SMeasureText, "metaLocalSortOrder"),
     CHILD(MetaGroupSortOrder, SMeasureText, "metaGroupSortOrder"),
     CHILD_MULTI(Section, SMeasureText, "section"),
+    CHILD_LIST(Section, SMeasureText),
     CHILD(LibraryName, SMeasureText, "libname"),
     CHILD(MatchLikelihood, SMeasureText, "matchLikelihood"),
     CHILD(SpillReason, SMeasureText, "spillReason"),
@@ -125,7 +133,21 @@ const static WuAttrInfo attrInfo[] = {
     ATTR(IsLoopBody, SMeasureBool, "@loopBody"),
     CHILD(NumResults, SMeasureCount, "_numResults"),
     CHILD(WhenIndex, SMeasureText, "_when"),
-    { WaMax, SMeasureNone, nullptr, nullptr, nullptr, nullptr }
+    ATTRX_MULTI(IdDependency, SMeasureId),
+    ATTRX_LIST(IdDependency, SMeasureId),
+    ATTRX(IsScheduled, SMeasureBool),
+    ATTRX(IdSuccess, SMeasureId),
+    ATTRX(IdFailure, SMeasureId),
+    ATTRX(IdRecovery, SMeasureId),
+    ATTRX(IdPersist, SMeasureId),
+    ATTRX(IdScheduled, SMeasureId),
+    ATTRX(PersistName, SMeasureText),
+    ATTRX(Type, SMeasureText),
+    ATTRX(Mode, SMeasureText),
+    ATTRX(State, SMeasureText),
+    ATTRX(Cluster, SMeasureText),
+    ATTRX(CriticalSection, SMeasureText),
+    { WaMax, SMeasureNone, nullptr, nullptr, nullptr, nullptr, nullptr, WaNone, WaNone }
 };
 
 static MapConstStringTo<WuAttr, WuAttr> nameToWa(true);        // Names are case insensitive
@@ -282,4 +304,17 @@ void setAttributeValueInt(IPropertyTree & tgt, WuAttr kind, __int64 value)
         tgt.setPropInt64(path, value);
     else
         addGraphAttribute(&tgt, info.childPath)->setPropInt64("@value", value);
+}
+
+bool isListAttribute(WuAttr kind)
+{
+    const WuAttrInfo & info = attrInfo[kind-WaNone];
+    return (info.multiKind != WaNone) && (info.multiKind == kind);
+}
+
+bool getListAttribute(WuAttr kind)
+{
+    const WuAttrInfo & info = attrInfo[kind-WaNone];
+    WuAttr multiKind = info.multiKind;
+    return (multiKind != WaNone) && (multiKind != kind) ? multiKind : WaNone;
 }
