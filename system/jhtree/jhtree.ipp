@@ -104,7 +104,7 @@ public:
     virtual bool IsShared() const { return CInterface::IsShared(); }
 
 // IKeyIndex impl.
-    virtual IKeyCursor *getCursor(IContextLogger *ctx);
+    virtual IKeyCursor *getCursor(const SegMonitorList &segs, IContextLogger *ctx);
 
     virtual size32_t keySize();
     virtual bool hasPayload();
@@ -170,33 +170,80 @@ class jhtree_decl CKeyCursor : public IKeyCursor, public CInterface
 private:
     IContextLogger *ctx;
     CKeyIndex &key;
+    const SegMonitorList &segs;
     Owned<CJHTreeNode> node;
     unsigned int nodeKey;
     ConstPointerArray activeBlobs;
+    unsigned seeks = 0;
+    unsigned scans = 0;
+    unsigned wildseeks = 0;
+    unsigned skips = 0;
+    unsigned nullSkips = 0;
+
+    bool eof=false;
+    bool matched=false;
+
+    unsigned keySize = 0;
+    const unsigned keyedSize = 0;
+    char *keyBuffer = nullptr;
 
     CJHTreeNode *locateFirstNode();
     CJHTreeNode *locateLastNode();
 
 public:
     IMPLEMENT_IINTERFACE;
-    CKeyCursor(CKeyIndex &_key, IContextLogger *ctx);
+    CKeyCursor(CKeyIndex &_key, const SegMonitorList &segs, IContextLogger *ctx);
     ~CKeyCursor();
 
     virtual bool next(char *dst);
-    virtual bool prev(char *dst);
     virtual bool first(char *dst);
     virtual bool last(char *dst);
-    virtual bool gtEqual(const char *src, char *dst, bool seekForward);
-    virtual bool ltEqual(const char *src, char *dst, bool seekForward);
+    virtual bool gtEqual(const char *src, char *dst);
+    virtual bool ltEqual(const char *src);
+    virtual const char *queryName() const override;
     virtual size32_t getSize();
+    virtual size32_t getKeyedSize() const;
     virtual offset_t getFPos(); 
     virtual void serializeCursorPos(MemoryBuffer &mb);
-    virtual void deserializeCursorPos(MemoryBuffer &mb, char *keyBuffer);
+    virtual void deserializeCursorPos(MemoryBuffer &mb);
     virtual unsigned __int64 getSequence(); 
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize);
     virtual void releaseBlobs();
-    virtual void reset();
-    virtual bool bloomFilterReject(const SegMonitorList &segs) const override;  // returns true if record cannot possibly match
+    virtual void reset(unsigned sortFromSeg = 0);
+    virtual bool lookup(bool exact, unsigned lastSeg) override;
+    virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen) override;
+    virtual bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen) override;
+    virtual unsigned __int64 getCount() override;
+    virtual unsigned __int64 checkCount(unsigned __int64 max) override;
+    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount) override;
+    virtual bool nextRange(unsigned groupSegCount) override;
+    virtual const byte *queryKeyBuffer() override;
+
+    virtual IKeyCursor *cloneForNextRange(unsigned sortFromSeg) const override;
+protected:
+    CKeyCursor(const CKeyCursor &_from, char *_keyBuffer);
+
+    void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg);
+    void noteSeeks(unsigned lseeks, unsigned lscans, unsigned lwildseeks);
+    void noteSkips(unsigned lskips, unsigned lnullSkips);
+
+
+    inline void setLow(unsigned segNo)
+    {
+        segs.setLow(segNo, keyBuffer);
+    }
+    inline unsigned setLowAfter(size32_t offset)
+    {
+        return segs.setLowAfter(offset, keyBuffer);
+    }
+    inline bool incrementKey(unsigned segno) const
+    {
+        return segs.incrementKey(segno, keyBuffer);
+    }
+    inline void endRange(unsigned segno)
+    {
+        segs.endRange(segno, keyBuffer);
+    }
 };
 
 
