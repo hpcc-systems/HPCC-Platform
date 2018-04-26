@@ -24,6 +24,8 @@
 #include "keybuild.hpp"
 #include "limits.h"
 #include "keydiff.hpp"
+#include "rtlrecord.hpp"
+#include "eclhelper_dyn.hpp"
 
 #define SMALL_ENOUGH_RATIO 20
 
@@ -212,6 +214,16 @@ private:
     offset_t * fpos;
 };
 
+static class DummyIndexCallback : public CInterfaceOf<IThorIndexCallback>
+{
+public:
+    DummyIndexCallback() {}
+    virtual byte * lookupBlob(unsigned __int64 id) override
+    {
+        UNIMPLEMENTED;
+    }
+} dummyCallback;
+
 class CKeyReader: public CInterface
 {
 public:
@@ -244,9 +256,17 @@ public:
             WARNLOG("Index part %s does not declare blob status: if it contains blobs, they will be lost", filename);
         else if(blobHead != 0)
             throw MakeStringException(0, "Index contains BLOBs, which are currently not supported by keydiff/patch");
-        if(keyIndex->queryMetadataHead())
-            WARNLOG("Index contains metadata, which will be ignored by keydiff/patch");
-        UNIMPLEMENTED; // keyCursor.setown(keyIndex->getCursor(NULL));
+        Owned<IPropertyTree> metadata = keyIndex->getMetadata();
+        if (metadata && metadata->hasProp("_rtlType"))
+        {
+            MemoryBuffer layoutBin;
+            metadata->getPropBin("_rtlType", layoutBin);
+            diskmeta.setown(createTypeInfoOutputMetaData(layoutBin, false, &dummyCallback));
+        }
+        if (!diskmeta)
+            throw MakeStringException(0, "Index has no layout information");
+        segs.setown(new SegMonitorList(diskmeta->queryRecordAccessor(true), false));
+        keyCursor.setown(keyIndex->getCursor(*segs, NULL));
         if(keyIndex->hasPayload())
             keyedsize = keyIndex->keyedSize();
         else
@@ -328,6 +348,8 @@ private:
 private:
     Owned<IFile> keyFile;
     Owned<IFileIO> keyFileIO;
+    Owned<IOutputMetaData> diskmeta;
+    Owned<SegMonitorList> segs;
     Owned<IKeyIndex> keyIndex;
     Owned<IKeyCursor> keyCursor;
     CRC32 crc;
