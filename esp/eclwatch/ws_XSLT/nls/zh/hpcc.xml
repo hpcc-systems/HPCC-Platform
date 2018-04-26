@@ -155,6 +155,7 @@
 <st id='ViewDetails'>显示详细内容</st>
 <st id='ViewingPage'>显示页号</st>
 <st id='ViewLogFile'>显示日志文件</st>
+<st id='ViewAuditLogFile'>显示审计日志文件</st>
 <st id='WarnIfAvailableDiskSpaceIsUnder'>警告如可用硬盘空间少于</st>
 <st id='WarnIfAvailableMemoryIsUnder'>警告如可用内存空间少于</st>
 <st id='WarnIfCPUUsageIsOver'>警告如CPU使用率大于</st>

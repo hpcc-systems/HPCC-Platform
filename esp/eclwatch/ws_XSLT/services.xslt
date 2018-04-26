@@ -542,6 +542,48 @@
                                                 </a>
                                             </xsl:if>
                                         </td>
+                                        <xsl:if test="$compType='DaliServerProcess'">
+                                          <td align="left" width="19">
+                                            <xsl:variable name="logDir">
+                                              <xsl:value-of  select="string(../../AuditLogDirectory)"/>
+                                            </xsl:variable>
+                                            <a style="padding-right:2">
+                                              <xsl:variable name="url">
+                                                <xsl:text>/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
+                                                <xsl:value-of select="Netaddress"/>
+                                                <xsl:text>%26FileType%3dlog%26CompType%3d</xsl:text>
+                                                <xsl:value-of select="$compType"/>
+                                                <xsl:text>%26OsType%3d</xsl:text>
+                                                <xsl:value-of select="OS"/>
+                                                <xsl:text>%26Directory%3d</xsl:text>
+                                              </xsl:variable>
+                                              <xsl:variable name="pageCaption">
+                                                <xsl:value-of select="concat('esp_iframe_title=', $caption, ' ', ../../Name, ' -- ', $hpccStrings/st[@id='LogFile'])"/>
+                                              </xsl:variable>
+                                              <xsl:attribute name="href">
+                                                <xsl:text>/esp/iframe?</xsl:text>
+                                                <xsl:value-of select="$pageCaption"/>
+                                                <xsl:text disable-output-escaping="yes">&amp;inner=</xsl:text>
+                                                <xsl:value-of select="$url"/>
+                                                <xsl:value-of select="$logDir"/>
+                                              </xsl:attribute>
+                                              <xsl:attribute name="onclick">
+                                                <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
+                                                <xsl:value-of select="Netaddress"/>
+                                                <xsl:text disable-output-escaping="yes">', '</xsl:text>
+                                                <xsl:value-of select="translate($logDir, '\', '/')"/>
+                                                <xsl:text disable-output-escaping="yes">', '</xsl:text>
+                                                <xsl:value-of select="$url"/>
+                                                <xsl:text disable-output-escaping="yes">', "</xsl:text>
+                                                <xsl:value-of select="$pageCaption"/>
+                                                <xsl:text disable-output-escaping="yes">", </xsl:text>
+                                                <xsl:value-of select="OS"/>
+                                                <xsl:text>);</xsl:text>
+                                              </xsl:attribute>
+                                              <img border="0" src="&filePathEntity;/img/base.gif" alt="{$hpccStrings/st[@id='ViewAuditLogFile']}" title="{$hpccStrings/st[@id='ViewAuditLogFile']}" width="19" height="16"/>
+                                            </a>
+                                          </td>
+                                        </xsl:if>
                                         <td width="14">
                                             <xsl:choose>
                                                 <xsl:when test="$compType!='' and ($compType!='EclAgentProcess' or OS=0)">

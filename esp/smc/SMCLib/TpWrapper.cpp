@@ -165,7 +165,7 @@ void CTpWrapper::fetchInstances(const char* ServiceType, IPropertyTree& service,
     }
 }
 
-void CTpWrapper::getTpDaliServers(IArrayOf<IConstTpDali>& list)
+void CTpWrapper::getTpDaliServers(double clientVersion, IArrayOf<IConstTpDali>& list)
 {
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
@@ -185,17 +185,25 @@ void CTpWrapper::getTpDaliServers(IArrayOf<IConstTpDali>& list)
         pService->setBuild(serviceTree.queryProp("@build"));
         pService->setType(eqDali);
 
-        StringBuffer tmpDir;
+        StringBuffer tmpDir, tmpAuditDir;
         if (getConfigurationDirectory(root->queryPropTree("Directories"), "log", "dali", name, tmpDir))
         {
             const char* pStr = tmpDir.str();
             if (pStr)
             {
                 if (strchr(pStr, '/'))
-                    tmpDir.append("/server");
+                    tmpDir.append("/");
                 else
-                    tmpDir.append("\\server");
-                pService->setLogDirectory( tmpDir.str() );
+                    tmpDir.append("\\");
+                tmpAuditDir.set(tmpDir.str());
+
+                tmpDir.append("server");
+                pService->setLogDirectory(tmpDir.str());
+                if (clientVersion >= 1.27)
+                {
+                    tmpAuditDir.append("audit");
+                    pService->setAuditLogDirectory(tmpAuditDir.str());
+                }
             }
         }
         else
