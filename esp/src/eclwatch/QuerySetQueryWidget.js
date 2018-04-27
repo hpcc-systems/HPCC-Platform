@@ -21,6 +21,8 @@ define([
     "dojo/on",
     "dojo/topic",
     "dojo/_base/array",
+    "dojo/dom-form",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/Menu",
@@ -36,6 +38,7 @@ define([
     "src/ESPQuery",
     "src/ESPUtil",
     "src/Utility",
+    "hpcc/SelectionGridWidget",
 
     "dojo/text!../templates/QuerySetQueryWidget.html",
 
@@ -55,10 +58,10 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, on, topic, arrayUtil,
+], function (declare, lang, i18n, nlsHPCC, on, topic, arrayUtil, domForm, topic,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 selector,
-                _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, Utility,
+                _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, Utility, SelectionGridWidget,
                 template) {
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -68,7 +71,9 @@ define([
         borderContainer: null,
         queriesTab: null,
         querySetGrid: null,
+        recreateQueriesGrid: null,
         clusterTargetSelect: null,
+        recreateQueryTargetSelect: null,
         filter: null,
 
         initalized: false,
@@ -82,12 +87,15 @@ define([
             this.inherited(arguments);
             this.queriesTab = registry.byId(this.id + "_PublishedQueries");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
+            this.recreateQueryTargetSelect = registry.byId(this.id + "RecreateTargetSelect");
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.filter = registry.byId(this.id + "Filter");
             this.downloadToList = registry.byId(this.id + "DownloadToList");
             this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
             this.downListForm = registry.byId(this.id + "DownListForm");
             this.fileName = registry.byId(this.id + "CSVFileName");
+            this.recreateQueriesGrid = registry.byId(this.id + "RecreateQueriesGrid");
+            this.recreateForm = registry.byId(this.id + "RecreateForm");
         },
 
         startup: function (args) {
@@ -143,6 +151,7 @@ define([
                 includeBlank: true,
                 Target: params.Cluster
             });
+
             if (params.Wuid) {
                 this.filter.setValue(this.id + "Wuid", params.Wuid);
             } else if (params.LogicalName) {
@@ -445,11 +454,25 @@ define([
                 }
             });
             this.querySetGrid.startup();
+
+            this.recreateQueriesGrid.createGrid({
+                idProperty: "Name",
+                    columns: {
+                        Name: {
+                            label: this.i18n.ID
+                        },
+                        QuerySetId: {
+                            label: this.i18n.Target
+                        }
+                    }
+            });
+
             this.refreshActionState();
         },
 
         refreshActionState: function () {
             var selection = this.querySetGrid.getSelected();
+            var data = [];
             var hasSelection = false;
             var isSuspended = false;
             var isNotSuspended = false;
@@ -475,16 +498,60 @@ define([
             registry.byId(this.id + "Activate").set("disabled", !isActive);
             registry.byId(this.id + "Deactivate").set("disabled", !isNotActive);
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
-
+            registry.byId(this.id + "RecreateQueryDropDown").set("disabled", !hasSelection);
 
             this.menuUnsuspend.set("disabled", !isNotSuspended);
             this.menuSuspend.set("disabled", !isSuspended);
             this.menuActivate.set("disabled", !isActive);
             this.menuDeactivate.set("disabled", !isNotActive);
+
+            if (hasSelection) {
+                arrayUtil.forEach(selection, function (item, idx) {
+                    data.push(item);
+                });
+                this.recreateQueriesGrid.setData(data);
+            }
          },
 
         _onRefresh: function (params) {
            this.refreshGrid();
+        },
+
+        _onRecreateQueriesSuccess: function (status) {
+            var context = this;
+            if (status) {
+                dojo.publish("hpcc/brToaster", {
+                    Severity: "Message",
+                    Source: "WsWorkunits.WURecreateQuery",
+                    Exceptions: [{ Source: context.i18n.RecreateQuery, Message: context.i18n.SuccessfullySaved }]
+                });
+            }
+        },
+
+        _onRecreateQueries: function () {
+            if (this.recreateForm.validate()) {
+                var context = this;
+                var success = false;
+                arrayUtil.forEach(this.recreateQueriesGrid.store.data, function (item, idx) {
+                        var request = domForm.toObject(context.id + "RecreateForm");
+                        request.Republish === "off" ? request.Republish = 1 : request.Republish = 0;
+                        request.AllowForeignFiles === "off" ? request.AllowForeignFiles = 0 : request.AllowForeignFiles = 1;
+                        request.UpdateDfs === "off" ? request.UpdateDfs = 0 : request.UpdateDfs = 1;
+                        request.UpdateSuperFiles === "off" ? request.UpdateSuperFiles = 0 : request.UpdateSuperFiles = 1;
+                        request.QueryId = item.Name;
+                        request.Target = item.QuerySetId;
+                        request.IncludeFileErrors = 1;
+                        WsWorkunits.WURecreateQuery({
+                            request: request
+                        }).then(function (response) {
+                            if (lang.exists("WURecreateQueryResponse.Wuid", response)) {
+                                success = true;
+                            }
+                            context._onRecreateQueriesSuccess(success);
+                        });
+                });
+                registry.byId(this.id + "RecreateQueryDropDown").closeDropDown();
+            }
         },
 
         _onDelete:function(){

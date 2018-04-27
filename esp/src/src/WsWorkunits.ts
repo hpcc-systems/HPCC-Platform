@@ -121,6 +121,10 @@ export function WUListQueries(params) {
     return ESPRequest.send("WsWorkunits", "WUListQueries", params);
 }
 
+export function WURecreateQuery(params) {
+    return ESPRequest.send("WsWorkunits", "WURecreateQuery", params);
+}
+
 export function WUGetNumFileToCopy(params) {
     return ESPRequest.send("WsWorkunits", "WUGetNumFileToCopy", params);
 }
