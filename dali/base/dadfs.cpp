@@ -1904,22 +1904,23 @@ public:
     {
         includeempty = _includeempty;
         dir = _dir;
-        StringBuffer baseq;
-        StringBuffer tmp;
-        if (base&&*base) {
-            CDfsLogicalFileName dlfn;
-            dlfn.set(base,".");
-            dlfn.makeScopeQuery(baseq,false);
-        }
+        StringBuffer lockPath;
+        if (!isEmptyString(base))
         {
-            CConnectLock connlock("CDFScopeIterator",querySdsFilesRoot(),false,false,false,timeout);
-            // could use CScopeConnectLock here probably
-            StringBuffer name;
-            IPropertyTree *root = connlock.conn->queryRoot();
-            if (baseq.length())
-                root = root->queryPropTree(baseq.str());
-            if (root)
-                add(*root,recursive,name);
+            CDfsLogicalFileName dlfn;
+            dlfn.set(base, "dummyfilename"); // makeScopeQuery expects a lfn to a file, 'dummyfilename' will not be used
+            dlfn.makeScopeQuery(lockPath, DXB_Scope);
+        }
+        else
+            lockPath.append(querySdsFilesRoot());
+
+        {
+            CConnectLock connlock("CDFScopeIterator", lockPath, false, false, false, timeout);
+            if (connlock.conn)
+            {
+                StringBuffer name;
+                add(*connlock.conn->queryRoot(),recursive,name);
+            }
         }
         if (scopes.ordinality()>1)
             qsortvec(scopes.getArray(),scopes.ordinality(),strcompare);
