@@ -153,7 +153,7 @@ define([
 
                 if (sessionIsActive) {
                     if (!cookie("ECLWatchUser")) {
-                        dojo.cookie("ECLWatchUser", "true");
+                        cookie("ECLWatchUser", "true");
                     }
 
                     var lock = dom.byId("Lock");
@@ -179,7 +179,7 @@ define([
                     });
                     idleWatcher.start();
                     monitorLockClick.unlocked();
-                } else if (dojo.cookie("ECLWatchUser")) {
+                } else if (cookie("ECLWatchUser")) {
                     window.location.replace(dojoConfig.urlInfo.basePath + "/Login.html");
                 }
                 stopLoading();
