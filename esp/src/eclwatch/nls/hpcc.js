@@ -106,6 +106,7 @@ define({root:
     Contents: "Contents",
     ContentType: "Content Type",
     Copy: "Copy",
+    CopyToClipboard: "Copy to clipboard",
     Count: "Count",
     CreateANewFile: "Create a new superfile",
     Created: "Created",
