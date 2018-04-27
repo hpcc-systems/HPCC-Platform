@@ -2,9 +2,7 @@
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect2 id="ECLRoxieExample_Anagram2">
-
   <title>Roxie Example: Anagram2</title>
-
 
   <para>In this example, we will download an open source data file of
   dictionary words, spray that file to our Thor cluster, then validate our
@@ -21,7 +19,7 @@
     <!-- DNT-End -->
 
     <para>We will download the word list from <ulink
-    url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
+    url="http://wordlist.aspell.net/12dicts">http://wordlist.aspell.net/12dicts</ulink></para>
 
     <para><orderedlist>
         <listitem>
@@ -31,8 +29,9 @@
         </listitem>
 
         <listitem>
-          <para>Extract the <emphasis role="bold">2of12.txt</emphasis> file to
-          a folder on your local machine.</para>
+          <para>Extract the package contents and save the <emphasis
+          role="bold">2of12.txt</emphasis> file (typically found in the
+          American sub-folder) to a folder on your local machine.</para>
         </listitem>
       </orderedlist></para>
   </sect3>
