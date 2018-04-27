@@ -1435,6 +1435,10 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     if (!sessionTree)
     {
         ESPLOG(LogMin, "Authentication failed: session:<%u> not found", sessionID);
+
+        clearCookie(authReq.authBinding->querySessionIDCookieName());
+        ESPLOG(LogMin, "clearCookie() called for session <%u> ID cookie", sessionID);
+
         if (authReq.isSoapPost) //from SOAP Test page
             sendMessage("Session expired. Please close this page and login again.", "text/html; charset=UTF-8");
         else
