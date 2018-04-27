@@ -55,6 +55,7 @@
 #include "hqlexpr.hpp"
 #include "eclrtl.hpp"
 #include "package.h"
+#include "daaudit.hpp"
 
 #define     Action_Delete           "Delete"
 #define     Action_AddtoSuperfile   "Add To Superfile"
@@ -117,6 +118,8 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
     StringBuffer xpath;
 
     DBGLOG("Initializing %s service [process = %s]", service, process);
+
+    espProcess.set(process);
 
     xpath.appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/DefaultScope", process, service);
     cfg->getProp(xpath.str(), defaultScope_);
@@ -1233,9 +1236,11 @@ typedef enum {
 } DeleteActionResult;
 
 
-DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults, bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively);
+DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles,
+    const char *auditStr, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults, bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively);
 
-bool doRemoveFileFromSuperfiles(const char *lfn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles, bool deleteRecursively, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults)
+bool doRemoveFileFromSuperfiles(const char *lfn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles, bool deleteRecursively,
+    const char *auditStr, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults)
 {
     StringArray emptySuperFiles;
     IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
@@ -1272,13 +1277,14 @@ bool doRemoveFileFromSuperfiles(const char *lfn, IUserDescriptor *userdesc, Stri
         }
     }
     ForEachItemIn(i, emptySuperFiles)
-        doDeleteFile(emptySuperFiles.item(i), userdesc, superFiles, failedFiles, returnStr, actionResults, false, true, deleteRecursively);
+        doDeleteFile(emptySuperFiles.item(i), userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, false, true, deleteRecursively);
 
     return true;
 }
 
-DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults,
-        bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively)
+DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles,
+    const char *auditStr, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults,
+    bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively)
 {
     StringArray parsed;
     parsed.appendListUniq(fn, "@");
@@ -1314,6 +1320,7 @@ DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, Strin
             }
         }
         fdir.removeEntry(fn, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
+        LOG(daliAuditLogCat, "%s,%s", auditStr, fn);
         setDeleteFileResults(lfn, group, false, isSuper ? "Deleted Superfile" : "Deleted File", NULL, returnStr, actionResults);
     }
     catch(IException* e)
@@ -1322,9 +1329,9 @@ DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, Strin
         e->errorMessage(emsg);
         if (removeFromSuperfiles && strstr(emsg, "owned by"))
         {
-            if (!doRemoveFileFromSuperfiles(lfn, userdesc, superFiles, failedFiles, deleteRecursively, returnStr, actionResults))
+            if (!doRemoveFileFromSuperfiles(lfn, userdesc, superFiles, failedFiles, deleteRecursively, auditStr, returnStr, actionResults))
                 return DeleteActionFailure;
-            return doDeleteFile(fn, userdesc, superFiles, failedFiles, returnStr, actionResults, superFilesOnly, false, false);
+            return doDeleteFile(fn, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, superFilesOnly, false, false);
         }
         if (e->errorCode() == DFSERR_CreateAccessDenied)
             emsg.replaceString("Create ", "Delete ");
@@ -1341,8 +1348,9 @@ DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, Strin
     return DeleteActionSuccess;
 }
 
-void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
-        bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively)
+void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles,
+    const char *auditStr, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
+    bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively)
 {
     ForEachItemIn(i, files)
     {
@@ -1351,7 +1359,7 @@ void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &s
             continue;
 
         PROGLOG("Deleting %s", fn);
-        if (DeleteActionFailure==doDeleteFile(fn, userdesc, superFiles, failedFiles, returnStr, actionResults, superFilesOnly, removeFromSuperfiles, deleteRecursively))
+        if (DeleteActionFailure==doDeleteFile(fn, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, superFilesOnly, removeFromSuperfiles, deleteRecursively))
         {
             failedFiles.appendUniq(fn);
             PROGLOG("Delete %s failed", fn);
@@ -1362,16 +1370,18 @@ void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &s
 
 }
 
-inline void doDeleteSuperFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
-        bool removeFromSuperfiles, bool deleteRecursively)
+inline void doDeleteSuperFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles,
+    StringArray &failedFiles, const char *auditStr, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
+    bool removeFromSuperfiles, bool deleteRecursively)
 {
-    doDeleteFiles(files, userdesc, superFiles, failedFiles, returnStr, actionResults, true, removeFromSuperfiles, deleteRecursively);
+    doDeleteFiles(files, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, true, removeFromSuperfiles, deleteRecursively);
 }
 
-inline void doDeleteSubFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
-        bool removeFromSuperfiles, bool deleteRecursively)
+inline void doDeleteSubFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles,
+    StringArray &failedFiles, const char *auditStr, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
+    bool removeFromSuperfiles, bool deleteRecursively)
 {
-    doDeleteFiles(files, userdesc, superFiles, failedFiles, returnStr, actionResults, false, removeFromSuperfiles, deleteRecursively);
+    doDeleteFiles(files, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, false, removeFromSuperfiles, deleteRecursively);
 }
 
 bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp)
@@ -1385,12 +1395,21 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
         userdesc->set(username, context.queryPassword(), context.querySessionToken(), context.querySignature());
     }
 
-    StringBuffer returnStr;
+    StringBuffer returnStr, auditStr = (",FileAccess,WsDfu,DELETED,");
     IArrayOf<IEspDFUActionInfo> actionResults;
 
     StringArray superFiles, failedFiles;
-    doDeleteSuperFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, returnStr, actionResults, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
-    doDeleteSubFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, returnStr, actionResults, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
+
+    auditStr.append(espProcess.get());
+    auditStr.append(',');
+    if (!isEmptyString(username))
+        auditStr.append(username).append('@');
+    context.getPeer(auditStr);
+
+    doDeleteSuperFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, auditStr.str(),
+        returnStr, actionResults, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
+    doDeleteSubFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, auditStr.str(),
+        returnStr, actionResults, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
 
     if (version >= 1.27)
         resp.setActionResults(actionResults);

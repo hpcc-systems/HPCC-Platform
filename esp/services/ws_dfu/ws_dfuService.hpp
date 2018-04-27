@@ -233,6 +233,7 @@ private:
     StringBuffer defaultScope_;
     StringBuffer user_;
     StringBuffer password_;
+    StringAttr   espProcess;
 };
 
 

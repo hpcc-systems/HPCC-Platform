@@ -44,6 +44,7 @@
 #include "esplog.hpp"
 #include "espcontext.hpp"
 #include "build-config.h"
+#include "mplog.hpp"
 
 #ifdef _WIN32
 /*******************************************
@@ -393,6 +394,11 @@ int init_main(int argc, char* argv[])
         }
 
         writeSentinelFile(sentinelFile);
+
+        // for auditing
+        startLogMsgParentReceiver();
+        connectLogMsgManagerToDali();
+
         result = work_main(*config, *server.get());
     }
     else
@@ -413,6 +419,7 @@ int main(int argc, char* argv[])
 {
     start_init_main(argc, argv, init_main);
     stopPerformanceMonitor();
+    disconnectLogMsgManagerFromDali();
     UseSysLogForOperatorMessages(false);
     releaseAtoms();
     return 0;
