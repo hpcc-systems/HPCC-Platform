@@ -28,9 +28,16 @@ source  ${INSTALL_DIR}/etc/init.d/export-path
 
 print_usage(){
     echo
-    echo "usage: hpcc-run.sh [-c component] [-a {hpcc-init|dafilesrv}] [-n concurrent] [-s] [-S] {start|stop|stopall|restart|status|setup}"
-    echo "  -a|--action: HPCC service name. Either hpcc-init (default) or dafilesrv."
-    echo "  -c|--comp: HPCC component. For example, mydali, myroxie, mythor, etc."
+    if use_systemd; then
+        echo "usage: hpcc-run.sh [-c component] [-n concurrent] [-s] [-S] {start|stop|restart|status}"
+    else #sysv init
+        echo "usage: hpcc-run.sh [-c component] [-a {hpcc-init|dafilesrv}] [-n concurrent] [-s] [-S] {start|stop|stopall|restart|status|setup}"
+        echo "  -a|--action: HPCC service name. Either hpcc-init (default) or dafilesrv."
+        echo "  -c|--comp: HPCC component. For example, mydali, myroxie, mythor, etc."
+    fi
+    if use_systemd; then
+        echo "  -c|--comp: HPCC component. For example, dali@mydali.service, roxie@myroxie.service, etc."
+    fi
     echo "  -n|--concurrent: How many concurrent instances to run. The default is equal to the number of nodes present."
     echo "  -S|--sequentially: For the command to run sequentially. i.e. one host a time. (overrides -n)"
     echo "  -s|--save: Save the result to a file named by ip."
@@ -44,9 +51,17 @@ getIPS(){
     if [[ -z "${comp}" ]]; then
         IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -machines | awk -F, '{print \$1}'  | sort | uniq`
     else
-        IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall | grep -e "${comp}" | awk -F, '{ print \$3 }' | sort | uniq`
+        if use_systemd; then
+            patf="*@"
+            patb=".service"
+            tmp_comp=${comp##$patf}
+            tmp_comp=${tmp_comp%%$patb}
+        else
+            tmp_comp=${comp}
+        fi
+        IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall | grep -e "${tmp_comp}" | awk -F, '{ print \$3 }' | sort | uniq`
         if [[ -z "${IPS}" ]]; then
-            log_failure_msg "Component ${comp} not found"
+            log_failure_msg "Component ${tmp_comp} not found"
             print_usage
             end 1
         fi
@@ -82,7 +97,15 @@ doOneIP(){
             return 1
         else
             hpccStatusFile=/tmp/hpcc_status_$$
-            local CMD="sudo ${INIT_PATH}/$_action $_args"
+            if use_systemd; then
+                if [[ -z "${comp}" ]]; then
+                    local CMD="sudo systemctl ${arg} hpccsystems-platform.target"
+                else
+                    local CMD="sudo systemctl ${arg} ${comp}"
+                fi
+            else
+                local CMD="sudo ${INIT_PATH}/$_action $_args"
+            fi
             echo "$_ip: Running $CMD"
             local CMD="$CMD | tee ${hpccStatusFile}"
 
@@ -118,7 +141,15 @@ if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
         echo "\$IP: Cannot SSH to host."
         exit 1
     else
-        CMD="sudo ${INIT_PATH}/$_action $_args"
+        if use_systemd; then
+            if [[ -z "${comp}" ]]; then
+                CMD="sudo systemctl ${arg} hpccsystems-platform.target"
+            else
+                CMD="sudo systemctl ${arg} ${comp}"
+            fi
+        else
+            CMD="sudo ${INIT_PATH}/$_action $_args"
+        fi
         echo "\$IP: Running \$CMD"
         CMD="\$CMD | tee $hpccStatusFile"
         ssh -i $home/$user/.ssh/id_rsa -o LogLevel=QUIET $user@\$IP \$CMD;
@@ -281,6 +312,14 @@ end() {
     exit $1
 }
 
+use_systemd() {
+    if which systemd 1>/dev/null 2>&1; then
+        systemd_path=`which systemd`
+        return 0
+    else
+        return 1
+    fi
+}
 
 ############################################
 #
@@ -357,7 +396,11 @@ case "$action" in
     hpcc-init) ;;
     dafilesrv) ;;
     *) if [[ -z $action ]]; then
-            action="hpcc-init"
+            if use_systemd; then
+                action="hpccsystems-platform.target"
+            else #sysv init
+                action="hpcc-init"
+            fi
         else
             print_usage
         fi
