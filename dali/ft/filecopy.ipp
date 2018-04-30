@@ -272,6 +272,15 @@ protected:
     void examineCsvStructure();
     IFormatPartitioner * createPartitioner(aindex_t index, bool calcOutput, unsigned numParts);
 
+    class CAbortRequestCallback : implements IAbortRequestCallback
+    {
+        FileSprayer &sprayer;
+    public:
+        CAbortRequestCallback(FileSprayer &_sprayer) : sprayer(_sprayer) { }
+        virtual bool abortRequested() { return sprayer.isAborting(); }
+    };
+
+
 private:
     bool calcUsePull();
     // Get and store Remote File Name parts into the History record
@@ -335,6 +344,7 @@ protected:
     int                     fileUmask;
     Owned<IPropertyTree>    srcHistory;
     dfu_operation           operation = dfu_unknown;
+    CAbortRequestCallback   fileSprayerAbortChecker;
 };
 
 

@@ -40,15 +40,16 @@ public:
     virtual void setTarget(IOutputProcessor * _target);
     virtual void setRecordStructurePresent(bool _recordStructurePresent);
     virtual void getRecordStructure(StringBuffer & _recordStructure);
+    virtual void setAbort(IAbortRequestCallback * _abort);
 
 protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor) = 0;
     virtual bool splitAfterPoint() { return false; }
     virtual void killBuffer() = 0;
-    
 
     void commonCalcPartitions();
 
+    virtual bool isAborting();
 
 protected:
     PartitionPointArray         results;
@@ -64,6 +65,7 @@ protected:
     unsigned                    thisHeaderSize;
     unsigned                    numParts;
     bool                        partitioning;
+    IAbortRequestCallback *     abortChecker = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -125,7 +127,7 @@ protected:
 
 
 //---------------------------------------------------------------------------
-// More complex processors that need to read the source file - e.g. because 
+// More complex processors that need to read the source file - e.g. because
 // output offset being calculated.
 
 
@@ -151,13 +153,13 @@ protected:
     void seekInput(offset_t offset);
     offset_t tellInput();
 
-    inline byte *bufferBase()  
-    { 
-        return (byte *)((bufattr.length()!=bufferSize)?bufattr.allocate(bufferSize):bufattr.bufferBase()); 
+    inline byte *bufferBase()
+    {
+        return (byte *)((bufattr.length()!=bufferSize)?bufattr.allocate(bufferSize):bufattr.bufferBase());
     }
     virtual void killBuffer()  { bufattr.clear(); }
     virtual void clearBufferOverrun() { numOfBufferOverrun = 0; numOfProcessedBytes = 0; }
-protected: 
+protected:
     Owned<IFileIOStream>   inStream;
     MemoryAttr             bufattr;
     size32_t               headerSize;
@@ -252,7 +254,7 @@ protected:
 
 private:
     void storeFieldName(const char * start, unsigned len);
-    
+
 protected:
     enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned        maxElementLength;
@@ -605,7 +607,7 @@ public:
     size32_t getEndOfRecord(const byte * record, unsigned maxToRead);
     offset_t getHeaderLength(BufferedDirectReader & reader);
     offset_t getFooterLength(BufferedDirectReader & reader, offset_t size);
-    
+
     unsigned getMaxElementLength() { return maxElementLength; }
 
 protected:
@@ -667,9 +669,12 @@ public:
     virtual void setTarget(IOutputProcessor * _target) { UNIMPLEMENTED; }
     virtual void setRecordStructurePresent(bool _recordStructurePresent);
     virtual void getRecordStructure(StringBuffer & _recordStructure);
+    virtual void setAbort(IAbortRequestCallback * _abort) { UNIMPLEMENTED; }
 
 protected:
     void callRemote();
+
+    virtual bool isAborting() { UNIMPLEMENTED; };
 
 protected:
     CachedPasswordProvider      passwordProvider;
@@ -710,7 +715,7 @@ public:
 
 protected:
     offset_t                outputOffset;
-    OwnedIFileIOStream      out; 
+    OwnedIFileIOStream      out;
 };
 
 class DALIFT_API CFixedOutputProcessor : public COutputProcessor

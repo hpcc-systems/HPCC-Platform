@@ -565,7 +565,7 @@ int FileSizeThread::run()
 //----------------------------------------------------------------------------
 
 FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * _recoveryConnection, const char *_wuid)
-  : wuid(_wuid)
+  : wuid(_wuid), fileSprayerAbortChecker(*this)
 {
     totalSize = 0;
     replicate = false;
@@ -1191,6 +1191,7 @@ void FileSprayer::calculateSprayPartition()
     ForEachItemIn(idx, sources)
     {
         IFormatPartitioner * partitioner = createPartitioner(idx, calcOutput, numParts);
+        partitioner->setAbort(&fileSprayerAbortChecker);
         partitioners.append(*partitioner);
     }
 
