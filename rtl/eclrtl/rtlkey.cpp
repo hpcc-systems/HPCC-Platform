@@ -510,137 +510,6 @@ public:
     virtual KeySegmentMonitorSerializeType serializeType() const override { return KSMST_CSINGLELITTLEKEYSEGMENTMONITOR; }
 };
 
-
-
-class COverrideableKeySegmentMonitor : public IOverrideableKeySegmentMonitor, public CInterface
-{
-    const void *overridden;
-    unsigned hash;
-
-public:
-    IMPLEMENT_IINTERFACE
-
-    COverrideableKeySegmentMonitor(IKeySegmentMonitor * _base) 
-    {
-        base.setown(_base); 
-        overridden = NULL;
-        hash = base->queryHashCode();
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 123); 
-    }
-
-    COverrideableKeySegmentMonitor(MemoryBuffer &mb) 
-    {
-        mb.read(hash);
-        base.setown(deserializeKeySegmentMonitor(mb)); 
-        overridden = NULL;
-    }
-
-    virtual void setOverrideBuffer(const void *ptr) override
-    {
-        overridden = ptr;
-    }
-
-    virtual unsigned queryHashCode() const override
-    {
-        return hash;
-    }
-
-    virtual bool getBloomHash(hash64_t &hash) const override
-    {
-        // MORE - I don't know what correct answer is but this is safest!
-        // Perhaps it should return hash of base/overridden as appropriate?
-        return false;
-    }
-
-    virtual bool matchesBuffer(const void *keyval) const override
-    {
-        if (overridden)
-        {
-            unsigned offset = base->getOffset();
-            return memcmp((char *) keyval+offset, (char *) overridden+offset, base->getSize()) == 0;
-        }
-        else
-            return base->matchesBuffer(keyval);
-    }
-    virtual bool matches(const RtlRow *keyval) const override
-    {
-        return matchesBuffer(keyval->queryRow());
-    }
-
-    virtual bool increment(void *keyval) const override
-    {
-        if (overridden)
-        {
-            // Set to next permitted value above current
-            unsigned offset = base->getOffset();
-            if (memcmp((char *) keyval+offset, (char *) overridden+offset, base->getSize()) < 0)
-            {
-                memcpy((char *) keyval+offset, (char *) overridden+offset, base->getSize());
-                return true;
-            }
-            return false;
-        }
-        else
-            return base->increment(keyval);
-    }
-    virtual void setLow(void *keyval) const override
-    {
-        if (overridden)
-        {
-            unsigned offset = base->getOffset();
-            memcpy((char *) keyval+offset, (char *) overridden+offset, base->getSize());
-        }
-        else
-            base->setLow(keyval);
-    }
-    virtual void setHigh(void *keyval) const override
-    {
-        if (overridden)
-        {
-            unsigned offset = base->getOffset();
-            memcpy((char *) keyval+offset, (char *) overridden+offset, base->getSize());
-        }
-        else
-            base->setHigh(keyval);
-    }
-    virtual void endRange(void *keyval) const override
-    {
-        if (overridden)
-        {
-            unsigned offset = base->getOffset();
-            memcpy((char *) keyval+offset, (char *) overridden+offset, base->getSize());
-        }
-        base->endRange(keyval);
-    }
-    virtual void copy(void * expandedRow, const void *rawRight) const override
-    {
-        base->copy(expandedRow, rawRight);
-    }
-
-    virtual bool isWild() const override                             { return overridden ? false : base->isWild(); }
-    virtual unsigned getFieldIdx() const override                    { return base->getFieldIdx(); }
-    virtual unsigned getOffset() const override                      { return base->getOffset(); }
-    virtual unsigned getSize() const override                        { return base->getSize(); }
-    virtual bool isEmpty() const override                            { return base->isEmpty(); }
-    virtual bool isSigned() const override                           { return base->isSigned(); }
-    virtual bool isLittleEndian() const override                     { return base->isLittleEndian(); }
-    virtual bool isWellKeyed() const override                        { return overridden ? true : base->isWellKeyed(); }
-    virtual bool isOptional() const override                         { return base->isOptional(); }
-    virtual unsigned numFieldsRequired() const override              { return base->numFieldsRequired(); }
-    virtual bool isSimple() const override                           { return base->isSimple();  }
-
-    virtual bool equivalentTo(const IKeySegmentMonitor &other) const override { throwUnexpected(); }
-    virtual int docompare(const void * expandedLeft, const void *rawRight) const override { throwUnexpected(); }
-    virtual bool setOffset(unsigned _offset) override { throwUnexpected(); }
-    virtual MemoryBuffer &serialize(MemoryBuffer &mb) const override { throwUnexpected(); }
-    virtual KeySegmentMonitorSerializeType serializeType() const override { throwUnexpected(); }
-    virtual IKeySegmentMonitor *clone() const override { throwUnexpected(); }
-
-protected:
-    Owned<IKeySegmentMonitor> base;
-};
-
-
 ECLRTL_API IStringSet *createRtlStringSet(size32_t size)
 {
     return createStringSet(size);
@@ -735,11 +604,6 @@ ECLRTL_API IKeySegmentMonitor *createSingleKeySegmentMonitor(bool optional, unsi
     return new CSingleKeySegmentMonitor(optional, value, _fieldIdx, offset, size);
 }
 
-ECLRTL_API IOverrideableKeySegmentMonitor *createOverrideableKeySegmentMonitor(IKeySegmentMonitor *base)
-{
-    return new COverrideableKeySegmentMonitor(base);
-}
-
 ECLRTL_API IKeySegmentMonitor *createSingleBigSignedKeySegmentMonitor(bool optional, unsigned fieldIdx, unsigned offset, unsigned size, const void * value)
 {
     return new CSingleBigSignedKeySegmentMonitor(optional, value, fieldIdx, offset, size);
@@ -788,8 +652,6 @@ ECLRTL_API IKeySegmentMonitor *deserializeKeySegmentMonitor(MemoryBuffer &mb)
             return new CSingleLittleSignedKeySegmentMonitor(mb);
         case KSMST_CSINGLELITTLEKEYSEGMENTMONITOR:
             return new CSingleLittleKeySegmentMonitor(mb);
-        case KSMST_OVERRIDEABLEKEYSEGMENTMONITOR:
-            return new COverrideableKeySegmentMonitor(mb);
     }
     return NULL; // up to caller to check
 }

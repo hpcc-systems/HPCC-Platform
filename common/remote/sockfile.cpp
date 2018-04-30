@@ -4725,7 +4725,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         unsigned pos = reply.length();
         while (keyManager->lookup(true))
         {
-            unsigned size = keyManager->queryRecordSize();
+            unsigned size = keyManager->queryRowSize();
             const byte *result = keyManager->queryKeyBuffer();
             reply.append(size);
             reply.append(size, result);

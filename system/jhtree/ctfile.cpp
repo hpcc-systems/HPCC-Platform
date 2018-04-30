@@ -794,7 +794,7 @@ bool CJHTreeNode::getValueAt(unsigned int index, char *dst) const
         {
             //It would make sense to have the fileposition at the start of the row from he perspective of the
             //internal representation, but that would complicate everything else which assumes the keyed
-            //fields start at the begining of the row.
+            //fields start at the beginning of the row.
             if (rowexp.get())
             {
                 rowexp->expandRow(dst,index,sizeof(offset_t),keyLen);

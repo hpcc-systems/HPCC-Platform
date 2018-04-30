@@ -38,22 +38,49 @@ interface jhtree_decl IDelayedFile : public IInterface
     virtual IFileIO *getFileIO() = 0;
 };
 
+class KeyStatsCollector
+{
+public:
+    IContextLogger *ctx;
+    unsigned seeks = 0;
+    unsigned scans = 0;
+    unsigned wildseeks = 0;
+    unsigned skips = 0;
+    unsigned nullskips = 0;
+
+    KeyStatsCollector(IContextLogger *_ctx) : ctx(_ctx) {}
+    void reset();
+    void noteSeeks(unsigned lseeks, unsigned lscans, unsigned lwildseeks);
+    void noteSkips(unsigned lskips, unsigned lnullSkips);
+
+};
+
 interface jhtree_decl IKeyCursor : public IInterface
 {
-    virtual bool next(char *dst) = 0;
-    virtual bool prev(char *dst) = 0;
-    virtual bool first(char *dst) = 0;
-    virtual bool last(char *dst) = 0;
-    virtual bool gtEqual(const char *src, char *dst, bool seekForward = false) = 0; // returns first record >= src
-    virtual bool ltEqual(const char *src, char *dst, bool seekForward = false) = 0; // returns last record <= src
-    virtual size32_t getSize() = 0;
+    virtual bool next(char *dst, KeyStatsCollector &stats) = 0;
+    virtual bool first(char *dst, KeyStatsCollector &stats) = 0;
+    virtual bool last(char *dst, KeyStatsCollector &stats) = 0;
+    virtual bool gtEqual(const char *src, char *dst, KeyStatsCollector &stats) = 0; // returns first record >= src
+    virtual bool ltEqual(const char *src, KeyStatsCollector &stats) = 0; // returns last record <= src
+    virtual const char *queryName() const = 0;
+    virtual size32_t getSize() = 0;  // Size of current row
+    virtual size32_t getKeyedSize() const = 0;  // Size of keyed fields
     virtual void serializeCursorPos(MemoryBuffer &mb) = 0;
-    virtual void deserializeCursorPos(MemoryBuffer &mb, char *keyBuffer) = 0;
+    virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats) = 0;
     virtual unsigned __int64 getSequence() = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
-    virtual void releaseBlobs() = 0;
-    virtual void reset() = 0;
-    virtual bool bloomFilterReject(const SegMonitorList &segs) const = 0;  // returns true if record cannot possibly match
+    virtual void reset(unsigned sortFromSeg = 0) = 0;
+    virtual bool lookup(bool exact, KeyStatsCollector &stats) = 0;
+
+    virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, KeyStatsCollector &stats) = 0;
+    virtual bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen) = 0;
+    virtual IKeyCursor *fixSortSegs(unsigned sortFieldOffset) = 0;
+
+    virtual unsigned __int64 getCount(KeyStatsCollector &stats) = 0;
+    virtual unsigned __int64 checkCount(unsigned __int64 max, KeyStatsCollector &stats) = 0;
+    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount, KeyStatsCollector &stats) = 0;
+    virtual bool nextRange(unsigned groupSegCount) = 0;
+    virtual const byte *queryKeyBuffer() const = 0;
 };
 
 interface IKeyIndex;
@@ -67,7 +94,7 @@ interface jhtree_decl IKeyIndexBase : public IInterface
 
 interface jhtree_decl IKeyIndex : public IKeyIndexBase
 {
-    virtual IKeyCursor *getCursor(IContextLogger *ctx) = 0;
+    virtual IKeyCursor *getCursor(const SegMonitorList *segs) = 0;
     virtual size32_t keySize() = 0;
     virtual bool isFullySorted() = 0;
     virtual bool isTopLevelKey() = 0;
@@ -177,6 +204,7 @@ class jhtree_decl SegMonitorList : implements IInterface, implements IIndexReadC
 public:
     IMPLEMENT_IINTERFACE_O;
     SegMonitorList(const RtlRecord &_recInfo, bool _needWild);
+    SegMonitorList(const SegMonitorList &_from, const char *fixedVals, unsigned sortFieldOffset);
     IArrayOf<IKeySegmentMonitor> segMonitors;
 
     void reset();
@@ -211,7 +239,6 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual const byte *queryKeyBuffer() = 0; //if using RLT: fpos is the translated value, so correct in a normal row
     virtual unsigned __int64 querySequence() = 0;
     virtual size32_t queryRowSize() = 0;     // Size of current row as returned by queryKeyBuffer()
-    virtual unsigned queryRecordSize() = 0;  // Max size
 
     virtual bool lookup(bool exact) = 0;
     virtual unsigned __int64 getCount() = 0;
@@ -225,7 +252,6 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual unsigned querySeeks() const = 0;
     virtual unsigned queryScans() const = 0;
     virtual unsigned querySkips() const = 0;
-    virtual unsigned queryNullSkips() const = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
     virtual void releaseBlobs() = 0;
     virtual void resetCounts() = 0;
