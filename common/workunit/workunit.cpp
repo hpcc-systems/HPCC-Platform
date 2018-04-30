@@ -1712,6 +1712,202 @@ protected:
     StatisticScopeType scopeType = SSTnone;
 };
 
+static int compareWorkflow(IInterface * const * pLeft, IInterface * const * pRight)
+{
+    IConstWorkflowItem * left = static_cast<IConstWorkflowItem *>(*pLeft);
+    IConstWorkflowItem * right = static_cast<IConstWorkflowItem *>(*pRight);
+    return left->queryWfid() - right->queryWfid();
+}
+
+static const char * trueToStr(bool value) { return value ? "true" : nullptr; }
+
+/*
+ * An implementation of IConstWUScopeIterator for the workflow information.
+ */
+class WorkflowStatisticsScopeIterator : public CInterfaceOf<IConstWUScopeIterator>
+{
+public:
+    WorkflowStatisticsScopeIterator(IConstWorkflowItemIterator * wfIter)
+    {
+        ForEach(*wfIter)
+            workflow.append(*LINK(wfIter->query()));
+        workflow.sort(compareWorkflow);
+    }
+
+    virtual bool first() override
+    {
+        if (workflow.empty())
+            return false;
+        curWorkflow = 0;
+        return initWorkflowItem();
+    }
+
+    virtual bool next() override
+    {
+        if (!workflow.isItem(++curWorkflow))
+            return false;
+        return initWorkflowItem();
+    }
+
+    virtual bool nextSibling() override
+    {
+        return next();
+    }
+
+    virtual bool nextParent() override
+    {
+        curWorkflow = NotFound;
+        return false;
+    }
+
+    virtual bool isValid() override
+    {
+        return workflow.isItem(curWorkflow);
+    }
+
+    virtual const char * queryScope() const override
+    {
+        return curScope.str();
+    }
+
+    virtual StatisticScopeType getScopeType() const override
+    {
+        return SSTworkflow;
+    }
+
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties) override
+    {
+        if (whichProperties & PTattributes)
+        {
+#if 0
+            //Enable this code when the mapping from multiple instance attributes to lists is implemented in the service layer above
+            //At that point remove WaDependencyList from the list below.
+            {
+                StringBuffer scratchpad;
+                Owned<IWorkflowDependencyIterator> depends = workflow.item(curWorkflow).getDependencies();
+                ForEach(*depends)
+                        visitor.noteAttribute(WaIdDependency, getValueText(depends->query(), scratchpad, WorkflowScopePrefix));
+            }
+#endif
+            play(visitor, { WaIdDependencyList, WaIsScheduled, WaIdSuccess, WaIdFailure, WaIdRecovery, WaIdPersist, WaIdScheduled,
+                            WaPersistName, WaLabel, WaMode, WaType, WaState, WaCluster, WaCriticalSection });
+        }
+    }
+
+    virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const override
+    {
+        return false;
+    }
+
+    virtual const char * queryAttribute(WuAttr attr, StringBuffer & scratchpad) const override
+    {
+        auto wf = &workflow.item(curWorkflow);
+        StringBufferAdaptor adaptor(scratchpad);
+        switch (attr)
+        {
+        case WaIdDependencyList:
+        {
+            bool first = true;
+            Owned<IWorkflowDependencyIterator> depends = workflow.item(curWorkflow).getDependencies();
+            ForEach(*depends)
+            {
+                if (first)
+                    scratchpad.append("[");
+                else
+                    scratchpad.append(",");
+                scratchpad.append('"').append(WorkflowScopePrefix).append(depends->query()).append('"');
+                first = false;
+            }
+            if (first)
+                return nullptr;
+            scratchpad.append("]");
+            return scratchpad.str();
+        }
+        case WaIsScheduled: return trueToStr(wf->isScheduled());
+        case WaIdSuccess: return getWfidText(wf->querySuccess(), scratchpad);
+        case WaIdFailure: return getWfidText(wf->queryFailure(), scratchpad);
+        case WaIdRecovery: return getWfidText(wf->queryRecovery(), scratchpad);
+        case WaIdPersist: return getWfidText(wf->queryPersistWfid(), scratchpad);
+        case WaIdScheduled: return getWfidText(wf->queryScheduledWfid(), scratchpad);
+        case WaPersistName: return queryOptString(wf->getPersistName(adaptor));
+        case WaLabel: return queryOptString(wf->getLabel(adaptor));
+        case WaMode: return wf->queryMode() != WFModeNormal ? queryWorkflowModeText(wf->queryMode()) : nullptr;
+        case WaType: return wf->queryType() != WFTypeNormal ? queryWorkflowTypeText(wf->queryType()) : nullptr;
+        case WaState: return queryWorkflowStateText(wf->queryState());
+        case WaCluster: return queryOptString(wf->queryCluster(adaptor));
+        case WaCriticalSection: return queryOptString(wf->getCriticalName(adaptor));
+        /*
+        The followng attributes are not generated - I'm not convinced they are very useful, but they could be added later.
+        virtual bool isScheduledNow() const = 0;
+        virtual IWorkflowEvent * getScheduleEvent() const = 0;
+        virtual unsigned querySchedulePriority() const = 0;
+        virtual bool hasScheduleCount() const = 0;
+        virtual unsigned queryScheduleCount() const = 0;
+        virtual unsigned queryRetriesAllowed() const = 0;
+        virtual int queryPersistCopies() const = 0;  // 0 - unmangled name,  < 0 - use default, > 0 - max number
+        virtual bool queryPersistRefresh() const = 0;
+        virtual unsigned queryScheduleCountRemaining() const = 0;
+        virtual unsigned queryRetriesRemaining() const = 0;
+        virtual int queryFailCode() const = 0;
+        virtual const char * queryFailMessage() const = 0;
+        virtual const char * queryEventName() const = 0;
+        virtual const char * queryEventExtra() const = 0;
+        */
+        }
+        return nullptr;
+    }
+
+    virtual const char * queryHint(const char * kind) const
+    {
+        return nullptr;
+    }
+
+protected:
+    bool initWorkflowItem()
+    {
+        curScope.clear().append(WorkflowScopePrefix).append(workflow.item(curWorkflow).queryWfid());
+        return true;
+    }
+
+    const char * getValueText(unsigned value, StringBuffer & scratchpad, const char * prefix = nullptr) const
+    {
+        return scratchpad.clear().append(prefix).append(value).str();
+    }
+
+    const char * queryOptString(IStringVal & value) const
+    {
+        const char * text = value.str();
+        if (!text || !*text)
+            return nullptr;
+        return text;
+    }
+
+    const char * getWfidText(unsigned value, StringBuffer & scratchpad) const
+    {
+        if (!value)
+            return nullptr;
+        return scratchpad.clear().append(WorkflowScopePrefix).append(value).str();
+    }
+
+    void play(IWuScopeVisitor & visitor, const std::initializer_list<WuAttr> & attrs) const
+    {
+        StringBuffer scratchpad;
+        for (auto attr : attrs)
+        {
+            const char * value = queryAttribute(attr, scratchpad.clear());
+            if (value)
+                visitor.noteAttribute(attr, value);
+        }
+    }
+
+protected:
+    IArrayOf<IConstWorkflowItem> workflow;
+    unsigned curWorkflow = 0;
+    StringBuffer curScope;
+};
+
+
+
 
 /*
  * An implementation of IConstWUScopeIterator that combines results from multiple sources.
@@ -2264,7 +2460,7 @@ static constexpr EnumMapping filterOptions[] = {
         { FOproperty, "prop" }, { FOproperty, "property" },
         { FOmeasure, "measure" }, { FOversion, "version" }, { 0, nullptr} };
 static constexpr EnumMapping sourceMappings[] = {
-        { SSFsearchGlobalStats, "global" }, { SSFsearchGraphStats, "stats" }, { SSFsearchGraphStats, "statistics" }, { SSFsearchGraph, "graph" }, { SSFsearchExceptions, "exception" },
+        { SSFsearchGlobalStats, "global" }, { SSFsearchGraphStats, "stats" }, { SSFsearchGraphStats, "statistics" }, { SSFsearchGraph, "graph" }, { SSFsearchExceptions, "exception" }, { SSFsearchWorkflow, "workflow" },
         { (int)SSFsearchAll, "all" }, { 0, nullptr } };
 static constexpr EnumMapping propertyMappings[] = {
         { PTstatistics, "stat" }, { PTstatistics, "statistic" }, { PTattributes, "attr" }, { PTattributes, "attribute" }, { PThints, "hint" },
@@ -2703,10 +2899,12 @@ void WuScopeFilter::finishedFilter()
             if (!(properties & PTstatistics))
                 sourceFlags &= ~(SSFsearchGlobalStats|SSFsearchGraphStats);
 
-            //graph only contains attributes and hints => remove if not interested
+            //graph, workflow only contains attributes and hints => remove if not interested
             if (!(properties & (PTattributes|PThints)))
-                sourceFlags &= ~(SSFsearchGraph);
+                sourceFlags &= ~(SSFsearchGraph|SSFsearchWorkflow);
         }
+
+
     }
 
     //Optimize sources if they haven't been explicitly specified
@@ -2720,7 +2918,7 @@ void WuScopeFilter::finishedFilter()
     else if (matchOnly(SSTgraph))
     {
         //Graph starts are stored globally, not in the graph stats.
-        sourceFlags &= ~(SSFsearchGraphStats);
+        sourceFlags &= ~(SSFsearchGraphStats|SSFsearchWorkflow);
 
         if (!(properties & (PTattributes|PThints)))
             sourceFlags &= ~(SSFsearchGraph);
@@ -2729,6 +2927,8 @@ void WuScopeFilter::finishedFilter()
     }
     else if (matchOnly(SSTsubgraph))
     {
+        sourceFlags &= ~(SSFsearchWorkflow);
+
         //subgraph timings are stored globally - otherwise need to look in the graph stats.
         if (!(properties & (PTattributes|PThints)))
         {
@@ -2743,12 +2943,12 @@ void WuScopeFilter::finishedFilter()
     else if (matchOnly(SSTcompilestage))
     {
         //compile stages are not stored in the graph
-        sourceFlags &= ~(SSFsearchGraphStats|SSFsearchGraph);
+        sourceFlags &= ~(SSFsearchGraphStats|SSFsearchGraph|SSFsearchWorkflow);
     }
     else if (matchOnly(SSTactivity))
     {
         //information about activities is not stored globally
-        sourceFlags &= ~(SSFsearchGlobalStats);
+        sourceFlags &= ~(SSFsearchGlobalStats|SSFsearchWorkflow);
     }
 
     // Everything stored in the graphs stats has a depth of 2 or more - so ignore if there are not matches in that depth
@@ -2757,10 +2957,16 @@ void WuScopeFilter::finishedFilter()
         sourceFlags &= ~(SSFsearchGraphStats);
     }
 
+    if (scopeFilter.compareDepth(1) < 0)
+    {
+        //If minimum match depth is > 1 then it will never match workflow
+        sourceFlags &= ~(SSFsearchWorkflow);
+    }
+
     //The xml graph is never updated, so do not check it if minVersion != 0
     if (minVersion != 0)
     {
-        sourceFlags &= ~SSFsearchGraph;
+        sourceFlags &= ~(SSFsearchGraph|SSFsearchWorkflow);
     }
 }
 
@@ -7881,7 +8087,7 @@ bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphN
     if (!MATCHES_CONST_PREFIX(scope, GraphScopePrefix))
         return false;
 
-    graphNum = atoi(scope + CONST_STRLEN(GraphScopePrefix));
+    graphNum = atoi(scope + strlen(GraphScopePrefix));
     subGraphId = 0;
 
     const char * colon = strchr(scope, ':');
@@ -7894,7 +8100,7 @@ bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphN
     const char * subgraph = colon+1;
     graphName.set(scope, (size32_t)(colon - scope));
     if (MATCHES_CONST_PREFIX(subgraph, SubGraphScopePrefix))
-        subGraphId = atoi(subgraph+CONST_STRLEN(SubGraphScopePrefix));
+        subGraphId = atoi(subgraph+strlen(SubGraphScopePrefix));
     return true;
 }
 
@@ -8029,6 +8235,13 @@ IConstWUScopeIterator & CLocalWorkUnit::getScopeIterator(const WuScopeFilter & f
         Owned<IConstWUScopeIterator> graphIter(new GraphScopeIterator(this, filter.queryIterFilter()));
         compoundIter->addIter(graphIter);
     }
+
+    if (sources & SSFsearchWorkflow)
+    {
+        Owned<IConstWUScopeIterator> workflowIter(new WorkflowStatisticsScopeIterator(getWorkflowItems()));
+        compoundIter->addIter(workflowIter);
+    }
+
 
     return *compoundIter.getClear();
 }
