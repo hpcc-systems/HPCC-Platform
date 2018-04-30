@@ -394,11 +394,7 @@ define([
             if (this.option("subgraph")) {
                 arrayUtil.forEach(this.graphData.subgraphs, function (subgraph, idx) {
                     if (!merge || !subgraph.__widget) {
-                        subgraph.__widget = new hpccCommon.Surface()
-                            .classed({ subgraph: true })
-                            .showIcon(false)
-                            .width(0)
-                            .height(0)
+                        subgraph.__widget = new hpccGraph.Subgraph()
                             .title(subgraph.__hpcc_id)
                         ;
                         subgraph.__widget.__hpcc_globalID = subgraph.__hpcc_id;
