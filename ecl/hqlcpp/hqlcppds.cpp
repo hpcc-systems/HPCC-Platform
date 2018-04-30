@@ -5442,7 +5442,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphResult(BuildCtx & ctx,
         else
             relationship = "Child";
 
-        addDependency(ctx, instance->queryBoundActivity(), parentActivity, childAtom, relationship);
+        addDependency(ctx, instance->queryBoundActivity(), parentActivity->queryActive(), childAtom, relationship);
     }
 
     instance->addAttributeBool(WaIsSpill, isSpill);
