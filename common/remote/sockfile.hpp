@@ -80,7 +80,7 @@ extern REMOTE_API ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms); 
 extern REMOTE_API ISocket *checkSocketSecure(ISocket *socket);
 class IOutputMetaData;
 class RowFilter;
-extern REMOTE_API IFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped);
+extern REMOTE_API IFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseNLimit);
 
 
 // client only

@@ -66,7 +66,6 @@
 
 static const unsigned __int64 defaultFileStreamChooseN = I64C(0x7fffffffffffffff); // constant should be move to common place (see eclhelper.hpp)
 static const unsigned __int64 defaultFileStreamSkipN = 0;
-static const unsigned __int64 defaultFileStreamRowLimit = (unsigned __int64) -1;
 static const unsigned defaultDaFSNumRecs = 100;
 enum OutputFormat:byte { outFmt_Binary, outFmt_Xml, outFmt_Json };
 
@@ -1790,7 +1789,7 @@ public:
     IMPLEMENT_IINTERFACE;
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
     // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
-    CRemoteFilteredFileIO(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped)
+    CRemoteFilteredFileIO(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseNLimit)
     : CRemoteBase(ep, filename)
     {
         // NB: input_grouped == output_grouped for now, but may want output to be ungrouped
@@ -1802,6 +1801,8 @@ public:
             " \"compressed\" : \"%s\",\n"
             " \"input_grouped\" : \"%s\",\n"
             " \"output_grouped\" : \"%s\"", filename, boolToStr(compressed), boolToStr(grouped), boolToStr(grouped));
+        if (chooseNLimit)
+            request.appendf(",\n \"choosen\" : \"%" I64F "u\"", chooseNLimit);
         if (fieldFilters.numFilterFields())
         {
             request.append(",\n \"keyfilter\" : [\n  ");
@@ -1952,7 +1953,7 @@ class CRemoteFilteredRowStream : public CRemoteFilteredFileIO, implements IRowSt
 {
 public:
     CRemoteFilteredRowStream(const RtlRecord &_recInfo, SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped)
-    : CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped), recInfo(_recInfo)
+    : CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped, 0), recInfo(_recInfo)
     {}
     virtual const byte *queryNextRow()  // NOTE - rows returned must NOT be freed
     {
@@ -1974,11 +1975,11 @@ protected:
     const RtlRecord &recInfo;
 };
 
-extern IFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped)
+extern IFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseNLimit)
 {
     try
     {
-        return new CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped);
+        return new CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped, chooseNLimit);
     }
     catch (IException *e)
     {
@@ -3804,7 +3805,6 @@ class CRemoteDiskReadActivity : public CSimpleInterfaceOf<IRemoteActivity>, impl
     Linked<IOutputMetaData> outMeta;
     Owned<const IDynamicTransform> translator;
     unsigned __int64 chooseN = 0;
-    unsigned __int64 limit = 0;
     unsigned __int64 processed = 0;
     unsigned __int64 startPos = 0;
     bool compressed = false;
@@ -3862,7 +3862,6 @@ class CRemoteDiskReadActivity : public CSimpleInterfaceOf<IRemoteActivity>, impl
         prefetcher.setown(helper->queryDiskRecordSize()->createDiskPrefetcher());
 
         chooseN = helper->getChooseNLimit();
-        limit = helper->getRowLimit();
         opened = true;
     }
     void close()
@@ -3933,13 +3932,6 @@ public:
 
                 if (rowSz)
                 {
-                    if (processed >= limit)
-                    {
-                        helper->onLimitExceeded();
-                        eogPending = false;
-                        someInGroup = false;
-                        return nullptr;
-                    }
                     processed++;
                     eogPending = eog;
                     someInGroup = true;
@@ -4017,7 +4009,6 @@ IRemoteActivity *createRemoteDiskRead(IPropertyTree &actNode)
     const char *fileName = actNode.queryProp("fileName");
     unsigned __int64 chooseN = actNode.getPropInt64("choosen", defaultFileStreamChooseN);
     unsigned __int64 skipN = actNode.getPropInt64("skipN", defaultFileStreamSkipN);
-    unsigned __int64 rowLimit = actNode.getPropInt64("rowLimit", defaultFileStreamRowLimit);
     bool compressed = actNode.getPropBool("compressed");
 
     bool inputGrouped = actNode.getPropBool("input_grouped", false);
@@ -4028,7 +4019,7 @@ IRemoteActivity *createRemoteDiskRead(IPropertyTree &actNode)
     Owned<IOutputMetaData> outMeta = getTypeInfoOutputMetaData(actNode, "output", outputGrouped);
     if (!outMeta)
         outMeta.set(inMeta);
-    Owned<IHThorDiskReadArg> helper = createDiskReadArg(fileName, LINK(inMeta), LINK(outMeta), LINK(outMeta), chooseN, skipN, rowLimit);
+    Owned<IHThorDiskReadArg> helper = createDiskReadArg(fileName, LINK(inMeta), LINK(outMeta), LINK(outMeta), chooseN, skipN, (unsigned __int64)-1);
     Owned<CRemoteDiskReadActivity> ret = new CRemoteDiskReadActivity(*helper, compressed, inputGrouped, outputGrouped);
     Owned<IPropertyTreeIterator> filterIter = actNode.getElements("keyfilter");
     ForEach(*filterIter)

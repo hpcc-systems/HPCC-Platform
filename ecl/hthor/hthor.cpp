@@ -8281,7 +8281,8 @@ bool CHThorDiskReadBaseActivity::openNext()
                         setDafsEndpointPort(ep);
                         StringBuffer path;
                         rfilename.getLocalPath(path);
-                        inputfileio.setown(createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped));
+
+                        inputfileio.setown(createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit));
                         if (inputfileio)
                         {
                             actualDiskMeta.set(projectedDiskMeta);
@@ -8539,6 +8540,8 @@ void CHThorDiskReadActivity::ready()
     if (helper.getFlags() & TDRlimitskips)
         limit = (unsigned __int64) -1;
     stopAfter = helper.getChooseNLimit();
+    if (!helper.transformMayFilter())
+        remoteLimit = stopAfter;
 }
 
 
@@ -8849,6 +8852,8 @@ void CHThorDiskCountActivity::ready()
     PARENT::ready(); 
     finished = false;
     stopAfter = helper.getChooseNLimit();
+    if (!helper.hasFilter())
+        remoteLimit = stopAfter;
 }
 
 void CHThorDiskCountActivity::gatherInfo(IFileDescriptor * fd)

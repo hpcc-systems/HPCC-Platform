@@ -1054,13 +1054,12 @@ protected:
                 return nullptr;
             currentRowOffset = prefetchBuffer.tell();
             prefetcher->readAhead(prefetchBuffer);
-            const byte * row = prefetchBuffer.queryRow();
-            bool matched = fieldFilterMatch(row);
+            bool matched = fieldFilterMatch(prefetchBuffer.queryRow());
             checkEog();
             if (matched) // NB: prefetchDone() call must be paired with a row returned from prefetchRow()
             {
                 hadMatchInGroup = true;
-                return row;
+                return prefetchBuffer.queryRow(); // NB: buffer ptr could have changed due to reading eog byte
             }
             else
                 prefetchBuffer.finishedRow();
@@ -1341,6 +1340,15 @@ public:
 #ifdef TRACE_CREATE
 unsigned CRowStreamReader::rdnum;
 #endif
+
+IExtRowStream *createRowStreamEx(IFileIO *fileIO, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, ITranslator *translatorContainer, IVirtualFieldCallback * fieldCallback)
+{
+    EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(rwFlags);
+    if (maxrows == (unsigned __int64)-1)
+        return new CRowStreamReader(fileIO, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
+    else
+        return new CLimitedRowStreamReader(fileIO, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
+}
 
 bool UseMemoryMappedRead = false;
 
@@ -2058,8 +2066,12 @@ static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<con
                 {
                     throw MakeStringException(0, "Translatable record layout mismatch detected for file %s, but translation disabled", tracing);
                 }
-                if (keyedTranslator)
-                    keyedTranslator->setown(createKeyTranslator(sourceFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
+                if (keyedTranslator && (sourceFormat != expectedFormat))
+                {
+                    Owned<const IKeyTranslator> _keyedTranslator = createKeyTranslator(sourceFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true));
+                    if (_keyedTranslator->needsTranslate())
+                        keyedTranslator->swap(_keyedTranslator);
+                }
             }
             else
                 translator.clear();
