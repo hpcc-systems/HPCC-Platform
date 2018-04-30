@@ -57,11 +57,7 @@ public:
 
 interface jhtree_decl IKeyCursor : public IInterface
 {
-    virtual bool next(char *dst, KeyStatsCollector &stats) = 0;
-    virtual bool first(char *dst, KeyStatsCollector &stats) = 0;
-    virtual bool last(char *dst, KeyStatsCollector &stats) = 0;
-    virtual bool gtEqual(const char *src, char *dst, KeyStatsCollector &stats) = 0; // returns first record >= src
-    virtual bool ltEqual(const char *src, KeyStatsCollector &stats) = 0; // returns last record <= src
+    virtual bool next(char *dst, KeyStatsCollector &stats) = 0; // MORE - remove
     virtual const char *queryName() const = 0;
     virtual size32_t getSize() = 0;  // Size of current row
     virtual size32_t getKeyedSize() const = 0;  // Size of keyed fields
@@ -69,7 +65,7 @@ interface jhtree_decl IKeyCursor : public IInterface
     virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats) = 0;
     virtual unsigned __int64 getSequence() = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
-    virtual void reset(unsigned sortFromSeg = 0) = 0;
+    virtual void reset() = 0;
     virtual bool lookup(bool exact, KeyStatsCollector &stats) = 0;
 
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, KeyStatsCollector &stats) = 0;
@@ -116,6 +112,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual unsigned getNodeSize() = 0;
     virtual const IFileIO *queryFileIO() const = 0;
     virtual bool hasSpecialFileposition() const = 0;
+    virtual bool needsRowBuffer() const = 0;
 };
 
 interface IKeyArray : extends IInterface
@@ -293,6 +290,7 @@ public:
 };
 
 extern jhtree_decl bool isCompressedIndex(const char *filename);
+extern jhtree_decl bool isIndexFile(IFile *filename);
 
 #define JHTREE_KEY_NOT_SORTED JHTREE_ERROR_START
 

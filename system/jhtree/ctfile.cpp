@@ -29,7 +29,7 @@
 #include "ctfile.hpp"
 #include "jstats.h"
 
-inline void SwapBigEndian(KeyHdr &hdr)
+void SwapBigEndian(KeyHdr &hdr)
 {
     _WINREV(hdr.phyrec);
     _WINREV(hdr.delstk);
@@ -119,6 +119,31 @@ extern bool isCompressedIndex(const char *filename)
     }
     return false;
 }
+
+extern jhtree_decl bool isIndexFile(IFile *file)
+{
+    try
+    {
+        offset_t size = file->size();
+        if (size <= sizeof(KeyHdr))
+            return false;
+        Owned<IFileIO> io = file->open(IFOread);
+        KeyHdr hdr;
+        if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
+            return false;
+        SwapBigEndian(hdr);
+        if (!hdr.root || !hdr.nodeSize || !hdr.root || size % hdr.nodeSize || hdr.root % hdr.nodeSize || hdr.root >= size)
+            return false;
+        return true;    // Reasonable heuristic...
+    }
+    catch (IException *E)
+    {
+        E->Release();
+    }
+    return false;
+}
+
+
 
 // CKeyHdr
 CKeyHdr::CKeyHdr()
@@ -266,47 +291,6 @@ bool CWriteNode::add(offset_t pos, const void *indata, size32_t insize, unsigned
         keyPtr += sizeof(rsequence);
         hdr.keyBytes += sizeof(rsequence);
     }
-
-#if 0
-    // This test is no longer valid if we don't treat all fields as keyed
-    if (hdr.numKeys)
-    {
-        if (memcmp(indata, lastKeyValue, keyedSize) < 0)
-        {
-            // dump out the rows in question
-            StringBuffer hex;
-            unsigned i;
-            for (i = 0; i < insize; i++)
-            {
-                hex.appendf("%02x ", ((unsigned char *) indata)[i]);
-            }
-            DBGLOG("this: %s", hex.str());
-            hex.clear();
-            for (i = 0; i < insize; i++)
-            {
-                hex.appendf("%02x ", ((unsigned char *) lastKeyValue)[i]);
-            }
-            DBGLOG("last: %s", hex.str());
-            hex.clear();
-            for (i = 0; i < insize; i++)
-            {
-                unsigned char c = ((unsigned char *) indata)[i];
-                hex.appendf("%c", isprint(c) ? c : '.');
-            }
-            DBGLOG("this: %s", hex.str());
-            hex.clear();
-            for (i = 0; i < insize; i++)
-            {
-                unsigned char c = ((unsigned char *) lastKeyValue)[i];
-                hex.appendf("%c", isprint(c) ? c : '.');
-            }
-            DBGLOG("last: %s", hex.str());
-
-            throw MakeStringException(0, "Data written to key must be in sorted order");
-        }
-    }
-#endif
-
     if (isLeaf() && keyType & HTREE_COMPRESSED_KEY)
     {
         if (0 == hdr.numKeys)
@@ -546,11 +530,12 @@ void *CJHTreeNode::allocMem(size32_t len)
     return ret;
 }
 
-char *CJHTreeNode::expandKeys(void *src,unsigned keylength,size32_t &retsize, bool rowcompression)
+char *CJHTreeNode::expandKeys(void *src,unsigned keylength,size32_t &retsize)
 {
-    Owned<IExpander> exp = rowcompression?createRDiffExpander():createLZWExpander(true);
+    Owned<IExpander> exp = createLZWExpander(true);
     int len=exp->init(src);
-    if (len==0) {
+    if (len==0)
+    {
         retsize = 0;
         return NULL;
     }
@@ -559,18 +544,6 @@ char *CJHTreeNode::expandKeys(void *src,unsigned keylength,size32_t &retsize, bo
     retsize = len;
     return outkeys;
 }
-
-IRandRowExpander *CJHTreeNode::expandQuickKeys(void *src, bool needCopy)
-{
-    if (IRandRowExpander::isRand(src)) {
-        // we are going to use node
-        IRandRowExpander *rowexp=createRandRDiffExpander();
-        rowexp->init(src, needCopy);
-        return rowexp;
-    }
-    return NULL;
-}
-
 
 void CJHTreeNode::unpack(const void *node, bool needCopy)
 {
@@ -617,18 +590,11 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         {
             MTIME_SECTION(queryActiveTimer(), "Compressed node expand");
             expandedSize = keyHdr->getNodeSize();
-            bool quick = (keyType&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY;
-#ifndef _OLD_VERSION
+            bool quick = !isBlob() && (keyType&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY;
             keyBuf = NULL;
-            if (quick)
-                rowexp.setown(expandQuickKeys(keys, needCopy));
-            if (!quick||!rowexp.get())
-#endif
-            {
-                keyBuf = expandKeys(keys,keyLen,expandedSize,quick);
-            }
+            if (!quick)
+                keyBuf = expandKeys(keys,keyLen,expandedSize);
         }
-        assertex(keyBuf||rowexp.get());
     }
     else
     {
@@ -762,27 +728,9 @@ offset_t CJHTreeNode::nextNodeFpos() const
     return ll;
 }
 
-void CJHTreeNode::dump()
-{
-    for (unsigned int i=0; i<getNumKeys(); i++)
-    {
-        unsigned char *dst = (unsigned char *) alloca(keyLen+50);
-        getValueAt(i,(char *) dst);
-        offset_t pos = getFPosAt(i);
-
-        StringBuffer nodeval;
-        for (unsigned j = 0; j < keyLen; j++)
-            nodeval.appendf("%02x", dst[j] & 0xff);
-        DBGLOG("keyVal %d [%" I64F "d] = %s", i, pos, nodeval.str());
-    }
-    DBGLOG("==========");
-}
-
 int CJHTreeNode::compareValueAt(const char *src, unsigned int index) const
 {
-    if (rowexp.get()) 
-        return rowexp->cmpRow(src,index,sizeof(__int64),keyCompareLen);
-    return memcmp(src, keyBuf + index*keyRecLen + sizeof(__int64), keyCompareLen);
+    return memcmp(src, keyBuf + index*keyRecLen + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0), keyCompareLen);
 }
 
 bool CJHTreeNode::getValueAt(unsigned int index, char *dst) const
@@ -792,36 +740,43 @@ bool CJHTreeNode::getValueAt(unsigned int index, char *dst) const
     {
         if (keyHdr->hasSpecialFileposition())
         {
-            //It would make sense to have the fileposition at the start of the row from he perspective of the
+            //It would make sense to have the fileposition at the start of the row from the perspective of the
             //internal representation, but that would complicate everything else which assumes the keyed
             //fields start at the beginning of the row.
-            if (rowexp.get())
-            {
-                rowexp->expandRow(dst,index,sizeof(offset_t),keyLen);
-                rowexp->expandRow(dst+keyLen,index,0,sizeof(offset_t));
-            }
-            else
-            {
-                const char * p = keyBuf + index*keyRecLen;
-                memcpy(dst, p + sizeof(offset_t), keyLen);
-                memcpy(dst+keyLen, p, sizeof(offset_t));
-            }
+            const char * p = keyBuf + index*keyRecLen;
+            memcpy(dst, p + sizeof(offset_t), keyLen);
+            memcpy(dst+keyLen, p, sizeof(offset_t));
         }
         else
         {
-            if (rowexp.get())
-            {
-                rowexp->expandRow(dst,index,0,keyLen);
-            }
-            else
-            {
-                const char * p = keyBuf + index*keyRecLen;
-                memcpy(dst, p, keyLen);
-            }
+            const char * p = keyBuf + index*keyRecLen;
+            memcpy(dst, p, keyLen);
         }
     }
     return true;
 }
+
+const char * CJHTreeNode::queryValueAt(unsigned int index, char *scratchBuffer) const
+{
+    if (index >= hdr.numKeys)
+        return nullptr;
+    else if (keyHdr->hasSpecialFileposition())
+    {
+        getValueAt(index, scratchBuffer);
+        return scratchBuffer;
+    }
+    else
+        return keyBuf + index*keyRecLen;
+}
+
+const char * CJHTreeNode::queryKeyAt(unsigned int index, char *scratchBuffer) const
+{
+    if (index >= hdr.numKeys)
+        return nullptr;
+    else
+        return keyBuf + index*keyRecLen + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0);
+}
+
 
 size32_t CJHTreeNode::getSizeAt(unsigned int index) const
 {
@@ -836,12 +791,8 @@ offset_t CJHTreeNode::getFPosAt(unsigned int index) const
     if (index >= hdr.numKeys) return 0;
 
     offset_t pos;
-    if (rowexp.get())
-        rowexp->expandRow(&pos,index,0,sizeof(pos));
-    else {
-        const char * p = keyBuf + index*keyRecLen;
-        memcpy( &pos, p, sizeof(__int64));
-    }
+    const char * p = keyBuf + index*keyRecLen;
+    memcpy( &pos, p, sizeof(__int64));
     _WINREV(pos);
     return pos;
 }
@@ -953,28 +904,9 @@ CJHVarTreeNode::~CJHVarTreeNode()
     delete [] recArray;
 }
 
-void CJHVarTreeNode::dump()
-{
-    for (unsigned int i=0; i<getNumKeys(); i++)
-    {
-        const void * p = recArray[i];
-        unsigned reclen = ((KEYRECSIZE_T *) p)[-1];
-        _WINREV(reclen);
-        unsigned char *dst = (unsigned char *) alloca(reclen);
-        getValueAt(i,(char *) dst);
-        offset_t pos = getFPosAt(i);
-
-        StringBuffer nodeval;
-        for (unsigned j = 0; j < reclen; j++)
-            nodeval.appendf("%02x", dst[j] & 0xff);
-        DBGLOG("keyVal %d [%" I64F "d] = %s", i, pos, nodeval.str());
-    }
-    DBGLOG("==========");
-}
-
 int CJHVarTreeNode::compareValueAt(const char *src, unsigned int index) const
 {
-    return memcmp(src, recArray[index] + sizeof(offset_t), keyCompareLen);
+    return memcmp(src, recArray[index] + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0), keyCompareLen);
 }
 
 bool CJHVarTreeNode::getValueAt(unsigned int num, char *dst) const
@@ -995,6 +927,26 @@ bool CJHVarTreeNode::getValueAt(unsigned int num, char *dst) const
             memcpy(dst, p, reclen);
     }
     return true;
+}
+
+const char *CJHVarTreeNode::queryValueAt(unsigned int index, char *scratchBuffer) const
+{
+    if (index >= hdr.numKeys)
+        return nullptr;
+    else if (keyHdr->hasSpecialFileposition())
+    {
+        getValueAt(index, scratchBuffer);
+        return scratchBuffer;
+    }
+    else
+        return recArray[index];
+}
+
+const char *CJHVarTreeNode::queryKeyAt(unsigned int index, char *scratchBuffer) const
+{
+    if (index >= hdr.numKeys)
+        return nullptr;
+    return recArray[index] + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0);
 }
 
 size32_t CJHVarTreeNode::getSizeAt(unsigned int num) const
@@ -1019,6 +971,74 @@ offset_t CJHVarTreeNode::getFPosAt(unsigned int num) const
     return pos;
 }
 
+//=========================================================================================================
+
+void CJHRowCompressedNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
+{
+    CJHTreeNode::load(_keyHdr, rawData, _fpos, needCopy);
+    assertex(hdr.leafFlag==1);
+    char *keys = ((char *) rawData) + sizeof(hdr)+sizeof(firstSequence);
+    assertex(IRandRowExpander::isRand(keys));
+    rowexp.setown(createRandRDiffExpander());
+    rowexp->init(keys, needCopy);
+}
+
+int CJHRowCompressedNode::compareValueAt(const char *src, unsigned int index) const
+{
+    return rowexp->cmpRow(src,index,keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0,keyCompareLen);
+}
+
+bool CJHRowCompressedNode::getValueAt(unsigned int num, char *dst) const
+{
+    if (num >= hdr.numKeys) return false;
+    if (dst)
+    {
+        if (keyHdr->hasSpecialFileposition())
+        {
+            rowexp->expandRow(dst,num,sizeof(offset_t),keyLen);
+            rowexp->expandRow(dst+keyLen,num,0,sizeof(offset_t));
+        }
+        else
+            rowexp->expandRow(dst,num,0,keyLen);
+    }
+    return true;
+}
+
+const char *CJHRowCompressedNode::queryValueAt(unsigned int num, char *scratchBuffer) const
+{
+    if (num >= hdr.numKeys)
+        return nullptr;
+    else
+    {
+        getValueAt(num, scratchBuffer);
+        return scratchBuffer;
+    }
+}
+
+const char *CJHRowCompressedNode::queryKeyAt(unsigned int num, char *scratchBuffer) const
+{
+    if (num >= hdr.numKeys)
+        return nullptr;
+    unsigned keyedSize = keyHdr->getNodeKeyLength();
+    if (keyHdr->hasSpecialFileposition())
+        rowexp->expandRow(scratchBuffer,num,sizeof(offset_t),keyedSize);
+    else
+        rowexp->expandRow(scratchBuffer,num,0,keyedSize);
+    return scratchBuffer;
+}
+
+offset_t CJHRowCompressedNode::getFPosAt(unsigned int num) const
+{
+    if (num >= hdr.numKeys)
+        return 0;
+    else
+    {
+        offset_t pos;
+        rowexp->expandRow(&pos,num,0,sizeof(pos));
+        _WINREV(pos);
+        return pos;
+    }
+}
 
 //=========================================================================================================
 

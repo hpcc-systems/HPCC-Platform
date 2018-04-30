@@ -1429,7 +1429,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
         flags.append("|JFdynamicindexfilename");
     if (boundIndexActivity)
         flags.append("|JFindexfromactivity");
-
+    if (options.createValueSets)
+        flags.append("|JFnewfilters");
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getJoinFlags", flags.str()+1);
 

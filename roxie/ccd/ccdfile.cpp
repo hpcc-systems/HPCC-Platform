@@ -1822,6 +1822,15 @@ protected:
 
         // NOTE - grouping is not included in the formatCRC, nor is the trailing byte that indicates grouping
         // included in the rtlTypeInfo.
+        const char *kind = props.queryProp("@kind");
+        if (kind)
+        {
+            RoxieFileType thisFileType = streq(kind, "key") ? ROXIE_KEY : ROXIE_FILE;
+            if (subFiles.length()==1)
+                fileType = thisFileType;
+            else
+                assertex(thisFileType==fileType);
+        }
 
         bool isGrouped = props.getPropBool("@grouped", false);
         int formatCrc = props.getPropInt("@formatCrc", 0);
@@ -2364,8 +2373,11 @@ public:
     {
         Owned<IFile> file = createIFile(localFileName);
         assertex(file->exists());
+
         offset_t size = file->size();
         Owned<IFileDescriptor> fdesc = createFileDescriptor();
+        if (isIndexFile(file))
+            fdesc->queryProperties().setProp("@kind", "key");
         Owned<IPropertyTree> pp = createPTree("Part", ipt_lowmem);
         pp->setPropInt64("@size",size);
         pp->setPropBool("@local", true);

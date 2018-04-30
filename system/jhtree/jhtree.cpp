@@ -224,7 +224,7 @@ unsigned SegMonitorList::_lastRealSeg() const
         if (!seg)
             return 0;
         seg--;
-        if (!segMonitors.item(seg).isWild())
+        if (!segMonitors.item(seg).isWild()) // MORE - why not just remove them? Stepping/overrides?
             return seg;
     }
 }
@@ -418,7 +418,7 @@ public:
         {
             hash64_t hash = HASH64_INIT;
             if (getBloomHash(partitionFieldMask, segs, hash))
-                return (hash % indexParts) + 1;
+                return (((unsigned) hash) % indexParts) + 1;  // NOTE - the Hash distribute function that distributes the index when building will truncate to 32-bits before taking modulus - so we must too!
         }
         return 0;
     }
@@ -1099,10 +1099,12 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
             ret.setown(new CJHTreeNode());
             break;
         case 1:
-        	if (keyHdr->isVariable())
-        		ret.setown(new CJHVarTreeNode());
-        	else
-        		ret.setown(new CJHTreeNode());
+            if (keyHdr->isVariable())
+                ret.setown(new CJHVarTreeNode());
+            else if (keyHdr->isRowCompressed())
+                ret.setown(new CJHRowCompressedNode());
+            else
+                ret.setown(new CJHTreeNode());
             break;
         case 2:
             ret.setown(new CJHTreeBlobNode());
@@ -1118,7 +1120,7 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
         }
         {
             MTIME_SECTION(queryActiveTimer(), "JHTREE load node");
-            ret->load(keyHdr, nodeData, pos, true);
+            ret->load(keyHdr, nodeData, pos, needsCopy);
         }
         return ret.getClear();
     }
@@ -1202,6 +1204,11 @@ void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
 bool CKeyIndex::hasSpecialFileposition() const
 {
     return keyHdr->hasSpecialFileposition();
+}
+
+bool CKeyIndex::needsRowBuffer() const
+{
+    return keyHdr->hasSpecialFileposition() || keyHdr->isRowCompressed();
 }
 
 size32_t CKeyIndex::keySize()
@@ -1334,6 +1341,40 @@ IPropertyTree * CKeyIndex::getMetadata()
     return ret;
 }
 
+CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
+{
+    keySeeks++;
+    stats.seeks++;
+    CJHTreeNode * n = 0;
+    CJHTreeNode * p = LINK(rootNode);
+    while (p != 0)
+    {
+        n = p;
+        p = getNode(n->prevNodeFpos(), stats.ctx);
+        if (p != 0)
+            n->Release();
+    }
+    return n;
+}
+
+CJHTreeNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
+{
+    keySeeks++;
+    stats.seeks++;
+    CJHTreeNode * n = 0;
+    CJHTreeNode * p = LINK(rootNode);
+
+    while (p != 0)
+    {
+        n = p;
+        p = getNode(n->nextNodeFpos(), stats.ctx);
+        if (p != 0)
+            n->Release();
+    }
+    return n;
+}
+
+
 void KeyStatsCollector::noteSeeks(unsigned lseeks, unsigned lscans, unsigned lwildseeks)
 {
     seeks += lseeks;
@@ -1392,49 +1433,23 @@ CKeyCursor::~CKeyCursor()
     free(keyBuffer);
 }
 
-void CKeyCursor::reset(unsigned sortFromSeg)
+void CKeyCursor::reset()
 {
     node.clear();
     matched = false;
     eof = key.bloomFilterReject(*segs);
     if (!eof)
-        setLow(sortFromSeg);
-}
-
-CJHTreeNode *CKeyCursor::locateFirstNode(KeyStatsCollector &stats)
-{
-    CJHTreeNode * n = 0;
-    CJHTreeNode * p = LINK(key.rootNode);
-    while (p != 0)
-    {
-        n = p;
-        p = key.getNode(n->prevNodeFpos(), stats.ctx);
-        if (p != 0)
-            n->Release();
-    }
-    return n;
-}
-
-CJHTreeNode *CKeyCursor::locateLastNode(KeyStatsCollector &stats)
-{
-    CJHTreeNode * n = 0;
-    CJHTreeNode * p = LINK(key.rootNode);
-
-    while (p != 0)
-    {
-        n = p;
-        p = key.getNode(n->nextNodeFpos(), stats.ctx);
-        if (p != 0)
-            n->Release();
-    }
-
-    return n;
+        setLow(0);
 }
 
 bool CKeyCursor::next(char *dst, KeyStatsCollector &stats)
 {
     if (!node)
-        return first(dst, stats);
+    {
+        node.setown(key.locateFirstNode(stats));
+        nodeKey = 0;
+        return node && node->getValueAt(nodeKey, dst);
+    }
     else
     {
         key.keyScans++;
@@ -1492,18 +1507,9 @@ unsigned __int64 CKeyCursor::getSequence()
     return node->getSequence(nodeKey);
 }
 
-bool CKeyCursor::first(char *dst, KeyStatsCollector &stats)
-{
-    key.keySeeks++;
-    node.setown(locateFirstNode(stats));
-    nodeKey = 0;
-    return node->getValueAt(nodeKey, dst);
-}
-
 bool CKeyCursor::last(char *dst, KeyStatsCollector &stats)
 {
-    key.keySeeks++;
-    node.setown(locateLastNode(stats));
+    node.setown(key.locateLastNode(stats));
     nodeKey = node->getNumKeys()-1;
     return node->getValueAt( nodeKey, dst );
 }
@@ -1821,7 +1827,6 @@ unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
 
 unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector &stats)
 {
-    setLow(0);
     reset();
     unsigned __int64 result = 0;
     unsigned lseeks = 0;
@@ -1962,13 +1967,13 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
     StringAttr keyfile;
     unsigned crc; 
     Linked<IDelayedFile> delayedFile;
-    Owned<IFileIO> iFileIO;
-    Owned<IKeyIndex> realKey;
-    CriticalSection c;
+    mutable Owned<IFileIO> iFileIO;
+    mutable Owned<IKeyIndex> realKey;
+    mutable CriticalSection c;
     bool isTLK;
     bool preloadAllowed;
 
-    inline IKeyIndex &checkOpen()
+    inline IKeyIndex &checkOpen() const
     {
         CriticalBlock b(c);
         if (!realKey)
@@ -2020,7 +2025,8 @@ public:
     virtual IPropertyTree * getMetadata() { return checkOpen().getMetadata(); }
     virtual unsigned getNodeSize() { return checkOpen().getNodeSize(); }
     virtual const IFileIO *queryFileIO() const override { return iFileIO; } // NB: if not yet opened, will be null
-    virtual bool hasSpecialFileposition() const { return realKey ? realKey->hasSpecialFileposition() : false; }
+    virtual bool hasSpecialFileposition() const { return checkOpen().hasSpecialFileposition(); }
+    virtual bool needsRowBuffer() const { return checkOpen().needsRowBuffer(); }
 };
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, bool isTLK, bool preloadAllowed)
@@ -2325,13 +2331,6 @@ class CKeyMerger : public CKeyLevelManager
     }
 
     Linked<IKeyIndexBase> keyset;
-
-    void resetKey(unsigned i)
-    {
-        IKeyCursor *cursor = cursors[i];
-        if (cursor)
-            cursor->reset(sortFromSeg);
-    }
 
     void calculateSortSeg()
     {
