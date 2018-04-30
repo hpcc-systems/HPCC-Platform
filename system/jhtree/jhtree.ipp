@@ -63,6 +63,8 @@ enum request { LTE, GTE };
 interface INodeLoader
 {
     virtual CJHTreeNode *loadNode(offset_t offset) = 0;
+    virtual CJHTreeNode *locateFirstNode(KeyStatsCollector &stats) = 0;
+    virtual CJHTreeNode *locateLastNode(KeyStatsCollector &stats) = 0;
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -132,9 +134,12 @@ public:
 
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
     virtual bool hasSpecialFileposition() const;
+    virtual bool needsRowBuffer() const;
  
  // INodeLoader impl.
     virtual CJHTreeNode *loadNode(offset_t offset) = 0;
+    CJHTreeNode *locateFirstNode(KeyStatsCollector &stats);
+    CJHTreeNode *locateLastNode(KeyStatsCollector &stats);
 };
 
 class jhtree_decl CMemKeyIndex : public CKeyIndex
@@ -183,10 +188,6 @@ public:
     ~CKeyCursor();
 
     virtual bool next(char *dst, KeyStatsCollector &stats) override;
-    virtual bool first(char *dst, KeyStatsCollector &stats) override;
-    virtual bool last(char *dst, KeyStatsCollector &stats) override;
-    virtual bool gtEqual(const char *src, char *dst, KeyStatsCollector &stats) override;
-    virtual bool ltEqual(const char *src, KeyStatsCollector &stats) override;
     virtual const char *queryName() const override;
     virtual size32_t getSize();
     virtual size32_t getKeyedSize() const;
@@ -195,7 +196,7 @@ public:
     virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats);
     virtual unsigned __int64 getSequence(); 
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize);
-    virtual void reset(unsigned sortFromSeg = 0);
+    virtual void reset();
     virtual bool lookup(bool exact, KeyStatsCollector &stats) override;
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, KeyStatsCollector &stats) override;
     virtual bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen) override;
@@ -209,11 +210,11 @@ public:
 protected:
     CKeyCursor(const CKeyCursor &from);
 
+    bool last(char *dst, KeyStatsCollector &stats);
+    bool gtEqual(const char *src, char *dst, KeyStatsCollector &stats);
+    bool ltEqual(const char *src, KeyStatsCollector &stats);
     bool _lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats);
     void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeyStatsCollector &stats);
-    CJHTreeNode *locateFirstNode(KeyStatsCollector &stats);
-    CJHTreeNode *locateLastNode(KeyStatsCollector &stats);
-
 
     inline void setLow(unsigned segNo)
     {
