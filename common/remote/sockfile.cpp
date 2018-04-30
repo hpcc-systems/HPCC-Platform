@@ -3997,17 +3997,17 @@ public:
  //interface IVirtualFieldCallback
     virtual const char * queryLogicalFilename(const void * row)
     {
-        const char * filename = nullptr;
+        const char * filename = nullptr; // MORE: This needs to be passed from the client to dafilesrv
         return filename ? filename : "";
     }
     virtual unsigned __int64 getFilePosition(const void * row)
     {
-        unsigned __int64 baseOffset = 0;
+        unsigned __int64 baseOffset = 0; // MORE: This needs to be passed from the client to dafilesrv
         return prefetchBuffer.tell() + baseOffset;
     }
     virtual unsigned __int64 getLocalFilePosition(const void * row)
     {
-        unsigned part = 0;
+        unsigned part = 0; // MORE: This needs to be passed from the client to dafilesrv
         return makeLocalFposOffset(part, prefetchBuffer.tell());
     }
 };

@@ -138,7 +138,7 @@ public:
     }
     virtual IOutputMetaData * queryProjectedDiskRecordSize() override final
     {
-        return in;
+        return projected;
     }
     virtual unsigned getDiskFormatCrc() override
     {

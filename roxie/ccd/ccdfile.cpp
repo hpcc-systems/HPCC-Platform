@@ -2110,8 +2110,11 @@ public:
                 {
                     translator.clear();
                     keyedTranslator.clear();
+                    //MORE: Could potentially avoid this if thisFormatCrc == expectedFormatCrc and projectedFormatCrc == expectedFormatCrc
                     translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
+#ifdef _DEBUG
                     translator->describe();
+#endif
 
                     if (!translator || !translator->canTranslate())
                         throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);

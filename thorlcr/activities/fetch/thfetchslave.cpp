@@ -334,10 +334,10 @@ public:
         files = parts.ordinality();
         if (files)
         {
-            unsigned projectedFormatCrc = fetchBaseHelper->getDiskFormatCrc();  // MORE: This is wrong, but doesn't currently matter.
+            unsigned expectedFormatCrc = fetchBaseHelper->getDiskFormatCrc();
             IOutputMetaData *projectedFormat = fetchBaseHelper->queryProjectedDiskRecordSize();
             RecordTranslationMode translationMode = getTranslationMode(*this);
-            getLayoutTranslations(translators, fetchBaseHelper->getFileName(), parts, translationMode, fetchBaseHelper->queryDiskRecordSize(), projectedFormat, projectedFormatCrc);
+            getLayoutTranslations(translators, fetchBaseHelper->getFileName(), parts, translationMode, fetchBaseHelper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
             ForEachItemIn(p, parts)
             {
                 const ITranslator *translator = translators.item(p);

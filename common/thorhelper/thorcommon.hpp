@@ -637,10 +637,10 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
  * providing translation mode and crc's allow translation. Returns true if translator created.
  * NB: translator and keyedTranslator are expected to be empty before calling.
 */
-extern THORHELPER_API bool getTranslators(Owned<const IDynamicTransform> &translator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned projectedCrc, bool skipFileFormatCrcCheck, unsigned publishedCrc);
+extern THORHELPER_API bool getTranslators(Owned<const IDynamicTransform> &translator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, bool skipFileFormatCrcCheck, unsigned publishedCrc);
 // Same as above, but will also return a key field translator in 2nd parameter. Returns true if translator created.
-extern THORHELPER_API bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> &keyedTranslator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned projectedCrc, bool skipFileFormatCrcCheck, unsigned publishedCrc);
+extern THORHELPER_API bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> &keyedTranslator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, bool skipFileFormatCrcCheck, unsigned publishedCrc);
 // Returns a ITranslator that gives access to a dynamic translator, keyed translator and the format used
-extern THORHELPER_API ITranslator *getTranslators(const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned projectedCrc, bool skipFileFormatCrcCheck, unsigned publishedCrc);
+extern THORHELPER_API ITranslator *getTranslators(const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, bool skipFileFormatCrcCheck, unsigned publishedCrc);
 
 #endif // THORHELPER_HPP

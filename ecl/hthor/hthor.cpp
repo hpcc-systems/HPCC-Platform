@@ -8081,10 +8081,8 @@ void CHThorDiskReadBaseActivity::resolve()
                 }
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
-                /*
                 if(agent.rltEnabled()==RecordTranslationMode::None && !agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
                     verifyRecordFormatCrc();
-                    */
             }
         }
         if (!ldFile)

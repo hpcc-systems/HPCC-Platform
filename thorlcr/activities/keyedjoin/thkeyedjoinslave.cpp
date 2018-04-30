@@ -1271,12 +1271,12 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 IPropertyTree &props = part.queryOwner().queryProperties();
                 unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
                 Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
-                unsigned projectedFormatCrc = helper->getDiskFormatCrc();
+                unsigned expectedFormatCrc = helper->getDiskFormatCrc();
                 IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
 
                 RecordTranslationMode translationMode = getTranslationMode(activity);
 
-                Owned<const ITranslator> translator = getTranslators(fname, helper->queryDiskRecordSize(), publishedFormat, projectedFormat, translationMode, projectedFormatCrc, false, publishedFormatCrc);
+                Owned<const ITranslator> translator = getTranslators(fname, helper->queryDiskRecordSize(), publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
                 if (translator)
                 {
                     if (!publishedFormat->queryTypeInfo()->canSerialize() || !projectedFormat->queryTypeInfo()->canSerialize())
