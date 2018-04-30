@@ -145,12 +145,16 @@
                                 <div><input id="${id}Protected" data-dojo-type="dijit.form.CheckBox"/></div>
                             </li>
                             <li>
-                                <label for="${id}Filesize">${i18n.ContentType}: </label>
+                                <label for="${id}ContentType">${i18n.ContentType}: </label>
                                 <div id="${id}ContentType"></div>
                             </li>
                             <li>
                                 <label for="${id}Filesize">${i18n.FileSize}: </label>
                                 <div id="${id}Filesize"></div>
+                            </li>
+                            <li>
+                                <label for="${id}IsCompressed">${i18n.IsCompressed}: </label>
+                                <div id="${id}IsCompressed"></div>
                             </li>
                             <li>
                                 <label for="${id}CompressedFileSize">${i18n.CompressedFileSize}: </label>
@@ -181,12 +185,20 @@
                                 <div id="${id}RecordCount"></div>
                             </li>
                             <li>
-                                <label for="${id}IsCompressed">${i18n.IsCompressed}: </label>
-                                <div id="${id}IsCompressed"></div>
-                            </li>
-                            <li>
                                 <label for="${id}DFUFilePartsOnClusters">${i18n.IsReplicated}: </label>
                                 <div id="${id}DFUFilePartsOnClusters"></div>
+                            </li>
+                            <li>
+                                <label for="${id}NumParts">${i18n.FileParts}: </label>
+                                <div id="${id}NumParts"></div>
+                            </li>
+                            <li>
+                                <label for="${id}MinSkew">${i18n.MinSkew}: </label>
+                                <div id="${id}MinSkew"></div>
+                            </li>
+                            <li>
+                                <label for="${id}MaxSkew">${i18n.MaxSkew}: </label>
+                                <div id="${id}MaxSkew"></div>
                             </li>
                         </ul>
                     </form>

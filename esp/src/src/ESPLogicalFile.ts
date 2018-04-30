@@ -209,8 +209,7 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
                     arrayUtil.forEach(DFUFilePartsOnCluster.DFUFileParts.DFUPart, function (DFUPart, idx) {
                         DFUFileParts.DFUPart.push(lang.mixin({
                             __hpcc_id: DFUPart.Id + "--" + DFUPart.Copy,
-                            Cluster: DFUFilePartsOnCluster.Cluster,
-                            PartsizeInt: parseInt(DFUPart.Partsize.split(",").join(""))
+                            Cluster: DFUFilePartsOnCluster.Cluster
                         }, DFUPart));
                     }, this);
                 }
@@ -227,6 +226,10 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
         if (CompressedFileSize) {
             this.CompressedFileSize = CompressedFileSize.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
+    },
+    _StatSetter: function(Stat) {
+        this.set("MinSkew", Stat.MinSkew);
+        this.set("MaxSkew", Stat.MaxSkew);
     },
     constructor: function (args) {
         if (args) {
