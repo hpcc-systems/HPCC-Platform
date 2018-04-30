@@ -22,6 +22,31 @@
 #include "rtlkey.hpp"
 #include "rtlrecord.hpp"
 
+/*
+ * Common functionality required by anything wanting to act as a filter for an index
+ */
+
+interface IIndexFilterList : public IInterface, public IIndexReadContext
+{
+    virtual const IIndexFilter *item(unsigned idx) const = 0;
+    virtual void setLow(unsigned segno, void *keyBuffer) const = 0;
+    virtual unsigned setLowAfter(size32_t offset, void *keyBuffer) const = 0;
+    virtual bool incrementKey(unsigned segno, void *keyBuffer) const = 0;
+    virtual void endRange(unsigned segno, void *keyBuffer) const = 0;
+    virtual unsigned lastRealSeg() const = 0;
+    virtual unsigned lastFullSeg() const = 0;
+    virtual unsigned numFilterFields() const = 0;
+    virtual IIndexFilterList *fixSortSegs(const char *fixedVals, unsigned sortFieldOffset) const = 0;
+    virtual void reset() = 0;
+    virtual void checkSize(size32_t keyedSize, char const * keyname) const = 0;
+    virtual void recalculateCache() = 0;
+    virtual void finish(size32_t keyedSize) = 0;
+    virtual void describe(StringBuffer &out) const = 0;
+    virtual bool matchesBuffer(const void *keyBuffer, unsigned lastSeg, unsigned &matchSeg) const = 0;
+    virtual unsigned getFieldOffset(unsigned idx) const = 0;
+    virtual bool canMatch() const = 0;
+};
+
 BITMASK_ENUM(TransitionMask);
 
 /*

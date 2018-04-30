@@ -105,19 +105,6 @@ public:
         }
     }
 
-    virtual unsigned ordinality() const
-    {
-        return segMonitors.length();
-    }
-
-    virtual IKeySegmentMonitor *item(unsigned idx) const
-    {
-        if (segMonitors.isItem(idx))
-            return &segMonitors.item(idx);
-        else
-            return NULL;
-    }
-
     virtual void start()
     {
         CDiskReadSlaveActivityBase::start();

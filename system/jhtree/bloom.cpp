@@ -89,23 +89,23 @@ int IndexBloomFilter::compare(CInterface *const *_a, CInterface *const *_b)
     return a->fields - b->fields;
 }
 
-bool IndexBloomFilter::reject(const SegMonitorList &segs) const
+bool IndexBloomFilter::reject(const IIndexFilterList &filters) const
 {
     hash64_t hashval = HASH64_INIT;
-    return getBloomHash(fields, segs, hashval) && !test(hashval);
+    return getBloomHash(fields, filters, hashval) && !test(hashval);
 }
 
-extern bool getBloomHash(__int64 fields, const SegMonitorList &segs, hash64_t &hashval)
+extern bool getBloomHash(__int64 fields, const IIndexFilterList &filters, hash64_t &hashval)
 {
     while (fields)
     {
         unsigned f = ffsll(fields)-1;    // extract lowest 1 bit
         fields &= ~ (((__uint64) 1)<<f); // and clear it
-        IKeySegmentMonitor *seg = segs.item(f);
-        if (seg)
+        const IIndexFilter *filter = filters.item(f);
+        if (filter)
         {
-            assertex(seg->getFieldIdx() == f);
-            if (!seg->getBloomHash(hashval))
+            assertex(filter->queryFieldIndex() == f);
+            if (!filter->getBloomHash(hashval))
                 return false;
         }
     }
@@ -117,7 +117,6 @@ class RowHasher : public CInterfaceOf<IRowHasher>
 public:
     RowHasher(const RtlRecord &_recInfo, __uint64 _fields);
     virtual hash64_t hash(const byte *row) const override;
-    virtual bool isExact(const SegMonitorList &segs) const override;
     virtual __uint64 queryFields() const override { return fields; }
 private:
     const RtlRecord &recInfo;
@@ -150,20 +149,6 @@ hash64_t RowHasher::hash(const byte *row) const
         hashval = rtlHash64Data(recInfo.queryType(f)->getMinSize(), row + recInfo.getFixedOffset(f), hashval);
     }
     return hashval;
-}
-
-bool RowHasher::isExact(const SegMonitorList &segs) const
-{
-    auto lfields = fields;
-    // This will need reworking if/when non-fixed-size fields are supported (should actually become easier)
-    while (lfields)
-    {
-        unsigned f = ffsll(lfields)-1;    // extract lowest 1 bit
-        lfields &= ~ (((__uint64) 1)<<f); // and clear it
-        if (!segs.isExact(recInfo.queryType(f)->getMinSize(), recInfo.getFixedOffset(f)))
-            return false;
-    }
-    return true;
 }
 
 SimpleRowHasher::SimpleRowHasher(const RtlRecord &_recInfo, __uint64 _fields, unsigned _offset, unsigned _length)

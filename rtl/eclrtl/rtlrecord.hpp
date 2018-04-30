@@ -294,10 +294,14 @@ public:
     }
     explicit operator bool() { return row != nullptr; }
 protected:
+    RtlRow(const RtlRecord & _info);  // for use by fixed-only case
+
     const RtlRecord & info;
     const byte * row;
     mutable unsigned numFieldsUsed = 0;
     size_t * variableOffsets;       // [0 + 1 entry for each variable size field ]
+    static size_t noVariableOffsets [1];  // Used when we are only interested in fixed offsets
+
 };
 
 struct ECLRTL_API RtlDynRow : public RtlRow
@@ -305,6 +309,15 @@ struct ECLRTL_API RtlDynRow : public RtlRow
 public:
     RtlDynRow(const RtlRecord & _info, const void * optRow = NULL);
     ~RtlDynRow();
+};
+
+// Special case for where we only want to access fields that are at fixed offsets - i.e. jhtree
+// Note that the RecInfo passed in may have variable fields, but we should not (and must not) try to resolve them
+
+struct ECLRTL_API RtlFixedRow : public RtlRow
+{
+public:
+    RtlFixedRow(const RtlRecord & _info, const void *_row, unsigned numFieldsUsed);
 };
 
 //The following template class is used from the generated code to avoid allocating the offset array

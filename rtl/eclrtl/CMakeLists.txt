@@ -37,6 +37,7 @@ set (    SRCS
          rtlint.cpp 
          rtlkey.cpp 
          rtlnewkey.cpp
+         rtlnktest.cpp
          rtlqstr.cpp 
          rtlrank.cpp 
          rtlfield.cpp 

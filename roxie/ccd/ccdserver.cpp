@@ -21787,16 +21787,6 @@ public:
             postFilter.addFilter(*filter);
     }
 
-    virtual unsigned ordinality() const
-    {
-        throwUnexpected();
-    }
-
-    virtual IKeySegmentMonitor *item(unsigned idx) const
-    {
-        throwUnexpected();
-    }
-
     virtual void stop()
     {
         if (useRemote())
@@ -22956,7 +22946,7 @@ public:
                                     if ((indexHelper.getFlags() & TIRcountkeyedlimit) != 0)
                                     {
                                         Owned<IKeyManager> countKey;
-                                        countKey.setown(createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), thisKey, this));
+                                        countKey.setown(createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), thisKey, this, indexHelper.hasNewSegmentMonitors()));
                                         countKey->setLayoutTranslator(translators->queryTranslator(fileNo));
                                         createSegmentMonitors(countKey);
                                         unsigned __int64 count = countKey->checkCount(keyedLimit);
@@ -22971,11 +22961,11 @@ public:
                             }
                             if (seekGEOffset && !thisKey->isTopLevelKey())
                             {
-                                tlk.setown(createSingleKeyMerger(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), thisKey, seekGEOffset, this));
+                                tlk.setown(createSingleKeyMerger(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), thisKey, seekGEOffset, this, indexHelper.hasNewSegmentMonitors()));
                             }
                             else
                             {
-                                tlk.setown(createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), thisKey, this));
+                                tlk.setown(createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), thisKey, this, indexHelper.hasNewSegmentMonitors()));
                                 if (!thisKey->isTopLevelKey())
                                     tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                                 else
@@ -22985,7 +22975,7 @@ public:
                             if (queryTraceLevel() > 3 || ctx->queryProbeManager())
                             {
                                 StringBuffer out;
-                                printKeyedValues(out, tlk, indexHelper.queryDiskRecordSize());
+                                tlk->describeFilter(out);
                                 CTXLOG("Using filter %s", out.str());
                                 if (ctx->queryProbeManager())
                                     ctx->queryProbeManager()->setNodeProperty(this, "filter", out.str());
@@ -23240,9 +23230,9 @@ public:
             keySet.setown(createKeyIndexSet());
             keySet->addIndex(LINK(key));
             if (owner.seekGEOffset)
-                tlk.setown(createKeyMerger(owner.indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keySet, owner.seekGEOffset, &owner));
+                tlk.setown(createKeyMerger(owner.indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keySet, owner.seekGEOffset, &owner, owner.indexHelper.hasNewSegmentMonitors()));
             else
-                tlk.setown(createLocalKeyManager(owner.indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keySet->queryPart(0), &owner));
+                tlk.setown(createLocalKeyManager(owner.indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keySet->queryPart(0), &owner, owner.indexHelper.hasNewSegmentMonitors()));
             if (!key->isTopLevelKey())
                 tlk->setLayoutTranslator(trans);
             owner.indexHelper.createSegmentMonitors(tlk);
@@ -23655,7 +23645,7 @@ public:
         unsigned __int64 result = 0;
         for (unsigned i = 0; i < numParts; i++)
         {
-            Owned<IKeyManager> countTlk = createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet->queryPart(i), this);
+            Owned<IKeyManager> countTlk = createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet->queryPart(i), this, indexHelper.hasNewSegmentMonitors());
             countTlk->setLayoutTranslator(translators->queryTranslator(i));
             indexHelper.createSegmentMonitors(countTlk);
             countTlk->finishSegmentMonitors();
@@ -23687,12 +23677,12 @@ public:
             }
             if (numParts > 1 || seekGEOffset)
             {
-                tlk.setown(createKeyMerger(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, this));
+                tlk.setown(createKeyMerger(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, this, indexHelper.hasNewSegmentMonitors()));
                 // note that we don't set up translator because we don't support it. If that ever changes...
             }
             else
             {
-                tlk.setown(createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet->queryPart(0), this));
+                tlk.setown(createLocalKeyManager(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet->queryPart(0), this, indexHelper.hasNewSegmentMonitors()));
                 tlk->setLayoutTranslator(translators->queryTranslator(0));
             }
             indexHelper.createSegmentMonitors(tlk);
@@ -23700,7 +23690,7 @@ public:
             if (queryTraceLevel() > 3 || ctx->queryProbeManager())
             {
                 StringBuffer out;
-                printKeyedValues(out, tlk, indexHelper.queryDiskRecordSize());
+                tlk->describeFilter(out);
                 CTXLOG("Using filter %s", out.str());
                 if (ctx->queryProbeManager())
                     ctx->queryProbeManager()->setNodeProperty(this, "filter", out.str());
@@ -25327,7 +25317,7 @@ public:
     CRoxieServerFullKeyedJoinHead(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, ITranslatorSet *_translators, IOutputMetaData *_indexReadMeta, IJoinProcessor *_joinHandler, bool _isLocal)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorKeyedJoinArg &)basehelper), 
-          tlk(createLocalKeyManager(helper.queryIndexRecordSize()->queryRecordAccessor(true), NULL, this)),
+          tlk(createLocalKeyManager(helper.queryIndexRecordSize()->queryRecordAccessor(true), NULL, this, helper.hasNewSegmentMonitors())),
           translators(_translators),
           keySet(_keySet),
           remote(_ctx, this, _remoteId, 0, helper, *this, true, true),
@@ -26231,7 +26221,7 @@ public:
         IOutputMetaData *_indexReadMeta, unsigned _joinFlags, bool _isSimple, bool _isLocal)
         : CRoxieServerKeyedJoinBase(_ctx, _factory, _probeManager, _remoteId, _joinFlags, false, _isSimple, _isLocal),
           indexReadMeta(_indexReadMeta),
-          tlk(createLocalKeyManager(helper.queryIndexRecordSize()->queryRecordAccessor(true), NULL, this)),
+          tlk(createLocalKeyManager(helper.queryIndexRecordSize()->queryRecordAccessor(true), NULL, this, helper.hasNewSegmentMonitors())),
           keySet(_keySet),
           translators(_translators)
     {

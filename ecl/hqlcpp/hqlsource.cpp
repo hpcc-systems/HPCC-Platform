@@ -3726,6 +3726,8 @@ void IndexReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (!nameExpr->isConstant()) flags.append("|TIRvarfilename");
     if (translator.hasDynamicFilename(tableExpr)) flags.append("|TIRdynamicfilename");
     if (requiresOrderedMerge) flags.append("|TIRorderedmerge");
+    if (translator.queryOptions().createValueSets)
+        flags.append("|TIRnewfilters");
 
     if (flags.length())
         translator.doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);

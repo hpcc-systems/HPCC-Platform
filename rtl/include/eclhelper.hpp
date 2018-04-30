@@ -1111,6 +1111,7 @@ enum
     TIRunfilteredtransform = 0x00004000,
     TIRorderedmerge     = 0x00008000,
     TIRunordered        = 0x00010000,
+    TIRnewfilters       = 0x00020000,               // Uses new style field filters
 };
 
 //flags for thor index write
@@ -1640,6 +1641,7 @@ enum {
     JFsmart                      = 0x10000000,
     JFunstable                   = 0x20000000, // can sorts be unstable?
     JFnevermatchself             = 0x40000000, // for a self join can a record match itself
+    JFnewfilters                 = 0x80000000, // using FieldFilters not segmonitors
 };
 
 // FetchFlags
@@ -1754,6 +1756,9 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned __int64 keyedFpos, unsigned counter) { return 0; }
 //Denormalize group:
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned _numRows, const void * * _rows) { return 0; }
+
+    inline bool hasNewSegmentMonitors()                     { return (getJoinFlags() & JFnewfilters) != 0; }
+
 };
 
 struct IHThorKeyedJoinArg : public IHThorKeyedJoinBaseArg, public IHThorFetchContext
@@ -1787,6 +1792,7 @@ enum
 {
     KDFvarindexfilename     = 0x00000001,
     KDFdynamicindexfilename = 0x00000002,
+    KDFnewfilters           = 0x00000004,
 };
 
 struct IHThorKeyedDistributeArg : public IHThorArg
@@ -1799,6 +1805,7 @@ struct IHThorKeyedDistributeArg : public IHThorArg
     virtual ICompare * queryCompareRowKey() = 0;
     virtual unsigned getFormatCrc() = 0;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
+    inline bool hasNewSegmentMonitors() { return (getFlags() & KDFnewfilters) != 0; }
 };
 
 
@@ -2308,6 +2315,7 @@ struct IHThorIndexReadBaseArg : extends IHThorCompoundBaseArg
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
 
     inline bool hasSegmentMonitors()                        { return (getFlags() & TIRnofilter) == 0; }
+    inline bool hasNewSegmentMonitors()                     { return (getFlags() & TIRnewfilters) != 0; }
     virtual IHThorSteppedSourceExtra *querySteppingExtra()  { return NULL; }
 };
 
