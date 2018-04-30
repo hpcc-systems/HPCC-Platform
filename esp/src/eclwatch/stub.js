@@ -24,6 +24,7 @@ define([
     "dojo/topic",
     "dojo/request/xhr",
     "dojo/cookie",
+    "dojo/on",
 
     "dijit/Dialog",
     "dijit/form/Button",
@@ -39,7 +40,7 @@ define([
     "css!dojo-themes/flat/flat.css",
     "css!hpcc/css/hpcc.css"
 
-], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic, xhr, cookie,
+], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic, xhr, cookie, on,
             Dialog, Button,
             ESPUtil, Utility, LockDialogWidget,
             entities, Toaster) {
@@ -155,10 +156,18 @@ define([
                         dojo.cookie("ECLWatchUser", "true");
                     }
 
+                    var lock = dom.byId("Lock");
                     idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
                     monitorLockClick = new ESPUtil.MonitorLockClick();
+                    on(lock, "click", function (event) {
+                        monitorLockClick.locked();
+                    });
                     monitorLockClick.on("unlocked", function (){
                         idleWatcher.start();
+                    });
+                    monitorLockClick.on("locked", function () {
+                        idleWatcher.stop();
+                        initUnlockListener();
                     });
                     idleWatcher.on("active", function () {
                         _resetESPTime();
@@ -176,6 +185,13 @@ define([
                 stopLoading();
             }
         );
+    }
+
+    function initUnlockListener() {
+        var unlock = dom.byId("unlock");
+        on(unlock, "click", function (event) {
+            monitorLockClick.unlocked();
+        });
     }
 
     function parseUrl() {
