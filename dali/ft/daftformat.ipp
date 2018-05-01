@@ -53,6 +53,7 @@ public:
     virtual void setTarget(IOutputProcessor * _target);
     virtual void setRecordStructurePresent(bool _recordStructurePresent);
     virtual void getRecordStructure(StringBuffer & _recordStructure);
+    virtual void setAbort(IAbortRequestCallback * _abort);
 
 protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor) = 0;
@@ -61,6 +62,7 @@ protected:
 
     void commonCalcPartitions();
 
+    virtual bool isAborting();
 
 protected:
     PartitionPointArray         results;
@@ -76,6 +78,7 @@ protected:
     unsigned                    thisHeaderSize;
     unsigned                    numParts;
     bool                        partitioning;
+    IAbortRequestCallback *     abortChecker = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -713,9 +716,12 @@ public:
     virtual void setTarget(IOutputProcessor * _target) { UNIMPLEMENTED; }
     virtual void setRecordStructurePresent(bool _recordStructurePresent);
     virtual void getRecordStructure(StringBuffer & _recordStructure);
+    virtual void setAbort(IAbortRequestCallback * _abort) { UNIMPLEMENTED; }
 
 protected:
     void callRemote();
+
+    virtual bool isAborting() { UNIMPLEMENTED; };
 
 protected:
     CachedPasswordProvider      passwordProvider;

@@ -58,6 +58,16 @@ CPartitioner::CPartitioner()
     partitioning = false;
 }
 
+void CPartitioner::setAbort(IAbortRequestCallback * _abort)
+{
+    abortChecker = _abort;
+}
+
+bool CPartitioner::isAborting()
+{
+    return abortChecker && abortChecker->abortRequested();
+}
+
 void CPartitioner::calcPartitions(Semaphore * sem)
 {
     commonCalcPartitions();
@@ -138,6 +148,9 @@ void CPartitioner::commonCalcPartitions()
             startInputOffset = inputOffset;
             startOutputOffset = cursor.outputOffset;
         }
+
+        if (isAborting())
+            throwAbortException();
     }
 
     assertex(startInputOffset != endOffset || splitAfterPoint());
