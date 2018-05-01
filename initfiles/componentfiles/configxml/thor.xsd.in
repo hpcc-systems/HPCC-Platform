@@ -655,6 +655,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="niceInc" type="xs:integer" use="optional" default="0">
+        <xs:annotation>
+          <xs:appinfo>
+              <tooltip>Process (master and slaves) nice value to increment (lower priority)</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
     </xs:complexType>
     <xs:key name="thorProcessKey1">
       <xs:selector xpath="./ThorMasterProcess|./ThorSlaveProcess"/>

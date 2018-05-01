@@ -921,6 +921,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="niceInc" type="xs:integer" use="optional" default="0">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Process nice value to increment (lower priority)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

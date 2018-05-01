@@ -122,6 +122,10 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         globals = createPTree(msg);
         mergeCmdParams(globals); // cmd line
 
+        int niceInc = globals->getPropInt("@niceInc", 0);
+        if (niceInc)
+            incrProcessNice(niceInc);
+
         unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
         unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
