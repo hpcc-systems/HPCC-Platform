@@ -2030,15 +2030,20 @@ static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<con
     if (expectedCrc)
     {
         IOutputMetaData * sourceFormat = expectedFormat;
+        unsigned sourceCrc = expectedCrc;
         if (!skipFileFormatCrcCheck)
         {
             if (mode != RecordTranslationMode::AlwaysECL)
             {
                 if (publishedFormat)
+                {
                     sourceFormat = publishedFormat;
+                    sourceCrc = publishedCrc;
+                }
             }
         }
 
+        //MORE: Could avoid creating translator if (projectedCrc != sourceCrc)
         if (projectedFormat != sourceFormat)
         {
             translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), sourceFormat->queryRecordAccessor(true)));
@@ -2049,7 +2054,9 @@ static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<con
             if (translator->needsTranslate())
             {
                 if ((RecordTranslationMode::None == mode) && translator->needsNonVirtualTranslate())
+                {
                     throw MakeStringException(0, "Translatable record layout mismatch detected for file %s, but translation disabled", tracing);
+                }
                 if (keyedTranslator)
                     keyedTranslator->setown(createKeyTranslator(sourceFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
             }

@@ -1510,7 +1510,10 @@ private:
                 // Not sure it would help much though - usually need to know the total record size anyway in real life
                 if (idx != info.matchIdx)
                     matchFlags |= match_move;
-                if (info.matchType != match_perfect && ((field->flags & RFTMispayloadfield) == 0 || (sourceFlags & RFTMispayloadfield) == 0))
+
+                //Whether this field is in an ifblock, or needs to be copied by linking it do not count as changes
+                FieldMatchType maskedType = (FieldMatchType)(info.matchType & ~(match_link|match_inifblock));
+                if (maskedType != match_perfect && ((field->flags & RFTMispayloadfield) == 0 || (sourceFlags & RFTMispayloadfield) == 0))
                     matchFlags |= match_keychange;
             }
             matchFlags |= info.matchType;
