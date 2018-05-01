@@ -906,19 +906,32 @@ margin-left:-20px;
 }
 
 .iconRefresh {
-    background-image: url("../img/refresh2.png"); 
+    background-image: url("../img/refresh2.png");
     width: 16px;
     height: 16px;
 }
 
 .iconAutoRefresh {
-    background-image: url("../img/autoRefresh.png"); 
+    background-image: url("../img/autoRefresh.png");
     width: 16px;
     height: 16px;
 }
 
+.iconAutoRefreshTrue{
+    background-image: url("../img/autoRefresh.png");
+    width: 16px;
+    height: 16px;
+    -webkit-animation:spin 4s linear infinite;
+    -moz-animation:spin 4s linear infinite;
+    animation:spin 4s linear infinite;
+}
+
+@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+
 .iconAutoRefreshDisabled {
-    background-image: url("../img/autoRefresh_disabled.png"); 
+    background-image: url("../img/autoRefresh_disabled.png");
     width: 16px;
     height: 16px;
 }
