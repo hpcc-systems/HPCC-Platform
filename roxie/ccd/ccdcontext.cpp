@@ -1469,7 +1469,7 @@ public:
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
         if (workUnit)
-            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), 0, 0));
+            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), getWorkflowId(), 0));
     }
 
     virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting)
@@ -1490,9 +1490,11 @@ public:
                     StringBuffer graphDesc;
                     formatGraphTimerLabel(graphDesc, graphName);
                     WorkunitUpdate progressWorkUnit(&workUnit->lock());
-                    progressWorkUnit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphName, StWhenStarted, NULL, startTimeStamp, 1, 0, StatsMergeAppend);
-                    updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
-                    addTimeStamp(progressWorkUnit, SSTgraph, graphName, StWhenFinished);
+                    StringBuffer graphScope;
+                    graphScope.append(WorkflowScopePrefix).append(getWorkflowId()).append(":").append(graphName);
+                    progressWorkUnit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTimeStamp, 1, 0, StatsMergeAppend);
+                    updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphScope, StTimeElapsed, graphDesc, elapsedTime);
+                    addTimeStamp(progressWorkUnit, SSTgraph, graphName, StWhenFinished, getWorkflowId());
                 }
                 graph->reset();
             }
@@ -1671,6 +1673,7 @@ public:
     }
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual char *getDaliServers() { throwUnexpected(); }
+    virtual unsigned getWorkflowId() { return 0; } // this is a virtual which is implemented in IGlobalContext
 
     // The following from ICodeContext should never be executed in slave activity. If we are on Roxie server, they will be implemented by more derived CRoxieServerContext class
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
