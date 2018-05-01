@@ -440,6 +440,15 @@
 	                </xs:appinfo>
 	              </xs:annotation>
 	            </xs:attribute>
+	            <xs:attribute name="invalidURLsAfterAuth" type="xs:string" use="optional" default="/esp/login">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <width>50</width>
+	                  <tooltip>After authentication, requests are redirected to the home page.</tooltip>
+	                  <colIndex>8</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
 	          </xs:complexType>
 	        </xs:element>
                 <xs:element name="HTTPS" minOccurs="0">
@@ -904,6 +913,13 @@
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>Check Session Timeout in every given seconds.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="urlAlias" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The URL alias for this ESP. This can be used to detect Cross-Origin Resource Sharing (CORS) access.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>

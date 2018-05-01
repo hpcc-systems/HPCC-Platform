@@ -547,6 +547,7 @@ int CEspHttpServer::onUpdatePassword(CHttpRequest* request, CHttpResponse* respo
                 m_request->queryContext()->setSessionToken(sessionID);
                 VStringBuffer cookieStr("%u", sessionID);
                 addCookie(binding->querySessionIDCookieName(), cookieStr.str(), 0, true);
+                addCookie(SESSION_AUTH_OK_COOKIE, "true", 0, false); //client can access this cookie.
                 cookieStr.setf("%u", binding->getClientSessionTimeoutSeconds());
                 addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0, false);
                 clearCookie(SESSION_START_URL_COOKIE);
@@ -956,9 +957,10 @@ EspAuthState CEspHttpServer::checkUserAuth()
     //The following 3 rules are used to detect  a REST type call.
     //   Any HTTP POST request;
     //   Any request which has a BasicAuthentication header;
-    //   Any CORS calls (any request which has an Origin header).
+    //   Any CORS calls.
     bool authSession = (domainAuthType == AuthPerSessionOnly) || ((domainAuthType == AuthTypeMixed) &&
-        authorizationHeader.isEmpty() && originHeader.isEmpty() && !strieq(authReq.httpMethod.str(), POST_METHOD));
+        authorizationHeader.isEmpty() && !authReq.authBinding->isCORSRequest(originHeader.str()) &&
+        !strieq(authReq.httpMethod.str(), POST_METHOD));
     return handleAuthFailed(authSession, authReq, false, nullptr);
 }
 
@@ -1092,11 +1094,13 @@ EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
 
     //We just got the user name. Let's add it into cookie for future use.
     addCookie(USER_NAME_COOKIE, userNameIn, 0, false);
+    addCookie(SESSION_AUTH_OK_COOKIE, "true", 0, false); //client can access this cookie.
 
     StringBuffer urlCookie;
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
     clearCookie(SESSION_START_URL_COOKIE);
-    m_response->redirect(*m_request, urlCookie.isEmpty() ? "/" : urlCookie.str());
+    bool canRedirect = authReq.authBinding->canRedirectAfterAuth(urlCookie.str());
+    m_response->redirect(*m_request, canRedirect ? urlCookie.str() : "/");
     return authSucceeded;
 }
 
@@ -1224,6 +1228,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     VStringBuffer cookieStr("%u", sessionID);
     addCookie(authReq.authBinding->querySessionIDCookieName(), cookieStr.str(), 0, true);
     cookieStr.setf("%u", authReq.authBinding->getClientSessionTimeoutSeconds());
+    addCookie(SESSION_AUTH_OK_COOKIE, "true", 0, false); //client can access this cookie.
     addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0, false);
     clearCookie(SESSION_AUTH_MSG_COOKIE);
     clearCookie(SESSION_START_URL_COOKIE);
@@ -1238,7 +1243,8 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
         return authTaskDone;
     }
 
-    m_response->redirect(*m_request, sessionStartURL);
+    bool canRedirect = authReq.authBinding->canRedirectAfterAuth(sessionStartURL);
+    m_response->redirect(*m_request, canRedirect ? sessionStartURL : "/");
     return authSucceeded;
 }
 
@@ -1356,6 +1362,7 @@ void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessi
 
         VStringBuffer sessionIDStr("%u", sessionID);
         addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0, true);
+        addCookie(SESSION_AUTH_OK_COOKIE, "true", 0, false); //client can access this cookie.
 
         if (getEspLogLevel()>=LogMax)
         {
@@ -1437,6 +1444,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
         ESPLOG(LogMin, "Authentication failed: session:<%u> not found", sessionID);
 
         clearCookie(authReq.authBinding->querySessionIDCookieName());
+        clearCookie(SESSION_AUTH_OK_COOKIE);
         ESPLOG(LogMin, "clearCookie() called for session <%u> ID cookie", sessionID);
 
         if (authReq.isSoapPost) //from SOAP Test page
@@ -1493,7 +1501,10 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
         ///authReq.ctx->setAuthorized(true);
         VStringBuffer sessionIDStr("%u", sessionID);
         addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0, true);
+        addCookie(SESSION_AUTH_OK_COOKIE, "true", 0, false); //client can access this cookie.
         if (getLoginPage)
+            m_response->redirect(*m_request, "/");
+        if (!authReq.authBinding->canRedirectAfterAuth(authReq.httpPath.str()))
             m_response->redirect(*m_request, "/");
     }
 
