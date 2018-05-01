@@ -330,6 +330,7 @@ bool isDiskInput(ThorActivityKind kind)
         case TAKindexgroupaggregate:
         case TAKindexgroupexists:
         case TAKindexgroupcount:
+        case TAKspillread:
             return true;
         default:
             return false;
@@ -658,6 +659,7 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                 case TAKcsvwrite:
                 case TAKxmlwrite:
                 case TAKjsonwrite:
+                case TAKspillwrite:
                     if (_shortCircuit) return true;
                     onCreate();
                     alreadyUpdated = checkUpdate();
@@ -836,6 +838,7 @@ bool isGlobalActivity(CGraphElementBase &container)
             unsigned flags = helper->getFlags();
             return (0 == (TDXtemporary & flags)); // global if not temporary
         }
+        case TAKspillwrite:
         case TAKspill:
             return false;
         case TAKcsvread:
@@ -949,6 +952,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKchildgroupaggregate:
         case TAKchildthroughnormalize:
         case TAKchildnormalize:
+        case TAKspillread:
 
         case TAKindexread:
         case TAKindexnormalize:

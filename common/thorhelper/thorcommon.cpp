@@ -797,6 +797,8 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKselfdenormalizegroup:   return "Self Denormalize Group";
     case TAKtrace:                  return "Trace";
     case TAKquantile:               return "Quantile";
+    case TAKspillread:              return "Spill Read";
+    case TAKspillwrite:             return "Spill Write";
     }
     throwUnexpected();
 }
@@ -843,6 +845,7 @@ extern bool isActivitySource(ThorActivityKind kind)
     case TAKindexgroupcount:
     case TAKstreamediterator:
     case TAKexternalsource:
+    case TAKspillread:
         return true;
     }
     return false;
@@ -879,6 +882,7 @@ extern bool isActivitySink(ThorActivityKind kind)
     case TAKwhen_action:
     case TAKdictionaryworkunitwrite:
     case TAKdictionaryresultwrite:
+    case TAKspillwrite:
         return true;
     }
     return false;

@@ -46,7 +46,8 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
 {
     switch (kind)
     {
-    case TAKdiskwrite: 
+    case TAKdiskwrite:
+    case TAKspillwrite:
         return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorDiskWriteArg &)arg, kind);
     case TAKsort: 
         return createGroupSortActivity(agent, activityId, subgraphId, (IHThorSortArg &)arg, kind);
@@ -231,6 +232,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKchildthroughnormalize:
         return createChildThroughNormalizeActivity(agent, activityId, subgraphId, (IHThorChildThroughNormalizeArg &)arg, kind);
     case TAKdiskread:
+    case TAKspillread:
         return createDiskReadActivity(agent, activityId, subgraphId, (IHThorDiskReadArg &)arg, kind);
     case TAKdisknormalize:
         return createDiskNormalizeActivity(agent, activityId, subgraphId, (IHThorDiskNormalizeArg &)arg, kind);
@@ -377,6 +379,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
     case TAKcsvwrite:
     case TAKxmlwrite:
     case TAKjsonwrite:
+    case TAKspillwrite:
         {
             IHThorDiskWriteArg * helper = static_cast<IHThorDiskWriteArg *>(arg.get());
             filename.set(helper->getFileName());
@@ -585,6 +588,7 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
         case TAKcsvwrite:
         case TAKxmlwrite:
         case TAKjsonwrite:
+        case TAKspillwrite:
             alreadyUpdated = alreadyUpToDate(agent);
             if (alreadyUpdated)
                 return false;

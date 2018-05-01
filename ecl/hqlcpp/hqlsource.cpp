@@ -1789,6 +1789,7 @@ static bool expandGraphLabel(ThorActivityKind kind)
     case TAKjsonread:
     case TAKdiskcount:
     case TAKdiskexists:
+    case TAKspillread:
         return true;
     default:
         return false;
@@ -1802,13 +1803,15 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     translator.gatherActiveCursors(ctx, parentCursors);
 
     bool isSpill = tableExpr && tableExpr->hasAttribute(_spill_Atom);
+    if (isSpill && (activityKind == TAKdiskread))
+        activityKind = TAKspillread;
     useImplementationClass = translator.queryOptions().minimizeActivityClasses && translator.targetRoxie() && isSpill;
 
     Owned<ActivityInstance> localInstance = new ActivityInstance(translator, ctx, activityKind, expr, kind);
     if (useImplementationClass)
         localInstance->setImplementationClass(newMemorySpillReadArgId);
 
-    if ((activityKind >= TAKdiskread) && (activityKind <= TAKdiskgroupaggregate))
+    if (((activityKind >= TAKdiskread) && (activityKind <= TAKdiskgroupaggregate)) || (activityKind == TAKspillread))
     {
         IHqlExpression * seq = querySequence(tableExpr);
         translator.noteResultAccessed(ctx, seq, nameExpr);
@@ -1940,7 +1943,10 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     if (nameExpr && nameExpr->queryValue())
     {
         if (isSpill)
-            graphLabel.append("\nSpill");
+        {
+            if (activityKind != TAKspillread)
+                graphLabel.append("\nSpill");
+        }
         else
         {
             graphLabel.newline();
@@ -2976,7 +2982,7 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
     }
 
     MemberFunction func(translator, instance->startctx);
-    if (instance->kind == TAKdiskread)
+    if ((instance->kind == TAKdiskread) || (instance->kind == TAKspillread))
         func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left) override");
     else
         func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IFilePositionProvider * fpp) override");

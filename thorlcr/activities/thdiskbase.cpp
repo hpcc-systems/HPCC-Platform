@@ -210,7 +210,8 @@ void CWriteMasterBase::init()
         if (blockCompressed)
             props.setPropBool("@blockCompressed", true);
         props.setProp("@kind", "flat");
-        if (TAKdiskwrite == container.getKind() && (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
+        if (((TAKdiskwrite == container.getKind()) || (TAKspillwrite == container.getKind())) &&
+                (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
         { // do early, because this will be local act. and will not come back to master until end of owning graph.
             publish();
         }
@@ -248,7 +249,7 @@ void CWriteMasterBase::publish()
             // create empty parts for a fileDesc being published that is larger than this clusters
             size32_t recordSize = 0;
             IOutputMetaData *diskRowMeta = diskHelperBase->queryDiskRecordSize()->querySerializedDiskMeta();
-            if (diskRowMeta->isFixedSize() && (TAKdiskwrite == container.getKind()))
+            if (diskRowMeta->isFixedSize() && ((TAKdiskwrite == container.getKind()) || (TAKspillwrite == container.getKind())))
             {
                 recordSize = diskRowMeta->getMinRecordSize();
                 if (0 != (diskHelperBase->getFlags() & TDXgrouped))
@@ -397,7 +398,7 @@ void CWriteMasterBase::done()
 {
     CMasterActivity::done();
     publish();
-    if (TAKdiskwrite == container.getKind() && (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner()) // I am in a child query
+    if (((TAKdiskwrite == container.getKind()) || (TAKspillwrite == container.getKind())) && (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner()) // I am in a child query
     {
         published = false;
         recordsProcessed = 0;

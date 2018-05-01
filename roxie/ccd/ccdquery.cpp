@@ -593,6 +593,7 @@ protected:
             else
                 return createRoxieServerDiskReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
         }
+        case TAKspillread:
         case TAKmemoryspillread:
             return createRoxieServerSpillReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKdisknormalize:
@@ -613,6 +614,7 @@ protected:
         case TAKxmlwrite:
         case TAKjsonwrite:
         case TAKmemoryspillwrite:
+        case TAKspillwrite:
             return createRoxieServerDiskWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
         case TAKindexwrite:
             return createRoxieServerIndexWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
@@ -1136,7 +1138,7 @@ public:
                             {
                                 IPropertyTree &node = nodes->query();
                                 ThorActivityKind kind = getActivityKind(node);
-                                if (kind != TAKdiskwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
+                                if (kind != TAKdiskwrite && kind != TAKspillwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
                                 {
                                     const char *fileName = queryNodeFileName(node, kind);
                                     const char *indexName = queryNodeIndexName(node, kind);

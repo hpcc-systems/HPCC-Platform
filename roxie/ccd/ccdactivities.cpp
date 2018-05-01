@@ -4650,7 +4650,7 @@ public:
         try  // operations does not want any missing file errors to be fatal, or throw traps - just log it
         {
             ThorActivityKind kind = getActivityKind(_graphNode);
-            if (kind != TAKdiskwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
+            if (kind != TAKdiskwrite && kind != TAKspillwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
             {
                 const char *fileName = queryNodeFileName(_graphNode, kind);
                 const char *indexName = queryNodeIndexName(_graphNode, kind);

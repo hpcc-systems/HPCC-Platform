@@ -10670,6 +10670,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         kind = (isJson) ? TAKjsonwrite : TAKxmlwrite;
         activityArgName = "XmlWrite";
     }
+    else if (expr->hasAttribute(_spill_Atom))
+        kind = TAKspillwrite;
 
     bool useImplementationClass = options.minimizeActivityClasses && targetRoxie() && expr->hasAttribute(_spill_Atom);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, activityArgName);
@@ -10683,15 +10685,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         StringBuffer s;
         s.append(getActivityText(kind));
         s.append("\n");
-        if (expr->hasAttribute(_spill_Atom))
-            s.append("Spill File");
-        else
-        {
-            if (expr->hasAttribute(_workflowPersist_Atom))
-                s.append("Persist ");
+        if (expr->hasAttribute(_workflowPersist_Atom))
+            s.append("Persist ");
 
-            filename->toString(s);
-        }
+        filename->toString(s);
         instance->graphLabel.set(s.str());
     }
 

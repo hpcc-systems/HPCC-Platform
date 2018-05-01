@@ -11468,7 +11468,7 @@ public:
 
     virtual void addDependency(unsigned source, ThorActivityKind sourceKind, unsigned sourceIdx, int controlId, const char *edgeId)
     {
-        if (sourceKind==TAKspill || sourceKind==TAKdiskwrite) // Bit of a hack - codegen probably should differentiate
+        if (sourceKind==TAKspill || sourceKind==TAKdiskwrite || sourceKind==TAKspillwrite) // Bit of a hack - codegen probably should differentiate
             setInput(0, source, sourceIdx);
         else
             CRoxieServerActivityFactory::addDependency(source, kind, sourceIdx, controlId, edgeId);
@@ -11965,7 +11965,7 @@ public:
         Owned<IHThorDiskWriteArg> helper = (IHThorDiskWriteArg *) helperFactory();
         isTemp = (helper->getFlags() & TDXtemporary) != 0;
         setNumOutputs(helper->getTempUsageCount());
-        if (_kind!=TAKdiskwrite)
+        if (_kind != TAKspillwrite)
             assertex(numOutputs == 0);
     }
 
@@ -22562,6 +22562,7 @@ public:
         case TAKjsonread:
             return new CRoxieServerXmlReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager, translators);
         case TAKdiskread:
+        case TAKspillread:
             return new CRoxieServerDiskReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager, translators);
         case TAKdisknormalize:
             return new CRoxieServerDiskNormalizeActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, manager, translators);
@@ -24732,7 +24733,7 @@ public:
                 return;  // ignore 'spills'
             bool isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
             ThorActivityKind kind = getActivityKind(_graphNode);
-            if (kind != TAKdiskwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
+            if (kind != TAKdiskwrite && kind != TAKspillwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
             {
                 fileName.set(queryNodeFileName(_graphNode, kind));
                 indexName.set(queryNodeIndexName(_graphNode, kind));
