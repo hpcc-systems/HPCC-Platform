@@ -128,7 +128,13 @@ public:
 
 static CriticalSection attachcrit;
 
-class CEspConfig : public CInterface, implements IInterface 
+#ifdef ESPCFG_EXPORTS
+    #define esp_cfg_decl DECL_EXPORT
+#else
+    #define esp_cfg_decl DECL_IMPORT
+#endif
+
+class esp_cfg_decl CEspConfig : public CInterface, implements IInterface
 {
 private:
     Owned<IPropertyTree> m_envpt;
