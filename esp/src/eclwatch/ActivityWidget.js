@@ -20,6 +20,7 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
+    "dojo/dom-attr",
 
     "dijit/registry",
     "dijit/form/Button",
@@ -38,7 +39,7 @@ define([
     "src/ESPUtil",
     "src/Utility",
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domAttr,
                 registry, Button, ToggleButton, ToolbarSeparator, ContentPane, Tooltip,
                 selector, tree,
                 GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil, Utility) {
@@ -52,6 +53,11 @@ define([
         _onAutoRefresh: function (event) {
             this.activity.disableMonitor(!this.autoRefreshButton.get("checked"));
             this.createStackControllerTooltip(this.id + "AutoRefresh", this.i18n.AutoRefresh + ": " + this.autoRefreshButton.get("checked"));
+            if (this.autoRefreshButton.get("checked")) {
+                domAttr.set(this.autoRefreshButton, "iconClass", "iconAutoRefreshTrue");
+            } else {
+                domAttr.set(this.autoRefreshButton, "iconClass", "iconAutoRefresh");
+            }
         },
 
         _onPause: function (event, params) {
