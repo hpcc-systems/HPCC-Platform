@@ -903,6 +903,7 @@ public:
     __int64 getOptInt64(const char *opt, __int64 dft=0);
     unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
     IThorAllocator *querySharedAllocator() const { return sharedAllocator; }
+    unsigned getWfid() const { return graphXGMML->getPropInt("@wfid"); }
     virtual IThorAllocator *getThorAllocator(unsigned channel);
 
     virtual void abort(IException *e);

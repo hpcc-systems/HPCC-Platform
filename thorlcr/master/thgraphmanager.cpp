@@ -824,10 +824,10 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
 
 bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, const SocketEndpoint &agentEp)
 {
+    timestamp_type startTs = getTimeStampNowValue();
     {
         Owned<IWorkUnit> wu = &workunit.lock();
         wu->setTracingValue("ThorBuild", BUILD_TAG);
-        addTimeStamp(wu, SSTgraph, graphName, StWhenStarted);
         updateWorkUnitLog(*wu);
     }
     Owned<IException> exception;
@@ -881,6 +881,9 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
 
     PROGLOG("Query %s loaded", compoundPath.str());
     Owned<CJobMaster> job = createThorGraph(graphName, workunit, querySo, sendSo, agentEp);
+    unsigned wfid = job->getWfid();
+    StringBuffer graphScope;
+    graphScope.append(WorkflowScopePrefix).append(wfid).append(":").append(graphName);
     PROGLOG("Graph %s created", graphName);
     PROGLOG("Running graph=%s", job->queryGraphName());
     addJob(*job);
@@ -896,6 +899,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
 
         {
             Owned<IWorkUnit> wu = &workunit.lock();
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTs, 1, 0, StatsMergeAppend);
+            //Could use addTimeStamp(wu, SSTgraph, graphName, StWhenStarted, wfid) if start time could be this point
             wu->setState(WUStateRunning);
             VStringBuffer version("%d.%d", THOR_VERSION_MAJOR, THOR_VERSION_MINOR);
             wu->setDebugValue("ThorVersion", version.str(), true);
@@ -910,9 +915,9 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         StringBuffer graphTimeStr;
         formatGraphTimerLabel(graphTimeStr, graphName);
 
-        updateWorkunitTimeStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs);
+        updateWorkunitTimeStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs, wfid);
 
-        addTimeStamp(wu, SSTgraph, graphName, StWhenFinished);
+        addTimeStamp(wu, SSTgraph, graphName, StWhenFinished, wfid);
         
         removeJob(*job);
     }
