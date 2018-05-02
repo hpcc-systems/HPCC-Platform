@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noRoxie
 //nothor
 //class=file
 //class=index
@@ -28,6 +27,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 
 //--- end of version configuration ---
 
+#option ('warnOnImplicitJoinLimit', false);
 #option ('hthorSpillThreshold',3000);
 #option ('layoutTranslation', useTranslation);
 

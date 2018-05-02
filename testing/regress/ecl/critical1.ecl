@@ -18,7 +18,6 @@ import Std;
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
 
-//noroxie
 //nohthor
 
 rawRecord := RECORD

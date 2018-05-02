@@ -17,9 +17,9 @@
 
 #onwarning (2304, ignore);
 
+#option('warnOnImplicitReadLimit', false);
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
-//noRoxie
 
 vstring(integer i) := TYPE
     export integer physicallength(string s) := i;

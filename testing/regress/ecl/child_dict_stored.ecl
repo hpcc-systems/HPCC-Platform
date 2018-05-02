@@ -1,6 +1,5 @@
 // Test fetching child dictionaries and datasets from stored
 
-// noroxie
 // nothor
 
 d1 := dataset(

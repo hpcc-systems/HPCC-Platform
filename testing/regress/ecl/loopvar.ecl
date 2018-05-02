@@ -15,8 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-//noroxie
 
+#option('warnOnImplicitJoinLimit', false);
 import Std;
 
 filename1 := '~someflatfile1';

@@ -16,7 +16,6 @@
 ############################################################################## */
 
 //noThor
-//noRoxie
 #option ('optimizeChildSource',true);
 
 namesRecord := 
