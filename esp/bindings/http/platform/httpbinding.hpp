@@ -167,6 +167,8 @@ private:
     int                     clientSessionTimeoutSeconds = 60 * ESP_SESSION_TIMEOUT;
     int                     serverSessionTimeoutSeconds = 120 * ESP_SESSION_TIMEOUT;
     int                     checkSessionTimeoutSeconds = ESP_CHECK_SESSION_TIMEOUT; //the duration to clean timed out sesssions
+    BoolHash                serverAlias;  //like www.microsoft.com, www.yahoo.com
+    BoolHash                invalidURLsAfterAuth; //Those URLs should not be used for redirect after authenticated, such as /SMC/, /esp/login
     BoolHash                domainAuthResources;
     StringArray             domainAuthResourcesWildMatch;
 
@@ -366,6 +368,9 @@ public:
     void readAuthDomainCfg(IPropertyTree* procCfg);
     void readUnrestrictedResources(const char* resources);
     void setSDSSession();
+    void setABoolHash(const char* csv, BoolHash& hash) const;
+    bool isCORSRequest(const char* originHeader);
+    bool canRedirectAfterAuth(const char* url) const;
 
     static void escapeSingleQuote(StringBuffer& src, StringBuffer& escaped);
 

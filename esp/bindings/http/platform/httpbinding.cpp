@@ -49,6 +49,7 @@
 #include "daclient.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
+#define DEFAULT_HTTP_PORT 80
 
 static HINSTANCE getXmlLib()
 {
@@ -312,6 +313,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
         setSDSSession();
         checkSessionTimeoutSeconds = proc_cfg->getPropInt("@checkSessionTimeoutSeconds", ESP_CHECK_SESSION_TIMEOUT);
     }
+
+    setABoolHash(proc_cfg->queryProp("@urlAlias"), serverAlias);
 }
 
 void EspHttpBinding::setSDSSession()
@@ -386,6 +389,12 @@ void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
             logoutURL.set(_logoutURL);
             domainAuthResources.setValue(logoutURL.get(), true);
         }
+
+        //Read pre-configured 'invalidURLsAfterAuth'. Separate the comma separated string to a
+        //list. Store them into BoolHash for quick lookup.
+        setABoolHash(authDomainTree->queryProp("@invalidURLsAfterAuth"), invalidURLsAfterAuth);
+        if (!loginURL.isEmpty())
+            invalidURLsAfterAuth.setValue(loginURL.get(), true);
     }
     else
     {//old environment.xml
@@ -410,6 +419,73 @@ void EspHttpBinding::readUnrestrictedResources(const char* resources)
         else
             domainAuthResources.setValue(resource, true);
     }
+}
+
+//Check whether the url is valid or not for redirect after authentication.
+bool EspHttpBinding::canRedirectAfterAuth(const char* url) const
+{
+    if (isEmptyString(url))
+        return false;
+
+    bool* found = invalidURLsAfterAuth.getValue(url);
+    return (!found || !*found);
+}
+
+//Use the origin header to check whether the request is a CORS request or not.
+bool EspHttpBinding::isCORSRequest(const char* originHeader)
+{
+    if (isEmptyString(originHeader))
+        return false;
+
+    const char* ptr = nullptr;
+    if (strnicmp(originHeader, "http://", 7) == 0)
+        ptr = originHeader + 7;
+    else if (strnicmp(originHeader, "https://", 8) == 0)
+        ptr = originHeader + 8;
+    else
+        return true;
+
+    StringBuffer ipStr; //ip or network alias
+    while(*ptr && *ptr != ':')
+    {
+        ipStr.append(*ptr);
+        ptr++;
+    }
+
+    IpAddress ip(ipStr.str());
+    if (ip.ipequals(queryHostIP()))
+        return false;
+
+    int port = 0;
+    if (*ptr && *ptr == ':')
+    {
+        ptr++;
+        while(*ptr && isdigit(*ptr))
+        {
+            port = 10*port + (*ptr-'0');
+            ptr++;
+        }
+    }
+    if (port == 0)
+        port = DEFAULT_HTTP_PORT;
+
+    if (port != getPort())
+        return true;
+
+
+    bool* found = serverAlias.getValue(ipStr.str());
+    return (!found || !*found);
+}
+
+void EspHttpBinding::setABoolHash(const char* csv, BoolHash& hash) const
+{
+    if (isEmptyString(csv))
+        return;
+
+    StringArray aList;
+    aList.appendListUniq(csv, ",");
+    ForEachItemIn(i, aList)
+        hash.setValue(aList.item(i), true);
 }
 
 StringBuffer &EspHttpBinding::generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns)
