@@ -1811,6 +1811,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.createValueSets,"createValueSets", false),
         DebugOption(options.implicitKeyedDiskFilter,"implicitKeyedDiskFilter", false),
         DebugOption(options.addDefaultBloom,"addDefaultBloom", true),
+        DebugOption(options.newDiskReadMapping, "newDiskReadMapping", true),
     };
 
     //get options values from workunit

@@ -551,7 +551,8 @@ public:
             prefetcher->readAhead(prefetchBuffer);
             const byte * row = prefetchBuffer.queryRow();
             size32_t sz = prefetchBuffer.queryRowSize();
-            fetchedLen = translator->queryTranslator().translate(fetchedRowBuilder, row);
+            LocalVirtualFieldCallback fieldCallback("<MORE>", fpos, localFpos);
+            fetchedLen = translator->queryTranslator().translate(fetchedRowBuilder, fieldCallback, row);
             prefetchBuffer.finishedRow();
         }
         else

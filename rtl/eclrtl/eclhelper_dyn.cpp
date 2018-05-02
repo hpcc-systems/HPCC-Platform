@@ -106,14 +106,14 @@ static int compareOffsets(const unsigned *a, const unsigned *b)
 class ECLRTL_API CDynamicDiskReadArg : public CThorDiskReadArg
 {
 public:
-    CDynamicDiskReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_out, unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit)
-        : fileName(_fileName), in(_in), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit)
+    CDynamicDiskReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_projected, IOutputMetaData *_out, unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit)
+        : fileName(_fileName), in(_in), projected(_projected), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit)
     {
-        translator.setown(createRecordTranslator(out->queryRecordAccessor(true), in->queryRecordAccessor(true)));
+        translator.setown(createRecordTranslator(out->queryRecordAccessor(true), projected->queryRecordAccessor(true)));
     }
     virtual bool needTransform() override
     {
-        return true;
+        return translator->needsTranslate();
     }
     virtual unsigned getFlags() override
     {
@@ -138,15 +138,19 @@ public:
     }
     virtual IOutputMetaData * queryProjectedDiskRecordSize() override final
     {
-        return in;
+        return projected;
     }
-    virtual unsigned getFormatCrc() override
+    virtual unsigned getDiskFormatCrc() override
+    {
+        return 0;  // engines should treat 0 as 'ignore'
+    }
+    virtual unsigned getProjectedFormatCrc() override
     {
         return 0;  // engines should treat 0 as 'ignore'
     }
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * src) override
     {
-        return translator->translate(rowBuilder, (const byte *) src);
+        return translator->translate(rowBuilder, fieldCallback, (const byte *) src);
     }
     virtual unsigned __int64 getChooseNLimit() { return chooseN; }
     virtual unsigned __int64 getRowLimit() { return rowLimit; }
@@ -157,8 +161,10 @@ public:
     }
 private:
     StringAttr fileName;
+    UnexpectedVirtualFieldCallback fieldCallback;
     unsigned flags = 0;
     Owned<IOutputMetaData> in;
+    Owned<IOutputMetaData> projected;
     Owned<IOutputMetaData> out;
     Owned<const IDynamicTransform> translator;
     RowFilter filters;
@@ -279,19 +285,14 @@ protected:
 class ECLRTL_API CDynamicIndexReadArg : public CThorIndexReadArg, implements IDynamicIndexReadArg
 {
 public:
-    CDynamicIndexReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_out, unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit)
-        : fileName(_fileName), in(_in), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit), filters(in->queryRecordAccessor(true))
+    CDynamicIndexReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_projected, IOutputMetaData *_out, unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit, unsigned _flags)
+        : fileName(_fileName), in(_in), projected(_projected), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit), flags(_flags), filters(in->queryRecordAccessor(true))
     {
-        translator.setown(createRecordTranslator(out->queryRecordAccessor(true), in->queryRecordAccessor(true)));
-        if (!translator->canTranslate())
-        {
-            translator->describe();
-            throw makeStringException(0, "Translation not possible");
-        }
+        translator.setown(createRecordTranslator(out->queryRecordAccessor(true), projected->queryRecordAccessor(true)));
     }
     virtual bool needTransform() override
     {
-        return true;
+        return translator->needsTranslate();
     }
     virtual unsigned getFlags() override
     {
@@ -316,7 +317,7 @@ public:
     }
     virtual IOutputMetaData * queryProjectedDiskRecordSize() override final
     {
-        return in;
+        return projected;
     }
     virtual unsigned getFormatCrc() override
     {
@@ -324,7 +325,7 @@ public:
     }
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * src) override
     {
-        return translator->translate(rowBuilder, (const byte *) src);
+        return translator->translate(rowBuilder, fieldCallback, (const byte *) src);
     }
     virtual unsigned __int64 getChooseNLimit() { return chooseN; }
     virtual unsigned __int64 getRowLimit() { return rowLimit; }
@@ -334,9 +335,11 @@ public:
     }
 
 private:
+    UnexpectedVirtualFieldCallback fieldCallback;
     StringAttr fileName;
     unsigned flags = 0;
     Owned<IOutputMetaData> in;
+    Owned<IOutputMetaData> projected;
     Owned<IOutputMetaData> out;
     Owned<const IDynamicTransform> translator;
     LegacyFilterSet filters;
@@ -376,21 +379,21 @@ extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(IPropertyTree &xgmml)
     unsigned __int64 chooseN = xgmml.getPropInt64("att[@name=\"chooseN\"]/@value", -1);
     unsigned __int64 skipN = xgmml.getPropInt64("att[@name=\"skipN\"]/@value", -1);
     unsigned __int64 rowLimit = xgmml.getPropInt64("att[@name=\"rowLimit\"]/@value", -1);
-    Owned<CDynamicDiskReadArg> ret = new CDynamicDiskReadArg(fileName, in.getClear(), out.getClear(), chooseN, skipN, rowLimit);
+    Owned<CDynamicDiskReadArg> ret = new CDynamicDiskReadArg(fileName, in.getClear(), LINK(out), LINK(out), chooseN, skipN, rowLimit);
     Owned<IPropertyTreeIterator> filters = xgmml.getElements("att[@name=\"keyfilter\"]");
     ForEach(*filters)
         ret->addFilter(filters->query().queryProp("@value"));
     return ret.getClear();
 }
 
-extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit)
+extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projected, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit)
 {
-    return new CDynamicDiskReadArg(fileName, in, out, chooseN, skipN, rowLimit);
+    return new CDynamicDiskReadArg(fileName, in, projected, out, chooseN, skipN, rowLimit);
 }
 
-extern ECLRTL_API IHThorIndexReadArg *createIndexReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit)
+extern ECLRTL_API IHThorIndexReadArg *createIndexReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projected, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit, unsigned flags)
 {
-    return new CDynamicIndexReadArg(fileName, in, out, chooseN, skipN, rowLimit);
+    return new CDynamicIndexReadArg(fileName, in, projected, out, chooseN, skipN, rowLimit, flags);
 }
 
 

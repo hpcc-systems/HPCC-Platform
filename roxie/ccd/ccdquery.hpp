@@ -277,6 +277,12 @@ public:
             return helperCrc;
     }
 
+    unsigned skipFileFormatCrcCheck() const
+    {
+        return queryFactory.queryOptions().skipFileFormatCrcCheck;
+    }
+
+
     RecordTranslationMode getEnableFieldTranslation() const
     {
         return queryFactory.queryOptions().enableFieldTranslation;

@@ -44,8 +44,8 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      202
-#define MIN_ACTIVITY_INTERFACE_VERSION  202             //minimum value that is compatible with current interface
+#define ACTIVITY_INTERFACE_VERSION      203
+#define MIN_ACTIVITY_INTERFACE_VERSION  203             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
 
@@ -65,6 +65,8 @@ interface ICodeContext;
 interface IAtom;
 interface IException;
 interface IFieldFilter;
+interface IThorDiskCallback;
+
 class MemoryBuffer;
 class StringBuffer;
 class rtlRowBuilder;
@@ -359,14 +361,15 @@ enum RtlFieldTypeMask
     RFTMhasLocale           = 0x00200000,                   // type has locale
     RFTMhasFields           = 0x00400000,                   // type has fields
     RFTMhasXpath            = 0x00800000,                   // field has xpath
-    RFTMhasInitializer      = 0x01000000,                   // field has initialzer
+    RFTMhasInitializer      = 0x01000000,                   // field has initializer
+    RFTMhasVirtualInitializer= 0x02000000,                   // field has virtual value for the initializer
 
     RFTMcontainsunknown     = 0x10000000,                   // contains a field of unknown type that we can't process properly
-    RFTMinvalidxml          = 0x20000000,                   // cannot be called to generate xml
+    RFTMcannotinterpret     = 0x20000000,                   // cannot interpret the record using the field type information
     RFTMhasxmlattr          = 0x40000000,                   // if specified, then xml output includes an attribute (recursive)
     RFTMnoserialize         = 0x80000000,                   // cannot serialize this typeinfo structure (contains aliens or other nasties)
 
-    RFTMinherited           = (RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr|RFTMnoserialize)    // These flags are recursively set on any parent records too
+    RFTMinherited           = (RFTMcontainsunknown|RFTMcannotinterpret|RFTMhasxmlattr|RFTMnoserialize)    // These flags are recursively set on any parent records too
 };
 
 //MORE: Can we provide any more useful information about ifblocks  E.g., a pseudo field?  We can add later if actually useful.
@@ -441,6 +444,28 @@ public:
 protected:
     ~RtlTypeInfo() = default;
 };
+
+
+//These values are used as special values for the initializer to implement different functionality
+enum RtlVirtualType
+{
+    FNoInitializer,                 // 0 means no initialiser - not a special virtual initialiser
+    FVirtualFilePosition,
+    FVirtualLocalFilePosition,
+    FVirtualFilename,
+    FVirtualRowSize,
+    FVirtualLimit = 256
+};
+
+static const char * const PVirtualFilePosition = (const char *)(memsize_t)FVirtualFilePosition;
+static const char * const PVirtualLocalFilePosition = (const char *)(memsize_t)FVirtualLocalFilePosition;
+static const char * const PVirtualFilename = (const char *)(memsize_t)FVirtualFilename;
+static const char * const PVirtualRowSize = (const char *)(memsize_t)FVirtualRowSize;
+
+inline bool isVirtualInitializer(const byte * initializer) { return initializer && (memsize_t)initializer < FVirtualLimit; }
+inline byte getVirtualInitializer(const byte * initializer) { return (byte)(memsize_t)initializer; }
+
+typedef IThorDiskCallback IVirtualFieldCallback;
 
 //Core struct used for representing meta for a field.  Effectively used as an interface.
 struct RtlFieldInfo
@@ -2317,7 +2342,8 @@ struct IHThorDiskReadBaseArg : extends IHThorCompoundBaseArg
     virtual IOutputMetaData * queryDiskRecordSize() = 0;            // Expected layout
     virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;   // Projected layout
     virtual unsigned getFlags() = 0;
-    virtual unsigned getFormatCrc() = 0;
+    virtual unsigned getDiskFormatCrc() = 0;
+    virtual unsigned getProjectedFormatCrc() = 0;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
     virtual void setCallback(IThorDiskCallback * callback) = 0;
 

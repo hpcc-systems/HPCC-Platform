@@ -748,7 +748,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
 
             RecordTranslationMode translationMode = getTranslationMode(activity);
             const char *fname = helper->getIndexFileName();
-            translator.setown(getTranslators(fname, helper->queryIndexRecordSize(), publishedFormat, projectedFormat, translationMode, expectedFormatCrc, publishedFormatCrc));
+            translator.setown(getTranslators(fname, helper->queryIndexRecordSize(), publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc));
             if (translator)
                 keyManager.setLayoutTranslator(&translator->queryTranslator());
         }
@@ -997,7 +997,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
 
                 RecordTranslationMode translationMode = getTranslationMode(activity);
 
-                Owned<const ITranslator> translator = getTranslators(fname, helper->queryIndexRecordSize(), publishedFormat, projectedFormat, translationMode, expectedFormatCrc, publishedFormatCrc);
+                Owned<const ITranslator> translator = getTranslators(fname, helper->queryIndexRecordSize(), publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
                 if (translator)
                 {
                     if (!publishedFormat->queryTypeInfo()->canSerialize() || !projectedFormat->queryTypeInfo()->canSerialize())
@@ -1208,7 +1208,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 if (partIO.translator)
                 {
                     MemoryBufferBuilder aBuilder(diskFetchRowMb, 0);
-                    partIO.translator->queryTranslator().translate(aBuilder, diskFetchRow);
+                    LocalVirtualFieldCallback fieldCallback("<MORE>", requestHeader.fpos, 0);
+                    partIO.translator->queryTranslator().translate(aBuilder, fieldCallback, diskFetchRow);
                     diskFetchRow = reinterpret_cast<const byte *>(diskFetchRowMb.toByteArray());
                 }
                 if (helper->fetchMatch(fetchKey, diskFetchRow))
@@ -1275,7 +1276,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
 
                 RecordTranslationMode translationMode = getTranslationMode(activity);
 
-                Owned<const ITranslator> translator = getTranslators(fname, helper->queryDiskRecordSize(), publishedFormat, projectedFormat, translationMode, expectedFormatCrc, publishedFormatCrc);
+                Owned<const ITranslator> translator = getTranslators(fname, helper->queryDiskRecordSize(), publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
                 if (translator)
                 {
                     if (!publishedFormat->queryTypeInfo()->canSerialize() || !projectedFormat->queryTypeInfo()->canSerialize())
@@ -1628,7 +1629,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
             RecordTranslationMode translationMode = getTranslationMode(*this);
             const char *fname = helper->getFileName();
-            partIO.translator = getTranslators(fname, expectedFormat, publishedFormat, projectedFormat, translationMode, expectedFormatCrc, publishedFormatCrc);
+            partIO.translator = getTranslators(fname, expectedFormat, publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
             if (partIO.translator)
             {
                 partIO.prefetcher = partIO.translator->queryActualFormat().createDiskPrefetcher();

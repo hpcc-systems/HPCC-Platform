@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning (2304, ignore);
+
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
 //noRoxie
@@ -65,7 +67,7 @@ d1 := dataset([
     rawLayout);
 output(d1,,prefix + 'imgfile', overwrite);
 
-d := dataset(prefix + 'imgfile', rawLayout1, FLAT);
+d := dataset(prefix + 'imgfile', rawLayout1, FLAT, virtual(legacy));
 i := index(d, keylayout, 'imgindex');
 
 rawtrim := table(d, { dl, date, unsigned2 seq:=0, unsigned2 num := 0, imgLength, _fpos});

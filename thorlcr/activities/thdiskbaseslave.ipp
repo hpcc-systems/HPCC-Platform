@@ -79,7 +79,7 @@ class CDiskReadSlaveActivityBase : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
-    Owned<IThorRowInterfaces> diskRowIf;
+    Owned<IThorRowInterfaces> projectedDiskRowIf;
 protected:
     StringAttr logicalFilename;
     StringArray subfileLogicalFilenames;
@@ -94,7 +94,7 @@ protected:
 public:
     CDiskReadSlaveActivityBase(CGraphElementBase *_container, IHThorArg *_helper);
     const char *queryLogicalFilename(unsigned index);
-    IThorRowInterfaces * queryDiskRowInterfaces();
+    IThorRowInterfaces * queryProjectedDiskRowInterfaces();
     virtual void start() override;
 
     

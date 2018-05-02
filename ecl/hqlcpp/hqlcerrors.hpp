@@ -221,6 +221,7 @@
 #define HQLERR_ExpectedFileLhsFetch             4209
 #define HQLERR_IncompatibleKeyedSubString       4210
 #define HQLERR_NonNullChildDSDefault            4211
+#define HQLERR_CannotInterpretRecord            4212
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -523,6 +524,7 @@
 #define HQLERR_ExpectedFileLhsFetch_Text        "The first argument of FETCH must be a disk file (had %s)"
 #define HQLERR_IncompatibleKeyedSubString_Text  "Cannot use two different KEYED substring filters for field %s in key %s"
 #define HQLERR_NonNullChildDSDefault_Text       "Non-null child dataset may not be used as default value (target field '%s')"
+#define HQLERR_CannotInterpretRecord_Text       "This dataset contains deprecated record formats and virtual fields.  Remove the alien data types, or temporarily add VIRTUAL(LEGACY) to the table definition"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
