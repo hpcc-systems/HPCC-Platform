@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WHEN_Function">
-  <!-- DNT-Start --><title>WHEN</title><!-- DNT-End -->
+  <title>WHEN</title>
 
   <informalexample id="SchWhen">
-    <para><emphasis role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->WHEN<!-- DNT-End --></primary>
+    <para><emphasis role="bold">WHEN<indexterm>
+        <primary>WHEN</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->WHEN<!-- DNT-End --> Function</primary>
+        <primary>WHEN Function</primary>
       </indexterm>(</emphasis><emphasis>trigger, action</emphasis><emphasis
-    role="bold"> [, <!-- DNT-Start -->BEFORE<!-- DNT-End --> | <!-- DNT-Start -->SUCCESS<!-- DNT-End --> | <!-- DNT-Start -->FAILURE<!-- DNT-End -->] )</emphasis></para>
+    role="bold"> [, BEFORE | SUCCESS | FAILURE] )</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
@@ -20,46 +20,46 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis>trigger</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>trigger</emphasis></entry>
 
               <entry>A dataset or action that launches the
               <emphasis>action</emphasis>.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>action</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>action</emphasis></entry>
 
               <entry>The action to execute.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">BEFORE</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis role="bold">BEFORE</emphasis></entry>
 
               <entry>Optional. Specifies an <emphasis>action</emphasis> that
               should be executed before the input is read.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">SUCCESS</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis role="bold">SUCCESS</emphasis></entry>
 
               <entry>Optional. Specifies an <emphasis>action</emphasis> that
-              should only be executed on <!-- DNT-Start -->SUCCESS<!-- DNT-End --> of the
-              <emphasis>trigger</emphasis> (e.g., no <!-- DNT-Start -->LIMITs<!-- DNT-End --> exceeded).</entry>
+              should only be executed on SUCCESS of the
+              <emphasis>trigger</emphasis> (e.g., no LIMITs exceeded).</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">FAILURE</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis role="bold">FAILURE</emphasis></entry>
 
               <entry>Optional. Specifies an <emphasis>action</emphasis> that
-              should only be executed on <!-- DNT-Start -->FAILURE<!-- DNT-End --> of the
-              <emphasis>trigger</emphasis> (e.g., a <!-- DNT-Start -->LIMIT<!-- DNT-End --> was
+              should only be executed on FAILURE of the
+              <emphasis>trigger</emphasis> (e.g., a LIMIT was
               exceeded).</entry>
             </row>
           </tbody>
         </tgroup>
       </informaltable></para>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End --> </emphasis>function associates an
+    <para>The <emphasis role="bold">WHEN </emphasis>function associates an
     <emphasis>action</emphasis> with a <emphasis>trigger</emphasis> (dataset
     or action) so that when the <emphasis>trigger</emphasis> is executed the
     <emphasis>action</emphasis> is also executed. This allows job scheduling
@@ -67,7 +67,7 @@
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>//a FUNCTION with side-effect Action
+    <programlisting>//a FUNCTION with side-effect Action
 namesTable := FUNCTION
    namesRecord := RECORD
      STRING20 surname;
@@ -82,10 +82,10 @@ END;
 z := namesTable : PERSIST('z');
   //the PERSIST causes the side-effect action to execute only when the PERSIST is re-built
 OUTPUT(z);
-</programlisting><!-- DNT-End -->
+</programlisting>
   </informalexample>
 
-  <para>See Also: <link linkend="FUNCTION_Structure"><!-- DNT-Start -->FUNCTION<!-- DNT-End -->
-  Structure</link>, <link linkend="WHEN"><!-- DNT-Start -->WHEN<!-- DNT-End --></link>, <link
-  linkend="WAIT"><!-- DNT-Start -->WAIT<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
+  Structure</link>, <link linkend="WHEN">WHEN</link>, <link
+  linkend="WAIT">WAIT</link></para>
 </sect1>

@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_IF">
-  <!-- DNT-Start --><title>#IF</title><!-- DNT-End -->
+  <title>#IF</title>
 
-  <para><emphasis role="bold">#<!-- DNT-Start -->IF<!-- DNT-End --><indexterm>
-      <primary>#<!-- DNT-Start -->IF<!-- DNT-End --></primary>
+  <para><emphasis role="bold">#IF<indexterm>
+      <primary>#IF</primary>
     </indexterm>( </emphasis><emphasis> condition </emphasis><emphasis
   role="bold">)</emphasis><emphasis role="bold">
   </emphasis><emphasis></emphasis></para>
@@ -13,8 +13,8 @@
   <para><emphasis>truestatements</emphasis><emphasis
   role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">[ #<!-- DNT-Start -->ELSEIF<!-- DNT-End --><indexterm>
-      <primary>#<!-- DNT-Start -->ELSEIF<!-- DNT-End --></primary>
+  <para><emphasis role="bold">[ #ELSEIF<indexterm>
+      <primary>#ELSEIF</primary>
     </indexterm>( </emphasis><emphasis> condition </emphasis><emphasis
   role="bold">)</emphasis><emphasis role="bold">
   </emphasis><emphasis></emphasis></para>
@@ -22,13 +22,13 @@
   <para><emphasis>truestatements </emphasis><emphasis
   role="bold">]</emphasis><emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">[ #<!-- DNT-Start -->ELSE<!-- DNT-End --></emphasis><emphasis
+  <para><emphasis role="bold">[ #ELSE</emphasis><emphasis
   role="bold"><indexterm>
-      <primary>#<!-- DNT-Start -->ELSE<!-- DNT-End --></primary>
+      <primary>#ELSE</primary>
     </indexterm> </emphasis><emphasis>falsestatements </emphasis><emphasis
   role="bold">]</emphasis><emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">#<!-- DNT-Start -->END<!-- DNT-End --></emphasis></para>
+  <para><emphasis role="bold">#END</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -38,57 +38,57 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>condition</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>condition</emphasis></entry>
 
             <entry>A logical expression.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>truestatements</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>truestatements</emphasis></entry>
 
             <entry>The Template statements to execute if the condition is
             true.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>#ELSEIF</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>#ELSEIF</emphasis></entry>
 
             <entry>Optional. Provides structure for statements to execute if
             its condition is true.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>#ELSE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>#ELSE</emphasis></entry>
 
             <entry>Optional. Provides structure for statements to execute if
             the condition is false.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>falsestatements</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>falsestatements</emphasis></entry>
 
             <entry>Optional. The Template statements to execute if the
             condition is false.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>#END</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>#END</emphasis></entry>
 
-            <entry>The #<!-- DNT-Start -->IF<!-- DNT-End --> structure terminator.</entry>
+            <entry>The #IF structure terminator.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#<!-- DNT-Start -->IF<!-- DNT-End --> </emphasis>structure evaluates the
+  <para>The <emphasis role="bold">#IF </emphasis>structure evaluates the
   <emphasis>condition </emphasis>and executes either the
   <emphasis>truestatements</emphasis> or <emphasis>falsestatements</emphasis>
-  (if present). This statement may be used outside an <!-- DNT-Start -->XML<!-- DNT-End --> scope and does not
-  require a previous <!-- DNT-Start -->LOADXML<!-- DNT-End --> to instantiate an <!-- DNT-Start -->XML<!-- DNT-End --> scope.</para>
+  (if present). This statement may be used outside an XML scope and does not
+  require a previous LOADXML to instantiate an XML scope.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  // This script creates a set attribute definition of the 1st 10
+  <programlisting>  // This script creates a set attribute definition of the 1st 10
   // natural numbers and defines an attribute named "Set10"
   
   #DECLARE (SetString);
@@ -111,8 +111,8 @@
   EXPORT Set10 := %'SetString'%; //generate the ECL code
                          // This generates:
                          // EXPORT Set10 := [1,2,3,4,5,6,7,8,9,10];
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="_LOOP-_BREAK">#<!-- DNT-Start -->LOOP<!-- DNT-End --></link>, <link
-  linkend="_DECLARE">#<!-- DNT-Start -->DECLARE<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="_LOOP-_BREAK">#LOOP</link>, <link
+  linkend="_DECLARE">#DECLARE</link></para>
 </sect1>

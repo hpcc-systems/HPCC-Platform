@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="INTFORMAT">
-  <!-- DNT-Start --><title>INTFORMAT</title><!-- DNT-End -->
+  <title>INTFORMAT</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->INTFORMAT<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->INTFORMAT<!-- DNT-End --></primary>
+  <para><emphasis role="bold">INTFORMAT<indexterm>
+      <primary>INTFORMAT</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->INTFORMAT<!-- DNT-End --> function</primary>
+      <primary>INTFORMAT function</primary>
     </indexterm>(</emphasis><emphasis>expression, width,
   mode</emphasis><emphasis role="bold">)</emphasis></para>
 
@@ -19,47 +19,47 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>The expression that specifies the integer value to
             format.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>width</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>width</emphasis></entry>
 
             <entry>The size of string in which to right-justify the
             value.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mode</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mode</emphasis></entry>
 
             <entry>The format type: 0 = leading blank fill, 1 = leading zero
             fill.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->INTFORMAT<!-- DNT-End --> returns a single value.</entry>
+            <entry>INTFORMAT returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->INTFORMAT<!-- DNT-End --> </emphasis>function returns the
+  <para>The <emphasis role="bold">INTFORMAT </emphasis>function returns the
   value of the <emphasis>expression</emphasis> formatted as a right-justified
   string of <emphasis>width</emphasis> characters.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>val := 123456789;
+  <programlisting>val := 123456789;
 OUTPUT(INTFORMAT(val,20,1));
   //formats as '00000000000123456789'
 OUTPUT(INTFORMAT(val,20,0));
   //formats as '          123456789'
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="REALFORMAT"><!-- DNT-Start -->REALFORMAT<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="REALFORMAT">REALFORMAT</link></para>
 </sect1>

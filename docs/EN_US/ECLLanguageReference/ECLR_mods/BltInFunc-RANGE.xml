@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RANGE">
-  <!-- DNT-Start --><title>RANGE</title><!-- DNT-End -->
+  <title>RANGE</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->RANGE<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->RANGE<!-- DNT-End --></primary>
+  <para><emphasis role="bold">RANGE<indexterm>
+      <primary>RANGE</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->RANGE<!-- DNT-End --> function</primary>
+      <primary>RANGE function</primary>
     </indexterm>( </emphasis><emphasis>setofdatasets,
-  setofintegers</emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  setofintegers</emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -19,80 +19,80 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>setofdatasets</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>setofdatasets</emphasis></entry>
 
             <entry>A set of datasets.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>setofintegers</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>setofintegers</emphasis></entry>
 
             <entry>A set of integers.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->RANGE<!-- DNT-End --> returns a set of datasets.</entry>
+            <entry>RANGE returns a set of datasets.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->RANGE<!-- DNT-End --> </emphasis>function extracts a subset
-  of the <emphasis>setofdatasets</emphasis> as a <!-- DNT-Start -->SET<!-- DNT-End -->. The
+  <para>The <emphasis role="bold">RANGE </emphasis>function extracts a subset
+  of the <emphasis>setofdatasets</emphasis> as a SET. The
   <emphasis>setofintegers</emphasis> specifies which elements of the
-  <emphasis>setofdatasets</emphasis> comprise the resulting <!-- DNT-Start -->SET<!-- DNT-End --> of datasets.
-  This is typically used in the <!-- DNT-Start -->GRAPH<!-- DNT-End --> function.</para>
+  <emphasis>setofdatasets</emphasis> comprise the resulting SET of datasets.
+  This is typically used in the GRAPH function.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>r := {STRING1 Letter};
+  <programlisting>r := {STRING1 Letter};
 ds1 := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],r);
 ds2 := DATASET([{'F'},{'G'},{'H'},{'I'},{'J'}],r);
 ds3 := DATASET([{'K'},{'L'},{'M'},{'N'},{'O'}],r);
@@ -105,7 +105,7 @@ outDS := RANGE(setDS,[1,3]);
 
 OUTPUT(outDS[1]); //results in A,B,C,D,E
 OUTPUT(outDS[2]); //results in K,L,M,N,O
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="GRAPH"><!-- DNT-Start -->GRAPH<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="GRAPH">GRAPH</link></para>
 </sect1>

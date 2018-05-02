@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="HASH64">
-  <!-- DNT-Start --><title>HASH64</title><!-- DNT-End -->
+  <title>HASH64</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->HASH<!-- DNT-End -->64<indexterm>
-      <primary><!-- DNT-Start -->HASH<!-- DNT-End -->64</primary>
+  <para><emphasis role="bold">HASH64<indexterm>
+      <primary>HASH64</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->HASH<!-- DNT-End -->64 function</primary>
+      <primary>HASH64 function</primary>
     </indexterm>(</emphasis><emphasis>expressionlist</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,30 +19,30 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>expressionlist</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expressionlist</emphasis></entry>
 
             <entry>A comma-delimited list of values.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->HASH<!-- DNT-End -->64 returns a single value.</entry>
+            <entry>HASH64 returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->HASH<!-- DNT-End -->64</emphasis> function returns a 64-bit
-  <!-- DNT-Start -->FNV<!-- DNT-End --> (Fowler/Noll/Vo) hash value derived from all the values in the
+  <para>The <emphasis role="bold">HASH64</emphasis> function returns a 64-bit
+  FNV (Fowler/Noll/Vo) hash value derived from all the values in the
   <emphasis>expressionlist</emphasis>. Trailing spaces are trimmed from string
-  (or <!-- DNT-Start -->UNICODE<!-- DNT-End -->) fields before the value is calculated (casting to <!-- DNT-Start -->DATA<!-- DNT-End --> prevents
+  (or UNICODE) fields before the value is calculated (casting to DATA prevents
   this).</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>OUTPUT(Person,{per_ssn,HASH64(per_ssn)});
-    //output SSN and its 64-bit hash value</programlisting><!-- DNT-End -->
+  <programlisting>OUTPUT(Person,{per_ssn,HASH64(per_ssn)});
+    //output SSN and its 64-bit hash value</programlisting>
 
-  <para>See Also: <link linkend="DISTRIBUTE"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --></link>, <link linkend="HASH"><!-- DNT-Start -->HASH<!-- DNT-End --></link>, <link linkend="HASH32"><!-- DNT-Start -->HASH<!-- DNT-End -->32</link>, <link linkend="HASHCRC"><!-- DNT-Start -->HASHCRC<!-- DNT-End --></link>, <link linkend="HASHMD5"><!-- DNT-Start -->HASHMD<!-- DNT-End -->5</link></para>
+  <para>See Also: <link linkend="DISTRIBUTE">DISTRIBUTE</link>, <link linkend="HASH">HASH</link>, <link linkend="HASH32">HASH32</link>, <link linkend="HASHCRC">HASHCRC</link>, <link linkend="HASHMD5">HASHMD5</link></para>
 </sect1>

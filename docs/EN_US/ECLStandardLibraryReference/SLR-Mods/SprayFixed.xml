@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SprayFixed">
-  <!-- DNT-Start --><title>SprayFixed</title><!-- DNT-End -->
+  <title>SprayFixed</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.File.<!-- DNT-Start -->SprayFixed<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.File.<!-- DNT-Start -->SprayFixed<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.File.SprayFixed<indexterm>
+      <primary>STD.File.SprayFixed</primary>
     </indexterm><indexterm>
-      <primary>File.<!-- DNT-Start -->SprayFixed<!-- DNT-End --></primary>
+      <primary>File.SprayFixed</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->SprayFixed<!-- DNT-End --></primary>
+      <primary>SprayFixed</primary>
     </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
   role="bold">, </emphasis> <emphasis>sourcepath, recordsize,
   destinationgroup,</emphasis> <emphasis> destinationlogicalname </emphasis> ,
@@ -28,8 +28,8 @@
   role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
-  <!-- DNT-Start -->STD<!-- DNT-End -->.File.fSprayFixed<indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.File.fSprayFixed</primary>
+  STD.File.fSprayFixed<indexterm>
+      <primary>STD.File.fSprayFixed</primary>
     </indexterm><indexterm>
       <primary>File.fSprayFixed</primary>
     </indexterm><indexterm>
@@ -59,98 +59,98 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>sourceIP</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>sourceIP</emphasis></entry>
 
-          <entry>A null-terminated string containing the <!-- DNT-Start -->IP<!-- DNT-End --> address of the
+          <entry>A null-terminated string containing the IP address of the
           file.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>sourcepath</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>sourcepath</emphasis></entry>
 
           <entry>A null-terminated string containing the path and name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>recordsize</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>recordsize</emphasis></entry>
 
           <entry>An integer containing the size of the records in the
           file.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>destinationgroup</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>destinationgroup</emphasis></entry>
 
           <entry>A null-terminated string containing the name of the specific
           supercomputer within the target cluster.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>destinationlogicalname</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>destinationlogicalname</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>timeout</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>timeout</emphasis></entry>
 
           <entry>Optional. An integer value indicating the timeout setting. If
           omitted, the default is -1. If set to zero (0), execution control
-          returns immediately to the <!-- DNT-Start -->ECL<!-- DNT-End --> workunit without waiting for the <!-- DNT-Start -->DFU<!-- DNT-End -->
+          returns immediately to the ECL workunit without waiting for the DFU
           workunit to complete.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>espserverIPport</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>espserverIPport</emphasis></entry>
 
-          <entry>A null-terminated string containing the protocol, <!-- DNT-Start -->IP<!-- DNT-End -->, port,
-          and directory, or the <!-- DNT-Start -->DNS<!-- DNT-End --> equivalent, of the <!-- DNT-Start -->ESP<!-- DNT-End --> server program.
-          This is usually the same <!-- DNT-Start -->IP<!-- DNT-End --> and port as <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, with "/FileSpray"
+          <entry>A null-terminated string containing the protocol, IP, port,
+          and directory, or the DNS equivalent, of the ESP server program.
+          This is usually the same IP and port as ECL Watch, with "/FileSpray"
           appended. If omitted, the default is the value contained in the
           lib_system.ws_fs_server attribute.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>maxConnections</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>maxConnections</emphasis></entry>
 
           <entry>Optional. An integer specifying the maximum number of
           connections. If omitted, the default is one (1).</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>allowoverwrite</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>allowoverwrite</emphasis></entry>
 
-          <entry>Optional. A boolean <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --> flag indicating whether to
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
           allow the new file to overwrite an existing file of the same name.
-          If omitted, the default is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          If omitted, the default is FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>replicate</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>replicate</emphasis></entry>
 
-          <entry>Optional. A boolean <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --> flag indicating whether to
-          replicate the new file. If omitted, the default is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          replicate the new file. If omitted, the default is FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>compress</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>compress</emphasis></entry>
 
-          <entry>Optional. A boolean <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --> flag indicating whether to
-          compress the new file. If omitted, the default is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          compress the new file. If omitted, the default is FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>failIfNoSourceFile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>failIfNoSourceFile</emphasis></entry>
 
-          <entry>Optional. A boolean <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --> flag indicating whether a
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether a
           missing file triggers a failure. If omitted, the default is
-          <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>expireDays</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>expireDays</emphasis></entry>
 
           <entry>Optional. A integer value indicating the number of days
           before automatically removing the file. If omitted, the default is
@@ -158,31 +158,31 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>dfuwuid</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>dfuwuid</emphasis></entry>
 
           <entry>The attribute name to receive the null-terminated string
-          containing the <!-- DNT-Start -->DFU<!-- DNT-End --> workunit <!-- DNT-Start -->ID<!-- DNT-End --> (<!-- DNT-Start -->DFUWUID<!-- DNT-End -->) generated for the
+          containing the DFU workunit ID (DFUWUID) generated for the
           job.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>fSprayFixed returns a null-terminated string containing the
-          <!-- DNT-Start -->DFU<!-- DNT-End --> workunit <!-- DNT-Start -->ID<!-- DNT-End --> (<!-- DNT-Start -->DFUWUID<!-- DNT-End -->).</entry>
+          DFU workunit ID (DFUWUID).</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->SprayFixed<!-- DNT-End --> </emphasis>function takes
+  <para>The <emphasis role="bold">SprayFixed </emphasis>function takes
   fixed-format file from the landing zone and distributes it across the nodes
   of the destination supercomputer.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">STD.File.SprayFixed('10.150.50.14','c:\\InputData\\MyFile.txt',
+  <programlisting format="linespecific">STD.File.SprayFixed('10.150.50.14','c:\\InputData\\MyFile.txt',
     255,'400way','IN::MyFile',-1,
     'http://10.150.50.12:8010/FileSpray');
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

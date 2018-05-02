@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_DEMANGLE">
-  <!-- DNT-Start --><title>#DEMANGLE</title><!-- DNT-End -->
+  <title>#DEMANGLE</title>
 
-  <para><emphasis role="bold">#<!-- DNT-Start -->DEMANGLE<!-- DNT-End --><indexterm>
-      <primary>#<!-- DNT-Start -->DEMANGLE<!-- DNT-End --></primary>
+  <para><emphasis role="bold">#DEMANGLE<indexterm>
+      <primary>#DEMANGLE</primary>
     </indexterm>( </emphasis><emphasis> identifier </emphasis><emphasis
   role="bold">);</emphasis></para>
 
@@ -17,22 +17,22 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>identifier</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>identifier</emphasis></entry>
 
-            <entry>A valid <!-- DNT-Start -->ECL<!-- DNT-End --> identifier label containing only letters,
+            <entry>A valid ECL identifier label containing only letters,
             numbers, dollar sign ($), and underscore (_) characters.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#<!-- DNT-Start -->DEMANGLE<!-- DNT-End --> </emphasis>statement takes an
+  <para>The <emphasis role="bold">#DEMANGLE </emphasis>statement takes an
   <emphasis>identifier</emphasis> string and returns the string as it was
-  before it was #<!-- DNT-Start -->MANGLEd<!-- DNT-End -->.</para>
+  before it was #MANGLEd.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  #DECLARE (mstg);
+  <programlisting>  #DECLARE (mstg);
   #DECLARE (dmstg);
   #SET (mstg, #MANGLE('SECTION_STATES/AREACODES'));
   
@@ -44,8 +44,8 @@
   #SET (dmstg, #DEMANGLE(%'mstg'%));
   export res2 := %'dmstg'%;
   res2; //res2 = 'SECTION_STATES/AREACODES'
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="_MANGLE">#<!-- DNT-Start -->MANGLE<!-- DNT-End --></link>, <link
+  <para>See Also: <link linkend="_MANGLE">#MANGLE</link>, <link
   linkend="Attribute_Definition">Attribute Names</link></para>
 </sect1>

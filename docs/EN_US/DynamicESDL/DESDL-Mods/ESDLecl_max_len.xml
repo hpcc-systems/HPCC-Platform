@@ -2,23 +2,23 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_ecl_max_len">
-  <!-- DNT-Start --><title>ecl_max_len <indexterm>
+  <title>ecl_max_len <indexterm>
       <primary>ecl_max_len</primary>
-    </indexterm>(n)</title><!-- DNT-End -->
+    </indexterm>(n)</title>
 
-  <para>This <emphasis>ecl_max_len</emphasis> attribute tells the <!-- DNT-Start -->ECL<!-- DNT-End -->
-  generator to use <!-- DNT-Start -->ECL<!-- DNT-End --> <emphasis>maxlength </emphasis>instead of the regular
+  <para>This <emphasis>ecl_max_len</emphasis> attribute tells the ECL
+  generator to use ECL <emphasis>maxlength </emphasis>instead of the regular
   field length.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>[ecl_max_len(50)] string CompanyName;
-[max_len(6)] string Gender;   </programlisting><!-- DNT-End -->
+  <programlisting>[ecl_max_len(50)] string CompanyName;
+[max_len(6)] string Gender;   </programlisting>
 
-  <para>The generated <!-- DNT-Start -->ECL<!-- DNT-End --> code is:</para>
+  <para>The generated ECL code is:</para>
 
-  <!-- DNT-Start --><programlisting>string CompanyName { xpath("CompanyName"),maxlength(50) };
-   string6 Gender { xpath("Gender") };   </programlisting><!-- DNT-End -->
+  <programlisting>string CompanyName { xpath("CompanyName"),maxlength(50) };
+   string6 Gender { xpath("Gender") };   </programlisting>
 
   <para><emphasis role="bold">Note</emphasis>: when both
   <emphasis>max_len</emphasis> and <emphasis>ecl_max_len</emphasis> are

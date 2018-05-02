@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <!-- DNT-Start --><title>ECL Plugin for the Eclipse IDE</title><!-- DNT-End -->
+    <title>ECL Plugin for the Eclipse IDE</title>
 
     <mediaobject>
       <imageobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems is a registered trademark of LexisNexis Risk Data
+      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -43,21 +43,21 @@
     <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <!-- DNT-Start --><!--Release Info makes a running page footer:now an include from version.xml--><!-- DNT-End -->
+    <!--Release Info makes a running page footer:now an include from version.xml-->
 
     <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <!-- DNT-Start --><!--The include statement pulls in the date_ver from version.xml--><!-- DNT-End -->
+    <!--The include statement pulls in the date_ver from version.xml-->
 
     <corpname>HPCC Systems</corpname>
 
-    <!-- DNT-Start --><!--corpname never prints--><!-- DNT-End -->
+    <!--corpname never prints-->
 
     <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <!-- DNT-Start --><!--Copyright tag now gets copyright from version.xml--><!-- DNT-End -->
+    <!--Copyright tag now gets copyright from version.xml-->
 
     <mediaobject role="logo">
       <imageobject>
@@ -67,33 +67,33 @@
   </bookinfo>
 
   <chapter id="Eclipse_Introduction">
-    <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
+    <title>Introduction</title>
 
-    <para>Eclipse is an alternative Integrated Development Environment (<!-- DNT-Start -->IDE<!-- DNT-End -->)
-    which can be used with the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Platform. Eclipse is open-source,
-    and multi-platform. It can be used instead of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> to write and
-    execute queries into data on an <!-- DNT-Start -->HPCC<!-- DNT-End --> cluster .</para>
+    <para>Eclipse is an alternative Integrated Development Environment (IDE)
+    which can be used with the HPCC Systems Platform. Eclipse is open-source,
+    and multi-platform. It can be used instead of the ECL IDE to write and
+    execute queries into data on an HPCC cluster .</para>
 
-    <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> plugin is also open source.</para>
+    <para>The ECL plugin is also open source.</para>
 
-    <para>The following sections cover how to install and use the <!-- DNT-Start -->ECL<!-- DNT-End --> plugin
+    <para>The following sections cover how to install and use the ECL plugin
     for Eclipse.</para>
 
     <sect1 id="ECL_Files" role="nobrk">
-      <!-- DNT-Start --><title>Prerequisites and Requirements</title><!-- DNT-End -->
+      <title>Prerequisites and Requirements</title>
 
       <para>These are the basic requirements to run the Eclipse plugin.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>Windows Prerequisites:</title><!-- DNT-End -->
+        <title>Windows Prerequisites:</title>
 
         <para><itemizedlist>
             <listitem>
-              <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Client Tools (available from <ulink
+              <para>The HPCC Client Tools (available from <ulink
               url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink>
               )</para>
 
-              <para>This installs the <!-- DNT-Start -->ECL<!-- DNT-End --> compiler, eclcc, command line tools,
+              <para>This installs the ECL compiler, eclcc, command line tools,
               and related components</para>
             </listitem>
 
@@ -107,7 +107,7 @@
             </listitem>
 
             <listitem>
-              <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> plugin for Eclipse</para>
+              <para>The ECL plugin for Eclipse</para>
 
               <para><informaltable colsep="1" frame="all" rowsep="1">
                   <?dbfo keep-together="always"?>
@@ -144,15 +144,15 @@
       </sect2>
 
       <sect2>
-        <!-- DNT-Start --><title>Linux Prerequisites:</title><!-- DNT-End -->
+        <title>Linux Prerequisites:</title>
 
         <para><itemizedlist>
             <listitem>
-              <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Client Tools (available from <ulink
+              <para>The HPCC Client Tools (available from <ulink
               url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink>
               )</para>
 
-              <para>This installs the <!-- DNT-Start -->ECL<!-- DNT-End --> compiler, eclcc, command line tools,
+              <para>This installs the ECL compiler, eclcc, command line tools,
               and related components</para>
             </listitem>
 
@@ -170,21 +170,21 @@
             </listitem>
 
             <listitem>
-              <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> plugin for Eclipse</para>
+              <para>The ECL plugin for Eclipse</para>
             </listitem>
           </itemizedlist></para>
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Mac (Intel-based) Prerequisites:</title><!-- DNT-End -->
+        <title>Mac (Intel-based) Prerequisites:</title>
 
         <itemizedlist>
           <listitem>
-            <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Client Tools (available from <ulink
+            <para>The HPCC Client Tools (available from <ulink
             url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink>
             )</para>
 
-            <para>This installs the <!-- DNT-Start -->ECL<!-- DNT-End --> compiler, eclcc, command line tools,
+            <para>This installs the ECL compiler, eclcc, command line tools,
             and related components</para>
           </listitem>
 
@@ -194,7 +194,7 @@
           </listitem>
 
           <listitem>
-            <para>Mac <!-- DNT-Start -->OS<!-- DNT-End --> X 64-bit (10.6.x or later)</para>
+            <para>Mac OS X 64-bit (10.6.x or later)</para>
           </listitem>
 
           <listitem>
@@ -202,7 +202,7 @@
           </listitem>
 
           <listitem>
-            <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> plugin for Eclipse</para>
+            <para>The ECL plugin for Eclipse</para>
           </listitem>
         </itemizedlist>
       </sect2>
@@ -210,31 +210,31 @@
   </chapter>
 
   <chapter id="Installing_Eclipse">
-    <!-- DNT-Start --><title>Installing Eclipse</title><!-- DNT-End -->
+    <title>Installing Eclipse</title>
 
-    <para>This section describes how to install the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End -->. If you
-    already have the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> installed, skip this section and go to
-    <emphasis>Installing the <!-- DNT-Start -->ECL<!-- DNT-End --> Plugin</emphasis>.</para>
+    <para>This section describes how to install the Eclipse IDE. If you
+    already have the Eclipse IDE installed, skip this section and go to
+    <emphasis>Installing the ECL Plugin</emphasis>.</para>
 
     <sect1 id="Used_to_Build_Queries" role="nobrk">
-      <!-- DNT-Start --><title>Getting Eclipse</title><!-- DNT-End -->
+      <title>Getting Eclipse</title>
 
-      <para>Download the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> from the site:</para>
+      <para>Download the Eclipse IDE from the site:</para>
 
       <para><ulink
       url="http://www.eclipse.org/downloads/">http://www.eclipse.org/downloads/</ulink>
       <itemizedlist>
           <listitem>
-            <para>Choose the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> for Java Developers package</para>
+            <para>Choose the Eclipse IDE for Java Developers package</para>
           </listitem>
 
           <listitem>
-            <para>Download the appropriate Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> for your
+            <para>Download the appropriate Eclipse IDE for your
             platform</para>
           </listitem>
 
           <listitem>
-            <para>The Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> is delivered as a compressed (.zip or
+            <para>The Eclipse IDE is delivered as a compressed (.zip or
             .tar.gz) file. Extract this file into the folder of your choice
             (for example, c:\Eclipse on Windows).</para>
           </listitem>
@@ -248,13 +248,13 @@
     </sect1>
 
     <sect1 id="Configuration_Files">
-      <!-- DNT-Start --><title>Installing the ECL Plugin</title><!-- DNT-End -->
+      <title>Installing the ECL Plugin</title>
 
       <para>To install the Eclipse plugin:</para>
 
       <para><orderedlist>
           <listitem>
-            <para>In Eclipse <!-- DNT-Start -->IDE<!-- DNT-End -->, select <emphasis role="bold">Help &gt;&gt;
+            <para>In Eclipse IDE, select <emphasis role="bold">Help &gt;&gt;
             Install New Software...</emphasis></para>
           </listitem>
 
@@ -275,7 +275,7 @@
             <?dbfo keep-together="always"?>
 
             <para>Provide a suitable name, for example, <emphasis
-            role="bluebold"><!-- DNT-Start -->ECL<!-- DNT-End -->_Plugin.</emphasis></para>
+            role="bluebold">ECL_Plugin.</emphasis></para>
           </listitem>
 
           <listitem>
@@ -301,13 +301,13 @@
 
                   <tbody>
                     <row>
-                      <entry><!-- DNT-Start -->http://eclipse.hpccsystems.com/stable<!-- DNT-End --></entry>
+                      <entry>http://eclipse.hpccsystems.com/stable</entry>
 
                       <entry>The latest stable build.</entry>
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->http://eclipse.hpccsystems.com/develop<!-- DNT-End --></entry>
+                      <entry>http://eclipse.hpccsystems.com/develop</entry>
 
                       <entry>The cutting-edge, untested development
                       build.</entry>
@@ -315,13 +315,13 @@
                   </tbody>
                 </tgroup>
               </informaltable><figure>
-                <!-- DNT-Start --><title>Enter Location</title><!-- DNT-End -->
+                <title>Enter Location</title>
 
                 <mediaobject>
                   <imageobject>
                     <imagedata fileref="images/EPI004.jpg" />
 
-                    <!-- DNT-Start --><!--This screen should show completed Location in the future--><!-- DNT-End -->
+                    <!--This screen should show completed Location in the future-->
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -330,7 +330,7 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Select the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Language</emphasis> box
+            <para>Select the <emphasis role="bold">ECL Language</emphasis> box
             then press the <emphasis role="bold">Next &gt;</emphasis>
             button.</para>
 
@@ -375,13 +375,13 @@
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>Updating the ECL Plugin for Eclipse</title><!-- DNT-End -->
+      <title>Updating the ECL Plugin for Eclipse</title>
 
       <para>We recommend using the Eclipse Automatic Update feature.</para>
 
       <para><orderedlist>
           <listitem>
-            <para>In Eclipse <!-- DNT-Start -->IDE<!-- DNT-End -->, select <emphasis role="bold">Window &gt;&gt;
+            <para>In Eclipse IDE, select <emphasis role="bold">Window &gt;&gt;
             Preferences.</emphasis></para>
           </listitem>
 
@@ -394,7 +394,7 @@
             updates and notify me</emphasis> button.</para>
 
             <figure>
-              <!-- DNT-Start --><title>Automatic Update Settings</title><!-- DNT-End -->
+              <title>Automatic Update Settings</title>
 
               <mediaobject>
                 <imageobject>
@@ -406,13 +406,13 @@
 
           <listitem>
             <para>Set your options, then press the<emphasis role="bold">
-            <!-- DNT-Start -->OK<!-- DNT-End --></emphasis> button.</para>
+            OK</emphasis> button.</para>
           </listitem>
         </orderedlist>To manually update the Eclipse plugin:</para>
 
       <para><orderedlist>
           <listitem>
-            <para>In Eclipse <!-- DNT-Start -->IDE<!-- DNT-End -->, select <emphasis role="bold">Help &gt;&gt;
+            <para>In Eclipse IDE, select <emphasis role="bold">Help &gt;&gt;
             Check for Updates...</emphasis></para>
 
             <para>A progress window displays as it checks for any available
@@ -430,21 +430,21 @@
   </chapter>
 
   <chapter id="Create_ECL_Project" role="brk">
-    <!-- DNT-Start --><title>Using Eclipse with HPCC</title><!-- DNT-End -->
+    <title>Using Eclipse with HPCC</title>
 
     <para>The following sections tell you how you can use Eclipse to interact
-    with the <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform.</para>
+    with the HPCC Platform.</para>
 
     <sect1 role="nobrk">
-      <!-- DNT-Start --><title>Creating an ECL Project</title><!-- DNT-End -->
+      <title>Creating an ECL Project</title>
 
-      <para>In order to use Eclipse with an <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform, you will need to be
-      able to create, edit, and submit <!-- DNT-Start -->ECL<!-- DNT-End --> projects. This is how to do that
+      <para>In order to use Eclipse with an HPCC Platform, you will need to be
+      able to create, edit, and submit ECL projects. This is how to do that
       with a simple "Hello World" project.</para>
 
       <para><orderedlist>
           <listitem>
-            <para>Open the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --></para>
+            <para>Open the Eclipse IDE</para>
           </listitem>
 
           <listitem>
@@ -460,8 +460,8 @@
           </listitem>
 
           <listitem>
-            <para>Expand the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --></emphasis> folder,
-            select <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Project</emphasis>, then press
+            <para>Expand the <emphasis role="bold">ECL</emphasis> folder,
+            select <emphasis role="bold">ECL Project</emphasis>, then press
             the <emphasis role="bold">Next</emphasis> button.</para>
 
             <graphic fileref="images/EPI007a.jpg" scale="90" />
@@ -481,7 +481,7 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>If your <!-- DNT-Start -->ECL<!-- DNT-End --> Development perspective is not already open, you
+            <para>If your ECL Development perspective is not already open, you
             are prompted to <emphasis role="bold">Open Associated
             Perspective?</emphasis> Press the <emphasis
             role="bold">Yes</emphasis> button.</para>
@@ -500,7 +500,7 @@
           </listitem>
 
           <listitem>
-            <para>In the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Explorer</emphasis> panel,
+            <para>In the <emphasis role="bold">ECL Explorer</emphasis> panel,
             right-click on the newly created project, then select <emphasis
             role="bold">New <emphasis role="bold">&gt;&gt;</emphasis>
             File.</emphasis></para>
@@ -534,8 +534,8 @@
                       fileref="images/caution.png" /></entry>
 
                       <entry>No matter what you name your file, be sure you
-                      <!-- DNT-Start -->ALWAYS<!-- DNT-End --> include the .ecl extension. The extension is
-                      required for the project to work correctly with the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+                      ALWAYS include the .ecl extension. The extension is
+                      required for the project to work correctly with the HPCC
                       compiler.</entry>
                     </row>
                   </tbody>
@@ -570,7 +570,7 @@
                     <entry><inlinegraphic
                     fileref="images/OSSgr3.png" /></entry>
 
-                    <entry>Saving an <!-- DNT-Start -->ECL<!-- DNT-End --> file automatically invokes a syntax
+                    <entry>Saving an ECL file automatically invokes a syntax
                     check. If there is an error, it is indicated by a red X
                     next to the line containing the error.</entry>
                   </row>
@@ -582,13 +582,13 @@
     </sect1>
 
     <sect1 id="Editing" role="brk">
-      <!-- DNT-Start --><title>Execute the ECL Code</title><!-- DNT-End -->
+      <title>Execute the ECL Code</title>
 
-      <para>You can choose where to execute your <!-- DNT-Start -->ECL<!-- DNT-End --> Code. Each target is
+      <para>You can choose where to execute your ECL Code. Each target is
       defined in a <emphasis role="bold">Run Configuration</emphasis>.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>Execute your ECL Code Remotely on a Server.</title><!-- DNT-End -->
+        <title>Execute your ECL Code Remotely on a Server.</title>
 
         <orderedlist>
           <listitem>
@@ -603,7 +603,7 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Double click <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Targets </emphasis>to
+            <para>Double click <emphasis role="bold">ECL Targets </emphasis>to
             create a new <emphasis role="bold">Run As</emphasis>
             configuration. <graphic fileref="images/EPI012a.jpg"
             scale="80" /></para>
@@ -612,7 +612,7 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>On the <emphasis role="bold"><!-- DNT-Start -->HPCC<!-- DNT-End --> Platfom</emphasis> tab
+            <para>On the <emphasis role="bold">HPCC Platfom</emphasis> tab
             enter the following:<variablelist>
                 <varlistentry>
                   <term>Name</term>
@@ -627,7 +627,7 @@
                   <term>IP address</term>
 
                   <listitem>
-                    <para><!-- DNT-Start -->IP<!-- DNT-End --> address or <!-- DNT-Start -->DNS<!-- DNT-End --> name of your <!-- DNT-Start -->ESP<!-- DNT-End --> server</para>
+                    <para>IP address or DNS name of your ESP server</para>
                   </listitem>
                 </varlistentry>
 
@@ -661,9 +661,9 @@
                   <term>ECL Watch / Address</term>
 
                   <listitem>
-                    <para>This is autofilled from the Server <!-- DNT-Start -->IP<!-- DNT-End --> Address above;
-                    however, if your <!-- DNT-Start -->ECL<!-- DNT-End --> Watch service is running on a
-                    different <!-- DNT-Start -->IP<!-- DNT-End --> or port, you can modify it here.</para>
+                    <para>This is autofilled from the Server IP Address above;
+                    however, if your ECL Watch service is running on a
+                    different IP or port, you can modify it here.</para>
 
                     <variablelist>
                       <varlistentry>
@@ -671,7 +671,7 @@
 
                         <listitem>
                           <para>Press the test button and you will see its
-                          current <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page. This lets you know you have
+                          current ECL Watch page. This lets you know you have
                           the correct configuration.</para>
                         </listitem>
                       </varlistentry>
@@ -681,7 +681,7 @@
               </variablelist></para>
 
             <figure>
-              <!-- DNT-Start --><title>Correct Configuration</title><!-- DNT-End -->
+              <title>Correct Configuration</title>
 
               <mediaobject>
                 <imageobject>
@@ -694,7 +694,7 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>On the <emphasis role="bold"><!-- DNT-Start -->ECLCC<!-- DNT-End --> Compiler</emphasis> tab
+            <para>On the <emphasis role="bold">ECLCC Compiler</emphasis> tab
             check the settings. The location of your installed Client Tools
             should have been found and auto-completed. If they are not
             correct, check the Override Defaults box and fill in the location
@@ -739,13 +739,13 @@
   </chapter>
 
   <chapter>
-    <!-- DNT-Start --><title>Next Steps</title><!-- DNT-End -->
+    <title>Next Steps</title>
 
-    <para>To familiarize yourself with the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> and the <!-- DNT-Start -->ECL<!-- DNT-End --> Development
+    <para>To familiarize yourself with the Eclipse IDE and the ECL Development
     perspective, we recommend working the following tutorials in Eclipse:
     <itemizedlist spacing="compact">
         <listitem>
-          <para>The <emphasis role="bold"><!-- DNT-Start -->HPCC<!-- DNT-End --> Data Tutorial</emphasis></para>
+          <para>The <emphasis role="bold">HPCC Data Tutorial</emphasis></para>
         </listitem>
 
         <listitem>

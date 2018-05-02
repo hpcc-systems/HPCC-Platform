@@ -2,25 +2,25 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FAIL">
-  <!-- DNT-Start --><title>FAIL<indexterm>
+  <title>FAIL<indexterm>
       <primary>FAIL</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
   <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
-  role="bold"> ] <!-- DNT-Start -->FAIL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->FAIL<!-- DNT-End --> action</primary>
+  role="bold"> ] FAIL<indexterm>
+      <primary>FAIL action</primary>
     </indexterm> [ (</emphasis><emphasis> errormessage </emphasis><emphasis
   role="bold">|</emphasis><emphasis> errorcode </emphasis><emphasis
   role="bold">) ] ;</emphasis></para>
 
   <para><emphasis role="bold"></emphasis><emphasis
   role="bold">[</emphasis><emphasis>attrname</emphasis> :=<emphasis
-  role="bold"> ] <!-- DNT-Start -->FAIL<!-- DNT-End -->(</emphasis><emphasis> errorcode , errormessage
+  role="bold"> ] FAIL(</emphasis><emphasis> errorcode , errormessage
   </emphasis><emphasis role="bold">) ;</emphasis></para>
 
   <para><emphasis role="bold"></emphasis><emphasis
   role="bold">[</emphasis><emphasis>attrname</emphasis> :=<emphasis
-  role="bold"> ] <!-- DNT-Start -->FAIL<!-- DNT-End -->(</emphasis><emphasis> datatype </emphasis><emphasis
+  role="bold"> ] FAIL(</emphasis><emphasis> datatype </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, </emphasis><emphasis
   role="bold">[</emphasis><emphasis> errorcode </emphasis><emphasis
   role="bold">]</emphasis><emphasis> </emphasis><emphasis
@@ -35,7 +35,7 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>attrname</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>attrname</emphasis></entry>
 
             <entry>Optional. The action name, which turns the action into an
             attribute definition, therefore not executed until the
@@ -43,41 +43,41 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>errormessage</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>errormessage</emphasis></entry>
 
             <entry>Optional. A string constant containing the message to
             display.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>errorcode</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>errorcode</emphasis></entry>
 
             <entry>Optional. An integer constant containing the error number
             to display.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>datatype</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>datatype</emphasis></entry>
 
-            <entry>The value type, name of a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure, <!-- DNT-Start -->DATASET<!-- DNT-End -->, or
-            <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> to emulate.</entry>
+            <entry>The value type, name of a RECORD structure, DATASET, or
+            DICTIONARY to emulate.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->FAIL<!-- DNT-End --> </emphasis>action immediately halts
+  <para>The <emphasis role="bold">FAIL </emphasis>action immediately halts
   processing on the workunit and displays the <emphasis>errorcode
   </emphasis>and/or <emphasis>errormessage</emphasis>. The third form is
   available for use in contexts where a value type or dataset is required.
-  <!-- DNT-Start -->FAIL<!-- DNT-End --> may not be used in an expression context (such as within a
-  <!-- DNT-Start -->TRANSFORM<!-- DNT-End -->)--use the <!-- DNT-Start -->ERROR<!-- DNT-End --> function<indexterm>
-      <primary><!-- DNT-Start -->ERROR<!-- DNT-End --> function</primary>
+  FAIL may not be used in an expression context (such as within a
+  TRANSFORM)--use the ERROR function<indexterm>
+      <primary>ERROR function</primary>
     </indexterm> for those situations.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>IF(header.version &lt;&gt; doxie.header_version_new,
+  <programlisting>IF(header.version &lt;&gt; doxie.header_version_new,
    FAIL('Mismatch -- header.version vs. doxie.header_version_new.'));
 
 FailedJob := FAIL('ouch, it broke');
@@ -87,8 +87,8 @@ nUniques  := COUNT(DEDUP(sPeople,Person.per_first_name AND
           : FAILURE(FailedJob);
 MyRecSet  := IF(EXISTS(Person),Person,
              FAIL(Person,99,'Person does not exist!!'));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="FAILURE"><!-- DNT-Start -->FAILURE<!-- DNT-End --></link>, <link
-  linkend="ERROR"><!-- DNT-Start -->ERROR<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="FAILURE">FAILURE</link>, <link
+  linkend="ERROR">ERROR</link></para>
 </sect1>

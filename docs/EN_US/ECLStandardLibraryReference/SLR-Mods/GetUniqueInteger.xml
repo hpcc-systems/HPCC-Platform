@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetUniqueInteger">
-  <!-- DNT-Start --><title>GetUniqueInteger</title><!-- DNT-End -->
+  <title>GetUniqueInteger</title>
 
-  <!-- DNT-Start --><para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
   STD.System.Util.GetUniqueInteger<indexterm>
       <primary>STD.System.Util.GetUniqueInteger</primary>
     </indexterm> <indexterm>
@@ -14,7 +14,7 @@
     </indexterm> <indexterm>
       <primary>GetUniqueInteger</primary>
     </indexterm>( [ </emphasis> <emphasis>dali</emphasis> <emphasis
-  role="bold"> ] );</emphasis></para><!-- DNT-End -->
+  role="bold"> ] );</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -24,7 +24,7 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>dali</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>dali</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the ip address
           of the remote dali to provide the number. If omitted, the default is
@@ -32,22 +32,22 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->GetUniqueInteger<!-- DNT-End --> returns returns an <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->8 value.</entry>
+          <entry>GetUniqueInteger returns returns an UNSIGNED8 value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->GetUniqueInteger<!-- DNT-End --> </emphasis>function returns
+  <para>The <emphasis role="bold">GetUniqueInteger </emphasis>function returns
   a number that is unique across all the slave nodes of the specified
   <emphasis>dali</emphasis>.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 
 OUTPUT(STD.System.Util.GetUniqueInteger());
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

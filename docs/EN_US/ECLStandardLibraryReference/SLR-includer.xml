@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <!-- DNT-Start --><title>Standard Library Reference</title><!-- DNT-End -->
+    <title>Standard Library Reference</title>
 
     <mediaobject>
       <imageobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -62,7 +62,7 @@
   </bookinfo>
 
   <chapter id="Logical_Files">
-    <!-- DNT-Start --><title><emphasis>Logical Files</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Logical Files</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CompareFiles.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -102,7 +102,7 @@
   </chapter>
 
   <chapter id="SuperFile_Management">
-    <!-- DNT-Start --><title><emphasis>SuperFiles</emphasis></title><!-- DNT-End -->
+    <title><emphasis>SuperFiles</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CreateSuperFile.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -160,7 +160,7 @@
   </chapter>
 
   <chapter id="External_File_Support">
-    <!-- DNT-Start --><title><emphasis>External Files </emphasis></title><!-- DNT-End -->
+    <title><emphasis>External Files </emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExternalLogicalFileName.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -179,7 +179,7 @@
   </chapter>
 
   <chapter id="File_Browsing_Support">
-    <!-- DNT-Start --><title><emphasis>File Browsing </emphasis></title><!-- DNT-End -->
+    <title><emphasis>File Browsing </emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/SetColumnMapping.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -198,7 +198,7 @@
   </chapter>
 
   <chapter id="File_Movement">
-    <!-- DNT-Start --><title><emphasis>File Movement</emphasis></title><!-- DNT-End -->
+    <title><emphasis>File Movement</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DfuPlusExec.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -232,7 +232,7 @@
   </chapter>
 
   <chapter id="String_Handling">
-    <!-- DNT-Start --><title><emphasis>String Handling</emphasis></title><!-- DNT-End -->
+    <title><emphasis>String Handling</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CleanAccents.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -359,7 +359,7 @@
   </chapter>
 
   <chapter id="MetaphoneSupport">
-    <!-- DNT-Start --><title><emphasis>Metaphone Support</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Metaphone Support</emphasis></title>
 
     <para>These functions provide a means to implement Double Metaphone or
     Metaphone 3 phonetic encoding or fuzzy-match algorithms which return a
@@ -376,7 +376,7 @@
   </chapter>
 
   <chapter id="Date_Handling">
-    <!-- DNT-Start --><title><emphasis>Date and Time Handling</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Date and Time Handling</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DateDataTypes.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -458,7 +458,7 @@
   </chapter>
 
   <chapter id="Cluster_Handling">
-    <!-- DNT-Start --><title><emphasis>Cluster Handling</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Cluster Handling</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Node.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -480,7 +480,7 @@
   </chapter>
 
   <chapter id="Job_Handling">
-    <!-- DNT-Start --><title><emphasis>Job Handling</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Job Handling</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WUID.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -505,7 +505,7 @@
   </chapter>
 
   <chapter id="File_Monitoring">
-    <!-- DNT-Start --><title><emphasis>File Monitoring </emphasis></title><!-- DNT-End -->
+    <title><emphasis>File Monitoring </emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/MonitorFile.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -515,7 +515,7 @@
   </chapter>
 
   <chapter id="Logging">
-    <!-- DNT-Start --><title><emphasis>Logging</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Logging</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/dbglog.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -531,14 +531,14 @@
   </chapter>
 
   <chapter id="Auditing">
-    <!-- DNT-Start --><title><emphasis>Auditing</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Auditing</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Audit.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Utilities">
-    <!-- DNT-Start --><title><emphasis>Utilities</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Utilities</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetHostName.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -559,7 +559,7 @@
   </chapter>
 
   <chapter id="Debugging">
-    <!-- DNT-Start --><title><emphasis>Debugging</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Debugging</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetParseTree.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -575,7 +575,7 @@
   </chapter>
 
   <chapter id="Email">
-    <!-- DNT-Start --><title><emphasis>Email</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Email</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/SendEmail.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -588,7 +588,7 @@
   </chapter>
 
   <chapter id="Workunit_Services">
-    <!-- DNT-Start --><title><emphasis>Workunit Services</emphasis></title><!-- DNT-End -->
+    <title><emphasis>Workunit Services</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WorkunitExists.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />

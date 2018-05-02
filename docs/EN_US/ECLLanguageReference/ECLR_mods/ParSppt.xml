@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Parsing_Support" role="nobrk">
-  <!-- DNT-Start --><title>Parsing Support</title><!-- DNT-End -->
+  <title>Parsing Support</title>
 
   <para>Natural Language Parsing<indexterm>
       <primary>Natural Language Parsing</primary>
-    </indexterm> is accomplished in <!-- DNT-Start -->ECL<!-- DNT-End --> by combining pattern definitions with
-  an output <!-- DNT-Start -->RECORD<!-- DNT-End --> structure (or <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function) specifically designed to
-  receive the parsed values, then using the <!-- DNT-Start -->PARSE<!-- DNT-End --> function to perform the
+    </indexterm> is accomplished in ECL by combining pattern definitions with
+  an output RECORD structure (or TRANSFORM function) specifically designed to
+  receive the parsed values, then using the PARSE function to perform the
   operation.</para>
 
   <para>Pattern definitions are used to detect "interesting" text within the
@@ -16,11 +16,11 @@
   define specific parsing elements and may be combined to form more complex
   patterns, tokens, and rules.</para>
 
-  <para>The output <!-- DNT-Start -->RECORD<!-- DNT-End --> structure (or <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function) defines the format
+  <para>The output RECORD structure (or TRANSFORM function) defines the format
   of the resulting recordset. It typically contains specific pattern matching
   functions that return the "interesting" text, its length or position.</para>
 
-  <para>The <!-- DNT-Start -->PARSE<!-- DNT-End --> function implements the parsing operation. It returns a
-  recordset that may then be post-processed as needed using standard <!-- DNT-Start -->ECL<!-- DNT-End -->
+  <para>The PARSE function implements the parsing operation. It returns a
+  recordset that may then be post-processed as needed using standard ECL
   syntax, or simply output.</para>
 </sect1>

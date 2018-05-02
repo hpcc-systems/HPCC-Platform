@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EndsWith">
-  <!-- DNT-Start --><title>EndsWith</title><!-- DNT-End -->
+  <title>EndsWith</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.EndsWith<indexterm>
+  <para><emphasis role="bold">STD.Str.EndsWith<indexterm>
       <primary>STD.Str.EndsWith</primary>
     </indexterm><indexterm>
       <primary>Str.EndsWith</primary>
     </indexterm><indexterm>
       <primary>EndsWith</primary>
     </indexterm>(</emphasis> <emphasis>source, suffix</emphasis>
-  <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
+  <emphasis role="bold">)</emphasis></para>
 
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -22,34 +22,34 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source</emphasis></entry>
 
           <entry>The string to search.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>suffix</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>suffix</emphasis></entry>
 
           <entry>The string to find.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->EndsWith<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
+          <entry>EndsWith returns a BOOLEAN value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->EndsWith<!-- DNT-End --></emphasis> function
-  returns <!-- DNT-Start -->TRUE<!-- DNT-End --> if the <emphasis>source</emphasis> ends with the text in the 
+  <para>The <emphasis role="bold">EndsWith</emphasis> function
+  returns TRUE if the <emphasis>source</emphasis> ends with the text in the 
   <emphasis>suffix</emphasis> parameter.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 STD.STr.EndsWith('a word away','away');   //returns TRUE
 STD.STr.EndsWith('a word a way','away');  //returns FALSE
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

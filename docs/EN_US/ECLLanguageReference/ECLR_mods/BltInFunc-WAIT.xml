@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WAIT">
-  <!-- DNT-Start --><title>WAIT</title><!-- DNT-End -->
+  <title>WAIT</title>
 
   <informalexample id="SchWAIT">
-   <para><emphasis role="bold"><!-- DNT-Start -->WAIT<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->WAIT<!-- DNT-End --></primary>
+   <para><emphasis role="bold">WAIT<indexterm>
+      <primary>WAIT</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->WAIT<!-- DNT-End --> Function</primary>
+      <primary>WAIT Function</primary>
     </indexterm>(</emphasis><emphasis>event</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -20,7 +20,7 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>event</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>event</emphasis></entry>
 
             <entry>A string constant containing the name of the event to wait
             for.</entry>
@@ -29,20 +29,20 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->WAIT<!-- DNT-End --> </emphasis>action is similar to the
-  <!-- DNT-Start -->WHEN<!-- DNT-End --> workflow service, but may be used within conditional code.</para>
+  <para>The <emphasis role="bold">WAIT </emphasis>action is similar to the
+  WHEN workflow service, but may be used within conditional code.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  //You can either do this:
+  <programlisting>  //You can either do this:
   action1;
   action2 : WHEN('expectedEvent');
   
   //can also be written as:
   SEQUENTIAL(action1,WAIT('expectedEvent'),action2);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
  </informalexample>
-  <para>See Also: <link linkend="EVENT"><!-- DNT-Start -->EVENT<!-- DNT-End --></link>, <link
-  linkend="NOTIFY"><!-- DNT-Start -->NOTIFY<!-- DNT-End --></link>, <link linkend="WHEN"><!-- DNT-Start -->WHEN<!-- DNT-End --></link>, <link linkend="CRON"><!-- DNT-Start -->CRON<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="EVENT">EVENT</link>, <link
+  linkend="NOTIFY">NOTIFY</link>, <link linkend="WHEN">WHEN</link>, <link linkend="CRON">CRON</link></para>
 </sect1>

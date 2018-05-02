@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FinishSuperFileTransaction">
-  <!-- DNT-Start --><title>FinishSuperFileTransaction</title><!-- DNT-End -->
+  <title>FinishSuperFileTransaction</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.FinishSuperFileTransaction<indexterm>
+  <para><emphasis role="bold">STD.File.FinishSuperFileTransaction<indexterm>
       <primary>STD.File.FinishSuperFileTransaction</primary>
     </indexterm><indexterm>
       <primary>File.FinishSuperFileTransaction</primary>
     </indexterm><indexterm>
       <primary>FinishSuperFileTransaction</primary>
     </indexterm>( [ </emphasis> <emphasis>rollback </emphasis> <emphasis
-  role="bold">] )</emphasis></para><!-- DNT-End -->
+  role="bold">] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,15 +21,15 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>rollback</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>rollback</emphasis></entry>
 
           <entry>Optional. A boolean flag that indicates whether to commit
-          (<!-- DNT-Start -->FALSE<!-- DNT-End -->) or roll back (<!-- DNT-Start -->TRUE<!-- DNT-End -->) the transaction. If omitted, the default
-          is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          (FALSE) or roll back (TRUE) the transaction. If omitted, the default
+          is FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>Null.</entry>
         </row>
@@ -37,13 +37,13 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->FinishSuperFileTransaction<!-- DNT-End -->
+  <para>The <emphasis role="bold">FinishSuperFileTransaction
   </emphasis>function terminates a superfile maintenance transaction frame. If
-  the <emphasis>rollback</emphasis> flag is <!-- DNT-Start -->FALSE<!-- DNT-End -->, the transaction is
+  the <emphasis>rollback</emphasis> flag is FALSE, the transaction is
   committed atomically and the transaction frame closes. Otherwise, the
   transaction is rolled back and the transaction frame closes.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">STD.File.FinishSuperFileTransaction();</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">STD.File.FinishSuperFileTransaction();</programlisting>
 </sect1>

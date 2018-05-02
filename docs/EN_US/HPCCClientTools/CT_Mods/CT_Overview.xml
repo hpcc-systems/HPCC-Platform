@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="CT_Overview">
-  <!-- DNT-Start --><title>Overview</title><!-- DNT-End -->
+  <title>Overview</title>
 
-  <!-- DNT-Start --><para>This manual contains documentation for the set of Client Tools for use
-  with the LexisNexis HPCC. These tools include:</para><!-- DNT-End -->
+  <para>This manual contains documentation for the set of Client Tools for use
+  with the LexisNexis HPCC. These tools include:</para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -15,40 +15,40 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">ECL IDE</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">ECL IDE</emphasis></entry>
 
-          <entry>An integrated development environment for <!-- DNT-Start -->ECL<!-- DNT-End --> programmers to
-          create, edit, and execute <!-- DNT-Start -->ECL<!-- DNT-End --> code.</entry>
+          <entry>An integrated development environment for ECL programmers to
+          create, edit, and execute ECL code.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">ECL Debugger</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">ECL Debugger</emphasis></entry>
 
-          <entry>A development tool integrated into the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, which is used
+          <entry>A development tool integrated into the ECL IDE, which is used
           to debug queries as they are developed.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">ECLPlus</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">ECLPlus</emphasis></entry>
 
-          <entry>Command line <!-- DNT-Start -->ECL<!-- DNT-End --> execution tool to facilitate automation of
-          <!-- DNT-Start -->ECL<!-- DNT-End --> Code execution.</entry>
+          <entry>Command line ECL execution tool to facilitate automation of
+          ECL Code execution.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">ECL</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">ECL</emphasis></entry>
 
-          <entry>Command line <!-- DNT-Start -->ECL<!-- DNT-End --> tool.</entry>
+          <entry>Command line ECL tool.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">ECL Compiler</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">ECL Compiler</emphasis></entry>
 
-          <entry>Command line <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler</entry>
+          <entry>Command line ECL Compiler</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">DFUPlus</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">DFUPlus</emphasis></entry>
 
           <entry>Command line Distributed File Utility management tool,
           facilitate automation of data file spray, despray, and other common
@@ -56,9 +56,9 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">ESDL</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">ESDL</emphasis></entry>
 
-          <entry>Command line <!-- DNT-Start -->ESDL<!-- DNT-End --> management tool.</entry>
+          <entry>Command line ESDL management tool.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -67,33 +67,33 @@
   <para><emphasis role="bold"> </emphasis></para>
 
   <sect1 id="Documentation_Conventions">
-    <!-- DNT-Start --><title>Documentation Conventions</title><!-- DNT-End -->
+    <title>Documentation Conventions</title>
 
     <sect2 id="ECL_Language">
-      <!-- DNT-Start --><title>ECL Language</title><!-- DNT-End -->
+      <title>ECL Language</title>
 
-      <para>Although <!-- DNT-Start -->ECL<!-- DNT-End --> is not case-sensitive, <!-- DNT-Start -->ECL<!-- DNT-End --> reserved keywords and
-      built-in functions in this document are always shown in <!-- DNT-Start -->ALL<!-- DNT-End --> <!-- DNT-Start -->CAPS<!-- DNT-End --> to make
+      <para>Although ECL is not case-sensitive, ECL reserved keywords and
+      built-in functions in this document are always shown in ALL CAPS to make
       them stand out for easy identification.</para>
 
       <sect3 id="CT_ECL_ExampleCode">
-        <!-- DNT-Start --><title>Example Code</title><!-- DNT-End -->
+        <title>Example Code</title>
 
         <para>All example code in this document appears in the following
         font:</para>
 
-        <!-- DNT-Start --><programlisting>MyECLFileName := COUNT(Person);
+        <programlisting>MyECLFileName := COUNT(Person);
 // MyECLFileName is a user-defined ECL file
 // COUNT is a built-in ECL function
-// Person is the name of a dataset</programlisting><!-- DNT-End -->
+// Person is the name of a dataset</programlisting>
 
-        <para><!-- DNT-Start -->ECL<!-- DNT-End --> file names and record set names are always shown in example
+        <para>ECL file names and record set names are always shown in example
         code as mixed-case. Run-on words may be used to explicitly identify
         purpose in examples.</para>
       </sect3>
 
       <sect3 id="CT_ECL_Actions">
-        <!-- DNT-Start --><title>Actions</title><!-- DNT-End -->
+        <title>Actions</title>
 
         <para>In step-by-step sections, there will be explicit actions to
         perform. These are all shown with a bullet or a numbered step to
@@ -103,31 +103,31 @@
         <para><itemizedlist>
             <listitem>
               <para>Keyboard and mouse actions are shown in small caps, such
-              as: <!-- DNT-Start -->DOUBLE<!-- DNT-End -->-<!-- DNT-Start -->CLICK<!-- DNT-End -->, or press the <!-- DNT-Start -->ENTER<!-- DNT-End --> key. word.</para>
+              as: DOUBLE-CLICK, or press the ENTER key. word.</para>
             </listitem>
 
             <listitem>
               <para>On-screen items to select are shown in boldface, such as:
-              press the <emphasis role="bold"><!-- DNT-Start -->OK<!-- DNT-End --> </emphasis>button.</para>
+              press the <emphasis role="bold">OK </emphasis>button.</para>
             </listitem>
           </itemizedlist></para>
       </sect3>
     </sect2>
 
     <sect2 id="Installation" role="brk">
-      <!-- DNT-Start --><title>Installation</title><!-- DNT-End -->
+      <title>Installation</title>
 
       <para>The installation program installs all client tools, including the
-      <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, ECLPlus, DFUPlus, and the <!-- DNT-Start -->ECL<!-- DNT-End --> Command line tools.</para>
+      ECL IDE, ECLPlus, DFUPlus, and the ECL Command line tools.</para>
 
       <orderedlist>
         <listitem>
-          <para>From the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> download
+          <para>From the HPCC Systems<superscript>®</superscript> download
           page, <ulink
           url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
 
           <para>Download the appropriate Client Tools for your Operating
-          System. (available for CentOS, Ubuntu, Mac <!-- DNT-Start -->OSX<!-- DNT-End -->, or Windows)</para>
+          System. (available for CentOS, Ubuntu, Mac OSX, or Windows)</para>
         </listitem>
 
         <listitem>
@@ -139,10 +139,10 @@
           hpccsystems-clienttools_community-4.X.X-XWindows-i386.exe on your
           machine. Follow the prompts to complete the installation.</para>
 
-          <para><emphasis role="bold"><!-- DNT-Start -->RPM<!-- DNT-End -->-Based Systems (CentOS/RedHat):
+          <para><emphasis role="bold">RPM-Based Systems (CentOS/RedHat):
           </emphasis></para>
 
-          <para>An <!-- DNT-Start -->RPM<!-- DNT-End --> installation package is provided. Install <!-- DNT-Start -->RPM<!-- DNT-End --> with the
+          <para>An RPM installation package is provided. Install RPM with the
           -Uvh switch, the U or upgrade will perform an upgrade if a previous
           version is already installed. <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting></para>
 
@@ -152,9 +152,9 @@
           <para>For Ubuntu installations a Debian package is provided. To
           install the package, use:</para>
 
-          <!-- DNT-Start --><programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting><!-- DNT-End -->
+          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
 
-          <para><emphasis role="bold">Mac <!-- DNT-Start -->OSX<!-- DNT-End -->:</emphasis></para>
+          <para><emphasis role="bold">Mac OSX:</emphasis></para>
 
           <para>Run the installation file, for example:
           hpccsystems-clienttools_community-4.X.X-XDarwin-x86_64.dmg. Follow

@@ -2,18 +2,18 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <!-- DNT-Start -->
+  
 
   <title>Installing &amp; Running the HPCC Platform</title>
 
-  <!-- DNT-End -->
+  
 
   <bookinfo>
-    <!-- DNT-Start -->
+    
 
     <title>Installing &amp; Running the HPCC Platform</title>
 
-    <!-- DNT-End -->
+    
 
     <mediaobject>
       <imageobject>
@@ -37,7 +37,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End -->
+      <para>HPCC
       Systems<superscript>®</superscript> is a registered trademark of
       LexisNexis Risk Data Management Inc.</para>
 
@@ -71,18 +71,18 @@
   </bookinfo>
 
   <chapter id="Welcome">
-    <!-- DNT-Start -->
+    
 
     <title>Welcome</title>
 
-    <!-- DNT-End -->
+    
 
     <para>These instructions will guide you through installing and running the
-    <!-- DNT-Start -->HPCC<!-- DNT-End --><footnote>
+    HPCC<footnote>
         <para><emphasis role="bold">H</emphasis>igh <emphasis
         role="bold">P</emphasis>erformance <emphasis
         role="bold">C</emphasis>omputing <emphasis
-        role="bold">C</emphasis>luster (<!-- DNT-Start -->HPCC<!-- DNT-End -->)
+        role="bold">C</emphasis>luster (HPCC)
         is a massively parallel processing computing platform that solves Big
         Data problems. See <ulink
         url="https://hpccsystems.com/Why-HPCC/How-it-works">https://hpccsystems.com/Why-HPCC/How-it-works</ulink>
@@ -90,15 +90,15 @@
       </footnote> Community Edition on a single node to start and then
     optionally, expand it to a larger cluster of nodes.</para>
 
-    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Thor technology is
+    <para>The HPCC Thor technology is
     designed to effectively process, analyze, and find links and associations
     within high volumes of complex data. This can detect non-obvious
     relationships, scale to support petabytes of data, and is significantly
     faster than competing technologies while requiring less hardware and
     resources.</para>
 
-    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Roxie technology - also
-    known as the Rapid Data Delivery Engine or <!-- DNT-Start -->RDDE<!-- DNT-End -->
+    <para>The HPCC Roxie technology - also
+    known as the Rapid Data Delivery Engine or RDDE
     - uses a combination of technologies and techniques that produce extremely
     fast throughput for queries on indexed data.</para>
 
@@ -127,22 +127,22 @@
       </informaltable></para>
 
     <sect1 id="Quick_Start">
-      <!-- DNT-Start -->
+      
 
       <title>Quick Start Guide</title>
 
-      <!-- DNT-End -->
+      
 
       <para>We recommend taking the time to read this manual in its entirety;
       however, the following is a quick start summary of steps. There are many
-      aspects of the <!-- DNT-Start -->HPCC<!-- DNT-End --> System platform
+      aspects of the HPCC System platform
       and this guide is intended to help you get the most out of your system.
       This section is not intended to replace the more comprehensive material
       in the remainder of this book.</para>
 
       <orderedlist>
         <listitem>
-          <para>Install <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
+          <para>Install HPCC.</para>
 
           <para>Download the installation package from <ulink
           url="https://hpccsystems.com/download/free-community-edition">https://hpccsystems.com/download</ulink>
@@ -153,34 +153,34 @@
           <para><programlisting> sudo yum install hpccsystems-platform&lt;rpm_file_name&gt;</programlisting>On
           Ubuntu/Debian:</para>
 
-          <!-- DNT-Start -->
+          
 
           <programlisting> sudo dpkg -i &lt;deb filename&gt; &amp;&amp; sudo apt-get install -f </programlisting>
 
-          <!-- DNT-End -->
+          
         </listitem>
 
         <listitem>
-          <para>Start your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          <para>Start your HPCC
           System.</para>
 
           <para><programlisting> sudo /etc/init.d/hpcc-init start</programlisting><emphasis
-          role="bold"><!-- DNT-Start -->NOTE<!-- DNT-End --></emphasis>: We
-          provide sample scripts (see <link linkend="Example-Scripts"><!-- DNT-Start -->Appendix<!-- DNT-End -->:Example
+          role="bold">NOTE</emphasis>: We
+          provide sample scripts (see <link linkend="Example-Scripts">Appendix:Example
           Scripts</link>) to make starting larger multi-node systems
           easier.</para>
         </listitem>
 
         <listitem>
-          <para>Run <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
+          <para>Run <emphasis role="bold">ECL
           Watch</emphasis>. Check out your system.</para>
 
-          <para>Using a browser, go to <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
-          Watch</emphasis> running on port 8010 of your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          <para>Using a browser, go to <emphasis role="bold">ECL
+          Watch</emphasis> running on port 8010 of your HPCC
           Node.</para>
 
           <para>For example, http://nnn.nnn.nnn.nnn:8010, where
-          nnn.nnn.nnn.nnn is your node's <!-- DNT-Start -->IP<!-- DNT-End -->
+          nnn.nnn.nnn.nnn is your node's IP
           address.</para>
         </listitem>
 
@@ -200,13 +200,13 @@
       </orderedlist>
 
       <sect2 id="Installing_NowWhat">
-        <!-- DNT-Start -->
+        
 
         <title>Now What?</title>
 
-        <!-- DNT-End -->
+        
 
-        <para>Now that you have <!-- DNT-Start -->HPCC<!-- DNT-End --> started
+        <para>Now that you have HPCC started
         and running, what do you want to do? Maybe evaluate your needs and
         proceed to develop a custom configuration suitable for those needs.
         Maybe you want to expand your system and add nodes. Those topics and
@@ -215,7 +215,7 @@
         <para>To familiarize yourself with what your system can do we
         recommend following the steps in:<itemizedlist spacing="compact">
             <listitem>
-              <para>The <emphasis role="bold"><!-- DNT-Start -->HPCC<!-- DNT-End -->
+              <para>The <emphasis role="bold">HPCC
               Data Tutorial</emphasis></para>
             </listitem>
 
@@ -226,7 +226,7 @@
 
             <listitem>
               <para>Read <emphasis role="bold">Using Config Manager</emphasis>
-              to learn how to configure an <!-- DNT-Start -->HPCC<!-- DNT-End -->
+              to learn how to configure an HPCC
               platform using Advanced View.</para>
             </listitem>
 
@@ -240,11 +240,11 @@
   </chapter>
 
   <chapter id="HPCC-installation-and-startup">
-    <!-- DNT-Start -->
+    
 
     <title>HPCC Installation and Startup</title>
 
-    <!-- DNT-End -->
+    
 
     <para>Follow these steps to install the packages and start components in a
     single-node configuration to begin. Once it is successfully installed, you
@@ -252,7 +252,7 @@
     system.</para>
 
     <para>Configuration Manager is the utility with which we configure the
-    <!-- DNT-Start -->HPCC<!-- DNT-End --> platform. It is run on your Linux
+    HPCC platform. It is run on your Linux
     Server and you access its interface using a browser.<figure>
         <title>System Overview: Thor</title>
 
@@ -272,35 +272,35 @@
       </figure></para>
 
     <sect1 id="initial-set-up-single-node">
-      <!-- DNT-Start -->
+      
 
       <title>Initial Setup-Single Node</title>
 
-      <!-- DNT-End -->
+      
 
-      <para>This section covers installing the <!-- DNT-Start -->HPCC<!-- DNT-End -->
-      on a single node. This will enable the <!-- DNT-Start -->HPCC<!-- DNT-End -->
-      system to operate successfully; however, the real strength of the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      <para>This section covers installing the HPCC
+      on a single node. This will enable the HPCC
+      system to operate successfully; however, the real strength of the HPCC
       is when it is run in a multi-node environment and can leverage the
-      ability to perform operations using Massively Parallel Processing (<!-- DNT-Start -->MPP<!-- DNT-End -->).</para>
+      ability to perform operations using Massively Parallel Processing (MPP).</para>
 
       <para>In addition, on a production system, you would dedicate one or
       more nodes to each server process. See the <emphasis>Using Configruation
       Manager </emphasis>manual for more details.</para>
 
       <sect2 id="installing-the-Package">
-        <!-- DNT-Start -->
+        
 
         <title>Installing the Package</title>
 
-        <!-- DNT-End -->
+        
 
         <para>The installation and package that you download is different
         depending on the operating system you plan to use. The installation
         packages will fail to install if their dependencies are missing from
         the target system.</para>
 
-        <para>Packages are available from the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        <para>Packages are available from the HPCC
         Systems<superscript>®</superscript> website: <ulink
         url="https://hpccsystems.com/download/free-community-edition">https://hpccsystems.com/download/</ulink></para>
 
@@ -308,21 +308,21 @@
         instructions:</para>
 
         <sect3 id="Installing_CentOS-RedHat-Suse">
-          <!-- DNT-Start -->
+          
 
           <title>CentOS/Red Hat</title>
 
-          <!-- DNT-End -->
+          
 
           <para>To install the Platform you should have the appropriate
           permissions to install packages. If you have sudo rights, then you
           can install the platform using yum.</para>
 
-          <!-- DNT-Start -->
+          
 
           <programlisting>sudo yum install &lt;hpccsystems platform rpm package&gt;</programlisting>
 
-          <!-- DNT-End -->
+          
 
           <para>Optionally you can install the package with rpm (recommended
           using the -Uvh options), however then you would have to negotiate
@@ -330,20 +330,20 @@
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
-          <!-- DNT-Start -->
+          
 
           <title>Ubuntu/Debian</title>
 
-          <!-- DNT-End -->
+          
 
           <para>For Ubuntu installations a Debian package is provided. To
           install the package, use:</para>
 
-          <!-- DNT-Start -->
+          
 
           <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
 
-          <!-- DNT-End -->
+          
 
           <para>After installing the package, you should run the following to
           update any dependencies.</para>
@@ -355,16 +355,16 @@
         </sect3>
 
         <sect3 id="HPCC_Plug-Ins" role="brk">
-          <!-- DNT-Start -->
+          
 
           <title>Plugins</title>
 
-          <!-- DNT-End -->
+          
 
           <para>There are several optional plugins that you could choose to
           add to your installation.</para>
 
-          <para>For <!-- DNT-Start -->RPM<!-- DNT-End --> based systems, you
+          <para>For RPM based systems, you
           can install using yum.</para>
 
           <para><programlisting>sudo yum install &lt;hpccsystems plugin plugin_name&gt;  </programlisting></para>
@@ -372,11 +372,11 @@
           <para>To install the optional plug ins for a Ubuntu/Debian package,
           use:</para>
 
-          <!-- DNT-Start -->
+          
 
           <programlisting>sudo dpkg -i &lt;hpccsystems plugin plugin_name&gt;  </programlisting>
 
-          <!-- DNT-End -->
+          
 
           <para>The optional plugins are:</para>
 
@@ -384,7 +384,7 @@
               <tgroup cols="2">
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><itemizedlist>
+                    <entry><itemizedlist>
                         <listitem>
                           <para>Python : pyembed</para>
                         </listitem>
@@ -404,7 +404,7 @@
                         <listitem>
                           <para>MySql : mysqlembed</para>
                         </listitem>
-                      </itemizedlist><!-- DNT-End --></entry>
+                      </itemizedlist></entry>
 
                     <entry><itemizedlist>
                         <listitem>
@@ -420,7 +420,7 @@
                         </listitem>
 
                         <listitem>
-                          <para><!-- DNT-Start -->SQL<!-- DNT-End --> Lite :
+                          <para>SQL Lite :
                           sqlite3embed</para>
                         </listitem>
                       </itemizedlist></entry>
@@ -435,17 +435,17 @@
       </sect2>
 
       <sect2 id="initial-startup" role="brk">
-        <!-- DNT-Start -->
+        
 
         <title><emphasis>Initial Startup</emphasis></title>
 
-        <!-- DNT-End -->
+        
 
         <orderedlist>
           <listitem>
             <para>Start the system using the default configuration.</para>
 
-            <para><!-- DNT-Start --><programlisting>sudo /etc/init.d/hpcc-init start</programlisting><!-- DNT-End --><graphic
+            <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting><graphic
             fileref="images/GS-InitStart.jpg" /><informaltable colsep="1"
                 frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -486,20 +486,20 @@
       </sect2>
 
       <sect2 id="ECL-on-a-single-node-system" role="brk">
-        <!-- DNT-Start -->
+        
 
         <title>Running an ECL Query on your Single-Node System</title>
 
-        <!-- DNT-End -->
+        
 
         <para>The single node system is running, and you can now create and
-        run some <!-- DNT-Start -->ECL<!-- DNT-End --><footnote>
+        run some ECL<footnote>
             <para><emphasis role="bold">E</emphasis>nterprise <emphasis
             role="bold">C</emphasis>ontrol <emphasis
-            role="bold">L</emphasis>anguage (<!-- DNT-Start -->ECL<!-- DNT-End -->)
+            role="bold">L</emphasis>anguage (ECL)
             is a declarative, data centric programming language used to manage
             all aspects of the massive data joins, sorts, and builds that
-            truly differentiate <!-- DNT-Start -->HPCC<!-- DNT-End --> (High
+            truly differentiate HPCC (High
             Performance Computing Cluster) from other technologies in its
             ability to provide flexible data analysis on a massive
             scale.</para>
@@ -507,18 +507,18 @@
         compiler, or the ECL Command line tool.</para>
 
         <sect3 id="InstallTheECLIDEandClientTools">
-          <!-- DNT-Start -->
+          
 
           <title>Install the ECL IDE and HPCC Client Tools</title>
 
-          <!-- DNT-End -->
+          
 
           <para><orderedlist>
               <listitem>
-                <para>In your browser, go to the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
-                Watch</emphasis> <!-- DNT-Start -->URL<!-- DNT-End -->. For
+                <para>In your browser, go to the <emphasis role="bold">ECL
+                Watch</emphasis> URL. For
                 example, http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is
-                your node's <!-- DNT-Start -->IP<!-- DNT-End -->
+                your node's IP
                 address.</para>
 
                 <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -534,9 +534,9 @@
                           <entry><inlinegraphic
                           fileref="images/caution.png" /></entry>
 
-                          <entry>Your <!-- DNT-Start -->IP<!-- DNT-End -->
+                          <entry>Your IP
                           address could be different from the ones provided in
-                          the example images. Please use the <!-- DNT-Start -->IP<!-- DNT-End -->
+                          the example images. Please use the IP
                           address of <emphasis role="bold">your</emphasis>
                           node.</entry>
                         </row>
@@ -548,7 +548,7 @@
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>From the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
+                <para>From the ECL Watch
                 Advanced menu, select on the <emphasis role="bold">Additional
                 Resources </emphasis>link.</para>
 
@@ -563,56 +563,56 @@
                     </mediaobject>
                   </figure></para>
 
-                <para>Follow the link to the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+                <para>Follow the link to the HPCC
                 System's portal download page.</para>
               </listitem>
 
               <listitem>
-                <para>Click on the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
-                <!-- DNT-Start -->IDE<!-- DNT-End --> </emphasis>link. (on the
+                <para>Click on the <emphasis role="bold">ECL
+                IDE </emphasis>link. (on the
                 right hand side in the Download column, under the Free
                 Community Edition heading)</para>
               </listitem>
 
               <listitem>
                 <para>Follow the instructions on the web page to install the
-                <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
+                ECL IDE.</para>
               </listitem>
 
               <listitem>
-                <para>Install the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->,
+                <para>Install the ECL IDE,
                 following the prompts in the installation program. Once the
-                <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
+                ECL IDE
                 is installed successfully, you can proceed.</para>
               </listitem>
             </orderedlist></para>
         </sect3>
 
         <sect3 id="RunningABasicECLProgram" role="brk">
-          <!-- DNT-Start -->
+          
 
           <title>Running a basic ECL program</title>
 
-          <!-- DNT-End -->
+          
 
-          <para>Now that the package is installed on your Linux node and <!-- DNT-Start -->ECL<!-- DNT-End -->
-          <!-- DNT-Start -->IDE<!-- DNT-End --> is installed on your Windows
-          workstation, you can run your first <!-- DNT-Start -->ECL<!-- DNT-End -->
-          program. <!-- DNT-Start -->ECL<!-- DNT-End --> programs may be run
-          locally or remotely. For larger <!-- DNT-Start -->ECL<!-- DNT-End -->
+          <para>Now that the package is installed on your Linux node and ECL
+          IDE is installed on your Windows
+          workstation, you can run your first ECL
+          program. ECL programs may be run
+          locally or remotely. For larger ECL
           jobs, you will want to target a remote cluster of machines, which
           may not be running the same operating system as the machine you are
           working on.</para>
 
-          <para>In this section we will use the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
+          <para>In this section we will use the <emphasis role="bold">ECL
           Command line interface</emphasis> to the compiler to compile and run
-          <!-- DNT-Start -->ECL<!-- DNT-End --> code locally.</para>
+          ECL code locally.</para>
 
-          <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> compiler (eclcc)
+          <para>The ECL compiler (eclcc)
           installs on to the eclcc server node when a package is installed.
           :This should be in your path, so you can run it from anywhere on the
           server. It is also installed on a Windows machine when you install
-          the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->.
+          the ECL IDE.
           To compile and run on Windows, you also need the Visual Studio 2008
           C++ compiler (see <emphasis>User Workstation Requirements
           </emphasis>for details).</para>
@@ -629,16 +629,16 @@
             </listitem>
 
             <listitem>
-              <para><!-- DNT-Start -->Compile<!-- DNT-End --> your program
+              <para>Compile your program
               using eclcc by typing the following command:<programlisting>eclcc hello.ecl</programlisting></para>
 
-              <!-- DNT-Start -->
+              
 
               <!--  ***       If you prefer, you can pipe the source code directly into the
             compiler as shown in the following example:
             <para><programlisting>echo \'hello again\'| eclcc -</programlisting></para> -->
 
-              <!-- DNT-End -->
+              
             </listitem>
 
             <listitem>
@@ -661,50 +661,50 @@
         </sect3>
 
         <sect3 id="RunningRemotelyUsingECLCmdLine">
-          <!-- DNT-Start -->
+          
 
           <title>Running remotely using ECL Command Line</title>
 
-          <!-- DNT-End -->
+          
 
-          <para>The <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
-          Command Line Interface (<!-- DNT-Start -->CLI<!-- DNT-End -->)
+          <para>The <emphasis role="bold">ECL
+          Command Line Interface (CLI)
           </emphasis>application accepts command line parameters to send
-          directly to an <!-- DNT-Start -->ECL<!-- DNT-End --> execution
+          directly to an ECL execution
           engine. You can use this utility to control the creation and
-          execution of larger <!-- DNT-Start -->ECL<!-- DNT-End --> jobs which
+          execution of larger ECL jobs which
           target a remote system. To compile jobs on a remote system, eclcc is
-          used to create an archive of the <!-- DNT-Start -->ECL<!-- DNT-End -->
-          code to be compiled, and the ecl <!-- DNT-Start -->CLI<!-- DNT-End -->
+          used to create an archive of the ECL
+          code to be compiled, and the ecl CLI
           is used to submit it to a target cluster for compilation by the
           remote compiler server (eclccserver).</para>
 
-          <para>To submit a job using the ecl <!-- DNT-Start -->CLI<!-- DNT-End -->,
-          make sure the <!-- DNT-Start -->HPCC<!-- DNT-End --> has been
+          <para>To submit a job using the ecl CLI,
+          make sure the HPCC has been
           started and use the following syntax: <programlisting>ecl run  hello.ecl --target=hthor --server=&lt;IP Address of the ESP node&gt;:8010</programlisting></para>
 
           <para>The workunit<footnote>
-              <para>A Workunit is a record of a task submitted to an <!-- DNT-Start -->HPCC<!-- DNT-End -->.
-              It contains an identifier--workunit <!-- DNT-Start -->ID<!-- DNT-End -->,
-              the <!-- DNT-Start -->ECL<!-- DNT-End --> code, results, and
+              <para>A Workunit is a record of a task submitted to an HPCC.
+              It contains an identifier--workunit ID,
+              the ECL code, results, and
               other information about the job.</para>
             </footnote> result is returned to the command line.</para>
 
-          <para>View the full details of the workunit using the <!-- DNT-Start -->ECL<!-- DNT-End -->
-          Watch interface for your <!-- DNT-Start -->HPCC<!-- DNT-End --> at
+          <para>View the full details of the workunit using the ECL
+          Watch interface for your HPCC at
           this location http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is
-          the <!-- DNT-Start -->IP<!-- DNT-End --> of your <!-- DNT-Start -->ESP<!-- DNT-End -->
-          server node. Either search for the workunit using the workunit <!-- DNT-Start -->ID<!-- DNT-End -->
-          or select <!-- DNT-Start -->ECL<!-- DNT-End --> Workunits/Browse and
+          the IP of your ESP
+          server node. Either search for the workunit using the workunit ID
+          or select ECL Workunits/Browse and
           find your workunit in the list provided.</para>
 
           <para>Setting up an <emphasis role="bold">ecl.ini</emphasis> file
           makes running a workunit a little easier when you want to use the
           same settings every time you submit a workunit in this way. See the
-          <emphasis><!-- DNT-Start -->HPCC<!-- DNT-End --> Client Tools
+          <emphasis>HPCC Client Tools
           </emphasis>manual for details.</para>
 
-          <para>If your <!-- DNT-Start -->ECL<!-- DNT-End --> is more complex
+          <para>If your ECL is more complex
           than a single source file, you can use the eclcc compiler locally to
           create an archive to be sent to the eclccServer:</para>
 
@@ -715,13 +715,13 @@
         </sect3>
 
         <sect3 id="RunningABasicECLProgramFromtheIDE" role="brk">
-          <!-- DNT-Start -->
+          
 
           <title>Running a basic ECL program from the ECL IDE</title>
 
-          <!-- DNT-End -->
+          
 
-          <!-- DNT-Start -->
+          
 
           <para><orderedlist>
               <listitem>
@@ -731,7 +731,7 @@
                 HPCCSystems <emphasis role="bold">&gt;&gt;</emphasis> ECL IDE
                 ).</para>
 
-                <!-- DNT-End -->
+                
 
                 <informaltable colsep="1" frame="all" rowsep="1">
                   <?dbfo keep-together="always"?>
@@ -747,8 +747,8 @@
                         fileref="images/OSSgr3.png" /></entry>
 
                         <entry>You can create a shortcut on your desktop to
-                        provide quick access to the <!-- DNT-Start -->ECL<!-- DNT-End -->
-                        <!-- DNT-Start -->IDE<!-- DNT-End -->.</entry>
+                        provide quick access to the ECL
+                        IDE.</entry>
                       </row>
                     </tbody>
                   </tgroup>
@@ -758,7 +758,7 @@
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>Enter the <emphasis role="bold">Login <!-- DNT-Start -->ID<!-- DNT-End --></emphasis>
+                <para>Enter the <emphasis role="bold">Login ID</emphasis>
                 and <emphasis role="bold">Password</emphasis> provided in the
                 Login dialog.</para>
 
@@ -770,13 +770,13 @@
 
                     <tbody>
                       <row>
-                        <entry><!-- DNT-Start -->Login ID<!-- DNT-End --></entry>
+                        <entry>Login ID</entry>
 
                         <entry>hpccdemo</entry>
                       </row>
 
                       <row>
-                        <entry><!-- DNT-Start -->Password<!-- DNT-End --></entry>
+                        <entry>Password</entry>
 
                         <entry>hpccdemo</entry>
                       </row>
@@ -785,11 +785,11 @@
                 </informaltable>
 
                 <figure>
-                  <!-- DNT-Start -->
+                  
 
                   <title>Login Window</title>
 
-                  <!-- DNT-End -->
+                  
 
                   <mediaobject>
                     <imageobject>
@@ -801,7 +801,7 @@
 
               <listitem>
                 <para>Open a new <emphasis role="bold">Builder
-                Window</emphasis> (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N)
+                Window</emphasis> (CTRL+N)
                 and write the following code:</para>
 
                 <para><programlisting>OUTPUT('Hello World');
@@ -810,9 +810,9 @@
                 <para>This could also be written as:</para>
 
                 <para><programlisting>'Hello World';
-</programlisting>In the second program listing, the <!-- DNT-Start -->OUTPUT<!-- DNT-End -->
+</programlisting>In the second program listing, the OUTPUT
                 keyword is omitted. This is possible because the language is
-                declarative and the <!-- DNT-Start -->OUTPUT<!-- DNT-End -->
+                declarative and the OUTPUT
                 action is implicit.</para>
               </listitem>
 
@@ -823,7 +823,7 @@
                 target cluster.</para>
 
                 <para><emphasis role="bold">Thor</emphasis> is the Data
-                Refinery component of your <!-- DNT-Start -->HPCC<!-- DNT-End -->.
+                Refinery component of your HPCC.
                 It is a disk based massively parallel computer cluster,
                 optimized for sorting, manipulating, and transforming massive
                 data.</para>
@@ -897,15 +897,15 @@
     </sect1>
 
     <sect1 id="Multi-Node-System">
-      <!-- DNT-Start -->
+      
 
       <title>Configuring a Multi-Node System</title>
 
-      <!-- DNT-End -->
+      
 
       <para>While the single-node system is fully-functional, it does not take
-      advantage of the true power of an <!-- DNT-Start -->HPCC<!-- DNT-End -->--the
-      ability to perform operations using Massively Parallel Processing (<!-- DNT-Start -->MPP<!-- DNT-End -->).
+      advantage of the true power of an HPCC--the
+      ability to perform operations using Massively Parallel Processing (MPP).
       This section provides the steps to expand your single-node system into a
       multi-node system using the Configuration Manager Wizard.</para>
 
@@ -915,21 +915,21 @@
       Processing.</para>
 
       <sect2 id="configuring-a-multi-node-system">
-        <!-- DNT-Start -->
+        
 
         <title>Using the Configuration Manager Wizard</title>
 
-        <!-- DNT-End -->
+        
 
         <para>This section details reconfiguring a system to use multiple
         nodes. Before you start this section, you must have already downloaded
-        the correct packages for your distro from the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        the correct packages for your distro from the HPCC
         Systems<superscript>®</superscript> website: <ulink
         url="https://hpccsystems.com/download/free-community-edition">https://hpccsystems.com/download/free-community-edition</ulink>.</para>
 
         <orderedlist>
           <listitem>
-            <para>If it is running, stop the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            <para>If it is running, stop the HPCC
             system, using this command:</para>
 
             <para><programlisting>sudo /etc/init.d/hpcc-init stop</programlisting></para>
@@ -947,7 +947,7 @@
                       <entry><inlinegraphic
                       fileref="images/OSSgr3.png" /></entry>
 
-                      <entry>You can use this command to confirm <!-- DNT-Start -->HPCC<!-- DNT-End -->
+                      <entry>You can use this command to confirm HPCC
                       processes are stopped:<para><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
                     </row>
                   </tbody>
@@ -972,11 +972,11 @@
             <para>Using a Web browser, go to the Configuration Manager's
             interface:</para>
 
-            <!-- DNT-Start -->
+            
 
             <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
 
-            <!-- DNT-End -->
+            
           </listitem>
 
           <listitem>
@@ -999,25 +999,25 @@
             <para>Press the <emphasis role="bold">Next</emphasis>
             button.</para>
 
-            <para>Next you will need to define the <!-- DNT-Start -->IP<!-- DNT-End -->
+            <para>Next you will need to define the IP
             addresses that your system will use.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Enter all the <!-- DNT-Start -->IP<!-- DNT-End --> addresses
-            you want to use for this <!-- DNT-Start -->HPCC<!-- DNT-End -->.
+            <para>Enter all the IP addresses
+            you want to use for this HPCC.
             Alternatively, you could enter the hostname(s).</para>
 
-            <para>The <!-- DNT-Start -->IP<!-- DNT-End --> addresses do not
-            need to be contiguous. In the image below, we specified the <!-- DNT-Start -->IP<!-- DNT-End -->
+            <para>The IP addresses do not
+            need to be contiguous. In the image below, we specified the IP
             addresses nn.nnn.nnn.1-100 and nn.nnn.nnn.111. These are separated
             with a semi-colon.</para>
 
             <para>You can specify a range of IPs using a hyphen (for example,
-            <!-- DNT-Start -->NNN<!-- DNT-End -->.<!-- DNT-Start -->NNN<!-- DNT-End -->.<!-- DNT-Start -->NNN<!-- DNT-End -->.1-100).
-            <!-- DNT-Start -->IP<!-- DNT-End --> Addresses can be specified
+            NNN.NNN.NNN.1-100).
+            IP Addresses can be specified
             individually using semi-colon delimiters.</para>
 
             <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg" /></para>
@@ -1115,7 +1115,7 @@
                       <entry><inlinegraphic
                       fileref="images/OSSgr3.png" /></entry>
 
-                      <entry>Keep in mind, that your <!-- DNT-Start -->HPPC<!-- DNT-End -->
+                      <entry>Keep in mind, that your HPPC
                       configuration may be different depending on your needs.
                       For example, you may not need a Roxie or you may need
                       several smaller Roxie clusters. In addition, in a
@@ -1168,7 +1168,7 @@
             <?dbfo keep-together="always"?>
 
             <para>Stop the Configuration Manager in the terminal where you
-            started it by pressing <!-- DNT-Start -->CTRL<!-- DNT-End -->-C.</para>
+            started it by pressing CTRL-C.</para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -1196,12 +1196,12 @@
             to the /etc/HPCCSystems and rename the file to
             environment.xml</para>
 
-            <!-- DNT-Start -->
+            
 
             <programlisting># for example
 sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
-            <!-- DNT-End -->
+            
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -1229,17 +1229,17 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
           <listitem>
             <para>If you have added new machines to the cluster, you need to
-            copy and install the <!-- DNT-Start -->HPCC<!-- DNT-End -->
-            package onto all nodes, and generate and clone the <!-- DNT-Start -->SSH<!-- DNT-End -->
+            copy and install the HPCC
+            package onto all nodes, and generate and clone the SSH
             keys. This can be done using the install-cluster.sh script which
-            is provided with <!-- DNT-Start -->HPCC<!-- DNT-End -->. Use the
+            is provided with HPCC. Use the
             following command:</para>
 
-            <!-- DNT-Start -->
+            
 
             <programlisting>/opt/HPCCSystems/sbin/install-cluster.sh -k &lt;package-file-name&gt;</programlisting>
 
-            <!-- DNT-End -->
+            
 
             <para>Where &lt;package-file-name&gt; is the name of the package
             file that you want to install on every node - this will be in the
@@ -1255,16 +1255,16 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
             <emphasis role="bold">/etc/HPCCSystems/</emphasis> on <emphasis
             role="bold">every</emphasis> node.</para>
 
-            <para>You may want to create a script to push out the <!-- DNT-Start -->XML<!-- DNT-End -->
-            file to all nodes. A sample script is provided with <!-- DNT-Start -->HPCC<!-- DNT-End -->.
-            The following command copies the <!-- DNT-Start -->XML<!-- DNT-End -->
+            <para>You may want to create a script to push out the XML
+            file to all nodes. A sample script is provided with HPCC.
+            The following command copies the XML
             files out to all nodes as required:</para>
 
             <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;
 </programlisting>Where the &lt;sourcefile&gt; is the absolute path to the file
             you want to copy, and the &lt;destinationfile&gt; is the absolute
             path to the file you want written out. See the appendix (<link
-            linkend="Example-Scripts"><!-- DNT-Start -->Appendix<!-- DNT-End -->:Example
+            linkend="Example-Scripts">Appendix:Example
             Scripts</link>) for more information on using this script.</para>
           </listitem>
         </orderedlist>
@@ -1273,16 +1273,16 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
         <orderedlist continuation="continues">
           <listitem>
-            <para>Restart the <!-- DNT-Start -->HPCC<!-- DNT-End --> system on
+            <para>Restart the HPCC system on
             <emphasis role="bold">every</emphasis> node. The following command
-            starts the <!-- DNT-Start -->HPCC<!-- DNT-End --> system on an
+            starts the HPCC system on an
             individual node:</para>
 
-            <!-- DNT-Start -->
+            
 
             <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
 
-            <!-- DNT-End -->
+            
 
             <informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -1299,17 +1299,17 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
                     <entry><para>You may want to use a script to push this
                     command out to every node. A sample script is provided
-                    with <!-- DNT-Start -->HPCC<!-- DNT-End -->. Use the
-                    following command to start <!-- DNT-Start -->HPCC<!-- DNT-End -->
+                    with HPCC. Use the
+                    following command to start HPCC
                     on all nodes:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
             </informaltable>
 
-            <para>This script can also be used to stop <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            <para>This script can also be used to stop HPCC
             on all nodes and to start and stop individual components on all
-            nodes. See the appendix (<link linkend="Example-Scripts"><!-- DNT-Start -->Appendix<!-- DNT-End -->:Example
+            nodes. See the appendix (<link linkend="Example-Scripts">Appendix:Example
             Scripts</link>) for more details.</para>
           </listitem>
         </orderedlist>
@@ -1317,18 +1317,18 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
     </sect1>
 
     <sect1 id="Starting-and-stopping">
-      <!-- DNT-Start -->
+      
 
       <title>Starting and Stopping</title>
 
-      <!-- DNT-End -->
+      
 
       <sect2 id="Start-Stop-Reset">
-        <!-- DNT-Start -->
+        
 
         <title><emphasis>Start, Stop, Restart the System</emphasis></title>
 
-        <!-- DNT-End -->
+        
 
         <para>Once you have your system environment established , the
         <emphasis role="bold">init </emphasis>system can be used to start,
@@ -1337,31 +1337,31 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         <para>The following commands can be used:</para>
 
         <sect3 id="StartStop_ToStartSystem">
-          <!-- DNT-Start -->
+          
 
           <title>To start the system:</title>
 
-          <!-- DNT-End -->
+          
 
-          <!-- DNT-Start -->
+          
 
           <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
 
-          <!-- DNT-End -->
+          
         </sect3>
 
         <sect3 id="StartStop_StopTheSystem">
-          <!-- DNT-Start -->
+          
 
           <title>To stop the system:</title>
 
-          <!-- DNT-End -->
+          
 
-          <!-- DNT-Start -->
+          
 
           <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
 
-          <!-- DNT-End -->
+          
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -1379,7 +1379,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                     <entry>You can use a script to start or stop multiple
                     nodes in the system. See <emphasis><link
                     linkend="Example-Scripts">Example Scripts</link>
-                    </emphasis>in the <!-- DNT-Start -->Appendix<!-- DNT-End -->
+                    </emphasis>in the Appendix
                     section.</entry>
                   </row>
                 </tbody>
@@ -1388,20 +1388,20 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         </sect3>
 
         <sect3 id="StartStop_SingleComponents">
-          <!-- DNT-Start -->
+          
 
           <title>Start or Stop Single Components</title>
 
-          <!-- DNT-End -->
+          
 
           <para>To start or stop a single component, you can use the -c flag
           in the init system as follows.</para>
 
-          <!-- DNT-Start -->
+          
 
           <programlisting>sudo /etc/init.d/hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting>
 
-          <!-- DNT-End -->
+          
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -1441,28 +1441,28 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
       </sect2>
 
       <sect2 id="Starting-Stopping-Config-Manager">
-        <!-- DNT-Start -->
+        
 
         <title><emphasis>Start or Stop Configuration
         Manager</emphasis></title>
 
-        <!-- DNT-End -->
+        
 
         <para>Configure the system as desired using Configuration
         Manager.</para>
 
         <orderedlist>
           <listitem>
-            <para>If the system is running, stop the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            <para>If the system is running, stop the HPCC
             system, using this command on <emphasis
             role="bold">every</emphasis> node:</para>
 
-            <!-- DNT-Start -->
+            
 
             <programlisting>sudo /etc/init.d/hpcc-init stop
 </programlisting>
 
-            <!-- DNT-End -->
+            
           </listitem>
 
           <listitem>
@@ -1470,22 +1470,22 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
             the first node is considered the head node and is used for this
             task, but this is up to you)</para>
 
-            <!-- DNT-Start -->
+            
 
             <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
-            <!-- DNT-End -->
+            
           </listitem>
 
           <listitem>
             <para>Using a web browser, go to the Configuration Manager's
             interface:</para>
 
-            <!-- DNT-Start -->
+            
 
             <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
 
-            <!-- DNT-End -->
+            
           </listitem>
         </orderedlist>
       </sect2>
@@ -1499,13 +1499,13 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <!-- DNT-Start -->
+    
 
     <!-- <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />   -->
 
-    <!-- DNT-End -->
+    
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
                 xpointer="xpointer(//*[@id='ssl4esp'])"
@@ -1546,15 +1546,15 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
   </chapter>
 
   <chapter id="ExampleECL_NextSteps">
-    <!-- DNT-Start -->
+    
 
     <title>Next Steps</title>
 
-    <!-- DNT-End -->
+    
 
-    <para>Available from the menu in the <!-- DNT-Start -->ECL<!-- DNT-End -->
-    <!-- DNT-Start -->IDE<!-- DNT-End --> there are several documents which
-    provide details on various aspects of the <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
+    <para>Available from the menu in the ECL
+    IDE there are several documents which
+    provide details on various aspects of the HPCC.</para>
 
     <para>You can access them from the help menu: Help <emphasis
     role="bold">&gt;&gt;</emphasis> Documentation.</para>
@@ -1573,15 +1573,15 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
     role="bold">Start</emphasis> menu :</para>
 
     <para>Start <emphasis role="bold">&gt;&gt;</emphasis> All Programs
-    <emphasis role="bold">&gt;&gt;</emphasis> <!-- DNT-Start -->HPCC<!-- DNT-End -->
-    Systems <emphasis role="bold">&gt;&gt;</emphasis> <!-- DNT-Start -->ECL<!-- DNT-End -->
-    <!-- DNT-Start -->IDE<!-- DNT-End --> <emphasis
+    <emphasis role="bold">&gt;&gt;</emphasis> HPCC
+    Systems <emphasis role="bold">&gt;&gt;</emphasis> ECL
+    IDE <emphasis
     role="bold">&gt;&gt;</emphasis> Docs</para>
 
     <para>To familiarize yourself with what your system can do we recommend
     following the steps in<itemizedlist spacing="compact">
         <listitem>
-          <para>The <emphasis role="bold"><!-- DNT-Start -->HPCC<!-- DNT-End -->
+          <para>The <emphasis role="bold">HPCC
           Data Tutorial</emphasis></para>
         </listitem>
 
@@ -1592,7 +1592,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
         <listitem>
           <para>Read <emphasis role="bold">Using Config Manager</emphasis> to
-          learn how to configure an <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          learn how to configure an HPCC
           platform using Advanced View.</para>
         </listitem>
 
@@ -1602,7 +1602,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         </listitem>
       </itemizedlist></para>
 
-    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End -->
+    <para>The HPCC
     Systems<superscript>®</superscript> Portal is also a valuable resource for
     more information including:</para>
 
@@ -1626,18 +1626,18 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
   </chapter>
 
   <chapter id="Appendix">
-    <!-- DNT-Start -->
+    
 
     <title>Appendix</title>
 
-    <!-- DNT-End -->
+    
 
     <sect1 id="Example-Scripts" role="nobrk">
-      <!-- DNT-Start -->
+      
 
       <title>Example Scripts</title>
 
-      <!-- DNT-End -->
+      
 
       <para>For a multi-node configuration, you must install the packages on
       each node. You can install each one manually or use scripts to copy and
@@ -1673,11 +1673,11 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         </informaltable></para>
 
       <sect2 id="ExampleScripts_install-cluster.sh">
-        <!-- DNT-Start -->
+        
 
         <title>install-cluster.sh</title>
 
-        <!-- DNT-End -->
+        
 
         <para><emphasis
         role="bold">install-cluster.sh</emphasis><emphasis><emphasis> [-k | -p
@@ -1692,34 +1692,34 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start -->&lt;package-name&gt;<!-- DNT-End --></entry>
+                  <entry>&lt;package-name&gt;</entry>
 
-                  <entry>Name of the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+                  <entry>Name of the HPCC
                   package to install. Required</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-h<!-- DNT-End --></entry>
+                  <entry>-h</entry>
 
                   <entry>Help. Optional.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-k, --newkey<!-- DNT-End --></entry>
+                  <entry>-k, --newkey</entry>
 
                   <entry>When specified, the script generates and distributes
                   ssh keys to all hosts. Optional.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-p, --pushkeydir<!-- DNT-End --></entry>
+                  <entry>-p, --pushkeydir</entry>
 
                   <entry>Push existing ssh key to remote machine. Optional.
                   Use either -k or -p, not both.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-n, --concurrent<!-- DNT-End --></entry>
+                  <entry>-n, --concurrent</entry>
 
                   <entry>When specified, denotes the number of concurrent
                   executions. Default is 5. Optional.</entry>
@@ -1745,7 +1745,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           </listitem>
 
           <listitem>
-            <para>installs the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform
+            <para>installs the HPCC platform
             package(s) on all nodes specified.</para>
           </listitem>
 
@@ -1775,7 +1775,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         <para><?hard-pagebreak ?><emphasis
         role="bold">Examples:</emphasis></para>
 
-        <para>This example installs the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        <para>This example installs the HPCC
         Platform packages to remaining nodes and pushes out the active
         environment.xml file to those nodes.:</para>
 
@@ -1784,7 +1784,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
         <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
 
-        <para>This example installs the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        <para>This example installs the HPCC
         Platform packages to all nodes and pushes out the active
         environment.xml file to those nodes. It also generates ssh keys and
         pushes them out to all nodes.</para>
@@ -1794,7 +1794,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
         <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
 
-        <para>This example installs the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        <para>This example installs the HPCC
         Platform packages and pushes out the active environment.xml file to 8
         concurrent nodes.:</para>
 
@@ -1805,11 +1805,11 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
       </sect2>
 
       <sect2 id="ExampleScripts_deploy-java-files.sh" role="brk">
-        <!-- DNT-Start -->
+        
 
         <title>deploy-java-files.sh</title>
 
-        <!-- DNT-End -->
+        
 
         <para><emphasis
         role="bold">deploy-java-files.sh</emphasis><emphasis><emphasis> [-c]
@@ -1824,32 +1824,32 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start -->-c<!-- DNT-End --></entry>
+                  <entry>-c</entry>
 
                   <entry>When specified, this option adds the target directory
                   or jar file path to classpath in environment.conf.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-e<!-- DNT-End --></entry>
+                  <entry>-e</entry>
 
                   <entry>When specified, this denotes the target is to be
                   removed from the classpath.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-H<!-- DNT-End --></entry>
+                  <entry>-H</entry>
 
-                  <entry>Host <!-- DNT-Start -->IP<!-- DNT-End --> list. When
-                  specified, will target the <!-- DNT-Start -->IP<!-- DNT-End -->
-                  addresses specified, one <!-- DNT-Start -->IP<!-- DNT-End -->
+                  <entry>Host IP list. When
+                  specified, will target the IP
+                  addresses specified, one IP
                   address per line. If this option is not used will run on the
-                  <!-- DNT-Start -->IP<!-- DNT-End --> list generated from the
+                  IP list generated from the
                   environment.xml</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-n<!-- DNT-End --></entry>
+                  <entry>-n</entry>
 
                   <entry>When specified, denotes the number of concurrent
                   execution threads. Default is 5. You must have python
@@ -1858,7 +1858,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-r<!-- DNT-End --></entry>
+                  <entry>-r</entry>
 
                   <entry>Reset classpath. When specified, will reset the
                   classpath to &lt;install_directory&gt;/classes. If used in
@@ -1867,13 +1867,13 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-s<!-- DNT-End --></entry>
+                  <entry>-s</entry>
 
                   <entry>Source file or directory.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-t<!-- DNT-End --></entry>
+                  <entry>-t</entry>
 
                   <entry>Target directory. The default is
                   &lt;install_directory&gt;/classes. If it is only for adding
@@ -1882,7 +1882,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-u<!-- DNT-End --></entry>
+                  <entry>-u</entry>
 
                   <entry>The username to use for ssh access to remote system.
                   Provide this option when the specified user does not use a
@@ -1893,7 +1893,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-x<!-- DNT-End --></entry>
+                  <entry>-x</entry>
 
                   <entry>When specified, this option excludes execution on the
                   current host.</entry>
@@ -1903,19 +1903,19 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           </informaltable></para>
 
         <para>The <emphasis role="bold">deploy-java-files.sh</emphasis>
-        script, is used to deploy java files (source) to <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        script, is used to deploy java files (source) to HPCC
         cluster hosts and update the classpath variable in
         environment.conf.</para>
 
-        <para>This script runs a command on all <!-- DNT-Start -->IP<!-- DNT-End -->
-        addresses or host names in the active environment.xml. The <!-- DNT-Start -->IP<!-- DNT-End -->
+        <para>This script runs a command on all IP
+        addresses or host names in the active environment.xml. The IP
         addresses are defined when editing the environment in
         ConfigMgr.</para>
 
         <para>This script writes to a log file:</para>
 
         <para><emphasis
-        role="bold">/var/log/HPCCSystems/cluster/se_&lt;action&gt;_&lt;commnd&gt;_&lt;pid&gt;_yyyymmdd_<!-- DNT-Start -->HHMMSS<!-- DNT-End -->.log</emphasis></para>
+        role="bold">/var/log/HPCCSystems/cluster/se_&lt;action&gt;_&lt;commnd&gt;_&lt;pid&gt;_yyyymmdd_HHMMSS.log</emphasis></para>
 
         <para><emphasis role="bold">Examples:</emphasis></para>
 
@@ -1941,11 +1941,11 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
       </sect2>
 
       <sect2 id="ExampleScripts_hpcc-push.sh" role="brk">
-        <!-- DNT-Start -->
+        
 
         <title>hpcc-push.sh</title>
 
-        <!-- DNT-End -->
+        
 
         <para><emphasis
         role="bold">hpcc-push.sh</emphasis><emphasis><emphasis> [-s
@@ -1960,26 +1960,26 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start -->-s<!-- DNT-End --></entry>
+                  <entry>-s</entry>
 
                   <entry>Source file or directory.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-t<!-- DNT-End --></entry>
+                  <entry>-t</entry>
 
                   <entry>Target file or directory.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-n, --concurrent<!-- DNT-End --></entry>
+                  <entry>-n, --concurrent</entry>
 
                   <entry>When specified, denotes the number of concurrent
                   executions. Default is 5. Optional.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-x<!-- DNT-End --></entry>
+                  <entry>-x</entry>
 
                   <entry>When specified, this option excludes execution on the
                   current host.</entry>
@@ -1989,13 +1989,13 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           </informaltable></para>
 
         <para><emphasis role="bold">This script "pushes" files from the source
-        filename and path to the destination filename and path for all <!-- DNT-Start -->IP<!-- DNT-End -->
+        filename and path to the destination filename and path for all IP
         addresses in the active environment.xml. </emphasis></para>
 
         <para>To use this script, the ssh keys need to be properly configured
         on all nodes, and you must use sudo.</para>
 
-        <para>The <!-- DNT-Start -->IP<!-- DNT-End --> addresses were defined
+        <para>The IP addresses were defined
         when editing the environment in ConfigMgr.</para>
 
         <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;
@@ -2007,11 +2007,11 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
       </sect2>
 
       <sect2 id="ExampleScripts_hpcc-run.sh" role="brk">
-        <!-- DNT-Start -->
+        
 
         <title>hpcc-run.sh</title>
 
-        <!-- DNT-End -->
+        
 
         <para><emphasis role="bold">hpcc-run.sh
         </emphasis><emphasis><emphasis>[-c component] [-a
@@ -2026,35 +2026,35 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start -->-a<!-- DNT-End --></entry>
+                  <entry>-a</entry>
 
-                  <entry><!-- DNT-Start -->HPCC<!-- DNT-End --> service name.
+                  <entry>HPCC service name.
                   Either hpcc-init (default) of dafilesrv.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-c<!-- DNT-End --></entry>
+                  <entry>-c</entry>
 
-                  <entry><!-- DNT-Start -->HPCC<!-- DNT-End --> component. For
+                  <entry>HPCC component. For
                   example, mydali, myroxie, mythor, etc.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-n, --concurrent<!-- DNT-End --></entry>
+                  <entry>-n, --concurrent</entry>
 
                   <entry>When specified, denotes the number of concurrent
                   instances to run. The default is 5. Optional.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-S<!-- DNT-End --></entry>
+                  <entry>-S</entry>
 
                   <entry>When specified, the command runs sequentially, one
                   host at a time.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->-s<!-- DNT-End --></entry>
+                  <entry>-s</entry>
 
                   <entry>When specified, saves the result to a file named
                   &lt;ip address&gt;.</entry>
@@ -2066,10 +2066,10 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         <para>To use this script, the ssh keys need to be properly configured
         on all nodes, and you must sudo as user hpcc.</para>
 
-        <para><emphasis role="bold">This script runs a command on all <!-- DNT-Start -->IP<!-- DNT-End -->
+        <para><emphasis role="bold">This script runs a command on all IP
         addresses in the active environment.xml. </emphasis></para>
 
-        <para>The <!-- DNT-Start -->IP<!-- DNT-End --> addresses were defined
+        <para>The IP addresses were defined
         when editing the environment in ConfigMgr. This script supports all
         the parameters of hpcc-init and dafilesrv.</para>
 
@@ -2100,41 +2100,41 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
     </sect1>
 
     <sect1 id="Uninstalling-the-HPCC">
-      <!-- DNT-Start -->
+      
 
       <title>Uninstalling the HPCC Platform</title>
 
-      <!-- DNT-End -->
+      
 
-      <para>To uninstall the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform,
+      <para>To uninstall the HPCC platform,
       issue the appropriate commands for your system. If necessary, do so on
       each node that it is installed on.</para>
 
       <para><emphasis role="bold">Centos/Red Hat</emphasis></para>
 
-      <!-- DNT-Start -->
+      
 
       <programlisting>sudo yum remove hpccsystems-platform </programlisting>
 
-      <!-- DNT-End -->
+      
 
       <para>Alternatively you can still use.</para>
 
       <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
 
-      <!-- DNT-Start -->
+      
 
       <programlisting>sudo dpkg -r hpccsystems-platform</programlisting>
 
-      <!-- DNT-End -->
+      
     </sect1>
 
     <sect1 id="Helper-Applications">
-      <!-- DNT-Start -->
+      
 
       <title>Helper Applications</title>
 
-      <!-- DNT-End -->
+      
 
       <para>There is a helper applications that runs on all nodes that you may
       need to stop or start manually.</para>
@@ -2163,11 +2163,11 @@ init_start_thor--></property></para>
     </sect1>
 
     <sect1 id="hpcc-init">
-      <!-- DNT-Start -->
+      
 
       <title>hpcc-init</title>
 
-      <!-- DNT-End -->
+      
 
       <para><emphasis role="bold"> service hpcc-init
       </emphasis><emphasis><emphasis>[</emphasis>option<emphasis>]</emphasis>
@@ -2181,7 +2181,7 @@ init_start_thor--></property></para>
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start -->option<!-- DNT-End --></entry>
+                <entry>option</entry>
 
                 <entry><itemizedlist>
                     <listitem>
@@ -2228,7 +2228,7 @@ init_start_thor--></property></para>
               </row>
 
               <row>
-                <entry><!-- DNT-Start -->command<!-- DNT-End --></entry>
+                <entry>command</entry>
 
                 <entry><itemizedlist>
                     <listitem>
@@ -2273,7 +2273,7 @@ init_start_thor--></property></para>
 
       <para><emphasis role="bold">Examples:</emphasis></para>
 
-      <!-- DNT-Start -->
+      
 
       <programlisting>sudo /etc/init.d/hpcc-init start
 sudo /etc/init.d/hpcc-init stop
@@ -2284,88 +2284,88 @@ sudo /etc/init.d/hpcc-init --component=myeclserver start
 sudo /etc/init.d/hpcc-init -c esp start
 </programlisting>
 
-      <!-- DNT-End -->
+      
 
       <sect2 id="HPCC_systemd_svc">
-        <!-- DNT-Start -->
+        
 
         <title>HPCC systemd services</title>
 
-        <!-- DNT-End -->
+        
 
-        <para>There are two <!-- DNT-Start -->HPCC<!-- DNT-End --> systemd
+        <para>There are two HPCC systemd
         services: hpcc-init and dafilesrv. While some hpcc-init systemd
         services are still developmental, users can use
         <emphasis>/etc/init.d/hpcc-init</emphasis> and
         <emphasis>/etc/init.d/dafilesrv</emphasis> directly. Invoking these
         services in this way provides status in the same manner as invoking
-        them with a service command does for other <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        them with a service command does for other HPCC
         processes.</para>
 
         <para>The hpcc-init system service will only support "start", "stop"
         and "restart" options. The other options, such as "status", "-c" are
         not supported.</para>
 
-        <para>There are two sets of <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        <para>There are two sets of HPCC
         systemd service scripts:
         <emphasis>hpcc-init.service/dafilesrv.service</emphasis> and
         <emphasis>hpcc-init@.service/dafilesrv@.service</emphasis> installed
         under /lib/systemd/system.</para>
 
-        <para>The first set does not have any output to <!-- DNT-Start -->STDOUT<!-- DNT-End -->/<!-- DNT-Start -->STDERROR<!-- DNT-End -->,
+        <para>The first set does not have any output to STDOUT/STDERROR,
         instead it logs to /var/log/syslog. To view the output:</para>
 
-        <!-- DNT-Start -->
+        
 
         <programlisting>journalctl -u &lt;service&gt; -f  </programlisting>
 
-        <!-- DNT-End -->
+        
 
-        <para>The second set has the same output to <!-- DNT-Start -->STDOUT<!-- DNT-End -->/<!-- DNT-Start -->STDERROR<!-- DNT-End -->
+        <para>The second set has the same output to STDOUT/STDERROR
         as directly invoking /etc/init.d/&lt;hpcc-init|dafilesrv&gt;</para>
 
         <para>Use either:</para>
 
-        <!-- DNT-Start -->
+        
 
         <programlisting>sudo service &lt;service&gt; &lt;start|stop|restart&gt;</programlisting>
 
-        <!-- DNT-End -->
+        
 
         <para>or</para>
 
-        <!-- DNT-Start -->
+        
 
         <programlisting>sudo systemctl &lt;start|stop|restart&gt; &lt;full_service_name&gt; </programlisting>
 
-        <!-- DNT-End -->
+        
 
         <para>The systemd displays the service status in it's own
         format.</para>
 
-        <!-- DNT-Start -->
+        
 
         <programlisting>sudo service &lt;service&gt; status </programlisting>
 
-        <!-- DNT-End -->
+        
 
         <para>or</para>
 
-        <!-- DNT-Start -->
+        
 
         <programlisting>sudo systemctl status &lt;full_service_name&gt; </programlisting>
 
-        <!-- DNT-End -->
+        
 
         <para>These are different than the output from</para>
 
-        <!-- DNT-Start -->
+        
 
         <programlisting>/etc/init.d/hpcc-init status</programlisting>
 
-        <!-- DNT-End -->
+        
 
-        <para><!-- DNT-Start -->HPCC<!-- DNT-End --> services started through
+        <para>HPCC services started through
         systemd will be listed as active in systemd. They can be listed as
         "sudo systemctl list-units [PATTERN...]". To remove them from the
         systemd active service list, you must run the stop service from the
@@ -2373,112 +2373,112 @@ sudo /etc/init.d/hpcc-init -c esp start
         already stopped by directly calling
         /etc/init.d/&lt;hpcc-init|dafilesrv&gt; stop.</para>
 
-        <para><!-- DNT-Start -->HPCC<!-- DNT-End --> uninstall will
-        automatically remove <!-- DNT-Start -->HPCC<!-- DNT-End --> services
+        <para>HPCC uninstall will
+        automatically remove HPCC services
         from active list and /etc/systemd/system/ directory.</para>
 
         <sect3 id="hpcc-init_sysd_svc_usage">
           <title id="hpcc_systemd_usage">hpcc-init systemd service
           usage</title>
 
-          <para>To start or stop <!-- DNT-Start -->HPCC<!-- DNT-End --> with
-          hpcc-init without <!-- DNT-Start -->STDOUT<!-- DNT-End -->/<!-- DNT-Start -->STDERR<!-- DNT-End -->
+          <para>To start or stop HPCC with
+          hpcc-init without STDOUT/STDERR
           output: <orderedlist>
               <listitem>
                 <para>Start</para>
 
-                <!-- DNT-Start -->
+                
 
                 <programlisting>sudo service hpcc-init start </programlisting>
 
-                <!-- DNT-End -->
+                
 
                 <para>or</para>
 
-                <!-- DNT-Start -->
+                
 
                 <programlisting>sudo systemctl start hpcc-init.service</programlisting>
 
-                <!-- DNT-End -->
+                
               </listitem>
 
               <listitem>
                 <para>Check</para>
 
-                <!-- DNT-Start -->
+                
 
                 <programlisting>sudo journalctl -u hpcc-init -f</programlisting>
 
-                <!-- DNT-End -->
+                
               </listitem>
 
               <listitem>
                 <para>Stop</para>
 
-                <!-- DNT-Start -->
+                
 
                 <programlisting>sudo service hpcc-init stop </programlisting>
 
-                <!-- DNT-End -->
+                
 
                 <para>or</para>
 
-                <!-- DNT-Start -->
+                
 
                 <programlisting>sudo systemctl stop hpcc-init.service</programlisting>
 
-                <!-- DNT-End -->
+                
               </listitem>
             </orderedlist></para>
 
-          <para>To start/stop <!-- DNT-Start -->HPCC<!-- DNT-End --> with
-          hpcc-init with <!-- DNT-Start -->STDOUT<!-- DNT-End -->/<!-- DNT-Start -->STDERR<!-- DNT-End -->
+          <para>To start/stop HPCC with
+          hpcc-init with STDOUT/STDERR
           output. Get current tty by running "tty". For example, tty -&gt;
           /dev/pts/1. "pts/1" will be used in following commands. <orderedlist>
               <listitem>
                 <para>Start</para>
 
-                <!-- DNT-Start -->
+                
 
                 <programlisting>sudo service hpcc-init@pts/1 start</programlisting>
 
-                <!-- DNT-End -->
+                
 
                 <para>or</para>
 
-                <!-- DNT-Start -->
+                
 
                 <programlisting>sudo systemctl start hpcc-init@pts/1.service</programlisting>
 
-                <!-- DNT-End -->
+                
               </listitem>
 
               <listitem>
                 <para>Check</para>
 
-                <!-- DNT-Start -->
+                
 
                 <programlisting>sudo journalctl -u hpcc-init -f</programlisting>
 
-                <!-- DNT-End -->
+                
               </listitem>
 
               <listitem>
                 <para>Stop</para>
 
-                <!-- DNT-Start -->
+                
 
                 <programlisting>sudo service hpcc-init@pts/1 stop</programlisting>
 
-                <!-- DNT-End -->
+                
 
                 <para>or</para>
 
-                <!-- DNT-Start -->
+                
 
                 <programlisting>sudo systemctl stop hpcc-init@pts/1.service</programlisting>
 
-                <!-- DNT-End -->
+                
               </listitem>
             </orderedlist></para>
         </sect3>
@@ -2490,14 +2490,14 @@ sudo /etc/init.d/hpcc-init -c esp start
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="Running-HPCC-Tools-Under-WINE">
-      <!-- DNT-Start -->
+      
 
       <title>Running the ECL IDE under WINE</title>
 
-      <!-- DNT-End -->
+      
 
-      <para>To run the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
-      under <!-- DNT-Start -->WINE<!-- DNT-End --> in Linux, follow these
+      <para>To run the ECL IDE
+      under WINE in Linux, follow these
       steps.</para>
 
       <orderedlist>
@@ -2539,62 +2539,62 @@ sudo /etc/init.d/hpcc-init -c esp start
 
         <listitem>
           <para>Select the <emphasis>Native (Windows)</emphasis> option and
-          press the <!-- DNT-Start -->OK<!-- DNT-End --> button.</para>
+          press the OK button.</para>
         </listitem>
 
         <listitem>
-          <para>Press the <!-- DNT-Start -->OK<!-- DNT-End --> button to close
+          <para>Press the OK button to close
           the Wine Configuration window.</para>
         </listitem>
 
         <listitem>
-          <para>Install the <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->ECL<!-- DNT-End -->
-          <!-- DNT-Start -->IDE<!-- DNT-End --> (Double-click the setup.msi
+          <para>Install the HPCC ECL
+          IDE (Double-click the setup.msi
           file and Wine will install it).</para>
         </listitem>
       </orderedlist>
     </sect1>
 
     <sect1 id="ExternLang_Support">
-      <!-- DNT-Start -->
+      
 
       <title>External Language Support</title>
 
-      <!-- DNT-End -->
+      
 
       <para>This section covers the steps to add external language support to
-      the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform. <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      the HPCC platform. HPCC
       offers support for several programming languages, some have additional
       dependencies that must be installed. External language support is
-      included with the platform installation package, however there are <!-- DNT-Start -->RPM<!-- DNT-End -->-based
-      <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform installation packages
+      included with the platform installation package, however there are RPM-based
+      HPCC Platform installation packages
       that explicitly state <emphasis role="bold">with
       plugins</emphasis>.</para>
 
-      <para><emphasis role="bold"><!-- DNT-Start -->RPM<!-- DNT-End -->-based
+      <para><emphasis role="bold">RPM-based
       systems:</emphasis></para>
 
-      <para>If you are interested in using external languages for <!-- DNT-Start -->RPM<!-- DNT-End -->-based
+      <para>If you are interested in using external languages for RPM-based
       systems (CentOS/Red Hat), you need to download and install the
       appropriate platform installation distribution <emphasis
       role="bold">with plugins</emphasis> option from the downloads
       site.</para>
 
-      <para>For <!-- DNT-Start -->RPM<!-- DNT-End --> based systems, there are
+      <para>For RPM based systems, there are
       two different installation packages available. One package includes the
       optional plugins to support embedded code from other languages. If you
       want support for other languages, choose the package for your distro
       that begins with:</para>
 
-      <!-- DNT-Start -->
+      
 
       <programlisting>hpccsystems-platform_community-with-plugins- </programlisting>
 
-      <!-- DNT-End -->
+      
 
       <para><emphasis role="bold">Debian-based systems:</emphasis></para>
 
-      <para>Optional plugin downloads are <!-- DNT-Start -->NOT<!-- DNT-End -->
+      <para>Optional plugin downloads are NOT
       needed for the Debian-based systems (Ubuntu) installation package, as
       the plugins are included in all the Debian installation packages.</para>
 
@@ -2606,68 +2606,68 @@ sudo /etc/init.d/hpcc-init -c esp start
         </listitem>
 
         <listitem>
-          <para><!-- DNT-Start -->Java<!-- DNT-End --></para>
+          <para>Java</para>
         </listitem>
 
         <listitem>
-          <para><!-- DNT-Start -->JavaScript<!-- DNT-End --></para>
+          <para>JavaScript</para>
         </listitem>
 
         <listitem>
-          <para><!-- DNT-Start -->Python<!-- DNT-End --></para>
+          <para>Python</para>
         </listitem>
 
         <listitem>
-          <para><!-- DNT-Start -->R<!-- DNT-End --></para>
+          <para>R</para>
         </listitem>
       </itemizedlist>
 
       <para>The following sections detail what is required to utilize these
-      languages in your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      languages in your HPCC
       platform.</para>
 
       <para>In addition to these languages, you can add support for additional
       languages by creating your own plugin. This is not very difficult to do.
-      For example the <!-- DNT-Start -->JavaScript<!-- DNT-End --> plugin is
+      For example the JavaScript plugin is
       about 500 lines of C++ code. You can use that as a template to write
       your own and, if desired, you can contribute it back to the open source
       initiative.</para>
 
       <sect2 id="Add_On_Java" role="brk">
-        <!-- DNT-Start -->
+        
 
         <title>Java</title>
 
-        <!-- DNT-End -->
+        
 
-        <para>You can run external <!-- DNT-Start -->Java<!-- DNT-End --> code
-        on the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform. Compiled <!-- DNT-Start -->Java<!-- DNT-End -->
-        can be used either as a .class (or a .jar) and called from <!-- DNT-Start -->ECL<!-- DNT-End -->
-        just like any other <!-- DNT-Start -->ECL<!-- DNT-End -->
+        <para>You can run external Java code
+        on the HPCC platform. Compiled Java
+        can be used either as a .class (or a .jar) and called from ECL
+        just like any other ECL
         function.</para>
 
-        <para>To extract the <!-- DNT-Start -->JNI<!-- DNT-End -->
+        <para>To extract the JNI
         signatures:</para>
 
-        <!-- DNT-Start -->
+        
 
         <programlisting>javap -s</programlisting>
 
-        <!-- DNT-End -->
+        
 
-        <para>To set up <!-- DNT-Start -->Java<!-- DNT-End --> to integrate
-        with the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform:</para>
+        <para>To set up Java to integrate
+        with the HPCC platform:</para>
 
         <orderedlist>
           <listitem>
-            <para>Install a <!-- DNT-Start -->Java<!-- DNT-End --> development
-            package, such as OpenJDK or Oracle <!-- DNT-Start -->Java<!-- DNT-End -->
-            <!-- DNT-Start -->SE<!-- DNT-End --> Development Kit (<!-- DNT-Start -->JDK<!-- DNT-End -->)
+            <para>Install a Java development
+            package, such as OpenJDK or Oracle Java
+            SE Development Kit (JDK)
             on the server.</para>
           </listitem>
 
           <listitem>
-            <para>Set the <!-- DNT-Start -->Java<!-- DNT-End --> <!-- DNT-Start -->CLASSPATH<!-- DNT-End --></para>
+            <para>Set the Java CLASSPATH</para>
 
             <para>You can set the classpath several ways:<itemizedlist>
                 <listitem>
@@ -2679,72 +2679,72 @@ sudo /etc/init.d/hpcc-init -c esp start
                 </listitem>
 
                 <listitem>
-                  <para>in your <!-- DNT-Start -->JVM<!-- DNT-End -->
+                  <para>in your JVM
                   Profile.</para>
                 </listitem>
 
                 <listitem>
                   <para>using classpath value in environment.conf</para>
 
-                  <para>The default configuration file for the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+                  <para>The default configuration file for the HPCC
                   platform is <emphasis
                   role="bold">/etc/HPCCSystems/environment.conf</emphasis> you
-                  will need to edit this file to point to your <!-- DNT-Start -->Java<!-- DNT-End -->
+                  will need to edit this file to point to your Java
                   build directory.</para>
 
                   <para>For example (on a Linux system):</para>
 
-                  <!-- DNT-Start -->
+                  
 
                   <programlisting> classpath=/opt/HPCCSystems/classes:/home/username/workspace/StreamAPI/bin </programlisting>
 
-                  <!-- DNT-End -->
+                  
 
-                  <para>The classpath should point to your <!-- DNT-Start -->Java<!-- DNT-End -->
+                  <para>The classpath should point to your Java
                   build directory.</para>
                 </listitem>
               </itemizedlist></para>
           </listitem>
 
           <listitem>
-            <para>Start the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            <para>Start the HPCC
             Systems<superscript>®</superscript> platform (restart if it is
             already running) in order to read the new configuration.</para>
 
             <para>For example :</para>
 
-            <!-- DNT-Start -->
+            
 
             <programlisting> sudo service hpcc-init start </programlisting>
 
-            <!-- DNT-End -->
+            
 
             <para>or</para>
 
-            <!-- DNT-Start -->
+            
 
             <programlisting>sudo service hpcc-init restart </programlisting>
 
-            <!-- DNT-End -->
+            
 
             <para>For more information see the <link
             linkend="Starting-and-stopping">Starting-and-stopping</link> the
-            <!-- DNT-Start -->HPCC<!-- DNT-End --> System in the
-            <emphasis>Installing and Running The <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            HPCC System in the
+            <emphasis>Installing and Running The HPCC
             Platform</emphasis> document.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Test the <!-- DNT-Start -->Java<!-- DNT-End -->
+            <para>Test the Java
             integration.</para>
 
-            <para>The <!-- DNT-Start -->HPCC<!-- DNT-End -->
-            Systems<superscript>®</superscript> platform comes with a <!-- DNT-Start -->Java<!-- DNT-End -->
-            example class. You can execute some <!-- DNT-Start -->Java<!-- DNT-End -->
-            code either in your <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
-            or the <!-- DNT-Start -->ECL<!-- DNT-End --> Playground.</para>
+            <para>The HPCC
+            Systems<superscript>®</superscript> platform comes with a Java
+            example class. You can execute some Java
+            code either in your ECL IDE
+            or the ECL Playground.</para>
 
             <para>For example:</para>
 
@@ -2753,37 +2753,37 @@ sudo /etc/init.d/hpcc-init -c esp start
 integer add1(integer val) := IMPORT(java, 'JavaCat.add1:(I)I');
 
 add1(10);
-</programlisting>If this successfully executes, you have correctly set up <!-- DNT-Start -->Java<!-- DNT-End -->
-            to work with your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+</programlisting>If this successfully executes, you have correctly set up Java
+            to work with your HPCC
             platform.</para>
 
             <para>If you get a "unable to load libjvm.so" error you should
-            reinstall or try a different <!-- DNT-Start -->Java<!-- DNT-End -->
+            reinstall or try a different Java
             package.</para>
           </listitem>
         </orderedlist>
 
-        <para>You can call <!-- DNT-Start -->Java<!-- DNT-End --> from <!-- DNT-Start -->ECL<!-- DNT-End -->
-        just like any other <!-- DNT-Start -->ECL<!-- DNT-End --> function.
-        <!-- DNT-Start -->Java<!-- DNT-End --> static functions can be easily
-        prototyped using <!-- DNT-Start -->ECL<!-- DNT-End --> types.</para>
+        <para>You can call Java from ECL
+        just like any other ECL function.
+        Java static functions can be easily
+        prototyped using ECL types.</para>
 
-        <para>Additional examples of <!-- DNT-Start -->Java<!-- DNT-End -->
-        for <!-- DNT-Start -->HPCC<!-- DNT-End --> can be found at:</para>
+        <para>Additional examples of Java
+        for HPCC can be found at:</para>
 
         <para><ulink
         url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl</ulink></para>
       </sect2>
 
       <sect2 id="Add_On_Javascript" role="brk">
-        <!-- DNT-Start -->
+        
 
         <title>JavaScript</title>
 
-        <!-- DNT-End -->
+        
 
-        <para>To enable <!-- DNT-Start -->JavaScript<!-- DNT-End --> support
-        within the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        <para>To enable JavaScript support
+        within the HPCC
         Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
@@ -2791,14 +2791,14 @@ add1(10);
             <para>Install the appropriate dependencies for your
             platform.</para>
 
-            <para><emphasis role="bold"><!-- DNT-Start -->RPM<!-- DNT-End -->-based
+            <para><emphasis role="bold">RPM-based
             systems:</emphasis></para>
 
-            <para><!-- DNT-Start -->JavaScript<!-- DNT-End --> support is
+            <para>JavaScript support is
             available for CentOS 6.x or later (not available for CentOS
             5.x).</para>
 
-            <para>On an <!-- DNT-Start -->RPM<!-- DNT-End -->-based system
+            <para>On an RPM-based system
             (CentOS/Red Hat) install <emphasis
             role="bold">v8embed.</emphasis></para>
 
@@ -2810,16 +2810,16 @@ add1(10);
           </listitem>
 
           <listitem>
-            <para>Test the <!-- DNT-Start -->JavaScript<!-- DNT-End -->
+            <para>Test the JavaScript
             integration.</para>
 
-            <para><!-- DNT-Start -->JavaScript<!-- DNT-End --> does
+            <para>JavaScript does
             multi-thread, as a result this can be the fastest of the currently
             supported embedded languages.</para>
 
-            <para>You can now execute some <!-- DNT-Start -->JavaScript<!-- DNT-End -->
-            code either in your <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
-            or the <!-- DNT-Start -->ECL<!-- DNT-End --> Playground.</para>
+            <para>You can now execute some JavaScript
+            code either in your ECL IDE
+            or the ECL Playground.</para>
 
             <para>For example:</para>
 
@@ -2840,11 +2840,11 @@ val;
 ENDEMBED;
 
 add1(10);
-</programlisting>If this successfully executes, you have correctly set up <!-- DNT-Start -->JavaScript<!-- DNT-End -->
-            to work with your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+</programlisting>If this successfully executes, you have correctly set up JavaScript
+            to work with your HPCC
             platform.</para>
 
-            <para>Additional examples of <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            <para>Additional examples of HPCC
             code can be found at:</para>
 
             <para><ulink
@@ -2854,70 +2854,70 @@ add1(10);
       </sect2>
 
       <sect2 id="Add_Python_support" role="brk">
-        <!-- DNT-Start -->
+        
 
         <title>Python</title>
 
-        <!-- DNT-End -->
+        
 
-        <para><!-- DNT-Start -->HPCC<!-- DNT-End --> supports <!-- DNT-Start -->Python<!-- DNT-End -->2
-        by default. The <!-- DNT-Start -->HPCC<!-- DNT-End --> platform
-        includes plugins for both <!-- DNT-Start -->Python<!-- DNT-End -->2
-        and <!-- DNT-Start -->Python<!-- DNT-End -->3, but only one may be
-        safely enabled at a time as the <!-- DNT-Start -->Python<!-- DNT-End -->
+        <para>HPCC supports Python2
+        by default. The HPCC platform
+        includes plugins for both Python2
+        and Python3, but only one may be
+        safely enabled at a time as the Python
         libraries export the same symbols for both versions. Enabling both may
         lead to unpredictable results including segmentation faults or
         undefined symbol errors.</para>
 
-        <para>By default the <!-- DNT-Start -->Python<!-- DNT-End -->3 plugin
-        will be present but disabled, and the <!-- DNT-Start -->Python<!-- DNT-End -->2
-        plugin will be present and enabled. If you want to use <!-- DNT-Start -->Python<!-- DNT-End -->3
+        <para>By default the Python3 plugin
+        will be present but disabled, and the Python2
+        plugin will be present and enabled. If you want to use Python3
         modify the your environment.conf file according to the example in the
         file. A cluster updated from an older version may not have the
         appropriate entries in the environment.conf file to support either
-        version of <!-- DNT-Start -->Python<!-- DNT-End -->.</para>
+        version of Python.</para>
 
-        <para>To enable <!-- DNT-Start -->Python<!-- DNT-End --> support
-        within the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        <para>To enable Python support
+        within the HPCC
         Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
-            <para>Install <!-- DNT-Start -->Python<!-- DNT-End -->, if not
-            already installed. Many distributions come with <!-- DNT-Start -->Python<!-- DNT-End -->
+            <para>Install Python, if not
+            already installed. Many distributions come with Python
             already installed.</para>
 
-            <para><!-- DNT-Start -->Python<!-- DNT-End --> 2.6, 2.7, or <!-- DNT-Start -->Python<!-- DNT-End -->3
+            <para>Python 2.6, 2.7, or Python3
             depending on your distribution's default version and to coordinate
             with the enabled entry in the environment.conf.</para>
           </listitem>
 
           <listitem>
-            <para>You can embed <!-- DNT-Start -->Python<!-- DNT-End -->
-            natively inside an <!-- DNT-Start -->ECL<!-- DNT-End --> Program,
-            much like <!-- DNT-Start -->BEGINC<!-- DNT-End -->++</para>
+            <para>You can embed Python
+            natively inside an ECL Program,
+            much like BEGINC++</para>
           </listitem>
 
           <listitem>
-            <para>Call <!-- DNT-Start -->Python<!-- DNT-End --> from <!-- DNT-Start -->ECL<!-- DNT-End -->
-            as you would any other <!-- DNT-Start -->ECL<!-- DNT-End -->
+            <para>Call Python from ECL
+            as you would any other ECL
             function.</para>
 
-            <para><!-- DNT-Start -->Python<!-- DNT-End --> does not
+            <para>Python does not
             multi-thread efficiently (Global Interpreter Lock). Effectively
             only one thread can be in the python code at once. Scripts are
             compiled every call (but with caching of most recent, per thread).
-            The <!-- DNT-Start -->IMPORT<!-- DNT-End --> case will avoid
+            The IMPORT case will avoid
             recompiles.</para>
           </listitem>
 
           <listitem>
-            <para>Test the <!-- DNT-Start -->Python<!-- DNT-End -->
+            <para>Test the Python
             integration.</para>
 
-            <para>You can now execute some <!-- DNT-Start -->Python<!-- DNT-End -->
-            code either in your <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
-            or the <!-- DNT-Start -->ECL<!-- DNT-End --> Playground.</para>
+            <para>You can now execute some Python
+            code either in your ECL IDE
+            or the ECL Playground.</para>
 
             <para>For example:</para>
 
@@ -2929,14 +2929,14 @@ ENDEMBED;
 
 split_words('Once upon a time');
 
-</programlisting>If this successfully executes, you have correctly set up <!-- DNT-Start -->Python<!-- DNT-End -->
-            to work with your <!-- DNT-Start -->HPCC<!-- DNT-End --> platform.
-            You can now embed <!-- DNT-Start -->Python<!-- DNT-End -->
-            anywhere you would use <!-- DNT-Start -->ECL<!-- DNT-End -->
-            within with your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+</programlisting>If this successfully executes, you have correctly set up Python
+            to work with your HPCC platform.
+            You can now embed Python
+            anywhere you would use ECL
+            within with your HPCC
             System.</para>
 
-            <para>Additional examples of <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            <para>Additional examples of HPCC
             code can be found at:</para>
 
             <para><ulink
@@ -2944,43 +2944,43 @@ split_words('Once upon a time');
           </listitem>
         </orderedlist>
 
-        <para>In order for <!-- DNT-Start -->Python<!-- DNT-End --> to work
-        properly it is important that the version of <!-- DNT-Start -->Python<!-- DNT-End -->
-        and the <!-- DNT-Start -->HPCC<!-- DNT-End --> system are set up
-        correctly to support using the installed version of <!-- DNT-Start -->Python<!-- DNT-End -->.
+        <para>In order for Python to work
+        properly it is important that the version of Python
+        and the HPCC system are set up
+        correctly to support using the installed version of Python.
         If you see "ld: cannot find --lpy2embed" error then your system is
-        likely set up for <!-- DNT-Start -->Python<!-- DNT-End -->3. Likewise,
+        likely set up for Python3. Likewise,
         if you see "ld: cannot find --lpy3embed" then your system is set up
-        for <!-- DNT-Start -->Python<!-- DNT-End -->2.</para>
+        for Python2.</para>
 
         <sect3>
-          <!-- DNT-Start -->
+          
 
           <title>Python Scope Options</title>
 
-          <!-- DNT-End -->
+          
 
-          <para><emphasis role="bold"><!-- DNT-Start -->GLOBALSCOPE<!-- DNT-End --></emphasis>
-          - This option allows independent <!-- DNT-Start -->EMBED<!-- DNT-End -->
+          <para><emphasis role="bold">GLOBALSCOPE</emphasis>
+          - This option allows independent EMBED
           attributes to share globals with each other if they specify the same
-          name for the <!-- DNT-Start -->GLOBALSCOPE<!-- DNT-End -->
+          name for the GLOBALSCOPE
           parameter.</para>
 
-          <para><emphasis role="bold"><!-- DNT-Start -->PERSIST<!-- DNT-End --></emphasis>
+          <para><emphasis role="bold">PERSIST</emphasis>
           - This option controls how long such a shared global scope will
           persist and exactly how far it will be shared.</para>
 
-          <para>The value passed to <!-- DNT-Start -->GLOBALSCOPE<!-- DNT-End -->
+          <para>The value passed to GLOBALSCOPE
           can be any string you like, allowing you to share globals between
-          related <!-- DNT-Start -->EMBED<!-- DNT-End --> sections while
+          related EMBED sections while
           keeping them distinct from unrelated ones.</para>
 
-          <para><!-- DNT-Start -->PERSIST<!-- DNT-End --> can take one of the
+          <para>PERSIST can take one of the
           following values:</para>
 
           <para><emphasis role="bold">global</emphasis> - The values persist
           indefinitely (until the process terminates) and are shared with any
-          other embeds using the same <!-- DNT-Start -->GLOBALSCOPE<!-- DNT-End -->
+          other embeds using the same GLOBALSCOPE
           value, even in other workunits.</para>
 
           <para><emphasis role="bold">query</emphasis> - The values persist
@@ -2996,21 +2996,21 @@ split_words('Once upon a time');
       </sect2>
 
       <sect2 id="R" role="brk">
-        <!-- DNT-Start -->
+        
 
         <title>R</title>
 
-        <!-- DNT-End -->
+        
 
-        <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform supports
-        embedded <!-- DNT-Start -->R<!-- DNT-End --> code. To enable <!-- DNT-Start -->R<!-- DNT-End -->
-        support within The <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        <para>The HPCC Platform supports
+        embedded R code. To enable R
+        support within The HPCC
         Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
-            <para>Download the <emphasis role="bold"><!-- DNT-Start -->R<!-- DNT-End -->
-            Embed</emphasis> plugin available from the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            <para>Download the <emphasis role="bold">R
+            Embed</emphasis> plugin available from the HPCC
             Systems portal.</para>
 
             <para><ulink
@@ -3022,7 +3022,7 @@ split_words('Once upon a time');
           <listitem>
             <para>Install the plugin.</para>
 
-            <para><emphasis role="bold"><!-- DNT-Start -->RPM<!-- DNT-End -->-based
+            <para><emphasis role="bold">RPM-based
             systems: </emphasis>Install using <emphasis>yum
             install</emphasis>.</para>
 
@@ -3038,20 +3038,20 @@ split_words('Once upon a time');
 
         <orderedlist continuation="continues">
           <listitem>
-            <para>Test the <!-- DNT-Start -->R<!-- DNT-End -->
+            <para>Test the R
             integration.</para>
 
-            <para><!-- DNT-Start -->R<!-- DNT-End --> is not multi-thread
-            aware, so the plugin has to wrap all calls to <!-- DNT-Start -->R<!-- DNT-End -->
+            <para>R is not multi-thread
+            aware, so the plugin has to wrap all calls to R
             for critical sections. Scripts are compiled with every call to
-            <!-- DNT-Start -->R<!-- DNT-End -->. The default runs each
-            embedded <!-- DNT-Start -->R<!-- DNT-End --> call in a local
-            environment. This environment can persist between embedded <!-- DNT-Start -->R<!-- DNT-End -->
+            R. The default runs each
+            embedded R call in a local
+            environment. This environment can persist between embedded R
             calls in the same environment.</para>
 
-            <para>You can now execute some <!-- DNT-Start -->R<!-- DNT-End -->
-            code either in your <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
-            or the <!-- DNT-Start -->ECL<!-- DNT-End --> Playground.</para>
+            <para>You can now execute some R
+            code either in your ECL IDE
+            or the ECL Playground.</para>
 
             <para>For example:</para>
 
@@ -3155,11 +3155,11 @@ SUM(NOFOLD(s1 + s2), a);
 s1b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := COUNTER+1));
 s2b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := (COUNTER/2)+1));
 SUM(NOFOLD(s1b + s2b), a); 
-</programlisting>If this successfully executes, you have correctly set up <!-- DNT-Start -->R<!-- DNT-End -->
-            to work with your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+</programlisting>If this successfully executes, you have correctly set up R
+            to work with your HPCC
             platform.</para>
 
-            <para>Additional examples of <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            <para>Additional examples of HPCC
             code can be found at:</para>
 
             <para><ulink
@@ -3170,32 +3170,32 @@ SUM(NOFOLD(s1b + s2b), a);
         <para></para>
 
         <sect3 id="R_DataTypes">
-          <!-- DNT-Start -->
+          
 
           <title>Mapping Datatypes</title>
 
-          <!-- DNT-End -->
+          
 
-          <para>Some additional considerations for mapping data types in <!-- DNT-Start -->R<!-- DNT-End -->.</para>
+          <para>Some additional considerations for mapping data types in R.</para>
 
-          <para>In <!-- DNT-Start -->HPCC<!-- DNT-End --> the <!-- DNT-Start -->ECL<!-- DNT-End -->
-          <emphasis role="bold"><!-- DNT-Start -->RECORD<!-- DNT-End --></emphasis>
-          maps to an <!-- DNT-Start -->R<!-- DNT-End -->
+          <para>In HPCC the ECL
+          <emphasis role="bold">RECORD</emphasis>
+          maps to an R
           <emphasis>list</emphasis>.</para>
 
-          <para>An <!-- DNT-Start -->ECL<!-- DNT-End --> <emphasis
-          role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End --></emphasis>
-          including a nested dataset is mapped to an <!-- DNT-Start -->R<!-- DNT-End -->
+          <para>An ECL <emphasis
+          role="bold">DATASET</emphasis>
+          including a nested dataset is mapped to an R
           <emphasis>dataframe</emphasis>.</para>
 
-          <para>An <!-- DNT-Start -->ECL<!-- DNT-End --> <emphasis
-          role="bold"><!-- DNT-Start -->SET<!-- DNT-End --></emphasis> is
-          mapped to an <!-- DNT-Start -->R<!-- DNT-End -->
+          <para>An ECL <emphasis
+          role="bold">SET</emphasis> is
+          mapped to an R
           <emphasis>vector</emphasis>.</para>
 
-          <para>These principals apply to passing data from <!-- DNT-Start -->HPCC<!-- DNT-End -->
-          to <!-- DNT-Start -->R<!-- DNT-End --> or data returning to <!-- DNT-Start -->HPCC<!-- DNT-End -->
-          from <!-- DNT-Start -->R<!-- DNT-End -->. There are usage examples
+          <para>These principals apply to passing data from HPCC
+          to R or data returning to HPCC
+          from R. There are usage examples
           of these concepts available at:</para>
 
           <para><ulink
@@ -3205,33 +3205,33 @@ SUM(NOFOLD(s1b + s2b), a);
         </sect3>
 
         <sect3>
-          <!-- DNT-Start -->
+          
 
           <title>R Scope Options</title>
 
-          <!-- DNT-End -->
+          
 
-          <para><emphasis role="bold"><!-- DNT-Start -->GLOBALSCOPE<!-- DNT-End --></emphasis>
-          - This option allows independent <!-- DNT-Start -->EMBED<!-- DNT-End -->
+          <para><emphasis role="bold">GLOBALSCOPE</emphasis>
+          - This option allows independent EMBED
           attributes to share globals with each other if they specify the same
-          name for the <!-- DNT-Start -->GLOBALSCOPE<!-- DNT-End -->
+          name for the GLOBALSCOPE
           parameter.</para>
 
-          <para><emphasis role="bold"><!-- DNT-Start -->PERSIST<!-- DNT-End --></emphasis>
+          <para><emphasis role="bold">PERSIST</emphasis>
           - This option controls how long such a shared global scope will
           persist and exactly how far it will be shared.</para>
 
-          <para>The value passed to <!-- DNT-Start -->GLOBALSCOPE<!-- DNT-End -->
+          <para>The value passed to GLOBALSCOPE
           can be any string you like, allowing you to share globals between
-          related <!-- DNT-Start -->EMBED<!-- DNT-End --> sections while
+          related EMBED sections while
           keeping them distinct from unrelated ones.</para>
 
-          <para><!-- DNT-Start -->PERSIST<!-- DNT-End --> can take one of the
+          <para>PERSIST can take one of the
           following values:</para>
 
           <para><emphasis role="bold">global</emphasis> - The values persist
           indefinitely (until the process terminates) and are shared with any
-          other embeds using the same <!-- DNT-Start -->GLOBALSCOPE<!-- DNT-End -->
+          other embeds using the same GLOBALSCOPE
           value, even in other workunits.</para>
 
           <para><emphasis role="bold">query</emphasis> - The values persist

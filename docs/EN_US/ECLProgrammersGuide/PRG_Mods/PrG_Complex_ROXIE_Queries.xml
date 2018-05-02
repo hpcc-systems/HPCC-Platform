@@ -2,36 +2,36 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Complex_Roxie_Query_Techniques">
-  <!-- DNT-Start --><title>Complex Roxie Query Techniques</title><!-- DNT-End -->
+  <title>Complex Roxie Query Techniques</title>
 
-  <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> coding techniques used in Roxie queries can be quite complex,
-  making use of multiple keys, payload keys, half-keyed <!-- DNT-Start -->JOINs<!-- DNT-End -->, the <!-- DNT-Start -->KEYDIFF<!-- DNT-End -->
-  function, and various other <!-- DNT-Start -->ECL<!-- DNT-End --> language features. All these techniques
+  <para>The ECL coding techniques used in Roxie queries can be quite complex,
+  making use of multiple keys, payload keys, half-keyed JOINs, the KEYDIFF
+  function, and various other ECL language features. All these techniques
   share a single focus, though--to maximize the performance of the query so its
   result is delivered as efficiently as possible, thereby maximizing the total
   transaction throughput rate possible for the Roxie that services the
   query.</para>
 
   <sect2 id="Key_Selection_Based_on_Input">
-    <!-- DNT-Start --><title>Key Selection Based on Input</title><!-- DNT-End -->
+    <title>Key Selection Based on Input</title>
 
     <para>It all starts with the architecture of your data and the keys you
     build from it. Typically, a single dataset would have multiple indexes
     into it so as to provide multiple access methods into the data. Therefore,
     one of the key techniques used in Roxie queries is to detect which of the
     set of possible values have been passed to the query, and based on those
-    values, choose the correct <!-- DNT-Start -->INDEX<!-- DNT-End --> to use.</para>
+    values, choose the correct INDEX to use.</para>
 
     <para>The basis for detecting which values have been passed to the query
-    is determined by the <!-- DNT-Start -->STORED<!-- DNT-End --> attributes defined to receive the passed
-    values. The <!-- DNT-Start -->SOAP<!-- DNT-End --> Interface automatically populates these attributes with
+    is determined by the STORED attributes defined to receive the passed
+    values. The SOAP Interface automatically populates these attributes with
     whatever values have been passed to the query. That means the query code
     need simply interrogate those parameters for the presence of values other
     than their defaults.</para>
 
     <para>This example demonstrates the technique:</para>
 
-    <!-- DNT-Start --><programlisting>IMPORT $;
+    <programlisting>IMPORT $;
 EXPORT PeopleSearchService() := FUNCTION
   STRING30 lname_value := '' : STORED('LastName');
   STRING30 fname_value := '' : STORED('FirstName');
@@ -42,18 +42,18 @@ EXPORT PeopleSearchService() := FUNCTION
                 FETCH(Base,IDX(LastName=lname_value),RIGHT.RecPos),
                 FETCH(Base,IDX(LastName=lname_value,FirstName=fname_value),RIGHT.RecPos));
   RETURN OUTPUT(CHOOSEN(Fetched,2000));
-END;</programlisting><!-- DNT-End -->
+END;</programlisting>
 
     <para>This query is written assuming that the LastName parameter will
-    always be passed, so the <!-- DNT-Start -->IF<!-- DNT-End --> needs only to detect whether a FirstName was
+    always be passed, so the IF needs only to detect whether a FirstName was
     also entered by the user. If so, then the filter on the index parameter to
-    the <!-- DNT-Start -->FETCH<!-- DNT-End --> needs to include that value, otherwise the <!-- DNT-Start -->FETCH<!-- DNT-End --> just needs to
+    the FETCH needs to include that value, otherwise the FETCH just needs to
     filter the index with the LastName value.</para>
 
     <para>There are several ways this code could have been written. Here's an
     alternative:</para>
 
-    <!-- DNT-Start --><programlisting>IMPORT $;
+    <programlisting>IMPORT $;
 EXPORT PeopleSearchService() := FUNCTION
   STRING30 lname_value := '' : STORED('LastName');
   STRING30 fname_value := '' : STORED('FirstName');
@@ -64,35 +64,35 @@ EXPORT PeopleSearchService() := FUNCTION
                    IDX.LastName=lname_value AND IDX.FirstName=fname_value);
   Fetched := FETCH(Base,IDX(IndxFilter),RIGHT.RecPos);
   RETURN OUTPUT(CHOOSEN(Fetched,2000));
-END;</programlisting><!-- DNT-End -->
+END;</programlisting>
 
-    <para>In this example, the <!-- DNT-Start -->IF<!-- DNT-End --> simply builds the correct filter expression
-    for the <!-- DNT-Start -->FETCH<!-- DNT-End --> to use. Using this form makes the code easier to read and
+    <para>In this example, the IF simply builds the correct filter expression
+    for the FETCH to use. Using this form makes the code easier to read and
     maintain by separating out the multiple possible forms of the filter logic
     from the function that uses it.</para>
   </sect2>
 
   <sect2 id="PG_Keyed_Joins">
-    <!-- DNT-Start --><title>Keyed Joins</title><!-- DNT-End -->
+    <title>Keyed Joins</title>
 
-    <para>Although the <!-- DNT-Start -->FETCH<!-- DNT-End --> function was specifically designed for indexed
-    access to data, in practice the half-keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> operation is more commonly
+    <para>Although the FETCH function was specifically designed for indexed
+    access to data, in practice the half-keyed JOIN operation is more commonly
     used in Roxie queries. A major reason for this is the flexibility that is
-    possible with <!-- DNT-Start -->JOIN<!-- DNT-End -->.</para>
+    possible with JOIN.</para>
 
-    <para>The advantages of using keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> operations in any query is fully
-    discussed in the <emphasis>Using <!-- DNT-Start -->ECL<!-- DNT-End --> Keys (<!-- DNT-Start -->INDEX<!-- DNT-End --> Files)</emphasis>
+    <para>The advantages of using keyed JOIN operations in any query is fully
+    discussed in the <emphasis>Using ECL Keys (INDEX Files)</emphasis>
     article. These advantages really benefit Roxie queries tremendously.
-    Because of the nature of Roxie, the best advantage from keyed <!-- DNT-Start -->JOINs<!-- DNT-End --> comes
-    from the use of half-keyed <!-- DNT-Start -->JOINs<!-- DNT-End --> that utilize payload keys (eliminating
-    the need for additional <!-- DNT-Start -->FETCH<!-- DNT-End --> operations).</para>
+    Because of the nature of Roxie, the best advantage from keyed JOINs comes
+    from the use of half-keyed JOINs that utilize payload keys (eliminating
+    the need for additional FETCH operations).</para>
   </sect2>
 
   <sect2 id="Limiting_Output">
-    <!-- DNT-Start --><title>Limiting Output</title><!-- DNT-End -->
+    <title>Limiting Output</title>
 
     <para>One major consideration for developing a Roxie query is the amount
-    of data that may possibly be returned from the query. Since <!-- DNT-Start -->JOIN<!-- DNT-End -->
+    of data that may possibly be returned from the query. Since JOIN
     operations can possibly result in huge datasets, care should be taken to
     limit the number of records any given query may return to a number that is
     "reasonable" for that specific type of query. Here are some techniques to
@@ -106,27 +106,27 @@ END;</programlisting><!-- DNT-End -->
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start -->*<!-- DNT-End --></entry>
+              <entry>*</entry>
 
-              <entry>The <!-- DNT-Start -->CHOOSEN<!-- DNT-End --> and <!-- DNT-Start -->LIMIT<!-- DNT-End --> functions should be used to limit
+              <entry>The CHOOSEN and LIMIT functions should be used to limit
               index reads to some maximum number.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->*<!-- DNT-End --></entry>
+              <entry>*</entry>
 
-              <entry>Keyed <!-- DNT-Start -->JOINs<!-- DNT-End --> should use the <!-- DNT-Start -->ATMOST<!-- DNT-End -->, <!-- DNT-Start -->KEEP<!-- DNT-End -->, or <!-- DNT-Start -->LIMIT<!-- DNT-End -->
+              <entry>Keyed JOINs should use the ATMOST, KEEP, or LIMIT
               option.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->*<!-- DNT-End --></entry>
+              <entry>*</entry>
 
               <entry>When a nested child dataset is defined, it should have a
-              <!-- DNT-Start -->MAXCOUNT<!-- DNT-End --> option defined on the child <!-- DNT-Start -->DATASET<!-- DNT-End --> field in the <!-- DNT-Start -->RECORD<!-- DNT-End -->
+              MAXCOUNT option defined on the child DATASET field in the RECORD
               structure, and the code that builds the nested child dataset
-              should use <!-- DNT-Start -->CHOOSEN<!-- DNT-End --> with a value that exactly matches the
-              <!-- DNT-Start -->MAXCOUNT<!-- DNT-End -->.</entry>
+              should use CHOOSEN with a value that exactly matches the
+              MAXCOUNT.</entry>
             </row>
           </tbody>
         </tgroup>

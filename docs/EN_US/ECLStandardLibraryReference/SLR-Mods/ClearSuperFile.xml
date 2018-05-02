@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ClearSuperFile">
-  <!-- DNT-Start --><title>ClearSuperFile</title><!-- DNT-End -->
+  <title>ClearSuperFile</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.ClearSuperFile<indexterm>
+  <para><emphasis role="bold">STD.File.ClearSuperFile<indexterm>
       <primary>STD.File.ClearSuperFile</primary>
     </indexterm><indexterm>
       <primary>File.ClearSuperFile</primary>
@@ -12,7 +12,7 @@
       <primary>ClearSuperFile</primary>
     </indexterm>(</emphasis> <emphasis> superfile, </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>, delete </emphasis> <emphasis
-  role="bold">] )</emphasis></para><!-- DNT-End -->
+  role="bold">] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,14 +22,14 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>superfile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>superfile</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>delete</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>delete</emphasis></entry>
 
           <entry>A boolean flag specifying whether to delete the sub-files
           from disk or just remove them from the <emphasis>superfile
@@ -38,7 +38,7 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>Null.</entry>
         </row>
@@ -46,7 +46,7 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ClearSuperFile<!-- DNT-End --> </emphasis>function removes
+  <para>The <emphasis role="bold">ClearSuperFile </emphasis>function removes
   all sub-files from the list of files comprising the
   <emphasis>superfile</emphasis>.</para>
 
@@ -54,9 +54,9 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">SEQUENTIAL(
+  <programlisting format="linespecific">SEQUENTIAL(
  STD.File.StartSuperFileTransaction(),
  STD.File.ClearSuperFile('MySuperFile'),
  STD.File.FinishSuperFileTransaction()
-);</programlisting><!-- DNT-End -->
+);</programlisting>
 </sect1>

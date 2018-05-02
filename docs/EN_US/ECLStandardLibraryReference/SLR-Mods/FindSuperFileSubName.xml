@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FindSuperFileSubName">
-  <!-- DNT-Start --><title>FindSuperFileSubName</title><!-- DNT-End -->
+  <title>FindSuperFileSubName</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.FindSuperFileSubName<indexterm>
+  <para><emphasis role="bold">STD.File.FindSuperFileSubName<indexterm>
       <primary>STD.File.FindSuperFileSubName</primary>
     </indexterm><indexterm>
       <primary>File.FindSuperFileSubName</primary>
     </indexterm><indexterm>
       <primary>FindSuperFileSubName</primary>
     </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
-  <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
+  <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,29 +21,29 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>superfile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>superfile</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>subfile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>subfile</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           sub-file.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->FindSuperFileSubName<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End -->4 value.</entry>
+          <entry>FindSuperFileSubName returns an INTEGER4 value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->FindSuperFileSubName<!-- DNT-End --> </emphasis>function
+  <para>The <emphasis role="bold">FindSuperFileSubName </emphasis>function
   returns the ordinal position of the specified <emphasis>subfile</emphasis>
   in the <emphasis>superfile</emphasis>.</para>
 
@@ -51,5 +51,5 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.File.GetSuperFileSubName('~CLASS::RT::IN::SF1', 'Sue');    //get position of sub-file Sue</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := STD.File.GetSuperFileSubName('~CLASS::RT::IN::SF1', 'Sue');    //get position of sub-file Sue</programlisting>
 </sect1>

@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="VizBundleChart2dMethods">
-  <!-- DNT-Start --><title><emphasis>Multi-Dimensional Methods</emphasis></title><!-- DNT-End -->
+  <title><emphasis>Multi-Dimensional Methods</emphasis></title>
 
   <para>This section covers methods that create multi-dimensional
   visualizations contained in the MultiD module. These methods provide ways to
@@ -11,14 +11,14 @@
   <para></para>
 
   <sect1 id="VizMultiDArea">
-    <!-- DNT-Start --><title>Area</title><!-- DNT-End -->
+    <title>Area</title>
 
-    <para><emphasis role="bold">Visualizer.MuiltD.<!-- DNT-Start -->Area<!-- DNT-End -->(<indexterm>
-        <primary>Visualizer.MultiD.<!-- DNT-Start -->Area<!-- DNT-End --></primary>
+    <para><emphasis role="bold">Visualizer.MuiltD.Area(<indexterm>
+        <primary>Visualizer.MultiD.Area</primary>
       </indexterm><indexterm>
-        <primary>MultiD.<!-- DNT-Start -->Area<!-- DNT-End --></primary>
+        <primary>MultiD.Area</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->Area<!-- DNT-End --></primary>
+        <primary>Area</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -36,46 +36,46 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>id</emphasis></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
-            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outputName</emphasis></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Maps <!-- DNT-Start -->Column<!-- DNT-End --> Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filteredBy</emphasis></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>properties</emphasis></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -83,14 +83,14 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->Area<!-- DNT-End --> </emphasis>visualization method
+    <para>The <emphasis role="bold">Area </emphasis>visualization method
     displays graphically quantitative data. The area between the axis and each
     line is shown and can be emphasized using shading or colors. This is
     commonly used to compare two or more quantities.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;                  
+    <programlisting format="linespecific">IMPORT Visualizer;                  
   ds := DATASET([ {'English', 5, 43, 41, 92},
                   {'History', 17, 43, 83, 93},
                   {'Geography', 7, 45, 52, 83},
@@ -104,18 +104,18 @@
   data_exams;
   
   viz_area := Visualizer.MultiD.Area('area',, 'MultiD__test');
-  Viz_area;</programlisting><!-- DNT-End -->
+  Viz_area;</programlisting>
   </sect1>
 
   <sect1 id="VizMultiDBar">
-    <!-- DNT-Start --><title>Bar</title><!-- DNT-End -->
+    <title>Bar</title>
 
-    <para><emphasis role="bold">Visualizer.MuiltD.<!-- DNT-Start -->Bar<!-- DNT-End -->(<indexterm>
-        <primary>Visualizer.MultiD.<!-- DNT-Start -->Bar<!-- DNT-End --></primary>
+    <para><emphasis role="bold">Visualizer.MuiltD.Bar(<indexterm>
+        <primary>Visualizer.MultiD.Bar</primary>
       </indexterm><indexterm>
-        <primary>MultiD.<!-- DNT-Start -->Bar<!-- DNT-End --></primary>
+        <primary>MultiD.Bar</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->Bar<!-- DNT-End --></primary>
+        <primary>Bar</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -133,46 +133,46 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>id</emphasis></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
-            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outputName</emphasis></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Maps <!-- DNT-Start -->Column<!-- DNT-End --> Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filteredBy</emphasis></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>properties</emphasis></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -180,13 +180,13 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->Bar<!-- DNT-End --> </emphasis>visualization method
+    <para>The <emphasis role="bold">Bar </emphasis>visualization method
     displays a graph consisting of horizontal rectangles (bars) where each
     length is proportional to data value.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;                  
+    <programlisting format="linespecific">IMPORT Visualizer;                  
   ds := DATASET([ {'English', 5, 43, 41, 92},
                   {'History', 17, 43, 83, 93},
                   {'Geography', 7, 45, 52, 83},
@@ -200,18 +200,18 @@
   data_exams;
   
   viz_bar := Visualizer.MultiD.Bar('bar',, 'MultiD__test');
-  viz_bar;</programlisting><!-- DNT-End -->
+  viz_bar;</programlisting>
   </sect1>
 
   <sect1 id="VizMultiDColumn">
-    <!-- DNT-Start --><title>Column</title><!-- DNT-End -->
+    <title>Column</title>
 
-    <para><emphasis role="bold">Visualizer.MuiltD.<!-- DNT-Start -->Column<!-- DNT-End -->(<indexterm>
-        <primary>Visualizer.MultiD.<!-- DNT-Start -->Column<!-- DNT-End --></primary>
+    <para><emphasis role="bold">Visualizer.MuiltD.Column(<indexterm>
+        <primary>Visualizer.MultiD.Column</primary>
       </indexterm><indexterm>
-        <primary>MultiD.<!-- DNT-Start -->Column<!-- DNT-End --></primary>
+        <primary>MultiD.Column</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->Column<!-- DNT-End --></primary>
+        <primary>Column</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -229,46 +229,46 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>id</emphasis></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
-            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outputName</emphasis></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Maps <!-- DNT-Start -->Column<!-- DNT-End --> Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filteredBy</emphasis></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>properties</emphasis></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -276,13 +276,13 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->Column<!-- DNT-End --> </emphasis>visualization method
+    <para>The <emphasis role="bold">Column </emphasis>visualization method
     displays a graph consisting of vertical rectangles (bars) where each
     length is proportional to data value.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;                  
+    <programlisting format="linespecific">IMPORT Visualizer;                  
   ds := DATASET([ {'English', 5, 43, 41, 92},
                   {'History', 17, 43, 83, 93},
                   {'Geography', 7, 45, 52, 83},
@@ -296,18 +296,18 @@
   data_exams;
   
   viz_Column := Visualizer.MultiD.Column('column',, 'MultiD__test');
-  viz_Column;</programlisting><!-- DNT-End -->
+  viz_Column;</programlisting>
   </sect1>
 
   <sect1 id="VizMultiDHexBin">
-    <!-- DNT-Start --><title>HexBin</title><!-- DNT-End -->
+    <title>HexBin</title>
 
-    <para><emphasis role="bold">Visualizer.MuiltD.<!-- DNT-Start -->HexBin<!-- DNT-End -->(<indexterm>
-        <primary>Visualizer.MultiD.<!-- DNT-Start -->HexBin<!-- DNT-End --></primary>
+    <para><emphasis role="bold">Visualizer.MuiltD.HexBin(<indexterm>
+        <primary>Visualizer.MultiD.HexBin</primary>
       </indexterm><indexterm>
-        <primary>MultiD.<!-- DNT-Start -->HexBin<!-- DNT-End --></primary>
+        <primary>MultiD.HexBin</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->HexBin<!-- DNT-End --></primary>
+        <primary>HexBin</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -325,46 +325,46 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>id</emphasis></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
-            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outputName</emphasis></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Maps <!-- DNT-Start -->Column<!-- DNT-End --> Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filteredBy</emphasis></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>properties</emphasis></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -372,7 +372,7 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->HexBin<!-- DNT-End --> </emphasis>visualization method
+    <para>The <emphasis role="bold">HexBin </emphasis>visualization method
     displays a Hexagonal Bin plot which plots two or more continuous variables
     against each other. Hexagonal binning is useful for aggregating data
     values into a coarser display. For example, rather than showing thousands
@@ -381,7 +381,7 @@
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;                  
+    <programlisting format="linespecific">IMPORT Visualizer;                  
   ds := DATASET([ {'English', 5, 43, 41, 92},
                   {'History', 17, 43, 83, 93},
                   {'Geography', 7, 45, 52, 83},
@@ -395,18 +395,18 @@
   data_exams;
   
   viz_hexBin := Visualizer.MultiD.HexBin('hexBin',, 'MultiD__test');
-  viz_hexBin;</programlisting><!-- DNT-End -->
+  viz_hexBin;</programlisting>
   </sect1>
 
   <sect1 id="VizMultiDLine">
-    <!-- DNT-Start --><title>Line</title><!-- DNT-End -->
+    <title>Line</title>
 
-    <para><emphasis role="bold">Visualizer.MuiltD.<!-- DNT-Start -->Line<!-- DNT-End -->(<indexterm>
-        <primary>Visualizer.MultiD.<!-- DNT-Start -->Line<!-- DNT-End --></primary>
+    <para><emphasis role="bold">Visualizer.MuiltD.Line(<indexterm>
+        <primary>Visualizer.MultiD.Line</primary>
       </indexterm><indexterm>
-        <primary>MultiD.<!-- DNT-Start -->Line<!-- DNT-End --></primary>
+        <primary>MultiD.Line</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->Line<!-- DNT-End --></primary>
+        <primary>Line</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -424,46 +424,46 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>id</emphasis></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
-            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outputName</emphasis></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Maps <!-- DNT-Start -->Column<!-- DNT-End --> Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filteredBy</emphasis></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>properties</emphasis></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -471,13 +471,13 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->Line<!-- DNT-End --> </emphasis>visualization method
+    <para>The <emphasis role="bold">Line </emphasis>visualization method
     displays a line graph which uses points connected by lines to show how
     values change.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;                  
+    <programlisting format="linespecific">IMPORT Visualizer;                  
   ds := DATASET([ {'English', 5, 43, 41, 92},
                   {'History', 17, 43, 83, 93},
                   {'Geography', 7, 45, 52, 83},
@@ -491,18 +491,18 @@
   data_exams;
   
   viz_line := Visualizer.MultiD.Line('line',, 'MultiD__test');
-  viz_line;</programlisting><!-- DNT-End -->
+  viz_line;</programlisting>
   </sect1>
 
   <sect1 id="VizMultiDScatter">
-    <!-- DNT-Start --><title>Scatter</title><!-- DNT-End -->
+    <title>Scatter</title>
 
-    <para><emphasis role="bold">Visualizer.MuiltD.<!-- DNT-Start -->Scatter<!-- DNT-End -->(<indexterm>
-        <primary>Visualizer.MultiD.<!-- DNT-Start -->Scatter<!-- DNT-End --></primary>
+    <para><emphasis role="bold">Visualizer.MuiltD.Scatter(<indexterm>
+        <primary>Visualizer.MultiD.Scatter</primary>
       </indexterm><indexterm>
-        <primary>MultiD.<!-- DNT-Start -->Scatter<!-- DNT-End --></primary>
+        <primary>MultiD.Scatter</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->Scatter<!-- DNT-End --></primary>
+        <primary>Scatter</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -520,46 +520,46 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>id</emphasis></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
-            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outputName</emphasis></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Maps <!-- DNT-Start -->Column<!-- DNT-End --> Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filteredBy</emphasis></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>properties</emphasis></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -567,13 +567,13 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->Scatter<!-- DNT-End --> </emphasis>visualization method
+    <para>The <emphasis role="bold">Scatter </emphasis>visualization method
     displays a scatter plot using horizontal and vertical axes to plot data
     points.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;                  
+    <programlisting format="linespecific">IMPORT Visualizer;                  
   ds := DATASET([ {'English', 5, 43, 41, 92},
                   {'History', 17, 43, 83, 93},
                   {'Geography', 7, 45, 52, 83},
@@ -588,18 +588,18 @@
   viz_scatter := Visualizer.MultiD.Scatter('scatter',, 'MultiD__test');
   viz_scatter;
 
-  </programlisting><!-- DNT-End -->
+  </programlisting>
   </sect1>
 
   <sect1 id="VizMultiDStep">
-    <!-- DNT-Start --><title>Step</title><!-- DNT-End -->
+    <title>Step</title>
 
-    <para><emphasis role="bold">Visualizer.MuiltD.<!-- DNT-Start -->Step<!-- DNT-End -->(<indexterm>
-        <primary>Visualizer.MultiD.<!-- DNT-Start -->Step<!-- DNT-End --></primary>
+    <para><emphasis role="bold">Visualizer.MuiltD.Step(<indexterm>
+        <primary>Visualizer.MultiD.Step</primary>
       </indexterm><indexterm>
-        <primary>MultiD.<!-- DNT-Start -->Step<!-- DNT-End --></primary>
+        <primary>MultiD.Step</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->Step<!-- DNT-End --></primary>
+        <primary>Step</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -617,46 +617,46 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>id</emphasis></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataSource</emphasis></entry>
 
-            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
-            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>outputName</emphasis></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>mappings</emphasis></entry>
 
-            <entry>Maps <!-- DNT-Start -->Column<!-- DNT-End --> Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filteredBy</emphasis></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>properties</emphasis></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -664,13 +664,13 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->Step<!-- DNT-End --> </emphasis>visualization method
+    <para>The <emphasis role="bold">Step </emphasis>visualization method
     creates a step graph made of lines in horizontal intervals or
     'steps'.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;                  
+    <programlisting format="linespecific">IMPORT Visualizer;                  
   ds := DATASET([ {'English', 5, 43, 41, 92},
                   {'History', 17, 43, 83, 93},
                   {'Geography', 7, 45, 52, 83},
@@ -685,6 +685,6 @@
   viz_step := Visualizer.MultiD.Step('step',, 'MultiD__test');
   viz_step;
 
-  </programlisting><!-- DNT-End -->
+  </programlisting>
   </sect1>
 </chapter>

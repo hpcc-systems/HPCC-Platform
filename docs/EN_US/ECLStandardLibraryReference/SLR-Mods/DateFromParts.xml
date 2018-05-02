@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DateFromParts">
-  <!-- DNT-Start --><title>DateFromParts</title><!-- DNT-End -->
+  <title>DateFromParts</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.DateFromParts<indexterm>
+  <para><emphasis role="bold">STD.Date.DateFromParts<indexterm>
       <primary>STD.Date.DateFromParts</primary>
     </indexterm><indexterm>
       <primary>Date.DateFromParts</primary>
     </indexterm><indexterm>
       <primary>DateFromParts</primary>
     </indexterm>(</emphasis> <emphasis>year, month, day</emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,46 +21,46 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>year</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>year</emphasis></entry>
 
-          <entry>An <!-- DNT-Start -->INTEGER<!-- DNT-End -->2 year value in the range 0 to 9999.</entry>
+          <entry>An INTEGER2 year value in the range 0 to 9999.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>month</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>month</emphasis></entry>
 
-          <entry>An <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->1 month value in the range 1 to 12.</entry>
+          <entry>An UNSIGNED1 month value in the range 1 to 12.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>day</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>day</emphasis></entry>
 
-          <entry>An <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->1 day value in the range 1 to 31.</entry>
+          <entry>An UNSIGNED1 day value in the range 1 to 31.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->DateFromParts<!-- DNT-End --> returns an <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->4 value.</entry>
+          <entry>DateFromParts returns an UNSIGNED4 value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->DateFromParts<!-- DNT-End --></emphasis> function returns a
+  <para>The <emphasis role="bold">DateFromParts</emphasis> function returns a
   Date_t value from the <emphasis>year</emphasis>, <emphasis>month</emphasis>,
   and <emphasis>day</emphasis> parameters.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 INTEGER2  MyYear  := 2012;  
 UNSIGNED1 MyMonth := 1;   
 UNSIGNED1 MyDay   := 1;  
   
 D := STD.Date.DateFromParts(MyYear,MyMonth,MyDay);
     //D contains 20120101, representing January 1, 2012
-  </programlisting><!-- DNT-End -->
+  </programlisting>
 
   <para></para>
 </sect1>

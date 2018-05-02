@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="IN_Operator">
-  <!-- DNT-Start --><title>IN Operator<indexterm>
+  <title>IN Operator<indexterm>
       <primary>IN</primary>
     </indexterm><indexterm>
       <primary>IN Operator</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <!-- DNT-Start --><para><emphasis>value </emphasis><emphasis role="bold">IN
-  </emphasis><emphasis>value_set</emphasis></para><!-- DNT-End -->
+  <para><emphasis>value </emphasis><emphasis role="bold">IN
+  </emphasis><emphasis>value_set</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -19,32 +19,32 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>value</emphasis></entry>
 
           <entry>The value to find in the <emphasis>value_set</emphasis>. This
           is usually a single value, but if the <emphasis>value_set</emphasis>
-          is a <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> with a multiple-component key, this may also be a
-          <!-- DNT-Start -->ROW<!-- DNT-End -->.</entry>
+          is a DICTIONARY with a multiple-component key, this may also be a
+          ROW.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>value_set</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>value_set</emphasis></entry>
 
-          <entry>A set of values. This may be a set expression, the <!-- DNT-Start -->SET<!-- DNT-End -->
-          function, or a <!-- DNT-Start -->DICTIONARY<!-- DNT-End -->.</entry>
+          <entry>A set of values. This may be a set expression, the SET
+          function, or a DICTIONARY.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->IN<!-- DNT-End --></emphasis> operator is shorthand for a
-  collection of <!-- DNT-Start -->OR<!-- DNT-End --> conditions. It is an operator that will search a set to
-  find an inclusion, resulting in a Boolean return. Using <!-- DNT-Start -->IN<!-- DNT-End --> is much more
-  efficient than the equivalent <!-- DNT-Start -->OR<!-- DNT-End --> expression.</para>
+  <para>The <emphasis role="bold">IN</emphasis> operator is shorthand for a
+  collection of OR conditions. It is an operator that will search a set to
+  find an inclusion, resulting in a Boolean return. Using IN is much more
+  efficient than the equivalent OR expression.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>ABCset := ['A', 'B', 'C'];
+  <programlisting>ABCset := ['A', 'B', 'C'];
 IsABCStatus := Person.Status IN ABCset;
     //This code is directly equivalent to:
     // IsABCStatus := Person.Status = 'A' OR
@@ -76,15 +76,15 @@ OUTPUT(6 IN CodeColorDCT);     //false
 
 ColorCodesDCT := DICTIONARY(ColorCodes,{Color,Code});
 OUTPUT(ROW({'Red',2},rec) IN ColorCodesDCT);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para>See Also: <link linkend="Basic_Attribute_Types">Basic Definition
   Types</link>, <link linkend="Basic_Attribute_Types">Definition Types</link>
   (<link linkend="Set_Attributes">Set Definitions</link>), <link
   linkend="Logical_Operators">Logical Operators</link>, <link
-  linkend="PARSE_Pattern_Value_Types"><!-- DNT-Start -->PATTERN<!-- DNT-End --></link>, <link
-  linkend="DICTIONARY"><!-- DNT-Start -->DICTIONARY<!-- DNT-End --></link>, <link linkend="ROW"><!-- DNT-Start -->ROW<!-- DNT-End --></link>,
-  <link linkend="SET"><!-- DNT-Start -->SET<!-- DNT-End --></link>, <link linkend="Recordset_Filtering">Sets and
-  Filters</link>, <link linkend="SET_OF"><!-- DNT-Start -->SET<!-- DNT-End --> <!-- DNT-Start -->OF<!-- DNT-End --></link>, <link
+  linkend="PARSE_Pattern_Value_Types">PATTERN</link>, <link
+  linkend="DICTIONARY">DICTIONARY</link>, <link linkend="ROW">ROW</link>,
+  <link linkend="SET">SET</link>, <link linkend="Recordset_Filtering">Sets and
+  Filters</link>, <link linkend="SET_OF">SET OF</link>, <link
   linkend="Set_Operators">Set Operators</link></para>
 </sect1>

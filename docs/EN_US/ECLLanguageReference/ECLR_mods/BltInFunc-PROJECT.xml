@@ -2,30 +2,30 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PROJECT">
-  <!-- DNT-Start --><title>PROJECT</title><!-- DNT-End -->
+  <title>PROJECT</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->PROJECT<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->PROJECT<!-- DNT-End --></primary>
+  <para><emphasis role="bold">PROJECT<indexterm>
+      <primary>PROJECT</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->PROJECT<!-- DNT-End --> function</primary>
+      <primary>PROJECT function</primary>
     </indexterm>(</emphasis><emphasis> recordset, transform
-  </emphasis><emphasis role="bold">[, <!-- DNT-Start -->PREFETCH<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->PREFETCH<!-- DNT-End --></primary>
+  </emphasis><emphasis role="bold">[, PREFETCH<indexterm>
+      <primary>PREFETCH</primary>
     </indexterm> [ (</emphasis><emphasis>lookahead </emphasis><emphasis
-  role="bold">[, <!-- DNT-Start -->PARALLEL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->PARALLEL<!-- DNT-End --></primary>
-    </indexterm>]) ] ]</emphasis><emphasis role="bold"> [, <!-- DNT-Start -->KEYED<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->KEYED<!-- DNT-End --></primary>
-    </indexterm> ] [, <!-- DNT-Start -->LOCAL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --></primary>
-    </indexterm> ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  role="bold">[, PARALLEL<indexterm>
+      <primary>PARALLEL</primary>
+    </indexterm>]) ] ]</emphasis><emphasis role="bold"> [, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ] [, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->PROJECT<!-- DNT-End -->(</emphasis><emphasis> recordset, record
-  </emphasis><emphasis role="bold">[, <!-- DNT-Start -->PREFETCH<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->PREFETCH<!-- DNT-End --></primary>
+  <para><emphasis role="bold">PROJECT(</emphasis><emphasis> recordset, record
+  </emphasis><emphasis role="bold">[, PREFETCH<indexterm>
+      <primary>PREFETCH</primary>
     </indexterm> [ (</emphasis><emphasis>lookahead </emphasis><emphasis
-  role="bold">[, <!-- DNT-Start -->PARALLEL<!-- DNT-End -->]) ] ]</emphasis><emphasis role="bold"> [, <!-- DNT-Start -->KEYED<!-- DNT-End --> ] [,
-  <!-- DNT-Start -->LOCAL<!-- DNT-End --> ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  role="bold">[, PARALLEL]) ] ]</emphasis><emphasis role="bold"> [, KEYED ] [,
+  LOCAL ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -35,29 +35,29 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>recordset</emphasis></entry>
 
             <entry>The set of records to process. This may be a single-record
-            in-line <!-- DNT-Start -->DATASET<!-- DNT-End -->.</entry>
+            in-line DATASET.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>transform</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>transform</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call for each record in the
+            <entry>The TRANSFORM function to call for each record in the
             recordset.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PREFETCH</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PREFETCH</emphasis></entry>
 
             <entry>Optional. Allows index reads within the transform to be as
-            efficient as keyed <!-- DNT-Start -->JOINs<!-- DNT-End -->. Valid for use only in Roxie
+            efficient as keyed JOINs. Valid for use only in Roxie
             queries.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>lookahead</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>lookahead</emphasis></entry>
 
             <entry>Optional. Specifies the number of look-ahead reads. If
             omitted, the default is the value of the _PrefetchProjectPreload
@@ -68,14 +68,14 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Specifies the lookahead is done on a separate
             thread, in parallel with query execution.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">KEYED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">KEYED</emphasis></entry>
 
             <entry>Optional. Specifies the activity is part of an index read
             operation, which allows the optimizer to generate optimal code for
@@ -83,93 +83,93 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">LOCAL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
             <entry>Optional. Specifies the operation is performed on each
             supercomputer node independently, without requiring interaction
             with all other nodes to acquire data; the operation maintains the
-            distribution of any previous <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->.</entry>
+            distribution of any previous DISTRIBUTE.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>record</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>record</emphasis></entry>
 
-            <entry>The output <!-- DNT-Start -->RECORD<!-- DNT-End --> structure<indexterm>
-                <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
+            <entry>The output RECORD structure<indexterm>
+                <primary>RECORD structure</primary>
               </indexterm> to use for each record in the recordset.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->PROJECT<!-- DNT-End --> returns a record set.</entry>
+            <entry>PROJECT returns a record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->PROJECT<!-- DNT-End --> </emphasis>function processes
+  <para>The <emphasis role="bold">PROJECT </emphasis>function processes
   through all records in the <emphasis>recordset </emphasis>performing the
   <emphasis>transform</emphasis> function on each record in turn.</para>
 
-  <para>The <!-- DNT-Start -->PROJECT<!-- DNT-End -->(<emphasis>recordset,record</emphasis>) form is simply a
+  <para>The PROJECT(<emphasis>recordset,record</emphasis>) form is simply a
   shorthand synonym for:</para>
 
-  <para><!-- DNT-Start -->PROJECT<!-- DNT-End -->(<emphasis>recordset</emphasis>,<!-- DNT-Start -->TRANSFORM<!-- DNT-End -->(<emphasis>record</emphasis>,<!-- DNT-Start -->SELF<!-- DNT-End -->
-  := <!-- DNT-Start -->LEFT<!-- DNT-End -->)).</para>
+  <para>PROJECT(<emphasis>recordset</emphasis>,TRANSFORM(<emphasis>record</emphasis>,SELF
+  := LEFT)).</para>
 
   <para>making it simple to move data from one structure to another without a
-  <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> as long as all the fields in the output
+  TRANSFORM as long as all the fields in the output
   <emphasis>record</emphasis> structure are present in the input
   <emphasis>recordset</emphasis>.</para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Project">
-    <!-- DNT-Start --><title>TRANSFORM Function<indexterm>
+    <title>TRANSFORM Function<indexterm>
         <primary>TRANSFORM Function</primary>
       </indexterm> Requirements<indexterm>
         <primary>TRANSFORM Function Requirements</primary>
@@ -177,21 +177,21 @@
         <primary>Transform Requirements</primary>
       </indexterm> - PROJECT<indexterm>
         <primary>Transform Requirement Project</primary>
-      </indexterm></title><!-- DNT-End -->
+      </indexterm></title>
 
     <para>The <emphasis>transform</emphasis> function must take at least one
-    parameter: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record of the same format as the
+    parameter: a LEFT record of the same format as the
     <emphasis>recordset</emphasis>. Optionally, it may take a second
-    parameter: an integer <!-- DNT-Start -->COUNTER<!-- DNT-End --> specifying the number of times the
+    parameter: an integer COUNTER specifying the number of times the
     <emphasis>transform</emphasis> has been called for the <emphasis>recordset
     </emphasis>or the current group in the <emphasis>recordset</emphasis> (see
-    the <!-- DNT-Start -->GROUP<!-- DNT-End --> function). The second parameter form is useful for adding
+    the GROUP function). The second parameter form is useful for adding
     sequence numbers. The format of the resulting record set does not need to
     be the same as the input.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>//form one example **********************************
+    <programlisting>//form one example **********************************
 Ages := RECORD
   STRING15 per_first_name;
   STRING25 per_last_name;
@@ -269,19 +269,19 @@ Rec# Value1 Value2 CatValues
 4      A      B      AB-3-1
 5      C      G      CG-3-2
 */
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link>, <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>, <link linkend="ROW"><!-- DNT-Start -->ROW<!-- DNT-End --></link>, <link linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="ROW">ROW</link>, <link linkend="DATASET">DATASET</link></para>
   </sect2>
 
   <sect2 id="BuiltinFunction_PROJECT">
-    <!-- DNT-Start --><title>PROJECT - Module</title><!-- DNT-End -->
+    <title>PROJECT - Module</title>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->PROJECT<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->PROJECT<!-- DNT-End --></primary>
+    <para><emphasis role="bold">PROJECT<indexterm>
+        <primary>PROJECT</primary>
       </indexterm>(</emphasis><emphasis> module, interface
-    </emphasis><emphasis role="bold">[, <!-- DNT-Start -->OPT<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->OPT<!-- DNT-End --></primary>
+    </emphasis><emphasis role="bold">[, OPT<indexterm>
+        <primary>OPT</primary>
       </indexterm> | </emphasis><emphasis>attributelist </emphasis><emphasis
     role="bold">] )</emphasis></para>
 
@@ -293,20 +293,20 @@ Rec# Value1 Value2 CatValues
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis>module</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>module</emphasis></entry>
 
-              <entry>The <!-- DNT-Start -->MODULE<!-- DNT-End --> structure containing the attribute definitions
+              <entry>The MODULE structure containing the attribute definitions
               whose values to pass as the interface.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>interface</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>interface</emphasis></entry>
 
-              <entry>The <!-- DNT-Start -->INTERFACE<!-- DNT-End --> structure to pass.</entry>
+              <entry>The INTERFACE structure to pass.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">OPT</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis role="bold">OPT</emphasis></entry>
 
               <entry>Optional. Suppresses the error message that is generated
               when an attribute defined in the interface is not also defined
@@ -314,7 +314,7 @@ Rec# Value1 Value2 CatValues
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis>attributelist</emphasis><!-- DNT-End --></entry>
+              <entry><emphasis>attributelist</emphasis></entry>
 
               <entry>Optional. A comma-delimited list of the specific
               attributes in the module to supply to the interface. This allows
@@ -324,16 +324,16 @@ Rec# Value1 Value2 CatValues
             </row>
 
             <row>
-              <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+              <entry>Return:</entry>
 
-              <entry><!-- DNT-Start -->PROJECT<!-- DNT-End --> returns a <!-- DNT-Start -->MODULE<!-- DNT-End --> compatible with the
+              <entry>PROJECT returns a MODULE compatible with the
               interface.</entry>
             </row>
           </tbody>
         </tgroup>
       </informaltable></para>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->PROJECT<!-- DNT-End --> </emphasis>function passes a
+    <para>The <emphasis role="bold">PROJECT </emphasis>function passes a
     <emphasis>module's</emphasis> attributes in the form of the
     <emphasis>interface</emphasis> to a function defined to accept parameters
     structured like the specified <emphasis>interface</emphasis>. This allows
@@ -345,7 +345,7 @@ Rec# Value1 Value2 CatValues
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>PROJECT(x,y)
+    <programlisting>PROJECT(x,y)
 /*is broadly equivalent to
 MODULE(y)
   SomeAttributeInY := x.someAttributeInY
@@ -363,8 +363,8 @@ myService(myInterface myArgs) := FUNCTION
 // you could directly pass PROJECT as a module parameter
 // to an attribute:
 myService(myInterface myArgs) := childService(PROJECT(myArgs, childInterface));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="MODULE_Structure"><!-- DNT-Start -->MODULE<!-- DNT-End --> Structure</link>, <link linkend="INTERFACE_Structure"><!-- DNT-Start -->INTERFACE<!-- DNT-End --> Structure</link>, <link linkend="FUNCTION_Structure"><!-- DNT-Start -->FUNCTION<!-- DNT-End --> Structure</link>, <link linkend="STORED"><!-- DNT-Start -->STORED<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="MODULE_Structure">MODULE Structure</link>, <link linkend="INTERFACE_Structure">INTERFACE Structure</link>, <link linkend="FUNCTION_Structure">FUNCTION Structure</link>, <link linkend="STORED">STORED</link></para>
   </sect2>
 </sect1>

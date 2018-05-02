@@ -2,13 +2,13 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Data_int">
-  <!-- DNT-Start --><title>int</title><!-- DNT-End -->
+  <title>int</title>
 
   <para><indexterm>
-      <primary><!-- DNT-Start -->int<!-- DNT-End --></primary>
+      <primary>int</primary>
     </indexterm>An integer value.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>int Age;   </programlisting><!-- DNT-End -->
+  <programlisting>int Age;   </programlisting>
 </sect1>

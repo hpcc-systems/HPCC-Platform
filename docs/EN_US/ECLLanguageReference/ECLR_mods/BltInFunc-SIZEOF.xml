@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SIZEOF">
-  <!-- DNT-Start --><title>SIZEOF</title><!-- DNT-End -->
+  <title>SIZEOF</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->SIZEOF<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->SIZEOF<!-- DNT-End --></primary>
+  <para><emphasis role="bold">SIZEOF<indexterm>
+      <primary>SIZEOF</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->SIZEOF<!-- DNT-End --> function</primary>
+      <primary>SIZEOF function</primary>
     </indexterm>(</emphasis><emphasis>data </emphasis><emphasis
-  role="bold">[</emphasis>, <emphasis role="bold"><!-- DNT-Start -->MAX<!-- DNT-End --></emphasis><emphasis
+  role="bold">[</emphasis>, <emphasis role="bold">MAX</emphasis><emphasis
   role="bold"><indexterm>
-      <primary><!-- DNT-Start -->MAX<!-- DNT-End --></primary>
+      <primary>MAX</primary>
     </indexterm> </emphasis><emphasis role="bold">] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -22,14 +22,14 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>data</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>data</emphasis></entry>
 
-            <entry>The name of a dataset, <!-- DNT-Start -->RECORD<!-- DNT-End --> structure, a fully-qualified
+            <entry>The name of a dataset, RECORD structure, a fully-qualified
             field name, or a constant string expression.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">MAX</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">MAX</emphasis></entry>
 
             <entry>Specifies the data is variable-length (such as containing
             child datasets) and the value to return is the maximum
@@ -37,21 +37,21 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->SIZEOF<!-- DNT-End --> returns a single integer value.</entry>
+            <entry>SIZEOF returns a single integer value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->SIZEOF<!-- DNT-End --> </emphasis>function returns the total
+  <para>The <emphasis role="bold">SIZEOF </emphasis>function returns the total
   number of bytes defined for storage of the specified
   <emphasis>data</emphasis> structure or field.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>MyRec := RECORD
+  <programlisting>MyRec := RECORD
 INTEGER1 F1;
 INTEGER5 F2;
 STRING1 F3;
@@ -93,7 +93,7 @@ SIZEOF(File_People.street); //result is 42
 SIZEOF('abc' + '123'); //result is 6
 SIZEOF(person.per_cid); //result is 9 - Person.per_cid is
         DATA9
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="LENGTH"><!-- DNT-Start -->LENGTH<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="LENGTH">LENGTH</link></para>
 </sect1>

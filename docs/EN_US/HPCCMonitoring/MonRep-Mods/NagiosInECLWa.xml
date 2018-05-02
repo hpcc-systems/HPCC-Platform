@@ -2,17 +2,17 @@
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Nagios_in_ECLWatch">
-  <!-- DNT-Start --><title>Nagios in ECL Watch</title><!-- DNT-End -->
+  <title>Nagios in ECL Watch</title>
 
-  <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch is set up for monitoring your system with Nagios. <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
-  has an <!-- DNT-Start -->API<!-- DNT-End --> that can interface with Nagios and provide Nagios monitoring
-  right in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. Nagios escalations can be pointed to any <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
-  version 5.4 (and later) and are viewable directly in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+  <para>ECL Watch is set up for monitoring your system with Nagios. ECL Watch
+  has an API that can interface with Nagios and provide Nagios monitoring
+  right in ECL Watch. Nagios escalations can be pointed to any ECL Watch
+  version 5.4 (and later) and are viewable directly in ECL Watch.</para>
 
-  <para>By default all <!-- DNT-Start -->ECL<!-- DNT-End --> Watch services defined in the environment.xml will
+  <para>By default all ECL Watch services defined in the environment.xml will
   receive notifications generated using
   <emphasis>hpcc-nagios-tools</emphasis>. You can override that if not
-  desired. The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch instances need not be in the cluster that is being
+  desired. The ECL Watch instances need not be in the cluster that is being
   monitored. <figure>
       <title>Nagios in ECL Watch</title>
 
@@ -24,7 +24,7 @@
     </figure></para>
 
   <para>Once you have Nagios configured for your environment, you can see at a
-  glance if there are any alerts. Along the top banner of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
+  glance if there are any alerts. Along the top banner of the ECL Watch
   window, you will see a small indicator light. The light is darkend (gray) if
   there is no system data being reported, typically indicative that your
   system is not yet configured for monitoring.</para>
@@ -33,8 +33,8 @@
   yellow when there is warning. The light turns red when there is an alert.
   All the alerts are configurable through the Nagios configuration.</para>
 
-  <para>By default <!-- DNT-Start -->ECL<!-- DNT-End --> Watch monitoring maintains the latest update for 30
-  minutes. This means that once Nagios stops escalations to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch any
+  <para>By default ECL Watch monitoring maintains the latest update for 30
+  minutes. This means that once Nagios stops escalations to ECL Watch any
   status, including Normal will expire from the list. Nagios escalations
   notification behavior and frequency is configurable, refer to the Nagios
   documentation for more information. An empty list could indicate 'no data'

@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WorkunitFilesRead">
-  <!-- DNT-Start --><title>WorkunitFilesRead</title><!-- DNT-End -->
+  <title>WorkunitFilesRead</title>
 
-  <!-- DNT-Start --><para><emphasis
+  <para><emphasis
   role="bold">STD.System.Workunit.WorkunitFilesRead    <indexterm>
       <primary>STD.System.Workunit.WorkunitFilesRead</primary>
     </indexterm>
@@ -18,7 +18,7 @@
       <primary>WorkunitFilesRead</primary>
     </indexterm>
 (</emphasis> <emphasis>
-  wuid </emphasis> <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
+  wuid </emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -28,39 +28,39 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>wuid</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>wuid</emphasis></entry>
 
           <entry>A null-terminated string containing the WorkUnit
           IDentifier.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->WorkunitFilesRead<!-- DNT-End --> returns a <!-- DNT-Start -->DATASET<!-- DNT-End --> value.</entry>
+          <entry>WorkunitFilesRead returns a DATASET value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->WorkunitFilesRead<!-- DNT-End --> </emphasis>function
-  returns a <!-- DNT-Start -->DATASET<!-- DNT-End --> with this format:</para>
+  <para>The <emphasis role="bold">WorkunitFilesRead </emphasis>function
+  returns a DATASET with this format:</para>
 
-  <!-- DNT-Start --><programlisting>EXPORT WsFileRead := RECORD
+  <programlisting>EXPORT WsFileRead := RECORD
   STRING name{MAXLENGTH(256)};
   STRING cluster{MAXLENGTH(64)};
   BOOLEAN isSuper;
   UNSIGNED4 usage;
-END;</programlisting><!-- DNT-End -->
+END;</programlisting>
 
   <para>Each record in the returned dataset specifies a file read by the
   workunit.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitFilesRead('W20070308-164946'));
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitFilesRead('W20070308-164946'));
 /* produces results that look like this
 'rttest::difftest::superfile','thor','true','1'
 'rttest::difftest::base1','thor','false','1'
-*/</programlisting><!-- DNT-End -->
+*/</programlisting>
 </sect1>

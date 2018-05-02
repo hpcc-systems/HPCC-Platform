@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CHECKPOINT">
-  <!-- DNT-Start --><title>CHECKPOINT</title><!-- DNT-End -->
+  <title>CHECKPOINT</title>
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
-  </emphasis><emphasis role="bold">: <!-- DNT-Start -->CHECKPOINT<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->CHECKPOINT<!-- DNT-End --></primary>
+  </emphasis><emphasis role="bold">: CHECKPOINT<indexterm>
+      <primary>CHECKPOINT</primary>
     </indexterm>(</emphasis><emphasis> name </emphasis><emphasis role="bold">)
   <indexterm>
-      <primary><!-- DNT-Start -->CHECKPOINT<!-- DNT-End --> workflow service</primary>
+      <primary>CHECKPOINT workflow service</primary>
     </indexterm></emphasis>;</para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -20,19 +20,19 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>attribute</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>attribute</emphasis></entry>
 
             <entry>The name of the Attribute.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>The definition of the attribute.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
             <entry>A string constant specifying the storage name of the
             value.</entry>
@@ -41,7 +41,7 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->CHECKPOINT<!-- DNT-End --> </emphasis>service stores the
+  <para>The <emphasis role="bold">CHECKPOINT </emphasis>service stores the
   result of the <emphasis>expression</emphasis> in the workunit so it remains
   available if the workunit fails to complete, and is automatically deleted
   when the job completes successfully. This is particularly useful for
@@ -49,16 +49,16 @@
   sequences. This service implicitly causes the <emphasis>attribute</emphasis>
   to be evaluated at global scope instead of any enclosing scope.</para>
 
-  <para>However, <!-- DNT-Start -->CHECKPOINT<!-- DNT-End --> is only useful when the unsuccessful workunit is
-  resubmitted through <!-- DNT-Start -->ECL<!-- DNT-End --> Watch; if a new workunit is instantiated, <!-- DNT-Start -->CHECKPOINT<!-- DNT-End -->
-  has no effect. The <!-- DNT-Start -->PERSIST<!-- DNT-End --> service is more generally useful.</para>
+  <para>However, CHECKPOINT is only useful when the unsuccessful workunit is
+  resubmitted through ECL Watch; if a new workunit is instantiated, CHECKPOINT
+  has no effect. The PERSIST service is more generally useful.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>CountPeople := COUNT(Person) : CHECKPOINT('PeopleCount');
+  <programlisting>CountPeople := COUNT(Person) : CHECKPOINT('PeopleCount');
        //Makes CountPeople available for reuse if
        // the job does not complete
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="PERSIST"><!-- DNT-Start -->PERSIST<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="PERSIST">PERSIST</link></para>
 </sect1>

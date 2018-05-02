@@ -3,11 +3,11 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <bookinfo>
-    <!-- DNT-Start -->
+    
 
     <title>ECL Scheduler</title>
 
-    <!-- DNT-End -->
+    
 
     <author>
       <firstname>Boca Raton</firstname>
@@ -23,156 +23,156 @@
   </bookinfo>
 
   <chapter id="ECLSched_comp">
-    <!-- DNT-Start -->
+    
 
     <title>ECL Scheduler Component</title>
 
-    <!-- DNT-End -->
+    
 
     <sect1 id="ECLSched_component" role="nobrk">
-      <!-- DNT-Start -->
+      
 
       <title>Installation and configuration</title>
 
-      <!-- DNT-End -->
+      
 
-      <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler installs when
-      you install the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform. It
-      starts and stops using hpcc-init, just as all other <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      <para>The ECL Scheduler installs when
+      you install the HPCC platform. It
+      starts and stops using hpcc-init, just as all other HPCC
       components.</para>
     </sect1>
 
     <sect1>
-      <!-- DNT-Start -->
+      
 
       <title>Using the ECL Scheduler</title>
 
-      <!-- DNT-End -->
+      
 
       <sect2>
-        <!-- DNT-Start -->
+        
 
         <title>ECL Language Statements Used</title>
 
-        <!-- DNT-End -->
+        
 
-        <para>The Following <!-- DNT-Start -->ECL<!-- DNT-End --> Language
+        <para>The Following ECL Language
         Statements are used:</para>
 
         <sect3>
-          <!-- DNT-Start -->
+          
 
           <title>WHEN</title>
 
-          <!-- DNT-End -->
+          
 
-          <para>The <emphasis role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End -->
+          <para>The <emphasis role="bold">WHEN
           </emphasis>service executes the action whenever the event is
-          triggered. The optional <emphasis role="bold"><!-- DNT-Start -->COUNT<!-- DNT-End -->
+          triggered. The optional <emphasis role="bold">COUNT
           </emphasis>option specifies the number of events to trigger
           instances of the action.</para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start -->
+          
 
           <title>NOTIFY</title>
 
-          <!-- DNT-End -->
+          
 
-          <para>The <emphasis role="bold"><!-- DNT-Start -->NOTIFY<!-- DNT-End -->
+          <para>The <emphasis role="bold">NOTIFY
           </emphasis>action triggers the event so that the <emphasis
-          role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End -->
+          role="bold">WHEN
           </emphasis>workflow service can proceed with operations they are
           assigned to execute.</para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start -->
+          
 
           <title>EVENT</title>
 
-          <!-- DNT-End -->
+          
 
-          <para>The <emphasis role="bold"><!-- DNT-Start -->EVENT<!-- DNT-End -->
+          <para>The <emphasis role="bold">EVENT
           </emphasis>function returns a trigger event, which may be used
-          within the <emphasis role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End -->
-          </emphasis>workflow service or the <emphasis role="bold"><!-- DNT-Start -->NOTIFY<!-- DNT-End --></emphasis>
-          action. <!-- DNT-Start -->EVENT<!-- DNT-End --> is not really a
-          statement, rather a parameter to <!-- DNT-Start -->WHEN<!-- DNT-End -->/<!-- DNT-Start -->NOTIFY<!-- DNT-End -->
+          within the <emphasis role="bold">WHEN
+          </emphasis>workflow service or the <emphasis role="bold">NOTIFY</emphasis>
+          action. EVENT is not really a
+          statement, rather a parameter to WHEN/NOTIFY
           to describe what kind of event it is used for.</para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start -->
+          
 
           <title>CRON</title>
 
-          <!-- DNT-End -->
+          
 
-          <para>The <emphasis role="bold"><!-- DNT-Start -->CRON<!-- DNT-End -->
+          <para>The <emphasis role="bold">CRON
           </emphasis>function defines a timer event for use within the
-          <emphasis role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End -->
+          <emphasis role="bold">WHEN
           </emphasis>workflow service. This is synonymous with <emphasis
-          role="bold"><!-- DNT-Start -->EVENT<!-- DNT-End -->('<!-- DNT-Start -->CRON<!-- DNT-End -->',
-          time)</emphasis>. <!-- DNT-Start -->CRON<!-- DNT-End --> itself is
-          not a statement, rather a parameter to <!-- DNT-Start -->WHEN<!-- DNT-End -->/<!-- DNT-Start -->NOTIFY<!-- DNT-End -->
+          role="bold">EVENT('CRON',
+          time)</emphasis>. CRON itself is
+          not a statement, rather a parameter to WHEN/NOTIFY
           to describe what kind of event it is used for.</para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start -->
+          
 
           <title>WAIT</title>
 
-          <!-- DNT-End -->
+          
 
-          <para>The <emphasis role="bold"><!-- DNT-Start -->WAIT<!-- DNT-End -->
+          <para>The <emphasis role="bold">WAIT
           </emphasis>function is a string constant containing the name of the
           event to wait for. It is used much like the <emphasis
-          role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End --></emphasis>
+          role="bold">WHEN</emphasis>
           workflow service, but may be used within conditional code.</para>
         </sect3>
       </sect2>
 
       <sect2>
-        <!-- DNT-Start -->
+        
 
         <title>Monitoring Functions in the Standard Library (STD.File)</title>
 
-        <!-- DNT-End -->
+        
 
         <sect3>
-          <!-- DNT-Start -->
+          
 
           <title>MonitorFile</title>
 
-          <!-- DNT-End -->
+          
 
-          <para>The <emphasis role="bold"><!-- DNT-Start -->MonitorFile<!-- DNT-End -->
-          </emphasis>function creates a file monitor job in the <!-- DNT-Start -->DFU<!-- DNT-End -->
+          <para>The <emphasis role="bold">MonitorFile
+          </emphasis>function creates a file monitor job in the DFU
           Server for a physical file.</para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start -->
+          
 
           <title>MonitorLogicalFileName</title>
 
-          <!-- DNT-End -->
+          
 
-          <para>The <emphasis role="bold"><!-- DNT-Start -->MonitorLogicalFileName<!-- DNT-End -->
-          </emphasis>function creates a file monitor job in the <!-- DNT-Start -->DFU<!-- DNT-End -->
+          <para>The <emphasis role="bold">MonitorLogicalFileName
+          </emphasis>function creates a file monitor job in the DFU
           Server for a logical file.</para>
         </sect3>
       </sect2>
 
       <sect2>
-        <!-- DNT-Start -->
+        
 
         <title>DFUPlus: Monitor Option</title>
 
-        <!-- DNT-End -->
+        
 
         <para><programlisting>     dfuplus action=monitor event=MyEvent</programlisting></para>
 
@@ -182,12 +182,12 @@
 
               <listitem>
                 <para>DFUServer file monitoring (either using the Standard
-                Library or DFUPlus) creates a <!-- DNT-Start -->DFU<!-- DNT-End -->
+                Library or DFUPlus) creates a DFU
                 Workunit. While monitoring, the Workunit's state is
                 <emphasis>monitoring </emphasis>and once it triggers the
                 event, it is set to <emphasis>finished</emphasis>. You can
-                Abort a "monitoring" <!-- DNT-Start -->DFU<!-- DNT-End -->
-                Workunit to stop monitoring from <!-- DNT-Start -->ECL<!-- DNT-End -->
+                Abort a "monitoring" DFU
+                Workunit to stop monitoring from ECL
                 Watch.</para>
               </listitem>
             </varlistentry>
@@ -196,14 +196,14 @@
     </sect1>
 
     <sect1 id="ECLSched_Interface">
-      <!-- DNT-Start -->
+      
 
       <title>Interface in ECL Watch</title>
 
-      <!-- DNT-End -->
+      
 
-      <para>To access the <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler
-      interface in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, click on
+      <para>To access the ECL Scheduler
+      interface in ECL Watch, click on
       the<emphasis role="bold"> Event Scheduler </emphasis>link in the
       navigation sub-menu. The Scheduler interface displays and you can see
       the scheduled workunits, if any.</para>
@@ -228,14 +228,14 @@
       <para>You can trigger an event by entering the EventName and Event Text
       in the entry boxes and then pressing the <emphasis
       role="bold">PushEvent</emphasis> button. This is the same as triggering
-      an event using <!-- DNT-Start -->NOTIFY<!-- DNT-End -->.</para>
+      an event using NOTIFY.</para>
 
       <sect2 id="ECLSched_WorkunitList">
-        <!-- DNT-Start -->
+        
 
         <title>Scheduler Workunit List</title>
 
-        <!-- DNT-End -->
+        
 
         <para>You can search scheduled workunits by cluster or event name. To
         filter by cluster or event name, click on the <emphasis
@@ -256,11 +256,11 @@
         <para>You can sort the workunits by clicking on the column
         header.</para>
 
-        <para>To view the workunit details, click on the workunit <!-- DNT-Start -->ID<!-- DNT-End -->
-        (<!-- DNT-Start -->WUID<!-- DNT-End -->) link for the workunit.</para>
+        <para>To view the workunit details, click on the workunit ID
+        (WUID) link for the workunit.</para>
 
         <para>You can modify scheduled workunits from the workunit details
-        page in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. Select the
+        page in ECL Watch. Select the
         workunit details page, then press the <emphasis
         role="bold">Reschedule</emphasis> button to reschedule a descheduled
         workunit. Press the <emphasis role="bold">Deschedule</emphasis> button
@@ -268,20 +268,20 @@
         access the Reschedule and Deschedule options from the context menu
         when you right click on a workunit.</para>
 
-        <para>If you are using a <!-- DNT-Start -->WHEN<!-- DNT-End --> clause
-        and it contains a <!-- DNT-Start -->COUNT<!-- DNT-End --> number, when
-        rescheduled the workunit will continue the <!-- DNT-Start -->COUNT<!-- DNT-End -->
-        from the point where it stopped and resumes the remaining <!-- DNT-Start -->COUNT<!-- DNT-End -->.
-        Once a workunit completes the <!-- DNT-Start -->COUNT<!-- DNT-End -->,
+        <para>If you are using a WHEN clause
+        and it contains a COUNT number, when
+        rescheduled the workunit will continue the COUNT
+        from the point where it stopped and resumes the remaining COUNT.
+        Once a workunit completes the COUNT,
         there is no reschedule option.</para>
       </sect2>
 
       <sect2 id="ECLSched_PushingEvents" role="brk">
-        <!-- DNT-Start -->
+        
 
         <title>Pushing Events</title>
 
-        <!-- DNT-End -->
+        
 
         <para>The Event Scheduler allows you to trigger or "push" an event to
         help manage and test your scheduled jobs.</para>
@@ -300,7 +300,7 @@
               <para>The EventName is a case-insensitive string constant naming
               the event to trap.</para>
 
-              <para>See Also: <!-- DNT-Start -->EVENT<!-- DNT-End --></para>
+              <para>See Also: EVENT</para>
             </listitem>
 
             <listitem>
@@ -310,7 +310,7 @@
               the specific type of event to trap. It may contain * and ? to
               wildcard-match.</para>
 
-              <para>See Also: <!-- DNT-Start -->EVENT<!-- DNT-End --></para>
+              <para>See Also: EVENT</para>
             </listitem>
 
             <listitem>
@@ -321,7 +321,7 @@
 
               <para><programlisting>  NOTIFY(EVENT(EventName,EventText));</programlisting></para>
 
-              <para>See Also: <!-- DNT-Start -->NOTIFY<!-- DNT-End -->, <!-- DNT-Start -->EVENT<!-- DNT-End --></para>
+              <para>See Also: NOTIFY, EVENT</para>
 
               <para><figure>
                   <title>PushEvent</title>

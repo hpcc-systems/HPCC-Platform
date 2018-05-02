@@ -2,9 +2,9 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_version">
-  <!-- DNT-Start --><title>version <indexterm>
+  <title>version <indexterm>
       <primary>version</primary>
-    </indexterm>and default_client_version</title><!-- DNT-End -->
+    </indexterm>and default_client_version</title>
 
   <para><indexterm>
       <primary>default_client_version</primary>
@@ -14,12 +14,12 @@
   explicitly specified in the request. </para>
 
   <para>The <emphasis role="bold">default_client_version</emphasis> is used
-  for <!-- DNT-Start -->API<!-- DNT-End --> requests in <!-- DNT-Start -->SOAP<!-- DNT-End --> format if the client doesn't specify the version.
+  for API requests in SOAP format if the client doesn't specify the version.
   The <emphasis role="bold">version</emphasis> is used for requests coming
-  from a web browser without a version decoration in the <!-- DNT-Start -->URL<!-- DNT-End -->.</para>
+  from a web browser without a version decoration in the URL.</para>
 
-  <para>These attributes provide better <!-- DNT-Start -->API<!-- DNT-End --> backward compatibility while
-  allowing <!-- DNT-Start -->API<!-- DNT-End --> developers to see the latest interface using a browser. </para>
+  <para>These attributes provide better API backward compatibility while
+  allowing API developers to see the latest interface using a browser. </para>
 
   <para>If <emphasis role="bold">default_client_version</emphasis> is higher
   than <emphasis role="bold">version</emphasis>, the service uses <emphasis
@@ -27,14 +27,14 @@
   specify a <emphasis role="bold">version</emphasis>.</para>
 
   <para>Even though defaults can be specified for a service, you should still
-  encourage <!-- DNT-Start -->API<!-- DNT-End --> developers to specify a version in requests to ensure
+  encourage API developers to specify a version in requests to ensure
   compatibility between their application and the service. </para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting> ESPservice [version("0.02"), default_client_version("0.01")] EsdlExample
+  <programlisting> ESPservice [version("0.02"), default_client_version("0.01")] EsdlExample
 {
     ESPmethod EchoPersonInfo(EchoPersonInfoRequest, EchoPersonInfoResponse);
     ESPmethod RoxieEchoPersonInfo(RoxieEchoPersonInfoRequest, RoxieEchoPersonInfoResponse);
-};</programlisting><!-- DNT-End -->
+};</programlisting>
 </sect1>

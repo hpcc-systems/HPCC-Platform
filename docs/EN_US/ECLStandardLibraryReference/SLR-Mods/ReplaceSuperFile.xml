@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ReplaceSuperFile">
-  <!-- DNT-Start --><title>ReplaceSuperFile</title><!-- DNT-End -->
+  <title>ReplaceSuperFile</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.ReplaceSuperFile<indexterm>
+  <para><emphasis role="bold">STD.File.ReplaceSuperFile<indexterm>
       <primary>STD.File.ReplaceSuperFile</primary>
     </indexterm><indexterm>
       <primary>File.ReplaceSuperFile</primary>
     </indexterm><indexterm>
       <primary>ReplaceSuperFile</primary>
     </indexterm>(</emphasis> <emphasis> superfile, subfile1 , subfile2
-  </emphasis> <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
+  </emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,28 +21,28 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>superfile</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>superfile</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>subfile1</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>subfile1</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           sub-file. This may be another superfile.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>subfile2</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>subfile2</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           sub-file. This may be another superfile.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>Null.</entry>
         </row>
@@ -50,7 +50,7 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ReplaceSuperFile<!-- DNT-End --> </emphasis>function removes
+  <para>The <emphasis role="bold">ReplaceSuperFile </emphasis>function removes
   the <emphasis>subfile1</emphasis> from the list of files comprising the
   <emphasis>superfile </emphasis>and replaces it with
   <emphasis>subfile2</emphasis>.</para>
@@ -59,11 +59,11 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">SEQUENTIAL(
+  <programlisting format="linespecific">SEQUENTIAL(
  STD.File.StartSuperFileTransaction(),
  STD.File.ReplaceSuperFile('MySuperFile',
       'MyOldSubFile',
       'MyNewSubFile'),
  STD.File.FinishSuperFileTransaction()
-);</programlisting><!-- DNT-End -->
+);</programlisting>
 </sect1>

@@ -2,55 +2,55 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_max_len">
-  <!-- DNT-Start --><title>max_len <indexterm>
+  <title>max_len <indexterm>
       <primary>max_len</primary>
-    </indexterm>(n)</title><!-- DNT-End -->
+    </indexterm>(n)</title>
 
   <para>The <emphasis>max_len</emphasis> attribute specifies the field length
-  for <!-- DNT-Start -->ECL<!-- DNT-End --> string field.</para>
+  for ECL string field.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>[max_len(20)] string City;   </programlisting><!-- DNT-End -->
+  <programlisting>[max_len(20)] string City;   </programlisting>
 
-  <para>It means that in <!-- DNT-Start -->ECL<!-- DNT-End -->, City field is a fixed length of 20 chars. For
+  <para>It means that in ECL, City field is a fixed length of 20 chars. For
   integer type, the max_len means the maximum size in bytes for the integer
   (8*max_len bits integer).</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>[max_len(3)] int Age;   </programlisting><!-- DNT-End -->
+  <programlisting>[max_len(3)] int Age;   </programlisting>
 
-  <para>This generates <!-- DNT-Start -->ECL<!-- DNT-End --> code:</para>
+  <para>This generates ECL code:</para>
 
-  <!-- DNT-Start --><programlisting>integer3 Age{xpath('Age')};   </programlisting><!-- DNT-End -->
+  <programlisting>integer3 Age{xpath('Age')};   </programlisting>
 
-  <para>This attribute works for ESPenum type, too. The <!-- DNT-Start -->ECL<!-- DNT-End --> type is also
+  <para>This attribute works for ESPenum type, too. The ECL type is also
   string.</para>
 
-  <!-- DNT-Start --><programlisting>[max_len(2)] ESPenum StateCode State;   </programlisting><!-- DNT-End -->
+  <programlisting>[max_len(2)] ESPenum StateCode State;   </programlisting>
 
   <para>Here the StateCode is 2-char state code enumeration.</para>
 
   <para>This attribute can also be used for ESPstruct, ESPrequest,
   ESPresponse:</para>
 
-  <!-- DNT-Start --><programlisting>ESPstruct [max_len(1867)] IdentitySlim : Identity
+  <programlisting>ESPstruct [max_len(1867)] IdentitySlim : Identity
   {
      ...
   };   
-  </programlisting><!-- DNT-End -->
+  </programlisting>
 
-  <para>This generates <!-- DNT-Start -->ECL<!-- DNT-End --> code:</para>
+  <para>This generates ECL code:</para>
 
-  <!-- DNT-Start --><programlisting>export t_MyQuery := record (share.t_Name), MAXLENGTH(1867)
+  <programlisting>export t_MyQuery := record (share.t_Name), MAXLENGTH(1867)
   {
-  }; </programlisting><!-- DNT-End -->
+  }; </programlisting>
 
-  <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> option <emphasis><!-- DNT-Start -->MAXLENGTH<!-- DNT-End --></emphasis> helps <!-- DNT-Start -->ECL<!-- DNT-End --> engine better
+  <para>The ECL option <emphasis>MAXLENGTH</emphasis> helps ECL engine better
   manage memory.</para>
 
-  <para>This does not affect the type in the <!-- DNT-Start -->XSD<!-- DNT-End -->/<!-- DNT-Start -->WSDL<!-- DNT-End -->. <!-- DNT-Start -->ESP<!-- DNT-End --> ignores this
+  <para>This does not affect the type in the XSD/WSDL. ESP ignores this
   attribute when generating the schema. The type for a string is xsd:string
   which has no length limit. Therefore, the schema stays the same if the field
   length changes in the Roxie query.</para>

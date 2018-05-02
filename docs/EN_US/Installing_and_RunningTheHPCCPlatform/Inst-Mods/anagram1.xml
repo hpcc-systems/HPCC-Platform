@@ -2,28 +2,28 @@
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect2 id="ECLExample_Anagram1" role="nobrk">
-  <!-- DNT-Start -->
+  
 
   <title>ECL Example: Anagram1</title>
 
-  <!-- DNT-End -->
+  
 
-  <para>This example takes a <!-- DNT-Start -->STRING<!-- DNT-End --> and
+  <para>This example takes a STRING and
   produces every possible anagram from it. This code is the basis for a second
   example which evaluates which of these are actual words using a word list
   data file.</para>
 
   <para><orderedlist>
       <listitem>
-        <para>Open the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
+        <para>Open the ECL IDE
         (Start <emphasis role="bold">&gt;&gt;</emphasis> All Programs
-        <emphasis role="bold">&gt;&gt;</emphasis> <!-- DNT-Start -->HPCC<!-- DNT-End -->
-        Systems <emphasis role="bold"> &gt;&gt;</emphasis> <!-- DNT-Start -->ECL<!-- DNT-End -->
-        <!-- DNT-Start -->IDE<!-- DNT-End --> ) and login to your <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
+        <emphasis role="bold">&gt;&gt;</emphasis> HPCC
+        Systems <emphasis role="bold"> &gt;&gt;</emphasis> ECL
+        IDE ) and login to your HPCC.</para>
       </listitem>
 
       <listitem>
-        <para>Open a new <emphasis role="bold">Builder Window</emphasis> (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N)
+        <para>Open a new <emphasis role="bold">Builder Window</emphasis> (CTRL+N)
         and write the following code:<programlisting>STRING Word := 'FRED' :STORED('Word');
 R := RECORD
         STRING SoFar {MAXLENGTH(200)};

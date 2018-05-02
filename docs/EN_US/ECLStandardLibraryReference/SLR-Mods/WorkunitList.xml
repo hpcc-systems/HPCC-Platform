@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WorkunitList">
-  <!-- DNT-Start --><title>WorkunitList</title><!-- DNT-End -->
+  <title>WorkunitList</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Workunit.WorkunitList <indexterm>
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitList <indexterm>
       <primary>STD.System.Workunit.WorkunitList</primary>
     </indexterm> <indexterm>
       <primary>System.Workunit.WorkunitList</primary>
@@ -27,7 +27,7 @@
   eclcontains </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,
   online </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, archived
   </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, appvalues
-  </emphasis> <emphasis role="bold">])</emphasis></para><!-- DNT-End -->
+  </emphasis> <emphasis role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -37,14 +37,14 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>lowwuid</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>lowwuid</emphasis></entry>
 
           <entry>A null-terminated string containing the lowest WorkUnit
           IDentifier to list. This may be an empty string.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>highwuid</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>highwuid</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the highest
           WorkUnit IDentifier to list. If omitted, the default is an empty
@@ -52,7 +52,7 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>cluster</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>cluster</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the name of the
           cluster the workunit ran on. If omitted, the default is an empty
@@ -60,7 +60,7 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>jobname</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>jobname</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the name of the
           workunit. This may contain wildcard ( * ? ) characters. If omitted,
@@ -68,21 +68,21 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>state</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>state</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the state of
           the workunit. If omitted, the default is an empty string.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>priority</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>priority</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the priority of
           the workunit. If omitted, the default is an empty string.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>fileread</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>fileread</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the name of a
           file read by the workunit. This may contain wildcard ( * ? )
@@ -90,7 +90,7 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>filewritten</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>filewritten</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the name of a
           file written by the workunit. This may contain wildcard ( * ? )
@@ -98,37 +98,37 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>roxiecluster</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>roxiecluster</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the name of the
           Roxie cluster. If omitted, the default is an empty string.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>eclcontains</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>eclcontains</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing text to search
-          for in the workunit's <!-- DNT-Start -->ECL<!-- DNT-End --> code. This may contain wildcard ( * ? )
+          for in the workunit's ECL code. This may contain wildcard ( * ? )
           characters. If omitted, the default is an empty string.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>online</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>online</emphasis></entry>
 
           <entry>Optional. A Boolean true/false value specifying whether the
-          search is performed online. If omitted, the default is <!-- DNT-Start -->TRUE<!-- DNT-End -->.</entry>
+          search is performed online. If omitted, the default is TRUE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>archived</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>archived</emphasis></entry>
 
           <entry>Optional. A Boolean true/false value specifying whether the
           search is performed in the archives. If omitted, the default is
-          <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>appvalues</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>appvalues</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing application
           values to search for. Use a string of the form appname/key=value or
@@ -136,24 +136,24 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->WorkunitList<!-- DNT-End --> returns a <!-- DNT-Start -->DATASET<!-- DNT-End -->.</entry>
+          <entry>WorkunitList returns a DATASET.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->WorkunitList<!-- DNT-End --> </emphasis>function returns a
+  <para>The <emphasis role="bold">WorkunitList </emphasis>function returns a
   dataset of all workunits that meet the search criteria specified by the
   parameters passed to the function. All the parameters are search values and
   all but the first are omittable, therefore the easiest way to pass a
-  particular single search parameter would be to use the <!-- DNT-Start -->NAMED<!-- DNT-End --> parameter
+  particular single search parameter would be to use the NAMED parameter
   passing technique.</para>
 
-  <para>The resulting <!-- DNT-Start -->DATASET<!-- DNT-End --> is in this format:</para>
+  <para>The resulting DATASET is in this format:</para>
 
-  <!-- DNT-Start --><programlisting>WorkunitRecord := RECORD
+  <programlisting>WorkunitRecord := RECORD
   STRING24 wuid;
   STRING owner{MAXLENGTH(64)};
   STRING cluster{MAXLENGTH(64)};
@@ -165,11 +165,11 @@
   STRING20 modified;
   BOOLEAN online;
   BOOLEAN protected;
-END;</programlisting><!-- DNT-End -->
+END;</programlisting>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitList(''));
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitList(''));
  //list all current workunits
 OUTPUT(STD.System.Workunit.WorkunitList('',
        NAMED eclcontains := 'COUNT'));
@@ -179,7 +179,7 @@ OUTPUT(STD.System.Workunit.WorkunitList('',
 STD.System.Workunit.SetWorkunitAppValue('MyApp','FirstName','Jim',TRUE);
 OUTPUT(STD.System.Workunit.WorkunitList(appvalues := 'MyApp/FirstName='Jim'));
 //returns a list of workunits with app values where FirstName='Jim'
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para>See Also: <link
   linkend="SetWorkunitAppValue">SetWorkunitAppValue</link></para>

@@ -2,22 +2,22 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LIBRARY">
-  <!-- DNT-Start --><title>LIBRARY</title><!-- DNT-End -->
+  <title>LIBRARY</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->LIBRARY<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->LIBRARY<!-- DNT-End --></primary>
+  <para><emphasis role="bold">LIBRARY<indexterm>
+      <primary>LIBRARY</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->LIBRARY<!-- DNT-End --> function</primary>
+      <primary>LIBRARY function</primary>
     </indexterm>(</emphasis><emphasis> </emphasis><emphasis
-  role="bold"><!-- DNT-Start -->INTERNAL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->INTERNAL<!-- DNT-End --></primary>
+  role="bold">INTERNAL<indexterm>
+      <primary>INTERNAL</primary>
     </indexterm>( </emphasis><emphasis>module </emphasis><emphasis
   role="bold">)</emphasis><emphasis>, interface </emphasis><emphasis
   role="bold">[</emphasis><emphasis> (</emphasis><emphasis role="bold">
   </emphasis><emphasis>parameters) </emphasis><emphasis role="bold">]
   )</emphasis><emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->LIBRARY<!-- DNT-End -->(</emphasis><emphasis> module , interface
+  <para><emphasis role="bold">LIBRARY(</emphasis><emphasis> module , interface
   </emphasis><emphasis role="bold">[</emphasis><emphasis>
   (</emphasis><emphasis role="bold"> </emphasis><emphasis>parameters)
   </emphasis><emphasis role="bold">] )</emphasis></para>
@@ -30,68 +30,68 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis role="bold">INTERNAL</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis role="bold">INTERNAL</emphasis></entry>
 
           <entry>Optional. Specifies the module is an attribute, not an
-          external library (created by the <!-- DNT-Start -->BUILD<!-- DNT-End --> action).</entry>
+          external library (created by the BUILD action).</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>module</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>module</emphasis></entry>
 
-          <entry>The name of the query library. When <!-- DNT-Start -->INTERNAL<!-- DNT-End -->, this is the
-          name of the <!-- DNT-Start -->MODULE<!-- DNT-End --> attribute that implements the query library. If
-          not <!-- DNT-Start -->INTERNAL<!-- DNT-End -->, this is a string expression containing the name of the
+          <entry>The name of the query library. When INTERNAL, this is the
+          name of the MODULE attribute that implements the query library. If
+          not INTERNAL, this is a string expression containing the name of the
           workunit that compiled the query library (typically defined with
-          #<!-- DNT-Start -->WORKUNIT<!-- DNT-End -->).</entry>
+          #WORKUNIT).</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>interface</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>interface</emphasis></entry>
 
-          <entry>The name of the <!-- DNT-Start -->INTERFACE<!-- DNT-End --> structure that defines the query
+          <entry>The name of the INTERFACE structure that defines the query
           library.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>parameters</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>parameters</emphasis></entry>
 
-          <entry>Optional. The values to pass to the <!-- DNT-Start -->INTERFACE<!-- DNT-End -->, if defined to
+          <entry>Optional. The values to pass to the INTERFACE, if defined to
           receive parameters.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->LIBRARY<!-- DNT-End --> results in a <!-- DNT-Start -->MODULE<!-- DNT-End --> that can be used to reference the
+          <entry>LIBRARY results in a MODULE that can be used to reference the
           exported attributes from the specified module.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->LIBRARY<!-- DNT-End --> </emphasis>function defines an
+  <para>The <emphasis role="bold">LIBRARY </emphasis>function defines an
   instance of a query library--the <emphasis>interface</emphasis> as
   implemented by the <emphasis>module</emphasis> when passed the specified
   <emphasis>parameters. </emphasis><emphasis role="bold">Query libraries are
   only used by hthor and Roxie.</emphasis></para>
 
-  <para><!-- DNT-Start -->INTERNAL<!-- DNT-End --> libraries are typically used when developing queries, while
-  external libraries are best for production queries. An <!-- DNT-Start -->INTERNAL<!-- DNT-End --> library
+  <para>INTERNAL libraries are typically used when developing queries, while
+  external libraries are best for production queries. An INTERNAL library
   generates the library code as a separate unit, but then includes that unit
   within the query workunit. It doesn't have the advantage of reducing compile
   time or memory usage in Roxie that an external library would have, but it
   does retain the library structure, and means that changes to the code cannot
   affect anyone else using the system.</para>
 
-  <para>External libraries are created by the <!-- DNT-Start -->BUILD<!-- DNT-End --> action and use the "name"
-  form of #<!-- DNT-Start -->WORKUNIT<!-- DNT-End --> to specify the external name of the library. An external
+  <para>External libraries are created by the BUILD action and use the "name"
+  form of #WORKUNIT to specify the external name of the library. An external
   library is pre-compiled and therefore reduces compile time for queries that
   use it. They also reduce memory usage in Roxie</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>NamesRec := RECORD
+  <programlisting>NamesRec := RECORD
     INTEGER1  NameID;
     STRING20  FName;
     STRING20  LName;
@@ -151,5 +151,5 @@ OUTPUT(lib3.matches,NAMED('INTERNAL_matches_interface_parms'));
 OUTPUT(lib3.others, NAMED('INTERNAL_nonmatches_interface_parms'));
 OUTPUT(lib4.matches,NAMED('EXTERNAL_matches_interface_parms'));
 OUTPUT(lib4.others, NAMED('EXTERNAL_nonmatches_interface_parms'));
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

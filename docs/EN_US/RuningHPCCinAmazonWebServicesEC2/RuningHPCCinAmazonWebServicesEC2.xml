@@ -2,11 +2,11 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <!-- DNT-Start --><title>Running the HPCC Systems Thor Platform within Amazon Web
-  Services</title><!-- DNT-End -->
+  <title>Running the HPCC Systems Thor Platform within Amazon Web
+  Services</title>
 
   <bookinfo>
-    <!-- DNT-Start --><title>Running the HPCC Systems Thor Platform within AWS</title><!-- DNT-End -->
+    <title>Running the HPCC Systems Thor Platform within AWS</title>
 
     <mediaobject>
       <imageobject>
@@ -31,12 +31,12 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems is a registered trademark of LexisNexis Risk Data
+      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
-      <para>Amazon Web Services, <!-- DNT-Start -->AWS<!-- DNT-End -->, Amazon <!-- DNT-Start -->EC<!-- DNT-End -->2, <!-- DNT-Start -->EC<!-- DNT-End -->2, Amazon Elastic Compute
+      <para>Amazon Web Services, AWS, Amazon EC2, EC2, Amazon Elastic Compute
       Cloud, Amazon S3, Amazon Simple Storage Service, are trademarks,
-      registered trademarks or trade dress of <!-- DNT-Start -->AWS<!-- DNT-End --> in the U.S. and/or other
+      registered trademarks or trade dress of AWS in the U.S. and/or other
       countries.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -50,7 +50,7 @@
 
       <para></para>
 
-      <para><emphasis role="redbold"><!-- DNT-Start -->BETA<!-- DNT-End --> 2</emphasis></para>
+      <para><emphasis role="redbold">BETA 2</emphasis></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -72,14 +72,14 @@
   </bookinfo>
 
   <chapter>
-    <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
+    <title>Introduction</title>
 
-    <para>This guide provides details and guidance in running an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems
-    Thor cluster inside an Amazon Web Services (<!-- DNT-Start -->AWS<!-- DNT-End -->) Elastic Cloud
-    (<!-- DNT-Start -->EC<!-- DNT-End -->2).</para>
+    <para>This guide provides details and guidance in running an HPCC Systems
+    Thor cluster inside an Amazon Web Services (AWS) Elastic Cloud
+    (EC2).</para>
 
     <para>This allows you to <emphasis role="bold">instantiate</emphasis> and
-    run <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor clusters of different sizes on the fly.</para>
+    run HPCC Systems Thor clusters of different sizes on the fly.</para>
 
     <para>This is useful for:</para>
 
@@ -97,12 +97,12 @@
       </listitem>
 
       <listitem>
-        <para>Leveraging the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor platform without incurring cost
+        <para>Leveraging the HPCC Systems Thor platform without incurring cost
         of hardware and administration</para>
       </listitem>
 
       <listitem>
-        <para>Create and use an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor cluster immediately without
+        <para>Create and use an HPCC Systems Thor cluster immediately without
         purchasing and installing new hardware</para>
       </listitem>
     </itemizedlist>
@@ -111,7 +111,7 @@
     for larger jobs. This flexibility allows you to match cost and processing
     power to the job at hand.</para>
 
-    <para>Instantiating temporary <!-- DNT-Start -->EC<!-- DNT-End -->2 nodes allows you to "rent" computing
+    <para>Instantiating temporary EC2 nodes allows you to "rent" computing
     capacity without long term commitments. In this manner, you pay as you go
     instead of incurring large fixed costs at the start.</para>
 
@@ -121,19 +121,19 @@
 
     <para>We are working with Amazon to improve the set up processes.
     <emphasis role="bold">In the near future, we will have a guide to show how
-    to run an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor cluster in an Amazon Elastic Map Reduce (<!-- DNT-Start -->EMR<!-- DNT-End -->)
+    to run an HPCC Systems Thor cluster in an Amazon Elastic Map Reduce (EMR)
     environment.</emphasis> We expect that method to be easier to set up and
-    operate. In addition, <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems is working on its own Enterprise Cloud
+    operate. In addition, HPCC Systems is working on its own Enterprise Cloud
     offering, but it is not yet ready to be announced.</para>
 
     <sect1>
-      <!-- DNT-Start --><title>Prerequisites and Assumptions</title><!-- DNT-End -->
+      <title>Prerequisites and Assumptions</title>
 
       <para>You will need:</para>
 
       <itemizedlist mark="bullet">
         <listitem>
-          <para>An Amazon Web Services account with <!-- DNT-Start -->EC<!-- DNT-End -->2 enabled</para>
+          <para>An Amazon Web Services account with EC2 enabled</para>
         </listitem>
 
         <listitem>
@@ -142,17 +142,17 @@
 
           <para><itemizedlist>
               <listitem>
-                <para><emphasis>Windows <!-- DNT-Start -->PC<!-- DNT-End --> or </emphasis></para>
+                <para><emphasis>Windows PC or </emphasis></para>
               </listitem>
 
               <listitem>
-                <para><emphasis>Linux workstation with the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> and the
-                <!-- DNT-Start -->ECL<!-- DNT-End --> plugin for Eclipse (available soon)</emphasis></para>
+                <para><emphasis>Linux workstation with the Eclipse IDE and the
+                ECL plugin for Eclipse (available soon)</emphasis></para>
               </listitem>
 
               <listitem>
                 <para><emphasis>Mac<superscript>*</superscript> workstation
-                with the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> and the <!-- DNT-Start -->ECL<!-- DNT-End --> plugin for Eclipse (available
+                with the Eclipse IDE and the ECL plugin for Eclipse (available
                 soon)</emphasis></para>
               </listitem>
             </itemizedlist></para>
@@ -163,7 +163,7 @@
         </listitem>
 
         <listitem>
-          <para>An <!-- DNT-Start -->SSH<!-- DNT-End --> tool, such as PuTTY</para>
+          <para>An SSH tool, such as PuTTY</para>
         </listitem>
 
         <listitem>
@@ -179,12 +179,12 @@
         </listitem>
       </itemizedlist>
 
-      <!-- DNT-Start --><!--***eclipse info needs to be added--><!-- DNT-End -->
+      <!--***eclipse info needs to be added-->
 
       <para><footnote label="*">
           <para>Some required components have not yet been built for the Mac
-          platform (for example, the <!-- DNT-Start -->ECLCC<!-- DNT-End --> compiler). For the time being you
-          can use a Windows emulator or a <!-- DNT-Start -->VM<!-- DNT-End --> on a Mac.</para>
+          platform (for example, the ECLCC compiler). For the time being you
+          can use a Windows emulator or a VM on a Mac.</para>
         </footnote></para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -199,7 +199,7 @@
               <row>
                 <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                <entry>For detailed PuTTY/pcsp/<!-- DNT-Start -->PUTTYGen<!-- DNT-End --> directions from
+                <entry>For detailed PuTTY/pcsp/PUTTYGen directions from
                 Amazon, see: <para><ulink
                 url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink></para></entry>
               </row>
@@ -209,7 +209,7 @@
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>Quick Start / Overview</title><!-- DNT-End -->
+      <title>Quick Start / Overview</title>
 
       <para><emphasis role="bold">This section is a summary of the details in
       this guide.</emphasis> After you have completed the detailed steps that
@@ -234,11 +234,11 @@
           </tgroup>
         </informaltable></para>
 
-      <para>This section provides simple steps to run an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor
-      cluster inside Amazon Web Services (<!-- DNT-Start -->AWS<!-- DNT-End -->) Elastic Cloud (<!-- DNT-Start -->EC<!-- DNT-End -->2). It assumes
-      you know how to use <!-- DNT-Start -->AWS<!-- DNT-End -->, how to connect to <!-- DNT-Start -->EC<!-- DNT-End -->2 instances, how to use
+      <para>This section provides simple steps to run an HPCC Systems Thor
+      cluster inside Amazon Web Services (AWS) Elastic Cloud (EC2). It assumes
+      you know how to use AWS, how to connect to EC2 instances, how to use
       Linux bash commands, and how to use ssh from your particular computer to
-      an <!-- DNT-Start -->EC<!-- DNT-End -->2 instance. See the <emphasis role="bold">Detailed Steps</emphasis>
+      an EC2 instance. See the <emphasis role="bold">Detailed Steps</emphasis>
       section for step by step instructions.</para>
 
       <itemizedlist>
@@ -248,76 +248,76 @@
 
           <orderedlist>
             <listitem>
-              <para>Log into Amazon's <!-- DNT-Start -->AWS<!-- DNT-End --> Management Console (<ulink
+              <para>Log into Amazon's AWS Management Console (<ulink
               url="http://aws.amazon.com">http://aws.amazon.com</ulink>) and
-              select the <!-- DNT-Start -->EC<!-- DNT-End -->2 tab.</para>
+              select the EC2 tab.</para>
             </listitem>
 
             <listitem>
               <para>Create a security group and call it <emphasis
-              role="bold"><!-- DNT-Start -->HPCC<!-- DNT-End --></emphasis>. The security group name can be
+              role="bold">HPCC</emphasis>. The security group name can be
               anything you choose, but for these instructions we will use
-              <!-- DNT-Start -->HPCC<!-- DNT-End -->. We suggest a unique Security Group name for each cluster
+              HPCC. We suggest a unique Security Group name for each cluster
               you intend to use.</para>
             </listitem>
 
             <listitem>
               <para>Click on the <emphasis role="bold">Show/Hide </emphasis>in
-              the upper right corner and show the Group <!-- DNT-Start -->ID<!-- DNT-End --></para>
+              the upper right corner and show the Group ID</para>
             </listitem>
 
             <listitem>
               <para>Add the following:<itemizedlist>
                   <listitem>
-                    <para><emphasis role="bold"><!-- DNT-Start -->SSH<!-- DNT-End --></emphasis></para>
+                    <para><emphasis role="bold">SSH</emphasis></para>
 
                     <para>For inter-node communication and to reach nodes for
                     configuration and troubleshooting</para>
                   </listitem>
 
                   <listitem>
-                    <para><emphasis role="bold"><!-- DNT-Start -->TCP<!-- DNT-End --> ports 8002, 8008, 8010,
+                    <para><emphasis role="bold">TCP ports 8002, 8008, 8010,
                     8015, 8145, 8050, 9876 </emphasis>(for external
                     access)</para>
 
-                    <para>These are for WsECL, <!-- DNT-Start -->ECL<!-- DNT-End --> Direct, <!-- DNT-Start -->ECL<!-- DNT-End --> Watch,
+                    <para>These are for WsECL, ECL Direct, ECL Watch,
                     Configuration Manager, WsAttributes, Roxie Config, and
                     Roxie Queries, respectively.</para>
                   </listitem>
 
                   <listitem>
-                    <para><emphasis role="bold"><!-- DNT-Start -->TCP<!-- DNT-End --> ports 1-65535</emphasis>
+                    <para><emphasis role="bold">TCP ports 1-65535</emphasis>
                     (for internal access only)</para>
 
-                    <para>Type the Group <!-- DNT-Start -->ID<!-- DNT-End --> for the <!-- DNT-Start -->HPCC<!-- DNT-End --> group in the Source
+                    <para>Type the Group ID for the HPCC group in the Source
                     text box.</para>
                   </listitem>
 
                   <listitem>
-                    <para><emphasis role="bold"><!-- DNT-Start -->UDP<!-- DNT-End --> ports 1-65535</emphasis>
+                    <para><emphasis role="bold">UDP ports 1-65535</emphasis>
                     (for internal access only)</para>
 
-                    <para>Type the Group <!-- DNT-Start -->ID<!-- DNT-End --> for the <!-- DNT-Start -->HPCC<!-- DNT-End --> group in the Source
+                    <para>Type the Group ID for the HPCC group in the Source
                     text box.</para>
                   </listitem>
 
                   <listitem>
-                    <para><emphasis role="bold"><!-- DNT-Start -->PING<!-- DNT-End --></emphasis> request (for
+                    <para><emphasis role="bold">PING</emphasis> request (for
                     internal access only)</para>
 
-                    <para>Add a custon <!-- DNT-Start -->ICMP<!-- DNT-End --> rule for Echo Request.</para>
+                    <para>Add a custon ICMP rule for Echo Request.</para>
 
-                    <para>Type the Group <!-- DNT-Start -->ID<!-- DNT-End --> for the <!-- DNT-Start -->HPCC<!-- DNT-End --> group in the Source
+                    <para>Type the Group ID for the HPCC group in the Source
                     text box.</para>
                   </listitem>
 
                   <listitem>
-                    <para><emphasis role="bold"><!-- DNT-Start -->PING<!-- DNT-End --></emphasis> reply (for
+                    <para><emphasis role="bold">PING</emphasis> reply (for
                     internal access only)</para>
 
-                    <para>Add a custon <!-- DNT-Start -->ICMP<!-- DNT-End --> rule for Echo Reply.</para>
+                    <para>Add a custon ICMP rule for Echo Reply.</para>
 
-                    <para>Type the Group <!-- DNT-Start -->ID<!-- DNT-End --> for the <!-- DNT-Start -->HPCC<!-- DNT-End --> group in the Source
+                    <para>Type the Group ID for the HPCC group in the Source
                     text box.</para>
                   </listitem>
                 </itemizedlist></para>
@@ -335,16 +335,16 @@
 
       <itemizedlist>
         <listitem>
-          <para>Launch Elastic Cloud (<!-- DNT-Start -->EC<!-- DNT-End -->2) Instances</para>
+          <para>Launch Elastic Cloud (EC2) Instances</para>
 
           <para><orderedlist>
               <listitem>
-                <para>If you are not already connected, log into the <!-- DNT-Start -->AWS<!-- DNT-End -->
+                <para>If you are not already connected, log into the AWS
                 Management Console (<ulink
                 url="http://aws.amazon.com">http://aws.amazon.com</ulink>) and
-                select the <!-- DNT-Start -->EC<!-- DNT-End -->2 tab.</para>
+                select the EC2 tab.</para>
 
-                <para>Connect to <emphasis role="bluebold"><!-- DNT-Start -->US<!-- DNT-End --> East
+                <para>Connect to <emphasis role="bluebold">US East
                 (Virginia)</emphasis> region (in the upper left corner of the
                 console.) This is required for the user-data scripts to work
                 properly. It does not matter which availability zone within
@@ -352,7 +352,7 @@
               </listitem>
 
               <listitem>
-                <para>Launch 64-bit Ubuntu 10.04 <!-- DNT-Start -->LTS<!-- DNT-End --> nodes for your cluster.
+                <para>Launch 64-bit Ubuntu 10.04 LTS nodes for your cluster.
                 You can use either:</para>
 
                 <itemizedlist>
@@ -364,19 +364,19 @@
 
                   <listitem>
                     <para><emphasis role="bluebold">ami-63be790a
-                    </emphasis>(Amazon <!-- DNT-Start -->EBS<!-- DNT-End -->: persistent storage, but higher
+                    </emphasis>(Amazon EBS: persistent storage, but higher
                     cost)</para>
 
-                    <para>You can use <!-- DNT-Start -->EBS<!-- DNT-End --> storage, but expect poorer
-                    performance as <!-- DNT-Start -->EBS<!-- DNT-End --> is not tuned for sequential access. See
-                    <link linkend="ebs_answer">the <!-- DNT-Start -->FAQ<!-- DNT-End --> section</link> for more
+                    <para>You can use EBS storage, but expect poorer
+                    performance as EBS is not tuned for sequential access. See
+                    <link linkend="ebs_answer">the FAQ section</link> for more
                     details.</para>
 
                     <para>Because of limitations for very large files in
                     certain fuse drivers, we do not recommend fuse drivers at
-                    this time. Instead, we suggest you leverage an <!-- DNT-Start -->EBS<!-- DNT-End --> mount
+                    this time. Instead, we suggest you leverage an EBS mount
                     for your landing zone. You can attach and mount a very
-                    large <!-- DNT-Start -->EBS<!-- DNT-End --> volume to the node containing your landing
+                    large EBS volume to the node containing your landing
                     zone.</para>
                   </listitem>
                 </itemizedlist>
@@ -392,7 +392,7 @@
 
               <listitem>
                 <para>Download the latest user-data script available from the
-                <!-- DNT-Start -->URL<!-- DNT-End --> listed below. Open it in a text editor, then copy and
+                URL listed below. Open it in a text editor, then copy and
                 paste the text (not the url) into the user-data script
                 box.</para>
 
@@ -411,13 +411,13 @@
               </listitem>
 
               <listitem>
-                <para>Use the <!-- DNT-Start -->HPCC<!-- DNT-End --> security group created earlier.</para>
+                <para>Use the HPCC security group created earlier.</para>
               </listitem>
 
               <listitem>
                 <para>Launch your nodes.</para>
 
-                <para>You now have an un-configured cluster with the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+                <para>You now have an un-configured cluster with the HPCC
                 Platform software installed. Continue on to configure your
                 cluster</para>
               </listitem>
@@ -429,25 +429,25 @@
 
       <itemizedlist>
         <listitem>
-          <para>Collect the private <!-- DNT-Start -->IP<!-- DNT-End --> addresses for your nodes</para>
+          <para>Collect the private IP addresses for your nodes</para>
 
           <para>If you have a small number of nodes, you can gather this
-          information using the <!-- DNT-Start -->AWS<!-- DNT-End --> Management Console interface.</para>
+          information using the AWS Management Console interface.</para>
 
           <para>For larger clusters, use the <emphasis
           role="bold">ips</emphasis> script provided. See <link
-          linkend="Collect">Collecting the Private <!-- DNT-Start -->IP<!-- DNT-End --> addresses</link> for for
+          linkend="Collect">Collecting the Private IP addresses</link> for for
           details.</para>
 
           <para><programlisting>sudo /opt/HPCCSystems/sbin/ips</programlisting></para>
         </listitem>
 
         <listitem>
-          <para>Configuring Your <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor Cluster</para>
+          <para>Configuring Your HPCC Systems Thor Cluster</para>
 
           <orderedlist>
             <listitem>
-              <para><!-- DNT-Start -->SSH<!-- DNT-End --> into the first node of your cluster using username:
+              <para>SSH into the first node of your cluster using username:
               <emphasis role="bluebold">ubuntu</emphasis> <itemizedlist>
                   <listitem>
                     <para>Linux or Mac:</para>
@@ -458,7 +458,7 @@
                   <listitem>
                     <para>Windows</para>
 
-                    <para>Use PuTTY, Pageant, and PuttyGen to <!-- DNT-Start -->SSH<!-- DNT-End --> to the
+                    <para>Use PuTTY, Pageant, and PuttyGen to SSH to the
                     node.</para>
 
                     <para>See <ulink
@@ -471,13 +471,13 @@
             <listitem>
               <para>Start Configuration Manager using this command:</para>
 
-              <!-- DNT-Start --><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting><!-- DNT-End -->
+              <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
             </listitem>
 
             <listitem>
               <para>In a web browser go to http://<emphasis
-              role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt;:8015</emphasis> (where
-              &lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt; is the public <!-- DNT-Start -->DNS<!-- DNT-End --> name of the node from which
+              role="bluebold">&lt;PUBLIC_DNS&gt;:8015</emphasis> (where
+              &lt;PUBLIC_DNS&gt; is the public DNS name of the node from which
               you started Configuration Manager).</para>
             </listitem>
 
@@ -522,15 +522,15 @@
 
             <listitem>
               <para>Write down the <emphasis role="bold">external</emphasis>
-              (public) <!-- DNT-Start -->DNS<!-- DNT-End --> names or <emphasis role="bold">external
-              </emphasis><!-- DNT-Start -->IP<!-- DNT-End --> addresses for ECLWatch (<!-- DNT-Start -->ESP<!-- DNT-End --> Service) and the
+              (public) DNS names or <emphasis role="bold">external
+              </emphasis>IP addresses for ECLWatch (ESP Service) and the
               Landing Zone (MyDropZone).</para>
 
-              <para>You can derive this from the Public <!-- DNT-Start -->DNS<!-- DNT-End --> name displayed in
-              the <!-- DNT-Start -->AWS<!-- DNT-End --> Console. For example, the <!-- DNT-Start -->DNS<!-- DNT-End --> name <emphasis
+              <para>You can derive this from the Public DNS name displayed in
+              the AWS Console. For example, the DNS name <emphasis
               role="bold">ec2-<emphasis
               role="bluebold">50-16-37-76</emphasis>.compute-1.amazonaws.com</emphasis>
-              translates to the <!-- DNT-Start -->IP<!-- DNT-End --> address of <emphasis
+              translates to the IP address of <emphasis
               role="bluebold">50.16.37.76</emphasis>.</para>
             </listitem>
           </orderedlist>
@@ -545,8 +545,8 @@
 
           <orderedlist continuation="continues" inheritnum="inherit">
             <listitem override="11">
-              <para>If you are using an Instance Store <!-- DNT-Start -->AMI<!-- DNT-End -->, as recommended,
-              you must tell the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor Platform where your instance
+              <para>If you are using an Instance Store AMI, as recommended,
+              you must tell the HPCC Systems Thor Platform where your instance
               storage is located. In the Configuration Manager browser
               window:</para>
 
@@ -631,8 +631,8 @@
             <listitem>
               <para>Copy the source xml file into the active location.</para>
 
-              <!-- DNT-Start --><programlisting>sudo -u hpcc cp /etc/HPCCSystems/source/hpcc_config_01.xml \
-/etc/HPCCSystems/environment.xml</programlisting><!-- DNT-End -->
+              <programlisting>sudo -u hpcc cp /etc/HPCCSystems/source/hpcc_config_01.xml \
+/etc/HPCCSystems/environment.xml</programlisting>
             </listitem>
 
             <listitem>
@@ -652,24 +652,24 @@
             </listitem>
 
             <listitem>
-              <para>In a web browser, connect to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch using
+              <para>In a web browser, connect to ECL Watch using
               http://<emphasis
-              role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt;:8010</emphasis> (where
-              &lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt; is the public <!-- DNT-Start -->DNS<!-- DNT-End --> Name of your <!-- DNT-Start -->ESP<!-- DNT-End -->
+              role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where
+              &lt;PUBLIC_DNS&gt; is the public DNS Name of your ESP
               server).</para>
             </listitem>
 
             <listitem>
-              <para>If you have not installed the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> (Or the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End -->
-              and the <!-- DNT-Start -->ECL<!-- DNT-End --> Plugin), you should install it now from the
+              <para>If you have not installed the ECL IDE (Or the Eclipse IDE
+              and the ECL Plugin), you should install it now from the
               Resources link in ECl Watch. <emphasis
-              role="bold">Note</emphasis> : A plug in for the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> is
+              role="bold">Note</emphasis> : A plug in for the Eclipse IDE is
               in limited beta for Linux and Windows and will be available
               shortly.</para>
             </listitem>
           </orderedlist>
 
-          <para>You are now ready to use your <!-- DNT-Start -->HPCC<!-- DNT-End --> Thor platform. You can
+          <para>You are now ready to use your HPCC Thor platform. You can
           follow the basic samples found later in this guide or try some of
           the suggestions in the <link linkend="NextSteps">Next Steps chapter.
           </link></para>
@@ -683,18 +683,18 @@
   </chapter>
 
   <chapter id="Collect">
-    <!-- DNT-Start --><title>Detailed Steps</title><!-- DNT-End -->
+    <title>Detailed Steps</title>
 
     <sect1 role="nobrk">
-      <!-- DNT-Start --><title>Create Keys; Configure Security Groups and TCP ports</title><!-- DNT-End -->
+      <title>Create Keys; Configure Security Groups and TCP ports</title>
 
-      <para>In this section, you will create <!-- DNT-Start -->SSH<!-- DNT-End --> security keys, configure your
+      <para>In this section, you will create SSH security keys, configure your
       security groups, and setup ports to use before starting the Amazon
-      Machine Image (<!-- DNT-Start -->AMI<!-- DNT-End -->).</para>
+      Machine Image (AMI).</para>
 
-      <para>You will use the <!-- DNT-Start -->SSH<!-- DNT-End --> keys to authenticate when connecting from
+      <para>You will use the SSH keys to authenticate when connecting from
       your workstation and for inter-node communication. You will also
-      configure firewall rules for your <!-- DNT-Start -->AWS<!-- DNT-End --> security group to open ports for
+      configure firewall rules for your AWS security group to open ports for
       external access and inter-node communication.</para>
 
       <para><emphasis role="bold">This process is only necessary the first
@@ -703,18 +703,18 @@
       cluster.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>Create EC2 instance keys</title><!-- DNT-End -->
+        <title>Create EC2 instance keys</title>
 
         <orderedlist numeration="arabic">
           <listitem>
-            <para>Log into the <!-- DNT-Start -->AWS<!-- DNT-End --> Management Console.</para>
+            <para>Log into the AWS Management Console.</para>
 
             <para><emphasis role="bold"><ulink
             url="http://aws.amazon.com/console/">http://aws.amazon.com/console/</ulink></emphasis></para>
           </listitem>
 
           <listitem>
-            <para>Select the <emphasis role="bold">the (<!-- DNT-Start -->EC<!-- DNT-End -->2)</emphasis> from
+            <para>Select the <emphasis role="bold">the (EC2)</emphasis> from
             the drop list at the top.</para>
 
             <para><figure>
@@ -727,7 +727,7 @@
                 </mediaobject>
               </figure></para>
 
-            <para><emphasis role="bold">Note</emphasis>: The <!-- DNT-Start -->AWS<!-- DNT-End --> Management
+            <para><emphasis role="bold">Note</emphasis>: The AWS Management
             Console interface and other screens may change without notice.
             However, most functionality should remain the same.</para>
           </listitem>
@@ -769,10 +769,10 @@
 
         <orderedlist continuation="continues" numeration="arabic">
           <listitem>
-            <para>Name it <emphasis role="bluebold"><!-- DNT-Start -->HPCC<!-- DNT-End -->_Key, </emphasis>then
+            <para>Name it <emphasis role="bluebold">HPCC_Key, </emphasis>then
             press the <emphasis role="bold">Create</emphasis> button. (You can
             give it any valid name, but for this example, we use <emphasis
-            role="bluebold"><!-- DNT-Start -->HPCC<!-- DNT-End -->_Key</emphasis>).</para>
+            role="bluebold">HPCC_Key</emphasis>).</para>
 
             <para><figure>
                 <title>HPCC_Key</title>
@@ -782,7 +782,7 @@
                     <imagedata fileref="images/AWS_04.jpg" />
                   </imageobject>
                 </mediaobject>
-              </figure>The console automatically offers the <!-- DNT-Start -->HPCC<!-- DNT-End -->_Key.pem file
+              </figure>The console automatically offers the HPCC_Key.pem file
             for download.</para>
 
             <para><figure>
@@ -817,7 +817,7 @@
               </informaltable></para>
 
             <para>You will use this file later to connect to the nodes with
-            your <!-- DNT-Start -->SSH<!-- DNT-End --> client and your <!-- DNT-Start -->SCP<!-- DNT-End --> / <!-- DNT-Start -->SFTP<!-- DNT-End --> client.</para>
+            your SSH client and your SCP / SFTP client.</para>
           </listitem>
 
           <listitem>
@@ -887,21 +887,21 @@
 
                   <tbody>
                     <row>
-                      <entry><!-- DNT-Start -->Name<!-- DNT-End --></entry>
+                      <entry>Name</entry>
 
-                      <entry><!-- DNT-Start -->HPCC<!-- DNT-End --></entry>
+                      <entry>HPCC</entry>
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->Description<!-- DNT-End --></entry>
+                      <entry>Description</entry>
 
                       <entry>High Performance Computing Cluster</entry>
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->VPC<!-- DNT-End --></entry>
+                      <entry>VPC</entry>
 
-                      <entry>No <!-- DNT-Start -->VPC<!-- DNT-End --></entry>
+                      <entry>No VPC</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -926,7 +926,7 @@
           </listitem>
 
           <listitem>
-            <para>Select the <!-- DNT-Start -->HPCC<!-- DNT-End --> Security Group (if not already
+            <para>Select the HPCC Security Group (if not already
             selected).</para>
 
             <para>You should see the details below. You may need to resize the
@@ -946,9 +946,9 @@
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Open up the SSH port</title><!-- DNT-End -->
+        <title>Open up the SSH port</title>
 
-        <para>This allows you to connect to your nodes using <!-- DNT-Start -->SSH<!-- DNT-End --> (via command
+        <para>This allows you to connect to your nodes using SSH (via command
         line on Linux or Putty on Windows).</para>
 
         <orderedlist numeration="arabic">
@@ -959,7 +959,7 @@
 
           <listitem>
             <para>From the <emphasis role="bold">Create a new rule</emphasis>
-            drop list, select <emphasis role="bluebold"><!-- DNT-Start -->SSH<!-- DNT-End -->.</emphasis></para>
+            drop list, select <emphasis role="bluebold">SSH.</emphasis></para>
           </listitem>
 
           <listitem>
@@ -985,11 +985,11 @@
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Open up additional TCP ports (8002, 8008, 8010, 8015, 8145,
-        8050, and 9876) for HPCC services</title><!-- DNT-End -->
+        <title>Open up additional TCP ports (8002, 8008, 8010, 8015, 8145,
+        8050, and 9876) for HPCC services</title>
 
-        <para>This allows external access to <!-- DNT-Start -->HPCC<!-- DNT-End --> services using a
-        browser-based interface and the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> on your local machine.</para>
+        <para>This allows external access to HPCC services using a
+        browser-based interface and the ECL IDE on your local machine.</para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -999,43 +999,43 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start -->WsECL<!-- DNT-End --></entry>
+                  <entry>WsECL</entry>
 
                   <entry>8002</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->ECL Direct<!-- DNT-End --></entry>
+                  <entry>ECL Direct</entry>
 
                   <entry>8008</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->ECL Watch<!-- DNT-End --></entry>
+                  <entry>ECL Watch</entry>
 
                   <entry>8010</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Configuration Manager<!-- DNT-End --></entry>
+                  <entry>Configuration Manager</entry>
 
                   <entry>8015</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->WsAtrtributes<!-- DNT-End --></entry>
+                  <entry>WsAtrtributes</entry>
 
                   <entry>8145</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Roxie Config<!-- DNT-End --></entry>
+                  <entry>Roxie Config</entry>
 
                   <entry>8050</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Roxie<!-- DNT-End --></entry>
+                  <entry>Roxie</entry>
 
                   <entry>9876</entry>
                 </row>
@@ -1046,7 +1046,7 @@
         <orderedlist numeration="arabic">
           <listitem>
             <para>From the <emphasis role="bold">Create a new rule</emphasis>
-            drop list, select <emphasis role="bluebold">Custom <!-- DNT-Start -->TCP<!-- DNT-End -->
+            drop list, select <emphasis role="bluebold">Custom TCP
             rule</emphasis>.</para>
           </listitem>
 
@@ -1084,16 +1084,16 @@
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Open up TCP ports for inter-node communication</title><!-- DNT-End -->
+        <title>Open up TCP ports for inter-node communication</title>
 
         <para>These ports are <emphasis role="bold">only</emphasis> open to
-        the IPs in your <!-- DNT-Start -->AWS<!-- DNT-End --> Security Group. In other words, they do not allow
-        access from outside or other <!-- DNT-Start -->AWS<!-- DNT-End --> instances.</para>
+        the IPs in your AWS Security Group. In other words, they do not allow
+        access from outside or other AWS instances.</para>
 
         <orderedlist numeration="arabic">
           <listitem>
             <para>From the <emphasis role="bold">Create a new rule</emphasis>
-            drop list, select <emphasis role="bluebold">Custom <!-- DNT-Start -->TCP<!-- DNT-End -->
+            drop list, select <emphasis role="bluebold">Custom TCP
             rule</emphasis>.</para>
           </listitem>
 
@@ -1104,7 +1104,7 @@
 
           <listitem>
             <para>In the <emphasis role="bold">Source</emphasis> entry box,
-            type <emphasis role="bluebold"><!-- DNT-Start -->HPCC<!-- DNT-End --></emphasis> and wait for the
+            type <emphasis role="bluebold">HPCC</emphasis> and wait for the
             drop list to appear. When it appears, select your security group
             as the source.</para>
 
@@ -1132,16 +1132,16 @@
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Open up UDP ports for inter-node communication</title><!-- DNT-End -->
+        <title>Open up UDP ports for inter-node communication</title>
 
         <para>These ports are <emphasis role="bold">only</emphasis> open to
-        the IPs in your <!-- DNT-Start -->AWS<!-- DNT-End --> Security Group. In other words, they do not allow
-        access from outside or other <!-- DNT-Start -->AWS<!-- DNT-End --> instances.</para>
+        the IPs in your AWS Security Group. In other words, they do not allow
+        access from outside or other AWS instances.</para>
 
         <orderedlist numeration="arabic">
           <listitem>
             <para>From the <emphasis role="bold">Create a new rule</emphasis>
-            drop list, select <emphasis role="bluebold">Custom <!-- DNT-Start -->UDP<!-- DNT-End -->
+            drop list, select <emphasis role="bluebold">Custom UDP
             rule</emphasis>.</para>
           </listitem>
 
@@ -1152,7 +1152,7 @@
 
           <listitem>
             <para>In the <emphasis role="bold">Source</emphasis> entry box,
-            type <emphasis role="bluebold"><!-- DNT-Start -->HPCC<!-- DNT-End --></emphasis> and wait for the
+            type <emphasis role="bluebold">HPCC</emphasis> and wait for the
             drop list to appear. When it appears, select your security group
             as the source.</para>
 
@@ -1180,18 +1180,18 @@
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Open up Ping access</title><!-- DNT-End -->
+        <title>Open up Ping access</title>
 
         <para>These ports are <emphasis role="bold">only</emphasis> open to
-        the IPs in your <!-- DNT-Start -->AWS<!-- DNT-End --> Security Group. In other words, they do not allow
-        access from outside or from other <!-- DNT-Start -->AWS<!-- DNT-End --> instances. The scripts use Ping
+        the IPs in your AWS Security Group. In other words, they do not allow
+        access from outside or from other AWS instances. The scripts use Ping
         to check the availability of a node before attempting an
         action.</para>
 
         <orderedlist numeration="arabic">
           <listitem>
             <para>From the Create a new rule drop list, select <emphasis
-            role="bluebold">Custom <!-- DNT-Start -->ICMP<!-- DNT-End --> rule</emphasis>.</para>
+            role="bluebold">Custom ICMP rule</emphasis>.</para>
           </listitem>
 
           <listitem>
@@ -1201,7 +1201,7 @@
 
           <listitem>
             <para>In the <emphasis role="bold">Source</emphasis> entry box,
-            type <emphasis role="bluebold"><!-- DNT-Start -->HPCC<!-- DNT-End --></emphasis> and wait for the
+            type <emphasis role="bluebold">HPCC</emphasis> and wait for the
             drop list to appear. When it appears, select your security group
             as the source.</para>
 
@@ -1223,7 +1223,7 @@
 
           <listitem>
             <para>From the Create a new rule drop list, select <emphasis
-            role="bluebold">Custom <!-- DNT-Start -->ICMP<!-- DNT-End --> rule</emphasis>.</para>
+            role="bluebold">Custom ICMP rule</emphasis>.</para>
           </listitem>
 
           <listitem>
@@ -1233,7 +1233,7 @@
 
           <listitem>
             <para>In the <emphasis role="bold">Source</emphasis> entry box,
-            type <emphasis role="bluebold"><!-- DNT-Start -->HPCC<!-- DNT-End --></emphasis> and wait for the
+            type <emphasis role="bluebold">HPCC</emphasis> and wait for the
             drop list to appear. When it appears, select your security group
             as the source.</para>
           </listitem>
@@ -1252,22 +1252,22 @@
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>Launch Ubuntu 10.04 AMI Instances</title><!-- DNT-End -->
+      <title>Launch Ubuntu 10.04 AMI Instances</title>
 
       <para>In this section, you will launch a set of Ubuntu 10.04 machines to
-      use for your <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor platform.</para>
+      use for your HPCC Systems Thor platform.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>Launch Ubuntu 10.04 AMIs</title><!-- DNT-End -->
+        <title>Launch Ubuntu 10.04 AMIs</title>
 
-        <para>An <!-- DNT-Start -->AMI<!-- DNT-End --> (Amazon Machine Image) is a pre-configured machine image
+        <para>An AMI (Amazon Machine Image) is a pre-configured machine image
         containing an operating system and other configuration
         settings.</para>
 
         <orderedlist numeration="arabic">
           <listitem>
             <para>In the Region drop list on the left, select <emphasis
-            role="bluebold"><!-- DNT-Start -->US<!-- DNT-End --> East (Virginia)</emphasis>.</para>
+            role="bluebold">US East (Virginia)</emphasis>.</para>
           </listitem>
 
           <listitem>
@@ -1317,7 +1317,7 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Enter the <!-- DNT-Start -->AMI<!-- DNT-End --> id in the search box.</para>
+            <para>Enter the AMI id in the search box.</para>
 
             <para><itemizedlist>
                 <listitem>
@@ -1328,20 +1328,20 @@
 
                 <listitem>
                   <para><emphasis role="bluebold">ami-63be790a
-                  </emphasis>(Amazon <!-- DNT-Start -->EBS<!-- DNT-End -->: persistent storage, but higher
+                  </emphasis>(Amazon EBS: persistent storage, but higher
                   cost)</para>
 
-                  <para>You can use <!-- DNT-Start -->EBS<!-- DNT-End --> storage, but expect poorer performance
-                  as <!-- DNT-Start -->EBS<!-- DNT-End --> is not tuned for sequential access. See <link
-                  linkend="ebs_answer">the <!-- DNT-Start -->FAQ<!-- DNT-End --> section</link> for more
+                  <para>You can use EBS storage, but expect poorer performance
+                  as EBS is not tuned for sequential access. See <link
+                  linkend="ebs_answer">the FAQ section</link> for more
                   details. Because of limitations for very large files in
                   certain fuse drivers, we do not recommend fuse drivers at
-                  this time. Instead, we suggest you leverage an <!-- DNT-Start -->EBS<!-- DNT-End --> mount for
-                  your landing zone. You can attach and mount a very large <!-- DNT-Start -->EBS<!-- DNT-End -->
+                  this time. Instead, we suggest you leverage an EBS mount for
+                  your landing zone. You can attach and mount a very large EBS
                   volume to the node containing your landing zone.</para>
                 </listitem>
               </itemizedlist><figure>
-                <!-- DNT-Start --><title>AMI Id</title><!-- DNT-End -->
+                <title>AMI Id</title>
 
                 <mediaobject>
                   <imageobject>
@@ -1357,9 +1357,9 @@
 
           <listitem>
             <para>Press the <emphasis role="bold">Select</emphasis> button
-            next to the <!-- DNT-Start -->AMI<!-- DNT-End -->.</para>
+            next to the AMI.</para>
 
-            <para>The Request Instances Wizard starts. You will use this <!-- DNT-Start -->AWS<!-- DNT-End -->
+            <para>The Request Instances Wizard starts. You will use this AWS
             tool to define your system instances.</para>
           </listitem>
 
@@ -1381,13 +1381,13 @@
 
                   <tbody>
                     <row>
-                      <entry><!-- DNT-Start -->Availability Zone<!-- DNT-End --></entry>
+                      <entry>Availability Zone</entry>
 
                       <entry>no preference</entry>
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->Instance Type<!-- DNT-End --></entry>
+                      <entry>Instance Type</entry>
 
                       <entry>Select the appropriate instance size. We suggest
                       <emphasis role="bold">Large</emphasis> for typical
@@ -1414,14 +1414,14 @@
           </listitem>
 
           <listitem>
-            <para>Go to the Web page at the <!-- DNT-Start -->URL<!-- DNT-End --> below. This page lists all the
+            <para>Go to the Web page at the URL below. This page lists all the
             available user-data scripts. Download the one you wish to
             use.</para>
 
             <para><programlisting>http://s3.amazonaws.com/hpccsystems-installs/userdatascripts.html</programlisting></para>
 
             <para>The user-data script you choose will determine which version
-            of the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform to instantiate. Older versions will remain
+            of the HPCC platform to instantiate. Older versions will remain
             available so you can recreate any version of a platform. This
             allows you to continue using the version you are familiar with and
             upgrade when you want to.</para>
@@ -1460,7 +1460,7 @@
                   </row>
 
                   <row>
-                    <entry>Installs the latest stable release of the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+                    <entry>Installs the latest stable release of the HPCC
                     platform package</entry>
                   </row>
 
@@ -1475,7 +1475,7 @@
                   </row>
 
                   <row>
-                    <entry>Installs supplemental packages for <!-- DNT-Start -->HPCC<!-- DNT-End --></entry>
+                    <entry>Installs supplemental packages for HPCC</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1496,31 +1496,31 @@
 
                   <tbody>
                     <row>
-                      <entry><!-- DNT-Start -->0Kernel ID<!-- DNT-End --></entry>
+                      <entry>0Kernel ID</entry>
 
                       <entry>Use Default</entry>
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->Ram Disk ID<!-- DNT-End --></entry>
+                      <entry>Ram Disk ID</entry>
 
                       <entry>Use Default</entry>
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->Monitoring<!-- DNT-End --></entry>
+                      <entry>Monitoring</entry>
 
                       <entry>Unchecked</entry>
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->Termination Protection<!-- DNT-End --></entry>
+                      <entry>Termination Protection</entry>
 
                       <entry>Unchecked</entry>
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->Shutdown Behavior<!-- DNT-End --></entry>
+                      <entry>Shutdown Behavior</entry>
 
                       <entry>Stop</entry>
                     </row>
@@ -1532,7 +1532,7 @@
           <listitem>
             <para>Under <emphasis role="bold">Key / Value</emphasis>
             configuration, Enter <emphasis
-            role="bluebold"><!-- DNT-Start -->HPCC<!-- DNT-End -->_Node</emphasis> as the name , then press the
+            role="bluebold">HPCC_Node</emphasis> as the name , then press the
             <emphasis role="bold">Continue</emphasis> button.</para>
           </listitem>
 
@@ -1540,13 +1540,13 @@
             <para>On the <emphasis role="bold">Create Key Pair</emphasis> tab,
             select <emphasis role="bold">Choose from your existing Key
             Pairs</emphasis>, then select the <emphasis
-            role="bluebold"><!-- DNT-Start -->HPCC<!-- DNT-End -->_Key</emphasis> from the drop list, then press
+            role="bluebold">HPCC_Key</emphasis> from the drop list, then press
             the <emphasis role="bold">Continue</emphasis> button.</para>
           </listitem>
 
           <listitem>
             <para>Under <emphasis role="bold">Configure Firewall</emphasis>,
-            select the <emphasis role="bluebold"><!-- DNT-Start -->HPCC<!-- DNT-End --></emphasis> security
+            select the <emphasis role="bluebold">HPCC</emphasis> security
             group, then press the <emphasis role="bold">Continue</emphasis>
             button.</para>
           </listitem>
@@ -1570,7 +1570,7 @@
           </listitem>
         </orderedlist>
 
-        <para>You now have an un-configured cluster with the <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform
+        <para>You now have an un-configured cluster with the HPCC Platform
         software installed. Continue on to configure your cluster.</para>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -1600,7 +1600,7 @@
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>View your Instances</title><!-- DNT-End -->
+      <title>View your Instances</title>
 
       <para>Click on the <emphasis role="bold">View your instances on the
       Instances page</emphasis> link and wait for your instance status to say
@@ -1617,9 +1617,9 @@
         </figure></para>
 
       <para>Note in the instance details (bottom frame) that each instance has
-      a private and a public <!-- DNT-Start -->IP<!-- DNT-End --> address that can be derived from the private
-      and public <!-- DNT-Start -->DNS<!-- DNT-End --> entries (your entries will be different). You will need
-      the private IPs later when using the <!-- DNT-Start -->HPCC<!-- DNT-End --> Configuration Manager.</para>
+      a private and a public IP address that can be derived from the private
+      and public DNS entries (your entries will be different). You will need
+      the private IPs later when using the HPCC Configuration Manager.</para>
 
       <para><figure>
           <title>Instance Details</title>
@@ -1631,15 +1631,15 @@
           </mediaobject>
         </figure></para>
 
-      <para>Notice the naming convention uses the <!-- DNT-Start -->IP<!-- DNT-End --> in the name. For
+      <para>Notice the naming convention uses the IP in the name. For
       example:</para>
 
       <blockquote>
-        <para>Private <!-- DNT-Start -->DNS<!-- DNT-End --> = ip-10-82-210-192.ec2.internal</para>
+        <para>Private DNS = ip-10-82-210-192.ec2.internal</para>
 
-        <para>Private <!-- DNT-Start -->IP<!-- DNT-End --> = 10.82.210.192</para>
+        <para>Private IP = 10.82.210.192</para>
 
-        <para>Public <!-- DNT-Start -->DNS<!-- DNT-End --> = ec2-75-101-212-180.compute-1.amazonaws.com</para>
+        <para>Public DNS = ec2-75-101-212-180.compute-1.amazonaws.com</para>
       </blockquote>
 
       <para></para>
@@ -1656,11 +1656,11 @@
             <row>
               <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-              <entry>Private IPs are for inter-node communications. Public <!-- DNT-Start -->DNS<!-- DNT-End -->
+              <entry>Private IPs are for inter-node communications. Public DNS
               names are for communicating to a node from outside the cloud.
               <emphasis role="bold">You will need the private IPs later when
-              using the <!-- DNT-Start -->HPCC<!-- DNT-End --> Configuration Manager. You will also need to know
-              the public <!-- DNT-Start -->DNS<!-- DNT-End --> name of your <!-- DNT-Start -->ESP<!-- DNT-End --> node and your Landing Zone
+              using the HPCC Configuration Manager. You will also need to know
+              the public DNS name of your ESP node and your Landing Zone
               node.</emphasis></entry>
             </row>
           </tbody>
@@ -1669,14 +1669,14 @@
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>Collect the Private IP addresses of your nodes.</title><!-- DNT-End -->
+      <title>Collect the Private IP addresses of your nodes.</title>
 
-      <para>The <!-- DNT-Start -->EC<!-- DNT-End -->2 instances are given random <!-- DNT-Start -->IP<!-- DNT-End --> addresses and are usually
-      not contiguous. The <!-- DNT-Start -->HPCC<!-- DNT-End --> Configuration Manager needs a list of IPs as
+      <para>The EC2 instances are given random IP addresses and are usually
+      not contiguous. The HPCC Configuration Manager needs a list of IPs as
       input criteria.</para>
 
       <para>If you have only a few nodes, you can collect this information
-      from the <!-- DNT-Start -->AWS<!-- DNT-End --> Management Console interface, however, this would be
+      from the AWS Management Console interface, however, this would be
       time-consuming on large clusters. To help gather this information, the
       user data script has installed a script for this purpose.</para>
 
@@ -1684,10 +1684,10 @@
 
       <itemizedlist>
         <listitem>
-          <para>Your <!-- DNT-Start -->AWS<!-- DNT-End --> Access Keys (both Access Key <!-- DNT-Start -->ID<!-- DNT-End --> and Secret Access
+          <para>Your AWS Access Keys (both Access Key ID and Secret Access
           Key).</para>
 
-          <para>You can find these in your account settings the <!-- DNT-Start -->AWS<!-- DNT-End --> Management
+          <para>You can find these in your account settings the AWS Management
           Console</para>
         </listitem>
 
@@ -1700,7 +1700,7 @@
 
       <orderedlist>
         <listitem>
-          <para><!-- DNT-Start -->SSH<!-- DNT-End --> into the first node of your instances.<itemizedlist>
+          <para>SSH into the first node of your instances.<itemizedlist>
               <listitem>
                 <para>Linux or Mac:</para>
 
@@ -1710,7 +1710,7 @@
               <listitem>
                 <para>Windows</para>
 
-                <para>Use PuTTY, Pageant, and PuttyGen to <!-- DNT-Start -->SSH<!-- DNT-End --> to the
+                <para>Use PuTTY, Pageant, and PuttyGen to SSH to the
                 node.</para>
 
                 <para>See <ulink
@@ -1729,28 +1729,28 @@
         <listitem>
           <para>Follow the prompts, until the script completes.</para>
 
-          <para>When the script completes, the <!-- DNT-Start -->IP<!-- DNT-End --> addresses are listed in the
+          <para>When the script completes, the IP addresses are listed in the
           console window and also saved to a file named <emphasis
           role="bold">ips.txt</emphasis>.</para>
         </listitem>
 
         <listitem>
-          <para>Copy the list of IPs and later paste into the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          <para>Copy the list of IPs and later paste into the HPCC
           Configuration Manager (see the next section)</para>
         </listitem>
       </orderedlist>
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>Configure your HPCC Systems Thor Cluster</title><!-- DNT-End -->
+      <title>Configure your HPCC Systems Thor Cluster</title>
 
-      <para>At this point, your nodes are running and the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems
+      <para>At this point, your nodes are running and the HPCC Systems
       platform packages and all dependencies are installed. In this section,
-      you will use the <!-- DNT-Start -->HPCC<!-- DNT-End -->'s Configuration Manager to configure your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      you will use the HPCC's Configuration Manager to configure your HPCC
       Systems Thor platform.</para>
 
       <para>If you are using PuTTY, you should use PuTTYgen to convert the
-      .<!-- DNT-Start -->PEM<!-- DNT-End --> file to a .<!-- DNT-Start -->PPK<!-- DNT-End --> file, then add it the PuTTY session or add the key
+      .PEM file to a .PPK file, then add it the PuTTY session or add the key
       to Pageant.</para>
 
       <para>See <ulink
@@ -1758,11 +1758,11 @@
       for more details.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>SSH to the first node and Start Configuration Manager</title><!-- DNT-End -->
+        <title>SSH to the first node and Start Configuration Manager</title>
 
         <orderedlist numeration="arabic">
           <listitem>
-            <para><!-- DNT-Start -->SSH<!-- DNT-End --> into the first node of your instances.<itemizedlist>
+            <para>SSH into the first node of your instances.<itemizedlist>
                 <listitem>
                   <para>Linux or Mac:</para>
 
@@ -1772,7 +1772,7 @@
                 <listitem>
                   <para>Windows</para>
 
-                  <para>Use PuTTY, Pageant, and PuttyGen to <!-- DNT-Start -->SSH<!-- DNT-End --> to the
+                  <para>Use PuTTY, Pageant, and PuttyGen to SSH to the
                   node.</para>
 
                   <para>See <ulink
@@ -1803,14 +1803,14 @@
       </sect2>
 
       <sect2>
-        <!-- DNT-Start --><title>Access the Configuration Manager's Wizard interface to generate
-        your HPCC environment configuration file</title><!-- DNT-End -->
+        <title>Access the Configuration Manager's Wizard interface to generate
+        your HPCC environment configuration file</title>
 
         <orderedlist numeration="arabic">
           <listitem>
             <para>In a Web browser, go to http://<emphasis
-            role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt;:8015</emphasis> (where
-            <!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End --> is the public <!-- DNT-Start -->DNS<!-- DNT-End --> name of the node where you started
+            role="bluebold">&lt;PUBLIC_DNS&gt;:8015</emphasis> (where
+            PUBLIC_DNS is the public DNS name of the node where you started
             Config Manager).</para>
           </listitem>
 
@@ -1842,8 +1842,8 @@
           <listitem>
             <para><emphasis role="bold">Leave the Roxie set to 0.</emphasis>
             For details on using a Roxie cluster, see the <emphasis>Installing
-            and Running the <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform</emphasis> manual. Details on
-            running a Roxie cluster on <!-- DNT-Start -->AWS<!-- DNT-End --> will appear in a future
+            and Running the HPCC Platform</emphasis> manual. Details on
+            running a Roxie cluster on AWS will appear in a future
             manual.</para>
           </listitem>
 
@@ -1873,20 +1873,20 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Write down the Internal <!-- DNT-Start -->IP<!-- DNT-End --> address for ECLWatch (<!-- DNT-Start -->ESP<!-- DNT-End -->
+            <para>Write down the Internal IP address for ECLWatch (ESP
             Service) and the Landing Zone (MyDropZone).</para>
 
-            <para>You will identify the node using its Internal <!-- DNT-Start -->IP<!-- DNT-End -->. You will
-            also need either the external <!-- DNT-Start -->DNS<!-- DNT-End --> name or external <!-- DNT-Start -->IP<!-- DNT-End --> address
-            later. You can see the <!-- DNT-Start -->DNS<!-- DNT-End --> Name on the <!-- DNT-Start -->AWS<!-- DNT-End --> Management
+            <para>You will identify the node using its Internal IP. You will
+            also need either the external DNS name or external IP address
+            later. You can see the DNS Name on the AWS Management
             Console.</para>
 
-            <para>To derive the <emphasis role="bold">external</emphasis> <!-- DNT-Start -->IP<!-- DNT-End -->
-            from the Public <!-- DNT-Start -->DNS<!-- DNT-End --> name displayed in the <!-- DNT-Start -->AWS<!-- DNT-End --> Console, look at the
-            numeric portion. For example, the <!-- DNT-Start -->DNS<!-- DNT-End --> name <emphasis
+            <para>To derive the <emphasis role="bold">external</emphasis> IP
+            from the Public DNS name displayed in the AWS Console, look at the
+            numeric portion. For example, the DNS name <emphasis
             role="bold">ec2-<emphasis
             role="bluebold">50-16-37-76</emphasis>.compute-1.amazonaws.com</emphasis>
-            translates to the <!-- DNT-Start -->IP<!-- DNT-End --> address of <emphasis
+            translates to the IP address of <emphasis
             role="bluebold">50.16.37.76</emphasis>.</para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -1899,15 +1899,15 @@
 
                   <tbody>
                     <row>
-                      <entry><!-- DNT-Start -->Name<!-- DNT-End --></entry>
+                      <entry>Name</entry>
 
-                      <entry>Internal <!-- DNT-Start -->IP<!-- DNT-End --></entry>
+                      <entry>Internal IP</entry>
 
-                      <entry>External <!-- DNT-Start -->DNS<!-- DNT-End --> name or <!-- DNT-Start -->IP<!-- DNT-End --></entry>
+                      <entry>External DNS name or IP</entry>
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->ESP<!-- DNT-End --> Server</entry>
+                      <entry>ESP Server</entry>
 
                       <entry></entry>
 
@@ -1915,7 +1915,7 @@
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->LZ<!-- DNT-End --> Server</entry>
+                      <entry>LZ Server</entry>
 
                       <entry></entry>
 
@@ -1929,7 +1929,7 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>If you chose the <!-- DNT-Start -->AMI<!-- DNT-End --> for persistent storage (Amazon <!-- DNT-Start -->EBS<!-- DNT-End -->),
+            <para>If you chose the AMI for persistent storage (Amazon EBS),
             press the <emphasis role="bold">Finish</emphasis> button.</para>
 
             <para>A message indicating success displays.</para>
@@ -1948,8 +1948,8 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>If you are using an Instance Store <!-- DNT-Start -->AMI<!-- DNT-End -->, as recommended, you
-            must tell the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor Platform where your instance
+            <para>If you are using an Instance Store AMI, as recommended, you
+            must tell the HPCC Systems Thor Platform where your instance
             storage is located. In the Configuration Manager browser
             window:</para>
 
@@ -2028,7 +2028,7 @@
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>Push the Configuration file to all nodes</title><!-- DNT-End -->
+      <title>Push the Configuration file to all nodes</title>
 
       <orderedlist numeration="arabic">
         <listitem>
@@ -2060,7 +2060,7 @@
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>Start your Thor Platform</title><!-- DNT-End -->
+      <title>Start your Thor Platform</title>
 
       <para>From the console window:</para>
 
@@ -2073,9 +2073,9 @@
         </listitem>
 
         <listitem>
-          <para>In a Web browser, connect to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch using http://<emphasis
-          role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt;:8010</emphasis> (where <!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->
-          is the public <!-- DNT-Start -->DNS<!-- DNT-End --> name of your <!-- DNT-Start -->ESP<!-- DNT-End --> server).</para>
+          <para>In a Web browser, connect to ECL Watch using http://<emphasis
+          role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where PUBLIC_DNS
+          is the public DNS name of your ESP server).</para>
 
           <para><figure>
               <title>ECL Watch</title>
@@ -2095,37 +2095,37 @@
   </chapter>
 
   <chapter>
-    <!-- DNT-Start --><title>Running ECL</title><!-- DNT-End -->
+    <title>Running ECL</title>
 
     <para></para>
 
     <sect1 id="ECL-on-a-single-node-system" role="nobrk">
-      <!-- DNT-Start --><title>Running ECL on your HPCC Systems Thor cluster</title><!-- DNT-End -->
+      <title>Running ECL on your HPCC Systems Thor cluster</title>
 
       <para>After your platform is running, and you can now create and run
-      some <!-- DNT-Start -->ECL<!-- DNT-End --><footnote>
+      some ECL<footnote>
           <para><emphasis role="bold">E</emphasis>nterprise <emphasis
           role="bold">C</emphasis>ontrol <emphasis
-          role="bold">L</emphasis>anguage (<!-- DNT-Start -->ECL<!-- DNT-End -->) is a declarative, data centric
+          role="bold">L</emphasis>anguage (ECL) is a declarative, data centric
           programming language used to manage all aspects of the massive data
-          joins, sorts, and builds that truly differentiate <!-- DNT-Start -->HPCC<!-- DNT-End --> (High
+          joins, sorts, and builds that truly differentiate HPCC (High
           Performance Computing Cluster) from other technologies in its
           ability to provide flexible data analysis on a massive scale.</para>
         </footnote> code using either ECL IDE, the command line ECL compiler,
       or the ECLPlus tool.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>Install the ECL IDE and HPCC Client Tools</title><!-- DNT-End -->
+        <title>Install the ECL IDE and HPCC Client Tools</title>
 
-        <para>You only need to install the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> once. If you have already
+        <para>You only need to install the ECL IDE once. If you have already
         installed it, you can skip this section. .</para>
 
         <para><orderedlist>
             <listitem>
-              <para>In a Web browser, connect to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch using
+              <para>In a Web browser, connect to ECL Watch using
               http://<emphasis
-              role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt;:8010</emphasis> (where
-              <!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End --> is the public <!-- DNT-Start -->DNS<!-- DNT-End --> name of your <!-- DNT-Start -->ESP<!-- DNT-End --> server).</para>
+              role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where
+              PUBLIC_DNS is the public DNS name of your ESP server).</para>
 
               <para><informaltable colsep="1" frame="all" rowsep="1">
                   <?dbfo keep-together="always"?>
@@ -2140,8 +2140,8 @@
                         <entry><inlinegraphic
                         fileref="images/caution.png" /></entry>
 
-                        <entry>Your <!-- DNT-Start -->IP<!-- DNT-End --> address could be different from the
-                        ones provided in the example images. Please use the <!-- DNT-Start -->IP<!-- DNT-End -->
+                        <entry>Your IP address could be different from the
+                        ones provided in the example images. Please use the IP
                         address of <emphasis role="bold">your</emphasis>
                         node.</entry>
                       </row>
@@ -2153,7 +2153,7 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>From <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page, click on the <emphasis
+              <para>From ECL Watch page, click on the <emphasis
               role="bold">Resources </emphasis> link in the menu on the left
               side.</para>
 
@@ -2168,37 +2168,37 @@
                   </mediaobject>
                 </figure></para>
 
-              <para>Follow the link to the <!-- DNT-Start -->HPCC<!-- DNT-End --> System's portal.</para>
+              <para>Follow the link to the HPCC System's portal.</para>
             </listitem>
 
             <listitem>
-              <para>Click on the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> and Client
+              <para>Click on the <emphasis role="bold">ECL IDE and Client
               Tools </emphasis>link.</para>
             </listitem>
 
             <listitem>
-              <para>Follow the instructions on the web page to install the <!-- DNT-Start -->ECL<!-- DNT-End -->
-              <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
+              <para>Follow the instructions on the web page to install the ECL
+              IDE.</para>
             </listitem>
 
             <listitem>
-              <para>Install the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, following the prompts in the
-              installation program. Once the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> is installed
+              <para>Install the ECL IDE, following the prompts in the
+              installation program. Once the ECL IDE is installed
               successfully, you can proceed.</para>
             </listitem>
           </orderedlist></para>
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Running a basic ECL program from the ECL IDE</title><!-- DNT-End -->
+        <title>Running a basic ECL program from the ECL IDE</title>
 
-        <!-- DNT-Start --><para><orderedlist>
+        <para><orderedlist>
             <listitem>
               <para>Open the ECL IDE on your Windows workstation, from your
               start menu. (<emphasis role="bold">Start</emphasis> &gt;&gt;
               <emphasis role="bold">All Programs</emphasis> &gt;&gt; <emphasis
               role="bold">HPCCSystems</emphasis> &gt;&gt; <emphasis
-              role="bold">ECL IDE</emphasis> ).</para><!-- DNT-End -->
+              role="bold">ECL IDE</emphasis> ).</para>
 
               <informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -2214,7 +2214,7 @@
                       fileref="images/OSSgr3.png" /></entry>
 
                       <entry>You can create a shortcut on your desktop to
-                      provide quick access to the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->.</entry>
+                      provide quick access to the ECL IDE.</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -2228,9 +2228,9 @@
 
             <listitem>
               <para>In the <emphasis role="bold">Server</emphasis> entry
-              control, type the Public <!-- DNT-Start -->DNS<!-- DNT-End --> name of your <!-- DNT-Start -->ESP<!-- DNT-End --> Server or the
-              <emphasis role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->IP<!-- DNT-End -->&gt;</emphasis> (where
-              <!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->IP<!-- DNT-End --> is the public <!-- DNT-Start -->IP<!-- DNT-End --> address of your <!-- DNT-Start -->ESP<!-- DNT-End --> server) then
+              control, type the Public DNS name of your ESP Server or the
+              <emphasis role="bluebold">&lt;PUBLIC_IP&gt;</emphasis> (where
+              PUBLIC_IP is the public IP address of your ESP server) then
               press the <emphasis role="bold">Ok</emphasis> button.</para>
 
               <para><figure>
@@ -2245,7 +2245,7 @@
             </listitem>
 
             <listitem>
-              <para>Enter the <emphasis role="bold">Login <!-- DNT-Start -->ID<!-- DNT-End --></emphasis> and
+              <para>Enter the <emphasis role="bold">Login ID</emphasis> and
               <emphasis role="bold">Password</emphasis> provided in the Login
               dialog.</para>
 
@@ -2257,14 +2257,14 @@
 
                   <tbody>
                     <row>
-                      <entry><!-- DNT-Start -->Login ID<!-- DNT-End --></entry>
+                      <entry>Login ID</entry>
 
                       <entry><emphasis
                       role="bluebold">hpccdemo</emphasis></entry>
                     </row>
 
                     <row>
-                      <entry><!-- DNT-Start -->Password<!-- DNT-End --></entry>
+                      <entry>Password</entry>
 
                       <entry><emphasis
                       role="bluebold">hpccdemo</emphasis></entry>
@@ -2274,7 +2274,7 @@
               </informaltable>
 
               <figure>
-                <!-- DNT-Start --><title>Login Window</title><!-- DNT-End -->
+                <title>Login Window</title>
 
                 <mediaobject>
                   <imageobject>
@@ -2286,7 +2286,7 @@
 
             <listitem>
               <para>Open a new <emphasis role="bold">Builder Window</emphasis>
-              (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N) and write the following code:</para>
+              (CTRL+N) and write the following code:</para>
 
               <para><programlisting>OUTPUT('Hello World');
 </programlisting></para>
@@ -2294,9 +2294,9 @@
               <para>This could also be written as:</para>
 
               <para><programlisting>'Hello World';
-</programlisting>In the second program listing, the <!-- DNT-Start -->OUTPUT<!-- DNT-End --> keyword is omitted.
+</programlisting>In the second program listing, the OUTPUT keyword is omitted.
               This is possible because the language is declarative and the
-              <!-- DNT-Start -->OUTPUT<!-- DNT-End --> action is implicit.</para>
+              OUTPUT action is implicit.</para>
             </listitem>
 
             <listitem>
@@ -2304,7 +2304,7 @@
               target cluster.</para>
 
               <para><emphasis role="bold">Thor</emphasis> is the Data Refinery
-              component of your <!-- DNT-Start -->HPCC<!-- DNT-End -->. It is a disk based massively parallel
+              component of your HPCC. It is a disk based massively parallel
               computer cluster, optimized for sorting, manipulating, and
               transforming massive data.</para>
 
@@ -2377,30 +2377,30 @@
   </chapter>
 
   <chapter>
-    <!-- DNT-Start --><title>More ECL Examples</title><!-- DNT-End -->
+    <title>More ECL Examples</title>
 
-    <para>This section contains additional <!-- DNT-Start -->ECL<!-- DNT-End --> examples you can use on your
-    <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor platform. You can run these on a single-node system or a
+    <para>This section contains additional ECL examples you can use on your
+    HPCC Systems Thor platform. You can run these on a single-node system or a
     larger multi-node cluster.</para>
 
     <sect1 role="nobrk">
-      <!-- DNT-Start --><title>ECL Example: Anagram1</title><!-- DNT-End -->
+      <title>ECL Example: Anagram1</title>
 
-      <para>This example takes a <!-- DNT-Start -->STRING<!-- DNT-End --> and produces every possible anagram
+      <para>This example takes a STRING and produces every possible anagram
       from it. This code is the basis for a second example which evaluates
       which of these are actual words using a word list data file.</para>
 
       <para><orderedlist>
           <listitem>
-            <para>Open the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> (<emphasis role="bold">Start</emphasis>
+            <para>Open the ECL IDE (<emphasis role="bold">Start</emphasis>
             &gt;&gt; <emphasis role="bold">All Programs</emphasis> &gt;&gt;
-            <emphasis role="bold"><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems</emphasis> &gt;&gt; <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> )
-            and login to your <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
+            <emphasis role="bold">HPCC Systems</emphasis> &gt;&gt; ECL IDE )
+            and login to your HPCC.</para>
           </listitem>
 
           <listitem>
             <para>Open a new <emphasis role="bold">Builder Window</emphasis>
-            (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N) and write the following code:<programlisting>STRING Word := 'FRED' :STORED('Word');
+            (CTRL+N) and write the following code:<programlisting>STRING Word := 'FRED' :STORED('Word');
 R := RECORD
         STRING SoFar {MAXLENGTH(200)};
         STRING Rest {MAXLENGTH(200)};
@@ -2468,7 +2468,7 @@ OUTPUT(L);</programlisting></para>
     </sect1>
 
     <sect1>
-      <!-- DNT-Start --><title>Anagram2</title><!-- DNT-End -->
+      <title>Anagram2</title>
 
       <para>In this example, we will download an open source data file of
       dictionary words, spray<footnote>
@@ -2484,7 +2484,7 @@ OUTPUT(L);</programlisting></para>
       as a simple example.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>Download the word list</title><!-- DNT-End -->
+        <title>Download the word list</title>
 
         <para>We will download the word list from <ulink
         url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
@@ -2492,7 +2492,7 @@ OUTPUT(L);</programlisting></para>
         <para><orderedlist>
             <listitem>
               <para>Download the <emphasis>Official 12 Dicts
-              </emphasis>Package. The files are available in tar.gz or <!-- DNT-Start -->ZIP<!-- DNT-End -->
+              </emphasis>Package. The files are available in tar.gz or ZIP
               format.</para>
             </listitem>
 
@@ -2504,29 +2504,29 @@ OUTPUT(L);</programlisting></para>
       </sect2>
 
       <sect2 id="Load_the_Incoming_Data">
-        <!-- DNT-Start --><title>Load the Dictionary File to your Landing Zone</title><!-- DNT-End -->
+        <title>Load the Dictionary File to your Landing Zone</title>
 
         <para>In this step, you will copy the data files to a location from
-        which it can be sprayed to your <!-- DNT-Start -->HPCC<!-- DNT-End --> Thor cluster. A Landing Zone is a
-        storage location attached to your <!-- DNT-Start -->HPCC<!-- DNT-End -->. It has a utility running to
+        which it can be sprayed to your HPCC Thor cluster. A Landing Zone is a
+        storage location attached to your HPCC. It has a utility running to
         facilitate file spraying to a cluster.</para>
 
-        <para>For smaller data files, maximum of 2<!-- DNT-Start -->GB<!-- DNT-End -->, you can use the
-        upload/download file utility in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. This data file is only ~400
+        <para>For smaller data files, maximum of 2GB, you can use the
+        upload/download file utility in ECL Watch. This data file is only ~400
         kb.</para>
 
         <para>Next you will distribute (or Spray) the dataset to all the nodes
-        in the <!-- DNT-Start -->HPCC<!-- DNT-End --> Thor cluster. The power of the <!-- DNT-Start -->HPCC<!-- DNT-End --> comes from its ability
+        in the HPCC Thor cluster. The power of the HPCC comes from its ability
         to assign multiple processors to work on different portions of the
-        data file in parallel. Even though the <!-- DNT-Start -->VM<!-- DNT-End --> Edition only has a single
+        data file in parallel. Even though the VM Edition only has a single
         node, the data must be sprayed to the cluster.</para>
 
         <orderedlist>
           <listitem>
-            <para>In a Web browser, connect to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch using
+            <para>In a Web browser, connect to ECL Watch using
             http://<emphasis
-            role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt;:8010</emphasis> (where
-            <!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End --> is the public <!-- DNT-Start -->DNS<!-- DNT-End --> name of your <!-- DNT-Start -->ESP<!-- DNT-End --> server).</para>
+            role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where
+            PUBLIC_DNS is the public DNS name of your ESP server).</para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -2541,8 +2541,8 @@ OUTPUT(L);</programlisting></para>
                       <entry><inlinegraphic
                       fileref="images/caution.png" /></entry>
 
-                      <entry>Your <!-- DNT-Start -->IP<!-- DNT-End --> address could be different from the ones
-                      provided in the example images. Please use the <!-- DNT-Start -->IP<!-- DNT-End -->
+                      <entry>Your IP address could be different from the ones
+                      provided in the example images. Please use the IP
                       address provided by <emphasis
                       role="bold">your</emphasis> installation.</entry>
                     </row>
@@ -2554,7 +2554,7 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>From <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page, click on the <emphasis
+            <para>From ECL Watch page, click on the <emphasis
             role="bluebold">Upload/download File </emphasis> link in the menu
             on the left side.</para>
 
@@ -2600,10 +2600,10 @@ OUTPUT(L);</programlisting></para>
       </sect2>
 
       <sect2 id="Spray_the_Data_to_THOR" role="brk">
-        <!-- DNT-Start --><title>Spray the Data File to your <emphasis>Thor
-        Cluster</emphasis></title><!-- DNT-End -->
+        <title>Spray the Data File to your <emphasis>Thor
+        Cluster</emphasis></title>
 
-        <para>To use the data file in our <!-- DNT-Start -->HPCC<!-- DNT-End --> Thor system, we must "spray" it
+        <para>To use the data file in our HPCC Thor system, we must "spray" it
         to all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a
@@ -2617,14 +2617,14 @@ OUTPUT(L);</programlisting></para>
 
         <orderedlist>
           <listitem>
-            <para>In a Web browser, connect to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch using
+            <para>In a Web browser, connect to ECL Watch using
             http://<emphasis
-            role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt;:8010</emphasis> (where
-            <!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End --> is the public <!-- DNT-Start -->DNS<!-- DNT-End --> name of your <!-- DNT-Start -->ESP<!-- DNT-End --> server).</para>
+            role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where
+            PUBLIC_DNS is the public DNS name of your ESP server).</para>
           </listitem>
 
           <listitem>
-            <para>Click on the Spray Delimited hyperlink under the <!-- DNT-Start -->DFU<!-- DNT-End --> Files
+            <para>Click on the Spray Delimited hyperlink under the DFU Files
             menu on the left.</para>
 
             <para><figure>
@@ -2637,7 +2637,7 @@ OUTPUT(L);</programlisting></para>
                 </mediaobject>
               </figure></para>
 
-            <para>The <emphasis role="bold"><!-- DNT-Start -->DFU<!-- DNT-End --> Spray Delimited</emphasis>
+            <para>The <emphasis role="bold">DFU Spray Delimited</emphasis>
             page displays.</para>
           </listitem>
 
@@ -2645,7 +2645,7 @@ OUTPUT(L);</programlisting></para>
             <para>Select mydropzone in the Source <emphasis
             role="bold">Machine/dropzone</emphasis> drop list.</para>
 
-            <para>The <!-- DNT-Start -->IP<!-- DNT-End --> Address is automatically filled and the Local Path is
+            <para>The IP Address is automatically filled and the Local Path is
             partially filled with the default folder on your landing zone.
             Note: The Community Edition typically only has one landing zone
             defined.</para>
@@ -2739,7 +2739,7 @@ OUTPUT(L);</programlisting></para>
             <para>The Workunit progress page displays.</para>
 
             <figure>
-              <!-- DNT-Start --><title>Workunit Progress</title><!-- DNT-End -->
+              <title>Workunit Progress</title>
 
               <mediaobject>
                 <imageobject>
@@ -2752,12 +2752,12 @@ OUTPUT(L);</programlisting></para>
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Run the ECL program on Thor<parameter></parameter></title><!-- DNT-End -->
+        <title>Run the ECL program on Thor<parameter></parameter></title>
 
         <para><orderedlist>
             <listitem>
               <para>Open a new <emphasis role="bold">Builder Window</emphasis>
-              (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N) and write the following code:<programlisting>IMPORT Std;
+              (CTRL+N) and write the following code:<programlisting>IMPORT Std;
 layout_word_list := record
   string word;
 end;
@@ -2835,23 +2835,23 @@ OUTPUT(ValidWords)
   </chapter>
 
   <chapter>
-    <!-- DNT-Start --><title>Data Handling</title><!-- DNT-End -->
+    <title>Data Handling</title>
 
-    <para>This section explains data handling in an <!-- DNT-Start -->AWS<!-- DNT-End --> configuration. More
-    information about Data Handling in an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems platform are available
+    <para>This section explains data handling in an AWS configuration. More
+    information about Data Handling in an HPCC Systems platform are available
     in the <emphasis>Data Handling</emphasis> manual.</para>
 
     <sect1 role="nobrk">
-      <!-- DNT-Start --><title>Using S3 buckets</title><!-- DNT-End -->
+      <title>Using S3 buckets</title>
 
       <para>S3 buckets provide a means of persistent storage inside Amazon Web
-      Services. You must configure your <!-- DNT-Start -->AWS<!-- DNT-End --> account to have an active Access
+      Services. You must configure your AWS account to have an active Access
       Key pair enable and create S3 buckets. Once you have created and
       activated your access key pair and and created a unique S3 bucket, you
       will use these for all future instantiations.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>Find your Amazon access key and secret access key</title><!-- DNT-End -->
+        <title>Find your Amazon access key and secret access key</title>
 
         <para><orderedlist>
             <listitem>
@@ -2874,7 +2874,7 @@ OUTPUT(ValidWords)
             </listitem>
 
             <listitem>
-              <para>Note your <emphasis role="bold">Access Key <!-- DNT-Start -->ID<!-- DNT-End --></emphasis>
+              <para>Note your <emphasis role="bold">Access Key ID</emphasis>
               and your <emphasis role="bold">Secret Access
               Key.</emphasis></para>
 
@@ -2900,7 +2900,7 @@ OUTPUT(ValidWords)
 
               <tbody>
                 <row>
-                  <entry>Access Key <!-- DNT-Start -->ID<!-- DNT-End --></entry>
+                  <entry>Access Key ID</entry>
 
                   <entry></entry>
                 </row>
@@ -2924,7 +2924,7 @@ OUTPUT(ValidWords)
 
         <para><orderedlist>
             <listitem>
-              <para>Open a console window and connect to the Landing Zone (<!-- DNT-Start -->LZ<!-- DNT-End -->)
+              <para>Open a console window and connect to the Landing Zone (LZ)
               node</para>
             </listitem>
 
@@ -2951,11 +2951,11 @@ s3cmd --configure
             </listitem>
 
             <listitem>
-              <para>Leave path to <!-- DNT-Start -->GPG<!-- DNT-End --> program blank</para>
+              <para>Leave path to GPG program blank</para>
             </listitem>
 
             <listitem>
-              <para>Answer the question Use <!-- DNT-Start -->HTTPS<!-- DNT-End -->?</para>
+              <para>Answer the question Use HTTPS?</para>
 
               <itemizedlist>
                 <listitem>
@@ -2986,7 +2986,7 @@ s3cmd --configure
       </sect2>
 
       <sect2>
-        <!-- DNT-Start --><title>Creating and Using S3 Buckets</title><!-- DNT-End -->
+        <title>Creating and Using S3 Buckets</title>
 
         <para>To store data on S3, you must create a bucket that is unique to
         the whole s3 system. Once created, this bucket persists even when you
@@ -2995,31 +2995,31 @@ s3cmd --configure
         <para>You can despray a file from Thor to your landing zone, then copy
         to an S3 bucket to for persistent storage. Later, you can copy files
         from the S3 bucket to a landing zone and spray the file to a Thor
-        cluster. More information about Data Handling in an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems
+        cluster. More information about Data Handling in an HPCC Systems
         platform are available in the <emphasis>Data Handling</emphasis>
         manual.</para>
 
         <sect3>
-          <!-- DNT-Start --><title>Create a bucket</title><!-- DNT-End -->
+          <title>Create a bucket</title>
 
           <para><programlisting>s3cmd mb s3://your-unique-bucket-name</programlisting></para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>List Buckets</title><!-- DNT-End -->
+          <title>List Buckets</title>
 
           <para><programlisting>s3cmd ls</programlisting></para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Upload a file to a bucket</title><!-- DNT-End -->
+          <title>Upload a file to a bucket</title>
 
           <para><programlisting>s3cmd put myfile.csv s3://your-unique-bucket-name
 </programlisting></para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Retrieve a file from a bucket</title><!-- DNT-End -->
+          <title>Retrieve a file from a bucket</title>
 
           <para><programlisting>s3cmd get s3://your-unique-bucket-name/myfile.csv myfile.csv
 </programlisting>See <ulink
@@ -3031,20 +3031,20 @@ s3cmd --configure
   </chapter>
 
   <chapter role="nobrk">
-    <!-- DNT-Start --><title>Terminating your AWS Instances</title><!-- DNT-End -->
+    <title>Terminating your AWS Instances</title>
 
     <para></para>
 
     <sect1 role="nobrk">
-      <!-- DNT-Start --><title>Terminating instances</title><!-- DNT-End -->
+      <title>Terminating instances</title>
 
       <para>If you need to save your data, you must to despray it first and
       save it off of your cluster before shutting down. More information about
-      Data Handling in an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems platform are available in the
+      Data Handling in an HPCC Systems platform are available in the
       <emphasis>Data Handling</emphasis> manual.</para>
 
-      <para>To terminate your cluster, open up the <!-- DNT-Start -->AWS<!-- DNT-End --> Management Console,
-      select your <!-- DNT-Start -->EC<!-- DNT-End -->2 nodes, and terminate them.</para>
+      <para>To terminate your cluster, open up the AWS Management Console,
+      select your EC2 nodes, and terminate them.</para>
 
       <para>You can select multiple contiguous nodes by clicking on the first
       row and then shift+clicking on the last row. You can select multiple
@@ -3053,9 +3053,9 @@ s3cmd --configure
   </chapter>
 
   <chapter id="NextSteps">
-    <!-- DNT-Start --><title>Next Steps</title><!-- DNT-End -->
+    <title>Next Steps</title>
 
-    <para>From <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page, click on the <emphasis role="bold">Resources
+    <para>From ECL Watch page, click on the <emphasis role="bold">Resources
     </emphasis> link in the menu on the left side.</para>
 
     <para><figure>
@@ -3074,7 +3074,7 @@ s3cmd --configure
     <para>To familiarize yourself with what your system can do, we recommend
     following the steps in:<itemizedlist spacing="compact">
         <listitem>
-          <para>The <emphasis role="bold"><!-- DNT-Start -->HPCC<!-- DNT-End --> Data Tutorial</emphasis></para>
+          <para>The <emphasis role="bold">HPCC Data Tutorial</emphasis></para>
         </listitem>
 
         <listitem>
@@ -3084,7 +3084,7 @@ s3cmd --configure
 
         <listitem>
           <para>Read <emphasis role="bold">Using Config Manager</emphasis> to
-          learn how to configure an <!-- DNT-Start -->HPCC<!-- DNT-End --> platform using Advanced View.</para>
+          learn how to configure an HPCC platform using Advanced View.</para>
         </listitem>
 
         <listitem>
@@ -3093,7 +3093,7 @@ s3cmd --configure
         </listitem>
       </itemizedlist></para>
 
-    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Portal ( <ulink
+    <para>The HPCC Systems Portal ( <ulink
     url="http://hpccsystems.com">HPCCSystems.com</ulink> ) is also a valuable
     resource for more information including:</para>
 
@@ -3121,7 +3121,7 @@ s3cmd --configure
   </chapter>
 
   <chapter>
-    <!-- DNT-Start --><title>Frequently Asked Questions</title><!-- DNT-End -->
+    <title>Frequently Asked Questions</title>
 
     <para></para>
 
@@ -3132,24 +3132,24 @@ s3cmd --configure
         <qandaentry>
           <question id="ebs_answer">
             <para>What is the difference between using instance-store
-            instances and Elastic Block Store (<!-- DNT-Start -->EBS<!-- DNT-End -->) instances?</para>
+            instances and Elastic Block Store (EBS) instances?</para>
           </question>
 
           <answer>
-            <para><!-- DNT-Start -->EBS<!-- DNT-End --> instances use Elastic Block Store for their root storage
+            <para>EBS instances use Elastic Block Store for their root storage
             device. This means that the operating system and any data stored
-            using <!-- DNT-Start -->EBS<!-- DNT-End --> volumes will persist after a node terminates. We
-            currently do not recommend <!-- DNT-Start -->EBS<!-- DNT-End --> for your nodes as it is tuned for
+            using EBS volumes will persist after a node terminates. We
+            currently do not recommend EBS for your nodes as it is tuned for
             random access. We recommend instance-store volumes which are tuned
             for sequential access. The bulk of instance storage can be found
             at /mnt/. The storage device your root system uses is governed by
-            the <!-- DNT-Start -->AMI<!-- DNT-End --> (Amazon Machine Image) you use.</para>
+            the AMI (Amazon Machine Image) you use.</para>
 
             <para>Very Large Files can be supported in numerous ways. Because
             of limitations for very large files in certain fuse drivers, we do
             not recommend fuse drivers at this time. Instead, we suggest you
-            leverage an <!-- DNT-Start -->EBS<!-- DNT-End --> mount for your landing zone. You can attach and
-            mount a very large <!-- DNT-Start -->EBS<!-- DNT-End --> volume to the node containing your landing
+            leverage an EBS mount for your landing zone. You can attach and
+            mount a very large EBS volume to the node containing your landing
             zone.</para>
           </answer>
         </qandaentry>
@@ -3182,20 +3182,20 @@ s3cmd --configure
           </question>
 
           <answer>
-            <para>Yes, you can use the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> with the <!-- DNT-Start -->ECL<!-- DNT-End --> plugin instead
-            of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->. Another option is to run the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> under <!-- DNT-Start -->WINE<!-- DNT-End -->.
+            <para>Yes, you can use the Eclipse IDE with the ECL plugin instead
+            of the ECL IDE. Another option is to run the ECL IDE under WINE.
             See the Client Tools Manual for details.</para>
           </answer>
         </qandaentry>
 
         <qandaentry>
           <question>
-            <para>Can I use other Regions in <!-- DNT-Start -->AWS<!-- DNT-End -->?</para>
+            <para>Can I use other Regions in AWS?</para>
           </question>
 
           <answer>
             <para>At this time, the User-Data Script is optimized for the
-            <!-- DNT-Start -->US<!-- DNT-End -->-east region. We plan to support other regions over time. You
+            US-east region. We plan to support other regions over time. You
             can download binaries from hpccsystems.com and install them
             manually on any region you like.</para>
           </answer>
@@ -3203,14 +3203,14 @@ s3cmd --configure
 
         <qandaentry>
           <question>
-            <para>Can I use a Mac workstation to access my <!-- DNT-Start -->HPCC<!-- DNT-End --> Thor on
-            <!-- DNT-Start -->AWS<!-- DNT-End -->?</para>
+            <para>Can I use a Mac workstation to access my HPCC Thor on
+            AWS?</para>
           </question>
 
           <answer>
             <para>Some required components have not yet been built for the Mac
-            platform (for example, the <!-- DNT-Start -->ECLCC<!-- DNT-End --> compiler). For the time being you
-            can use a Windows emulator or a <!-- DNT-Start -->VM<!-- DNT-End --> on a Mac.</para>
+            platform (for example, the ECLCC compiler). For the time being you
+            can use a Windows emulator or a VM on a Mac.</para>
           </answer>
         </qandaentry>
 
@@ -3223,20 +3223,20 @@ s3cmd --configure
             <para>This is a difficult question to answer without direct
             experience with your data. The answer is governed by the size of
             the data, the complexity of the data, and the complexity of the
-            <!-- DNT-Start -->ECL<!-- DNT-End --> you write. In addition, you should consider how quickly your
+            ECL you write. In addition, you should consider how quickly your
             business needs the results.</para>
 
             <para>When we contemplate a new project, we run tests with sample
             data to answer these questions. We recommend you do the
             same.</para>
 
-            <!-- DNT-Start --><!--What is the maximum number of nodes I can run?--><!-- DNT-End -->
+            <!--What is the maximum number of nodes I can run?-->
           </answer>
         </qandaentry>
 
         <qandaentry>
           <question>
-            <para>Can I use an <!-- DNT-Start -->AMI<!-- DNT-End --> that uses another operating system?</para>
+            <para>Can I use an AMI that uses another operating system?</para>
           </question>
 
           <answer>
@@ -3251,7 +3251,7 @@ s3cmd --configure
           </question>
 
           <answer>
-            <para>Peer support is available in the Forums on the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems
+            <para>Peer support is available in the Forums on the HPCC Systems
             Portal.</para>
           </answer>
         </qandaentry>
@@ -3262,7 +3262,7 @@ s3cmd --configure
           </question>
 
           <answer>
-            <para>Visit the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Portal at <ulink
+            <para>Visit the HPCC Systems Portal at <ulink
             url="http://hpccsystems.com">http://hpccsystems.com</ulink>. On
             this site, you will find white papers, code examples, videos, and
             forums where you can ask questions or read questions posted by

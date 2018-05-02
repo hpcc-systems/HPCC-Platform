@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LOCAL">
-  <!-- DNT-Start --><title>LOCAL</title><!-- DNT-End -->
+  <title>LOCAL</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">LOCAL<indexterm>
+  <para><emphasis role="bold">LOCAL<indexterm>
       <primary>LOCAL</primary>
     </indexterm><indexterm>
       <primary>LOCAL function</primary>
     </indexterm>(</emphasis><emphasis>data</emphasis><emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -19,31 +19,31 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>data</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>data</emphasis></entry>
 
-          <entry>The name of a <!-- DNT-Start -->DATASET<!-- DNT-End --> or <!-- DNT-Start -->INDEX<!-- DNT-End --> attribute.</entry>
+          <entry>The name of a DATASET or INDEX attribute.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->LOCAL<!-- DNT-End --> returns a record set or index.</entry>
+          <entry>LOCAL returns a record set or index.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->LOCAL<!-- DNT-End --> </emphasis>function specifies that all
+  <para>The <emphasis role="bold">LOCAL </emphasis>function specifies that all
   subsequent operations on the <emphasis>data</emphasis> are performed locally
-  on each node (similar to use of the <!-- DNT-Start -->LOCAL<!-- DNT-End --> option on a function). This is
-  typically used within an <!-- DNT-Start -->ALLNODES<!-- DNT-End --> operation. <emphasis role="bold">Available
+  on each node (similar to use of the LOCAL option on a function). This is
+  typically used within an ALLNODES operation. <emphasis role="bold">Available
   for use only in Roxie<indexterm>
       <primary>Roxie</primary>
     </indexterm>.</emphasis></para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>ds := JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID);</programlisting><!-- DNT-End -->
+  <programlisting>ds := JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID);</programlisting>
 
-  <para>See Also: <link linkend="ALLNODES"><!-- DNT-Start -->ALLNODES<!-- DNT-End --></link>, <link linkend="THISNODE"><!-- DNT-Start -->THISNODE<!-- DNT-End --></link>, <link linkend="NOLOCAL"><!-- DNT-Start -->NOLOCAL<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="ALLNODES">ALLNODES</link>, <link linkend="THISNODE">THISNODE</link>, <link linkend="NOLOCAL">NOLOCAL</link></para>
 </sect1>

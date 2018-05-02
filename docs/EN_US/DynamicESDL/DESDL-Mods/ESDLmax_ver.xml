@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_max_ver">
-  <!-- DNT-Start --><title>max_ver</title><!-- DNT-End -->
+  <title>max_ver</title>
 
   <para><indexterm>
       <primary>max_ver</primary>
@@ -12,5 +12,5 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting> [max_ver("1.04")] bool IsValid;   </programlisting><!-- DNT-End -->
+  <programlisting> [max_ver("1.04")] bool IsValid;   </programlisting>
 </sect1>

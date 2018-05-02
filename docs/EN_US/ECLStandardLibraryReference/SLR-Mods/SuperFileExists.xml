@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SuperFileExists">
-  <!-- DNT-Start --><title>SuperFileExists</title><!-- DNT-End -->
+  <title>SuperFileExists</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.SuperFileExists<indexterm>
+  <para><emphasis role="bold">STD.File.SuperFileExists<indexterm>
       <primary>STD.File.SuperFileExists</primary>
     </indexterm><indexterm>
       <primary>File.SuperFileExists</primary>
     </indexterm><indexterm>
       <primary>SuperFileExists</primary>
     </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,33 +21,33 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>filename</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->SuperFileExists<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
+          <entry>SuperFileExists returns a BOOLEAN value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->SuperFileExists<!-- DNT-End --> </emphasis>function returns
-  <!-- DNT-Start -->TRUE<!-- DNT-End --> if the specified <emphasis>filename</emphasis> is present in the
-  Distributed File Utility (<!-- DNT-Start -->DFU<!-- DNT-End -->) and is a SuperFile. It returns <!-- DNT-Start -->FALSE<!-- DNT-End --> if the
+  <para>The <emphasis role="bold">SuperFileExists </emphasis>function returns
+  TRUE if the specified <emphasis>filename</emphasis> is present in the
+  Distributed File Utility (DFU) and is a SuperFile. It returns FALSE if the
   <emphasis>filename</emphasis> does exist but it is not a SuperFile (in other
-  words, it is a normal <!-- DNT-Start -->DATASET<!-- DNT-End -->. Use the <!-- DNT-Start -->STD<!-- DNT-End -->.File.FileExists function to
+  words, it is a normal DATASET. Use the STD.File.FileExists function to
   detect their presence or absence).</para>
 
   <para>This function is not included in a superfile transaction.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.File.SuperFileExists('~CLASS::RT::IN::SF1');</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := STD.File.SuperFileExists('~CLASS::RT::IN::SF1');</programlisting>
 
   <para>See Also: <link linkend="FileExists">FileExists</link></para>
 </sect1>

@@ -2,29 +2,29 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PARSE">
-  <!-- DNT-Start --><title>PARSE</title><!-- DNT-End -->
+  <title>PARSE</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->PARSE<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->PARSE<!-- DNT-End --></primary>
+  <para><emphasis role="bold">PARSE<indexterm>
+      <primary>PARSE</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->PARSE<!-- DNT-End --> function</primary>
+      <primary>PARSE function</primary>
     </indexterm>(</emphasis><emphasis>dataset, data, pattern,
   result</emphasis><emphasis role="bold"> </emphasis><emphasis>, flags
   </emphasis><emphasis role="bold">[</emphasis>,<emphasis role="bold">
-  <!-- DNT-Start -->MAXLENGTH<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->MAXLENGTH<!-- DNT-End --></primary>
+  MAXLENGTH<indexterm>
+      <primary>MAXLENGTH</primary>
     </indexterm>( </emphasis><emphasis>length </emphasis><emphasis
   role="bold">) ])</emphasis><emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->PARSE<!-- DNT-End -->(</emphasis><emphasis>dataset, data,
+  <para><emphasis role="bold">PARSE(</emphasis><emphasis>dataset, data,
   result</emphasis><emphasis role="bold"> </emphasis><emphasis>,
-  </emphasis><emphasis role="bold"><!-- DNT-Start -->XML<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->XML<!-- DNT-End --></primary>
+  </emphasis><emphasis role="bold">XML<indexterm>
+      <primary>XML</primary>
     </indexterm>( </emphasis><emphasis>path </emphasis><emphasis role="bold">)
-  </emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis>
-  <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ]
-  [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name
+  </emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -35,82 +35,82 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>dataset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>dataset</emphasis></entry>
 
             <entry>The set of records to process.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>data</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>data</emphasis></entry>
 
             <entry>An expression specifying the text to parse, typically the
             name of a field in the dataset.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>pattern</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>pattern</emphasis></entry>
 
             <entry>The parsing pattern to match.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>result</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>result</emphasis></entry>
 
-            <entry>The name of either the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure attribute that
-            specifies the format of the output record set (like the <!-- DNT-Start -->TABLE<!-- DNT-End -->
-            function), or the <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function that produces the output
-            record set (like <!-- DNT-Start -->PROJECT<!-- DNT-End -->).</entry>
+            <entry>The name of either the RECORD structure attribute that
+            specifies the format of the output record set (like the TABLE
+            function), or the TRANSFORM function that produces the output
+            record set (like PROJECT).</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>flags</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>flags</emphasis></entry>
 
             <entry>One or more parsing options, listed below.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">MAXLENGTH</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">MAXLENGTH</emphasis></entry>
 
             <entry>Specifies the the maximum length the pattern can match. If
             omitted, the default length is 4096.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>length</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>length</emphasis></entry>
 
             <entry>An integer constant specifying the maximum number of
             matching characters.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">XML</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">XML</emphasis></entry>
 
-            <entry>Specifies the dataset contains <!-- DNT-Start -->XML<!-- DNT-End --> data.</entry>
+            <entry>Specifies the dataset contains XML data.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>path</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>path</emphasis></entry>
 
-            <entry>A string constant containing the <!-- DNT-Start -->XPATH<!-- DNT-End --> to the tag that
-            delimits the <!-- DNT-Start -->XML<!-- DNT-End --> data in the dataset.</entry>
+            <entry>A string constant containing the XPATH to the tag that
+            delimits the XML data in the dataset.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record
             order.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not
             significant. When True, specifies the default output record
@@ -118,64 +118,64 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is
             significant.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in
             parallel.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using
             <emphasis>numthreads</emphasis> threads.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this
             activity.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
             <entry>The algorithm to use for this activity. Must be from the
-            list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and
-            <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->PARSE<!-- DNT-End --> returns a record set.</entry>
+            <entry>PARSE returns a record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->PARSE<!-- DNT-End --> </emphasis>function performs a text or
-  <!-- DNT-Start -->XML<!-- DNT-End --> parsing operation.</para>
+  <para>The <emphasis role="bold">PARSE </emphasis>function performs a text or
+  XML parsing operation.</para>
 
   <sect2 id="PARSE_Text_Data">
-    <!-- DNT-Start --><title>PARSE Text<indexterm>
+    <title>PARSE Text<indexterm>
         <primary>PARSE Text</primary>
-      </indexterm> Data</title><!-- DNT-End -->
+      </indexterm> Data</title>
 
     <para>The first form operates on the <emphasis>dataset</emphasis>, finding
     records whose <emphasis>data</emphasis> contains a match for the
@@ -183,18 +183,18 @@
     the <emphasis>result </emphasis>format. If the
     <emphasis>pattern</emphasis> finds multiple matches in the
     <emphasis>data</emphasis>, then a result record is generated for each
-    match. Each match for a <!-- DNT-Start -->PARSE<!-- DNT-End --> is effectively a single path through the
+    match. Each match for a PARSE is effectively a single path through the
     <emphasis>pattern</emphasis>. If there is more than one path that matches,
     then the <emphasis>result</emphasis> transform is either called once for
-    each path, or if the <!-- DNT-Start -->BEST<!-- DNT-End --> option is used, the path with the lowest penalty
+    each path, or if the BEST option is used, the path with the lowest penalty
     is selected.</para>
 
-    <para>If the <emphasis>result</emphasis> names a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure, then
-    this form of <!-- DNT-Start -->PARSE<!-- DNT-End --> operates like the <!-- DNT-Start -->TABLE<!-- DNT-End --> function to generate the result
+    <para>If the <emphasis>result</emphasis> names a RECORD structure, then
+    this form of PARSE operates like the TABLE function to generate the result
     set, but may also operate on variable length text. If the
-    <emphasis>result</emphasis> names a <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function, then the transform
-    generates the result set. The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function must take at least one
-    parameter: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record of the same format as the
+    <emphasis>result</emphasis> names a TRANSFORM function, then the transform
+    generates the result set. The TRANSFORM function must take at least one
+    parameter: a LEFT record of the same format as the
     <emphasis>dataset</emphasis>. The format of the resulting record set does
     not need to be the same as the input.</para>
 
@@ -208,129 +208,129 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">FIRST<indexterm>
+              <entry><emphasis role="bold">FIRST<indexterm>
                   <primary>FIRST</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Only return a row for the first match starting at a
               particular position.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">ALL<indexterm>
+              <entry><emphasis role="bold">ALL<indexterm>
                   <primary>ALL</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Return a row for every possible match of the string at a
               particular position.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">WHOLE<indexterm>
+              <entry><emphasis role="bold">WHOLE<indexterm>
                   <primary>WHOLE</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Only match the whole string.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">NOSCAN<indexterm>
+              <entry><emphasis role="bold">NOSCAN<indexterm>
                   <primary>NOSCAN</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>If a position matches, don't continue searching for other
               matches.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">SCAN<indexterm>
+              <entry><emphasis role="bold">SCAN<indexterm>
                   <primary>SCAN</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>If a position matches, continue searching from the end of
               the match, otherwise continue from the next position.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">SCAN ALL<indexterm>
+              <entry><emphasis role="bold">SCAN ALL<indexterm>
                   <primary>SCAN ALL</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Return matches for every possible start position. Use the
-              <!-- DNT-Start -->TRIM<!-- DNT-End --> function to eliminate parsing extraneous trailing
+              TRIM function to eliminate parsing extraneous trailing
               blanks.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">NOCASE<indexterm>
+              <entry><emphasis role="bold">NOCASE<indexterm>
                   <primary>NOCASE</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Perform a case insensitive comparison.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">CASE<indexterm>
+              <entry><emphasis role="bold">CASE<indexterm>
                   <primary>CASE</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Perform a case sensitive comparison (this is the
               default).</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">SKIP</emphasis><indexterm>
+              <entry><emphasis role="bold">SKIP</emphasis><indexterm>
                   <primary>SKIP</primary>
-                </indexterm>(<emphasis>separator-pattern</emphasis>)<!-- DNT-End --></entry>
+                </indexterm>(<emphasis>separator-pattern</emphasis>)</entry>
 
               <entry>Specify a pattern that can be inserted after each token
-              in a search pattern. For example, <!-- DNT-Start -->SKIP<!-- DNT-End --> ( [' ','\t']*) skips
+              in a search pattern. For example, SKIP ( [' ','\t']*) skips
               spaces and tabs between tokens.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">KEEP</emphasis><indexterm>
+              <entry><emphasis role="bold">KEEP</emphasis><indexterm>
                   <primary>KEEP</primary>
-                </indexterm>(<emphasis>max</emphasis>)<!-- DNT-End --></entry>
+                </indexterm>(<emphasis>max</emphasis>)</entry>
 
               <entry>Only keep the first <emphasis>max</emphasis>
               matches.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">ATMOST</emphasis><indexterm>
+              <entry><emphasis role="bold">ATMOST</emphasis><indexterm>
                   <primary>ATMOST</primary>
-                </indexterm>(<emphasis>max</emphasis>)<!-- DNT-End --></entry>
+                </indexterm>(<emphasis>max</emphasis>)</entry>
 
               <entry>Don't produce any matches if there are more than
               <emphasis>max</emphasis> matches.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">MAX<indexterm>
+              <entry><emphasis role="bold">MAX<indexterm>
                   <primary>MAX</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Return a row for the result that matches the longest
               sequence of the input. Only one match is returned unless the
-              <!-- DNT-Start -->MANY<!-- DNT-End --> option is also specified.</entry>
+              MANY option is also specified.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">MIN<indexterm>
+              <entry><emphasis role="bold">MIN<indexterm>
                   <primary>MIN</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Return a row for the result that matches the shortest
               sequence of the input. Only one match is returned unless the
-              <!-- DNT-Start -->MANY<!-- DNT-End --> option is also specified.</entry>
+              MANY option is also specified.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">MATCHED<indexterm>
+              <entry><emphasis role="bold">MATCHED<indexterm>
                   <primary>MATCHED</primary>
                 </indexterm></emphasis>( [ <emphasis>rule-reference</emphasis>
-              ] )<!-- DNT-End --></entry>
+              ] )</entry>
 
               <entry>Used when <emphasis>rule-reference</emphasis> is used in
               a user-matching function. If a rule-reference is not specified,
@@ -338,56 +338,56 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">MATCHED(ALL)<indexterm>
+              <entry><emphasis role="bold">MATCHED(ALL)<indexterm>
                   <primary>MATCHED ALL</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Retain all rule-names -- if they are used by user match
               functions.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">NOT MATCHED<indexterm>
+              <entry><emphasis role="bold">NOT MATCHED<indexterm>
                   <primary>NOT MATCHED</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Generate a row if there were no matches on the input row.
-              All calls to the <!-- DNT-Start -->MATCHED<!-- DNT-End -->() function return false inside the
+              All calls to the MATCHED() function return false inside the
               <emphasis>resultstructure</emphasis>.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">NOT MATCHED ONLY<indexterm>
+              <entry><emphasis role="bold">NOT MATCHED ONLY<indexterm>
                   <primary>NOT MATCHED ONLY</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Only generate a row if no matches were found.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">BEST<indexterm>
+              <entry><emphasis role="bold">BEST<indexterm>
                   <primary>BEST</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Pick the match with the highest score (lowest penalty).
-              If the <!-- DNT-Start -->MAX<!-- DNT-End --> or <!-- DNT-Start -->MIN<!-- DNT-End --> flags are also present, they are applied
-              first. Only one match is returned unless the <!-- DNT-Start -->MANY<!-- DNT-End --> option is also
+              If the MAX or MIN flags are also present, they are applied
+              first. Only one match is returned unless the MANY option is also
               specified.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">MANY<indexterm>
+              <entry><emphasis role="bold">MANY<indexterm>
                   <primary>MANY</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
-              <entry>Return multiple matches for <!-- DNT-Start -->BEST<!-- DNT-End -->, <!-- DNT-Start -->MAX<!-- DNT-End -->, or <!-- DNT-Start -->MIN<!-- DNT-End -->
+              <entry>Return multiple matches for BEST, MAX, or MIN
               options.</entry>
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">PARSE<indexterm>
+              <entry><emphasis role="bold">PARSE<indexterm>
                   <primary>PARSE</primary>
-                </indexterm></emphasis><!-- DNT-End --></entry>
+                </indexterm></emphasis></entry>
 
               <entry>Implements Tomita parsing<indexterm>
                   <primary>Tomita parsing</primary>
@@ -396,23 +396,23 @@
             </row>
 
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">USE<indexterm>
+              <entry><emphasis role="bold">USE<indexterm>
                   <primary>USE</primary>
                 </indexterm></emphasis>([ <emphasis>struct</emphasis>, ]
-              x)<!-- DNT-End --></entry>
+              x)</entry>
 
-              <entry>Specifies using a <!-- DNT-Start -->RULE<!-- DNT-End --> pattern attribute defined further
-              on in the code with the <!-- DNT-Start -->DEFINE<!-- DNT-End -->(x) function, introducing a
-              recursive grammar (the only recursion allowed in <!-- DNT-Start -->ECL<!-- DNT-End -->). If the
-              optional <emphasis>struct</emphasis> <!-- DNT-Start -->RECORD<!-- DNT-End --> structure<indexterm>
-                  <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
-                </indexterm> is specified, <!-- DNT-Start -->USE<!-- DNT-End --> specifies using a <!-- DNT-Start -->RULE<!-- DNT-End --> pattern
-              attribute defined further on in the code with the <!-- DNT-Start -->DEFINE<!-- DNT-End -->(x)
+              <entry>Specifies using a RULE pattern attribute defined further
+              on in the code with the DEFINE(x) function, introducing a
+              recursive grammar (the only recursion allowed in ECL). If the
+              optional <emphasis>struct</emphasis> RECORD structure<indexterm>
+                  <primary>RECORD structure</primary>
+                </indexterm> is specified, USE specifies using a RULE pattern
+              attribute defined further on in the code with the DEFINE(x)
               function that produces a row result in the
-              <emphasis>struct</emphasis> <!-- DNT-Start -->RECORD<!-- DNT-End --> structure<indexterm>
-                  <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
-                </indexterm> format (valid only with the <!-- DNT-Start -->PARSE<!-- DNT-End --> option also
-              present). <!-- DNT-Start -->USE<!-- DNT-End --> is required on <!-- DNT-Start -->PARSE<!-- DNT-End --> when any patterns cannot be
+              <emphasis>struct</emphasis> RECORD structure<indexterm>
+                  <primary>RECORD structure</primary>
+                </indexterm> format (valid only with the PARSE option also
+              present). USE is required on PARSE when any patterns cannot be
               found by walking the rules from the root down without following
               any USEs.</entry>
             </row>
@@ -422,7 +422,7 @@
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>rec := {STRING10000 line};
+    <programlisting>rec := {STRING10000 line};
 datafile := DATASET([
     {'Ge 34:2 And when Shechem the son of Hamor the Hivite, prince of the country, saw her,'+
      ' he took her, and lay with her, and defiled her.'},
@@ -451,40 +451,40 @@ results := RECORD
   STRING30 RelationPhrase := MatchText(relationtype);
 END;
 outfile1 := PARSE(datafile,line,progeny,results,SCAN ALL);
-</programlisting><!-- DNT-End -->
+</programlisting>
   </sect2>
 
   <sect2 id="PARSE_XML_Data">
-    <!-- DNT-Start --><title>PARSE XML<indexterm>
+    <title>PARSE XML<indexterm>
         <primary>PARSE XML</primary>
-      </indexterm> Data</title><!-- DNT-End -->
+      </indexterm> Data</title>
 
-    <para>The second form operates on an <!-- DNT-Start -->XML<!-- DNT-End --> <emphasis>dataset</emphasis>,
-    parsing the <!-- DNT-Start -->XML<!-- DNT-End --> <emphasis>data </emphasis>and creating a result set using
+    <para>The second form operates on an XML <emphasis>dataset</emphasis>,
+    parsing the XML <emphasis>data </emphasis>and creating a result set using
     the <emphasis>result </emphasis>parameter, one output record per input.
     The expectation is that each row of <emphasis>data</emphasis> contains a
-    complete block of <!-- DNT-Start -->XML<!-- DNT-End -->. If the <emphasis>result</emphasis> names a <!-- DNT-Start -->RECORD<!-- DNT-End -->
-    structure, then this form of <!-- DNT-Start -->PARSE<!-- DNT-End --> operates like the <!-- DNT-Start -->TABLE<!-- DNT-End --> function to
+    complete block of XML. If the <emphasis>result</emphasis> names a RECORD
+    structure, then this form of PARSE operates like the TABLE function to
     generate the result set.</para>
 
-    <para>If the <emphasis>result</emphasis> names a <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function, then
-    the transform generates the result set. The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function must take
-    at least one parameter: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record of the same format as the
+    <para>If the <emphasis>result</emphasis> names a TRANSFORM function, then
+    the transform generates the result set. The TRANSFORM function must take
+    at least one parameter: a LEFT record of the same format as the
     <emphasis>dataset</emphasis>. The format of the resulting record set does
     not need to be the same as the input.</para>
 
-    <para><emphasis role="bold">NOTE:</emphasis> <!-- DNT-Start -->XML<!-- DNT-End --> reading and parsing can
+    <para><emphasis role="bold">NOTE:</emphasis> XML reading and parsing can
     consume a large amount of memory, depending on the usage. In particular,
     if the specified xpath matches a very large amount of data, then a large
     data structure will be provided to the transform. Therefore, the more you
     match, the more resources you consume per match. For example, if you have
     a very large document and you match an element near the root that
     virtually encompasses the whole thing, then the whole thing will be
-    constructed as a referenceable structure that the <!-- DNT-Start -->ECL<!-- DNT-End --> can get at.</para>
+    constructed as a referenceable structure that the ECL can get at.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>linerec := { STRING line };
+    <programlisting>linerec := { STRING line };
 in1 := DATASET([{
         '&lt;ENTITY eid="P101" type="PERSON" subtype="MILITARY"&gt;' +
         '  &lt;ATTRIBUTE name="fullname"&gt;JOHN SMITH&lt;/ATTRIBUTE&gt;' +
@@ -530,32 +530,32 @@ outrec t(lineRec L) := TRANSFORM
 END;
 
 textout := PARSE(in1, line, t(LEFT), XML('/ENTITY[@type="PERSON"]'));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link>, <link
-    linkend="OUTPUT"><!-- DNT-Start -->OUTPUT<!-- DNT-End --></link>, <link
-    linkend="XMLENCODE"><!-- DNT-Start -->XMLENCODE<!-- DNT-End --></link>, <link
-    linkend="XMLDECODE"><!-- DNT-Start -->XMLDECODE<!-- DNT-End --></link>, <link
-    linkend="REGEXFIND"><!-- DNT-Start -->REGEXFIND<!-- DNT-End --></link>, <link
-    linkend="REGEXREPLACE"><!-- DNT-Start -->REGEXREPLACE<!-- DNT-End --></link>, <link
-    linkend="DEFINE"><!-- DNT-Start -->DEFINE<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="DATASET">DATASET</link>, <link
+    linkend="OUTPUT">OUTPUT</link>, <link
+    linkend="XMLENCODE">XMLENCODE</link>, <link
+    linkend="XMLDECODE">XMLDECODE</link>, <link
+    linkend="REGEXFIND">REGEXFIND</link>, <link
+    linkend="REGEXREPLACE">REGEXREPLACE</link>, <link
+    linkend="DEFINE">DEFINE</link></para>
   </sect2>
 
   <sect2 id="Extended_PARSE_Examples">
-    <!-- DNT-Start --><title>Extended PARSE<indexterm>
+    <title>Extended PARSE<indexterm>
         <primary>Extended PARSE</primary>
       </indexterm> Examples<indexterm>
         <primary>PARSE Examples</primary>
       </indexterm><indexterm>
         <primary>Extended PARSE Examples</primary>
-      </indexterm></title><!-- DNT-End -->
+      </indexterm></title>
 
     <para>This example parses raw phone numbers from a specific field in an
     input dataset into a single standard output containing just the numbers. A
     missing area code in the raw input results in three leading zeroes in the
     output.</para>
 
-    <!-- DNT-Start --><programlisting>infile := DATASET([{'5619994581'},{'15619994581'},
+    <programlisting>infile := DATASET([{'5619994581'},{'15619994581'},
                    {'(561) 999-4581'},{'(561)999-4581'},
                    {'561-999-4581'},{'561 999 4581'},
                    {'561.999.4581'},{'561/999/4581'},
@@ -598,12 +598,12 @@ outfile :=
   PARSE(infile, rawnumber, phonenumber, layout_phone_append,FIRST, NOT MATCHED, WHOLE);
 
 OUTPUT(outfile);
-</programlisting><!-- DNT-End -->
+</programlisting>
 
     <para>This example parses a small subset of raw movie data (freely
-    available at <!-- DNT-Start -->IMDB<!-- DNT-End -->.com) into standard database fields:</para>
+    available at IMDB.com) into standard database fields:</para>
 
-    <!-- DNT-Start --><programlisting>Layout_Actors_Raw := RECORD
+    <programlisting>Layout_Actors_Raw := RECORD
 STRING120 IMDB_Actor_Desc;
 END;
 
@@ -696,6 +696,6 @@ NLP_Actor_Movie := ITERATE(Actor_Movie_Init,IterNames(LEFT,RIGHT));
 
 // and output the result set
 OUTPUT(NLP_Actor_Movie);
-</programlisting><!-- DNT-End -->
+</programlisting>
   </sect2>
 </sect1>

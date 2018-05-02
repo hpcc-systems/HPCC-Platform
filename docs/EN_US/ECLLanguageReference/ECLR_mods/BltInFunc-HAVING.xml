@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="HAVING">
-  <!-- DNT-Start --><title>HAVING</title><!-- DNT-End -->
+  <title>HAVING</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->HAVING<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->HAVING<!-- DNT-End --></primary>
+  <para><emphasis role="bold">HAVING<indexterm>
+      <primary>HAVING</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->HAVING<!-- DNT-End --> function</primary>
+      <primary>HAVING function</primary>
     </indexterm>(</emphasis><emphasis> groupdataset, expression
-  </emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  </emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -19,83 +19,83 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>groupdataset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>groupdataset</emphasis></entry>
 
-            <entry>The name of a <!-- DNT-Start -->GROUPed<!-- DNT-End --> record set.</entry>
+            <entry>The name of a GROUPed record set.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>The logical expression by which to filter the
             groups.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->HAVING<!-- DNT-End --> returns a <!-- DNT-Start -->GROUPed<!-- DNT-End --> record set.</entry>
+            <entry>HAVING returns a GROUPed record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->HAVING<!-- DNT-End --></emphasis> function returns a <!-- DNT-Start -->GROUPed<!-- DNT-End -->
+  <para>The <emphasis role="bold">HAVING</emphasis> function returns a GROUPed
   record set containing just those groups for which the
-  <emphasis>expression</emphasis> is true. This is similar to the <!-- DNT-Start -->HAVING<!-- DNT-End -->
-  clause in <!-- DNT-Start -->SQL<!-- DNT-End -->. <emphasis role="bold"></emphasis></para>
+  <emphasis>expression</emphasis> is true. This is similar to the HAVING
+  clause in SQL. <emphasis role="bold"></emphasis></para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>MyGroups := GROUP(SORT(Person,lastname),lastname);
+  <programlisting>MyGroups := GROUP(SORT(Person,lastname),lastname);
      //group by last name
 Filtered := HAVING(MyGroups,COUNT(ROWS(LEFT)) &gt; 10);
-     //filter out the small groups</programlisting><!-- DNT-End -->
+     //filter out the small groups</programlisting>
 
-  <para>See Also: <link linkend="GROUP"><!-- DNT-Start -->GROUP<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="GROUP">GROUP</link></para>
 </sect1>

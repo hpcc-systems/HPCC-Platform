@@ -2,25 +2,25 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ROLLUP">
-  <!-- DNT-Start --><title>ROLLUP</title><!-- DNT-End -->
+  <title>ROLLUP</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->ROLLUP<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->ROLLUP<!-- DNT-End --></primary>
+  <para><emphasis role="bold">ROLLUP<indexterm>
+      <primary>ROLLUP</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->ROLLUP<!-- DNT-End --> function</primary>
+      <primary>ROLLUP function</primary>
     </indexterm>(</emphasis><emphasis>recordset, condition, transform
-  </emphasis><emphasis role="bold">[, <!-- DNT-Start -->LOCAL<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --></primary>
-    </indexterm>] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  </emphasis><emphasis role="bold">[, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->ROLLUP<!-- DNT-End -->(</emphasis><emphasis>recordset,
-  transform, fieldlist </emphasis><emphasis role="bold">[, <!-- DNT-Start -->LOCAL<!-- DNT-End -->]
-  [, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  <para><emphasis role="bold">ROLLUP(</emphasis><emphasis>recordset,
+  transform, fieldlist </emphasis><emphasis role="bold">[, LOCAL]
+  [, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->ROLLUP<!-- DNT-End -->(</emphasis><emphasis>recordset,
-  </emphasis><emphasis role="bold"><!-- DNT-Start -->GROUP<!-- DNT-End --></emphasis><emphasis><indexterm>
-      <primary><!-- DNT-Start -->GROUP<!-- DNT-End --></primary>
-    </indexterm>, transform </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  <para><emphasis role="bold">ROLLUP(</emphasis><emphasis>recordset,
+  </emphasis><emphasis role="bold">GROUP</emphasis><emphasis><indexterm>
+      <primary>GROUP</primary>
+    </indexterm>, transform </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -30,7 +30,7 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>recordset</emphasis></entry>
 
             <entry>The set of records to process, typically sorted in the same
             order that the condition or <emphasis>fieldlist</emphasis> will
@@ -38,129 +38,129 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>condition</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>condition</emphasis></entry>
 
             <entry>An expression that defines "duplicate" records. The
-            keywords <!-- DNT-Start -->LEFT<!-- DNT-End --> and <!-- DNT-Start -->RIGHT<!-- DNT-End --> may be used as dataset qualifiers for
+            keywords LEFT and RIGHT may be used as dataset qualifiers for
             fields in the <emphasis>recordset</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>transform</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>transform</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call for each pair of duplicate
+            <entry>The TRANSFORM function to call for each pair of duplicate
             records found.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">LOCAL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
             <entry>Optional. Specifies the operation is performed on each node
             independently, without requiring interaction with all other nodes
             to acquire data; the operation maintains the distribution of any
-            previous <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->.</entry>
+            previous DISTRIBUTE.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>fieldlist</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>fieldlist</emphasis></entry>
 
             <entry>A comma-delimited list of expressions or fields in the
             recordset that defines "duplicate" records. You may use the
-            keywords <!-- DNT-Start -->WHOLE<!-- DNT-End --> <!-- DNT-Start -->RECORD<!-- DNT-End --> (or just <!-- DNT-Start -->RECORD<!-- DNT-End -->) to indicate all fields in
-            that structure, and/or you may use the keyword <!-- DNT-Start -->EXCEPT<!-- DNT-End --> to list
+            keywords WHOLE RECORD (or just RECORD) to indicate all fields in
+            that structure, and/or you may use the keyword EXCEPT to list
             fields to exclude.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">GROUP</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">GROUP</emphasis></entry>
 
-            <entry>Specifies the <emphasis>recordset</emphasis> is <!-- DNT-Start -->GROUPed<!-- DNT-End --> and
-            the <!-- DNT-Start -->ROLLUP<!-- DNT-End --> operation will produce a single output record for each
+            <entry>Specifies the <emphasis>recordset</emphasis> is GROUPed and
+            the ROLLUP operation will produce a single output record for each
             group. If this is not the case, an error occurs.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->ROLLUP<!-- DNT-End --> returns a record set.</entry>
+            <entry>ROLLUP returns a record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ROLLUP<!-- DNT-End --></emphasis> function is similar to the
-  <!-- DNT-Start -->DEDUP<!-- DNT-End --> function<indexterm>
-      <primary><!-- DNT-Start -->DEDUP<!-- DNT-End --> function</primary>
+  <para>The <emphasis role="bold">ROLLUP</emphasis> function is similar to the
+  DEDUP function<indexterm>
+      <primary>DEDUP function</primary>
     </indexterm> with the addition of a call to the
   <emphasis>transform</emphasis> function to process each duplicate record
   pair. This allows you to retrieve valuable information from the "duplicate"
   record before it's thrown away. Depending on how you code the
-  <emphasis>transform </emphasis>function, <!-- DNT-Start -->ROLLUP<!-- DNT-End --> can keep the <!-- DNT-Start -->LEFT<!-- DNT-End --> or <!-- DNT-Start -->RIGHT<!-- DNT-End -->
+  <emphasis>transform </emphasis>function, ROLLUP can keep the LEFT or RIGHT
   record, or any mixture of data from both.</para>
 
   <para>
-  The first form of <!-- DNT-Start -->ROLLUP<!-- DNT-End --> tests a condition using values from the records that
-  would be passed as <!-- DNT-Start -->LEFT<!-- DNT-End --> and <!-- DNT-Start -->RIGHT<!-- DNT-End --> to the <emphasis>transform</emphasis>.  
+  The first form of ROLLUP tests a condition using values from the records that
+  would be passed as LEFT and RIGHT to the <emphasis>transform</emphasis>.  
   The records are combined if the condition is true.
-  The second form of <!-- DNT-Start -->ROLLUP<!-- DNT-End --> compares values from adjacent records in the input
+  The second form of ROLLUP compares values from adjacent records in the input
   <emphasis>recordset</emphasis>, and combines them if they are the same.  
   These two forms will behave differently if the <emphasis>transform</emphasis>
   modifies some of the fields used in the matching condition (see example below).
   </para>
   
-  <para>For the first pair of candidate records, the <!-- DNT-Start -->LEFT<!-- DNT-End --> record passed to the transform
-  is the first record of the pair, and the <!-- DNT-Start -->RIGHT<!-- DNT-End --> record is the second.
+  <para>For the first pair of candidate records, the LEFT record passed to the transform
+  is the first record of the pair, and the RIGHT record is the second.
   For subsequent matches of the same values,
-  the <!-- DNT-Start -->LEFT<!-- DNT-End --> record passed is the result record from the previous call to the
-  <emphasis>transform</emphasis> and the <!-- DNT-Start -->RIGHT<!-- DNT-End --> record is the next record in
+  the LEFT record passed is the result record from the previous call to the
+  <emphasis>transform</emphasis> and the RIGHT record is the next record in
   the <emphasis>recordset</emphasis>, as in this example:</para>
 
-  <!-- DNT-Start --><programlisting>ds := DATASET([{1,10},{1,20},{1,30},{3,40},{4,50}], 
+  <programlisting>ds := DATASET([{1,10},{1,20},{1,30},{3,40},{4,50}], 
               {UNSIGNED r, UNSIGNED n});
 d t(ds L, ds R) := TRANSFORM
   SELF.r := L.r + R.r;
@@ -179,27 +179,27 @@ ROLLUP(ds, LEFT.r = RIGHT.r,t(LEFT, RIGHT));
    3  40
    4  50
    the third record is not combined because the transform modified the value.
-*/</programlisting><!-- DNT-End -->
+*/</programlisting>
 
   <sect2 id="TRANSFORM_Function_Requirements_Rollup">
-    <!-- DNT-Start --><title>TRANSFORM Function Requirements - ROLLUP</title><!-- DNT-End -->
+    <title>TRANSFORM Function Requirements - ROLLUP</title>
 
-    <para>For forms 1 and 2 of <!-- DNT-Start -->ROLLUP<!-- DNT-End -->, the <emphasis>transform</emphasis>
-    function must take at least two parameters: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record and a <!-- DNT-Start -->RIGHT<!-- DNT-End -->
+    <para>For forms 1 and 2 of ROLLUP, the <emphasis>transform</emphasis>
+    function must take at least two parameters: a LEFT record and a RIGHT
     record, which must both be in the same format as the
     <emphasis>recordset</emphasis>. The format of the resulting record set
     must also be the same as the inputs.</para>
 
-    <para>For form 3 of <!-- DNT-Start -->ROLLUP<!-- DNT-End -->, the <emphasis>transform</emphasis> function
-    must take at least two parameters: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record which must be in the same
-    format as the <emphasis>recordset, </emphasis>and a <!-- DNT-Start -->ROWS<!-- DNT-End -->(<!-- DNT-Start -->LEFT<!-- DNT-End -->) whose
-    format must be a <!-- DNT-Start -->DATASET<!-- DNT-End -->(<!-- DNT-Start -->RECORDOF<!-- DNT-End -->(<emphasis>recordset</emphasis>))
+    <para>For form 3 of ROLLUP, the <emphasis>transform</emphasis> function
+    must take at least two parameters: a LEFT record which must be in the same
+    format as the <emphasis>recordset, </emphasis>and a ROWS(LEFT) whose
+    format must be a DATASET(RECORDOF(<emphasis>recordset</emphasis>))
     parameter. The format of the resulting record set may be different from
     the inputs.</para>
   </sect2>
 
   <sect2 id="ROLLUP_Form_1">
-    <!-- DNT-Start --><title>ROLLUP Form 1</title><!-- DNT-End -->
+    <title>ROLLUP Form 1</title>
 
     <para>Form 1 processes through all records in the <emphasis>recordset
     </emphasis>performing the <emphasis>transform</emphasis> function only on
@@ -209,7 +209,7 @@ ROLLUP(ds, LEFT.r = RIGHT.r,t(LEFT, RIGHT));
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>//a crosstab table of last names and the number of times they occur
+    <programlisting>//a crosstab table of last names and the number of times they occur
 MyRec := RECORD
   Person.per_last_name;
   INTEGER4 PersonCount := 1;
@@ -225,23 +225,23 @@ END;
 XtabOut := ROLLUP(SortedTable,
                   LEFT.per_last_name=RIGHT.per_last_name,
                   Xform(LEFT,RIGHT));
-</programlisting><!-- DNT-End -->
+</programlisting>
   </sect2>
 
   <sect2 id="ROLLUP_Form_2">
-    <!-- DNT-Start --><title>ROLLUP Form 2</title><!-- DNT-End -->
+    <title>ROLLUP Form 2</title>
 
     <para>Form 2 processes through all records in the <emphasis>recordset
     </emphasis>performing the <emphasis>transform</emphasis> function only on
     those pairs of adjacent records where all the expressions in the
     <emphasis>fieldlist</emphasis> match (indicating duplicate records) and
     passing through all other records to the output. This form allows you to
-    use the same kind of <!-- DNT-Start -->EXCEPT<!-- DNT-End --> field exclusion logic available to
-    <!-- DNT-Start -->DEDUP<!-- DNT-End -->.</para>
+    use the same kind of EXCEPT field exclusion logic available to
+    DEDUP.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>rec := {STRING1 str1,STRING1 str2,STRING1 str3};
+    <programlisting>rec := {STRING1 str1,STRING1 str2,STRING1 str3};
 ds := DATASET([{'a', 'b', 'c'},{'a', 'b', 'c'},
                {'a', 'c', 'c'},{'a', 'c', 'd'}], rec);
 rec tr(rec L, rec R) := TRANSFORM
@@ -268,24 +268,24 @@ r6 := ROLLUP(ds, tr(LEFT, RIGHT), str1 + str2);
 r7 := ROLLUP(ds, tr(LEFT, RIGHT), Cat(str1,str2));
   //equivalent to Cat(LEFT.str1,LEFT.str2) =
   // Cat(RIGHT.str1,RIGHT.str2 )
-</programlisting><!-- DNT-End -->
+</programlisting>
   </sect2>
 
   <sect2 id="ROLLUP_Form_3">
-    <!-- DNT-Start --><title>ROLLUP Form 3</title><!-- DNT-End -->
+    <title>ROLLUP Form 3</title>
 
-    <para>Form 3 is a special form of <!-- DNT-Start -->ROLLUP<!-- DNT-End --> where the second parameter passed
-    to the <emphasis>transform</emphasis> is a <!-- DNT-Start -->GROUP<!-- DNT-End --> and the first parameter
-    is the first record in that <!-- DNT-Start -->GROUP<!-- DNT-End -->. It processes through all groups in the
+    <para>Form 3 is a special form of ROLLUP where the second parameter passed
+    to the <emphasis>transform</emphasis> is a GROUP and the first parameter
+    is the first record in that GROUP. It processes through all groups in the
     <emphasis>recordset</emphasis>, producing one result record for each
     group. Aggregate functions can be used inside the
-    <emphasis>transform</emphasis> (such as <!-- DNT-Start -->TOPN<!-- DNT-End --> or <!-- DNT-Start -->CHOOSEN<!-- DNT-End -->) on the second
+    <emphasis>transform</emphasis> (such as TOPN or CHOOSEN) on the second
     parameter. The result record set is not grouped. This form is implicitly
-    <!-- DNT-Start -->LOCAL<!-- DNT-End --> in nature, due to the grouping.</para>
+    LOCAL in nature, due to the grouping.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>inrec := RECORD
+    <programlisting>inrec := RECORD
   UNSIGNED6 did;
 END;
 
@@ -354,11 +354,11 @@ finalRec doRollup(outRec l, DATASET(outRec) allRows) :=
 END;
 
 results := ROLLUP(combined, GROUP, doRollup(LEFT,ROWS(LEFT)));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
-    Structure</link>, <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End -->
-    Structure</link>, <link linkend="DEDUP"><!-- DNT-Start -->DEDUP<!-- DNT-End --></link>, <link
-    linkend="EXCEPT"><!-- DNT-Start -->EXCEPT<!-- DNT-End --></link>, <link linkend="GROUP"><!-- DNT-Start -->GROUP<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+    Structure</link>, <link linkend="RECORD_Structure">RECORD
+    Structure</link>, <link linkend="DEDUP">DEDUP</link>, <link
+    linkend="EXCEPT">EXCEPT</link>, <link linkend="GROUP">GROUP</link></para>
   </sect2>
 </sect1>

@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CompareFiles">
-  <!-- DNT-Start --><title>CompareFiles</title><!-- DNT-End -->
+  <title>CompareFiles</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.CompareFiles<indexterm>
+  <para><emphasis role="bold">STD.File.CompareFiles<indexterm>
       <primary>STD.File.CompareFiles</primary>
     </indexterm><indexterm>
       <primary>File.CompareFiles</primary>
@@ -15,7 +15,7 @@
   role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>, usecrcs </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -25,46 +25,46 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>file1</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>file1</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           first file.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>file2</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>file2</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           second file.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>logicalonly</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>logicalonly</emphasis></entry>
 
-          <entry>Optional. A boolean <!-- DNT-Start -->TRUE<!-- DNT-End -->/<!-- DNT-Start -->FALSE<!-- DNT-End --> flag that, when <!-- DNT-Start -->TRUE<!-- DNT-End -->, does not
+          <entry>Optional. A boolean TRUE/FALSE flag that, when TRUE, does not
           compare physical information from disk but only the logical
           information in the system datastore (Dali). If omitted, the default
-          is <!-- DNT-Start -->TRUE<!-- DNT-End -->.</entry>
+          is TRUE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>usecrcs</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>usecrcs</emphasis></entry>
 
-          <entry>Optional. A boolean <!-- DNT-Start -->TRUE<!-- DNT-End -->/<!-- DNT-Start -->FALSE<!-- DNT-End --> flag indicating that, when
-          <!-- DNT-Start -->TRUE<!-- DNT-End -->, compares physical CRCs of all the parts on disk. This may be
-          slow on large files. If omitted, the default is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          <entry>Optional. A boolean TRUE/FALSE flag indicating that, when
+          TRUE, compares physical CRCs of all the parts on disk. This may be
+          slow on large files. If omitted, the default is FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->CompareFiles<!-- DNT-End --> returns returns an <!-- DNT-Start -->INTEGER<!-- DNT-End -->4 value.</entry>
+          <entry>CompareFiles returns returns an INTEGER4 value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->CompareFiles<!-- DNT-End --> </emphasis>function compares
+  <para>The <emphasis role="bold">CompareFiles </emphasis>function compares
   <emphasis>file1</emphasis> against <emphasis>file2</emphasis> and returns
   the following values:</para>
 
@@ -76,14 +76,14 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start -->0<!-- DNT-End --></entry>
+          <entry>0</entry>
 
           <entry><emphasis>file1</emphasis> and <emphasis>file2</emphasis>
           match exactly</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->1<!-- DNT-End --></entry>
+          <entry>1</entry>
 
           <entry><emphasis>file1</emphasis> and <emphasis>file2</emphasis>
           contents match, but <emphasis>file1</emphasis> is newer than
@@ -91,7 +91,7 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->-1<!-- DNT-End --></entry>
+          <entry>-1</entry>
 
           <entry><emphasis>file1</emphasis> and <emphasis>file2</emphasis>
           contents match, but <emphasis>file2</emphasis> is newer than
@@ -99,7 +99,7 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->2<!-- DNT-End --></entry>
+          <entry>2</entry>
 
           <entry><emphasis>file1</emphasis> and <emphasis>file2</emphasis>
           contents do not match and <emphasis>file1</emphasis> is newer than
@@ -107,7 +107,7 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->-2<!-- DNT-End --></entry>
+          <entry>-2</entry>
 
           <entry><emphasis>file1</emphasis> and <emphasis>file2</emphasis>
           contents do not match and <emphasis>file2</emphasis> is newer than
@@ -119,6 +119,6 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.File.CompareFiles('Fred1', 'Fred2');
-</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := STD.File.CompareFiles('Fred1', 'Fred2');
+</programlisting>
 </sect1>

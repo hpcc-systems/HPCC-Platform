@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="Math_Library">
-  <!-- DNT-Start --><title><emphasis>Math Support</emphasis></title><!-- DNT-End -->
+  <title><emphasis>Math Support</emphasis></title>
 
   <para>This section covers the common math functions in the Standard
   Library.</para>
@@ -10,15 +10,15 @@
   <para></para>
 
   <sect1 id="Infinity">
-    <!-- DNT-Start --><title>Infinity</title><!-- DNT-End -->
+    <title>Infinity</title>
 
-    <!-- DNT-Start --><para><emphasis role="bold">STD.Math.Infinity<indexterm>
+    <para><emphasis role="bold">STD.Math.Infinity<indexterm>
         <primary>STD.Math.Infinity</primary>
       </indexterm><indexterm>
         <primary>Math.Infinity</primary>
       </indexterm><indexterm>
         <primary>Infinity</primary>
-      </indexterm>;</emphasis></para><!-- DNT-End -->
+      </indexterm>;</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -28,36 +28,36 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
-            <entry>Returns a <!-- DNT-Start -->REAL<!-- DNT-End --> "infinity" value.</entry>
+            <entry>Returns a REAL "infinity" value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->Infinity<!-- DNT-End --> </emphasis>returns an "infinity"
+    <para><emphasis role="bold">Infinity </emphasis>returns an "infinity"
     value.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+    <programlisting format="linespecific">IMPORT STD;
 myValue := STD.Math.Infinity;
 myValue;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="isInfinite"><!-- DNT-Start -->isInfinite<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="isInfinite">isInfinite</link></para>
   </sect1>
 
   <sect1 id="NaN">
-    <!-- DNT-Start --><title>NaN</title><!-- DNT-End -->
+    <title>NaN</title>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->NaN<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->NaN<!-- DNT-End --></primary>
+    <para><emphasis role="bold">STD.Math.NaN<indexterm>
+        <primary>STD.Math.NaN</primary>
       </indexterm><indexterm>
-        <primary>Math.<!-- DNT-Start -->NaN<!-- DNT-End --></primary>
+        <primary>Math.NaN</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->NaN<!-- DNT-End --></primary>
+        <primary>NaN</primary>
       </indexterm></emphasis><emphasis>;</emphasis>
     <emphasis></emphasis></para>
 
@@ -71,36 +71,36 @@ myValue;
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
-            <entry>Returns a non-signalling <!-- DNT-Start -->NaN<!-- DNT-End --> (Not a Number)value.</entry>
+            <entry>Returns a non-signalling NaN (Not a Number)value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->NaN<!-- DNT-End --> </emphasis>function returns a
-    non-signalling <!-- DNT-Start -->NaN<!-- DNT-End --> (Not a Number) value..</para>
+    <para>The <emphasis role="bold">NaN </emphasis>function returns a
+    non-signalling NaN (Not a Number) value..</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+    <programlisting format="linespecific">IMPORT STD;
 myValue := STD.Math.NaN;
 myValue;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
     <para>See Also: <link linkend="isNaN">IsNan</link></para>
   </sect1>
 
   <sect1 id="isInfinite">
-    <!-- DNT-Start --><title>isInfinite</title><!-- DNT-End -->
+    <title>isInfinite</title>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->isInfinite<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->isInfinite<!-- DNT-End --></primary>
+    <para><emphasis role="bold">STD.Math.isInfinite<indexterm>
+        <primary>STD.Math.isInfinite</primary>
       </indexterm><indexterm>
-        <primary>Math.<!-- DNT-Start -->isInfinite<!-- DNT-End --></primary>
+        <primary>Math.isInfinite</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->isInfinite<!-- DNT-End --></primary>
+        <primary>isInfinite</primary>
       </indexterm>(</emphasis> <emphasis>val</emphasis><emphasis>);</emphasis>
     <emphasis></emphasis></para>
 
@@ -114,46 +114,46 @@ myValue;
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>val</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>val</emphasis></entry>
 
             <entry>The value to test</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
-            <entry>Returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> indicating whether a real value is
+            <entry>Returns a BOOLEAN indicating whether a real value is
             infinite (positive or negative).</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->isInfinite<!-- DNT-End --> </emphasis>function returns
+    <para>The <emphasis role="bold">isInfinite </emphasis>function returns
     whether a real value is infinite (positive or negative).</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+    <programlisting format="linespecific">IMPORT STD;
 a := STD.Math.Infinity ;
 b := 42.1;
 STD.Math.isInfinite(a); //true
 STD.Math.isInfinite(b); //false
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="Infinity"><!-- DNT-Start -->Infinity<!-- DNT-End -->, </link><link
-    linkend="isFinite"><!-- DNT-Start -->isFinite<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="Infinity">Infinity, </link><link
+    linkend="isFinite">isFinite</link></para>
   </sect1>
 
   <sect1 id="isNaN">
-    <!-- DNT-Start --><title>isNaN</title><!-- DNT-End -->
+    <title>isNaN</title>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->isNaN<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->isNaN<!-- DNT-End --></primary>
+    <para><emphasis role="bold">STD.Math.isNaN<indexterm>
+        <primary>STD.Math.isNaN</primary>
       </indexterm><indexterm>
-        <primary>Math.<!-- DNT-Start -->isNaN<!-- DNT-End --></primary>
+        <primary>Math.isNaN</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->isNaN<!-- DNT-End --></primary>
+        <primary>isNaN</primary>
       </indexterm>(</emphasis> <emphasis>val</emphasis><emphasis>);</emphasis>
     <emphasis></emphasis></para>
 
@@ -167,46 +167,46 @@ STD.Math.isInfinite(b); //false
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>val</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>val</emphasis></entry>
 
             <entry>The value to test</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
-            <entry>Returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> indicating whether a real value is a <!-- DNT-Start -->NaN<!-- DNT-End -->
+            <entry>Returns a BOOLEAN indicating whether a real value is a NaN
             (not a number) value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->isNaN<!-- DNT-End --> </emphasis>function returns whether
-    a real value is a <!-- DNT-Start -->NaN<!-- DNT-End --> (not a number) value.</para>
+    <para>The <emphasis role="bold">isNaN </emphasis>function returns whether
+    a real value is a NaN (not a number) value.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+    <programlisting format="linespecific">IMPORT STD;
 a := STD.Math.NaN ;
 b := 42.1;
 STD.Math.isNaN(a); //true
 STD.Math.isNaN(b); //false
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="NaN"><!-- DNT-Start -->NaN<!-- DNT-End -->,</link><link linkend="isFinite">
-    <!-- DNT-Start -->isFinite<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="NaN">NaN,</link><link linkend="isFinite">
+    isFinite</link></para>
   </sect1>
 
   <sect1 id="isFinite">
-    <!-- DNT-Start --><title>isFinite</title><!-- DNT-End -->
+    <title>isFinite</title>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->isFinite<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->isFinite<!-- DNT-End --></primary>
+    <para><emphasis role="bold">STD.Math.isFinite<indexterm>
+        <primary>STD.Math.isFinite</primary>
       </indexterm><indexterm>
-        <primary>Math.<!-- DNT-Start -->isFinite<!-- DNT-End --></primary>
+        <primary>Math.isFinite</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->isFinite<!-- DNT-End --></primary>
+        <primary>isFinite</primary>
       </indexterm>(</emphasis> <emphasis>val</emphasis><emphasis>);</emphasis>
     <emphasis></emphasis></para>
 
@@ -220,48 +220,48 @@ STD.Math.isNaN(b); //false
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>val</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>val</emphasis></entry>
 
             <entry>The value to test</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
-            <entry>Returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> indicating whether a real value is a
-            valid value (neither infinite not <!-- DNT-Start -->NaN<!-- DNT-End -->).</entry>
+            <entry>Returns a BOOLEAN indicating whether a real value is a
+            valid value (neither infinite not NaN).</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->isFinite<!-- DNT-End --> </emphasis>function returns
-    whether a real value is a valid value (neither infinite not <!-- DNT-Start -->NaN<!-- DNT-End -->).</para>
+    <para>The <emphasis role="bold">isFinite </emphasis>function returns
+    whether a real value is a valid value (neither infinite not NaN).</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+    <programlisting format="linespecific">IMPORT STD;
 a := STD.Math.Infinity ;
 b := STD.Math.NaN;
 c := 42.1;
 STD.Math.isFinite(a); //false
 STD.Math.isFinite(b); //false
 STD.Math.isFinite(c); //true
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="isNaN"><!-- DNT-Start -->isNaN<!-- DNT-End --> ,</link><link
-    linkend="isInfinite"><!-- DNT-Start -->isInfinite<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="isNaN">isNaN ,</link><link
+    linkend="isInfinite">isInfinite</link></para>
   </sect1>
 
   <sect1 id="FMod">
-    <!-- DNT-Start --><title>FMod</title><!-- DNT-End -->
+    <title>FMod</title>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->FMod<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->FMod<!-- DNT-End --></primary>
+    <para><emphasis role="bold">STD.Math.FMod<indexterm>
+        <primary>STD.Math.FMod</primary>
       </indexterm><indexterm>
-        <primary>Math.<!-- DNT-Start -->FMod<!-- DNT-End --></primary>
+        <primary>Math.FMod</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->FMod<!-- DNT-End --></primary>
+        <primary>FMod</primary>
       </indexterm>(</emphasis> <emphasis>numer, denom);</emphasis>
     <emphasis></emphasis></para>
 
@@ -275,19 +275,19 @@ STD.Math.isFinite(c); //true
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>numer</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numer</emphasis></entry>
 
             <entry>The numerator</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>denom</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>denom</emphasis></entry>
 
             <entry>The denominator</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>Returns the floating-point remainder of numer/denom
             (rounded towards zero).</entry>
@@ -296,7 +296,7 @@ STD.Math.isFinite(c); //true
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->FMod<!-- DNT-End --></emphasis> function returns the
+    <para>The <emphasis role="bold">FMod</emphasis> function returns the
     floating-point remainder of numer/denom (rounded towards zero). </para>
 
     <para>If denom is zero, the result depends on the divideByZero flag:
@@ -308,7 +308,7 @@ STD.Math.isFinite(c); //true
       </listitem>
 
       <listitem>
-        <para>If set to 'nan': returns a non-signalling <!-- DNT-Start -->NaN<!-- DNT-End --> value.</para>
+        <para>If set to 'nan': returns a non-signalling NaN value.</para>
       </listitem>
 
       <listitem>
@@ -318,25 +318,25 @@ STD.Math.isFinite(c); //true
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">#OPTION ('divideByZero', 'nan'); //divide by zero creates a quiet NaN
+    <programlisting format="linespecific">#OPTION ('divideByZero', 'nan'); //divide by zero creates a quiet NaN
 IMPORT STD;
 STD.Math.FMod(5.1, 3.0);  // 2.1
 STD.Math.FMod(-5.1, 3.0); // -2.1
 STD.Math.FMod(5.1, 0);    // NaN
-</programlisting><!-- DNT-End -->
+</programlisting>
 
     <para></para>
   </sect1>
 
   <sect1 id="FMatch">
-    <!-- DNT-Start --><title>FMatch</title><!-- DNT-End -->
+    <title>FMatch</title>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->FMatch<!-- DNT-End --><indexterm>
-        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Math.<!-- DNT-Start -->FMatch<!-- DNT-End --></primary>
+    <para><emphasis role="bold">STD.Math.FMatch<indexterm>
+        <primary>STD.Math.FMatch</primary>
       </indexterm><indexterm>
-        <primary>Math.<!-- DNT-Start -->FMatch<!-- DNT-End --></primary>
+        <primary>Math.FMatch</primary>
       </indexterm><indexterm>
-        <primary><!-- DNT-Start -->FMatch<!-- DNT-End --></primary>
+        <primary>FMatch</primary>
       </indexterm>(</emphasis> <emphasis>a, b, epsilon);</emphasis>
     <emphasis></emphasis></para>
 
@@ -350,25 +350,25 @@ STD.Math.FMod(5.1, 0);    // NaN
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>a</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>a</emphasis></entry>
 
             <entry>The first value.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>b</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>b</emphasis></entry>
 
             <entry>The second value.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>epsilon</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>epsilon</emphasis></entry>
 
             <entry>The allowable margin of error.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+            <entry>Return:<emphasis></emphasis></entry>
 
             <entry>Returns whether two floating point values are the same,
             within margin of error epsilon.</entry>
@@ -377,15 +377,15 @@ STD.Math.FMod(5.1, 0);    // NaN
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold"><!-- DNT-Start -->FMatch<!-- DNT-End --></emphasis> function returns whether
+    <para>The <emphasis role="bold">FMatch</emphasis> function returns whether
     two floating point values are the same, within margin of error
     epsilon.</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+    <programlisting format="linespecific">IMPORT STD;
 STD.Math.FMatch(2.6,2.2,0.5); //true
-STD.Math.FMatch(2.6,2.2,0.3); //false</programlisting><!-- DNT-End -->
+STD.Math.FMatch(2.6,2.2,0.3); //false</programlisting>
 
     <para></para>
   </sect1>

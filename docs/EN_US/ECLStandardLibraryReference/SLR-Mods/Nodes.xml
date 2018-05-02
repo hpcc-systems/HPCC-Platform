@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Nodes">
-  <!-- DNT-Start --><title>Nodes</title><!-- DNT-End -->
+  <title>Nodes</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Thorlib.Nodes<indexterm>
+  <para><emphasis role="bold">STD.System.Thorlib.Nodes<indexterm>
       <primary>STD.System.Thorlib.Nodes</primary>
     </indexterm><indexterm>
       <primary>System.Thorlib.Nodes</primary>
@@ -13,7 +13,7 @@
     </indexterm><indexterm>
       <primary>Nodes</primary>
     </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,21 +23,21 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->Nodes<!-- DNT-End --> returns an <!-- DNT-Start -->UNSIGNED<!-- DNT-End --> <!-- DNT-Start -->INTEGER<!-- DNT-End -->4 value.</entry>
+          <entry>Nodes returns an UNSIGNED INTEGER4 value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->Nodes<!-- DNT-End --> </emphasis>function returns the number
+  <para>The <emphasis role="bold">Nodes </emphasis>function returns the number
   of nodes in the Thor cluster (always returns 1 on hThor and Roxie). This
-  number is the same as the <!-- DNT-Start -->CLUSTERSIZE<!-- DNT-End --> compile time constant. The <!-- DNT-Start -->Nodes<!-- DNT-End -->
+  number is the same as the CLUSTERSIZE compile time constant. The Nodes
   function is evaluated each time it is called, so the choice to use the
   function versus the constant depends upon the circumstances.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.System.Thorlib.Nodes();</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := STD.System.Thorlib.Nodes();</programlisting>
 </sect1>

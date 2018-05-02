@@ -2,20 +2,20 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESPresponse">
-  <!-- DNT-Start --><title>ESPresponse</title><!-- DNT-End -->
+  <title>ESPresponse</title>
 
   <para><indexterm>
-      <primary><!-- DNT-Start -->ESPresponse<!-- DNT-End --></primary>
+      <primary>ESPresponse</primary>
     </indexterm>The response structure for a method.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>ESPresponse  MyQueryResponse
+  <programlisting>ESPresponse  MyQueryResponse
  
 {
     string FirstName;
     string MiddleName;
     string LastName;
  
-};  </programlisting><!-- DNT-End -->
+};  </programlisting>
 </sect1>

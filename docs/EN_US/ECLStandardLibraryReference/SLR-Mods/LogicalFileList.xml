@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LogicalFileList">
-  <!-- DNT-Start --><title>LogicalFileList</title><!-- DNT-End -->
+  <title>LogicalFileList</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.LogicalFileList<indexterm>
+  <para><emphasis role="bold">STD.File.LogicalFileList<indexterm>
       <primary>STD.File.LogicalFileList</primary>
     </indexterm><indexterm>
       <primary>File.LogicalFileList</primary>
@@ -16,7 +16,7 @@
   </emphasis> <emphasis>includesuper</emphasis> <emphasis role="bold">
   ]</emphasis> <emphasis role="bold"> [, </emphasis> <emphasis>unknownszero
   </emphasis> <emphasis role="bold">] </emphasis><emphasis role="bold"> [, </emphasis> <emphasis>foreigndali
-  </emphasis> <emphasis role="bold">] )</emphasis></para><!-- DNT-End -->
+  </emphasis> <emphasis role="bold">] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -26,46 +26,46 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>pattern</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>pattern</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the mask of the
           files to list. If omitted,the default is '*' (all files).</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>includenormal</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>includenormal</emphasis></entry>
 
           <entry>Optional. A boolean flag indicating whether to include
-          "normal" files. If omitted, the default is <!-- DNT-Start -->TRUE<!-- DNT-End -->.</entry>
+          "normal" files. If omitted, the default is TRUE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>includesuper</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>includesuper</emphasis></entry>
 
           <entry>Optional. A boolean flag indicating whether to include
-          SuperFiles. If omitted, the default is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          SuperFiles. If omitted, the default is FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>unknownszero</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>unknownszero</emphasis></entry>
 
           <entry>Optional. A boolean flag indicating to set file sizes that
           are unknown to zero (0) instead of minus-one (-1). If omitted, the
-          default is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
+          default is FALSE.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>foreigndali</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>foreigndali</emphasis></entry>
 
-          <entry>Optional. The <!-- DNT-Start -->IP<!-- DNT-End --> address of the foreign dali used to resolve the file. 
+          <entry>Optional. The IP address of the foreign dali used to resolve the file. 
           If blank then the file is resolved locally.  If omitted, the
           default is blank.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis></emphasis></entry>
 
-          <entry><!-- DNT-Start -->LogicalFileList<!-- DNT-End --> returns returns a dataset in the following
+          <entry>LogicalFileList returns returns a dataset in the following
           format:</entry>
         </row>
       </tbody>
@@ -84,15 +84,15 @@ EXPORT FsLogicalFileInfoRecord := RECORD(FsLogicalFileNameRecord)
   STRING owner;
   STRING cluster;
 END;
-</programlisting>The <emphasis role="bold"><!-- DNT-Start -->LogicalFileList<!-- DNT-End --> </emphasis>function
+</programlisting>The <emphasis role="bold">LogicalFileList </emphasis>function
   returns a list of the logical files in the environment files as a dataset in
   the format listed above.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.File.LogicalFileList());
+  <programlisting format="linespecific">OUTPUT(STD.File.LogicalFileList());
   //returns all normal files
     
 OUTPUT(STD.File.LogicalFileList(,FALSE,TRUE));
-  //returns all SuperFiles</programlisting><!-- DNT-End -->
+  //returns all SuperFiles</programlisting>
 </sect1>

@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CleanSpaces">
-  <!-- DNT-Start --><title>CleanSpaces</title><!-- DNT-End -->
+  <title>CleanSpaces</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->CleanSpaces<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->CleanSpaces<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Str.CleanSpaces<indexterm>
+      <primary>STD.Str.CleanSpaces</primary>
     </indexterm><indexterm>
-      <primary>Str.<!-- DNT-Start -->CleanSpaces<!-- DNT-End --></primary>
+      <primary>Str.CleanSpaces</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->CleanSpaces<!-- DNT-End --></primary>
+      <primary>CleanSpaces</primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->CleanSpaces<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->CleanSpaces<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Uni.CleanSpaces<indexterm>
+      <primary>STD.Uni.CleanSpaces</primary>
     </indexterm><indexterm>
-      <primary>Uni.<!-- DNT-Start -->CleanSpaces<!-- DNT-End --></primary>
+      <primary>Uni.CleanSpaces</primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
@@ -28,22 +28,22 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source</emphasis></entry>
 
           <entry>A string containing the data to clean.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->CleanSpaces<!-- DNT-End --> returns either a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> value, as
+          <entry>CleanSpaces returns either a STRING or UNICODE value, as
           appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>All variations of the <emphasis role="bold"><!-- DNT-Start -->CleanSpaces<!-- DNT-End -->
+  <para>All variations of the <emphasis role="bold">CleanSpaces
   </emphasis>function return the <emphasis>source</emphasis> string with all
   instances of multiple adjacent space characters (2 or more spaces together,
   or a tab character) reduced to a single space character. It also trims off
@@ -51,10 +51,10 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.CleanSpaces('ABCDE  ABCDE');
+  <programlisting format="linespecific">A := STD.Str.CleanSpaces('ABCDE  ABCDE');
   //A contains 'ABCDE ABCDE'
 UNICODE C := STD.Uni.CleanSpaces(U'ABCDE ABCDE');   //C contains U'ABCDE ABCDE'
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para></para>
 </sect1>

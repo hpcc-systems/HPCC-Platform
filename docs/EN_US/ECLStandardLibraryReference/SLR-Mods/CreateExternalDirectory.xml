@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CreateExternalDirectory">
-  <!-- DNT-Start --><title>CreateExternalDirectory</title><!-- DNT-End -->
+  <title>CreateExternalDirectory</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.CreateExternalDirectory<indexterm>
+  <para><emphasis role="bold">STD.File.CreateExternalDirectory<indexterm>
       <primary>STD.File.CreateExternalDirectory</primary>
     </indexterm><indexterm>
       <primary>File.CreateExternalDirectory</primary>
     </indexterm><indexterm>
       <primary>CreateExternalDirectory</primary>
     </indexterm>(</emphasis> <emphasis> location, path </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,14 +21,14 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>location</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>location</emphasis></entry>
 
-          <entry>A null-terminated string containing the <!-- DNT-Start -->IP<!-- DNT-End --> address of the
+          <entry>A null-terminated string containing the IP address of the
           remote machine.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>path</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>path</emphasis></entry>
 
           <entry>A null-terminated string containing the directory path to
           create.</entry>
@@ -37,15 +37,15 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->CreateExternalDirectory<!-- DNT-End --> </emphasis>function
+  <para>The <emphasis role="bold">CreateExternalDirectory </emphasis>function
   creates the <emphasis>path</emphasis> on the <emphasis>location
   </emphasis>(if it does not already exist). The dafileserv utility program
   must be running on the <emphasis>location</emphasis> machine.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IP   := '10.150.254.6';
+  <programlisting format="linespecific">IP   := '10.150.254.6';
 path := '/c$/training/import/NewDir';
 STD.File.CreateExternalDirectory(IP,path);
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

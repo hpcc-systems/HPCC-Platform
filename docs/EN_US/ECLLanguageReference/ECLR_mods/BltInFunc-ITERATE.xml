@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ITERATE">
-  <!-- DNT-Start --><title>ITERATE<indexterm>
+  <title>ITERATE<indexterm>
       <primary>ITERATE</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">ITERATE<indexterm>
+  <para><emphasis role="bold">ITERATE<indexterm>
       <primary>ITERATE function</primary>
     </indexterm>(</emphasis><emphasis>recordset, transform
   </emphasis><emphasis role="bold">[, LOCAL<indexterm>
       <primary>LOCAL</primary>
-    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para><!-- DNT-End -->
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -19,75 +19,75 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>recordset</emphasis></entry>
 
           <entry>The set of records to process.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>transform</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>transform</emphasis></entry>
 
-          <entry>The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call for each record in the
+          <entry>The TRANSFORM function to call for each record in the
           <emphasis>recordset</emphasis>.</entry>
         </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->LOCAL<!-- DNT-End --></emphasis> Optional. Specifies the
+  <para><emphasis role="bold">LOCAL</emphasis> Optional. Specifies the
   operation is performed on each supercomputer node independently, without
   requiring interaction with all other nodes to acquire data; the operation
-  maintains the distribution of any previous <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->.</para>
+  maintains the distribution of any previous DISTRIBUTE.</para>
 
-  <para>Return:<emphasis> </emphasis><!-- DNT-Start -->ITERATE<!-- DNT-End --> returns a record set.</para>
+  <para>Return:<emphasis> </emphasis>ITERATE returns a record set.</para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ITERATE<!-- DNT-End --> </emphasis>function processes
+  <para>The <emphasis role="bold">ITERATE </emphasis>function processes
   through all records in the <emphasis>recordset </emphasis>one pair of
   records at a time, performing the <emphasis>transform</emphasis> function on
   each pair in turn. The first record in the <emphasis>recordset</emphasis> is
@@ -97,20 +97,20 @@
   the next pair.</para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Iterate">
-    <!-- DNT-Start --><title>TRANSFORM Function Requirements - ITERATE</title><!-- DNT-End -->
+    <title>TRANSFORM Function Requirements - ITERATE</title>
 
     <para>The <emphasis>transform</emphasis> function<indexterm>
         <primary>transform function</primary>
-      </indexterm> must take at least two parameters: <!-- DNT-Start -->LEFT<!-- DNT-End --> and <!-- DNT-Start -->RIGHT<!-- DNT-End --> records
+      </indexterm> must take at least two parameters: LEFT and RIGHT records
     that must both be of the same format as the resulting recordset. An
-    optional third parameter may be specified: an integer <!-- DNT-Start -->COUNTER<!-- DNT-End --> specifying
+    optional third parameter may be specified: an integer COUNTER specifying
     the number of times the <emphasis>transform</emphasis> has been called for
     the <emphasis>recordset </emphasis>or the current group in the
-    <emphasis>recordset</emphasis> (see the <!-- DNT-Start -->GROUP<!-- DNT-End --> function).</para>
+    <emphasis>recordset</emphasis> (see the GROUP function).</para>
 
     <para>Example:</para>
 
-    <!-- DNT-Start --><programlisting>ResType := RECORD
+    <programlisting>ResType := RECORD
   INTEGER1 Val;
   INTEGER1 Rtot;
 END;
@@ -150,8 +150,8 @@ Run_Bal DoRoll(Run_bal L, Run_bal R) := TRANSFORM
 END;
 
 MySet2 := ITERATE(TradesBal,DoRoll(LEFT,RIGHT));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-    <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link>, <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>, <link linkend="ROLLUP"><!-- DNT-Start -->ROLLUP<!-- DNT-End --></link></para>
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="ROLLUP">ROLLUP</link></para>
   </sect2>
 </sect1>

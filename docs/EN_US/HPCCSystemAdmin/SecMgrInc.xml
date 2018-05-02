@@ -3,9 +3,9 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <!-- DNT-Start --><title>Security Manager Plugin Framework</title><!-- DNT-End -->
+    <title>Security Manager Plugin Framework</title>
 
-    <!-- DNT-Start --><!--some-book-set-up-stuff--><!-- DNT-End -->
+    <!--some-book-set-up-stuff-->
 
     <mediaobject>
       <imageobject>
@@ -52,9 +52,9 @@
     </mediaobject>
   </bookinfo>
 
-  <!-- DNT-Start --><!--/end-book-set-up-stuff--><!-- DNT-End -->
+  <!--/end-book-set-up-stuff-->
 
-  <!-- DNT-Start --><!--include-at-chapterlevel--><!-- DNT-End -->
+  <!--include-at-chapterlevel-->
 
   <xi:include href="HPCCSystemAdmin/SA-Mods/SecMgrMod.xml"
               xpointer="element(/1)"

@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESP_Struct">
-  <!-- DNT-Start --><title>ESPstruct</title><!-- DNT-End -->
+  <title>ESPstruct</title>
 
-  <para><!-- DNT-Start -->ESPstruct<!-- DNT-End --> <indexterm>
-      <primary><!-- DNT-Start -->ESPstruct<!-- DNT-End --></primary>
+  <para>ESPstruct <indexterm>
+      <primary>ESPstruct</primary>
     </indexterm>is a set of elements grouped together under one name. These
   elements, known as <emphasis>members</emphasis>, can have different types
   and different lengths. Structures can be nested and support
@@ -13,7 +13,7 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>
+  <programlisting>
 ESPstruct NameBlock
 
 {
@@ -22,5 +22,5 @@ ESPstruct NameBlock
     string LastName;
     int Age;
 };
-   </programlisting><!-- DNT-End -->
+   </programlisting>
 </sect1>

@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ATAN2">
-  <!-- DNT-Start --><title>ATAN2</title><!-- DNT-End -->
+  <title>ATAN2</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->ATAN<!-- DNT-End -->2<indexterm>
-      <primary><!-- DNT-Start -->ATAN<!-- DNT-End -->2</primary>
+  <para><emphasis role="bold">ATAN2<indexterm>
+      <primary>ATAN2</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->ATAN<!-- DNT-End -->2 function</primary>
+      <primary>ATAN2 function</primary>
     </indexterm>(</emphasis><emphasis>y, x</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,36 +19,36 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>y</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>y</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->REAL<!-- DNT-End --> numerator value for the tangent.</entry>
+            <entry>The REAL numerator value for the tangent.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>x</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>x</emphasis></entry>
 
-            <entry>The <!-- DNT-Start -->REAL<!-- DNT-End --> denominator value for the tangent.</entry>
+            <entry>The REAL denominator value for the tangent.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+            <entry>Return:</entry>
 
-            <entry><!-- DNT-Start -->ATAN<!-- DNT-End -->2 returns a single <!-- DNT-Start -->REAL<!-- DNT-End --> value.</entry>
+            <entry>ATAN2 returns a single REAL value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ATAN<!-- DNT-End -->2 </emphasis>function returns the
+  <para>The <emphasis role="bold">ATAN2 </emphasis>function returns the
   arctangent (inverse) of the calculated tangent, in radians. This is similar
-  to the <!-- DNT-Start -->ATAN<!-- DNT-End --> function<indexterm>
-      <primary><!-- DNT-Start -->ATAN<!-- DNT-End --> function</primary>
+  to the ATAN function<indexterm>
+      <primary>ATAN function</primary>
     </indexterm> but more accurate and handles the situations where
   <emphasis>x</emphasis> or <emphasis>y</emphasis> is zero.</para>
 
   <para>Example:</para>
 
-  <para>ArcTangent := <!-- DNT-Start -->ATAN<!-- DNT-End -->2(TangentNumerator, TangentDenominator);</para>
+  <para>ArcTangent := ATAN2(TangentNumerator, TangentDenominator);</para>
 
-  <para>See Also: <link linkend="ATAN"><!-- DNT-Start -->ATAN<!-- DNT-End --></link>, <link linkend="ACOS"><!-- DNT-Start -->ACOS<!-- DNT-End --></link>, <link linkend="COS"><!-- DNT-Start -->COS<!-- DNT-End --></link>, <link linkend="ASIN"><!-- DNT-Start -->ASIN<!-- DNT-End --></link>, <link linkend="SIN"><!-- DNT-Start -->SIN<!-- DNT-End --></link>, <link linkend="TAN"><!-- DNT-Start -->TAN<!-- DNT-End --></link>, <link linkend="COSH"><!-- DNT-Start -->COSH<!-- DNT-End --></link>, <link linkend="SINH"><!-- DNT-Start -->SINH<!-- DNT-End --></link>, <link linkend="TANH"><!-- DNT-Start -->TANH<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="ATAN">ATAN</link>, <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
 </sect1>

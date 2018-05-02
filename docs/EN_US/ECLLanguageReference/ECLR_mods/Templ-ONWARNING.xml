@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_ONWARNING">
-  <!-- DNT-Start --><title>#ONWARNING</title><!-- DNT-End -->
+  <title>#ONWARNING</title>
 
-  <para><emphasis role="bold">#<!-- DNT-Start -->ONWARNING<!-- DNT-End --><indexterm>
-      <primary>#<!-- DNT-Start -->ONWARNING<!-- DNT-End --></primary>
+  <para><emphasis role="bold">#ONWARNING<indexterm>
+      <primary>#ONWARNING</primary>
     </indexterm>(</emphasis><emphasis>code, action</emphasis><emphasis
   role="bold">); </emphasis></para>
 
@@ -17,14 +17,14 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>code</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>code</emphasis></entry>
 
-            <entry>The number displayed in the "Code" column of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->'s
+            <entry>The number displayed in the "Code" column of the ECL IDE's
             Syntax Errors toolbox.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>action</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>action</emphasis></entry>
 
             <entry>One of these actions: ignore, error, or warning.</entry>
           </row>
@@ -32,24 +32,24 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#<!-- DNT-Start -->ONWARNING<!-- DNT-End --> </emphasis>statement allows you
+  <para>The <emphasis role="bold">#ONWARNING </emphasis>statement allows you
   to globally specify how to handle specific warnings. You may have it treated
   as a warning, promote it to an error, or ignore it. Useful warnings can get
   lost in a sea of less-useful ones. This feature allows you to get rid of the
   "clutter."</para>
 
-  <para>The <!-- DNT-Start -->ONWARNING<!-- DNT-End --> workflow service overrides any global warning handling
-  specified by #<!-- DNT-Start -->ONWARNING<!-- DNT-End -->.</para>
+  <para>The ONWARNING workflow service overrides any global warning handling
+  specified by #ONWARNING.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>  #ONWARNING(1041, error);
+  <programlisting>  #ONWARNING(1041, error);
        //globally promote "Record doesn't have an explicit
        // maximum record size" warnings to errors
   rec := { STRING x } : ONWARNING(1041, ignore);
        //ignore "Record doesn't have an explicit maximum
        // record size" warning on this attribute, only
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="ONWARNING"><!-- DNT-Start -->ONWARNING<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="ONWARNING">ONWARNING</link></para>
 </sect1>

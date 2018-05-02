@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="msTick">
-  <!-- DNT-Start --><title>msTick</title><!-- DNT-End -->
+  <title>msTick</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Debug.msTick<indexterm>
+  <para><emphasis role="bold">STD.System.Debug.msTick<indexterm>
       <primary>STD.System.Debug.msTick</primary>
     </indexterm> <indexterm>
       <primary>System.Debug.msTick</primary>
@@ -12,7 +12,7 @@
       <primary>Debug.msTick</primary>
     </indexterm> <indexterm>
       <primary>msTick</primary>
-    </indexterm>(</emphasis> <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
+    </indexterm>(</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,15 +22,15 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->msTick<!-- DNT-End --> returns a 4-byte unsigned integer value.</entry>
+          <entry>msTick returns a 4-byte unsigned integer value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->msTick<!-- DNT-End --> </emphasis>function returns elapsed
+  <para>The <emphasis role="bold">msTick </emphasis>function returns elapsed
   time since its start point, in milliseconds. The start point is undefined,
   making this function useful only for judging elapsed time between calls to
   the function by subtracting the latest return value from the earlier. When
@@ -40,7 +40,7 @@
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 t1   := STD.System.Debug.msTick() : STORED('StartTime');    //get start time
 
 ds1 := DATASET([{0,0,0,0,0}],
@@ -73,5 +73,5 @@ R := ROLLUP(P,
 paws := STD.System.Debug.Sleep(1000); //pause for one second before continuing
 
 SEQUENTIAL(paws,OUTPUT(P, ALL),OUTPUT(R, ALL));
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

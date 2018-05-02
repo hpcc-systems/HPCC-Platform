@@ -27,7 +27,7 @@
 
   <para>Roxie resolves data files at query load time. First, it will look for
   a package defining the superkey contents. If there is no package, it will
-  look in the Dali Server's <!-- DNT-Start -->DFU<!-- DNT-End --> (Distributed
+  look in the Dali Server's DFU (Distributed
   File Utility).</para>
 
   <para>The end result is quicker, more flexible process, without the need of
@@ -37,7 +37,7 @@
 
   <para>Without packages, you would do one of the following:</para>
 
-  <para>- Add new subfile(s) to the superkey via <!-- DNT-Start -->ECL<!-- DNT-End -->
+  <para>- Add new subfile(s) to the superkey via ECL
   code, ECLWatch, or DFUPlus, then reload the cluster.</para>
 
   <para>- Revise the query to use a different key file, compile it, and
@@ -49,8 +49,8 @@
   no other purpose.</para>
 
   <para>The definition of a superfile or superkey inside of a package file
-  overrides the definition in Dali, but does <!-- DNT-Start -->NOT<!-- DNT-End -->
-  change the superfile or superkey definition in Dali Server's <!-- DNT-Start -->DFU<!-- DNT-End -->.</para>
+  overrides the definition in Dali, but does NOT
+  change the superfile or superkey definition in Dali Server's DFU.</para>
 
   <para>Package information is used as soon as it is added to Dali and the
   package is activated. This can be done using using <emphasis role="bold">ecl
@@ -58,18 +58,18 @@
   packagemap add</emphasis> &amp; <emphasis role="bold">ecl packagemap
   activate</emphasis>).</para>
 
-  <!-- DNT-Start -->
+  
 
   <!--You should always validate or run the reporting step on the packages (NYI)-->
 
-  <!-- DNT-End -->
+  
 
   <sect1>
-    <!-- DNT-Start -->
+    
 
     <title>Example</title>
 
-    <!-- DNT-End -->
+    
 
     <para>In this example, we have a query named MyQuery which uses a superkey
     named MyDataKey that includes two subfiles:</para>
@@ -104,10 +104,10 @@
 
     <para><emphasis role="redbold"></emphasis></para>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->Example<!-- DNT-End -->
+    <para><emphasis role="bold">Example
     1:</emphasis></para>
 
-    <!-- DNT-Start -->
+    
 
     <programlisting>&lt;RoxiePackages&gt;
  &lt;Package id="MyQuery"&gt;
@@ -123,9 +123,9 @@
 
 </programlisting>
 
-    <!-- DNT-End -->
+    
 
-    <para><emphasis role="bold"><!-- DNT-Start -->Example<!-- DNT-End -->
+    <para><emphasis role="bold">Example
     2:</emphasis></para>
 
     <para><programlisting>&lt;RoxiePackages&gt;
@@ -145,11 +145,11 @@
   </sect1>
 
   <sect1>
-    <!-- DNT-Start -->
+    
 
     <title>Updating Data</title>
 
-    <!-- DNT-End -->
+    
 
     <para>This section details the typical steps a query developer and a data
     developer follow once a query is ready for production.</para>
@@ -183,11 +183,11 @@
         <para>Add the package map(s) by associating the package information
         with a QuerySet.</para>
 
-        <!-- DNT-Start -->
+        
 
         <!--You should always validate or run the reporting step on the packages (NYI)-->
 
-        <!-- DNT-End -->
+        
       </listitem>
 
       <listitem>
@@ -238,11 +238,11 @@
 
         <para>Use the command:</para>
 
-        <!-- DNT-Start -->
+        
 
         <!--You should always validate or run the reporting step on the packages (NYI)-->
 
-        <!-- DNT-End -->
+        
       </listitem>
     </itemizedlist>
 
@@ -252,13 +252,13 @@
   </sect1>
 
   <sect1>
-    <!-- DNT-Start -->
+    
 
     <title>Package File Syntax</title>
 
-    <!-- DNT-End -->
+    
 
-    <para>Package files are formatted in <!-- DNT-Start -->XML<!-- DNT-End -->
+    <para>Package files are formatted in XML
     using the conventions detailed in this section.</para>
 
     <para>A Package file must begin with <emphasis
@@ -281,11 +281,11 @@
     purposes. The comments are included for clarity, but are not required.
     </emphasis></para>
 
-    <para><emphasis role="bold"><!-- DNT-Start -->Example<!-- DNT-End --></emphasis>:</para>
+    <para><emphasis role="bold">Example</emphasis>:</para>
 
     <para></para>
 
-    <!-- DNT-Start -->
+    
 
     <programlisting> 1.  &lt;RoxiePackages&gt;
  2.   &lt;!-- Begin Queries --&gt;
@@ -305,7 +305,7 @@
 16.  &lt;/RoxiePackages&gt;
 </programlisting>
 
-    <!-- DNT-End -->
+    
 
     <para>In this example, we have a query: <emphasis
     role="bold">MyQuery</emphasis>. The query uses a superkey defined in a
@@ -338,11 +338,11 @@
   </sect1>
 
   <sect1>
-    <!-- DNT-Start -->
+    
 
     <title>Multi-Part package maps</title>
 
-    <!-- DNT-End -->
+    
 
     <para>In version 6.0.0 or later, you can organize your package map file
     mappings into a collection of files that define the files for some subset
@@ -416,31 +416,31 @@
 
     <para>This allows you to add them separately:</para>
 
-    <!-- DNT-Start -->
+    
 
     <programlisting>ecl packagemap add-part &lt;target&gt; target_pmid contacts.pkg
 ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
 </programlisting>
 
-    <!-- DNT-End -->
+    
 
     <para>And then activate the entire package map (which consists of all
     parts added to the given target_pmid):</para>
 
-    <!-- DNT-Start -->
+    
 
     <programlisting>ecl packagemap activate &lt;target&gt; target_pmid</programlisting>
 
-    <!-- DNT-End -->
+    
 
     <para>You can then change individual parts, and update them in the package
     map:</para>
 
-    <!-- DNT-Start -->
+    
 
     <programlisting>ecl packagemap add-part &lt;target&gt; &lt;target_pmid&gt; persons.pkg --delete-previous</programlisting>
 
-    <!-- DNT-End -->
+    
 
     <para>Notice that target_pmid is the identifier for the collection of all
     the packagmap parts. That identifier can be used to activate or delete the
@@ -449,11 +449,11 @@ ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
     <para>You can use "get-part" to see what the named part looks like in Dali
     for the given identifier:</para>
 
-    <!-- DNT-Start -->
+    
 
     <programlisting>ecl packagemap get-part &lt;target&gt; &lt;packagemap&gt; contents.pkg</programlisting>
 
-    <!-- DNT-End -->
+    
 
     <para>You could potentially retrieve the part that way, edit it, and
     replace it as shown above. You can use <emphasis
@@ -499,14 +499,14 @@ ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
     that multipart package map and then continue by managing its individual
     parts. In this case:</para>
 
-    <!-- DNT-Start -->
+    
 
     <programlisting>ecl packagemap add &lt;target&gt; multipart.pkg
 ecl packagemap add-part &lt;target&gt; multipart.pkg addresses.pkg 
 ecl packagemap activate &lt;target&gt; multipart.pkg
 </programlisting>
 
-    <!-- DNT-End -->
+    
 
     <para>This would be useful, for example, when copying an entire package
     map from one target to another.</para>
@@ -520,7 +520,7 @@ ecl packagemap activate &lt;target&gt; multipart.pkg
 
 
     <para>This section contains details about the actions and options used to
-    work with packages. The <!-- DNT-Start -->ECL<!-- DNT-End --> command line
+    work with packages. The ECL command line
     tool is fully documented in the Client Tools Manual.</para>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
@@ -624,11 +624,11 @@ ecl packagemap activate &lt;target&gt; multipart.pkg
     </xi:include>
 
     <sect2 role="brk">
-      <!-- DNT-Start -->
+      
 
       <title>Tips:</title>
 
-      <!-- DNT-End -->
+      
 
       <itemizedlist mark="bullet">
         <listitem>
@@ -654,11 +654,11 @@ ecl packagemap activate &lt;target&gt; multipart.pkg
           <para>Before you delete a package map, make sure you have a backup
           copy.</para>
 
-          <!-- DNT-Start -->
+          
 
           <!--You should always validate or run the reporting step on the packages (NYI)-->
 
-          <!-- DNT-End -->
+          
         </listitem>
       </itemizedlist>
     </sect2>

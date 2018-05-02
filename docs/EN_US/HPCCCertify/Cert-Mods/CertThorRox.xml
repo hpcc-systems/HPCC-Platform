@@ -2,17 +2,17 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="Generate_Certification_data_file">
-  <!-- DNT-Start --><title>Certify Thor &amp; Roxie</title><!-- DNT-End -->
+  <title>Certify Thor &amp; Roxie</title>
 
   <para>The following sections will help you to Certify that the Thor, hThor,
   and Roxie components of your system are all working correctly.</para>
 
   <sect1 id="Cert_BuildDataOnThor" role="nobrk">
-    <!-- DNT-Start --><title>Build Data on Thor</title><!-- DNT-End -->
+    <title>Build Data on Thor</title>
 
     <para><orderedlist>
         <listitem>
-          <para>Open <emphasis role="bold">the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --></emphasis></para>
+          <para>Open <emphasis role="bold">the ECL IDE</emphasis></para>
 
           <para><emphasis role="bold">Enter the <emphasis role="bold">Login
           ID</emphasis> and <emphasis role="bold">Password</emphasis>
@@ -24,13 +24,13 @@
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start -->Login ID<!-- DNT-End --></entry>
+                    <entry>Login ID</entry>
 
                     <entry>hpccdemo</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->Password<!-- DNT-End --></entry>
+                    <entry>Password</entry>
 
                     <entry>hpccdemo</entry>
                   </row>
@@ -44,10 +44,10 @@
           role="bold">_Certification.BuildDataFiles</emphasis> file.
           <itemizedlist>
               <listitem>
-                <para>In the lower right corner of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> you will see a
+                <para>In the lower right corner of the ECL IDE you will see a
                 section labeled <emphasis
                 role="bluebold">Repository</emphasis>, containing a few
-                folders. These folders contain the <!-- DNT-Start -->ECL<!-- DNT-End --> files. Click the + sign
+                folders. These folders contain the ECL files. Click the + sign
                 next to <emphasis role="bluebold">Samples</emphasis>, open the
                 folder.</para>
               </listitem>
@@ -72,12 +72,12 @@
                 <para>Double-click on the <emphasis
                 role="bold">BuildDataFiles</emphasis> file to open it.</para>
 
-                <para>In the BuildDataFiles file, you will see some <!-- DNT-Start -->ECL<!-- DNT-End --> code
+                <para>In the BuildDataFiles file, you will see some ECL code
                 in the file as follows:</para>
 
-                <!-- DNT-Start --><programlisting>  Base := Cert.Setup.NodeMult1; //max = 20
+                <programlisting>  Base := Cert.Setup.NodeMult1; //max = 20
   Mult := Cert.Setup.NodeMult2; //max = 20
-</programlisting><!-- DNT-End -->
+</programlisting>
 
                 <para>These two multipliers, <emphasis
                 role="bold">NodeMult1</emphasis> and <emphasis
@@ -133,7 +133,7 @@
     <para></para>
 
     <sect2 id="Expected_result_Generate_Data_file">
-      <!-- DNT-Start --><title>EXPECTED RESULT:</title><!-- DNT-End -->
+      <title>EXPECTED RESULT:</title>
 
       <para>Look for the green checkmark indicating successful
       completion</para>
@@ -199,7 +199,7 @@
   </sect1>
 
   <sect1 id="Certify_Data_Refinery_functionality">
-    <!-- DNT-Start --><title>Certify Thor Functionality</title><!-- DNT-End -->
+    <title>Certify Thor Functionality</title>
 
     <para>This section certifies:</para>
 
@@ -236,7 +236,7 @@
 
       <orderedlist>
         <listitem>
-          <para>Open the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --></emphasis></para>
+          <para>Open the <emphasis role="bold">ECL IDE</emphasis></para>
 
           <para><emphasis role="bold">Enter the <emphasis role="bold">Login
           ID</emphasis> and <emphasis
@@ -249,13 +249,13 @@
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start -->Login ID<!-- DNT-End --></entry>
+                    <entry>Login ID</entry>
 
                     <entry>hpccdemo</entry>
                   </row>
 
                   <row>
-                    <entry><!-- DNT-Start -->Password<!-- DNT-End --></entry>
+                    <entry>Password</entry>
 
                     <entry>hpccdemo</entry>
                   </row>
@@ -266,13 +266,13 @@
 
         <listitem>
           <para>Open the <emphasis
-          role="bold">_Certification.Certify_<!-- DNT-Start -->DR<!-- DNT-End --></emphasis> file.</para>
+          role="bold">_Certification.Certify_DR</emphasis> file.</para>
 
           <para><itemizedlist>
               <listitem>
-                <para>In the lower right corner of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> you will see a
+                <para>In the lower right corner of the ECL IDE you will see a
                 section labeled as Repository, containing a few folders. This
-                contains the <!-- DNT-Start -->ECL<!-- DNT-End --> files. Click the + sign next to
+                contains the ECL files. Click the + sign next to
                 <emphasis>Samples</emphasis>, to open the folder.</para>
               </listitem>
 
@@ -293,7 +293,7 @@
 
               <listitem>
                 <para>Double-click on the <emphasis
-                role="bold">Certify_<!-- DNT-Start -->DR<!-- DNT-End --></emphasis> file to open it.</para>
+                role="bold">Certify_DR</emphasis> file to open it.</para>
               </listitem>
             </itemizedlist></para>
         </listitem>
@@ -338,7 +338,7 @@
     </sect2>
 
     <sect2 id="CEertify_DR_Expected_Result">
-      <!-- DNT-Start --><title>EXPECTED RESULT</title><!-- DNT-End -->
+      <title>EXPECTED RESULT</title>
 
       <para>Look for the Green checkmark indicating successful
       completion.</para>
@@ -353,7 +353,7 @@
           </mediaobject>
         </figure></para>
 
-      <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch <emphasis role="bold">Results</emphasis> tab section
+      <para>The ECL Watch <emphasis role="bold">Results</emphasis> tab section
       should be as follows:</para>
 
       <blockquote>
@@ -393,14 +393,14 @@
   </sect1>
 
   <sect1 id="Certify_DDE">
-    <!-- DNT-Start --><title>Certify Key build capabilities</title><!-- DNT-End -->
+    <title>Certify Key build capabilities</title>
 
     <para>This section will certify that the system can perform its key build
     capabilities.</para>
 
     <orderedlist>
       <listitem>
-        <para>Open the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --></emphasis></para>
+        <para>Open the <emphasis role="bold">ECL IDE</emphasis></para>
 
         <para><emphasis role="bold">Enter the <emphasis role="bold">Login
         ID</emphasis> and <emphasis
@@ -413,13 +413,13 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start -->Login ID<!-- DNT-End --></entry>
+                  <entry>Login ID</entry>
 
                   <entry>hpccdemo</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start -->Password<!-- DNT-End --></entry>
+                  <entry>Password</entry>
 
                   <entry>hpccdemo</entry>
                 </row>
@@ -434,9 +434,9 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>In the lower right corner of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> you will see a
+              <para>In the lower right corner of the ECL IDE you will see a
               section labeled as Repository, containing a couple of folders.
-              This contains the <!-- DNT-Start -->ECL<!-- DNT-End --> files. Select the + sign next to it
+              This contains the ECL files. Select the + sign next to it
               Samples, open the folder.</para>
             </listitem>
 
@@ -501,7 +501,7 @@
     generated data. It builds an index on one of those data files.</para>
 
     <sect2 id="Expected_Result_Certify_DR">
-      <!-- DNT-Start --><title>EXPECTED RESULT</title><!-- DNT-End -->
+      <title>EXPECTED RESULT</title>
 
       <para>Look for the green checkmark indicating successful
       completion.</para>
@@ -524,15 +524,15 @@
   </sect1>
 
   <sect1 id="Cert_VerifyIndexBuild">
-    <!-- DNT-Start --><title>Verify the Index Build</title><!-- DNT-End -->
+    <title>Verify the Index Build</title>
 
     <orderedlist>
       <listitem>
-        <para>Open <!-- DNT-Start -->ECL<!-- DNT-End --> Watch in your browser using the following <!-- DNT-Start -->URL<!-- DNT-End -->:</para>
+        <para>Open ECL Watch in your browser using the following URL:</para>
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
-        </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End -->
-        Server's <!-- DNT-Start -->IP<!-- DNT-End --> Address and pppp is the port. The default port is
+        </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
+        Server's IP Address and pppp is the port. The default port is
         8010)</emphasis></para>
       </listitem>
 
@@ -579,12 +579,12 @@
   </sect1>
 
   <sect1 id="Certify_Thor_access_to_index_data" role="brk">
-    <!-- DNT-Start --><title>Certify Thor Access to Indexed Data</title><!-- DNT-End -->
+    <title>Certify Thor Access to Indexed Data</title>
 
     <para>This section certifies Thor access to indexed data.</para>
 
     <sect2 id="CertifyThorAccess">
-      <!-- DNT-Start --><title>Certify Thor Access</title><!-- DNT-End -->
+      <title>Certify Thor Access</title>
 
       <orderedlist>
         <listitem>
@@ -593,9 +593,9 @@
 
           <para><itemizedlist>
               <listitem>
-                <para>In the lower right corner of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> you will see a
+                <para>In the lower right corner of the ECL IDE you will see a
                 section labeled as Repository, containing a couple of folders.
-                This contains the <!-- DNT-Start -->ECL<!-- DNT-End --> files. Click the + sign next to
+                This contains the ECL files. Click the + sign next to
                 <emphasis>Samples</emphasis>, open the folder.</para>
               </listitem>
 
@@ -659,10 +659,10 @@
     </sect2>
 
     <sect2 id="CertifyThor_ExpectedResult">
-      <!-- DNT-Start --><title>EXPECTED RESULT:</title><!-- DNT-End -->
+      <title>EXPECTED RESULT:</title>
 
       <para>The first 100 records from the query display, looking similar to
-      the following (<!-- DNT-Start -->BRYANT<!-- DNT-End --> in last name).</para>
+      the following (BRYANT in last name).</para>
 
       <para><figure>
           <title>Results page</title>
@@ -679,7 +679,7 @@
   </sect1>
 
   <sect1 id="Cert_CompilePublishRoxieQuery">
-    <!-- DNT-Start --><title>Compile and Publish a Roxie Query</title><!-- DNT-End -->
+    <title>Compile and Publish a Roxie Query</title>
 
     <orderedlist>
       <listitem>
@@ -689,9 +689,9 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>In the lower right corner of the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> you will see a
+              <para>In the lower right corner of the ECL IDE you will see a
               section labeled as Repository, containing a couple of folders.
-              This contains the <!-- DNT-Start -->ECL<!-- DNT-End --> files. Click the + sign next to <emphasis
+              This contains the ECL files. Click the + sign next to <emphasis
               role="bold">Samples</emphasis>, open the folder.</para>
             </listitem>
 
@@ -767,7 +767,7 @@
       </listitem>
 
       <listitem>
-        <para>Select the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Watch</emphasis> button at
+        <para>Select the <emphasis role="bold">ECL Watch</emphasis> button at
         the lower left corner of the window.</para>
 
         <para><figure>
@@ -783,7 +783,7 @@
 
       <listitem>
         <para>Select the <emphasis role="bold">Publish</emphasis> button from
-        the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch tab that you just opened. (you may have to scroll down
+        the ECL Watch tab that you just opened. (you may have to scroll down
         in the main window)<figure>
             <title>ECL Watch Publish button</title>
 
@@ -796,12 +796,12 @@
       </listitem>
 
       <listitem>
-        <para>Open the <!-- DNT-Start -->ESP<!-- DNT-End --> page in your browser using the following
-        <!-- DNT-Start -->URL<!-- DNT-End -->:</para>
+        <para>Open the ESP page in your browser using the following
+        URL:</para>
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
-        </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End -->
-        Server's <!-- DNT-Start -->IP<!-- DNT-End --> Address and pppp is the port. The default port is
+        </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
+        Server's IP Address and pppp is the port. The default port is
         8002)</emphasis></para>
 
         <para><figure>
@@ -825,7 +825,7 @@
       </listitem>
 
       <listitem>
-        <para>Enter the name <!-- DNT-Start -->BRYANT<!-- DNT-End --> in the <emphasis
+        <para>Enter the name BRYANT in the <emphasis
         role="bold">lname</emphasis> field.<!--(output xml || output tables... )***--></para>
 
         <para><figure>
@@ -846,10 +846,10 @@
     </orderedlist>
 
     <sect2 id="The_Expected_Result">
-      <!-- DNT-Start --><title>EXPECTED RESULT:</title><!-- DNT-End -->
+      <title>EXPECTED RESULT:</title>
 
       <para>A list of 100 records should display, looking similar to the
-      following (<!-- DNT-Start -->BRYANT<!-- DNT-End --> in last name).</para>
+      following (BRYANT in last name).</para>
 
       <para><figure>
           <title>Result</title>

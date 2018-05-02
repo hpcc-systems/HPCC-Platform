@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ToLowerCase">
-  <!-- DNT-Start --><title>ToLowerCase</title><!-- DNT-End -->
+  <title>ToLowerCase</title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->ToLowerCase<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->ToLowerCase<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Str.ToLowerCase<indexterm>
+      <primary>STD.Str.ToLowerCase</primary>
     </indexterm><indexterm>
-      <primary>Str.<!-- DNT-Start -->ToLowerCase<!-- DNT-End --></primary>
+      <primary>Str.ToLowerCase</primary>
     </indexterm><indexterm>
-      <primary><!-- DNT-Start -->ToLowerCase<!-- DNT-End --></primary>
+      <primary>ToLowerCase</primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->ToLowerCase<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->ToLowerCase<!-- DNT-End --></primary>
+  <para><emphasis role="bold">STD.Uni.ToLowerCase<indexterm>
+      <primary>STD.Uni.ToLowerCase</primary>
     </indexterm><indexterm>
-      <primary>Uni.<!-- DNT-Start -->ToLowerCase<!-- DNT-End --></primary>
+      <primary>Uni.ToLowerCase</primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleToLowerCase<indexterm>
-      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleToLowerCase</primary>
+  <para><emphasis role="bold">STD.Uni.LocaleToLowerCase<indexterm>
+      <primary>STD.Uni.LocaleToLowerCase</primary>
     </indexterm><indexterm>
       <primary>Uni.LocaleToLowerCase</primary>
     </indexterm><indexterm>
@@ -37,13 +37,13 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>source</emphasis></entry>
 
           <entry>A string containing the data to change case.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>locale</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -51,21 +51,21 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->ToLowerCase<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> value, as
+          <entry>ToLowerCase returns a STRING or UNICODE value, as
           appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ToLowerCase<!-- DNT-End --> </emphasis>functions return the
+  <para>The <emphasis role="bold">ToLowerCase </emphasis>functions return the
   <emphasis>source</emphasis> string with all upper case characters converted
   to lower case.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.ToLowerCase('ABCDE'); //A contains 'abcde'
-</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := STD.Str.ToLowerCase('ABCDE'); //A contains 'abcde'
+</programlisting>
 </sect1>

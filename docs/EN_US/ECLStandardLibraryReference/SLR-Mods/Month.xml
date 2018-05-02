@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Month">
-  <!-- DNT-Start --><title>Month</title><!-- DNT-End -->
+  <title>Month</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.Month<indexterm>
+  <para><emphasis role="bold">STD.Date.Month<indexterm>
       <primary>STD.Date.Month</primary>
     </indexterm><indexterm>
       <primary>Date.Month</primary>
     </indexterm><indexterm>
       <primary>Month</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,32 +21,32 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>date</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>date</emphasis></entry>
 
           <entry>A date value in the Date_t format.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->Month<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value in the range of 1 through
+          <entry>Month returns an INTEGER value in the range of 1 through
           12.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->Month<!-- DNT-End --></emphasis> function returns the month
+  <para>The <emphasis role="bold">Month</emphasis> function returns the month
   number from the <emphasis>date</emphasis> value.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 UNSIGNED4 MyDate := 20120101;   //January 1, 2012
   
 M := STD.Date.Month(MyDate);
     //M contains 1, representing January
-  </programlisting><!-- DNT-End -->
+  </programlisting>
 
   <para></para>
 </sect1>

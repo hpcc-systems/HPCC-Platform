@@ -2,32 +2,32 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DATA">
-  <!-- DNT-Start --><title>DATA<indexterm>
+  <title>DATA<indexterm>
       <primary>DATA</primary>
     </indexterm><indexterm>
       <primary>DATA value type</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->DATA<!-- DNT-End -->[</emphasis><emphasis>n</emphasis><emphasis
+  <para><emphasis role="bold">DATA[</emphasis><emphasis>n</emphasis><emphasis
   role="bold">]</emphasis></para>
 
   <para>A "packed hexadecimal<indexterm>
       <primary>packed hexadecimal</primary>
     </indexterm>" data block of <emphasis>n</emphasis> bytes, zero padded (not
-  space-padded). If <emphasis>n </emphasis>is omitted, the <!-- DNT-Start -->DATA<!-- DNT-End --> is variable
+  space-padded). If <emphasis>n </emphasis>is omitted, the DATA is variable
   length to the size needed to contain the result of the cast or passed
-  parameter. Type casting is allowed but only to a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> of the
+  parameter. Type casting is allowed but only to a STRING or UNICODE of the
   same number of bytes.</para>
 
-  <para>This type is particularly useful for containing <!-- DNT-Start -->BLOB<!-- DNT-End --> (Binary Large
+  <para>This type is particularly useful for containing BLOB (Binary Large
   OBject) data. See the Programmer's Guide article <emphasis
-  role="bold">Working with <!-- DNT-Start -->BLOBs<!-- DNT-End --></emphasis> for more information on this
+  role="bold">Working with BLOBs</emphasis> for more information on this
   subject.</para>
 
-  <para>The upper size limit for any <!-- DNT-Start -->DATA<!-- DNT-End --> value is 4<!-- DNT-Start -->GB<!-- DNT-End -->.</para>
+  <para>The upper size limit for any DATA value is 4GB.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>DATA8 MyHexString := x'1234567890ABCDEF'; 
-        // an 8-byte data block - hex values 12 34 56 78 90 AB CD EF</programlisting><!-- DNT-End -->
+  <programlisting>DATA8 MyHexString := x'1234567890ABCDEF'; 
+        // an 8-byte data block - hex values 12 34 56 78 90 AB CD EF</programlisting>
 </sect1>

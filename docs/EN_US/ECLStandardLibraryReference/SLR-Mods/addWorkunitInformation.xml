@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="addWorkunitInformation">
-  <!-- DNT-Start --><title>addWorkunitInformation</title><!-- DNT-End -->
+  <title>addWorkunitInformation</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Log.addWorkunitInformation<indexterm>
+  <para><emphasis role="bold">STD.System.Log.addWorkunitInformation<indexterm>
       <primary>STD.System.Log.addWorkunitInformation</primary>
     </indexterm> <indexterm>
       <primary>System.Log.addWorkunitInformation</primary>
@@ -14,7 +14,7 @@
       <primary>addWorkunitInformation</primary>
     </indexterm>(</emphasis> <emphasis> text </emphasis><emphasis
   role="bold">[</emphasis> <emphasis>, code </emphasis><emphasis role="bold">]
-  )</emphasis></para><!-- DNT-End -->
+  )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -24,13 +24,13 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>text</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>text</emphasis></entry>
 
           <entry>A string containing the text to write.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start --><emphasis>code</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>code</emphasis></entry>
 
           <entry>Optional. The code number to associate with the
           <emphasis>text</emphasis>. If omitted, the default is zero
@@ -38,24 +38,24 @@
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->addWorkunitInformation<!-- DNT-End --> does not return a value.</entry>
+          <entry>addWorkunitInformation does not return a value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->addWorkunitInformation<!-- DNT-End --> </emphasis>action
+  <para>The <emphasis role="bold">addWorkunitInformation </emphasis>action
   writes the <emphasis>text</emphasis> string to the eclagent.log file for the
   workunit, and also displays the <emphasis>code</emphasis> and
-  <emphasis>text</emphasis> in the Info section of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page for the
+  <emphasis>text</emphasis> in the Info section of the ECL Watch page for the
   workunit.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 STD.System.Log.addWorkunitInformation('Got Here',1);    
    //write text to log and display "1: Got Here" as Info
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

@@ -2,10 +2,10 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
-  <!-- DNT-Start --><title>Using ECL Watch 4.x</title><!-- DNT-End -->
+  <title>Using ECL Watch 4.x</title>
 
   <bookinfo>
-    <!-- DNT-Start --><title>Using ECL Watch 4.x</title><!-- DNT-End -->
+    <title>Using ECL Watch 4.x</title>
 
     <mediaobject>
       <imageobject>
@@ -71,37 +71,37 @@
   </bookinfo>
 
   <chapter id="NewECLWatchIntro">
-    <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
+    <title>Introduction</title>
 
-    <para>This document depicts details about the newly redesigned <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.
+    <para>This document depicts details about the newly redesigned ECL Watch.
     The new design is more practical and offers many new features and
-    functionality. The new <!-- DNT-Start -->ECL<!-- DNT-End --> Watch is bundled with the 4.x <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform
+    functionality. The new ECL Watch is bundled with the 4.x HPCC Platform
     software.</para>
 
     <sect1 id="ECLWatch4x">
-      <!-- DNT-Start --><title>ECL Watch 4.x</title><!-- DNT-End -->
+      <title>ECL Watch 4.x</title>
 
-      <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides an interface to the <!-- DNT-Start -->HPCC<!-- DNT-End --> system and allows you
+      <para>ECL Watch provides an interface to the HPCC system and allows you
       to view information and interrogate nodes to confirm all expected
       processes are running. This provides a simple view into the system and a
       means to perform Work Unit and data files maintenance.***</para>
 
-      <para>Using <!-- DNT-Start -->ECL<!-- DNT-End --> watch assumes your <!-- DNT-Start -->HPCC<!-- DNT-End --> system is up and running, able
-      to process jobs, and workunits. You would use the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch interface to
+      <para>Using ECL watch assumes your HPCC system is up and running, able
+      to process jobs, and workunits. You would use the ECL Watch interface to
       both check the status of your jobs, and perform operations on those
       jobs.***</para>
     </sect1>
 
     <sect1 id="ECLWorkunits" role="brk">
-      <!-- DNT-Start --><title>ECL Workunits Page</title><!-- DNT-End -->
+      <title>ECL Workunits Page</title>
 
-      <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Workunits page contains a list of all the <!-- DNT-Start -->ECL<!-- DNT-End --> workunits on
+      <para>The ECL Workunits page contains a list of all the ECL workunits on
       your system. It provides access to more details about the workunits. You
       can also perform actions on the selected workunit using the Workunit
       Action buttons.</para>
 
       <para>To access the workunits page click on the<emphasis role="bold">
-      <!-- DNT-Start -->ECL<!-- DNT-End --></emphasis> icon, then click the <emphasis
+      ECL</emphasis> icon, then click the <emphasis
       role="bold">Workunits</emphasis> link from the navigation sub-menu.
       <figure>
           <title>ECL Files</title>
@@ -114,7 +114,7 @@
           </mediaobject>
         </figure></para>
 
-      <para>The page displays the <!-- DNT-Start -->ECL<!-- DNT-End --> workunits on your system. Choose
+      <para>The page displays the ECL workunits on your system. Choose
       the<emphasis role="bold"> Workunits</emphasis> Navigation tab to display
       the workunits.</para>
 
@@ -206,7 +206,7 @@
       </itemizedlist>
 
       <sect2 id="ECLWatchFilterOptions" role="brk">
-        <!-- DNT-Start --><title>Filter Options</title><!-- DNT-End -->
+        <title>Filter Options</title>
 
         <para>You can filter the workunits displayed on the Workunits tab by
         clicking on the<emphasis role="bold"> Filter</emphasis> Action button.
@@ -235,8 +235,8 @@
           </listitem>
 
           <listitem>
-            <para><emphasis role="bold"><!-- DNT-Start -->WUID<!-- DNT-End --></emphasis> - filter workunits for
-            specific workunit <!-- DNT-Start -->ID<!-- DNT-End --> (wuid).</para>
+            <para><emphasis role="bold">WUID</emphasis> - filter workunits for
+            specific workunit ID (wuid).</para>
           </listitem>
 
           <listitem>
@@ -260,8 +260,8 @@
           </listitem>
 
           <listitem>
-            <para><emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> </emphasis>- filter workunits by
-            specific <!-- DNT-Start -->ECL<!-- DNT-End -->. For example, <emphasis>:=dataset.
+            <para><emphasis role="bold">ECL </emphasis>- filter workunits by
+            specific ECL. For example, <emphasis>:=dataset.
             </emphasis>Supports wildcards.</para>
           </listitem>
 
@@ -325,7 +325,7 @@
           </figure></para>
 
         <sect3 id="ECLWatch_SortingColumns">
-          <!-- DNT-Start --><title>Sorting Columns</title><!-- DNT-End -->
+          <title>Sorting Columns</title>
 
           <para>You can sort a column by clicking on the column heading. Click
           once for ascending, click again to toggle to descending. The
@@ -343,7 +343,7 @@
       </sect2>
 
       <sect2 id="ECLWatchContextMenu" role="brk">
-        <!-- DNT-Start --><title>Context Menu</title><!-- DNT-End -->
+        <title>Context Menu</title>
 
         <para>You can right-click on a workunit to get a context menu of
         actions, including filter options. These are the same set of actions
@@ -462,10 +462,10 @@
           </listitem>
         </itemizedlist>
 
-        <!-- DNT-Start --><!-- added WU Details stuff here --><!-- DNT-End -->
+        <!-- added WU Details stuff here -->
 
         <sect3 id="ECLWatch_PublishActionButton" role="brk">
-          <!-- DNT-Start --><title>Publish Action Button</title><!-- DNT-End -->
+          <title>Publish Action Button</title>
 
           <para>Click on the Publish action button to publish a query. <figure>
               <title>Publish Menu</title>
@@ -482,7 +482,7 @@
           fill in the required values you can press the <emphasis
           role="bold">Submit </emphasis>button to submit your query.</para>
 
-          <para>Options for <!-- DNT-Start -->ECL<!-- DNT-End --> Publish</para>
+          <para>Options for ECL Publish</para>
 
           <itemizedlist>
             <listitem>
@@ -494,8 +494,8 @@
 
           <itemizedlist>
             <listitem>
-              <para><emphasis role="bold">Remote Dali:</emphasis> The <!-- DNT-Start -->IP<!-- DNT-End --> or
-              hostname of the <!-- DNT-Start -->DALI<!-- DNT-End --> to be used to resolve remote files.
+              <para><emphasis role="bold">Remote Dali:</emphasis> The IP or
+              hostname of the DALI to be used to resolve remote files.
               (optional)</para>
             </listitem>
           </itemizedlist>
@@ -516,21 +516,21 @@
 
             <listitem>
               <para><emphasis role="bold">Priority:</emphasis> Sets the
-              priority for the query. Values can be <!-- DNT-Start -->LOW<!-- DNT-End -->, <!-- DNT-Start -->HIGH<!-- DNT-End -->, <!-- DNT-Start -->SLA<!-- DNT-End -->, or <!-- DNT-Start -->NONE<!-- DNT-End -->.
-              <!-- DNT-Start -->NONE<!-- DNT-End --> will clear current setting.</para>
+              priority for the query. Values can be LOW, HIGH, SLA, or NONE.
+              NONE will clear current setting.</para>
             </listitem>
           </itemizedlist>
 
           <itemizedlist>
             <listitem>
-              <para><emphasis role="bold">Allow Foreign <!-- DNT-Start -->Files<!-- DNT-End -->:</emphasis>
+              <para><emphasis role="bold">Allow Foreign Files:</emphasis>
               Check the box to allow the use of foreign files in a Roxie
               query. If a Roxie query references foreign files and this is not
               enabled, publish will fail.</para>
             </listitem>
 
             <listitem>
-              <para><emphasis role="bold">Update Super <!-- DNT-Start -->Files<!-- DNT-End -->:</emphasis> Use
+              <para><emphasis role="bold">Update Super Files:</emphasis> Use
               when a query uses foreign superfiles or a remote Dali. When such
               a query is published the superfiles are copied from the remote
               Dali. If superfiles already exist locally, then the current
@@ -541,7 +541,7 @@
         </sect3>
 
         <sect3 id="ZAP" role="brk">
-          <!-- DNT-Start --><title>Z.A.P. Utility</title><!-- DNT-End -->
+          <title>Z.A.P. Utility</title>
 
           <para>The Zipped Analysis Package (Z.A.P.) button is a utility for
           collecting system information and encapsulating it into a shareable
@@ -550,7 +550,7 @@
           utility packages up information to send for further analysis.</para>
 
           <figure>
-            <!-- DNT-Start --><title>Z.A.P. Button</title><!-- DNT-End -->
+            <title>Z.A.P. Button</title>
 
             <mediaobject>
               <imageobject>
@@ -564,7 +564,7 @@
           opens the Zipped Analysis Package dialog.</para>
 
           <figure>
-            <!-- DNT-Start --><title>The Zipped Analysis Package Dialog</title><!-- DNT-End -->
+            <title>The Zipped Analysis Package Dialog</title>
 
             <mediaobject>
               <imageobject>
@@ -575,7 +575,7 @@
 
           <para>Fill in the corresponding values under Description, History,
           and Timings in the Z.A.P. dialog. Optionally, you can password
-          protect the <!-- DNT-Start -->ZAP<!-- DNT-End --> package and choose to include slave logs. Press the
+          protect the ZAP package and choose to include slave logs. Press the
           <emphasis role="bold">Apply </emphasis>button when finished. The
           Z.A.P. utililty generates a zip file with all the appropriate
           information for troubleshooting.</para>
@@ -585,14 +585,14 @@
           person handling your support request, or you can upload the file
           into the issue tracking system. Before distributing the file, verify
           that the file does not contain any sensitive data, such as
-          personally identifiable information (<!-- DNT-Start -->PII<!-- DNT-End -->).</para>
+          personally identifiable information (PII).</para>
         </sect3>
 
         <sect3 id="ECLWatchSlaveLogDialog">
-          <!-- DNT-Start --><title>Slave Logs</title><!-- DNT-End -->
+          <title>Slave Logs</title>
 
           <figure>
-            <!-- DNT-Start --><title>The Slave Logs Dialog</title><!-- DNT-End -->
+            <title>The Slave Logs Dialog</title>
 
             <mediaobject>
               <imageobject>
@@ -609,7 +609,7 @@
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsOutputsTab" role="brk">
-          <!-- DNT-Start --><title>Outputs tab</title><!-- DNT-End -->
+          <title>Outputs tab</title>
 
           <para>Click on the Outputs tab to see all results.<figure>
               <title>Outputs</title>
@@ -642,28 +642,28 @@
 
           <itemizedlist>
             <listitem>
-              <para><emphasis role="bold"><!-- DNT-Start -->GZIP<!-- DNT-End --></emphasis></para>
+              <para><emphasis role="bold">GZIP</emphasis></para>
             </listitem>
 
             <listitem>
-              <para><emphasis role="bold"><!-- DNT-Start -->ZIP<!-- DNT-End --> </emphasis></para>
+              <para><emphasis role="bold">ZIP </emphasis></para>
             </listitem>
 
             <listitem>
-              <para><emphasis role="bold"><!-- DNT-Start -->XLS<!-- DNT-End -->:</emphasis> Download the output
+              <para><emphasis role="bold">XLS:</emphasis> Download the output
               in an Excel spreadsheet format.</para>
             </listitem>
           </itemizedlist>
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsVisualizations" role="brk">
-          <!-- DNT-Start --><title>Visualizations</title><!-- DNT-End -->
+          <title>Visualizations</title>
 
           <para>You can see visual representations of select workunits.
-          <!-- DNT-Start -->Visualizations<!-- DNT-End --> are available from the workunit <emphasis
+          Visualizations are available from the workunit <emphasis
           role="bold">Outputs</emphasis> tab. The Visualize tab provides a
           number of chart types you can generate if you have included
-          additional resources in your <!-- DNT-Start -->ECL<!-- DNT-End --> code via the enhanced manifest
+          additional resources in your ECL code via the enhanced manifest
           mechanism (such as an index web page). <figure>
               <title>Visualization</title>
 
@@ -674,7 +674,7 @@
               </mediaobject>
             </figure></para>
 
-          <para>To access <!-- DNT-Start -->Visualizations<!-- DNT-End -->, click on the Outputs tab from the
+          <para>To access Visualizations, click on the Outputs tab from the
           selected workunit details page, then select the <emphasis
           role="bold">Visualize</emphasis> tab. You can view different
           visualization types by clicking on the drop list on the Visualize
@@ -683,7 +683,7 @@
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsInputsTab" role="brk">
-          <!-- DNT-Start --><title>Inputs tab</title><!-- DNT-End -->
+          <title>Inputs tab</title>
 
           <para>Click on the <emphasis role="bold">Inputs</emphasis> tab to
           see the workunit's input files. The input files are the source files
@@ -727,7 +727,7 @@
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsGraphsTab">
-          <!-- DNT-Start --><title>Graphs tab</title><!-- DNT-End -->
+          <title>Graphs tab</title>
 
           <para>Click on the <emphasis role="bold">Graphs</emphasis> tab to
           see the graphs produced by the workunit. <figure>
@@ -746,7 +746,7 @@
         </sect3>
 
         <sect3 id="ECLWatchECLWorkunitsTimersTab" role="brk">
-          <!-- DNT-Start --><title>Timers tab</title><!-- DNT-End -->
+          <title>Timers tab</title>
 
           <para>Click on the <emphasis role="bold">Timers</emphasis> tab to
           see the workunit timings. <figure>
@@ -769,14 +769,14 @@
           was used in the work unit.</para>
 
           <sect4 id="ECLWatch_ECLWorkunitsStatsTab">
-            <!-- DNT-Start --><title>Stats</title><!-- DNT-End -->
+            <title>Stats</title>
 
-            <para>On the workunit Timers tab is another tab for <!-- DNT-Start -->Stats<!-- DNT-End -->. The
-            <!-- DNT-Start -->Stats<!-- DNT-End --> tab is a visual representation of all the workunit
+            <para>On the workunit Timers tab is another tab for Stats. The
+            Stats tab is a visual representation of all the workunit
             timings.</para>
 
             <figure>
-              <!-- DNT-Start --><title>Stats</title><!-- DNT-End -->
+              <title>Stats</title>
 
               <mediaobject>
                 <imageobject>
@@ -785,17 +785,17 @@
               </mediaobject>
             </figure>
 
-            <para>Select the timer values from the drop list on the <!-- DNT-Start -->Stats<!-- DNT-End --> tab
+            <para>Select the timer values from the drop list on the Stats tab
             to view the various charts and graphs.</para>
           </sect4>
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsWorkflowsTab">
-          <!-- DNT-Start --><title>Workflows tab</title><!-- DNT-End -->
+          <title>Workflows tab</title>
 
           <para>The workflows tab only exists if you have an attribute
           scheduled. There are multiple workflows when your code contains more
-          than one <!-- DNT-Start -->WHEN<!-- DNT-End --> statement.</para>
+          than one WHEN statement.</para>
 
           <para><emphasis role="bold">Counts:</emphasis> How many "events" are
           scheduled to happen.</para>
@@ -805,10 +805,10 @@
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsQueriesTab">
-          <!-- DNT-Start --><title>Queries tab</title><!-- DNT-End -->
+          <title>Queries tab</title>
 
-          <para><!-- DNT-Start -->Queries<!-- DNT-End --> will only appear in the work unit details if the work
-          unit is a published <!-- DNT-Start -->QUERY<!-- DNT-End -->. Displays what queries were published from
+          <para>Queries will only appear in the work unit details if the work
+          unit is a published QUERY. Displays what queries were published from
           that work unit. Same as the queries tab: suspend, unsuspend,
           activate or deactivate. delete tabs with out any data.</para>
 
@@ -816,11 +816,11 @@
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsHelpersTab">
-          <!-- DNT-Start --><title>Helpers tab</title><!-- DNT-End -->
+          <title>Helpers tab</title>
 
           <para>The Helpers tab display several helpful elements. Which show
-          the <!-- DNT-Start -->ECL<!-- DNT-End -->. The work unit <!-- DNT-Start -->XML<!-- DNT-End -->. Archived query, The <!-- DNT-Start -->DLL<!-- DNT-End -->. S. O.., Thor
-          log, <!-- DNT-Start -->ECL<!-- DNT-End --> Agent log, and Thor slave log. The relevant logs files. If
+          the ECL. The work unit XML. Archived query, The DLL. S. O.., Thor
+          log, ECL Agent log, and Thor slave log. The relevant logs files. If
           a Roxy log only logs the relevant sections for the selected work
           unit.</para>
 
@@ -829,24 +829,24 @@
         </sect3>
 
         <sect3 id="WUDetails_ECL__TAB">
-          <!-- DNT-Start --><title>ECL Tab</title><!-- DNT-End -->
+          <title>ECL Tab</title>
 
-          <para>Shows the <!-- DNT-Start -->ECL<!-- DNT-End --> code for that workunit. It is the same thing as
-          the Helpers <!-- DNT-Start -->ECL<!-- DNT-End --> link.</para>
+          <para>Shows the ECL code for that workunit. It is the same thing as
+          the Helpers ECL link.</para>
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsXMLTab">
-          <!-- DNT-Start --><title>XML tab</title><!-- DNT-End -->
+          <title>XML tab</title>
 
-          <para>The workunits <!-- DNT-Start -->XML<!-- DNT-End --> record as stored in Dali.</para>
+          <para>The workunits XML record as stored in Dali.</para>
         </sect3>
       </sect2>
     </sect1>
 
     <sect1 id="DFUWorkunits" role="brk">
-      <!-- DNT-Start --><title>DFU Workunits Page</title><!-- DNT-End -->
+      <title>DFU Workunits Page</title>
 
-      <para>The <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits page contains a list of all the <!-- DNT-Start -->DFU<!-- DNT-End --> workunits on
+      <para>The DFU Workunits page contains a list of all the DFU workunits on
       your system. It provides access to more details about the workunits. You
       can also perform actions on the selected workunit using the Workunit
       Action buttons. <figure>
@@ -859,11 +859,11 @@
           </mediaobject>
         </figure></para>
 
-      <para>To access the <!-- DNT-Start -->DFU<!-- DNT-End --> workunits page, click on the<emphasis
-      role="bold"> <!-- DNT-Start -->Files<!-- DNT-End --> </emphasis>link on the navigation pane, then click
+      <para>To access the DFU workunits page, click on the<emphasis
+      role="bold"> Files </emphasis>link on the navigation pane, then click
       the <emphasis role="bold">Workunits</emphasis> link from the navigation
-      sub-menu. This action opens the <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits page. The page displays
-      the <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits on your system.</para>
+      sub-menu. This action opens the DFU Workunits page. The page displays
+      the DFU Workunits on your system.</para>
 
       <para><figure>
           <title>Browse DFU Workunits</title>
@@ -950,7 +950,7 @@
       their own tab.</para>
 
       <sect2 id="DFU_WU_Filter_Options" role="brk">
-        <!-- DNT-Start --><title>DFU Workunits Filter Options</title><!-- DNT-End -->
+        <title>DFU Workunits Filter Options</title>
 
         <para>You can filter the workunits displayed on the Workunits tab by
         clicking on the<emphasis role="bold"> Filter</emphasis> Action button.
@@ -969,7 +969,7 @@
             </mediaobject>
           </figure></para>
 
-        <para>The <!-- DNT-Start -->DFU<!-- DNT-End --> Workunit filter options allow you to filter workunits
+        <para>The DFU Workunit filter options allow you to filter workunits
         using the specified criteria. Workunits can be filtered by:</para>
 
         <itemizedlist>
@@ -1022,7 +1022,7 @@
           </figure></para>
 
         <sect3 id="DFU_Column_Sorting">
-          <!-- DNT-Start --><title>Sorting Columns</title><!-- DNT-End -->
+          <title>Sorting Columns</title>
 
           <para>You can sort a column by clicking on the column heading. Click
           once for ascending, click again to toggle to descending. The
@@ -1040,7 +1040,7 @@
       </sect2>
 
       <sect2 id="DFU_WorunitDetails" role="brk">
-        <!-- DNT-Start --><title>DFU Workunit Details Page</title><!-- DNT-End -->
+        <title>DFU Workunit Details Page</title>
 
         <para>When you open the selected workunit(s) you will see the workunit
         details. The Workunit Details tab provides information about a
@@ -1099,10 +1099,10 @@
           </itemizedlist></para>
 
         <sect3 id="ECLWatch_DFUWorkunits_XMLTab">
-          <!-- DNT-Start --><title>XML Tab</title><!-- DNT-End -->
+          <title>XML Tab</title>
 
-          <para>The <!-- DNT-Start -->XML<!-- DNT-End --> Tab on the workunit details page allows you to see the
-          <!-- DNT-Start -->XML<!-- DNT-End --> representation of the workunit. <figure>
+          <para>The XML Tab on the workunit details page allows you to see the
+          XML representation of the workunit. <figure>
               <title>Workunit Detail XML tab</title>
 
               <mediaobject>
@@ -1114,10 +1114,10 @@
         </sect3>
 
         <sect3 id="ECLWatch_DFUWorkunits_SourceTab">
-          <!-- DNT-Start --><title>Source Tab</title><!-- DNT-End -->
+          <title>Source Tab</title>
 
           <para>The Source Tab on the workunit details page allows you to view
-          the source file(s) of the <!-- DNT-Start -->DFU<!-- DNT-End --> workunit. <figure>
+          the source file(s) of the DFU workunit. <figure>
               <title>Workunit Detail Source tab</title>
 
               <mediaobject>
@@ -1129,10 +1129,10 @@
         </sect3>
 
         <sect3 id="ECLWatch_DFUWorkunits_TargetTab">
-          <!-- DNT-Start --><title>Target Tab</title><!-- DNT-End -->
+          <title>Target Tab</title>
 
           <para>The Target Tab on the workunit details page allows you to view
-          the target of the <!-- DNT-Start -->DFU<!-- DNT-End --> workunit.<figure>
+          the target of the DFU workunit.<figure>
               <title>Workunit Detail Target tab</title>
 
               <mediaobject>
@@ -1146,21 +1146,21 @@
     </sect1>
 
     <sect1 id="ECLWatchLogicalFiles" role="brk">
-      <!-- DNT-Start --><title>Files</title><!-- DNT-End -->
+      <title>Files</title>
 
-      <para>The <emphasis role="bold"><!-- DNT-Start -->Files<!-- DNT-End --></emphasis> page contains features
+      <para>The <emphasis role="bold">Files</emphasis> page contains features
       relating to the process of getting data files on to your cluster,
       managing these files and also the workunits associated with them. Click
-      on the<emphasis role="bold"> <!-- DNT-Start -->Files<!-- DNT-End --></emphasis> icon for access to the
-      <!-- DNT-Start -->Files<!-- DNT-End --> features. You can also perform actions on selected files and
+      on the<emphasis role="bold"> Files</emphasis> icon for access to the
+      Files features. You can also perform actions on selected files and
       superfiles using the Workunit Action buttons.</para>
 
       <sect2 id="Logical_Files_Page" role="nobrk">
-        <!-- DNT-Start --><title>Logical Files Page</title><!-- DNT-End -->
+        <title>Logical Files Page</title>
 
-        <para>To access the <!-- DNT-Start -->Files<!-- DNT-End --> page click on the <emphasis
-        role="bold"><!-- DNT-Start -->Files<!-- DNT-End --> </emphasis>icon, then click the <emphasis
-        role="bold">Logical <!-- DNT-Start -->Files<!-- DNT-End --></emphasis> link from the navigation
+        <para>To access the Files page click on the <emphasis
+        role="bold">Files </emphasis>icon, then click the <emphasis
+        role="bold">Logical Files</emphasis> link from the navigation
         sub-menu.</para>
 
         <para><figure>
@@ -1287,7 +1287,7 @@
         <para><itemizedlist>
             <listitem>
               <para>Press the<emphasis role="bold"> Open</emphasis> button to
-              open the Logical <!-- DNT-Start -->Files<!-- DNT-End --> Details page(s).</para>
+              open the Logical Files Details page(s).</para>
             </listitem>
 
             <listitem>
@@ -1298,7 +1298,7 @@
             <listitem>
               <para>Press the <emphasis role="bold">Remote Copy</emphasis>
               button to open the dialog where you can copy files from a
-              foreign <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform. You will need premission to access the
+              foreign HPCC Platform. You will need premission to access the
               foreign Dali server.</para>
             </listitem>
 
@@ -1342,7 +1342,7 @@
         to open a tab with the details for each selected file.</para>
 
         <sect3 id="ECLWatch_Files_RemoteCopy">
-          <!-- DNT-Start --><title>Remote Copy</title><!-- DNT-End -->
+          <title>Remote Copy</title>
 
           <para>Press the <emphasis role="bold">Remote Copy</emphasis> button
           to open the dialog where you can copy files to or from a foreign
@@ -1363,7 +1363,7 @@
         </sect3>
 
         <sect3 id="CopyLogicalFile">
-          <!-- DNT-Start --><title>Copy File</title><!-- DNT-End -->
+          <title>Copy File</title>
 
           <para>Press the <emphasis role="bold">Copy</emphasis> button to
           display the copy drop menu, with additional file copy
@@ -1371,7 +1371,7 @@
         </sect3>
 
         <sect3 id="LogicalFile_Sorting">
-          <!-- DNT-Start --><title>Sorting Columns</title><!-- DNT-End -->
+          <title>Sorting Columns</title>
 
           <para>You can sort a column by clicking on the column heading. Click
           once for ascending, click again to toggle to descending. The
@@ -1388,10 +1388,10 @@
         </sect3>
 
         <sect3 id="LogicalFileFilterOptions" role="brk">
-          <!-- DNT-Start --><title>Logical Files Filter Options</title><!-- DNT-End -->
+          <title>Logical Files Filter Options</title>
 
           <para>You can filter the logIcal files displayed on the Logical
-          <!-- DNT-Start -->Files<!-- DNT-End --> tab by clicking on the<emphasis role="bold"> Filter</emphasis>
+          Files tab by clicking on the<emphasis role="bold"> Filter</emphasis>
           Action button. The Filter sub-menu displays. Fill in values to
           specify the filter criteria, then press the <emphasis
           role="bold">Apply</emphasis> button.</para>
@@ -1490,9 +1490,9 @@
       </sect2>
 
       <sect2 id="LogicalFilesDetailsPage" role="brk">
-        <!-- DNT-Start --><title>Logical Files Details</title><!-- DNT-End -->
+        <title>Logical Files Details</title>
 
-        <para>The Logical <!-- DNT-Start -->Files<!-- DNT-End --> Detail page shows specific details for the
+        <para>The Logical Files Detail page shows specific details for the
         file selected. You select the file to view by clicking the appropriate
         tab from the Navigation Tabs at the top of the page.</para>
 
@@ -1524,22 +1524,22 @@
             </listitem>
 
             <listitem>
-              <para>Select the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --></emphasis> tab to
-              view the <!-- DNT-Start -->ECL<!-- DNT-End --> code.</para>
+              <para>Select the <emphasis role="bold">ECL</emphasis> tab to
+              view the ECL code.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <emphasis role="bold"><!-- DNT-Start -->DEF<!-- DNT-End --></emphasis> tab to
-              view the <!-- DNT-Start -->ECL<!-- DNT-End --> definitions.</para>
+              <para>Select the <emphasis role="bold">DEF</emphasis> tab to
+              view the ECL definitions.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <emphasis role="bold"><!-- DNT-Start -->XML<!-- DNT-End --></emphasis> tab to
-              view the <!-- DNT-Start -->XML<!-- DNT-End --> representation of the logical file.</para>
+              <para>Select the <emphasis role="bold">XML</emphasis> tab to
+              view the XML representation of the logical file.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <emphasis role="bold"><!-- DNT-Start -->Superfiles<!-- DNT-End --></emphasis> tab
+              <para>Select the <emphasis role="bold">Superfiles</emphasis> tab
               (when enabled) to display the superfile information.</para>
             </listitem>
 
@@ -1549,7 +1549,7 @@
             </listitem>
 
             <listitem>
-              <para>Select the <emphasis role="bold"><!-- DNT-Start -->Queries<!-- DNT-End --></emphasis> tab to
+              <para>Select the <emphasis role="bold">Queries</emphasis> tab to
               see which queries use use which logical files.</para>
             </listitem>
 
@@ -1568,7 +1568,7 @@
 
             <listitem>
               <para>Select the <emphasis role="bold">History</emphasis> tab to
-              display a list of <!-- DNT-Start -->DFU<!-- DNT-End --> Actions taken such as copy, remote copy,
+              display a list of DFU Actions taken such as copy, remote copy,
               spray, etc. for the file.</para>
             </listitem>
           </itemizedlist>On the File Details Summary tab, you can perform some
@@ -1609,13 +1609,13 @@
         </itemizedlist>
 
         <sect3 id="ECLWatch_LogicalFiles_SuperFiles" role="brk">
-          <!-- DNT-Start --><title>Superfiles</title><!-- DNT-End -->
+          <title>Superfiles</title>
 
-          <para>A superfile is a managed list of subfiles (Logical <!-- DNT-Start -->Files<!-- DNT-End -->)
+          <para>A superfile is a managed list of subfiles (Logical Files)
           treated as a single logical entity. When a file is a superfile, the
           <emphasis role="bold">Summary</emphasis> tab displays the superfile
           details, such as each subfile. Select a superfile from the Logical
-          <!-- DNT-Start -->Files<!-- DNT-End --> list, then press the Open action button. This displays the
+          Files list, then press the Open action button. This displays the
           superfile details page.<figure>
               <title>Superfile Details page</title>
 
@@ -1661,10 +1661,10 @@
     </sect1>
 
     <sect1 id="Landing_Zones" vendor="eclwatchSS">
-      <!-- DNT-Start --><title>Landing Zones</title><!-- DNT-End -->
+      <title>Landing Zones</title>
 
       <para>To access the Landing Zones page click on the <emphasis
-      role="bold"><!-- DNT-Start -->Files<!-- DNT-End --></emphasis> icon, then click the <emphasis
+      role="bold">Files</emphasis> icon, then click the <emphasis
       role="bold">Landing Zones</emphasis> link from the navigation sub-menu.
       The Landing Zone link displays the Landing Zones page. The Landing Zone
       Page shows you each landing zone you have configured for your cluster
@@ -1686,7 +1686,7 @@
       page.</para>
 
       <sect2 id="Upload_Files">
-        <!-- DNT-Start --><title>Upload files</title><!-- DNT-End -->
+        <title>Upload files</title>
 
         <para>You can upload files to your landing zone from the Landing Zone
         page. <figure>
@@ -1716,8 +1716,8 @@
                       <entry><inlinegraphic
                       fileref="../../images/tip.jpg" /></entry>
 
-                      <entry>The upload utility in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch is limited by the
-                      browser's file size limitation. This is typically 4 <!-- DNT-Start -->GB<!-- DNT-End -->.
+                      <entry>The upload utility in ECL Watch is limited by the
+                      browser's file size limitation. This is typically 4 GB.
                       For production systems, we recommend a secure copy
                       protocol (scp) utility.</entry>
                     </row>
@@ -1758,7 +1758,7 @@
       </sect2>
 
       <sect2 id="Download_Files">
-        <!-- DNT-Start --><title>Download files</title><!-- DNT-End -->
+        <title>Download files</title>
 
         <para>You can download files from your landing zone to your computer.
         <orderedlist>
@@ -1776,7 +1776,7 @@
       </sect2>
 
       <sect2 id="Delete_Files">
-        <!-- DNT-Start --><title>Delete files</title><!-- DNT-End -->
+        <title>Delete files</title>
 
         <para>You can delete files from your landing zone. <orderedlist>
             <listitem>
@@ -1792,7 +1792,7 @@
       </sect2>
 
       <sect2 id="HexPreview" role="brk">
-        <!-- DNT-Start --><title>Hex Preview</title><!-- DNT-End -->
+        <title>Hex Preview</title>
 
         <para>The Hex Preview shows the contents of a file on the landing zone
         in hexadecimal form. If the file is large, then only the first 32k
@@ -1826,22 +1826,22 @@
         using the spinbox controls on the <emphasis
         role="bold">Width</emphasis> box.</para>
 
-        <para>If you have an <!-- DNT-Start -->EBCDIC<!-- DNT-End --> file check the box next to <emphasis
-        role="bold"><!-- DNT-Start -->EBCDIC<!-- DNT-End -->:</emphasis> for it to display properly.</para>
+        <para>If you have an EBCDIC file check the box next to <emphasis
+        role="bold">EBCDIC:</emphasis> for it to display properly.</para>
       </sect2>
 
-      <!-- DNT-Start --><!-- ***Moved SPRAY Files Section over to DH-Mod1.xml: to avoid duplicate data*** --><!-- DNT-End -->
+      <!-- ***Moved SPRAY Files Section over to DH-Mod1.xml: to avoid duplicate data*** -->
     </sect1>
 
     <sect1 id="Pub_Query">
-      <!-- DNT-Start --><title>Published Queries</title><!-- DNT-End -->
+      <title>Published Queries</title>
 
-      <para>The <!-- DNT-Start -->Queries<!-- DNT-End --> page provides access to published <!-- DNT-Start -->Queries<!-- DNT-End --> on all
-      clusters in an environment. To access the <!-- DNT-Start -->Queries<!-- DNT-End --> page click the
-      Published <!-- DNT-Start -->Queries<!-- DNT-End --> link from the Navigation pane in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+      <para>The Queries page provides access to published Queries on all
+      clusters in an environment. To access the Queries page click the
+      Published Queries link from the Navigation pane in ECL Watch.</para>
 
       <sect2 id="ECLWatch_Queries">
-        <!-- DNT-Start --><title>Queries</title><!-- DNT-End -->
+        <title>Queries</title>
 
         <para>Click on any link from the <emphasis
         role="bold">Targets</emphasis> page to displays that target page. The
@@ -1901,12 +1901,12 @@
     </sect1>
 
     <sect1 id="Operations">
-      <!-- DNT-Start --><title>Operations</title><!-- DNT-End -->
+      <title>Operations</title>
 
-      <para>The <!-- DNT-Start -->Operations<!-- DNT-End --> page provides access to several system
-      administrator tasks you can perform on your <!-- DNT-Start -->HPCC<!-- DNT-End --> system. To access the
-      <!-- DNT-Start -->Operations<!-- DNT-End --> page click the <!-- DNT-Start -->Operations<!-- DNT-End --> link from the Navigation pane in
-      <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+      <para>The Operations page provides access to several system
+      administrator tasks you can perform on your HPCC system. To access the
+      Operations page click the Operations link from the Navigation pane in
+      ECL Watch.</para>
 
       <para>More to come...</para>
     </sect1>

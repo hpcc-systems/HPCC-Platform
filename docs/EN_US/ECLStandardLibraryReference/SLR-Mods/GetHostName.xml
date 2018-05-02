@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetHostName">
-  <!-- DNT-Start --><title>GetHostName</title><!-- DNT-End -->
+  <title>GetHostName</title>
 
-  <!-- DNT-Start --><para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
   STD.System.Util.GetHostName<indexterm>
       <primary>STD.System.Util.GetHostName</primary>
     </indexterm> <indexterm>
@@ -14,7 +14,7 @@
     </indexterm> <indexterm>
       <primary>GetHostName</primary>
     </indexterm>(</emphasis> <emphasis> ip </emphasis> <emphasis
-  role="bold">);</emphasis></para><!-- DNT-End -->
+  role="bold">);</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -24,30 +24,30 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>ip</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>ip</emphasis></entry>
 
-          <entry>A null-terminated string containing the <!-- DNT-Start -->IP<!-- DNT-End --> address of the
+          <entry>A null-terminated string containing the IP address of the
           remote machine.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->GetHostName<!-- DNT-End --> returns returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> (null-terminated)
+          <entry>GetHostName returns returns a VARSTRING (null-terminated)
           value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->GetHostName<!-- DNT-End --> </emphasis>function does a
-  reverse <!-- DNT-Start -->DNS<!-- DNT-End --> lookup to return the host name for the machine at the specified
+  <para>The <emphasis role="bold">GetHostName </emphasis>function does a
+  reverse DNS lookup to return the host name for the machine at the specified
   <emphasis>ip</emphasis> address.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IP   := '10.150.254.6';
+  <programlisting format="linespecific">IP   := '10.150.254.6';
    
 OUTPUT(STD.System.Util.GetHostName(IP));
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>

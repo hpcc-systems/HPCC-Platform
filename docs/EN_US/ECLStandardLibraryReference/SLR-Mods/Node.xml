@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Node">
-  <!-- DNT-Start --><title>Node</title><!-- DNT-End -->
+  <title>Node</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Thorlib.Node<indexterm>
+  <para><emphasis role="bold">STD.System.Thorlib.Node<indexterm>
       <primary>STD.System.Thorlib.Node</primary>
     </indexterm><indexterm>
       <primary>System.Thorlib.Node</primary>
@@ -13,7 +13,7 @@
     </indexterm><indexterm>
       <primary>Node</primary>
     </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,19 +23,19 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->Node<!-- DNT-End --> returns an <!-- DNT-Start -->UNSIGNED<!-- DNT-End --> <!-- DNT-Start -->INTEGER<!-- DNT-End -->4 value.</entry>
+          <entry>Node returns an UNSIGNED INTEGER4 value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->Node<!-- DNT-End --> </emphasis>function returns the
+  <para>The <emphasis role="bold">Node </emphasis>function returns the
   (zero-based) number of the Data Refinery (Thor) or Rapid Data Delivery
   Engine (Roxie) node.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.System.Thorlib.Node();</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := STD.System.Thorlib.Node();</programlisting>
 </sect1>

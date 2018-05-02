@@ -2,17 +2,17 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WHEN">
-  <!-- DNT-Start --><title>WHEN</title><!-- DNT-End -->
+  <title>WHEN</title>
 
-  <para><emphasis>action </emphasis><emphasis role="bold">: <!-- DNT-Start -->WHEN<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->WHEN<!-- DNT-End --></primary>
+  <para><emphasis>action </emphasis><emphasis role="bold">: WHEN<indexterm>
+      <primary>WHEN</primary>
     </indexterm>(</emphasis><emphasis> event </emphasis><emphasis
   role="bold">[</emphasis><emphasis> ,</emphasis><emphasis
-  role="bold"><!-- DNT-Start -->COUNT<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->COUNT<!-- DNT-End --></primary>
+  role="bold">COUNT<indexterm>
+      <primary>COUNT</primary>
     </indexterm>(</emphasis><emphasis> repeat </emphasis><emphasis
   role="bold">) ] ) </emphasis><indexterm>
-      <primary><!-- DNT-Start -->WHEN<!-- DNT-End --> workflow service</primary>
+      <primary>WHEN workflow service</primary>
     </indexterm>;</para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -23,22 +23,22 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>action</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>action</emphasis></entry>
 
-            <entry>Any valid <!-- DNT-Start -->ECL<!-- DNT-End --> Action to execute.</entry>
+            <entry>Any valid ECL Action to execute.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>event</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>event</emphasis></entry>
 
             <entry>The event that triggers action execution. This may be
-            either the <!-- DNT-Start -->EVENT<!-- DNT-End --> or <!-- DNT-Start -->CRON<!-- DNT-End --> functions, <!-- DNT-Start -->EVENTNAME<!-- DNT-End --> or the name of an
-            <!-- DNT-Start -->EVENT<!-- DNT-End --> (as a shorthand for <!-- DNT-Start -->EVENT<!-- DNT-End -->(event,'*')), or any attribute
+            either the EVENT or CRON functions, EVENTNAME or the name of an
+            EVENT (as a shorthand for EVENT(event,'*')), or any attribute
             defined with those functions.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>COUNT</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>COUNT</emphasis></entry>
 
             <entry>Optional. Specifies the number of events to trigger
             instances of the action. If omitted, the default is unlimited
@@ -49,7 +49,7 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>repeat</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>repeat</emphasis></entry>
 
             <entry>An integer expression.</entry>
           </row>
@@ -57,13 +57,13 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End --> </emphasis>service executes the
+  <para>The <emphasis role="bold">WHEN </emphasis>service executes the
   <emphasis>action </emphasis>whenever the <emphasis>event
   </emphasis>occurs.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>IMPORT STD;
+  <programlisting>IMPORT STD;
 IF (STD.File.FileExists('test::myfile'),
      STD.File.DeleteLogicalFile('test::myfile'));
      //deletes the file if it already exists
@@ -90,9 +90,9 @@ IF (STD.File.FileExists('test::myfile'),
   BUILD(teenagers) : WHEN(events.dailyAtMidnight);
   BUILD(oldies) : WHEN(events.dailyAt(6));
   BUILD(oldies) : WHEN(EVENT('FileDropped', 'x'));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>See Also: <link linkend="EVENT"><!-- DNT-Start -->EVENT<!-- DNT-End --></link>, <link
-  linkend="CRON"><!-- DNT-Start -->CRON<!-- DNT-End --></link>, <link linkend="NOTIFY"><!-- DNT-Start -->NOTIFY<!-- DNT-End --></link>, <link
-  linkend="WAIT"><!-- DNT-Start -->WAIT<!-- DNT-End --></link></para>
+  <para>See Also: <link linkend="EVENT">EVENT</link>, <link
+  linkend="CRON">CRON</link>, <link linkend="NOTIFY">NOTIFY</link>, <link
+  linkend="WAIT">WAIT</link></para>
 </sect1>

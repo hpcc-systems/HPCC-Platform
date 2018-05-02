@@ -2,11 +2,11 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="likely">
-  <!-- DNT-Start --><title>LIKELY and UNLIKELY</title><!-- DNT-End -->
+  <title>LIKELY and UNLIKELY</title>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-  :=<emphasis role="bold"> ] <!-- DNT-Start -->LIKELY<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->LIKELY<!-- DNT-End --></primary>
+  :=<emphasis role="bold"> ] LIKELY<indexterm>
+      <primary>LIKELY</primary>
     </indexterm>(</emphasis><emphasis>filtercondition</emphasis><emphasis
   role="bold">, [</emphasis><emphasis> likelihood </emphasis><emphasis
   role="bold">] </emphasis><emphasis role="bold">);</emphasis></para>
@@ -23,13 +23,13 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>filtercondition</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>filtercondition</emphasis></entry>
 
             <entry>A filter condition for the hint.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>likelihood</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>likelihood</emphasis></entry>
 
             <entry>The probability value expressed in a decimal value between
             0 and 1.</entry>
@@ -38,22 +38,22 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <!-- DNT-Start -->LIKELY<!-- DNT-End -->/<!-- DNT-Start -->UNLIKELY<!-- DNT-End --> hint can be wrapped around a filter condition to
+  <para>The LIKELY/UNLIKELY hint can be wrapped around a filter condition to
   indicate to the code generator the likelihood that the filter condition will
   filter the record.</para>
 
-  <para><!-- DNT-Start -->LIKELY<!-- DNT-End --> specifies that the filter condition is likely to match most
-  records. <!-- DNT-Start -->UNLIKELY<!-- DNT-End --> specifies that very few records are likely to be
+  <para>LIKELY specifies that the filter condition is likely to match most
+  records. UNLIKELY specifies that very few records are likely to be
   matched.</para>
 
-  <para>Specific probability value may be provided for <!-- DNT-Start -->LIKELY<!-- DNT-End -->. The probability
+  <para>Specific probability value may be provided for LIKELY. The probability
   value is decimal value greater than 0 and less than 1. The closer this value
   is to 1.0 the more likely that the filter condition is likely to match a
   record. The closer the value is to 0.0 the less likely the filter condition
   is to match records. The code generator makes use of the likelihood
   information to produce better code.</para>
 
-  <para>The code generator uses the <!-- DNT-Start -->LIKELY<!-- DNT-End -->/<!-- DNT-Start -->UNLIKELY<!-- DNT-End --> hint together with the
+  <para>The code generator uses the LIKELY/UNLIKELY hint together with the
   count of usage, to determine the cost of spilling and the cost of
   re-filtering the dataset every time it is used. Spills are only be generated
   when the cost of spilling is lower than the cost of re-filtering the dataset
@@ -64,17 +64,17 @@
   than 100. The filter is expected to retain 99.9% of records. This filter
   result is used by 3 different activities. The cost of spilling the results
   of the filter is likely to be significantly higher than the simply
-  re-filtering the input dataset every time it used. <!-- DNT-Start -->LIKELY<!-- DNT-End --> can be used to
+  re-filtering the input dataset every time it used. LIKELY can be used to
   share this likelihood information with the code generator so that it may
   make sensible decisions regarding when to spill.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>PeopleYoungerThan100 := AllPeople( LIKELY(age &lt; 100, 0.999) );
+  <programlisting>PeopleYoungerThan100 := AllPeople( LIKELY(age &lt; 100, 0.999) );
 // Probably not worth spilling PeopleYoungerThan100
 
 PeopleOlderThan100 := AllPeople( UNLIKELY(age&gt;100) );
-// Probably worth spilling even if PeopleOlderThan100 is used by only a couple of activities</programlisting><!-- DNT-End -->
+// Probably worth spilling even if PeopleOlderThan100 is used by only a couple of activities</programlisting>
 
   <para></para>
 </sect1>

@@ -2,10 +2,10 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
-  <!-- DNT-Start --><title>HPCC System Administrator's Guide</title><!-- DNT-End -->
+  <title>HPCC System Administrator's Guide</title>
 
   <bookinfo>
-    <!-- DNT-Start --><title>HPCC System Administrator's Guide</title><!-- DNT-End -->
+    <title>HPCC System Administrator's Guide</title>
 
     <mediaobject>
       <imageobject>
@@ -29,7 +29,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -64,30 +64,30 @@
   </bookinfo>
 
   <chapter id="HPCC_Systems_Administration">
-    <!-- DNT-Start --><title>Introducing HPCC Systems<superscript>®</superscript>
-    Administraton</title><!-- DNT-End -->
+    <title>Introducing HPCC Systems<superscript>®</superscript>
+    Administraton</title>
 
     <sect1 id="HPCC_SysAdminIntro" role="nobrk">
-      <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
+      <title>Introduction</title>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> (High Performance Computing Cluster) is a massive
+      <para>HPCC (High Performance Computing Cluster) is a massive
       parallel-processing computing platform that solves Big Data
       problems.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> stores and processes large quantities of data, processing
+      <para>HPCC stores and processes large quantities of data, processing
       billions of records per second using massive parallel processing
       technology. Large amounts of data across disparate data sources can be
-      accessed, analyzed, and manipulated in fractions of seconds. <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      accessed, analyzed, and manipulated in fractions of seconds. HPCC
       functions as both a processing and a distributed data storage
       environment, capable of analyzing terabytes of information.</para>
     </sect1>
 
     <sect1 id="HPCC_Architectural_Overview">
-      <!-- DNT-Start --><title>Architectural Overview</title><!-- DNT-End -->
+      <title>Architectural Overview</title>
 
-      <para>An <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> Platform consists of
-      the following components: <!-- DNT-Start -->Thor<!-- DNT-End -->, <!-- DNT-Start -->Roxie<!-- DNT-End -->, <!-- DNT-Start -->ESP<!-- DNT-End --> Server, <!-- DNT-Start -->Dali<!-- DNT-End -->, <!-- DNT-Start -->Sasha<!-- DNT-End -->, <!-- DNT-Start -->DFU<!-- DNT-End -->
-      Server, and <!-- DNT-Start -->ECLCC<!-- DNT-End --> Server. <!-- DNT-Start -->LDAP<!-- DNT-End --> security is optionally available.</para>
+      <para>An HPCC Systems<superscript>®</superscript> Platform consists of
+      the following components: Thor, Roxie, ESP Server, Dali, Sasha, DFU
+      Server, and ECLCC Server. LDAP security is optionally available.</para>
 
       <para><figure>
           <title>HPCC Architectural Diagram</title>
@@ -102,17 +102,17 @@
       <?hard-pagebreak ?>
 
       <para>Data loading is controlled through the Distributed File Utility
-      (<!-- DNT-Start -->DFU<!-- DNT-End -->) server.</para>
+      (DFU) server.</para>
 
-      <para>Data typically arrives on the landing zone (for example, by <!-- DNT-Start -->FTP<!-- DNT-End -->).
-      File movement (across components) is initiated by <!-- DNT-Start -->DFU<!-- DNT-End -->. Data is copied
+      <para>Data typically arrives on the landing zone (for example, by FTP).
+      File movement (across components) is initiated by DFU. Data is copied
       from the landing zone and is distributed (sprayed) to the Data Refinery
-      (<!-- DNT-Start -->Thor<!-- DNT-End -->) by the <!-- DNT-Start -->ECL<!-- DNT-End --> code. Data can be further processed via <!-- DNT-Start -->ETL<!-- DNT-End --> (Extract,
+      (Thor) by the ECL code. Data can be further processed via ETL (Extract,
       Transform, and Load process) in the refinery.</para>
 
       <para>A single physical file is distributed into multiple physical files
       across the nodes of a cluster. The aggregate of the physical files
-      creates one logical file that is addressed by the <!-- DNT-Start -->ECL<!-- DNT-End --> code.</para>
+      creates one logical file that is addressed by the ECL code.</para>
 
       <para><figure>
           <title>Data Processing</title>
@@ -128,40 +128,40 @@
       the landing zone.</para>
 
       <sect2 id="HPCC_Clusters" role="brk">
-        <!-- DNT-Start --><title>Clusters</title><!-- DNT-End -->
+        <title>Clusters</title>
 
-        <para><!-- DNT-Start -->HPCC<!-- DNT-End --> environment contains clusters which you define and use
-        according to your needs. The types of clusters used in <!-- DNT-Start -->HPCC<!-- DNT-End -->:</para>
+        <para>HPCC environment contains clusters which you define and use
+        according to your needs. The types of clusters used in HPCC:</para>
 
         <sect3 id="SysAdm_Thor_Cluster">
-          <!-- DNT-Start --><title>Thor</title><!-- DNT-End -->
+          <title>Thor</title>
 
-          <para>Data Refinery (<!-- DNT-Start -->Thor<!-- DNT-End -->) -- Used to process every one of billions
-          of records in order to create billions of "improved" records. <!-- DNT-Start -->ECL<!-- DNT-End -->
+          <para>Data Refinery (Thor) -- Used to process every one of billions
+          of records in order to create billions of "improved" records. ECL
           Agent (hThor) is also used to process simple jobs that would be an
-          inefficient use of the <!-- DNT-Start -->Thor<!-- DNT-End --> cluster.</para>
+          inefficient use of the Thor cluster.</para>
         </sect3>
 
         <sect3 id="SysAdm_Roxie_Cluster">
-          <!-- DNT-Start --><title>Roxie</title><!-- DNT-End -->
+          <title>Roxie</title>
 
-          <para>Rapid Data Delivery Engine (<!-- DNT-Start -->Roxie<!-- DNT-End -->) -- Used to search quickly
+          <para>Rapid Data Delivery Engine (Roxie) -- Used to search quickly
           for a particular record or set of records.</para>
 
-          <para>Queries are compiled and published, usually in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. Data
-          moves in parallel from <!-- DNT-Start -->Thor<!-- DNT-End --> nodes to the receiving <!-- DNT-Start -->Roxie<!-- DNT-End --> nodes.
+          <para>Queries are compiled and published, usually in ECL Watch. Data
+          moves in parallel from Thor nodes to the receiving Roxie nodes.
           Parallel bandwidth utilization improves the speed of putting new
           data into play.</para>
         </sect3>
 
         <sect3 id="SysAdm_Clusters_ECLAgent">
-          <!-- DNT-Start --><title>ECL Agent</title><!-- DNT-End -->
+          <title>ECL Agent</title>
 
-          <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Agent's primary function is to send the job to execute
-          on the appropriate cluster. The <!-- DNT-Start -->ECL<!-- DNT-End --> Agent can act as a single-node
+          <para>The ECL Agent's primary function is to send the job to execute
+          on the appropriate cluster. The ECL Agent can act as a single-node
           cluster. That is called spawning an hThor cluster. hThor is used to
           process simple jobs that would otherwise be an inefficient use of
-          <!-- DNT-Start -->Thor<!-- DNT-End -->. For simple tasks, the <!-- DNT-Start -->ECL<!-- DNT-End --> Agent will make a determination and
+          Thor. For simple tasks, the ECL Agent will make a determination and
           perform the execution itself by acting as an hThor cluster. <figure>
               <title>Clusters</title>
 
@@ -175,200 +175,200 @@
       </sect2>
 
       <sect2 id="SysAdm_SystemServers" role="brk">
-        <!-- DNT-Start --><title>System Servers</title><!-- DNT-End -->
+        <title>System Servers</title>
 
-        <para>The System Servers are integral middleware components of an <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        <para>The System Servers are integral middleware components of an HPCC
         system. They are used to control workflow and inter-component
         communication.</para>
 
         <sect3 id="SysAdm_Dali">
-          <!-- DNT-Start --><title>Dali</title><!-- DNT-End -->
+          <title>Dali</title>
 
-          <para><!-- DNT-Start -->Dali<!-- DNT-End --> is also known as the system data store. It manages
+          <para>Dali is also known as the system data store. It manages
           workunit records, logical file directory, and shared object
           services. It maintains the message queues that drive job execution
           and scheduling.</para>
 
-          <para><!-- DNT-Start -->Dali<!-- DNT-End --> also performs session management. It tracks all active
-          <!-- DNT-Start -->Dali<!-- DNT-End --> client sessions registered in the environment, such that you
+          <para>Dali also performs session management. It tracks all active
+          Dali client sessions registered in the environment, such that you
           can list all clients and their roles. (see <emphasis>dalidiag
           -clients</emphasis>)</para>
 
-          <para>Another task <!-- DNT-Start -->Dali<!-- DNT-End --> performs is to act as the locking manager.
-          <!-- DNT-Start -->HPCC<!-- DNT-End --> uses <!-- DNT-Start -->Dali<!-- DNT-End -->'s locking manager to control shared and exclusive
+          <para>Another task Dali performs is to act as the locking manager.
+          HPCC uses Dali's locking manager to control shared and exclusive
           locks to metadata.</para>
         </sect3>
 
         <sect3 id="SysAdm_Sahsa">
-          <!-- DNT-Start --><title>Sasha</title><!-- DNT-End -->
+          <title>Sasha</title>
 
-          <para>The <!-- DNT-Start -->Sasha<!-- DNT-End --> server is a companion "housekeeping" server to the
-          <!-- DNT-Start -->Dali<!-- DNT-End --> server. <!-- DNT-Start -->Sasha<!-- DNT-End --> works independently of, yet in conjunction with
-          <!-- DNT-Start -->Dali<!-- DNT-End -->. <!-- DNT-Start -->Sasha<!-- DNT-End -->'s main function is to reduce the stress on the <!-- DNT-Start -->Dali<!-- DNT-End -->
-          server. Wherever possible, <!-- DNT-Start -->Sasha<!-- DNT-End --> reduces the resource utilization on
-          <!-- DNT-Start -->Dali<!-- DNT-End -->. A very important aspect of <!-- DNT-Start -->Sasha<!-- DNT-End --> is coalescing, by saving the
+          <para>The Sasha server is a companion "housekeeping" server to the
+          Dali server. Sasha works independently of, yet in conjunction with
+          Dali. Sasha's main function is to reduce the stress on the Dali
+          server. Wherever possible, Sasha reduces the resource utilization on
+          Dali. A very important aspect of Sasha is coalescing, by saving the
           in-memory store to a new store edition.</para>
 
-          <para><!-- DNT-Start -->Sasha<!-- DNT-End --> archives workunits (including <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits) that are
+          <para>Sasha archives workunits (including DFU Workunits) that are
           then stored in folders on a disk.</para>
 
-          <para><!-- DNT-Start -->Sasha<!-- DNT-End --> also performs routine housekeeping such as removing
-          cached workunits and <!-- DNT-Start -->DFU<!-- DNT-End --> recovery files.</para>
+          <para>Sasha also performs routine housekeeping such as removing
+          cached workunits and DFU recovery files.</para>
 
-          <para><!-- DNT-Start -->Sasha<!-- DNT-End --> can also run <!-- DNT-Start -->XREF<!-- DNT-End -->, to cross reference physical files
+          <para>Sasha can also run XREF, to cross reference physical files
           with logical metadata, to determine if there are lost/found/orphaned
           files. It then presents options (via EclWatch) for their recovery or
           deletion.</para>
 
-          <para><!-- DNT-Start -->Sasha<!-- DNT-End --> is the component responsible for removing expired files
-          when the criteria has been met. The <!-- DNT-Start -->EXPIRE<!-- DNT-End --> option on <!-- DNT-Start -->ECL<!-- DNT-End -->'s <!-- DNT-Start -->OUTPUT<!-- DNT-End --> or
-          <!-- DNT-Start -->PERSIST<!-- DNT-End --> sets that condition.</para>
+          <para>Sasha is the component responsible for removing expired files
+          when the criteria has been met. The EXPIRE option on ECL's OUTPUT or
+          PERSIST sets that condition.</para>
         </sect3>
 
         <sect3 id="SysAdm_DFU">
-          <!-- DNT-Start --><title>DFU Server</title><!-- DNT-End -->
+          <title>DFU Server</title>
 
-          <para><!-- DNT-Start -->DFU<!-- DNT-End --> server controls the spraying and despraying operations
-          used to move data in and out of <!-- DNT-Start -->Thor<!-- DNT-End -->.</para>
+          <para>DFU server controls the spraying and despraying operations
+          used to move data in and out of Thor.</para>
 
-          <para><!-- DNT-Start -->DFU<!-- DNT-End --> services are available from: <itemizedlist>
+          <para>DFU services are available from: <itemizedlist>
               <listitem>
-                <para>Standard libraries in <!-- DNT-Start -->ECL<!-- DNT-End --> code.</para>
+                <para>Standard libraries in ECL code.</para>
               </listitem>
 
               <listitem>
-                <para>Client interfaces: <!-- DNT-Start -->Eclipse<!-- DNT-End -->, <!-- DNT-Start -->ECL<!-- DNT-End --> Playground, <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, and
-                the <!-- DNT-Start -->ECL<!-- DNT-End --> command line interface.</para>
+                <para>Client interfaces: Eclipse, ECL Playground, ECL IDE, and
+                the ECL command line interface.</para>
               </listitem>
 
               <listitem>
-                <para><!-- DNT-Start -->DFU<!-- DNT-End --> Plus command line interface.</para>
+                <para>DFU Plus command line interface.</para>
               </listitem>
             </itemizedlist></para>
         </sect3>
 
         <sect3 id="SysAdm_ECLCCSvr">
-          <!-- DNT-Start --><title>ECLCC Server</title><!-- DNT-End -->
+          <title>ECLCC Server</title>
 
-          <para><!-- DNT-Start -->ECLCC<!-- DNT-End --> Server is the compiler that translates <!-- DNT-Start -->ECL<!-- DNT-End --> code. When
-          you submit <!-- DNT-Start -->ECL<!-- DNT-End --> code, the <!-- DNT-Start -->ECLCC<!-- DNT-End --> Server generates optimized C++ which
-          is then compiled and executed. <!-- DNT-Start -->ECLCC<!-- DNT-End --> Server controls the whole
+          <para>ECLCC Server is the compiler that translates ECL code. When
+          you submit ECL code, the ECLCC Server generates optimized C++ which
+          is then compiled and executed. ECLCC Server controls the whole
           compilation process.</para>
 
-          <para>When you submit workunits for execution on <!-- DNT-Start -->Thor<!-- DNT-End -->, they are
-          first converted to executable code by the <!-- DNT-Start -->ECLCC<!-- DNT-End --> Server.</para>
+          <para>When you submit workunits for execution on Thor, they are
+          first converted to executable code by the ECLCC Server.</para>
 
-          <para>When you submit a workunit to <!-- DNT-Start -->Roxie<!-- DNT-End -->, code is compiled and
-          later published to the <!-- DNT-Start -->Roxie<!-- DNT-End --> cluster, where it is available to
+          <para>When you submit a workunit to Roxie, code is compiled and
+          later published to the Roxie cluster, where it is available to
           execute multiple times.</para>
 
-          <para><!-- DNT-Start -->ECLCC<!-- DNT-End --> Server is also used when the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> requests a syntax
+          <para>ECLCC Server is also used when the ECL IDE requests a syntax
           check.</para>
 
-          <para><!-- DNT-Start -->ECLCC<!-- DNT-End --> Server uses a queue to convert workunits one at a time,
-          however you can have <!-- DNT-Start -->ECLCC<!-- DNT-End --> Servers deployed in the system to
+          <para>ECLCC Server uses a queue to convert workunits one at a time,
+          however you can have ECLCC Servers deployed in the system to
           increase throughput and they will automatically load balance as
           required.</para>
         </sect3>
 
         <sect3 id="SysAdm_ECLAgent">
-          <!-- DNT-Start --><title>ECL Agent</title><!-- DNT-End -->
+          <title>ECL Agent</title>
 
-          <para><!-- DNT-Start -->ECL<!-- DNT-End --> Agent (hThor) is a single node process for executing
-          simple <!-- DNT-Start -->ECL<!-- DNT-End --> Queries.</para>
+          <para>ECL Agent (hThor) is a single node process for executing
+          simple ECL Queries.</para>
 
-          <para><!-- DNT-Start -->ECL<!-- DNT-End --> Agent is an execution engine that processes workunits by
-          sending them to the appropriate cluster. <!-- DNT-Start -->ECL<!-- DNT-End --> Agent processes are
+          <para>ECL Agent is an execution engine that processes workunits by
+          sending them to the appropriate cluster. ECL Agent processes are
           spawned on-demand when you submit a workunit.</para>
         </sect3>
 
         <sect3 id="SysAdm_ESPServer">
-          <!-- DNT-Start --><title>ESP Server</title><!-- DNT-End -->
+          <title>ESP Server</title>
 
-          <para><!-- DNT-Start -->ESP<!-- DNT-End --> (Enterprise Service Platform) Server is the
-          inter-component communication server. <!-- DNT-Start -->ESP<!-- DNT-End --> Server is a framework that
+          <para>ESP (Enterprise Service Platform) Server is the
+          inter-component communication server. ESP Server is a framework that
           allows multiple services to be "plugged in" to provide various types
           of functionality to client applications via multiple
           protocols.</para>
 
-          <para>Examples of services that are plugged into <!-- DNT-Start -->ESP<!-- DNT-End -->
+          <para>Examples of services that are plugged into ESP
           include:<itemizedlist>
               <listitem>
                 <para><emphasis role="bold">WsECL:</emphasis> Interface to
-                published queries on a <!-- DNT-Start -->Roxie<!-- DNT-End -->, <!-- DNT-Start -->Thor<!-- DNT-End -->, or hThor cluster.</para>
+                published queries on a Roxie, Thor, or hThor cluster.</para>
               </listitem>
 
               <listitem>
-                <para><emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Watch:</emphasis> A web-based
+                <para><emphasis role="bold">ECL Watch:</emphasis> A web-based
                 query execution, monitoring, and file management interface. It
-                can be accessed via the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> or a web browser. See
-                <emphasis>Using <!-- DNT-Start -->ECL<!-- DNT-End --> Watch</emphasis>.</para>
+                can be accessed via the ECL IDE or a web browser. See
+                <emphasis>Using ECL Watch</emphasis>.</para>
               </listitem>
             </itemizedlist></para>
 
-          <para>The <!-- DNT-Start -->ESP<!-- DNT-End --> Server supports both <!-- DNT-Start -->XML<!-- DNT-End --> and <!-- DNT-Start -->JSON<!-- DNT-End --> Formats.</para>
+          <para>The ESP Server supports both XML and JSON Formats.</para>
 
-          <!-- DNT-Start --><!--formerly : protocols - HTTP, HTTPS, SOAP, and JSON - --><!-- DNT-End -->
+          <!--formerly : protocols - HTTP, HTTPS, SOAP, and JSON - -->
         </sect3>
 
         <sect3 id="SysAdm_LDAP">
-          <!-- DNT-Start --><title>LDAP</title><!-- DNT-End -->
+          <title>LDAP</title>
 
           <para>You can incorporate a Lightweight Directory Access Protocol
-          (<!-- DNT-Start -->LDAP<!-- DNT-End -->) server to work with <!-- DNT-Start -->Dali<!-- DNT-End --> to enforce the security restrictions
+          (LDAP) server to work with Dali to enforce the security restrictions
           for file scopes, workunit scopes, and feature access.</para>
 
-          <para>When <!-- DNT-Start -->LDAP<!-- DNT-End --> is configured, you need to authenticate when
-          accessing <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, WsECL, <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, or any other client tools.
+          <para>When LDAP is configured, you need to authenticate when
+          accessing ECL Watch, WsECL, ECL IDE, or any other client tools.
           Those credentials are then used to authenticate any requests from
           those tools.</para>
         </sect3>
       </sect2>
 
       <sect2 id="SysAdm_ClienInterfaces">
-        <!-- DNT-Start --><title>Client Interfaces</title><!-- DNT-End -->
+        <title>Client Interfaces</title>
 
         <para>The following Client Interfaces are available to interact with
-        the <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform.</para>
+        the HPCC Platform.</para>
 
         <sect3 id="SysAdm_Eclipse">
-          <!-- DNT-Start --><title>Eclipse</title><!-- DNT-End -->
+          <title>Eclipse</title>
 
-          <para>With the <!-- DNT-Start -->ECL<!-- DNT-End --> plugin for <!-- DNT-Start -->Eclipse<!-- DNT-End -->, you can use the <!-- DNT-Start -->Eclipse<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
-          to create and execute queries into your data on an <!-- DNT-Start -->HPCC<!-- DNT-End --> platform
-          using Enterprise Control Language (<!-- DNT-Start -->ECL<!-- DNT-End -->). <!-- DNT-Start -->Eclipse<!-- DNT-End --> is open-source, and
+          <para>With the ECL plugin for Eclipse, you can use the Eclipse IDE
+          to create and execute queries into your data on an HPCC platform
+          using Enterprise Control Language (ECL). Eclipse is open-source, and
           multi-platform and it can be used to interface with your data and
-          workunits on <!-- DNT-Start -->HPCC<!-- DNT-End -->. The <!-- DNT-Start -->ECL<!-- DNT-End --> plugin for <!-- DNT-Start -->Eclipse<!-- DNT-End --> is also
+          workunits on HPCC. The ECL plugin for Eclipse is also
           open-source.</para>
         </sect3>
 
         <sect3 id="SysAdm_ECLIDE">
-          <!-- DNT-Start --><title>ECL IDE</title><!-- DNT-End -->
+          <title>ECL IDE</title>
 
-          <para><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> is a full-featured <!-- DNT-Start -->GUI<!-- DNT-End --> providing access to your <!-- DNT-Start -->ECL<!-- DNT-End -->
-          code for <!-- DNT-Start -->ECL<!-- DNT-End --> development. <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> uses various <!-- DNT-Start -->ESP<!-- DNT-End --> services via
-          <!-- DNT-Start -->SOAP<!-- DNT-End -->.</para>
+          <para>ECL IDE is a full-featured GUI providing access to your ECL
+          code for ECL development. ECL IDE uses various ESP services via
+          SOAP.</para>
 
-          <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> provides access to <!-- DNT-Start -->ECL<!-- DNT-End --> Definitions to build your
+          <para>The ECL IDE provides access to ECL Definitions to build your
           queries. These definitions are created by coding an expression that
           defines how some calculation or record set derivation is to be done.
-          Once defined, they can be used in succeeding <!-- DNT-Start -->ECL<!-- DNT-End --> definitions.</para>
+          Once defined, they can be used in succeeding ECL definitions.</para>
         </sect3>
 
         <sect3 id="SysAdm_Int_ECLWatch">
-          <!-- DNT-Start --><title>ECL Watch</title><!-- DNT-End -->
+          <title>ECL Watch</title>
 
-          <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch is a web-based query execution, monitoring, and file
-          management interface. It can be accessed via <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, <!-- DNT-Start -->Eclipse<!-- DNT-End -->, or a
-          web browser. <!-- DNT-Start -->ECL<!-- DNT-End --> Watch allows you to see information about and
+          <para>ECL Watch is a web-based query execution, monitoring, and file
+          management interface. It can be accessed via ECL IDE, Eclipse, or a
+          web browser. ECL Watch allows you to see information about and
           manipulate workunits. It also allows you monitor cluster activity
           and perform other administrative tasks.</para>
 
-          <para>Using <!-- DNT-Start -->ECL<!-- DNT-End --> Watch you can:<itemizedlist>
+          <para>Using ECL Watch you can:<itemizedlist>
               <listitem>
-                <para>Browse through previously submitted workunits (<!-- DNT-Start -->WU<!-- DNT-End -->). You
+                <para>Browse through previously submitted workunits (WU). You
                 can see a visual representation (graphs) of the data flow
-                within the <!-- DNT-Start -->WU<!-- DNT-End -->, complete with statistics which are updated as
+                within the WU, complete with statistics which are updated as
                 the job progresses.</para>
               </listitem>
 
@@ -390,18 +390,18 @@
               </listitem>
             </itemizedlist></para>
 
-          <para>See the <emphasis>Using <!-- DNT-Start -->ECL<!-- DNT-End --> Watch </emphasis>Manual for more
+          <para>See the <emphasis>Using ECL Watch </emphasis>Manual for more
           details.</para>
         </sect3>
 
         <sect3 id="SysAdm_ComLine">
-          <!-- DNT-Start --><title><emphasis role="bold">Command Line Tools</emphasis></title><!-- DNT-End -->
+          <title><emphasis role="bold">Command Line Tools</emphasis></title>
 
-          <para>Command line tools: <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->, <!-- DNT-Start -->DFU<!-- DNT-End -->
-          Plus</emphasis>, and <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Plus</emphasis>
-          provide command line access to functionality provided by the <!-- DNT-Start -->ECL<!-- DNT-End -->
+          <para>Command line tools: <emphasis role="bold">ECL, DFU
+          Plus</emphasis>, and <emphasis role="bold">ECL Plus</emphasis>
+          provide command line access to functionality provided by the ECL
           Watch web pages. They work by communicating with the corresponding
-          <!-- DNT-Start -->ESP<!-- DNT-End --> service via <!-- DNT-Start -->SOAP<!-- DNT-End -->.</para>
+          ESP service via SOAP.</para>
 
           <para>See the <emphasis>Client Tools </emphasis>Manual for more
           details.</para>
@@ -409,24 +409,24 @@
       </sect2>
     </sect1>
 
-    <!-- DNT-Start --><!--Inclusion-from-ClientTool-As-Sect1: REMOVED--><!-- DNT-End -->
+    <!--Inclusion-from-ClientTool-As-Sect1: REMOVED-->
   </chapter>
 
   <chapter id="SysAdm_HW_and_SW-Req">
-    <!-- DNT-Start --><title>Hardware and Software Requirements</title><!-- DNT-End -->
+    <title>Hardware and Software Requirements</title>
 
     <para>This chapter describes some of the hardware and software
-    requirements in order to run the <!-- DNT-Start -->HPCC<!-- DNT-End --> System. <!-- DNT-Start -->HPCC<!-- DNT-End --> is designed to run on
+    requirements in order to run the HPCC System. HPCC is designed to run on
     commodity hardware, which makes building and maintaining large scale
     (petabytes) clusters economically feasible. When planning your cluster
     hardware, you will need to balance a number of considerations specific to
     your needs.</para>
 
     <para>This section provides some insight into the hardware and
-    infrastructure that <!-- DNT-Start -->HPCC<!-- DNT-End --> works well on. This is not an exclusive
+    infrastructure that HPCC works well on. This is not an exclusive
     comprehensive set of instructions, nor a mandate on what hardware you must
     have. Consider this as a guide to use when looking to implement or scale
-    your <!-- DNT-Start -->HPCC<!-- DNT-End --> system. These suggestions should be taken into consideration for
+    your HPCC system. These suggestions should be taken into consideration for
     your specific enterprise needs.</para>
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
@@ -447,156 +447,156 @@
   </chapter>
 
   <chapter id="SysAdm_HWSizing">
-    <!-- DNT-Start --><title>Hardware and Components</title><!-- DNT-End -->
+    <title>Hardware and Components</title>
 
     <para>This section provides some insight as to what sort of hardware and
-    infrastructure optimally <!-- DNT-Start -->HPCC<!-- DNT-End --> works well on. This is not an exclusive
+    infrastructure optimally HPCC works well on. This is not an exclusive
     comprehensive set of instructions, nor a mandate on what hardware you must
     have. Consider this as a guide to use when looking to implement or scale
-    your <!-- DNT-Start -->HPCC<!-- DNT-End --> system. These suggestions should be taken into consideration for
+    your HPCC system. These suggestions should be taken into consideration for
     your specific enterprise needs.</para>
 
-    <para><!-- DNT-Start -->HPCC<!-- DNT-End --> is designed to run on commodity hardware, which makes building
+    <para>HPCC is designed to run on commodity hardware, which makes building
     and maintaining large scale (petabytes) clusters economically feasible.
     When planning your cluster hardware, you will need to balance a number of
     considerations, including fail-over domains and potential performance
-    issues. Hardware planning should include distributing <!-- DNT-Start -->HPCC<!-- DNT-End --> across multiple
+    issues. Hardware planning should include distributing HPCC across multiple
     physical hosts, such as a cluster. Generally, one type of best practice is
-    to run <!-- DNT-Start -->HPCC<!-- DNT-End --> processes of a particular type, for example <!-- DNT-Start -->Thor<!-- DNT-End -->, <!-- DNT-Start -->Roxie<!-- DNT-End -->, or
-    <!-- DNT-Start -->Dali<!-- DNT-End -->, on a host configured specifically for that type of process.</para>
+    to run HPCC processes of a particular type, for example Thor, Roxie, or
+    Dali, on a host configured specifically for that type of process.</para>
 
     <sect1 id="SysAdm_ThorHW">
-      <!-- DNT-Start --><title>Thor Hardware</title><!-- DNT-End -->
+      <title>Thor Hardware</title>
 
-      <para><!-- DNT-Start -->Thor<!-- DNT-End --> slave nodes require a proper balance of <!-- DNT-Start -->CPU<!-- DNT-End -->, <!-- DNT-Start -->RAM<!-- DNT-End -->, network,
-      and disk I/O in order to operate most efficiently. A single <!-- DNT-Start -->Thor<!-- DNT-End --> slave
-      node works optimally when allocated 4 <!-- DNT-Start -->CPU<!-- DNT-End --> cores, 8<!-- DNT-Start -->GB<!-- DNT-End --> <!-- DNT-Start -->RAM<!-- DNT-End -->, 1Gb/sec
-      network and 200<!-- DNT-Start -->MB<!-- DNT-End -->/sec sequential read/write disk I/O.</para>
+      <para>Thor slave nodes require a proper balance of CPU, RAM, network,
+      and disk I/O in order to operate most efficiently. A single Thor slave
+      node works optimally when allocated 4 CPU cores, 8GB RAM, 1Gb/sec
+      network and 200MB/sec sequential read/write disk I/O.</para>
 
       <para>Hardware architecture can provide higher value within a single
       physical server. In such cases you can use multi-slave to configure your
-      larger physical servers to run multiple <!-- DNT-Start -->Thor<!-- DNT-End --> slave nodes per physical
+      larger physical servers to run multiple Thor slave nodes per physical
       server.</para>
 
-      <para>It is important to note that <!-- DNT-Start -->HPCC<!-- DNT-End --> by nature is a parallel
-      processing system and all <!-- DNT-Start -->Thor<!-- DNT-End --> slave nodes will be exercising at
-      precisely the same time. So when allocating more than one <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Thor<!-- DNT-End -->
+      <para>It is important to note that HPCC by nature is a parallel
+      processing system and all Thor slave nodes will be exercising at
+      precisely the same time. So when allocating more than one HPCC Thor
       slave per physical machine assure that each slave meets the recommended
       requirements.</para>
 
-      <para>For instance, 1 physical server with 48 cores, 96<!-- DNT-Start -->GB<!-- DNT-End --> <!-- DNT-Start -->RAM<!-- DNT-End -->, 10Gb/sec
-      network and 2<!-- DNT-Start -->GB<!-- DNT-End -->/sec sequential I/O would be capable of running ten (10)
-      <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Thor<!-- DNT-End --> slaves at optimal efficiency. The order of optimization for
-      resource usage in a <!-- DNT-Start -->Thor<!-- DNT-End --> slave node is disk I/O 60%, network 30%, and
-      <!-- DNT-Start -->CPU<!-- DNT-End --> 10%. Any increase in sequential I/O will have the most impact on
+      <para>For instance, 1 physical server with 48 cores, 96GB RAM, 10Gb/sec
+      network and 2GB/sec sequential I/O would be capable of running ten (10)
+      HPCC Thor slaves at optimal efficiency. The order of optimization for
+      resource usage in a Thor slave node is disk I/O 60%, network 30%, and
+      CPU 10%. Any increase in sequential I/O will have the most impact on
       speed, followed by improvements in network, followed by improvements in
-      <!-- DNT-Start -->CPU<!-- DNT-End -->.</para>
+      CPU.</para>
 
-      <para>Network architecture is also an important consideration. <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Thor<!-- DNT-End -->
+      <para>Network architecture is also an important consideration. HPCC Thor
       nodes work optimally in a streamlined network architecture between all
-      <!-- DNT-Start -->Thor<!-- DNT-End --> slave processes.</para>
+      Thor slave processes.</para>
 
-      <para><!-- DNT-Start -->RAID<!-- DNT-End --> is recommended and all <!-- DNT-Start -->RAID<!-- DNT-End --> levels suitable for sequential
+      <para>RAID is recommended and all RAID levels suitable for sequential
       read/write operations and high availability are acceptable. For example,
-      <!-- DNT-Start -->RAID<!-- DNT-End -->1, <!-- DNT-Start -->RAID<!-- DNT-End -->10, <!-- DNT-Start -->RAID<!-- DNT-End -->5 (preferred), and <!-- DNT-Start -->RAID<!-- DNT-End -->6.</para>
+      RAID1, RAID10, RAID5 (preferred), and RAID6.</para>
     </sect1>
 
     <sect1 id="SysAdm_RoxieHW">
-      <!-- DNT-Start --><title>Roxie Hardware Configurations</title><!-- DNT-End -->
+      <title>Roxie Hardware Configurations</title>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Roxie<!-- DNT-End --> processes require require a proper, yet different (from
-      <!-- DNT-Start -->Thor<!-- DNT-End -->) balance of <!-- DNT-Start -->CPU<!-- DNT-End -->, <!-- DNT-Start -->RAM<!-- DNT-End -->, network, and disk I/O in order to ensure
-      efficient operations. A single <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Roxie<!-- DNT-End --> node works optimally when
-      allocated 6 or more <!-- DNT-Start -->CPU<!-- DNT-End --> cores, 24<!-- DNT-Start -->GB<!-- DNT-End --> <!-- DNT-Start -->RAM<!-- DNT-End -->, 1Gb/sec network backbone, and
-      400/sec 4k random read <!-- DNT-Start -->IOPS<!-- DNT-End -->.</para>
+      <para>HPCC Roxie processes require require a proper, yet different (from
+      Thor) balance of CPU, RAM, network, and disk I/O in order to ensure
+      efficient operations. A single HPCC Roxie node works optimally when
+      allocated 6 or more CPU cores, 24GB RAM, 1Gb/sec network backbone, and
+      400/sec 4k random read IOPS.</para>
 
-      <para>Each <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Roxie<!-- DNT-End --> node is presented two hard drives, each capable of
-      200/sec 4k random seek <!-- DNT-Start -->IOPS<!-- DNT-End -->. Hard drive recommendations for <!-- DNT-Start -->Roxie<!-- DNT-End -->
-      efficiency are 15K <!-- DNT-Start -->SAS<!-- DNT-End -->, or <!-- DNT-Start -->SSD<!-- DNT-End -->. A good rule of thumb is the more random
-      read <!-- DNT-Start -->IOPS<!-- DNT-End --> the better and faster your <!-- DNT-Start -->Roxie<!-- DNT-End --> will perform.</para>
+      <para>Each HPCC Roxie node is presented two hard drives, each capable of
+      200/sec 4k random seek IOPS. Hard drive recommendations for Roxie
+      efficiency are 15K SAS, or SSD. A good rule of thumb is the more random
+      read IOPS the better and faster your Roxie will perform.</para>
 
-      <para>Running multiple <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Roxie<!-- DNT-End --> nodes on a single physical server is
+      <para>Running multiple HPCC Roxie nodes on a single physical server is
       not recommended, except in the cases of virtualization or
       containers.</para>
 
-      <para>Configure your system to balance the size of your <!-- DNT-Start -->Thor<!-- DNT-End --> and <!-- DNT-Start -->Roxie<!-- DNT-End -->
-      clusters. The number of <!-- DNT-Start -->Roxie<!-- DNT-End --> nodes should never exceed the number of
-      <!-- DNT-Start -->Thor<!-- DNT-End --> nodes. In addition, the number of <!-- DNT-Start -->Thor<!-- DNT-End --> nodes should be evenly
-      divisible by the number of <!-- DNT-Start -->Roxie<!-- DNT-End --> nodes. This ensures an efficient
-      distribution of file parts from <!-- DNT-Start -->Thor<!-- DNT-End --> to <!-- DNT-Start -->Roxie<!-- DNT-End -->.</para>
+      <para>Configure your system to balance the size of your Thor and Roxie
+      clusters. The number of Roxie nodes should never exceed the number of
+      Thor nodes. In addition, the number of Thor nodes should be evenly
+      divisible by the number of Roxie nodes. This ensures an efficient
+      distribution of file parts from Thor to Roxie.</para>
     </sect1>
 
     <sect1 id="SysAdm_Dali_Sasha">
-      <!-- DNT-Start --><title>Dali and Sasha Hardware Configurations</title><!-- DNT-End -->
+      <title>Dali and Sasha Hardware Configurations</title>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Dali<!-- DNT-End --> processes store cluster metadata in <!-- DNT-Start -->RAM<!-- DNT-End -->. For optimal
-      efficiency, provide at least 48<!-- DNT-Start -->GB<!-- DNT-End --> of <!-- DNT-Start -->RAM<!-- DNT-End -->, 6 or more <!-- DNT-Start -->CPU<!-- DNT-End --> cores, 1Gb/sec
-      network interface and a high availability disk for a single <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Dali<!-- DNT-End -->.
-      <!-- DNT-Start -->HPCC<!-- DNT-End -->'s <!-- DNT-Start -->Dali<!-- DNT-End --> processes are one of the few native active/passive
+      <para>HPCC Dali processes store cluster metadata in RAM. For optimal
+      efficiency, provide at least 48GB of RAM, 6 or more CPU cores, 1Gb/sec
+      network interface and a high availability disk for a single HPCC Dali.
+      HPCC's Dali processes are one of the few native active/passive
       components. Using standard "swinging disk" clustering is recommended for
-      a high availability setup. For a single <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Dali<!-- DNT-End --> process, any suitable
-      High Availability (<!-- DNT-Start -->HA<!-- DNT-End -->) <!-- DNT-Start -->RAID<!-- DNT-End --> level is fine.</para>
+      a high availability setup. For a single HPCC Dali process, any suitable
+      High Availability (HA) RAID level is fine.</para>
 
-      <para><!-- DNT-Start -->Sasha<!-- DNT-End --> only stores data to locally available disks, reading data
-      from <!-- DNT-Start -->Dali<!-- DNT-End --> then processing it by archiving workunits (WUs) to disk. It is
-      beneficial to configure <!-- DNT-Start -->Sasha<!-- DNT-End --> for a larger amount of archiving so that
-      <!-- DNT-Start -->Dali<!-- DNT-End --> does not keep too many workunits in memory. This requires a larger
+      <para>Sasha only stores data to locally available disks, reading data
+      from Dali then processing it by archiving workunits (WUs) to disk. It is
+      beneficial to configure Sasha for a larger amount of archiving so that
+      Dali does not keep too many workunits in memory. This requires a larger
       amount of disk space.</para>
 
-      <para>Allocating greater disk space for <!-- DNT-Start -->Sasha<!-- DNT-End --> is sound practice as
-      configuring <!-- DNT-Start -->Sasha<!-- DNT-End --> for more archiving better benefits <!-- DNT-Start -->Dali<!-- DNT-End -->. Since <!-- DNT-Start -->Sasha<!-- DNT-End -->
-      assists <!-- DNT-Start -->Dali<!-- DNT-End --> by performing housekeeping, it works best when on its own
-      node. Ideally, you should avoid putting <!-- DNT-Start -->Sasha<!-- DNT-End --> and <!-- DNT-Start -->Dali<!-- DNT-End --> on the same node,
+      <para>Allocating greater disk space for Sasha is sound practice as
+      configuring Sasha for more archiving better benefits Dali. Since Sasha
+      assists Dali by performing housekeeping, it works best when on its own
+      node. Ideally, you should avoid putting Sasha and Dali on the same node,
       because the node that runs these components is extremely critical,
       particularly when it comes to recovering from losses. Therefore, it
-      should be as robust as possible: <!-- DNT-Start -->RAID<!-- DNT-End --> drives, fault tolerant,
+      should be as robust as possible: RAID drives, fault tolerant,
       etc.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>Sasha/Dali Interactions</title><!-- DNT-End -->
+        <title>Sasha/Dali Interactions</title>
 
-        <para>A critical role of <!-- DNT-Start -->Sasha<!-- DNT-End --> is in coalescing. When <!-- DNT-Start -->Dali<!-- DNT-End --> shuts down,
+        <para>A critical role of Sasha is in coalescing. When Dali shuts down,
         it saves its in-memory store to a new store edition by creating a new
-        <emphasis>dalisdsXXXX.xml</emphasis>, where <!-- DNT-Start -->XXXX<!-- DNT-End --> is incremented to the
+        <emphasis>dalisdsXXXX.xml</emphasis>, where XXXX is incremented to the
         new edition. The current edition is recorded by the filename
-        store.<!-- DNT-Start -->XXXX<!-- DNT-End --></para>
+        store.XXXX</para>
 
         <para>An explicit request to save using
         <emphasis>dalidiag</emphasis>:</para>
 
-        <!-- DNT-Start --><programlisting> dalidiag . -save </programlisting><!-- DNT-End -->
+        <programlisting> dalidiag . -save </programlisting>
 
         <para>The new editions, as per the above example are created the same
-        way. During an explicit save, all changes to <!-- DNT-Start -->SDS<!-- DNT-End --> are blocked.
+        way. During an explicit save, all changes to SDS are blocked.
         Therefore all clients will block if they try to make any alteration
         until the save is complete.</para>
 
         <para>There are some options (though not commonly used) that can
-        configure <!-- DNT-Start -->Dali<!-- DNT-End --> to detect quiet/idle time and force a save in exactly
+        configure Dali to detect quiet/idle time and force a save in exactly
         the same way an explicit save request does, meaning that it will block
         any write transactions while saving.</para>
 
-        <para>All <!-- DNT-Start -->Dali<!-- DNT-End --> <!-- DNT-Start -->SDS<!-- DNT-End --> changes are recorded in a delta transaction log (in
-        <!-- DNT-Start -->XML<!-- DNT-End --> format) with a naming convention of
-        <emphasis>daliincXXXX.xml</emphasis>, where <!-- DNT-Start -->XXXX<!-- DNT-End --> is the current store
+        <para>All Dali SDS changes are recorded in a delta transaction log (in
+        XML format) with a naming convention of
+        <emphasis>daliincXXXX.xml</emphasis>, where XXXX is the current store
         edition. They are also optionally mirrored to a backup location. This
         transaction log grows indefinitely until the store is saved.</para>
 
-        <para>In the normal/recommended setup, <!-- DNT-Start -->Sasha<!-- DNT-End --> is the primary creator of
-        new <!-- DNT-Start -->SDS<!-- DNT-End --> store editions. It does so on a schedule and according to
+        <para>In the normal/recommended setup, Sasha is the primary creator of
+        new SDS store editions. It does so on a schedule and according to
         other configuration options (for example, you could configure for a
-        minimum delta transaction log size). <!-- DNT-Start -->Sasha<!-- DNT-End --> reads the last saved store
+        minimum delta transaction log size). Sasha reads the last saved store
         and the current transaction log and replays the transaction log over
         the last saved store to form a new in-memory version, and then saves
-        it. Unlike the <!-- DNT-Start -->Dali<!-- DNT-End --> saving process, this does not block or interfere
-        with <!-- DNT-Start -->Dali<!-- DNT-End -->. In the event of abrupt termination of the <!-- DNT-Start -->Dali<!-- DNT-End --> process
-        (such as being killed or a power loss) <!-- DNT-Start -->Dali<!-- DNT-End --> uses the same delta
+        it. Unlike the Dali saving process, this does not block or interfere
+        with Dali. In the event of abrupt termination of the Dali process
+        (such as being killed or a power loss) Dali uses the same delta
         transaction log at restart in order to replay the last save and
         changes to return to the last operational state.</para>
 
         <para></para>
 
-        <!-- DNT-Start --><!-- *** COMMENTING OUT WHOLE Of MONITORING SECTION
+        <!-- *** COMMENTING OUT WHOLE Of MONITORING SECTION
        <sect3>
           <title>HPCC Reporting</title>
 
@@ -609,41 +609,41 @@
 
           <para>More to come***</para>          
         </sect3>
-        END COMMENT ***--><!-- DNT-End -->
+        END COMMENT ***-->
       </sect2>
     </sect1>
 
     <sect1 id="SysAdm_OtherHPCCcomponents">
-      <!-- DNT-Start --><title>Other HPCC Components</title><!-- DNT-End -->
+      <title>Other HPCC Components</title>
 
-      <para><!-- DNT-Start -->ECL<!-- DNT-End --> Agent, <!-- DNT-Start -->ECLCC<!-- DNT-End --> Server, <!-- DNT-Start -->DFU<!-- DNT-End --> Server, the <!-- DNT-Start -->Thor<!-- DNT-End --> master, and <!-- DNT-Start -->ECL<!-- DNT-End -->
+      <para>ECL Agent, ECLCC Server, DFU Server, the Thor master, and ECL
       Watch are administrative processes which are used for supporting
       components of the main clusters.</para>
 
-      <para>For maximum efficiency you should provide 24<!-- DNT-Start -->GB<!-- DNT-End --> <!-- DNT-Start -->RAM<!-- DNT-End -->, 6+ <!-- DNT-Start -->CPU<!-- DNT-End --> cores,
+      <para>For maximum efficiency you should provide 24GB RAM, 6+ CPU cores,
       1Gb/sec network and high availability disk(s). These components can be
       made highly available in an active/active fashion.</para>
     </sect1>
   </chapter>
 
   <chapter id="Routine_Maintenance">
-    <!-- DNT-Start --><title>Routine Maintenance</title><!-- DNT-End -->
+    <title>Routine Maintenance</title>
 
-    <para>In order to ensure that your <!-- DNT-Start -->HPCC<!-- DNT-End --> system keeps running optimally,
+    <para>In order to ensure that your HPCC system keeps running optimally,
     some care and maintenance is required. The following sections address
-    routine maintenance tasks for your <!-- DNT-Start -->HPCC<!-- DNT-End --> system.</para>
+    routine maintenance tasks for your HPCC system.</para>
 
-    <!-- DNT-Start --><!--***SYSTEM HEALTH CHECK UP***TO COME***--><!-- DNT-End -->
+    <!--***SYSTEM HEALTH CHECK UP***TO COME***-->
 
     <sect1 id="SysAdmin_DataHandling">
-      <!-- DNT-Start --><title>Data Handling</title><!-- DNT-End -->
+      <title>Data Handling</title>
 
-      <para>When you start working with your <!-- DNT-Start -->HPCC<!-- DNT-End --> system, you will want to
+      <para>When you start working with your HPCC system, you will want to
       have some data on the system to process. Data gets transferred to the
-      <!-- DNT-Start -->HPCC<!-- DNT-End --> system by a process called a spray. Likewise to get data out from
-      an <!-- DNT-Start -->HPCC<!-- DNT-End --> system it must be desprayed.</para>
+      HPCC system by a process called a spray. Likewise to get data out from
+      an HPCC system it must be desprayed.</para>
 
-      <para>As <!-- DNT-Start -->HPCC<!-- DNT-End --> is a computer cluster the data gets deployed out over the
+      <para>As HPCC is a computer cluster the data gets deployed out over the
       nodes that make up the cluster. A <emphasis>spray</emphasis> or import
       is the relocation of a data file from one location (such as a Landing
       Zone) to a cluster. The term spray was adopted due to the nature of the
@@ -661,41 +661,41 @@
       storage location defined in your system's environment. There can be one
       or more of these locations defined. A daemon (dafilesrv) must be running
       on that server to enable file sprays and desprays. You can spray or
-      despray some files to your landing zone through <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. To upload
+      despray some files to your landing zone through ECL Watch. To upload
       large files, you will need a tool that supports the secure copy
       protocol, something like a WinSCP.</para>
 
-      <para>For more information about <!-- DNT-Start -->HPCC<!-- DNT-End --> data handling see the
-      <emphasis><!-- DNT-Start -->HPCC<!-- DNT-End --> Data Handling</emphasis> and the <emphasis><!-- DNT-Start -->HPCC<!-- DNT-End --> Data
+      <para>For more information about HPCC data handling see the
+      <emphasis>HPCC Data Handling</emphasis> and the <emphasis>HPCC Data
       Tutorial</emphasis> documents.</para>
 
-      <!-- DNT-Start --><!--***CAN TIE THIS ALL TOGETHER - as part of routine maint. clean up some data files... archive data... etc. ***TO COME***--><!-- DNT-End -->
+      <!--***CAN TIE THIS ALL TOGETHER - as part of routine maint. clean up some data files... archive data... etc. ***TO COME***-->
     </sect1>
 
     <sect1 id="SysAdm_BackUpData" role="nobrk">
-      <!-- DNT-Start --><title>Back Up Data</title><!-- DNT-End -->
+      <title>Back Up Data</title>
 
       <para>An integral part of routine maintenance is the backup of essential
       data. Devise a backup strategy to meet the needs of your organization.
       This section is not meant to replace your current backup strategy,
       instead this section supplements it by outlining special considerations
-      for <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript>.</para>
+      for HPCC Systems<superscript>®</superscript>.</para>
 
       <sect2 id="SysAdm_BackUpConsider">
-        <!-- DNT-Start --><title>Backup Considerations</title><!-- DNT-End -->
+        <title>Backup Considerations</title>
 
         <para>You probably already have some sort of a backup strategy in
-        place, by adding <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> into your
+        place, by adding HPCC Systems<superscript>®</superscript> into your
         operating environment there are some additional considerations to be
         aware of. The following sections discuss backup considerations for the
-        individual <!-- DNT-Start -->HPCC<!-- DNT-End --> system components.</para>
+        individual HPCC system components.</para>
 
         <sect3 id="SysAdm_BkU_Dali">
-          <!-- DNT-Start --><title>Dali</title><!-- DNT-End -->
+          <title>Dali</title>
 
-          <para><!-- DNT-Start -->Dali<!-- DNT-End --> can be configured to create its own backup. It is
+          <para>Dali can be configured to create its own backup. It is
           strongly recommended that the backup be kept on a different server
-          or node for disaster recovery purposes. You can specify the <!-- DNT-Start -->Dali<!-- DNT-End -->
+          or node for disaster recovery purposes. You can specify the Dali
           backup folder location using the Configuration Manager. You may want
           to keep multiple generations of backups, to be able to restore to a
           certain point in time. For example, you may want to do daily
@@ -703,28 +703,28 @@
 
           <para>You may want to keep backup copies at a system level using
           traditional methods. Regardless of method or scheme you would be
-          well advised to backup your <!-- DNT-Start -->Dali<!-- DNT-End -->.</para>
+          well advised to backup your Dali.</para>
 
-          <para>You should try to avoid putting <!-- DNT-Start -->Dali<!-- DNT-End -->, <!-- DNT-Start -->Sasha<!-- DNT-End -->, and even your
-          <!-- DNT-Start -->Thor<!-- DNT-End --> Master on the same node. Ideally you want each of these
+          <para>You should try to avoid putting Dali, Sasha, and even your
+          Thor Master on the same node. Ideally you want each of these
           components to be on separate nodes to not only reduce the stress on
           the system hardware (allowing the system to operate better) but also
           enabling you to recover your entire environment, files, and
           workunits in the event of a loss. In addition it would affect every
-          other <!-- DNT-Start -->Thor<!-- DNT-End -->/<!-- DNT-Start -->Roxie<!-- DNT-End --> cluster in the same environment if you lose this
+          other Thor/Roxie cluster in the same environment if you lose this
           node.</para>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_Sasha">
-          <!-- DNT-Start --><title>Sasha</title><!-- DNT-End -->
+          <title>Sasha</title>
 
-          <para><!-- DNT-Start -->Sasha<!-- DNT-End --> is the component that does the <!-- DNT-Start -->SDS<!-- DNT-End --> coalescing. It is
+          <para>Sasha is the component that does the SDS coalescing. It is
           normally the sole component that creates new store editions. It's
-          also the component that creates the <!-- DNT-Start -->XREF<!-- DNT-End --> metadata that ECLWatch
-          uses. Be aware that <!-- DNT-Start -->Sasha<!-- DNT-End --> can create quite a bit of archive data.
+          also the component that creates the XREF metadata that ECLWatch
+          uses. Be aware that Sasha can create quite a bit of archive data.
           Once the workunits are archived they are no longer available in the
-          <!-- DNT-Start -->Dali<!-- DNT-End --> data store. The archives can still be accessed through <!-- DNT-Start -->ECL<!-- DNT-End -->
-          Watch by restoring them to <!-- DNT-Start -->Dali<!-- DNT-End -->.</para>
+          Dali data store. The archives can still be accessed through ECL
+          Watch by restoring them to Dali.</para>
 
           <para>If you need high availability for archived workunits, you
           should back them up at a system level using traditional backup
@@ -732,77 +732,77 @@
         </sect3>
 
         <sect3 id="SysAdm_BkUp_DFUSvr">
-          <!-- DNT-Start --><title>DFU Server</title><!-- DNT-End -->
+          <title>DFU Server</title>
 
-          <para><!-- DNT-Start -->DFU<!-- DNT-End --> Server has no data. <!-- DNT-Start -->DFU<!-- DNT-End --> workunits are stored in <!-- DNT-Start -->Dali<!-- DNT-End --> until
-          they are archived by <!-- DNT-Start -->Sasha<!-- DNT-End -->.</para>
+          <para>DFU Server has no data. DFU workunits are stored in Dali until
+          they are archived by Sasha.</para>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_ECLCCSvr">
-          <!-- DNT-Start --><title>ECLCC Server</title><!-- DNT-End -->
+          <title>ECLCC Server</title>
 
-          <para><!-- DNT-Start -->ECLCC<!-- DNT-End --> Server stores no data. <!-- DNT-Start -->ECL<!-- DNT-End --> workunits are stored in <!-- DNT-Start -->Dali<!-- DNT-End -->
-          and archived by <!-- DNT-Start -->Sasha<!-- DNT-End -->.</para>
+          <para>ECLCC Server stores no data. ECL workunits are stored in Dali
+          and archived by Sasha.</para>
 
-          <!-- DNT-Start --><!--***COMMENT:<para><emphasis role="bold">Note:</emphasis> No compiler is shipped
+          <!--***COMMENT:<para><emphasis role="bold">Note:</emphasis> No compiler is shipped
           with the HPCC System. The ECLCC Server compiles ECL code into C++,
-          however you must have a C++ compiler to use on your system. </para> --><!-- DNT-End -->
+          however you must have a C++ compiler to use on your system. </para> -->
         </sect3>
 
         <sect3 id="SysAdm_BkUp_ECLAgent">
-          <!-- DNT-Start --><title>ECL Agent</title><!-- DNT-End -->
+          <title>ECL Agent</title>
 
-          <para><!-- DNT-Start -->ECL<!-- DNT-End --> Agent stores no data.</para>
+          <para>ECL Agent stores no data.</para>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_ECLSched">
-          <!-- DNT-Start --><title>ECL Scheduler</title><!-- DNT-End -->
+          <title>ECL Scheduler</title>
 
-          <para><!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler stores no data. <!-- DNT-Start -->ECL<!-- DNT-End --> Workunits are stored in
-          <!-- DNT-Start -->Dali<!-- DNT-End -->.</para>
+          <para>ECL Scheduler stores no data. ECL Workunits are stored in
+          Dali.</para>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_ESPsvr">
-          <!-- DNT-Start --><title>ESP Server</title><!-- DNT-End -->
+          <title>ESP Server</title>
 
-          <para><!-- DNT-Start -->ESP<!-- DNT-End --> Server stores no data. If you are using <!-- DNT-Start -->SSL<!-- DNT-End --> certificates,
+          <para>ESP Server stores no data. If you are using SSL certificates,
           public and private keys they should be backed up using traditional
           methods.</para>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_Thor">
-          <!-- DNT-Start --><title>Thor</title><!-- DNT-End -->
+          <title>Thor</title>
 
-          <para><!-- DNT-Start -->Thor<!-- DNT-End -->, the data refinery, as one of the critical components of
-          <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> needs to be backed up.
-          Backup <!-- DNT-Start -->Thor<!-- DNT-End --> by configuring replication and setting up a nightly back
-          up cron task. Backup <!-- DNT-Start -->Thor<!-- DNT-End --> on demand before and/or after any node
-          swap or drive swap if you do not have a <!-- DNT-Start -->RAID<!-- DNT-End --> configured.</para>
+          <para>Thor, the data refinery, as one of the critical components of
+          HPCC Systems<superscript>®</superscript> needs to be backed up.
+          Backup Thor by configuring replication and setting up a nightly back
+          up cron task. Backup Thor on demand before and/or after any node
+          swap or drive swap if you do not have a RAID configured.</para>
 
-          <para>A very important part of administering <!-- DNT-Start -->Thor<!-- DNT-End --> is to check the
+          <para>A very important part of administering Thor is to check the
           logs to ensure the previous backups completed successfully.</para>
 
           <para><emphasis role="bold">Backupnode</emphasis></para>
 
-          <para>Backupnode is a tool that is packaged with <!-- DNT-Start -->HPCC<!-- DNT-End -->. Backupnode
-          allows you to backup <!-- DNT-Start -->Thor<!-- DNT-End --> nodes on demand or in a script. You can
+          <para>Backupnode is a tool that is packaged with HPCC. Backupnode
+          allows you to backup Thor nodes on demand or in a script. You can
           also use backupnode regularly in a crontab or by adding a backupnode
           component with Configuration Manager to your environment. You would
-          always want to run it on the <!-- DNT-Start -->Thor<!-- DNT-End --> master of that cluster.</para>
+          always want to run it on the Thor master of that cluster.</para>
 
           <para>The following example is one suggested way for invoking
           backupnode manually.</para>
 
-          <!-- DNT-Start --><programlisting>  /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor" &amp; </programlisting><!-- DNT-End -->
+          <programlisting>  /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor" &amp; </programlisting>
 
-          <para>The command line parameter must match the name of your <!-- DNT-Start -->Thor<!-- DNT-End -->
+          <para>The command line parameter must match the name of your Thor
           cluster. In your production environment, it is likely that you would
-          provide descriptive names for your <!-- DNT-Start -->Thor<!-- DNT-End --> clusters.</para>
+          provide descriptive names for your Thor clusters.</para>
 
-          <para>For example, if your <!-- DNT-Start -->Thor<!-- DNT-End --> cluster is named thor400_7s, you
+          <para>For example, if your Thor cluster is named thor400_7s, you
           would call start_backupnode thor400_7s.</para>
 
-          <!-- DNT-Start --><programlisting>  /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor400_7s" &amp; </programlisting><!-- DNT-End -->
+          <programlisting>  /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor400_7s" &amp; </programlisting>
 
           <para><emphasis role="bold">Backupnode run
           regularly</emphasis></para>
@@ -811,42 +811,42 @@
           you may want a crontab entry (to backup thor400_7s) set to run at
           1am daily:</para>
 
-          <!-- DNT-Start --><programlisting>  0 1 * * * /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor400_7s" &amp; </programlisting><!-- DNT-End -->
+          <programlisting>  0 1 * * * /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor400_7s" &amp; </programlisting>
 
           <para>Backupnode writes out its activity to a log file. That log can
           be found at:</para>
 
-          <para>/var/log/HPCCSystems/backupnode/<!-- DNT-Start -->MM<!-- DNT-End -->_<!-- DNT-Start -->DD<!-- DNT-End -->_<!-- DNT-Start -->YYYY<!-- DNT-End -->_<!-- DNT-Start -->HH<!-- DNT-End -->_<!-- DNT-Start -->MM<!-- DNT-End -->_<!-- DNT-Start -->SS<!-- DNT-End -->.log</para>
+          <para>/var/log/HPCCSystems/backupnode/MM_DD_YYYY_HH_MM_SS.log</para>
 
-          <para>The (<!-- DNT-Start -->MM<!-- DNT-End -->) Month, (<!-- DNT-Start -->DD<!-- DNT-End -->) Day, (<!-- DNT-Start -->YYYY<!-- DNT-End -->) 4-digit Year, (<!-- DNT-Start -->HH<!-- DNT-End -->) Hour, (<!-- DNT-Start -->MM<!-- DNT-End -->)
-          Minutes, and (<!-- DNT-Start -->SS<!-- DNT-End -->) Seconds of the backup comprising the log file
+          <para>The (MM) Month, (DD) Day, (YYYY) 4-digit Year, (HH) Hour, (MM)
+          Minutes, and (SS) Seconds of the backup comprising the log file
           name.</para>
 
-          <para>The main log file exists on the <!-- DNT-Start -->Thor<!-- DNT-End --> master node. It shows
+          <para>The main log file exists on the Thor master node. It shows
           what nodes it is run on and if it finished. You can find other
-          backupnode logs on each of the <!-- DNT-Start -->Thor<!-- DNT-End --> nodes showing what files, if
+          backupnode logs on each of the Thor nodes showing what files, if
           any, it needed to restore.</para>
 
           <para>It is important to check the logs to ensure the previous
           backups completed successfully. The following entry is from the
           backupnode log showing that backup completed successfully:</para>
 
-          <!-- DNT-Start --><programlisting>00000028 2014-02-19 12:01:08 26457 26457 "Completed in 0m 0s with 0 errors" 
-00000029 2014-02-19 12:01:08 26457 26457 "backupnode finished" </programlisting><!-- DNT-End -->
+          <programlisting>00000028 2014-02-19 12:01:08 26457 26457 "Completed in 0m 0s with 0 errors" 
+00000029 2014-02-19 12:01:08 26457 26457 "backupnode finished" </programlisting>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_Roxie">
-          <!-- DNT-Start --><title>Roxie</title><!-- DNT-End -->
+          <title>Roxie</title>
 
-          <para><!-- DNT-Start -->Roxie<!-- DNT-End --> data is protected by three forms of redundancy:</para>
+          <para>Roxie data is protected by three forms of redundancy:</para>
 
           <itemizedlist>
             <listitem>
               <para><emphasis role="bold">Original Source Data File
               Retention:</emphasis> When a query is published, the data is
-              typically copied from a remote site, either a <!-- DNT-Start -->Thor<!-- DNT-End --> or a <!-- DNT-Start -->Roxie<!-- DNT-End -->.
-              The <!-- DNT-Start -->Thor<!-- DNT-End --> data can serve as backup, provided it is not removed or
-              altered on <!-- DNT-Start -->Thor<!-- DNT-End -->. <!-- DNT-Start -->Thor<!-- DNT-End --> data is typically retained for a period of
+              typically copied from a remote site, either a Thor or a Roxie.
+              The Thor data can serve as backup, provided it is not removed or
+              altered on Thor. Thor data is typically retained for a period of
               time sufficient to serve as a backup copy.</para>
             </listitem>
 
@@ -859,29 +859,29 @@
 
             <listitem>
               <para><emphasis role="bold">Sibling Cluster
-              Redundancy:</emphasis> Although not required, <!-- DNT-Start -->Roxie<!-- DNT-End --> may run
-              multiple identically-configured <!-- DNT-Start -->Roxie<!-- DNT-End --> clusters. When two
+              Redundancy:</emphasis> Although not required, Roxie may run
+              multiple identically-configured Roxie clusters. When two
               clusters are deployed for Production each node has an identical
               twin in terms of queries and/or data stored on the node in the
               other cluster. This configuration provides multiple redundant
-              copies of data files. With three sibling <!-- DNT-Start -->Roxie<!-- DNT-End --> clusters that
+              copies of data files. With three sibling Roxie clusters that
               have peer node redundancy, there are always six copies of each
               file part at any given time; eliminating the need to use
-              traditional backup procedures for <!-- DNT-Start -->Roxie<!-- DNT-End --> data files.</para>
+              traditional backup procedures for Roxie data files.</para>
             </listitem>
           </itemizedlist>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_LandZone">
-          <!-- DNT-Start --><title>Landing Zone</title><!-- DNT-End -->
+          <title>Landing Zone</title>
 
           <para>The Landing Zone is used to host incoming and outgoing files.
-          This should be treated similarly to an <!-- DNT-Start -->FTP<!-- DNT-End --> server. Use traditional
+          This should be treated similarly to an FTP server. Use traditional
           system level backups.</para>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_Misc">
-          <!-- DNT-Start --><title>Misc</title><!-- DNT-End -->
+          <title>Misc</title>
 
           <para>Backup of any additional component add-ons, your environment
           files (environment.xml), or other custom configurations should be
@@ -891,7 +891,7 @@
     </sect1>
 
     <sect1 id="SysAdm_Log_Files">
-      <!-- DNT-Start --><title>Log Files</title><!-- DNT-End -->
+      <title>Log Files</title>
 
       <para>You can review system messages and see any error messages as they
       are reported and captured in log files. Log files can help you in
@@ -899,7 +899,7 @@
       troubleshooting.</para>
 
       <sect2 id="SysAdm_Component_Logs">
-        <!-- DNT-Start --><title>Component Logs</title><!-- DNT-End -->
+        <title>Component Logs</title>
 
         <para>There are log files for each component in directories below
         <emphasis role="bold">/var/log/HPCCSystems</emphasis> (default
@@ -909,7 +909,7 @@
 
         <para>There are log files which record activity among the various
         components. You can find the log files in subdirectories named
-        corresponding to the components that they track. For example, the <!-- DNT-Start -->Thor<!-- DNT-End -->
+        corresponding to the components that they track. For example, the Thor
         logs would be found in a directory named mythor, the sasha log would
         be in the mysasha directory, the esp log in the myesp
         directory.</para>
@@ -921,30 +921,30 @@
         name, such as esp.log which is a short cut to the latest current log
         file for that component.</para>
 
-        <!-- DNT-Start --><!-- # JIRA 18201 #--><!-- DNT-End -->
+        <!-- # JIRA 18201 #-->
 
         <para>Understanding the log files, and what is normally reported in
-        the log files, helps in troubleshooting the <!-- DNT-Start -->HPCC<!-- DNT-End --> system.</para>
+        the log files, helps in troubleshooting the HPCC system.</para>
 
         <para>As part of routine maintenance you may want to backup, archive,
         and remove the older log files. Some log files can grow quite large
         and you should be mindful of available disk space where the system
         writes out its log files. It could prove to be helpful to separate
-        your log file directory from your <!-- DNT-Start -->OS<!-- DNT-End --> or component file system.</para>
+        your log file directory from your OS or component file system.</para>
       </sect2>
 
       <sect2 id="SysAdm_AccessLogFiles">
-        <!-- DNT-Start --><title>Accessing Log Files</title><!-- DNT-End -->
+        <title>Accessing Log Files</title>
 
         <para>You can access and view the log files directly by going to the
         component log directory from a command prompt or a terminal
-        application. You can also view the component log files through <!-- DNT-Start -->ECL<!-- DNT-End -->
+        application. You can also view the component log files through ECL
         Watch.</para>
 
-        <para>To view logs on <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, click on the <emphasis
+        <para>To view logs on ECL Watch, click on the <emphasis
         role="bold">Operations</emphasis> icon, then click on the <emphasis
         role="bold">System Servers</emphasis> link. That opens the System
-        Servers page in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. There are several <!-- DNT-Start -->HPCC<!-- DNT-End --> system components
+        Servers page in ECL Watch. There are several HPCC system components
         listed on that page. In the <emphasis role="bold">Directory</emphasis>
         column for each component there is a computer drive icon. Click the
         icon in the row for the component log you wish to view. <figure>
@@ -958,10 +958,10 @@
           </figure></para>
 
         <para>You can also view log files from the other links under the
-        Operations icon in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. <orderedlist>
+        Operations icon in ECL Watch. <orderedlist>
             <listitem>
               <para>Click on the <emphasis role="bold">Target
-              <!-- DNT-Start -->Clusters<!-- DNT-End --></emphasis> link to open the tab with links to your
+              Clusters</emphasis> link to open the tab with links to your
               system's clusters.</para>
             </listitem>
 
@@ -992,10 +992,10 @@
           </orderedlist></para>
 
         <sect3 id="Workunit_Logs">
-          <!-- DNT-Start --><title>Log files in ECL Workunits</title><!-- DNT-End -->
+          <title>Log files in ECL Workunits</title>
 
-          <para>You can also access the <!-- DNT-Start -->Thor<!-- DNT-End --> or <!-- DNT-Start -->ECL<!-- DNT-End --> Agent log files from the
-          <!-- DNT-Start -->ECL<!-- DNT-End --> Workunits. (not available for <!-- DNT-Start -->Roxie<!-- DNT-End --> workunits) In <!-- DNT-Start -->ECL<!-- DNT-End --> Watch when
+          <para>You can also access the Thor or ECL Agent log files from the
+          ECL Workunits. (not available for Roxie workunits) In ECL Watch when
           examining the Workunit details, you will see a <emphasis
           role="bold">Helpers</emphasis> tab. Click on the Helpers tab to
           display the relevant log files for that particular workunit. <figure>
@@ -1017,11 +1017,11 @@
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <chapter id="OnDemand_Maintenance">
-    <!-- DNT-Start --><title>System Configuration and Management</title><!-- DNT-End -->
+    <title>System Configuration and Management</title>
 
-    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> system requires configuration. The Configuration Manager
+    <para>The HPCC system requires configuration. The Configuration Manager
     tool (configmgr) included with the system software is a valuable piece of
-    setting up your <!-- DNT-Start -->HPCC<!-- DNT-End --> system. The Configuration Manager is a graphical tool
+    setting up your HPCC system. The Configuration Manager is a graphical tool
     provided that can be used to configure your system. Configuration Manager
     has a wizard that you can run which will easily generate an environment
     file to get you configured, up and running quickly. There is an advanced
@@ -1040,7 +1040,7 @@
         </mediaobject>
       </figure></para>
 
-    <!-- DNT-Start --><!--/*Including special SysAdmin Config Module -paras- */--><!-- DNT-End -->
+    <!--/*Including special SysAdmin Config Module -paras- */-->
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='cfgmgr_introP0'])"
@@ -1062,18 +1062,18 @@
                 xpointer="xpointer(//*[@id='cfgmgr_introP3'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <!-- DNT-Start --><!--/*Including special SysAdmin Config Module -Sect1- */--><!-- DNT-End -->
+    <!--/*Including special SysAdmin Config Module -Sect1- */-->
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="xpointer(//*[@id='configuring-a-multi-node-system'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="SysAdm_Env.conf">
-      <!-- DNT-Start --><title>Environment.conf</title><!-- DNT-End -->
+      <title>Environment.conf</title>
 
-      <para>Another component of <!-- DNT-Start -->HPCC<!-- DNT-End --> system configuration is the
+      <para>Another component of HPCC system configuration is the
       environment.conf file. Environment.conf contains some global definitions
-      that the configuration manager uses to configure the <!-- DNT-Start -->HPCC<!-- DNT-End --> system. In
+      that the configuration manager uses to configure the HPCC system. In
       most cases, the defaults are sufficient.</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -1086,9 +1086,9 @@
               <row>
                 <entry><inlinegraphic fileref="images/caution.png" /></entry>
 
-                <entry><emphasis role="bold"><!-- DNT-Start -->WARNING<!-- DNT-End --></emphasis>: These
+                <entry><emphasis role="bold">WARNING</emphasis>: These
                 settings are essential to proper system operation. Only expert
-                level <!-- DNT-Start -->HPCC<!-- DNT-End --> administrators should attempt to change any aspects
+                level HPCC administrators should attempt to change any aspects
                 of this file.</entry>
               </row>
             </tbody>
@@ -1096,16 +1096,16 @@
         </informaltable>By default the environment.conf file is
       located:</para>
 
-      <!-- DNT-Start --><programlisting>/etc/HPCCSystems</programlisting><!-- DNT-End -->
+      <programlisting>/etc/HPCCSystems</programlisting>
 
-      <para>Environment.conf is required upon startup of <!-- DNT-Start -->HPCC<!-- DNT-End -->. The
-      environment.conf is where the <!-- DNT-Start -->HPCC<!-- DNT-End --> environment file is defined.</para>
+      <para>Environment.conf is required upon startup of HPCC. The
+      environment.conf is where the HPCC environment file is defined.</para>
 
-      <!-- DNT-Start --><programlisting>/opt/HPCCSystems/environment.xml</programlisting><!-- DNT-End -->
+      <programlisting>/opt/HPCCSystems/environment.xml</programlisting>
 
       <para>This is also where the working path is defined.</para>
 
-      <!-- DNT-Start --><programlisting>path=/opt/HPCCSystems</programlisting><!-- DNT-End -->
+      <programlisting>path=/opt/HPCCSystems</programlisting>
 
       <para>The working path is used by several aspects of the application,
       changing this could cause needless complications. By default the
@@ -1139,23 +1139,23 @@ use_epoll=true
 </programlisting></para>
 
       <sect2 id="SysAdm_Paths">
-        <!-- DNT-Start --><title>Path considerations</title><!-- DNT-End -->
+        <title>Path considerations</title>
 
         <para>Most of the directories are defined as absolute paths:</para>
 
-        <!-- DNT-Start --><programlisting>configs=/etc/HPCCSystems
+        <programlisting>configs=/etc/HPCCSystems
 path=/opt/HPCCSystems
 classpath=/opt/HPCCSystems/classes
 runtime=/var/lib/HPCCSystems
-lock=/var/lock/HPCCSystems</programlisting><!-- DNT-End -->
+lock=/var/lock/HPCCSystems</programlisting>
 
-        <para><!-- DNT-Start -->HPCC<!-- DNT-End --> will not run properly without the proper paths, and in some
+        <para>HPCC will not run properly without the proper paths, and in some
         cases needs the absolute path. If a process or component can't find a
         path you will get an error message such as the following:</para>
 
-        <!-- DNT-Start --><programlisting>"There are no components configured to run on the node..." </programlisting><!-- DNT-End -->
+        <programlisting>"There are no components configured to run on the node..." </programlisting>
 
-        <para>If the path changes from HPCCSystems, it does <!-- DNT-Start -->NOT<!-- DNT-End --> change in the
+        <para>If the path changes from HPCCSystems, it does NOT change in the
         environment.xml file. Any changes would require manually modifying the
         environment.xml file.</para>
 
@@ -1164,7 +1164,7 @@ lock=/var/lock/HPCCSystems</programlisting><!-- DNT-End -->
       </sect2>
 
       <sect2 id="SysAdm_OtherEnv.conf">
-        <!-- DNT-Start --><title>Other Environment.conf items</title><!-- DNT-End -->
+        <title>Other Environment.conf items</title>
 
         <para>Some other items used by or referred to in
         environment.conf.<variablelist>
@@ -1183,7 +1183,7 @@ lock=/var/lock/HPCCSystems</programlisting><!-- DNT-End -->
 
               <listitem>
                 <para>Categories available to be logged. These consist of
-                Time(<!-- DNT-Start -->TIM<!-- DNT-End -->), Date(<!-- DNT-Start -->DAT<!-- DNT-End -->), Process <!-- DNT-Start -->ID<!-- DNT-End --> (<!-- DNT-Start -->PID<!-- DNT-End -->), Thread <!-- DNT-Start -->ID<!-- DNT-End --> (<!-- DNT-Start -->TID<!-- DNT-End -->),
+                Time(TIM), Date(DAT), Process ID (PID), Thread ID (TID),
                 etc.</para>
               </listitem>
             </varlistentry>
@@ -1195,7 +1195,7 @@ lock=/var/lock/HPCCSystems</programlisting><!-- DNT-End -->
                 <para>In the default environment.conf there is a value for
                 interface. The default value for that is:</para>
 
-                <!-- DNT-Start --><programlisting>interface=*</programlisting><!-- DNT-End -->
+                <programlisting>interface=*</programlisting>
 
                 <para>The default value of * assigns the interface to an open
                 ip address, in any order. Specifying an interface, such as
@@ -1206,10 +1206,10 @@ lock=/var/lock/HPCCSystems</programlisting><!-- DNT-End -->
       </sect2>
 
       <sect2 id="ConfiguringRemoteAccessOverTLS">
-        <!-- DNT-Start --><title>Remote Access over TLS</title><!-- DNT-End -->
+        <title>Remote Access over TLS</title>
 
         <para>Configuring your system for remote file access over Transport
-        Layer Security (<!-- DNT-Start -->TLS<!-- DNT-End -->) requires modifying the <emphasis
+        Layer Security (TLS) requires modifying the <emphasis
         role="bold">dafilesrv</emphasis> setting in the
         <emphasis>environment.conf</emphasis> file.</para>
 
@@ -1226,13 +1226,13 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         deploy the <emphasis>environment.conf</emphasis> file (and cert/key
         files) to all nodes as appropriate.</para>
 
-        <para>When dafilesrv is enabled for <!-- DNT-Start -->TLS<!-- DNT-End --> (port 7600), it can still
-        connect over a non-<!-- DNT-Start -->TLS<!-- DNT-End --> connection (port 7100) to allow legacy clients
+        <para>When dafilesrv is enabled for TLS (port 7600), it can still
+        connect over a non-TLS connection (port 7100) to allow legacy clients
         to work.</para>
       </sect2>
     </sect1>
 
-    <!-- DNT-Start --><!--Inclusions-As-Sect1--><!-- DNT-End -->
+    <!--Inclusions-As-Sect1-->
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
                 xpointer="element(/1)"
@@ -1249,19 +1249,19 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="SysAdm_WUs_ActiveDir">
-      <!-- DNT-Start --><title>Workunits and Active Directory</title><!-- DNT-End -->
+      <title>Workunits and Active Directory</title>
 
       <para>The performance of your system can vary depending on how some
       components interact. One area which could impact performance is the
       relationship with users, groups, and Active Directory. If possible,
-      having a separate Active Directory specific to <!-- DNT-Start -->HPCC<!-- DNT-End --> could be a good
+      having a separate Active Directory specific to HPCC could be a good
       policy. There have been a few instances where just one Active Directory
       servicing many, diverse applications has been less than optimal.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> makes setting up your Active Directory <!-- DNT-Start -->OU<!-- DNT-End -->'s relatively easy.
-      <!-- DNT-Start -->ESP<!-- DNT-End --> creates all the <!-- DNT-Start -->OU<!-- DNT-End -->'s for you when it starts up, based on the
+      <para>HPCC makes setting up your Active Directory OU's relatively easy.
+      ESP creates all the OU's for you when it starts up, based on the
       settings you defined in Configuration Manager. You can then start
-      <!-- DNT-Start -->Dali<!-- DNT-End -->/<!-- DNT-Start -->ESP<!-- DNT-End --> and use ECLWatch to add or modify users or groups.</para>
+      Dali/ESP and use ECLWatch to add or modify users or groups.</para>
 
       <para>You can assign permissions to each user individually, however it
       is more manageable to assign these permissions to groups, and then add
@@ -1273,10 +1273,10 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
       appropriate group(s).</para>
 
       <sect2 id="SysAdm_AD_and_LDAP">
-        <!-- DNT-Start --><title>Active Directory, and LDAP Commonality</title><!-- DNT-End -->
+        <title>Active Directory, and LDAP Commonality</title>
 
         <para>There are components that are common to both Active Directory
-        and <!-- DNT-Start -->LDAP<!-- DNT-End -->. There are a few relevant terms, that may need some further
+        and LDAP. There are a few relevant terms, that may need some further
         explanation. <variablelist>
             <varlistentry>
               <term>filesBasedn</term>
@@ -1332,11 +1332,11 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="Redefining_Thor_Nodes">
-      <!-- DNT-Start --><title>Redefining nodes in a Thor Cluster</title><!-- DNT-End -->
+      <title>Redefining nodes in a Thor Cluster</title>
 
-      <para>To reconfigure a <!-- DNT-Start -->Thor<!-- DNT-End --> cluster where you replace existing nodes
-      (with new <!-- DNT-Start -->IP<!-- DNT-End -->'s) or add or remove nodes, you must take an additional step
-      to restructure the group. <!-- DNT-Start -->Dali<!-- DNT-End --> will not automatically restructure an
+      <para>To reconfigure a Thor cluster where you replace existing nodes
+      (with new IP's) or add or remove nodes, you must take an additional step
+      to restructure the group. Dali will not automatically restructure an
       existing group.</para>
 
       <para>This is because existing published files reference the previous
@@ -1344,10 +1344,10 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
       invalidate those files and make the physical files inaccessible.</para>
 
       <para>There are a couple of scenarios where you would want to redefine
-      your <!-- DNT-Start -->Thor<!-- DNT-End --> cluster.</para>
+      your Thor cluster.</para>
 
       <sect2 id="Replace_Faulty_Node" role="nobrk">
-        <!-- DNT-Start --><title>Replacing faulty node(s)</title><!-- DNT-End -->
+        <title>Replacing faulty node(s)</title>
 
         <para>If data files are replicated, replacing a node and forcing the
         new group to be used by existing files may be desirable. In this
@@ -1364,40 +1364,40 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
       </sect2>
 
       <sect2 id="SysAdmin_Resizing_The_Cluster" role="nobrk">
-        <!-- DNT-Start --><title>Resizing the cluster</title><!-- DNT-End -->
+        <title>Resizing the cluster</title>
 
-        <para>If you are adding or removing <!-- DNT-Start -->Thor<!-- DNT-End --> cluster nodes but
+        <para>If you are adding or removing Thor cluster nodes but
         <emphasis>all previous nodes remain part of the environment and
         accessible</emphasis>, you must <emphasis
         role="bold">rename</emphasis> the group that is associated with the
-        <!-- DNT-Start -->Thor<!-- DNT-End --> cluster (or the Cluster name if there is no group name).</para>
+        Thor cluster (or the Cluster name if there is no group name).</para>
 
         <para>This will ensure all previously existing files, continue to use
         the old group structure, while new files use the new group
         structure.</para>
 
-        <para>In summary, if the <!-- DNT-Start -->Thor<!-- DNT-End --> cluster changes it must be updated in
-        the <!-- DNT-Start -->Dali<!-- DNT-End -->.</para>
+        <para>In summary, if the Thor cluster changes it must be updated in
+        the Dali.</para>
       </sect2>
     </sect1>
   </chapter>
 
   <chapter id="Best_Practices_Chapter">
-    <!-- DNT-Start --><title>Best Practices</title><!-- DNT-End -->
+    <title>Best Practices</title>
 
     <para>This chapter outlines various forms of best practices established by
-    long time <!-- DNT-Start -->HPCC<!-- DNT-End --> users and administrators running <!-- DNT-Start -->HPCC<!-- DNT-End --> in a high
+    long time HPCC users and administrators running HPCC in a high
     availability, demanding production environment. While it is not required
     that you run your environment in this manner, as your specific
     requirements may vary. This section provides some best practice
-    recommendations established after several years of running <!-- DNT-Start -->HPCC<!-- DNT-End --> in a
+    recommendations established after several years of running HPCC in a
     demanding, intense, production environment.</para>
 
     <sect1 id="BP_Cluster_Redundancy" role="nobrk">
-      <!-- DNT-Start --><title>Cluster Redundancy</title><!-- DNT-End -->
+      <title>Cluster Redundancy</title>
 
       <para>There are several aspects of cluster redundancy that should be
-      considered when setting up your <!-- DNT-Start -->HPCC<!-- DNT-End --> system.</para>
+      considered when setting up your HPCC system.</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -1412,79 +1412,79 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 <entry><inlinegraphic fileref="images/tip.jpg" /></entry>
 
                 <entry><para>Make sure you allocate ample resources to your
-                key components. <!-- DNT-Start -->Dali<!-- DNT-End --> is <!-- DNT-Start -->RAM<!-- DNT-End --> intensive. <!-- DNT-Start -->ECL<!-- DNT-End --> Agent and <!-- DNT-Start -->ECL<!-- DNT-End -->
-                Server are processor dependent. <!-- DNT-Start -->Thor<!-- DNT-End --> should have a minimum of
-                4<!-- DNT-Start -->GB<!-- DNT-End --> <!-- DNT-Start -->RAM<!-- DNT-End --> per node.</para><para> </para></entry>
+                key components. Dali is RAM intensive. ECL Agent and ECL
+                Server are processor dependent. Thor should have a minimum of
+                4GB RAM per node.</para><para> </para></entry>
               </row>
             </tbody>
           </tgroup>
         </informaltable></para>
 
       <sect2 id="SysAdm_BestPrac_Dali">
-        <!-- DNT-Start --><title>Dali</title><!-- DNT-End -->
+        <title>Dali</title>
 
-        <para><!-- DNT-Start -->Dali<!-- DNT-End --> should be run in an active/passive configuration.
+        <para>Dali should be run in an active/passive configuration.
         Active/passive meaning you would have two Dalis running, one primary,
         or active, and the other passive. In this scenario all actions are run
-        on the active <!-- DNT-Start -->Dali<!-- DNT-End -->, but duplicated on the passive one. If the active
-        <!-- DNT-Start -->Dali<!-- DNT-End --> fails, then you can fail over to the passive <!-- DNT-Start -->Dali<!-- DNT-End -->.<!--NOTE: Add steps for how to configure an Active/Passive Dali--></para>
+        on the active Dali, but duplicated on the passive one. If the active
+        Dali fails, then you can fail over to the passive Dali.<!--NOTE: Add steps for how to configure an Active/Passive Dali--></para>
 
         <para>Another suggested best practice is to use standard clustering
-        with a quorum and a takeover <!-- DNT-Start -->VIP<!-- DNT-End --> (a kind of load balancer). If the
-        primary <!-- DNT-Start -->Dali<!-- DNT-End --> fails, you move the <!-- DNT-Start -->VIP<!-- DNT-End --> and data directory over to the
-        passive node and restart the <!-- DNT-Start -->Dali<!-- DNT-End --> service.</para>
+        with a quorum and a takeover VIP (a kind of load balancer). If the
+        primary Dali fails, you move the VIP and data directory over to the
+        passive node and restart the Dali service.</para>
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_DFUsvr">
-        <!-- DNT-Start --><title>DFU Server</title><!-- DNT-End -->
+        <title>DFU Server</title>
 
-        <para>You can run multiple instances of the <!-- DNT-Start -->DFU<!-- DNT-End --> Server. You can run
+        <para>You can run multiple instances of the DFU Server. You can run
         all instances as active, as opposed to an active/passive
-        configuration. There is no need for a load balancer or <!-- DNT-Start -->VIP<!-- DNT-End -->. Each
-        instance routinely queries the <!-- DNT-Start -->Dali<!-- DNT-End --> for workunits. Should one fail,
+        configuration. There is no need for a load balancer or VIP. Each
+        instance routinely queries the Dali for workunits. Should one fail,
         the other(s) will continue to pull new workunits.</para>
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_ECLCCSvr_">
-        <!-- DNT-Start --><title>ECLCC Server</title><!-- DNT-End -->
+        <title>ECLCC Server</title>
 
-        <para>You can run multiple active instances of the <!-- DNT-Start -->ECLCC<!-- DNT-End --> Server for
-        redundancy. There is no need for a load balancer or <!-- DNT-Start -->VIP<!-- DNT-End --> for this
+        <para>You can run multiple active instances of the ECLCC Server for
+        redundancy. There is no need for a load balancer or VIP for this
         either. Each instance will routinely check for workunits. Should one
         fail, the other(s) will continue to compile.</para>
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_ESP_ECLWatch_WSECL">
-        <!-- DNT-Start --><title>ESP/ECL Watch/WsECL</title><!-- DNT-End -->
+        <title>ESP/ECL Watch/WsECL</title>
 
-        <para>To establish redundancy, place the <!-- DNT-Start -->ESP<!-- DNT-End --> Servers in a <!-- DNT-Start -->VIP<!-- DNT-End -->. For an
+        <para>To establish redundancy, place the ESP Servers in a VIP. For an
         active/active design, you must use a load balancer. For active/passive
         you can use pacemaker/heartbeat. If you run active/active, you should
         maintain a single client's connection to a single server for the life
-        of a session for <!-- DNT-Start -->ECL<!-- DNT-End --> Watch (port 8010). Other services, such as WsECL
+        of a session for ECL Watch (port 8010). Other services, such as WsECL
         (port 8002) do not require a persistent connection to a single
         server.</para>
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_ECLAgent">
-        <!-- DNT-Start --><title>ECL Agent</title><!-- DNT-End -->
+        <title>ECL Agent</title>
 
-        <para>You can run multiple active instances of the <!-- DNT-Start -->ECL<!-- DNT-End --> Agent. No need
-        for a load balancer or <!-- DNT-Start -->VIP<!-- DNT-End -->. Each instance routinely queries for
+        <para>You can run multiple active instances of the ECL Agent. No need
+        for a load balancer or VIP. Each instance routinely queries for
         workunits. Should one fail, the other(s) will continue to pull new
         workunits.</para>
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_Sasha">
-        <!-- DNT-Start --><title>Sasha</title><!-- DNT-End -->
+        <title>Sasha</title>
 
-        <para><!-- DNT-Start -->Sasha<!-- DNT-End --> should be run in an active/passive configuration.
+        <para>Sasha should be run in an active/passive configuration.
         Active/passive meaning you would have two Sashas configured, one
         primary (active), and the other standing by.</para>
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_ECLSched">
-        <!-- DNT-Start --><title>ECL Scheduler</title><!-- DNT-End -->
+        <title>ECL Scheduler</title>
 
         <para>No need for a load balancer, runs active/active. Each instance
         routinely queries for workunits. Should one fail, the other(s) will
@@ -1492,17 +1492,17 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_ThorMaster">
-        <!-- DNT-Start --><title>Thormaster</title><!-- DNT-End -->
+        <title>Thormaster</title>
 
-        <para>Set up <!-- DNT-Start -->Thor<!-- DNT-End --> in an active/passive configuration. Active/passive
+        <para>Set up Thor in an active/passive configuration. Active/passive
         meaning you would have two instances running, one primary (active),
         and the other passive. No load balancer needed. If the active instance
         fails, then you can fail over to the passive. Failover then uses the
-        <!-- DNT-Start -->VIP<!-- DNT-End --> (a kind of load balancer) to distribute any incoming requests.<!--NOTE: Add steps for how to configure the Active/Passive Thor--></para>
+        VIP (a kind of load balancer) to distribute any incoming requests.<!--NOTE: Add steps for how to configure the Active/Passive Thor--></para>
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_DropZone">
-        <!-- DNT-Start --><title>Dropzone</title><!-- DNT-End -->
+        <title>Dropzone</title>
 
         <para>This is just a fileserver that runs the dafilesrv process.
         Configure in the same fashion as you would any active/passive file
@@ -1513,46 +1513,46 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
     </sect1>
 
     <sect1 id="BP_High_Availability">
-      <!-- DNT-Start --><title>High Availability</title><!-- DNT-End -->
+      <title>High Availability</title>
 
-      <para>If you require high availability for your <!-- DNT-Start -->HPCC<!-- DNT-End --> system, there are
+      <para>If you require high availability for your HPCC system, there are
       some additional considerations that you should be aware of. This is not
       comprehensive list, and it is not meant to be step-by-step instructions
       for setting up disaster recovery. Instead this section just provides
-      some more information to consider when incorporating <!-- DNT-Start -->HPCC<!-- DNT-End --> into your
+      some more information to consider when incorporating HPCC into your
       disaster recovery plan.</para>
 
       <sect2 id="Thor_HA">
-        <!-- DNT-Start --><title>Thor</title><!-- DNT-End -->
+        <title>Thor</title>
 
-        <para>When designing a <!-- DNT-Start -->Thor<!-- DNT-End --> cluster for high availability, consider
-        how it actually works -- a <!-- DNT-Start -->Thor<!-- DNT-End --> cluster accepts jobs from a job queue.
-        If there are two <!-- DNT-Start -->Thor<!-- DNT-End --> clusters servicing the job queue, one will
+        <para>When designing a Thor cluster for high availability, consider
+        how it actually works -- a Thor cluster accepts jobs from a job queue.
+        If there are two Thor clusters servicing the job queue, one will
         continue accepting jobs if the other one fails.</para>
 
-        <para>With replication enabled, the still-functioning <!-- DNT-Start -->Thor<!-- DNT-End --> will be
-        able to read data from the back up location of the broken <!-- DNT-Start -->Thor<!-- DNT-End -->. Other
-        components (such as <!-- DNT-Start -->ECL<!-- DNT-End --> Server, or <!-- DNT-Start -->ESP<!-- DNT-End -->) can also have multiple
-        instances. The remaining components, such as <!-- DNT-Start -->Dali<!-- DNT-End -->, or <!-- DNT-Start -->DFU<!-- DNT-End --> Server, work
+        <para>With replication enabled, the still-functioning Thor will be
+        able to read data from the back up location of the broken Thor. Other
+        components (such as ECL Server, or ESP) can also have multiple
+        instances. The remaining components, such as Dali, or DFU Server, work
         in a traditional shared storage high availability failover
         model.</para>
 
-        <para>Another important consideration is to keep your <!-- DNT-Start -->ESP<!-- DNT-End --> and <!-- DNT-Start -->Dali<!-- DNT-End --> on
-        separate nodes from your <!-- DNT-Start -->Thor<!-- DNT-End --> master. This way if your <!-- DNT-Start -->Thor<!-- DNT-End --> master
-        fails, you can replace it, bring up the replacement with the same <!-- DNT-Start -->IP<!-- DNT-End -->
-        (address) and it should then come up. Since <!-- DNT-Start -->Thor<!-- DNT-End --> stores no workunit
-        data, the <!-- DNT-Start -->DALI<!-- DNT-End --> and <!-- DNT-Start -->ESP<!-- DNT-End --> can provide the file metadata to recover your
+        <para>Another important consideration is to keep your ESP and Dali on
+        separate nodes from your Thor master. This way if your Thor master
+        fails, you can replace it, bring up the replacement with the same IP
+        (address) and it should then come up. Since Thor stores no workunit
+        data, the DALI and ESP can provide the file metadata to recover your
         workunits.</para>
 
         <sect3 id="Thor_HA_Downside">
-          <!-- DNT-Start --><title>The Downside</title><!-- DNT-End -->
+          <title>The Downside</title>
 
           <para>Costs twice as much initially because you essentially have to
           have two of everything.</para>
         </sect3>
 
         <sect3 id="SysAdm_HA_ThorUpside">
-          <!-- DNT-Start --><title>The Upside</title><!-- DNT-End -->
+          <title>The Upside</title>
 
           <para>Almost 100% of the time you can utilize the additional
           processing capacity. You can run more jobs, have more space,
@@ -1560,9 +1560,9 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         </sect3>
 
         <sect3 id="SysAdm_HA_ThorDR">
-          <!-- DNT-Start --><title>Disaster Recovery concerns</title><!-- DNT-End -->
+          <title>Disaster Recovery concerns</title>
 
-          <para>The important factor to consider for disaster recovery (<!-- DNT-Start -->DR<!-- DNT-End -->) is
+          <para>The important factor to consider for disaster recovery (DR) is
           the bandwidth required to replicate your data. Your network
           administrator should evaluate this aspect carefully.</para>
 
@@ -1572,11 +1572,11 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           your budget.</para>
 
           <para>A best practice is to find where the data is the smallest (at
-          ingestion, after normalization, at <!-- DNT-Start -->Roxie<!-- DNT-End -->) and replicate from that
+          ingestion, after normalization, at Roxie) and replicate from that
           point and rerun the processing in both locations.</para>
 
           <para>The key to getting disaster recovery right is to know your
-          data flow. For instance, if you are ingesting 20<!-- DNT-Start -->TB<!-- DNT-End --> of raw data
+          data flow. For instance, if you are ingesting 20TB of raw data
           daily, then taking that raw data and rolling it up, scoring it,
           indexing it, etc. You would be better off replicating an
           intermediate dataset (that we call base files), rather than
@@ -1584,11 +1584,11 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           daily ingest and then blow the data up in size) -- you would be
           better off to ingest the input and then re-run it.</para>
 
-          <para><!-- DNT-Start -->Thor<!-- DNT-End --> has the ability to do a "Thor copy" which copies data
-          from one cluster to another. You can also do this through <!-- DNT-Start -->ECL<!-- DNT-End --> code.
+          <para>Thor has the ability to do a "Thor copy" which copies data
+          from one cluster to another. You can also do this through ECL code.
           Additionally, you may decide you don't want, or need to have a "hot"
-          <!-- DNT-Start -->DR<!-- DNT-End --> <!-- DNT-Start -->Thor<!-- DNT-End -->. In that case, the most common minor disasters cause only a
-          relatively brief, less than 1 day disaster. Since <!-- DNT-Start -->Thor<!-- DNT-End --> is
+          DR Thor. In that case, the most common minor disasters cause only a
+          relatively brief, less than 1 day disaster. Since Thor is
           responsible for creating data updates it can take a day or a few to
           recover. The data just is not quite as fresh but as long as the
           Roxies are replicated the data is still flowing. In the case of a
@@ -1599,64 +1599,64 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         </sect3>
 
         <sect3 id="SysAdm_HA_ThorConclusion">
-          <!-- DNT-Start --><title>Conclusion</title><!-- DNT-End -->
+          <title>Conclusion</title>
 
           <para>Disaster recovery is a calculation. The cost of failure, times
           the likelihood per year of an event occurring, less than or greater
           than the cost to prevent against it. Taking all that into
-          consideration can help you to put a sensible <!-- DNT-Start -->DR<!-- DNT-End --> plan in
+          consideration can help you to put a sensible DR plan in
           place.</para>
         </sect3>
       </sect2>
 
       <sect2 id="HA_Roxie">
-        <!-- DNT-Start --><title>Roxie</title><!-- DNT-End -->
+        <title>Roxie</title>
 
-        <para>In the case of <!-- DNT-Start -->Roxie<!-- DNT-End -->, a best practice is to have multiple <!-- DNT-Start -->Roxie<!-- DNT-End -->
+        <para>In the case of Roxie, a best practice is to have multiple Roxie
         clusters and use a proxy to balance. In case of how to keep the data
-        in sync, a pull approach is best. The <!-- DNT-Start -->Roxie<!-- DNT-End --> automatically pulls the
+        in sync, a pull approach is best. The Roxie automatically pulls the
         data it needs from the "source" listed in the package file. The data
-        can also be pulled from another <!-- DNT-Start -->Roxie<!-- DNT-End --> or a <!-- DNT-Start -->Thor<!-- DNT-End -->. In most cases you
-        would pull to your <!-- DNT-Start -->DR<!-- DNT-End --> <!-- DNT-Start -->Roxie<!-- DNT-End --> from the primary <!-- DNT-Start -->Roxie<!-- DNT-End --> out of the load
-        balancer, but it can also pull from a <!-- DNT-Start -->Thor<!-- DNT-End --> in the primary location as
+        can also be pulled from another Roxie or a Thor. In most cases you
+        would pull to your DR Roxie from the primary Roxie out of the load
+        balancer, but it can also pull from a Thor in the primary location as
         well.</para>
       </sect2>
 
       <sect2 id="HA_Middlewear">
-        <!-- DNT-Start --><title>Middleware</title><!-- DNT-End -->
+        <title>Middleware</title>
 
-        <para>Replication of some components (<!-- DNT-Start -->ECL<!-- DNT-End --> Agent, <!-- DNT-Start -->ESP<!-- DNT-End -->/Eclwatch, <!-- DNT-Start -->DFU<!-- DNT-End -->
+        <para>Replication of some components (ECL Agent, ESP/Eclwatch, DFU
         Server, etc.) are pretty straight forward as they really don't have
-        anything to replicate. <!-- DNT-Start -->Dali<!-- DNT-End --> is the biggest consideration when it comes
-        to replication. In the case of <!-- DNT-Start -->Dali<!-- DNT-End -->, you have <!-- DNT-Start -->Sasha<!-- DNT-End --> as the backup
-        locally. The <!-- DNT-Start -->Dali<!-- DNT-End --> files can be replicated using rsync. A better
-        approach could be to use a synchronizing device (cluster <!-- DNT-Start -->WAN<!-- DNT-End --> sync, <!-- DNT-Start -->SAN<!-- DNT-End -->
-        block replication, etc.), and just put the <!-- DNT-Start -->Dali<!-- DNT-End --> stores on that and
+        anything to replicate. Dali is the biggest consideration when it comes
+        to replication. In the case of Dali, you have Sasha as the backup
+        locally. The Dali files can be replicated using rsync. A better
+        approach could be to use a synchronizing device (cluster WAN sync, SAN
+        block replication, etc.), and just put the Dali stores on that and
         just allow it replicate as designed.</para>
 
         <para>There isn't just a one size fits all approach. Special care,
-        design, and planning are required to make an effective <!-- DNT-Start -->DR<!-- DNT-End --> strategy
-        that doesn't "over synchronize" across slow <!-- DNT-Start -->WAN<!-- DNT-End --> links, but still
+        design, and planning are required to make an effective DR strategy
+        that doesn't "over synchronize" across slow WAN links, but still
         provides you with an acceptable level of redundancy for your business
         needs.</para>
       </sect2>
     </sect1>
 
     <sect1 id="SysAdm_BestPrac">
-      <!-- DNT-Start --><title>Best Practice Considerations</title><!-- DNT-End -->
+      <title>Best Practice Considerations</title>
 
       <para>There are several other aspects to best practice considerations,
       and these will change with your system requirements. The following
       sections are some best practice considerations for some aspects of the
-      <!-- DNT-Start -->HPCC<!-- DNT-End --> system. Keep in mind that suggested best practices are merely
+      HPCC system. Keep in mind that suggested best practices are merely
       suggested and may not be appropriate for your needs. A thorough review
       of the considerations highlighted here can be very helpful if your needs
       align with the stated considerations.</para>
 
-      <!-- DNT-Start --><!--/*Further elaboration of both User permissions, and permission settings... also some hardware set up best practices. Suggested***/--><!-- DNT-End -->
+      <!--/*Further elaboration of both User permissions, and permission settings... also some hardware set up best practices. Suggested***/-->
 
       <sect2 id="SysAdm_BestPrac_MultiThor">
-        <!-- DNT-Start --><title>Multiple Thors</title><!-- DNT-End -->
+        <title>Multiple Thors</title>
 
         <para>You can run multiple Thors on the same physical hardware.
         Multiple Thors on the same hardware are independent and unaware of
@@ -1668,11 +1668,11 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
 
         <para>The downside of running multiple Thors on the same hardware is
         that the physical memory on the nodes needs to be shared among each of
-        the Thors. This needs to be configured per <!-- DNT-Start -->Thor<!-- DNT-End --> cluster
+        the Thors. This needs to be configured per Thor cluster
         definition.</para>
 
         <para>Multiple Thors on the same cluster require them to share the
-        same build and installation. The environment defines each <!-- DNT-Start -->Thor<!-- DNT-End -->
+        same build and installation. The environment defines each Thor
         cluster, which can share the same machine set. There are slave and
         master port settings that need to be set to avoid clashing. There are
         also memory sharing/splitting considerations and settings that need to
@@ -1685,14 +1685,14 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">Setting</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">Setting</emphasis></entry>
 
                   <entry><emphasis role="bold">Description</emphasis></entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis
-                  role="bold">globalMemorySize</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis
+                  role="bold">globalMemorySize</emphasis></entry>
 
                   <entry>The maximum memory a slave process can use. Typically
                   85 percent of the memory on the system divided by the total
@@ -1701,63 +1701,63 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis
-                  role="bold">localThorPortInc</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis
+                  role="bold">localThorPortInc</emphasis></entry>
 
                   <entry>This value is the increment from the base slave
                   port.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis
-                  role="bold">masterMemorySize</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis
+                  role="bold">masterMemorySize</emphasis></entry>
 
-                  <entry>The maximum memory a <!-- DNT-Start -->Thor<!-- DNT-End --> master can use. If left
+                  <entry>The maximum memory a Thor master can use. If left
                   blank it will use the <emphasis>globalMemorySize</emphasis>
                   value.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">masterport</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">masterport</emphasis></entry>
 
-                  <entry>This value must be unique between <!-- DNT-Start -->Thor<!-- DNT-End --> instances
+                  <entry>This value must be unique between Thor instances
                   running on the same hardware.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">name</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">name</emphasis></entry>
 
-                  <entry>The name of each <!-- DNT-Start -->Thor<!-- DNT-End --> instance must be
+                  <entry>The name of each Thor instance must be
                   unique.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">nodeGroup</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">nodeGroup</emphasis></entry>
 
                   <entry>This value is associated with files published by this
-                  <!-- DNT-Start -->Thor<!-- DNT-End --> instance. Normally it is left blank and defaults to the
+                  Thor instance. Normally it is left blank and defaults to the
                   same as the <emphasis>name</emphasis> attribute. In
                   environments with multiple Thors sharing the same group of
-                  nodes, the <emphasis>name</emphasis> value of each <!-- DNT-Start -->Thor<!-- DNT-End --> must
+                  nodes, the <emphasis>name</emphasis> value of each Thor must
                   be different. However, the <emphasis>nodeGroup</emphasis>
                   value of all the Thors sharing the same physical nodes
                   should be set to the same name. It is very important to make
                   the <emphasis>nodeGroup</emphasis> value equal to one of the
-                  <!-- DNT-Start -->Thor<!-- DNT-End --> instance name values.</entry>
+                  Thor instance name values.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis role="bold">slaveport</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis role="bold">slaveport</emphasis></entry>
 
-                  <entry>This value must be unique between <!-- DNT-Start -->Thor<!-- DNT-End --> instances
+                  <entry>This value must be unique between Thor instances
                   running on the same hardware.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis
-                  role="bold">SlavesPerNode</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis
+                  role="bold">SlavesPerNode</emphasis></entry>
 
-                  <entry>The number of slaves per node per <!-- DNT-Start -->Thor<!-- DNT-End -->
+                  <entry>The number of slaves per node per Thor
                   instance.</entry>
                 </row>
               </tbody>
@@ -1765,20 +1765,20 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           </informaltable></para>
 
         <para>You must not place multiple Thors on hardware which does not
-        have enough <!-- DNT-Start -->CPU<!-- DNT-End --> cores to support it. You should not have more Thors
+        have enough CPU cores to support it. You should not have more Thors
         than number of cores. One good rule is to use a formula where the
-        number of cores divided by two is the maximum number of <!-- DNT-Start -->Thor<!-- DNT-End --> clusters
+        number of cores divided by two is the maximum number of Thor clusters
         to use.</para>
 
         <sect3>
-          <!-- DNT-Start --><title>Multiple Nodes</title><!-- DNT-End -->
+          <title>Multiple Nodes</title>
 
           <para>Try to keep resources running on their own nodes, if possible
-          for either one or multiple <!-- DNT-Start -->Thor<!-- DNT-End --> clusters. If running some kind of
+          for either one or multiple Thor clusters. If running some kind of
           active/passive high availability, don't keep your active and passive
-          master on the same node. Try to keep <!-- DNT-Start -->Dali<!-- DNT-End --> and <!-- DNT-Start -->ESP<!-- DNT-End --> on separate nodes.
+          master on the same node. Try to keep Dali and ESP on separate nodes.
           Even if you don't have the luxury of very many nodes, you want the
-          <!-- DNT-Start -->Thor<!-- DNT-End --> master and the <!-- DNT-Start -->Dali<!-- DNT-End --> (at minimum) to be on separate nodes. The
+          Thor master and the Dali (at minimum) to be on separate nodes. The
           best practice is to keep as many components as possible on their own
           nodes.</para>
 
@@ -1790,13 +1790,13 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         </sect3>
 
         <sect3 id="Thor_TimesOut">
-          <!-- DNT-Start --><title>Thor times out</title><!-- DNT-End -->
+          <title>Thor times out</title>
 
           <para>There is a case where a system policy or practice could cause
-          an issue with <!-- DNT-Start -->Thor<!-- DNT-End --> nodes. At startup if a <!-- DNT-Start -->Thor<!-- DNT-End --> cluster hangs, and
-          then eventually times out. Then if your <!-- DNT-Start -->Thormaster<!-- DNT-End --> log shows that
+          an issue with Thor nodes. At startup if a Thor cluster hangs, and
+          then eventually times out. Then if your Thormaster log shows that
           the master is fine, but indicates that it is waiting to connect the
-          slaves. Then you may have an issue with the <!-- DNT-Start -->SSH<!-- DNT-End --> daemon
+          slaves. Then you may have an issue with the SSH daemon
           configuration.</para>
 
           <para>There is a security feature called
@@ -1804,7 +1804,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           (the OpenSSH server process) that will disallow connections from
           anyone not declared on that list. This is not default for sshd,
           rather it is an option that must be enabled. If that option is
-          enabled that can cause the <!-- DNT-Start -->Thor<!-- DNT-End --> nodes to hang in the manner
+          enabled that can cause the Thor nodes to hang in the manner
           described. If that option is enabled, then you must unset the
           option, or add the hpcc user to the AllowUsers list.</para>
 
@@ -1813,12 +1813,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
       </sect2>
 
       <sect2>
-        <!-- DNT-Start --><title>Multiple Roxie Clusters</title><!-- DNT-End -->
+        <title>Multiple Roxie Clusters</title>
 
-        <para>You can configure multiple <!-- DNT-Start -->Roxie<!-- DNT-End --> clusters. When you have
-        multiple <!-- DNT-Start -->Roxie<!-- DNT-End --> clusters, it is better to use a load balancer with
-        those Roxies. To configure multiple <!-- DNT-Start -->Roxie<!-- DNT-End --> clusters start with adding
-        your <!-- DNT-Start -->Roxie<!-- DNT-End --> to the <!-- DNT-Start -->VIPS<!-- DNT-End --> tab in the Configuration Manager. <figure>
+        <para>You can configure multiple Roxie clusters. When you have
+        multiple Roxie clusters, it is better to use a load balancer with
+        those Roxies. To configure multiple Roxie clusters start with adding
+        your Roxie to the VIPS tab in the Configuration Manager. <figure>
             <title>Configure VIP</title>
 
             <mediaobject>
@@ -1828,17 +1828,17 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
             </mediaobject>
           </figure></para>
 
-        <para>Open up the <!-- DNT-Start -->HPCC<!-- DNT-End --> Configuration Manager and proceed to the
+        <para>Open up the HPCC Configuration Manager and proceed to the
         Advanced View option. For more information about using ConfigMgr see
         Using Configuration Manager. <orderedlist>
             <listitem>
-              <para>Select your <!-- DNT-Start -->ESP<!-- DNT-End --> Service (the default is the <emphasis
+              <para>Select your ESP Service (the default is the <emphasis
               role="bold">myws_ecl</emphasis>) from the Navigator panel on the
               left side.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <emphasis role="bold"><!-- DNT-Start -->VIPS<!-- DNT-End --></emphasis>
+              <para>Select the <emphasis role="bold">VIPS</emphasis>
               tab.</para>
             </listitem>
 
@@ -1849,24 +1849,24 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
 
             <listitem>
               <para>Set the <emphasis role="bold">Send Target To
-              <!-- DNT-Start -->Roxie<!-- DNT-End --></emphasis> value to <emphasis>False</emphasis>.</para>
+              Roxie</emphasis> value to <emphasis>False</emphasis>.</para>
             </listitem>
           </orderedlist></para>
 
         <para>This setting (the <emphasis>includeTargetInURL</emphasis>
-        setting) must be false if running multiple <!-- DNT-Start -->Roxie<!-- DNT-End --> clusters.</para>
+        setting) must be false if running multiple Roxie clusters.</para>
       </sect2>
 
       <sect2 id="virtual-thor-slaves">
-        <!-- DNT-Start --><title>Virtual Thor slaves</title><!-- DNT-End -->
+        <title>Virtual Thor slaves</title>
 
         <para><indexterm>
-            <primary>Virtual <!-- DNT-Start -->Thor<!-- DNT-End --> slaves</primary>
-          </indexterm>Beginning in version 6.0.0, <!-- DNT-Start -->Thor<!-- DNT-End --> clusters can be
+            <primary>Virtual Thor slaves</primary>
+          </indexterm>Beginning in version 6.0.0, Thor clusters can be
         configured to take full advantage of the resources available per node
-        using Virtual <!-- DNT-Start -->Thor<!-- DNT-End --> slaves.</para>
+        using Virtual Thor slaves.</para>
 
-        <para>In <!-- DNT-Start -->HPCC<!-- DNT-End --> versions prior to 6.0.0, cluster configurations were
+        <para>In HPCC versions prior to 6.0.0, cluster configurations were
         typically set to N number of <emphasis
         role="bold">slavesPerNode</emphasis><indexterm>
             <primary>slavesPerNode</primary>
@@ -1889,7 +1889,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           </listitem>
 
           <listitem>
-            <para>Slaves do not share <!-- DNT-Start -->RAM<!-- DNT-End --> or any other resources.</para>
+            <para>Slaves do not share RAM or any other resources.</para>
           </listitem>
 
           <listitem>
@@ -1905,13 +1905,13 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
 
         <itemizedlist>
           <listitem>
-            <para>In this configuration, each physical node has a single <!-- DNT-Start -->Thor<!-- DNT-End -->
+            <para>In this configuration, each physical node has a single Thor
             slave process.</para>
           </listitem>
 
           <listitem>
             <para>Each slave process has N virtual slaves. This is set using a
-            <!-- DNT-Start -->Thor<!-- DNT-End --> configuration option called <emphasis
+            Thor configuration option called <emphasis
             role="bold">channelsPerSlave</emphasis><indexterm>
                 <primary>channelsPerSlave</primary>
               </indexterm> <emphasis><emphasis
@@ -1934,7 +1934,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           </listitem>
 
           <listitem>
-            <para>Slaves can request and share all available <!-- DNT-Start -->RAM<!-- DNT-End -->.</para>
+            <para>Slaves can request and share all available RAM.</para>
           </listitem>
 
           <listitem>
@@ -1944,27 +1944,27 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
 
           <listitem>
             <para>Allows for future enhancements to bring better
-            management/coordination of <!-- DNT-Start -->CPU<!-- DNT-End --> cores.</para>
+            management/coordination of CPU cores.</para>
           </listitem>
         </itemizedlist>
 
         <para>The significance of having access to all available memory
         becomes very significant for some activities. The clearest example is
-        a <!-- DNT-Start -->SMART<!-- DNT-End --> or <!-- DNT-Start -->LOOKUP<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End -->.</para>
+        a SMART or LOOKUP JOIN.</para>
 
         <sect3 id="smartlookup-join-example">
-          <!-- DNT-Start --><title>SMART/LOOKUP JOIN example</title><!-- DNT-End -->
+          <title>SMART/LOOKUP JOIN example</title>
 
-          <para>A <!-- DNT-Start -->LOOKUP<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End --> works approximately as follows:</para>
+          <para>A LOOKUP JOIN works approximately as follows:</para>
 
           <itemizedlist>
             <listitem>
-              <para>Streams local slave <!-- DNT-Start -->RHS<!-- DNT-End --> dataset to all other
+              <para>Streams local slave RHS dataset to all other
               slaves.</para>
             </listitem>
 
             <listitem>
-              <para>All slaves gather global <!-- DNT-Start -->RHS<!-- DNT-End --> into one table.</para>
+              <para>All slaves gather global RHS into one table.</para>
             </listitem>
 
             <listitem>
@@ -1973,100 +1973,100 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
             </listitem>
 
             <listitem>
-              <para>Once all slaves are done, the <!-- DNT-Start -->LHS<!-- DNT-End --> is streamed and matched
+              <para>Once all slaves are done, the LHS is streamed and matched
               against the hash table to produce the joined results.</para>
             </listitem>
           </itemizedlist>
 
-          <para>Note: The complete <!-- DNT-Start -->RHS<!-- DNT-End --> table and hash table must fit into
+          <para>Note: The complete RHS table and hash table must fit into
           memory; otherwise the join fails with an out of memory error.</para>
 
-          <para><!-- DNT-Start -->SMART<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End --> is an evolution of <!-- DNT-Start -->LOOKUP<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End -->. If it cannot fit
-          the global <!-- DNT-Start -->RHS<!-- DNT-End --> into memory, it will <!-- DNT-Start -->HASH<!-- DNT-End --> <!-- DNT-Start -->PARTITION<!-- DNT-End --> the <!-- DNT-Start -->RHS<!-- DNT-End --> and <!-- DNT-Start -->HASH<!-- DNT-End -->
-          <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --> the <!-- DNT-Start -->LHS<!-- DNT-End --> and perform a <!-- DNT-Start -->LOCAL<!-- DNT-End --> <!-- DNT-Start -->LOOKUP<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End -->.</para>
+          <para>SMART JOIN is an evolution of LOOKUP JOIN. If it cannot fit
+          the global RHS into memory, it will HASH PARTITION the RHS and HASH
+          DISTRIBUTE the LHS and perform a LOCAL LOOKUP JOIN.</para>
 
-          <para>If it cannot fit the local <!-- DNT-Start -->RHS<!-- DNT-End --> set into memory on any given
+          <para>If it cannot fit the local RHS set into memory on any given
           node, then it will gather and sort both local datasets and perform a
-          standard <!-- DNT-Start -->JOIN<!-- DNT-End -->.</para>
+          standard JOIN.</para>
 
-          <para>The key advantage of <!-- DNT-Start -->LOOKUP<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End --> is speed. If the <!-- DNT-Start -->RHS<!-- DNT-End --> fits
-          into memory, it can perform a very quick gather and streamed <!-- DNT-Start -->JOIN<!-- DNT-End --> of
-          a large <!-- DNT-Start -->LHS<!-- DNT-End --> set, without the need of gathering and sorting
+          <para>The key advantage of LOOKUP JOIN is speed. If the RHS fits
+          into memory, it can perform a very quick gather and streamed JOIN of
+          a large LHS set, without the need of gathering and sorting
           anything.</para>
 
-          <para>The advantages of a virtual slave <!-- DNT-Start -->Thor<!-- DNT-End --> configuration for <!-- DNT-Start -->ECL<!-- DNT-End -->
-          code using <!-- DNT-Start -->LOOKUP<!-- DNT-End -->/<!-- DNT-Start -->SMART<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End --> is that in effect it will have N times
-          as much memory before it fails or fails over in the <!-- DNT-Start -->SMART<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End -->
+          <para>The advantages of a virtual slave Thor configuration for ECL
+          code using LOOKUP/SMART JOIN is that in effect it will have N times
+          as much memory before it fails or fails over in the SMART JOIN
           case.</para>
 
-          <para>It is also much quicker; instead of broadcasting the local <!-- DNT-Start -->RHS<!-- DNT-End -->
+          <para>It is also much quicker; instead of broadcasting the local RHS
           to N slave process per node; it only has to communicate it to one.
-          That one slave can share the same table and same <!-- DNT-Start -->HT<!-- DNT-End --> with the other
+          That one slave can share the same table and same HT with the other
           virtual slaves directly.</para>
 
           <para><emphasis role="strong"><emphasis>Key advantages of
-          <!-- DNT-Start -->LOOKUP<!-- DNT-End -->/<!-- DNT-Start -->SMART<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End --> in a Virtual Slave <!-- DNT-Start -->Thor<!-- DNT-End -->
+          LOOKUP/SMART JOIN in a Virtual Slave Thor
           Setup:</emphasis></emphasis></para>
 
           <itemizedlist>
             <listitem>
-              <para>N times as much memory available for <!-- DNT-Start -->RHS<!-- DNT-End -->. In other words,
-              the <!-- DNT-Start -->RHS<!-- DNT-End --> can be N times bigger before failing or failing over in
-              <!-- DNT-Start -->SMART<!-- DNT-End --> <!-- DNT-Start -->JOIN<!-- DNT-End --> case. (In the illustrated example, the <!-- DNT-Start -->JOIN<!-- DNT-End --> would
+              <para>N times as much memory available for RHS. In other words,
+              the RHS can be N times bigger before failing or failing over in
+              SMART JOIN case. (In the illustrated example, the JOIN would
               have 4 times as much memory available)</para>
             </listitem>
 
             <listitem>
               <para>Significantly less communication of row data -- equals
-              significantly faster processing for larger <!-- DNT-Start -->RHS<!-- DNT-End --> sets.</para>
+              significantly faster processing for larger RHS sets.</para>
             </listitem>
           </itemizedlist>
         </sect3>
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_HugePages">
-        <!-- DNT-Start --><title>Huge Pages</title><!-- DNT-End -->
+        <title>Huge Pages</title>
 
         <para>Linux uses pages as its basic units of memory. Your system may
         run faster and benefit from huge page support. Huge pages of the
         appropriate type and size need to be allocated from the operating
         system. Almost all current Linux systems are set up with Transparent
-        Huge Pages (<!-- DNT-Start -->THP<!-- DNT-End -->) available by default.</para>
+        Huge Pages (THP) available by default.</para>
 
-        <para><!-- DNT-Start -->Thor<!-- DNT-End -->, <!-- DNT-Start -->Roxie<!-- DNT-End -->, and <!-- DNT-Start -->ECL<!-- DNT-End --> Agent clusters all have options in the
+        <para>Thor, Roxie, and ECL Agent clusters all have options in the
         configuration to enable huge page support. The Transparent Huge Pages
-        are enabled for <!-- DNT-Start -->Thor<!-- DNT-End -->, <!-- DNT-Start -->Roxie<!-- DNT-End -->, and <!-- DNT-Start -->ECL<!-- DNT-End --> Agent clusters in the default
-        <!-- DNT-Start -->HPCC<!-- DNT-End --> environment. <!-- DNT-Start -->Thor<!-- DNT-End --> clusters can stand to benefit more from huge
-        pages than can <!-- DNT-Start -->Roxie<!-- DNT-End -->.</para>
+        are enabled for Thor, Roxie, and ECL Agent clusters in the default
+        HPCC environment. Thor clusters can stand to benefit more from huge
+        pages than can Roxie.</para>
 
         <para>You can check the file
-        /sys/kernel/mm/transparent_hugepage/enabled to see what your <!-- DNT-Start -->OS<!-- DNT-End -->
-        setting is. With <!-- DNT-Start -->THP<!-- DNT-End --> you do not have to explicitly set a size. If your
-        system is not configured to use <!-- DNT-Start -->THP<!-- DNT-End -->, then you may want to implement
+        /sys/kernel/mm/transparent_hugepage/enabled to see what your OS
+        setting is. With THP you do not have to explicitly set a size. If your
+        system is not configured to use THP, then you may want to implement
         Huge Pages.</para>
 
         <sect3 id="SysAdm_BestPrac_SetUpHuge_Pgs">
-          <!-- DNT-Start --><title>Setting up Huge Pages</title><!-- DNT-End -->
+          <title>Setting up Huge Pages</title>
 
-          <para>To set up huge page support, consult your <!-- DNT-Start -->OS<!-- DNT-End --> documentation and
+          <para>To set up huge page support, consult your OS documentation and
           determine how to enable huge page support. For example, the
           administrator can allocate persistent huge pages (for the
-          appropriate <!-- DNT-Start -->OS<!-- DNT-End -->) on the kernel boot command line by specifying the
+          appropriate OS) on the kernel boot command line by specifying the
           "hugepages=N" parameter at boot. With huge pages you also need to
           explicitly allocate the size.</para>
 
-          <para>In <!-- DNT-Start -->HPCC<!-- DNT-End -->, there are three places in the configuration manager
+          <para>In HPCC, there are three places in the configuration manager
           to set the attributes to use Huge Pages.</para>
 
-          <para>There are attributes in each component, in the <!-- DNT-Start -->ECL<!-- DNT-End --> Agent
-          attributes, in <!-- DNT-Start -->Roxie<!-- DNT-End --> attributes, and in <!-- DNT-Start -->Thor<!-- DNT-End --> attributes. In each
+          <para>There are attributes in each component, in the ECL Agent
+          attributes, in Roxie attributes, and in Thor attributes. In each
           component there are two values:</para>
 
-          <!-- DNT-Start --><programlisting>heapUseHugePages  
-heapUseTransparentHugePages</programlisting><!-- DNT-End -->
+          <programlisting>heapUseHugePages  
+heapUseTransparentHugePages</programlisting>
 
           <para>Enable Huge Pages in your operating system, then configure
-          <!-- DNT-Start -->HPCC<!-- DNT-End --> for the component(s) you wish.</para>
+          HPCC for the component(s) you wish.</para>
         </sect3>
       </sect2>
     </sect1>
@@ -2081,23 +2081,23 @@ heapUseTransparentHugePages</programlisting><!-- DNT-End -->
   </chapter>
 
   <chapter id="Resources">
-    <!-- DNT-Start --><title>System Resources</title><!-- DNT-End -->
+    <title>System Resources</title>
 
-    <para>There are additional resources available for the <!-- DNT-Start -->HPCC<!-- DNT-End --> System.</para>
+    <para>There are additional resources available for the HPCC System.</para>
 
     <sect1 id="HPCC_Resources" role="nobrk">
-      <!-- DNT-Start --><title>HPCC Resources</title><!-- DNT-End -->
+      <title>HPCC Resources</title>
 
       <para>The resources link can be found under the Operations Icon link.
-      The resources link in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides a link to the <!-- DNT-Start -->HPCC<!-- DNT-End -->
-      Systems<superscript>®</superscript> web portal. Visit the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      The resources link in ECL Watch provides a link to the HPCC
+      Systems<superscript>®</superscript> web portal. Visit the HPCC
       Systems<superscript>®</superscript> Web Portal at <ulink
       url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for
       software updates, plugins, support, documentation, and more. This is
-      where you can find resources useful for running and maintaining <!-- DNT-Start -->HPCC<!-- DNT-End --> on
+      where you can find resources useful for running and maintaining HPCC on
       the web portal.</para>
 
-      <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides a link to the <!-- DNT-Start -->HPCC<!-- DNT-End --> portal's download page:
+      <para>ECL Watch provides a link to the HPCC portal's download page:
       <ulink
       url="http://hpccsystems.com/download">http://hpccsystems.com/download</ulink>.
       This is the page where you can download Installation packages, virtual
@@ -2105,9 +2105,9 @@ heapUseTransparentHugePages</programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="SysAdm_Addl_Resources">
-      <!-- DNT-Start --><title>Additional Resources</title><!-- DNT-End -->
+      <title>Additional Resources</title>
 
-      <para>Additional help with <!-- DNT-Start -->HPCC<!-- DNT-End --> and Learning <!-- DNT-Start -->ECL<!-- DNT-End --> is also available.
+      <para>Additional help with HPCC and Learning ECL is also available.
       There are online courses available. Go to :</para>
 
       <para><ulink

@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Year">
-  <!-- DNT-Start --><title>Year</title><!-- DNT-End -->
+  <title>Year</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.Year<indexterm>
+  <para><emphasis role="bold">STD.Date.Year<indexterm>
       <primary>STD.Date.Year</primary>
     </indexterm><indexterm>
       <primary>Date.Year</primary>
     </indexterm><indexterm>
       <primary>Year</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,31 +21,31 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>date</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>date</emphasis></entry>
 
           <entry>A date value in the Date_t format.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
+          <entry>Return:</entry>
 
-          <entry><!-- DNT-Start -->Year<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value.</entry>
+          <entry>Year returns an INTEGER value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->Year<!-- DNT-End --></emphasis> function returns the <!-- DNT-Start -->Year<!-- DNT-End -->
+  <para>The <emphasis role="bold">Year</emphasis> function returns the Year
   number from the <emphasis>date</emphasis> value.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <programlisting format="linespecific">IMPORT STD;
 UNSIGNED4 MyDate := 20120101;   //January 1, 2012
   
 Y := STD.Date.Year(MyDate);
     //Y contains 2012
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para></para>
 </sect1>

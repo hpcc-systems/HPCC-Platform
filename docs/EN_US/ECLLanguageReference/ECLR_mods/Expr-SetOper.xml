@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Set_Operators">
-  <!-- DNT-Start --><title>Set Operators</title><!-- DNT-End -->
+  <title>Set Operators</title>
 
-  <!-- DNT-Start --><para><emphasis>The following set operators<indexterm>
+  <para><emphasis>The following set operators<indexterm>
       <primary>Set Operators</primary>
     </indexterm> are supported, listed here in their evaluation
-  precedence:</emphasis></para><!-- DNT-End -->
+  precedence:</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup align="left" cols="2">
@@ -17,7 +17,7 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start -->+<!-- DNT-End --></entry>
+          <entry>+</entry>
 
           <entry>Append (all elements from both sets, without re-ordering or
           duplicate element removal)</entry>

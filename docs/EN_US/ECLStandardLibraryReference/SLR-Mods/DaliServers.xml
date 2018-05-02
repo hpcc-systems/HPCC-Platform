@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DaliServer">
-  <!-- DNT-Start --><title>DaliServer</title><!-- DNT-End -->
+  <title>DaliServer</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Thorlib.DaliServer <indexterm>
+  <para><emphasis role="bold">STD.System.Thorlib.DaliServer <indexterm>
       <primary>STD.System.ThorLib.DaliServer</primary>
     </indexterm> <indexterm>
       <primary>System.ThorLib.DaliServer</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>DaliServer</primary>
     </indexterm> (</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,19 +23,19 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry>Daliserver returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value.</entry>
+          <entry>Daliserver returns a VARSTRING value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
   <para>The <emphasis role="bold">Daliserver </emphasis>function returns the
-  <!-- DNT-Start -->IP<!-- DNT-End --> and port of the system data store (Dali) server for the environment
+  IP and port of the system data store (Dali) server for the environment
   running the workunit.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := Thorlib.Daliserver();</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := Thorlib.Daliserver();</programlisting>
 </sect1>

@@ -2,22 +2,22 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_ecl_name">
-  <!-- DNT-Start --><title>ecl_name <indexterm>
+  <title>ecl_name <indexterm>
       <primary>ecl_name</primary>
-    </indexterm>("name")</title><!-- DNT-End -->
+    </indexterm>("name")</title>
 
   <para>The <emphasis>ecl_name</emphasis> attribute specifies the field name
-  in generated <!-- DNT-Start -->ECL<!-- DNT-End --> code. By default, the field name in <!-- DNT-Start -->ECL<!-- DNT-End --> is the same as the
-  name defined in <!-- DNT-Start -->ECM<!-- DNT-End -->. However, in some cases, the name could causes issues in
-  <!-- DNT-Start -->ECL<!-- DNT-End -->. For example keywords in <!-- DNT-Start -->ECL<!-- DNT-End --> cannot be used as a field name.</para>
+  in generated ECL code. By default, the field name in ECL is the same as the
+  name defined in ECM. However, in some cases, the name could causes issues in
+  ECL. For example keywords in ECL cannot be used as a field name.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <!-- DNT-Start --><programlisting>[ecl_name("_export")] string Export;
- [ecl_name("_type")] string Type;   </programlisting><!-- DNT-End -->
+  <programlisting>[ecl_name("_export")] string Export;
+ [ecl_name("_type")] string Type;   </programlisting>
 
-  <para>Here, both <emphasis role="bold"><!-- DNT-Start -->EXPORT<!-- DNT-End --></emphasis> and <emphasis
-  role="bold"><!-- DNT-Start -->TYPE<!-- DNT-End --></emphasis> are <!-- DNT-Start -->ECL<!-- DNT-End --> keywords and cannot be used as <!-- DNT-Start -->ECL<!-- DNT-End --> field
+  <para>Here, both <emphasis role="bold">EXPORT</emphasis> and <emphasis
+  role="bold">TYPE</emphasis> are ECL keywords and cannot be used as ECL field
   names. We use <emphasis>ecl_name</emphasis> to tell the esdl2ecl process to
   generate acceptable names.</para>
 </sect1>

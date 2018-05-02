@@ -2,22 +2,22 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DECIMAL">
-  <!-- DNT-Start --><title>DECIMAL<indexterm>
+  <title>DECIMAL<indexterm>
       <primary>DECIMAL</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <para><emphasis role="bold">[<!-- DNT-Start -->UNSIGNED<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->UNSIGNED<!-- DNT-End --></primary>
-    </indexterm>] <!-- DNT-Start -->DECIMAL<!-- DNT-End --></emphasis><emphasis role="bold">n
+  <para><emphasis role="bold">[UNSIGNED<indexterm>
+      <primary>UNSIGNED</primary>
+    </indexterm>] DECIMAL</emphasis><emphasis role="bold">n
   </emphasis><emphasis role="bold">[ </emphasis><emphasis role="bold">_y
   </emphasis><emphasis role="bold">]</emphasis><emphasis
   role="bold"><indexterm>
-      <primary><!-- DNT-Start -->DECIMAL<!-- DNT-End --> value type</primary>
+      <primary>DECIMAL value type</primary>
     </indexterm></emphasis></para>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->UDECIMAL<!-- DNT-End --></emphasis><emphasis
+  <para><emphasis role="bold">UDECIMAL</emphasis><emphasis
   role="bold">n<indexterm>
-      <primary><!-- DNT-Start -->UDECIMALn<!-- DNT-End --></primary>
+      <primary>UDECIMALn</primary>
     </indexterm> </emphasis><emphasis role="bold">[ </emphasis><emphasis
   role="bold">_y </emphasis><emphasis role="bold">]</emphasis></para>
 
@@ -28,18 +28,18 @@
   <emphasis>y</emphasis> defines the number of decimal places in the
   value.</para>
 
-  <para>If the <!-- DNT-Start -->UNSIGNED<!-- DNT-End --> keyword is omitted, the rightmost nibble holds the
+  <para>If the UNSIGNED keyword is omitted, the rightmost nibble holds the
   sign. Unsigned decimal declarations may be contracted to use the optional
-  <!-- DNT-Start -->UDECIMAL<!-- DNT-End --><emphasis>n</emphasis> syntax instead of <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->
-  <!-- DNT-Start -->DECIMAL<!-- DNT-End --><emphasis>n</emphasis>.</para>
+  UDECIMAL<emphasis>n</emphasis> syntax instead of UNSIGNED
+  DECIMAL<emphasis>n</emphasis>.</para>
 
-  <para>Using exclusively <!-- DNT-Start -->DECIMAL<!-- DNT-End --> values in computations invokes the Binary
-  Coded Decimal (<!-- DNT-Start -->BCD<!-- DNT-End -->) math libraries (base-10 math), allowing up to 32-digits
+  <para>Using exclusively DECIMAL values in computations invokes the Binary
+  Coded Decimal (BCD) math libraries (base-10 math), allowing up to 32-digits
   of precision (which may be on either side of the decimal point).</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>DECIMAL5_2 MyDecimal := 123.45;
+  <programlisting>DECIMAL5_2 MyDecimal := 123.45;
         //five total digits with two decimal places
       
 OutputFormat199 := RECORD
@@ -55,5 +55,5 @@ UDECIMAL10 Person.phone;
     </indexterm> containing 10 digits,
         // occupying 5 bytes in a flat file
      
-END;</programlisting><!-- DNT-End -->
+END;</programlisting>
 </sect1>

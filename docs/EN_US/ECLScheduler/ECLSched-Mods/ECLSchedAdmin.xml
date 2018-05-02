@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <bookinfo>
-    <!-- DNT-Start --><title>ECL Scheduler</title><!-- DNT-End -->
+    <title>ECL Scheduler</title>
 
     <author>
       <firstname>Boca Raton</firstname>
@@ -19,15 +19,15 @@
   </bookinfo>
 
   <chapter id="ECLSched-Admin">
-    <!-- DNT-Start --><title>ECL Scheduler Admin</title><!-- DNT-End -->
+    <title>ECL Scheduler Admin</title>
 
     <sect1 role="nobrk">
-      <!-- DNT-Start --><title>Command Line Interface: scheduleadmin</title><!-- DNT-End -->
+      <title>Command Line Interface: scheduleadmin</title>
 
       <para>The <emphasis role="bold">scheduleadmin</emphasis> is the command
-      line interface to the <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler. The scheduleadmin is located by
+      line interface to the ECL Scheduler. The scheduleadmin is located by
       default in <emphasis role="bold">/opt/HPCCSystems/bin/ </emphasis>on
-      your <!-- DNT-Start -->HPCC<!-- DNT-End --> system.</para>
+      your HPCC system.</para>
 
       <para><emphasis role="bold">scheduleadmin
       </emphasis><emphasis>daliserver</emphasis>
@@ -43,14 +43,14 @@
 
             <tbody>
               <row>
-                <entry><!-- DNT-Start --><emphasis>daliserver</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>daliserver</emphasis></entry>
 
-                <entry>The <!-- DNT-Start -->URL<!-- DNT-End --> (http:// or https://) and/or <!-- DNT-Start -->IP<!-- DNT-End --> address of the
+                <entry>The URL (http:// or https://) and/or IP address of the
                 Dali server. The port may also be included.</entry>
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>operation</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>operation</emphasis></entry>
 
                 <entry>One of the following actions: <programlisting
                 role="tab">     servers
@@ -65,7 +65,7 @@
               </row>
 
               <row>
-                <entry><!-- DNT-Start --><emphasis>options</emphasis><!-- DNT-End --></entry>
+                <entry><emphasis>options</emphasis></entry>
 
                 <entry>Optional. A space-delimited list of optional items
                 (listed below) appropriate to the
@@ -77,17 +77,17 @@
 
       <para>The <emphasis role="bold">scheduleadmin</emphasis> application
       accepts command line parameters to maintain the list of workunits the
-      <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler monitors.</para>
+      ECL Scheduler monitors.</para>
 
       <sect2>
-        <!-- DNT-Start --><title>Support Operations</title><!-- DNT-End -->
+        <title>Support Operations</title>
 
         <para>The following operations are supported.</para>
 
         <sect3>
-          <!-- DNT-Start --><title>Servers</title><!-- DNT-End -->
+          <title>Servers</title>
 
-          <para>The server operation returns a list of the <!-- DNT-Start -->ECL<!-- DNT-End --> Server queues
+          <para>The server operation returns a list of the ECL Server queues
           attached to the specifed daliserver that have events being
           monitored.</para>
 
@@ -101,7 +101,7 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Add wuid</title><!-- DNT-End -->
+          <title>Add wuid</title>
 
           <para>The add operation allows you to re-add the specified wuid
           after having removed it from the monitor list.</para>
@@ -118,10 +118,10 @@
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis>wuid</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis>wuid</emphasis></entry>
 
                     <entry>A workunit identifier that contains an action with
-                    a <!-- DNT-Start -->WHEN<!-- DNT-End --> workflow service.</entry>
+                    a WHEN workflow service.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -134,7 +134,7 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Remove wuid</title><!-- DNT-End -->
+          <title>Remove wuid</title>
 
           <para>The remove operation allows you to remove the specified wuid
           from the monitor list.</para>
@@ -153,10 +153,10 @@
 
                 <tbody>
                   <row>
-                    <entry><!-- DNT-Start --><emphasis>wuid</emphasis><!-- DNT-End --></entry>
+                    <entry><emphasis>wuid</emphasis></entry>
 
                     <entry>A workunit identifier that contains an action with
-                    a <!-- DNT-Start -->WHEN<!-- DNT-End --> workflow service.</entry>
+                    a WHEN workflow service.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -167,10 +167,10 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Removeall</title><!-- DNT-End -->
+          <title>Removeall</title>
 
           <para>The removeall operation allows you to remove all workunits
-          that contain actions with <!-- DNT-Start -->WHEN<!-- DNT-End --> workflow services from the monitor
+          that contain actions with WHEN workflow services from the monitor
           list.</para>
 
           <para>Example:</para>
@@ -180,8 +180,8 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>List [<emphasis>eclserver </emphasis>|
-          <emphasis>event</emphasis>]</title><!-- DNT-End -->
+          <title>List [<emphasis>eclserver </emphasis>|
+          <emphasis>event</emphasis>]</title>
 
           <para>The list operation displays the list of monitored workunits
           and the events that they are waiting to occur.</para>
@@ -198,14 +198,14 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>eclserver</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>eclserver</emphasis></entry>
 
-                  <entry>The name of an <!-- DNT-Start -->ECL<!-- DNT-End --> Server queue attached to the
+                  <entry>The name of an ECL Server queue attached to the
                   daliserver.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>event</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>event</emphasis></entry>
 
                   <entry>Optional. The name of an event. If omitted, all
                   events are displayed.</entry>
@@ -232,11 +232,11 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Monitor[<emphasis>eclserver</emphasis>|
-          <emphasis>event</emphasis>]</title><!-- DNT-End -->
+          <title>Monitor[<emphasis>eclserver</emphasis>|
+          <emphasis>event</emphasis>]</title>
 
           <para>The monitor operation blocks and updates the display of the
-          list of monitored workunits as changes occur. Press the <!-- DNT-Start -->ENTER<!-- DNT-End --> key to
+          list of monitored workunits as changes occur. Press the ENTER key to
           return to the command prompt.</para>
 
           <para>These options are used by the monitor operation.</para>
@@ -251,14 +251,14 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>eclserver</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>eclserver</emphasis></entry>
 
-                  <entry>The name of an <!-- DNT-Start -->ECL<!-- DNT-End --> Server queue attached to the
+                  <entry>The name of an ECL Server queue attached to the
                   daliserver.</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>event</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>event</emphasis></entry>
 
                   <entry>Optional. The name of an event. If omitted, all
                   events are displayed.</entry>
@@ -284,7 +284,7 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Cleanup</title><!-- DNT-End -->
+          <title>Cleanup</title>
 
           <para>The cleanup operation trims unused branches from the tree list
           of monitored workunits.</para>
@@ -296,8 +296,8 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Push [<emphasis>eclserver</emphasis>|
-          <emphasis>event</emphasis>]</title><!-- DNT-End -->
+          <title>Push [<emphasis>eclserver</emphasis>|
+          <emphasis>event</emphasis>]</title>
 
           <para>The push operation posts the specified event as having
           occurred. This allows you to "fake" an event occurrence for testing
@@ -315,17 +315,17 @@
 
               <tbody>
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>event</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>event</emphasis></entry>
 
-                  <entry>The name of a user-defined event (this must <!-- DNT-Start -->NOT<!-- DNT-End --> be
+                  <entry>The name of a user-defined event (this must NOT be
                   "CRON").</entry>
                 </row>
 
                 <row>
-                  <entry><!-- DNT-Start --><emphasis>subtype</emphasis><!-- DNT-End --></entry>
+                  <entry><emphasis>subtype</emphasis></entry>
 
                   <entry>The string value to match the second parameter to the
-                  <!-- DNT-Start -->EVENT<!-- DNT-End --> function.</entry>
+                  EVENT function.</entry>
                 </row>
               </tbody>
             </tgroup>

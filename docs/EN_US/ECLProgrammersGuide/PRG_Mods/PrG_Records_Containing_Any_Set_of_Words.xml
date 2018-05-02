@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Records_Containing_Any_of_a_Set_of_Words">
-  <!-- DNT-Start --><title>Records Containing Any of a Set of Words</title><!-- DNT-End -->
+  <title>Records Containing Any of a Set of Words</title>
 
   <para>Part of the data cleanup problem is the possible presence of profanity
   or cartoon character names in the data. This can become an issue whenever
   you are working with data that originated from direct input by end-users to
-  a website. The following code (contained in the BadWordSearch.<!-- DNT-Start -->ECL<!-- DNT-End --> file) will
+  a website. The following code (contained in the BadWordSearch.ECL file) will
   detect the presence of any of a set of "bad" words in a given field:</para>
 
-  <!-- DNT-Start --><programlisting>IMPORT std;
+  <programlisting>IMPORT std;
 
 SetBadWords := ['JUNK', 'GARBAGE', 'CRUD'];
 BadWordDS := DATASET(SetBadWords,{STRING10 word});
@@ -45,29 +45,29 @@ result := PROJECT(SearchDS,CheckWords(LEFT));
 
 OUTPUT(result(FoundWord=TRUE));
 OUTPUT(result(FoundWord=FALSE));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>This code is a simple <!-- DNT-Start -->PROJECT<!-- DNT-End --> of each record that you want to search.
-  The result will be a record set containing the record <!-- DNT-Start -->ID<!-- DNT-End --> field, the
-  firstname search field, and a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> FoundWord flag field indicating
+  <para>This code is a simple PROJECT of each record that you want to search.
+  The result will be a record set containing the record ID field, the
+  firstname search field, and a BOOLEAN FoundWord flag field indicating
   whether any "bad" word was found.</para>
 
-  <para>The search itself is done by a nested <!-- DNT-Start -->PROJECT<!-- DNT-End --> of the field to be
-  searched against the <!-- DNT-Start -->DATASET<!-- DNT-End --> of "bad" words. Using the <!-- DNT-Start -->EXISTS<!-- DNT-End --> function to
-  detect if any records are returned from that <!-- DNT-Start -->PROJECT<!-- DNT-End --> where the returned
-  Found field is <!-- DNT-Start -->TRUE<!-- DNT-End --> sets the FoundWord flag field value.</para>
+  <para>The search itself is done by a nested PROJECT of the field to be
+  searched against the DATASET of "bad" words. Using the EXISTS function to
+  detect if any records are returned from that PROJECT where the returned
+  Found field is TRUE sets the FoundWord flag field value.</para>
 
   <para>The Std.Str.Find function simply detects the presence anywhere within
-  the search string of any of the "bad" words. The <!-- DNT-Start -->OUTPUT<!-- DNT-End --> of the set of
-  records where the FoundWord is <!-- DNT-Start -->TRUE<!-- DNT-End --> allows post-processing to evaluate
+  the search string of any of the "bad" words. The OUTPUT of the set of
+  records where the FoundWord is TRUE allows post-processing to evaluate
   whether the record is worth keeping or garbage (probably requiring human
   intervention).</para>
 
   <para>The above code is a specific example of this technique, but it would
-  be much more useful to have a <!-- DNT-Start -->MACRO<!-- DNT-End --> that accomplishes this task, something
-  like this one (also contained in the BadWordSearch.<!-- DNT-Start -->ECL<!-- DNT-End --> file):</para>
+  be much more useful to have a MACRO that accomplishes this task, something
+  like this one (also contained in the BadWordSearch.ECL file):</para>
 
-  <!-- DNT-Start --><programlisting>MAC_FindBadWords(BadWordSet,InFile,IDfld,SeekFld,ResAttr,MatchType=1) := MACRO
+  <programlisting>MAC_FindBadWords(BadWordSet,InFile,IDfld,SeekFld,ResAttr,MatchType=1) := MACRO
   #UNIQUENAME(BadWordDS)
   %BadWordDS% := DATASET(BadWordSet,{STRING word{MAXLENGTH(50)}});
 
@@ -104,9 +104,9 @@ OUTPUT(result(FoundWord=FALSE));
   END;
   ResAttr := PROJECT(%ChkTbl%,%CheckWords%(LEFT));
 ENDMACRO;
-</programlisting><!-- DNT-End -->
+</programlisting>
 
-  <para>This <!-- DNT-Start -->MACRO<!-- DNT-End --> does a bit more than the previous example. It begins by
+  <para>This MACRO does a bit more than the previous example. It begins by
   passing in:</para>
 
   <para>* The set of words to find</para>
@@ -121,23 +121,23 @@ ENDMACRO;
 
   <para>* The type of matching to do (defaulting to 1)</para>
 
-  <para>Passing in the set of words to seek allows the <!-- DNT-Start -->MACRO<!-- DNT-End --> to operate
+  <para>Passing in the set of words to seek allows the MACRO to operate
   against any given set of strings. Specifying the result attribute name
   allows easy post-processing of the data.</para>
 
-  <para>Where this <!-- DNT-Start -->MACRO<!-- DNT-End --> starts going beyond the previous example is in the
-  MatchType parameter, which allows the <!-- DNT-Start -->MACRO<!-- DNT-End --> to use the Template Language #<!-- DNT-Start -->IF<!-- DNT-End -->
+  <para>Where this MACRO starts going beyond the previous example is in the
+  MatchType parameter, which allows the MACRO to use the Template Language #IF
   function to generate three different kinds of searches from the same
   codebase: a "contains" search (the default), an exact match, and a "starts
   with" search.</para>
 
-  <para>It also has an expanded output <!-- DNT-Start -->RECORD<!-- DNT-End --> structure that includes a
+  <para>It also has an expanded output RECORD structure that includes a
   FoundPos field to contain the pointer to the first entry in the passed in
   set that matched. This allows post processing to detect positional matches
   within the set so that "matched pairs" of words can be detected, as in this
-  example (also contained in the BadWordSearch.<!-- DNT-Start -->ECL<!-- DNT-End --> file):</para>
+  example (also contained in the BadWordSearch.ECL file):</para>
 
-  <!-- DNT-Start --><programlisting>SetCartoonFirstNames := ['GEORGE','FRED', 'FREDDY'];
+  <programlisting>SetCartoonFirstNames := ['GEORGE','FRED', 'FREDDY'];
 SetCartoonLastNames := ['JETSON','FLINTSTONE','KRUEGER'];
 
 MAC_FindBadWords(SetCartoonFirstNames,SearchDS,ID,firstname,Res1,2)
@@ -157,13 +157,13 @@ GoodGuys := SearchDS(ID NOT IN SetBadGuys);
 BadGuys := SearchDS(ID IN SetBadGuys);
 OUTPUT(BadGuys,NAMED('BadGuys'));
 OUTPUT(GoodGuys,NAMED('GoodGuys'));
-</programlisting><!-- DNT-End -->
+</programlisting>
 
   <para>Notice that the position of the cartoon character names in their
   separate sets defines a single character name to search for in multiple
-  passes. Calling the <!-- DNT-Start -->MACRO<!-- DNT-End --> twice, searching for the first and last names
+  passes. Calling the MACRO twice, searching for the first and last names
   separately, allows you to post-process their results with a simple inner
-  <!-- DNT-Start -->JOIN<!-- DNT-End --> where the same record was found in each and, most importantly, the
+  JOIN where the same record was found in each and, most importantly, the
   positional values of the matches are the same. This prevents "GEORGE
   KRUEGER" from being mis-labelled a cartoon character name.</para>
 </sect1>

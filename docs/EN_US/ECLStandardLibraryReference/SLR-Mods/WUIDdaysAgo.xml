@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WUIDdaysAgo">
-  <!-- DNT-Start --><title>WUIDdaysAgo</title><!-- DNT-End -->
+  <title>WUIDdaysAgo</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Workunit.WUIDdaysAgo    <indexterm>
+  <para><emphasis role="bold">STD.System.Workunit.WUIDdaysAgo    <indexterm>
       <primary>STD.System.Workunit.WUIDdaysAgo</primary>
     </indexterm>
     <indexterm>
@@ -17,7 +17,7 @@
       <primary>WUIDdaysAgo</primary>
     </indexterm>
 (</emphasis>
-  <emphasis> daysago </emphasis> <emphasis role="bold"> )</emphasis></para><!-- DNT-End -->
+  <emphasis> daysago </emphasis> <emphasis role="bold"> )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -27,28 +27,28 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start --><emphasis>daysago</emphasis><!-- DNT-End --></entry>
+          <entry><emphasis>daysago</emphasis></entry>
 
           <entry>An unsigned integer containing the number of days to go
           back.</entry>
         </row>
 
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->WUIDdaysAgo<!-- DNT-End --> returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value.</entry>
+          <entry>WUIDdaysAgo returns a VARSTRING value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->WUIDdaysAgo<!-- DNT-End --> </emphasis>function returns a
+  <para>The <emphasis role="bold">WUIDdaysAgo </emphasis>function returns a
   valid WorkUnit IDentifier for a workunit that would have run within the last
   <emphasis>daysago</emphasis> days.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">daysago := STD.System.Workunit.WUIDdaysAgo(3);
+  <programlisting format="linespecific">daysago := STD.System.Workunit.WUIDdaysAgo(3);
 OUTPUT(STD.System.Workunit.WorkunitList(daysago));
- //returns a list of workunits run in the last 72 hours</programlisting><!-- DNT-End -->
+ //returns a list of workunits run in the last 72 hours</programlisting>
 </sect1>

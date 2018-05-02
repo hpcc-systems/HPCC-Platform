@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Platform">
-  <!-- DNT-Start --><title>Platform</title><!-- DNT-End -->
+  <title>Platform</title>
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Job.Platform<indexterm>
+  <para><emphasis role="bold">STD.System.Job.Platform<indexterm>
       <primary>STD.System.Job.Platform</primary>
     </indexterm> <indexterm>
       <primary>System.Job.Platform</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>Platform</primary>
     </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para><!-- DNT-End -->
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,19 +23,19 @@
 
       <tbody>
         <row>
-          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry><!-- DNT-Start -->Platform<!-- DNT-End --> returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value.</entry>
+          <entry>Platform returns a VARSTRING value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->Platform<!-- DNT-End --> </emphasis>function returns the
+  <para>The <emphasis role="bold">Platform </emphasis>function returns the
   platform name (hthor, thor, or roxie) of the cluster running the
   workunit.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">A := STD.System.Job.Platform();</programlisting><!-- DNT-End -->
+  <programlisting format="linespecific">A := STD.System.Job.Platform();</programlisting>
 </sect1>

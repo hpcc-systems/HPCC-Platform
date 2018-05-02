@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DISTRIBUTION">
-  <!-- DNT-Start --><title>DISTRIBUTION<indexterm>
+  <title>DISTRIBUTION<indexterm>
       <primary>DISTRIBUTION</primary>
-    </indexterm></title><!-- DNT-End -->
+    </indexterm></title>
 
-  <para><emphasis role="bold"><!-- DNT-Start -->DISTRIBUTION<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->DISTRIBUTION<!-- DNT-End --> function</primary>
+  <para><emphasis role="bold">DISTRIBUTION<indexterm>
+      <primary>DISTRIBUTION function</primary>
     </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, fields</emphasis><emphasis role="bold">
-  ] [</emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->NAMED<!-- DNT-End --><indexterm>
-      <primary><!-- DNT-Start -->NAMED<!-- DNT-End --></primary>
+  ] [</emphasis><emphasis>,</emphasis><emphasis role="bold"> NAMED<indexterm>
+      <primary>NAMED</primary>
     </indexterm>( </emphasis><emphasis>name</emphasis><emphasis role="bold"> )
-  ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis>
-  <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ]
-  [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -27,13 +27,13 @@
 
         <tbody>
           <row>
-            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>recordset</emphasis></entry>
 
             <entry>The set of records on which to run statistics.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>fields</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>fields</emphasis></entry>
 
             <entry>Optional. A comma-delimited list of fields in the recordset
             to which to limit the action. If omitted, all fields are
@@ -41,14 +41,14 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">NAMED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">NAMED</emphasis></entry>
 
             <entry>Optional. Specifies the result name that appears in the
             workunit. </entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
             <entry>A string constant containing the result label. This must be
             a valid label (See <link linkend="Attribute_Name_Rules">Definition
@@ -56,21 +56,21 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
             <entry>Optional. Specifies the output record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
             <entry>Specifies the significance of the output record
             order.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>bool</emphasis></entry>
 
             <entry>When False, specifies the output record order is not
             significant. When True, specifies the default output record
@@ -78,53 +78,53 @@
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is
             significant.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
             <entry>Optional. Specifies the input record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity in
             parallel.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using
             <emphasis>numthreads</emphasis> threads.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
             <entry>Optional. Override the algorithm used for this
             activity.</entry>
           </row>
 
           <row>
-            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
+            <entry><emphasis>name</emphasis></entry>
 
             <entry>The algorithm to use for this activity. Must be from the
-            list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and
-            <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->DISTRIBUTION<!-- DNT-End --></emphasis> action produces a
-  crosstab report in <!-- DNT-Start -->XML<!-- DNT-End --> format indicating how many unique records there are
+  <para>The <emphasis role="bold">DISTRIBUTION</emphasis> action produces a
+  crosstab report in XML format indicating how many unique records there are
   in the <emphasis>recordset</emphasis> for each value in each field in the
   <emphasis>recordset</emphasis>.</para>
 
@@ -135,12 +135,12 @@
   &lt;Field name="seqnum" estimate="4000000"/&gt;
 &lt;/XML&gt;</programlisting></para>
 
-  <para>The <!-- DNT-Start -->DECIMAL<!-- DNT-End --> data type is not supported by this action. You can use a
-  <!-- DNT-Start -->REAL<!-- DNT-End --> data type instead.</para>
+  <para>The DECIMAL data type is not supported by this action. You can use a
+  REAL data type instead.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
+  <programlisting>SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
      {STRING1 Value1,STRING1 Value2});
 DISTRIBUTION(SomeFile);
 /* The result comes back looking like this:
@@ -198,5 +198,5 @@ END;
 
 out := PARSE(x, line, res, XML('XML/Field'));
 out;
-</programlisting><!-- DNT-End -->
+</programlisting>
 </sect1>
