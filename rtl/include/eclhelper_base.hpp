@@ -1115,6 +1115,20 @@ class ECLRTL_API CThorStreamedIteratorArg : public CThorArgOf<IHThorStreamedIter
 {
 };
 
+class ECLRTL_API CThorExternalArg : public CThorArgOf<IHThorExternalArg>
+{
+public:
+    CThorExternalArg(unsigned _numInputs);
+    virtual ~CThorExternalArg();
+    virtual IRowStream * createOutput(IThorActivityContext * activityContext) override;
+    virtual void execute(IThorActivityContext * activityContext) override;
+    virtual void setInput(unsigned whichInput, IRowStream * input) override;
+
+protected:
+    IRowStream * * inputs;
+};
+
+
 //-- Full implementations of selective activities that don't ever require any access to the context.
 
 class ECLRTL_API CLibraryNullArg : public CThorNullArg

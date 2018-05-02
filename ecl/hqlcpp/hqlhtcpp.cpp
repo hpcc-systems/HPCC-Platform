@@ -2351,6 +2351,21 @@ void ActivityInstance::buildPrefix()
 
 void ActivityInstance::buildSuffix()
 {
+    if (!implementationClassName && constructorArgs)
+    {
+        StringBuffer baseClassName;
+        baseClassName.append("CThor").append(activityArgName).append("Arg");
+        IIdAtom * baseClassId = createIdAtom(baseClassName);
+        OwnedHqlExpr call = translator.bindFunctionCall(baseClassId, constructorArgs);
+
+        StringBuffer s;
+        s.append(className).append("() : ");
+        translator.generateExprCpp(s, call);
+        s.append(" {}");
+
+        classctx.addQuoted(s);
+    }
+
     if (numChildQueries)
         addAttributeInt(WaNumChildQueries, numChildQueries);
 
@@ -6490,7 +6505,9 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 //Items in this list need to also be in the list inside doBuildActivityChildDataset
             case no_call:
             case no_externalcall:
-                if (expr->isAction())
+                if (callIsActivity(expr))
+                    result = doBuildActivityEmbed(ctx, expr, isRoot);
+                else if (expr->isAction())
                     result = doBuildActivityAction(ctx, expr, isRoot);
                 else if (expr->isDatarow())
                     result = doBuildActivityCreateRow(ctx, expr, false);
@@ -8859,6 +8876,92 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRemote(BuildCtx & ctx, IHqlExp
     }
 
     buildInstanceSuffix(instance);
+
+    return instance->getBoundActivity();
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+ABoundActivity * HqlCppTranslator::doBuildActivityEmbed(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
+{
+    CIArray bound;
+    IHqlExpression * funcdef = queryFuncdef(expr);
+    IHqlExpression * formals = funcdef->queryChild(1);
+    ForEachChild(iInput, formals)
+    {
+        IHqlExpression * input = formals->queryChild(iInput);
+        if (!isStreamingDataset(input))
+            break;
+
+        IHqlExpression * actual = expr->queryChild(iInput);
+        assertex(actual);
+        bound.append(*buildCachedActivity(ctx, actual));
+    }
+
+    ThorActivityKind kind;
+    if (expr->isDataset())
+        kind = bound.empty() ? TAKexternalsource : TAKexternalprocess;
+    else
+        kind = TAKexternalsink;
+
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, "External");
+
+    //Substitute the parameters into the external call/embed definition, so that any attributes that depend on the arguments
+    //are expanded.
+    OwnedHqlExpr expandedCall = expandOutOfLineFunctionCall(expr);
+
+    //The setting for the local attribute allows the localness to be configured for the activity
+    IHqlExpression * localAttr = expandedCall->queryAttribute(localAtom);
+    if (localAttr)
+    {
+        IHqlExpression * value = localAttr->queryChild(0);
+        if (value)
+            instance->isLocal = getBoolValue(value, false);
+        else
+            instance->isLocal = true;
+    }
+
+    buildActivityFramework(instance, isRoot);
+    OwnedHqlExpr numInputsExpr = getSizetConstant(bound.ordinality());
+    instance->addConstructorParameter(numInputsExpr);
+
+    buildInstancePrefix(instance);
+
+    HqlExprArray actuals;
+    ForEachChild(i, formals)
+    {
+        if (i < bound.ordinality())
+        {
+            IHqlExpression * input = formals->queryChild(i);
+            StringBuffer argument;
+            argument.append("inputs[").append(i).append("]");
+            OwnedHqlExpr ds = createQuoted(argument, input->getType());
+            actuals.append(*createTranslated(ds));
+        }
+        else
+        {
+            IHqlExpression * actual = expr->queryChild(i);
+            actuals.append(*LINK(actual));
+        }
+    }
+    OwnedHqlExpr newCall = expr->clone(actuals);
+
+    if (expr->isDataset())
+    {
+        MemberFunction func(*this, instance->startctx, "virtual IRowStream * createOutput(IThorActivityContext * activityContext) override");
+        buildReturn(func.ctx, newCall);
+    }
+    else
+    {
+        MemberFunction func(*this, instance->startctx, "virtual void execute(IThorActivityContext * activityContext) override");
+        buildStmt(func.ctx, newCall);
+    }
+
+    buildInstanceSuffix(instance);
+
+    ForEachItemIn(idx2, bound)
+        buildConnectInputOutput(ctx, instance, (ABoundActivity *)&bound.item(idx2), 0, idx2);
 
     return instance->getBoundActivity();
 }

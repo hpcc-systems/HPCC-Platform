@@ -852,6 +852,9 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKgraphloop:
         case TAKparallelgraphloop:
         case TAKloopdataset:
+        case TAKexternalsink:
+        case TAKexternalsource:
+        case TAKexternalprocess:
             return false;
 // dependent on local/grouped
         case TAKkeyeddistribute:

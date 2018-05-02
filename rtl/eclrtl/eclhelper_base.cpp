@@ -801,3 +801,18 @@ unsigned CThorTraceArg::getSample() { return 0; }
 unsigned CThorTraceArg::getSkip() { return 0; }
 const char *CThorTraceArg::getName() { return NULL; }
 
+
+//CThorExternalArg
+CThorExternalArg::CThorExternalArg(unsigned _numInputs)
+{
+    inputs = new IRowStream *[_numInputs];
+    for (unsigned i=0; i < _numInputs; i++)
+        inputs[i] = nullptr;
+}
+
+CThorExternalArg::~CThorExternalArg() { delete [] inputs; }
+
+IRowStream * CThorExternalArg::createOutput(IThorActivityContext * activityContext) { rtlFailUnexpected(); }
+void CThorExternalArg::execute(IThorActivityContext * activityContext) { rtlFailUnexpected(); }
+void CThorExternalArg::setInput(unsigned whichInput, IRowStream * input) { inputs[whichInput] = input; }
+

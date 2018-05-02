@@ -1706,6 +1706,15 @@ bool isLocalActivity(IHqlExpression * expr)
         return false;
     case no_compound:
         return isLocalActivity(expr->queryChild(1));
+    case no_call:
+    case no_externalcall:
+        if (callIsActivity(expr))
+        {
+            //Can only be deduced by substituting the parameters into the body and seeing if the local attribute has a constant value
+            //currently assume false.  It may need improving when support for global embed activities is added.
+            return false;
+        }
+        return false;
     case no_compound_diskread:
     case no_compound_disknormalize:
     case no_compound_diskaggregate:
@@ -1904,7 +1913,10 @@ bool localChangesActivityAction(IHqlExpression * expr)
     case no_nwaymerge:
     case no_selfjoin:
     case no_joincount:
-        return !isKeyedJoin(expr);          // Keyed joins always 
+        return !isKeyedJoin(expr);          // Keyed joins always
+    case no_call:
+    case no_externalcall:
+        return callIsActivity(expr);
     }
     return false;
 }

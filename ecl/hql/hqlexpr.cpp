@@ -2264,7 +2264,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_httpcall:
     case no_soapcall:
     case no_newsoapcall:
-    case no_externalcall:                       // None in the sense it is generally used for.
     case no_alias:
     case no_id2blob:
     case no_embedbody:
@@ -2274,7 +2273,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_param:
     case no_typetransfer:
     case no_translated:
-    case no_call:
     case no_rows:
     case no_external:
     case no_delayedselect:
@@ -2450,6 +2448,14 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
         return childdataset_left;
     case no_chooseds:
         return childdataset_many_noscope;
+    case no_call:
+        if (functionCallIsActivity(expr))
+            return childdataset_many_noscope;
+        return childdataset_none;
+    case no_externalcall:
+        if (externalCallIsActivity(expr))
+            return childdataset_many_noscope;
+        return childdataset_none;
     case no_merge:
     case no_regroup:
     case no_cogroup:
@@ -2698,7 +2704,6 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_httpcall:
     case no_soapcall:
     case no_newsoapcall:
-    case no_externalcall:                       // None in the sense it is generally used for.
     case no_alias:
     case no_id2blob:
     case no_embedbody:
@@ -2706,7 +2711,6 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_datasetfromdictionary:
     case no_param:
     case no_translated:
-    case no_call:
     case no_rows:
     case no_external:
     case no_rowsetindex:
@@ -2766,6 +2770,14 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
         return 0;
     case no_quoted:
     case no_variable:
+        return 0;
+    case no_call:
+        if (functionCallIsActivity(dataset))
+            return numStreamInputs(dataset->queryBody()->queryFunctionDefinition());
+        return 0;
+    case no_externalcall:
+        if (externalCallIsActivity(dataset))
+            return numStreamInputs(dataset->queryExternalDefinition());
         return 0;
     case no_mapto:
     case no_compound:
@@ -8398,6 +8410,81 @@ bool functionBodyUsesContext(IHqlExpression * body)
     }
 }
 
+bool functionBodyIsActivity(IHqlExpression * body)
+{
+    switch (body->getOperator())
+    {
+    case no_external:
+        return body->hasAttribute(activityAtom);
+    case no_outofline:
+    case no_funcdef:
+        return functionBodyIsActivity(body->queryChild(0));
+    case no_embedbody:
+        return body->hasAttribute(activityAtom);
+    default:
+        return false;
+    }
+}
+
+bool functionCallIsActivity(IHqlExpression * call)
+{
+    dbgassertex(call->getOperator() == no_call);
+    return functionBodyIsActivity(call->queryBody()->queryFunctionDefinition());
+}
+
+bool externalCallIsActivity(IHqlExpression * call)
+{
+    dbgassertex(call->getOperator() == no_externalcall);
+    return functionBodyIsActivity(call->queryExternalDefinition());
+}
+
+IHqlExpression * queryFuncdef(IHqlExpression * call)
+{
+    switch (call->getOperator())
+    {
+    case no_call:
+        return call->queryBody()->queryFunctionDefinition();
+    case no_externalcall:
+        return call->queryExternalDefinition();
+    default:
+        throwUnexpected();
+    }
+}
+
+bool callIsActivity(IHqlExpression * call)
+{
+    return functionBodyIsActivity(queryFuncdef(call));
+}
+
+bool isStreamingDataset(IHqlExpression * param)
+{
+    dbgassertex(param->getOperator() == no_param);
+    ITypeInfo * paramType = param->queryType();
+    switch (paramType->getTypeCode())
+    {
+    case type_table:
+    case type_groupedtable:
+        if (hasStreamedModifier(paramType))
+            return true;
+        break;
+    }
+    return false;
+}
+
+unsigned numStreamInputs(IHqlExpression * funcdef)
+{
+    dbgassertex(funcdef->getOperator() == no_funcdef);
+    IHqlExpression * formals = funcdef->queryChild(1);
+    unsigned numStreams = 0;
+    ForEachChild(i, formals)
+    {
+        if (!isStreamingDataset(formals->queryChild(i)))
+            break;
+        numStreams++;
+    }
+    return numStreams;
+}
+
 IHqlExpression * createFunctionDefinition(IIdAtom * id, HqlExprArray & args)
 {
     IHqlExpression * body = &args.item(0);
@@ -12438,7 +12525,6 @@ IHqlExpression * expandOutOfLineFunctionCall(IHqlExpression * expr)
     CallExpansionContext ctx;
     ctx.functionCache = &functionCache;
     ctx.forceOutOfLineExpansion = true;
-    assertex(expr->getOperator() == no_call);
     if (ctx.expandFunctionCall(expr))
         return expandFunctionCallPreserveAnnotation(ctx, expr);
     return LINK(expr);
@@ -12931,6 +13017,8 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
         attrs.append(*createAttribute(contextSensitiveAtom));
     if (functionBodyUsesContext(body))
         attrs.append(*LINK(cachedContextAttribute));
+    if (functionBodyIsActivity(body))
+        attrs.append(*createAttribute(activityAtom));
 
     IHqlExpression *child = body->queryChild(0);
     if (child && child->getOperator()==no_embedbody)

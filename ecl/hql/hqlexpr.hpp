@@ -1889,6 +1889,13 @@ extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, IHqlExp
 extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, HqlExprArray & args);
 extern HQL_API IHqlExpression * queryNonDelayedBaseAttribute(IHqlExpression * expr);
 extern HQL_API bool functionBodyUsesContext(IHqlExpression * body);
+extern HQL_API bool functionBodyIsActivity(IHqlExpression * body);
+extern HQL_API bool functionCallIsActivity(IHqlExpression * call);
+extern HQL_API bool externalCallIsActivity(IHqlExpression * call);
+extern HQL_API bool callIsActivity(IHqlExpression * call); // can be no_call or no_externalcall
+extern HQL_API IHqlExpression * queryFuncdef(IHqlExpression * call);
+extern HQL_API bool isStreamingDataset(IHqlExpression * param);
+extern HQL_API unsigned numStreamInputs(IHqlExpression * funcdef);
 
 #define NO_AGGREGATE        \
          no_count:          \

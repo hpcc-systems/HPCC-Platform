@@ -7809,6 +7809,8 @@ public:
             mangled.append("P18IGlobalCodeContext");
         else if (body->hasAttribute(userMatchFunctionAtom))
             mangled.append("P12IMatchWalker");
+        if (functionBodyIsActivity(body))
+            mangled.append("P20IThorActivityContext");
 
         mangled.append(mangledReturnParameters);
 
@@ -8079,6 +8081,8 @@ public:
             mangled.append("PVIGlobalCodeContext@@");
         else if (body->hasAttribute(userMatchFunctionAtom))
             mangled.append("PVIMatchWalker@@");
+        if (functionBodyIsActivity(body))
+            mangled.append("PVIThorActivityContext@@");
 
         if (mangledReturnParameters.length())
             mangled.append(mangledReturnParameters);

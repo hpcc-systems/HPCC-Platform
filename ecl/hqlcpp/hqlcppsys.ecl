@@ -790,6 +790,7 @@ const char * cppSystemText[]  = {
     "   boolean newMemorySpillSplitArg(unsigned4 usageCount, const varstring name, boolean meta) : include, pseudoentrypoint='new CLibraryMemorySpillSplitArg';",
     "   boolean newWorkUnitReadArg(const varstring _name, boolean _meta) : include, pseudoentrypoint='new CLibraryWorkUnitReadArg';",
     "   boolean newWorkUnitWriteArg(const varstring _name, unsigned4 _flags, boolean _meta) : include, pseudoentrypoint='new CLibraryWorkUnitWriteArg';",
+    "   CThorExternalArg(unsigned4 _numInputs) : include;",
 
     "   destructMetaMember(row _x) : omethod,entrypoint='destruct';",
     "   walkIndirectMetaMember(row _x, boolean _visitor) : omethod,entrypoint='walkIndirectMembers';",

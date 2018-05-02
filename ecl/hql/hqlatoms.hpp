@@ -81,6 +81,7 @@ extern HQL_API IAtom * actionAtom;
 extern HQL_API IAtom * activeAtom;
 extern HQL_API IAtom * activeFailureAtom;
 extern HQL_API IAtom * activeNlpAtom;
+extern HQL_API IAtom * activityAtom;
 extern HQL_API IAtom * afterAtom;
 extern HQL_API IAtom * algorithmAtom;
 extern HQL_API IAtom * _aliased_Atom;

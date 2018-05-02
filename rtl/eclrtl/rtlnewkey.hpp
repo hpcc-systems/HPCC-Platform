@@ -91,7 +91,7 @@ public:
     {
         if (nextSeekIsGT())
         {
-            assertex(nextUnmatchedRange == -1U);
+            assertex(nextUnmatchedRange == (unsigned)-1);
             assertex(numMatched != filters.ordinality());
             unsigned i;
             int c = 0;
@@ -147,7 +147,7 @@ public:
     unsigned numFilterFields() const { return filters.ordinality(); }
     const RtlRow & queryRow() const { return currentRow; }
     bool setRowForward(const byte * row);
-    bool nextSeekIsGT() const { return (nextUnmatchedRange == -1U); }
+    bool nextSeekIsGT() const { return (nextUnmatchedRange == (unsigned)-1); }
     bool noMoreMatches() const { return eos; }
 
 protected:

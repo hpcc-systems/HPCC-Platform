@@ -2370,6 +2370,9 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             buildTempExpr(ctx, expr, tgt, format);
             return;
         }
+        break;
+    case no_quoted:
+        throwUnexpectedX("Translated expression passed to doBuildDataset()");
     }
 
     if (expr->isDictionary())

@@ -702,6 +702,13 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
         out.append("IMatchWalker * results");
         firstParam = false;
     }
+    if (functionBodyIsActivity(body))
+    {
+        if (!firstParam)
+            out.append(",");
+        out.append("IThorActivityContext * activity");
+        firstParam = false;
+    }
 
     if (returnParameters.length())
     {
@@ -1218,6 +1225,13 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 else if (props->hasAttribute(globalContextAtom))
                 {
                     out.append("gctx");
+                    needComma = true;
+                }
+                if (functionBodyIsActivity(funcdef))
+                {
+                    if (needComma)
+                        out.append(",");
+                    out.append("activityContext");
                     needComma = true;
                 }
                 for (unsigned index = firstArg; index < numArgs; index++)
