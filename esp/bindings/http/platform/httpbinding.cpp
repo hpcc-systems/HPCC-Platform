@@ -539,6 +539,19 @@ int EspHttpBinding::getMethodHelp(IEspContext &context, const char *serv, const 
     return 0;
 }
 
+bool EspHttpBinding::isMethodInService(IEspContext& context, const char *servname, const char *methname)
+{
+    StringBuffer serviceQName;
+    StringBuffer methodQName;
+    if (!qualifyServiceName(context, servname, methname, serviceQName, &methodQName))
+        return false;
+
+    if (methodQName.length() > 0)
+        return true;
+
+    return isMethodInSubService(context, servname, methname);
+}
+
 bool EspHttpBinding::qualifySubServiceName(IEspContext &context, const char *servname, const char *methname, StringBuffer &servQName, StringBuffer *methQName)
 {
     if (m_subservices)

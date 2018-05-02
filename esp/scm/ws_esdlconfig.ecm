@@ -35,9 +35,10 @@ ESPStruct ESDLConfiguration
 };
 ESPstruct ESDLBinding
 {
-    string EspProcess;
-    string EspBinding;
     string Id;
+    string EspProcess;
+    [min_ver("1.4")] int Port;
+    [max_ver("1.3")] string EspBinding;
 };
 
 ESPstruct ESDLDefinition
@@ -60,6 +61,7 @@ ESPrequest [nil_remove] GetESDLDefinitionRequest
     string Id;
     [min_ver("1.3")] string Name;
     [min_ver("1.3")] int Seq;
+    string ServiceName;
     [min_ver("1.2")] boolean ReportMethodsAvailable;
 };
 
@@ -94,12 +96,12 @@ ESPresponse [nil_remove, exceptions_inline] PublishESDLDefinitionResponse
 ESPrequest [nil_remove] PublishESDLBindingRequest
 {
     string EspProcName;        //Name of ESP Process
-    string EspBindingName;     //Name of ESP Binding - optional, but we must be able to look it up. We can look it up by EspProc + Esp Port or EspProc + Esp Service.
-    string EspPort;            //Esp Proc + Esp port = ESP Binding
-    string EspServiceName;     //Esp Proc + Esp service name = ESP Binding
-                               //Therefore, either pass in EspBindingName, or Esp Port or ESP ServiceName
+    string EspBindingName;     //Name of ESP Binding
+    string EspPort;            //Port to bind on. You need to specify either EspBindingName or EspPort.
     string EsdlDefinitionID;   // The ESDL definition name.ver
     string EsdlServiceName;    //Name of service as defined in ESDL Definition
+
+    [max_ver("1.3")] string EspServiceName;
 
     boolean Overwrite;
     string Config; // dynamic xml, can have <Binding EspProcess=xxx EspBinding=WsAccurint><Definition name=xx id=xx.yy><Methods><Method>...
@@ -155,12 +157,13 @@ ESPresponse ListDESDLEspBindingsResp
 
 ESPrequest [nil_remove] ConfigureESDLBindingMethodRequest
 {
-    string EspProcName;       //Name of ESP Process
-    string EspBindingName;    //Name + port = binding
-    string EspPort;            //Esp Proc + Esp port = ESP Binding
-    string EsdlDefinitionID;   // The ESDL definition name.ver
-    string EsdlServiceName;    //Name of service as defined in ESDL Definition
-    //string MethodName;         //If no port is provided
+    [min_ver("1.4")] string EsdlBindingId;
+    [min_ver("1.4")] string MethodName;
+    [max_ver("1.3")] string EspProcName;       //Name of ESP Process
+    [max_ver("1.3")] string EspBindingName;    //Name + port = binding
+    [max_ver("1.3")] string EspPort;            //Esp Proc + Esp port = ESP Binding
+    [max_ver("1.3")] string EsdlDefinitionID;   // The ESDL definition name.ver
+    [max_ver("1.3")] string EsdlServiceName;    //Name of service as defined in ESDL Definition
     boolean Overwrite;
     //string Attributes;        //xml <methods><Method name="name" url="http://vvvzzz.yyy.xxx:9876" password="h7fermX+gmYuuBwUsS-qeZ==" username="myname" queryname="UPS_Services.RightAddressService" status="available" testrepo="0" querytype="roxie"/><Methods>
     string Config; // dynamic xml, can have <Binding EspProcess=xxx EspBinding=WsAccurint><Definition name=xx id=xx.yy><Methods><Method>...
@@ -185,10 +188,10 @@ ESPresponse [nil_remove, exceptions_inline] ConfigureESDLBindingMethodResponse
 
 ESPrequest GetESDLBindingRequest
 {
-    string EspProcName;   //Name of ESP Process
-    string EspBindingName;
-    string EspPort;       //Name + port = service
-    string EsdlBindingId; //espprocname.espbinding
+    string EsdlBindingId;
+    [max_ver("1.3")] string EspProcName;   //Name of ESP Process
+    [max_ver("1.3")] string EspBindingName;
+    [max_ver("1.3")] string EspPort;
     [min_ver("1.1")] bool IncludeInterfaceDefinition;
     [min_ver("1.2")] boolean ReportMethodsAvailable;
 };
@@ -233,6 +236,18 @@ ESPresponse [exceptions_inline] ListESDLDefinitionsResponse
     ESParray<ESPstruct ESDLDefinition, Definition> Definitions;
 };
 
+ESPstruct EspPortStruct
+{
+    int Value;
+    ESParray<ESPstruct ESDLBinding, Binding> Bindings;
+};
+
+ESPstruct EspProcessStruct
+{
+    string Name;
+    ESParray<ESPstruct EspPortStruct, Port> Ports;
+};
+
 ESPrequest [exceptions_inline] ListESDLBindingsRequest
 {
 };
@@ -240,10 +255,13 @@ ESPrequest [exceptions_inline] ListESDLBindingsRequest
 ESPresponse [exceptions_inline] ListESDLBindingsResponse
 {
     string BindingsXML;
-    ESParray<ESPstruct ESDLBinding, Binding> Bindings;
+    [max_ver("1.3")] ESParray<ESPstruct ESDLBinding, Binding> Bindings;
+    [min_ver("1.4")] ESParray<ESPstruct EspProcessStruct, EspProcess> EspProcesses;
 };
 
-ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.3"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
+#define VERSION_FOR_ESDLCMD "1.4"
+
+ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.4"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod [auth_feature("ESDLConfigAccess:WRITE")] PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);

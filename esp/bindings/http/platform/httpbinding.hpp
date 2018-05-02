@@ -317,6 +317,7 @@ public:
 
     virtual int getMethodDescription(IEspContext &context, const char *serv, const char *method, StringBuffer &page);
     virtual int getMethodHelp(IEspContext &context, const char *serv, const char *method, StringBuffer &page);
+    bool isMethodInService(IEspContext& context, const char *servname, const char *methname);
 
     virtual int getMethodHtmlForm(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &page, bool bIncludeFormTag){return 0;}
     virtual bool hasSubService(IEspContext &context, const char *name);

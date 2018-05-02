@@ -192,7 +192,10 @@ public:
 
             if( deps )
             {
-                xmlOut.appendf( "<esxdl name=\"%s\">", serviceName);
+                if (serviceName)
+                    xmlOut.appendf("<esxdl name=\"%s\">", serviceName);
+                else
+                    xmlOut.appendf("<esxdl>");
                 defHelper->toXML( *deps, xmlOut, version, opts, flags );
                 xmlOut.append("</esxdl>");
             }
@@ -231,7 +234,7 @@ public:
         if(server == NULL)
             throw MakeStringException(-1, "Server url not specified");
 
-        VStringBuffer url("http://%s:%s/WsESDLConfig", server, port);
+        VStringBuffer url("http://%s:%s/WsESDLConfig/?ver_=%s", server, port, VERSION_FOR_ESDLCMD);
 
         IClientWsESDLConfig * esdlConfigClient = createWsESDLConfigClient();
         esdlConfigClient->addServiceUrl(url.str());

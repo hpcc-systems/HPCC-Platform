@@ -63,6 +63,7 @@ private:
     Mutex abortMutex;
     bool m_SEHMappingEnabled;
     CEspConfig* m_config;
+    CriticalSection m_BindingCritSect;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -191,6 +192,7 @@ public:
 
         LOG(MCprogress, "binding %s, on %s:%d", name, strIP.str(), port);
 
+        CriticalBlock cb(m_BindingCritSect);
         ISocket **socketp = m_srvSockets.getValue(port);
         ISocket *socket=(socketp!=NULL) ? *socketp : NULL;
 
@@ -230,6 +232,48 @@ public:
             IERRLOG("Can't create socket on %s:%d", strIP.str(), port);
             throw MakeStringException(-1, "Can't create socket on %s:%d", strIP.str(), port);
         }
+    }
+
+    virtual void removeBinding(unsigned short port, IEspRpcBinding & bind)
+    {
+        IEspProtocol* prot = dynamic_cast<IEspProtocol*>(bind.queryListener());
+        if (prot)
+        {
+            CriticalBlock cb(m_BindingCritSect);
+            int left = prot->removeBindingMap(port, &bind);
+            if (left == 0)
+            {
+                DBGLOG("No more bindings on port %d, so freeing up the port.",port);
+                ISocket **socketp = m_srvSockets.getValue(port);
+                ISocket *socket=(socketp!=nullptr) ? *socketp : nullptr;
+                if (socket != nullptr)
+                {
+                    remove(socket);
+                    m_srvSockets.remove(port);
+                    socket->close();
+                }
+            }
+        }
+    }
+
+    virtual IPropertyTree* queryProcConfig()
+    {
+        return m_config->queryProcConfig();
+    }
+
+    virtual IEspProtocol* queryProtocol(const char* name)
+    {
+        return m_config->queryProtocol(name);
+    }
+
+    virtual IEspRpcBinding* queryBinding(const char* name)
+    {
+        return m_config->queryBinding(name);
+    }
+
+    virtual const char* getProcName()
+    {
+        return m_config->getProcName();
     }
 
 //ISocketHandler
