@@ -238,6 +238,10 @@ export var MonitorLockClick = dojo.declare([Evented], {
     unlocked: function () {
         var context = this;
         context.emit("unlocked", {});
+    },
+    locked: function () {
+        var context = this;
+        context.emit("locked", {});
     }
 });
 

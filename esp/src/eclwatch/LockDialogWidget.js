@@ -63,7 +63,6 @@ define([
             this.tableContainer = registry.byId(this.id + "TableContainer");
             this.unlockUserName = registry.byId(this.id + "UnlockUserName");
             this.unlockPassword = registry.byId(this.id + "UnlockPassword");
-            this.unlockBtn = registry.byId(this.id + "UnlockBtn");
             this.unlockForm = registry.byId(this.id + "UnlockForm");
         },
 
@@ -110,6 +109,14 @@ define([
         },
 
         _onLock: function (event) {
+            var context = this;
+
+            on(this.unlockPassword, "keypress", function (event) {
+                if (event.key === "Enter") {
+                    context._onUnlock();
+                }
+            });
+
             xhr("esp/lock", {
                 method: "post",
             });
