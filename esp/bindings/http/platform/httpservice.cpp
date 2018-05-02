@@ -1551,6 +1551,7 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
     ///authReq.ctx->setAuthorized(true);
 
     clearCookie(authReq.authBinding->querySessionIDCookieName());
+    clearCookie(SESSION_AUTH_OK_COOKIE);
     clearCookie(SESSION_TIMEOUT_COOKIE);
     const char* logoutURL = authReq.authBinding->queryLogoutURL();
     if (!isEmptyString(logoutURL) && !lock)
