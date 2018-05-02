@@ -902,6 +902,7 @@ ESPrequest WUResultBinRequest
     string ResultName;
     int    Sequence;
     string Format("raw");
+    [min_ver("1.73")] string Cluster;
     [min_ver("1.50")] ESParray<ESPstruct NamedValue> FilterBy;
 
     int64 Start(0);
