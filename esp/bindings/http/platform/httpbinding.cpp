@@ -393,8 +393,6 @@ void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
         //Read pre-configured 'invalidURLsAfterAuth'. Separate the comma separated string to a
         //list. Store them into BoolHash for quick lookup.
         setABoolHash(authDomainTree->queryProp("@invalidURLsAfterAuth"), invalidURLsAfterAuth);
-        if (!loginURL.isEmpty())
-            invalidURLsAfterAuth.setValue(loginURL.get(), true);
     }
     else
     {//old environment.xml
@@ -402,6 +400,10 @@ void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
         readUnrestrictedResources(DEFAULT_UNRESTRICTED_RESOURCES);
         loginURL.set(DEFAULT_LOGIN_URL);
     }
+
+    if (!loginURL.isEmpty())
+        setABoolHash(loginURL.get(), invalidURLsAfterAuth);
+    setABoolHash("/esp/login", invalidURLsAfterAuth);
     domainAuthResourcesWildMatch.sortCompare(compareLength);
 }
 
@@ -485,7 +487,12 @@ void EspHttpBinding::setABoolHash(const char* csv, BoolHash& hash) const
     StringArray aList;
     aList.appendListUniq(csv, ",");
     ForEachItemIn(i, aList)
-        hash.setValue(aList.item(i), true);
+    {
+        const char* s = aList.item(i);
+        bool* found = hash.getValue(s);
+        if (!found || !*found);
+            hash.setValue(s, true);
+    }
 }
 
 StringBuffer &EspHttpBinding::generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns)
