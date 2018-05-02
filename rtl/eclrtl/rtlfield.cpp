@@ -4225,6 +4225,7 @@ size32_t translateScalar(ARowBuilder &builder, size32_t offset, const RtlFieldIn
     case type_swapint:
     case type_packedint:
     case type_filepos:
+    case type_keyedint:
         offset = destType.buildInt(builder, offset, field, sourceType.getInt(source));
         break;
     case type_real:
