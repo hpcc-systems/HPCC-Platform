@@ -1033,6 +1033,8 @@ enum ThorActivityKind
     TAKtrace,
     TAKquantile,
     TAKjsonfetch,
+    TAKspillread,
+    TAKspillwrite,
 
     TAKlast
 };

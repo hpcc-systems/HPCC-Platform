@@ -581,6 +581,7 @@ bool CMasterGraphElement::checkUpdate()
         case TAKcsvwrite:
         case TAKxmlwrite:
         case TAKjsonwrite:
+        case TAKspillwrite:
         {
             IHThorDiskWriteArg *helper = (IHThorDiskWriteArg *)queryHelper();
             doCheckUpdate = 0 != (helper->getFlags() & TDWupdate);
@@ -588,6 +589,8 @@ bool CMasterGraphElement::checkUpdate()
             helper->getUpdateCRCs(eclCRC, totalCRC);
             if (TAKdiskwrite == getKind())
                 temporary = 0 != (helper->getFlags() & (TDXtemporary|TDXjobtemp));
+            else if (TAKspillwrite == getKind())
+                temporary = true;
             break;
         }
     }

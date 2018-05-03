@@ -165,6 +165,7 @@ public:
                 break;
             case TAKdiskread:
             case TAKdisknormalize:
+            case TAKspillread:
                 ret = createDiskReadActivityMaster(this);
                 break;
             case TAKdiskaggregate:
@@ -194,6 +195,7 @@ public:
                 ret = createIndexGroupAggregateActivityMaster(this);
                 break;
             case TAKdiskwrite:
+            case TAKspillwrite:
                 ret = createDiskWriteActivityMaster(this);
                 break;
             case TAKcsvwrite:

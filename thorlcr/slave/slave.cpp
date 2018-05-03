@@ -309,6 +309,7 @@ public:
         switch (kind)
         {
             case TAKdiskread:
+            case TAKspillread:
                 ret = createDiskReadSlave(this);
                 break;
             case TAKdisknormalize:
@@ -356,6 +357,7 @@ public:
                 ret = createSpillSlave(this);
                 break;
             case TAKdiskwrite:
+            case TAKspillwrite:
                 ret = createDiskWriteSlave(this);
                 break;
             case TAKsort:

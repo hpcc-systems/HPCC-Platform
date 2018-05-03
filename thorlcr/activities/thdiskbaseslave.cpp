@@ -338,7 +338,7 @@ void CDiskWriteSlaveActivityBase::open()
      */
     size32_t diskRowMinSz = 0;
     IOutputMetaData *diskRowMeta = diskHelperBase->queryDiskRecordSize()->querySerializedDiskMeta();
-    if (diskRowMeta->isFixedSize() && (TAKdiskwrite == container.getKind()))
+    if (diskRowMeta->isFixedSize() && ((TAKdiskwrite == container.getKind()) || (TAKspillwrite == container.getKind())))
     {
         diskRowMinSz = diskRowMeta->getMinRecordSize();
         if (grouped)
