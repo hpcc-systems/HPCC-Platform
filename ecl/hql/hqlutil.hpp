@@ -685,6 +685,10 @@ inline IHqlExpression * queryDefaultValue(IHqlExpression * expr, unsigned idx)
     return (ret && (ret->getOperator() != no_omitted)) ? ret : NULL;
 }
 
+extern HQL_API IHqlExpression * getHozedBias(ITypeInfo * type);
+extern HQL_API ITypeInfo * getHozedKeyType(IHqlExpression * expr);
+extern HQL_API IHqlExpression * getHozedKeyValue(IHqlExpression * _value);
+
 extern HQL_API bool hasNonNullRecord(ITypeInfo * type);
 
 //Mangle the names to make it slightly trickier for someone disassembling the system, 

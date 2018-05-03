@@ -166,6 +166,7 @@ EXPORT DG_VarFile   := DATASET(DG_FileOut+'VAR',DG_VarOutRecPlus,FLAT);
 
 EXPORT DG_NormalVarIndex  := INDEX(DG_VarFile, { DG_firstname; DG_lastname; __filepos } ,DG_IndexOut+'VARINDEX'); // THIS IS NOT VARIABLE - stupid test!
 EXPORT DG_TransVarIndex  := INDEX(DG_VarFile, { DG_firstname; DG_lastname; }, { DGextra := DG_lastname; __filepos } ,DG_IndexOut+'TRANS_VARINDEX');
+EXPORT DG_IntIndex  := INDEX(DG_VarFile, { DG_parentID; DG_firstname => STRING DG_lastname := DG_lastname; __filepos } ,DG_IndexOut+'INTINDEX');
 
 indexName := IF(useTranslation, __nameof__(DG_TransVarIndex), __nameof__(DG_NormalVarIndex));
 EXPORT DG_VarIndex  := INDEX(DG_NormalVarIndex, indexName);

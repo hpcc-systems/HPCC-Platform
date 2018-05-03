@@ -280,6 +280,73 @@ bool recordContainsIfBlock(IHqlExpression * record)
     return false;
 }
 
+ITypeInfo * getHozedKeyType(IHqlExpression * expr)
+{
+    Linked<ITypeInfo> type = expr->queryType();
+
+    type_t tc = type->getTypeCode();
+    switch (tc)
+    {
+    case type_boolean:
+    case type_data:
+    case type_qstring:
+        break;
+    case type_int:
+    case type_swapint:
+        if (type->isSigned())
+            type.setown(makeIntType(type->getSize(), false));
+        if ((type->getTypeCode() == type_littleendianint) && (type->getSize() != 1))
+            type.setown(makeSwapIntType(type->getSize(), false));
+        break;
+    case type_string:
+        if (type->queryCharset()->queryName() != asciiAtom)
+            type.setown(makeStringType(type->getSize(), NULL, NULL));
+        break;
+    case type_varstring:
+        if (type->queryCharset()->queryName() != asciiAtom)
+            type.setown(makeVarStringType(type->getStringLen(), NULL, NULL));
+        break;
+    case type_decimal:
+        if (!type->isSigned())
+            break;
+        //fallthrough
+    default:
+        //anything else is a payload field, don't do any transformations...
+        break;
+    }
+
+    return type.getClear();
+}
+
+IHqlExpression * getHozedBias(ITypeInfo * type)
+{
+    unsigned __int64 bias = ((unsigned __int64)1 << (type->getSize()*8-1));
+    return createConstant(type->castFrom(false, bias));
+}
+
+IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
+{
+    HqlExprAttr value = _value;
+    Linked<ITypeInfo> type = _value->queryType()->queryPromotedType();
+    Owned<ITypeInfo> hozedType = getHozedKeyType(value);
+
+    type_t tc = type->getTypeCode();
+    switch (tc)
+    {
+    case type_int:
+    case type_swapint:
+        if (type->isSigned())
+        {
+            type.setown(makeIntType(type->getSize(), false));
+            value.setown(ensureExprType(value, type));
+            value.setown(createValue(no_add, LINK(type), LINK(value), getHozedBias(type)));
+        }
+        break;
+    }
+
+    return ensureExprType(value, hozedType);
+}
+
 //---------------------------------------------------------------------------
 
 bool containsAggregate(IHqlExpression * expr)

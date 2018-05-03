@@ -3094,7 +3094,7 @@ hashedIndexAttr
                             IHqlExpression * hashList = parser->processSortList($4, no_hash, NULL, sortItems, NULL, NULL);
                             // MORE - we need to sort the hashList by fieldno, since we are only storing a bitmap...
                             // Or give an error if they are specified out of order, I suppose.
-                            IHqlExpression *hashFunc = createValue(no_hash64, makeIntType(8, false), LINK(hashList), createAttribute(internalAtom));
+                            IHqlExpression *hashFunc = createValue(no_hash64, makeIntType(8, false), parser->castIndexTypes(hashList), createAttribute(internalAtom));
                             OwnedHqlExpr distr = createComma(createAttribute(noRootAtom), createExprAttribute(distributedAtom, hashFunc), createLocalAttribute());
                             OwnedHqlExpr hash = createExprAttribute(hashAtom, hashList);
                             $$.setExpr(createComma(distr.getClear(), hash.getClear())); 
