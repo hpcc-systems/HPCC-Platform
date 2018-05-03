@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="SA_SupportUtilities">
+  <title>Support Utilities</title>
+
+  <para>There are a few additional components which are neither system servers
+  nor client interfaces but nonetheless important in supporting HPCC
+  tasks.</para>
+
+  <sect3 id="DAFilesrv">
+    <title>dafilesrv</title>
+
+    <para>The dafilesrv is a daemon that runs on system servers or physical
+    locations on the HPCC system. This daemon enables the HPCC components to
+    have file access to physical file locations. File access could be
+    spraying, despraying, copying, accessing logs, etc. Anything that requires
+    a file from another node, must have dafilesrv running on that node. The
+    dafilesrv daemon can be configured to allow SSL connections only, which
+    secures remote access to physical files.</para>
+
+    <para>The dafilesrv daemon runs as a process on every HPCC node. The
+    daemon will typically keep running even if your system is stopped. That is
+    an important fact to keep in mind if you are stopping your system for
+    maintenance, installations, or upgrades. Even if you issue the HPCC system
+    stop command, you would still need to stop the dafilesrv daemon.</para>
+
+    <para>One way to check and see if dafilesrv is running, is to issue a
+    command such as the following:</para>
+
+    <para><programlisting>ps -eaf | grep dafilesrv</programlisting> Even if
+    your HPCC System is stopped, you should still see that the dafilesrv is
+    running.</para>
+
+    <para>Issue the following command to stop the dafilesrv daemon on a System
+    V based system.</para>
+
+    <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a dafilesrv stop</programlisting>
+
+    <para>Issue the following command to stop the dafiilesrv daemon on a
+    Systemd based system. </para>
+
+    <programlisting>hpcc-run.sh -c dafilesrv@mydafilesrv.service stop</programlisting>
+
+    <para>You must have sudo permission level access in order to start or stop
+    any of the HPCC components, including dafilesrv.</para>
+
+    <para>After you verify that dafilesrv is not running you can then proceed
+    with the installation.</para>
+  </sect3>
+
+  <sect3>
+    <title>ftslave</title>
+
+    <para>The ftslave is a process used when spraying data by dfuserver. The
+    ftslave process is launched on demand as part of the spray process. There
+    may be mutliple ftslave processes running on any given node at any given
+    time, depending on the number of active sprays.</para>
+  </sect3>
+</sect2>
