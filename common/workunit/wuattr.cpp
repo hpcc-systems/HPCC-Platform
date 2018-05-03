@@ -318,3 +318,9 @@ WuAttr getListAttribute(WuAttr kind)
     WuAttr multiKind = info.multiKind;
     return (multiKind != WaNone) && (multiKind != kind) ? multiKind : WaNone;
 }
+
+WuAttr getSingleKindOfListAttribute(WuAttr kind)
+{
+    const WuAttrInfo & info = attrInfo[kind-WaNone];
+    return info.singleKind;
+}

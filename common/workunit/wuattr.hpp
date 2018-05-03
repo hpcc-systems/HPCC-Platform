@@ -147,5 +147,6 @@ extern WORKUNIT_API void setAttributeValueInt(IPropertyTree & tgt, WuAttr kind, 
 
 extern WORKUNIT_API bool isListAttribute(WuAttr kind);
 extern WORKUNIT_API WuAttr getListAttribute(WuAttr kind);
+extern WORKUNIT_API WuAttr getSingleKindOfListAttribute(WuAttr kind);
 
 #endif

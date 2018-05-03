@@ -34,7 +34,7 @@ public:
 
     void resetScope();
     void noteScopeType(const StatisticScopeType _sst);
-    IArrayOf<IEspWUResponseProperty> & getResponseProperties() { return EspWUResponseProperties;}
+    IArrayOf<IEspWUResponseProperty> & getResponseProperties() { endListAttr(); return EspWUResponseProperties;}
     unsigned __int64 getMaxTimestamp() const { return maxTimestamp;}
 
 private:
@@ -64,6 +64,48 @@ private:
     IArrayOf<IEspWUResponseProperty> EspWUResponseProperties;
     StatisticScopeType currentStatisticScopeType = SSTnone;
 
+    WuAttr stateListAttr = WaNone;
+    StringBuffer listAttrValues;
+    inline bool matchesProcessingListAttr(WuAttr attr)
+    {
+        return attr==stateListAttr;
+    }
+    inline bool isProcessingListAttr()
+    {
+        return stateListAttr!= WaNone;
+    }
+    void processListAttr(WuAttr attr, const char *value)
+    {
+        if (matchesProcessingListAttr(attr))
+        {
+            listAttrValues.append(", ");
+        }
+        else
+        {
+            endListAttr();
+            stateListAttr = attr;
+            listAttrValues.append("[");
+        }
+        listAttrValues.append("\"").append(value).append("\"");
+    };
+    void endListAttr()
+    {
+        if (stateListAttr!=WaNone)
+        {
+            Owned<IEspWUResponseProperty> EspWUResponseProperty = createWUResponseProperty("","");
+            EspWUResponseProperty->setName(queryWuAttributeName(stateListAttr));
+            listAttrValues.append("]");
+            if (includeFormatted)
+                EspWUResponseProperty->setFormatted(listAttrValues);
+            if (includeRawValue)
+                EspWUResponseProperty->setRawValue(listAttrValues);
+
+            EspWUResponseProperties.append(*EspWUResponseProperty.getClear());
+            stateListAttr = WaNone;
+            listAttrValues.clear();
+        }
+    }
+
     void buildAttribListToReturn(IConstWUPropertiesToReturn & propertiesToReturn);
 };
 
@@ -81,6 +123,7 @@ WUDetailsVisitor::WUDetailsVisitor(IConstWUPropertyOptions & propertyOptions, IC
 
 void WUDetailsVisitor::noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra)
 {
+    if (isProcessingListAttr()) endListAttr();
     if (extraStatisticsRequested)
     {
         // If the statistic is not in the standard return statistic list,
@@ -122,32 +165,62 @@ void WUDetailsVisitor::noteStatistic(StatisticKind kind, unsigned __int64 value,
 
 void WUDetailsVisitor::noteAttribute(WuAttr attr, const char * value)
 {
-    if (extraAttributesRequested)
+    // Notes regarding List type attributes
+    // For list type attributes, noteAttribute is called with the singular equivalent -e.g.IdDependency rather than IdDependencyList
+    //
+    //  - By default only the List type (e.g. IdDependencyList) - that's the case when allAttributes are requested
+    //  - If IdDependency is specifically requested provide that _instead_ of the IdDependencyList
+    WuAttr listAttr = getListAttribute(attr);
+    bool returnList = (listAttr==WaNone)?false:true;
+    bool returnAttr = true;
+
+    if ((extraAttributesRequested ||returnAttributeSpecified) && (!returnList||!matchesProcessingListAttr(listAttr)) )
     {
         // If the Attribute is not in the standard return statistic list,
         // then check if it's in the additional attribute list
-        if ((returnAttributeSpecified && !returnAttributeList->test(attr-WaNone)))
+        if (returnAttributeSpecified)
         {
-            if (additionalAttribsForCurScope==nullptr ||
-                additionalAttribsForCurScope->find(attr)==additionalAttribsForCurScope->end())
+            if (!returnAttributeList->test(attr-WaNone) && (additionalAttribsForCurScope==nullptr ||
+                additionalAttribsForCurScope->find(attr)==additionalAttribsForCurScope->end()))
             {
-                return;
+                returnAttr = false;
+            } else
+            {
+                returnList = false;  // As individual type requested, List type equivalent not returned
             }
         }
+        if (returnList && (returnAttributeSpecified && !returnAttributeList->test(listAttr-WaNone)))
+        {
+            if (additionalAttribsForCurScope==nullptr ||
+                additionalAttribsForCurScope->find(listAttr)==additionalAttribsForCurScope->end())
+            {
+                returnList = false;
+            }
+        }
+        if (!returnList & !returnAttr)
+            return;
     }
 
-    Owned<IEspWUResponseProperty> EspWUResponseProperty = createWUResponseProperty("","");
-    EspWUResponseProperty->setName(queryWuAttributeName(attr));
-    if (includeFormatted)
-        EspWUResponseProperty->setFormatted(value);
-    if (includeRawValue)
-        EspWUResponseProperty->setRawValue(value);
+    if (returnList)
+        processListAttr(listAttr, value);
+    else
+    {
+        endListAttr();
 
-    EspWUResponseProperties.append(*EspWUResponseProperty.getClear());
+        Owned<IEspWUResponseProperty> EspWUResponseProperty = createWUResponseProperty("","");
+        EspWUResponseProperty->setName(queryWuAttributeName(attr));
+        if (includeFormatted)
+            EspWUResponseProperty->setFormatted(value);
+        if (includeRawValue)
+            EspWUResponseProperty->setRawValue(value);
+
+        EspWUResponseProperties.append(*EspWUResponseProperty.getClear());
+    }
 }
 
 void WUDetailsVisitor::noteHint(const char * kind, const char * value)
 {
+    if (isProcessingListAttr()) endListAttr();
     Owned<IEspWUResponseProperty> EspWUResponseProperty = createWUResponseProperty("","");
 
     StringBuffer hint("hint:");
@@ -208,6 +281,26 @@ void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & prop
         }
     }
 
+    bool attributeListSeparateRequested = false;
+    StringArray & propertiesToReturnList = propertiesToReturn.getProperties();
+    ForEachItemIn(i,propertiesToReturnList)
+    {
+        const char * attributeName = propertiesToReturnList[i];
+        const WuAttr wa = queryWuAttribute(attributeName, WaMax);
+        if (wa != WaMax)
+        {
+            if (getListAttribute(wa)!=WaNone)
+            {
+                if (!returnAttributeSpecified)
+                {
+                    returnAttributeList.set(createBitSet(AttributeFilterMaskSize));
+                    returnAttributeSpecified=true;
+                }
+                returnAttributeList->set(wa-WaNone,true);
+            }
+        }
+    }
+
     // If additional stats or attributes specified for scope type,
     // then noteStatistic & noteAttribute will need to work out what to return
     if (extraStatisticsRequested || extraAttributesRequested)
@@ -255,6 +348,7 @@ void WUDetailsVisitor::resetScope()
     additionalStatsForCurScope = nullptr;
     additionalAttribsForCurScope = nullptr;
     EspWUResponseProperties.clear();
+    if (isProcessingListAttr()) endListAttr();
 }
 
 void WUDetailsVisitor::noteScopeType(const StatisticScopeType _sst)
