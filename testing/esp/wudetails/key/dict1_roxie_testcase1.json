@@ -455,14 +455,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '148',
                             'Formatted': '148',
@@ -490,6 +482,14 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '12',
                             'Formatted': '12',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -560,14 +560,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '8',
                             'Formatted': '8',
@@ -595,6 +587,14 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '0..?[disk]',
                             'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -665,30 +665,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'dict1',
-                            'Formatted': 'dict1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '16',
                             'Formatted': '16',
@@ -708,6 +684,22 @@ testCase(ScopeFilter={
                             'Name': 'RecordSize',
                             'RawValue': '20',
                             'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["dict1"]',
+                            'Formatted': '["dict1"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None

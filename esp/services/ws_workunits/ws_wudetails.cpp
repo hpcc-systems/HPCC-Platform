@@ -23,6 +23,12 @@
 #include "jset.hpp"
 #include "jstatcodes.h"
 
+typedef std::pair<WuAttr, StringBuffer> AttribValuePair;
+bool operator==(const AttribValuePair & p1, const AttribValuePair & p2)
+{
+    return p1.first==p2.first;
+}
+
 class WUDetailsVisitor : public IWuScopeVisitor
 {
 public:
@@ -34,7 +40,7 @@ public:
 
     void resetScope();
     void noteScopeType(const StatisticScopeType _sst);
-    IArrayOf<IEspWUResponseProperty> & getResponseProperties() { return EspWUResponseProperties;}
+    IArrayOf<IEspWUResponseProperty> & getResponseProperties() { endListAttr(); return EspWUResponseProperties;}
     unsigned __int64 getMaxTimestamp() const { return maxTimestamp;}
 
 private:
@@ -48,21 +54,71 @@ private:
     bool includeCreator = false;
     bool includeCreatorType = false;
 
-    bool extraStatisticsRequested = false;
-    std::set<StatisticKind> extraStatistics[SSTmax];
-    bool extraAttributesRequested = false;
-    std::set<WuAttr> extraAttributes[SSTmax];
+    bool statisticsPostFilterRequired = false;        // Does statistics have be filtered in the visited method (noteStatistic)
+                                                      // Only when true, does the following 3 variables have valid values
+    std::set<StatisticKind> extraStatistics[SSTmax];  // Extra statistics returned for a given scope type
+    const std::set<StatisticKind> * extraStatisticsForCurScope = nullptr; // Tracks statistics required for current scope type
+    Owned<IBitSet> propertiesToReturnStats;           // Statistic to be returned for every scope/scope type
 
-    bool returnStatisticListSpecified = false;
-    Owned<IBitSet> returnStatisticList;
-    bool returnAttributeSpecified = false;
-    Owned<IBitSet> returnAttributeList;
 
-    const std::set<StatisticKind> * additionalStatsForCurScope = nullptr;
-    const std::set<WuAttr> * additionalAttribsForCurScope = nullptr;
+    bool attributesPostFilterRequired = false;         // Does attributes have be filtered in the visited method (noteAttribute)
+                                                      // Only when true, does the following 3 variables have valid values
+    std::set<WuAttr> extraAttributes[SSTmax];         // Extra attributes returned for a given scope type
+    const std::set<WuAttr> * extraAttributesForCurScope = nullptr; // Tracks attributes required for current scope type
+    Owned<IBitSet> propertiesToReturnAttribs;         // Attributes to be returned for every scope/scope type
+
     unsigned __int64 maxTimestamp = 0;
     IArrayOf<IEspWUResponseProperty> EspWUResponseProperties;
     StatisticScopeType currentStatisticScopeType = SSTnone;
+
+    class MultiListValues
+    {
+    public:
+        void add(WuAttr attr, const char *value)
+        {
+            AttribValuePair tmp(attr,"");
+
+            auto cur = find(attribValuePairs.begin(), attribValuePairs.end(), tmp);
+            if (cur!=attribValuePairs.end())
+            {
+                cur->second.appendf(", \"%s\"",  value);
+            }
+            else
+            {
+                tmp.second.appendf("[\"%s\"",  value);
+                attribValuePairs.emplace_back(tmp);
+            }
+        }
+
+        void flushListAttributes(WUDetailsVisitor & parent)
+        {
+            for(AttribValuePair & ap: attribValuePairs)
+            {
+                parent.addAttribToResp(ap.first, ap.second.append("]").str());
+            }
+            attribValuePairs.clear();
+        }
+    private:
+        std::vector<AttribValuePair> attribValuePairs;
+    } multiListValues;
+
+    void addAttribToResp(WuAttr attr, const char * value)
+    {
+        Owned<IEspWUResponseProperty> EspWUResponseProperty = createWUResponseProperty("","");
+        EspWUResponseProperty->setName(queryWuAttributeName(attr));
+        if (includeFormatted)
+            EspWUResponseProperty->setFormatted(value);
+        if (includeRawValue)
+            EspWUResponseProperty->setRawValue(value);
+
+        EspWUResponseProperties.append(*EspWUResponseProperty.getClear());
+    }
+
+    void endListAttr()
+    {
+        multiListValues.flushListAttributes(*this);
+    }
+    bool includeAttribute(WuAttr w);
 
     void buildAttribListToReturn(IConstWUPropertiesToReturn & propertiesToReturn);
 };
@@ -81,16 +137,22 @@ WUDetailsVisitor::WUDetailsVisitor(IConstWUPropertyOptions & propertyOptions, IC
 
 void WUDetailsVisitor::noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra)
 {
-    if (extraStatisticsRequested)
+    endListAttr();
+
+    // This section handles the special case where there are Statistics in ExtraProperties.
+    // When ExtraProperties are provided, this filter handles both PropertiesToReturn
+    // and ExtraProperties. (In all other cases, the scope iterator will filter before visiting
+    if (statisticsPostFilterRequired)
     {
-        // If the statistic is not in the standard return statistic list,
-        // then check if it's in the additional property list
-        if (returnStatisticListSpecified && !returnStatisticList->test(kind))
+        // Check first if the StatisticKind is listed in the main list (propertiesToReturnStats)
+        // If there's no match there, check if the StatisticKind is in the scope type specific list
+        if (!propertiesToReturnStats->test(kind))
         {
-            if (additionalStatsForCurScope==nullptr ||
-                additionalStatsForCurScope->find(kind)==additionalStatsForCurScope->end())
+            // If it's not in propertiesToReturnStats, then check the extraStatisticsForCurScope
+            if (extraStatisticsForCurScope==nullptr ||
+                extraStatisticsForCurScope->find(kind)==extraStatisticsForCurScope->end())
             {
-                return;
+                return; // It is in neither list so filter out
             }
         }
     }
@@ -120,39 +182,78 @@ void WUDetailsVisitor::noteStatistic(StatisticKind kind, unsigned __int64 value,
         maxTimestamp = extra.getTimestamp();
 }
 
+bool WUDetailsVisitor::includeAttribute(WuAttr attr)
+{
+    if (propertiesToReturnAttribs->test(attr-WaNone))
+        return true;
+    if (extraAttributesForCurScope!=nullptr &&
+        extraAttributesForCurScope->find(attr)!=extraAttributesForCurScope->end())
+        return true;
+    return false;
+}
+
 void WUDetailsVisitor::noteAttribute(WuAttr attr, const char * value)
 {
-    if (extraAttributesRequested)
+    // Note: For attributes that may have its values as MultiList, return it as
+    // a MultiList only. That is unless the Single kind is specifically requested
+    // as there is no reason to provide both.
+
+    // Try to get  the MultiList equivalent.  If it can't, listAttr==WaNone
+    // e.g. if attr==WaDefinition, then listAttr==WaDefinitionList
+    WuAttr listAttr = getListAttribute(attr);
+    // If values may be returned as MultiList (listAttr!=WaNone), set flag to
+    // assuming that values will be returned as MultiList
+    bool returnAttrAsMultiList = (listAttr!=WaNone);
+    bool returnAttrAsSingleValue = true;
+
+    if (attributesPostFilterRequired)
     {
-        // If the Attribute is not in the standard return statistic list,
-        // then check if it's in the additional attribute list
-        if ((returnAttributeSpecified && !returnAttributeList->test(attr-WaNone)))
+        if (includeAttribute(attr))             // Single item specifically requested
         {
-            if (additionalAttribsForCurScope==nullptr ||
-                additionalAttribsForCurScope->find(attr)==additionalAttribsForCurScope->end())
+            if (isListAttribute(attr))          // Check to see if attr is multilist type
             {
-                return;
+                returnAttrAsMultiList = true;
+                returnAttrAsSingleValue = false;
+                listAttr=attr;
             }
+            else
+                returnAttrAsMultiList = false;  // so don't return as MultiList value
+        }
+        else
+        {
+            returnAttrAsSingleValue = false;    // Attribute as single value not selected
+            if (returnAttrAsMultiList && !includeAttribute(listAttr))
+                return;
         }
     }
+    if (!returnAttrAsMultiList && !returnAttrAsSingleValue)
+        return;
 
-    Owned<IEspWUResponseProperty> EspWUResponseProperty = createWUResponseProperty("","");
-    EspWUResponseProperty->setName(queryWuAttributeName(attr));
-    if (includeFormatted)
-        EspWUResponseProperty->setFormatted(value);
-    if (includeRawValue)
-        EspWUResponseProperty->setRawValue(value);
+    StringBuffer encoded;
+    encodeXML(value, encoded);
 
-    EspWUResponseProperties.append(*EspWUResponseProperty.getClear());
+    if (returnAttrAsMultiList)
+        multiListValues.add(listAttr,encoded.str());
+    else
+        addAttribToResp(attr, encoded.str());
 }
 
 void WUDetailsVisitor::noteHint(const char * kind, const char * value)
 {
+    endListAttr();
     Owned<IEspWUResponseProperty> EspWUResponseProperty = createWUResponseProperty("","");
 
     StringBuffer hint("hint:");
     hint.append(kind);
     EspWUResponseProperty->setName(hint);
+
+    StringBuffer encoded;
+    if (includeFormatted || includeRawValue)
+    {
+        encodeXML(value, encoded);
+        value = encoded.str();
+    }
+
     if (includeFormatted)
         EspWUResponseProperty->setFormatted(value);
     if (includeRawValue)
@@ -161,14 +262,31 @@ void WUDetailsVisitor::noteHint(const char * kind, const char * value)
     EspWUResponseProperties.append(*EspWUResponseProperty.getClear());
 }
 
+// Get StatisticKind or WuAttr from property name and return true
+// When neither possible, return false.
+static bool getPropertyIdFromName(const char *propName, StatisticKind & sk, WuAttr & wa )
+{
+    wa = WaNone;
+    sk = queryStatisticKind(propName, StKindNone);
+    if (sk!=StKindNone)
+        return true;
+
+    wa = queryWuAttribute(propName, WaNone);
+    if (wa!=WaNone)
+        return true;
+
+    return false;
+}
+
 void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & propertiesToReturn)
 {
-    const bool allStatistics = propertiesToReturn.getAllStatistics();
-    const bool allAttributes = propertiesToReturn.getAllAttributes();
+    bool returnAllStatistic = propertiesToReturn.getAllStatistics();
+    bool returnAllAttributes = propertiesToReturn.getAllAttributes();
 
-    if (propertiesToReturn.getAllProperties() || (allStatistics && allAttributes) )
+    if ( (returnAllStatistic && returnAllAttributes) || propertiesToReturn.getAllProperties())
         return;
 
+    // ScopeType specific properties (extra properties specific to given scope types)
     IArrayOf<IConstWUExtraProperties> & extraProperties = propertiesToReturn.getExtraProperties();
     ForEachItemIn(idx, extraProperties)
     {
@@ -177,75 +295,94 @@ void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & prop
         if (!scopeTypeWithAdditionalProps || !*scopeTypeWithAdditionalProps)
             continue;
 
-        StatisticScopeType sst = queryScopeType(scopeTypeWithAdditionalProps,SSTnone);
-        if(sst==SSTnone)
+        StatisticScopeType sst = queryScopeType(scopeTypeWithAdditionalProps, SSTnone);
+        if (sst==SSTnone)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid ScopeType (%s) in ExtraProperties",scopeTypeWithAdditionalProps);
 
+        // Generate list of properties for this Scope Type
         const StringArray & props = cur.getProperties();
         ForEachItemIn(idx2, props)
         {
-            StatisticKind sk = queryStatisticKind(props[idx2], StKindNone);
-            if (sk==StKindAll)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid property name (%s) in ExtraProperties",props[idx2]);
+            StatisticKind sk;
+            WuAttr wa;
+            const char *propName = props[idx2];
+
+            if (!getPropertyIdFromName(propName, sk, wa))
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid property name (%s) in ExtraProperties",propName);
+
             if (sk!=StKindNone)
             {
-                if (!allStatistics)
+                if (!returnAllStatistic)
                 {
                     extraStatistics[sst].insert(sk);
-                    extraStatisticsRequested = true;
+                    statisticsPostFilterRequired = true;
                 }
             }
             else
             {
-                const WuAttr wa = queryWuAttribute(props[idx2], WaMax);
-                if (wa==WaMax)
-                    throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid property name (%s) in ExtraProperties",props[idx2]);
-                if (!allAttributes)
+                if (!returnAllAttributes)
                 {
                     extraAttributes[sst].insert(wa);
-                    extraAttributesRequested = true;
+                    attributesPostFilterRequired = true;
                 }
             }
         }
     }
 
-    // If additional stats or attributes specified for scope type,
-    // then noteStatistic & noteAttribute will need to work out what to return
-    if (extraStatisticsRequested || extraAttributesRequested)
+    // Examine propertiesToReturn to see if any thing there will require a post filter
+    if (!attributesPostFilterRequired)
     {
+        // If single kind list is requested, it must be handled by post filter as the default behaviour
+        // is to only return multi list kind. (Scope iterator's filtering is not able to handle this
+        // and like with any other filtering that cannot be handled by the scope iterator it must be
+        // handled by the post filter. By adding the single kind item to the post filter, noteAttribute
+        // is forced to return the single kind.)
+        //
+        // Note: if attributesPostFilterRequired is set to true, then the second propertiesToReturnList
+        // loop is processed to add the single kind list items as well as all other attibutes required.
         StringArray & propertiesToReturnList = propertiesToReturn.getProperties();
-        ForEachItemIn(idx,propertiesToReturnList)
+        ForEachItemIn(idx1,propertiesToReturnList)
         {
-            const char * attributeName = propertiesToReturnList[idx];
-            if (!attributeName || *attributeName==0) continue;
-
-            const StatisticKind sk = queryStatisticKind(attributeName, StKindNone);
-            if (sk==StKindAll)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Attribute name in AttributeToReturn(%s)", attributeName);
-            if (sk!=StKindNone)
+            const char * propName = propertiesToReturnList[idx1];
+            WuAttr wa = queryWuAttribute(propName, WaNone);
+            if (wa!=WaNone)
             {
-                if (!returnStatisticListSpecified)
+                if (getListAttribute(wa)!=WaNone)
                 {
-                    returnStatisticList.set(createBitSet(StatisticFilterMaskSize));
-                    returnStatisticListSpecified=true;
+                    attributesPostFilterRequired = true;
+                    break;
                 }
-                returnStatisticList->set(sk, true);
             }
-            else
-            {
-              const WuAttr wa = queryWuAttribute(attributeName, WaMax);
-              if (wa!=WaMax)
-              {
-                  if (!returnAttributeSpecified)
-                  {
-                      returnAttributeList.set(createBitSet(AttributeFilterMaskSize));
-                      returnAttributeSpecified=true;
-                  }
-                  returnAttributeList->set(wa-WaNone,true);
-              }
-              else
-                  throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Attribute name in AttributeToReturn(%s)", attributeName);
-            }
+        }
+    }
+    // Post Filtering (filtering within in visited method) required if statistics or attributes requested in ExtraProperties
+    if (!statisticsPostFilterRequired && !attributesPostFilterRequired)
+        return;
+
+    if (statisticsPostFilterRequired)
+        propertiesToReturnStats.set(createBitSet(StatisticFilterMaskSize));
+    if (attributesPostFilterRequired)
+        propertiesToReturnAttribs.set(createBitSet(AttributeFilterMaskSize));
+
+    StringArray & propertiesToReturnList = propertiesToReturn.getProperties();
+    ForEachItemIn(idx1,propertiesToReturnList)
+    {
+        const char * propName = propertiesToReturnList[idx1];
+        if (!propName || *propName==0) continue;
+
+        StatisticKind sk;
+        WuAttr wa;
+        if (!getPropertyIdFromName(propName, sk, wa))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid property name (%s) in PropertiesToReturn",propName);
+        if (sk!=StKindNone)
+        {
+            if (statisticsPostFilterRequired)
+                propertiesToReturnStats->set(sk, true);
+        }
+        else
+        {
+            if (attributesPostFilterRequired)
+                propertiesToReturnAttribs->set(wa-WaNone,true);
         }
     }
 }
@@ -253,16 +390,17 @@ void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & prop
 void WUDetailsVisitor::resetScope()
 {
     currentStatisticScopeType = SSTnone;
-    additionalStatsForCurScope = nullptr;
-    additionalAttribsForCurScope = nullptr;
+    extraStatisticsForCurScope = nullptr;
+    extraAttributesForCurScope = nullptr;
     EspWUResponseProperties.clear();
+    endListAttr();
 }
 
 void WUDetailsVisitor::noteScopeType(const StatisticScopeType _sst)
 {
     currentStatisticScopeType = _sst;
-    additionalStatsForCurScope = & extraStatistics[currentStatisticScopeType];
-    additionalAttribsForCurScope = & extraAttributes[currentStatisticScopeType];
+    extraStatisticsForCurScope = & extraStatistics[currentStatisticScopeType];
+    extraAttributesForCurScope = & extraAttributes[currentStatisticScopeType];
 }
 
 WUDetails::WUDetails(IConstWorkUnit *_workunit, const char *_wuid)
@@ -360,10 +498,9 @@ void WUDetails::buildWuScopeFilter(IConstWUScopeFilter & requestScopeFilter, ICo
     StringArray & properties = propertiesToReturn.getProperties();
     ForEachItemIn(idx5,properties)
     {
-        if (properties.item(idx5) && *properties.item(idx5))
-        {
-            wuScopeFilter.addOutput(properties.item(idx5));
-        }
+        const char * propName = properties.item(idx5);
+        if (propName && *propName)
+            wuScopeFilter.addOutput(propName);
     }
 
     IArrayOf<IConstWUExtraProperties> & extraProperties= propertiesToReturn.getExtraProperties();
