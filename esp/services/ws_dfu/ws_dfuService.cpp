@@ -1386,6 +1386,9 @@ inline void doDeleteSubFiles(StringArray &files, IUserDescriptor *userdesc, Stri
 
 bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp)
 {
+    if (detached)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Dali server is detached. Please try later.");
+
     double version = context.getClientVersion();
     Owned<IUserDescriptor> userdesc;
     const char *username = context.queryUserId();

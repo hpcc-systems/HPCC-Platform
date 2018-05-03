@@ -134,6 +134,7 @@ private:
     Mutex m_superfilemutex;
     unsigned nodeGroupCacheTimeout;
     Owned<CThorNodeGroupCache> thorNodeGroupCache;
+    bool detached = false;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -225,6 +226,17 @@ private:
     void getFilePartsOnClusters(IEspContext &context, const char* clusterReq, StringArray& clusters, IDistributedFile* df, IEspDFUFileDetail& FileDetails,
         offset_t& mn, offset_t& mx, offset_t& sum, offset_t& count);
     bool getQueryFile(const char *logicalName, const char *querySet, const char *queryID, IEspDFUFileDetail &fileDetails);
+    bool attachServiceToDali() override
+    {
+        detached = false;
+        return true;
+    }
+
+    bool detachServiceFromDali() override
+    {
+        detached = true;
+        return true;
+    }
 private:
     bool         m_disableUppercaseTranslation;
     StringBuffer m_clusterName;

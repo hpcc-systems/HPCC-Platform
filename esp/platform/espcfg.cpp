@@ -34,6 +34,7 @@
 #include "espcfg.ipp"
 #include "xslprocessor.hpp" 
 #include "espcontext.hpp"
+#include "mplog.hpp"
 
 #include <dalienv.hpp>
 
@@ -528,6 +529,10 @@ void CEspConfig::initDali(const char *servers)
 
         serverstatus = new CSDSServerStatus("ESPserver");
         ensureSDSSessionDomains();
+
+        // for auditing
+        startLogMsgParentReceiver();
+        connectLogMsgManagerToDali();
     }
 }
 
@@ -1042,6 +1047,7 @@ bool CEspConfig::detachESPFromDali(bool force)
             iter++;
         }
         setIsDetachedFromDali(true);
+        disconnectLogMsgManagerFromDali();
         closedownClientProcess();
         saveAttachState();
     }
