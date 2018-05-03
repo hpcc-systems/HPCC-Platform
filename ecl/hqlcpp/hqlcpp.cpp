@@ -1808,7 +1808,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.timeTransforms,"timeTransforms", false),
         DebugOption(options.reportDFSinfo,"reportDFSinfo", 0),
         DebugOption(options.useGlobalCompareClass,"useGlobalCompareClass", false),
-        DebugOption(options.createValueSets,"createValueSets", false),
+        DebugOption(options.createValueSets,"createValueSets", true),
         DebugOption(options.implicitKeyedDiskFilter,"implicitKeyedDiskFilter", false),
         DebugOption(options.addDefaultBloom,"addDefaultBloom", true),
         DebugOption(options.newDiskReadMapping, "newDiskReadMapping", true),

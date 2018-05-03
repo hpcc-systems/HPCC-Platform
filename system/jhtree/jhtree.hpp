@@ -30,7 +30,7 @@
 #include "errorlist.h"
 
 class BloomFilter;
-class SegMonitorList;
+class IIndexFilterList;
 
 interface jhtree_decl IDelayedFile : public IInterface
 {
@@ -90,7 +90,7 @@ interface jhtree_decl IKeyIndexBase : public IInterface
 
 interface jhtree_decl IKeyIndex : public IKeyIndexBase
 {
-    virtual IKeyCursor *getCursor(const SegMonitorList *segs) = 0;
+    virtual IKeyCursor *getCursor(const IIndexFilterList *filter) = 0;
     virtual size32_t keySize() = 0;
     virtual bool isFullySorted() = 0;
     virtual bool isTopLevelKey() = 0;
@@ -184,48 +184,52 @@ typedef wchar_t UChar;
 typedef unsigned short UChar;
 #endif //_WIN32
 #include "rtlkey.hpp"
+#include "rtlnewkey.hpp"
 #include "jmisc.hpp"
 
 class RtlRecord;
 interface IDynamicTransform;
 
-class jhtree_decl SegMonitorList : implements IInterface, implements IIndexReadContext, public CInterface
+class jhtree_decl SegMonitorList : public CInterfaceOf<IIndexFilterList>
 {
-    unsigned _lastRealSeg() const;
     unsigned cachedLRS = 0;
     bool modified = true;
-    bool needWild;
     const RtlRecord &recInfo;
     unsigned keySegCount;
-
-public:
-    IMPLEMENT_IINTERFACE_O;
-    SegMonitorList(const RtlRecord &_recInfo, bool _needWild);
-    SegMonitorList(const SegMonitorList &_from, const char *fixedVals, unsigned sortFieldOffset);
     IArrayOf<IKeySegmentMonitor> segMonitors;
 
-    void reset();
-    void swapWith(SegMonitorList &other);
-    void setLow(unsigned segno, void *keyBuffer) const;
-    unsigned setLowAfter(size32_t offset, void *keyBuffer) const;
-    bool incrementKey(unsigned segno, void *keyBuffer) const;
-    void endRange(unsigned segno, void *keyBuffer) const;
-    inline unsigned lastRealSeg() const { assertex(!modified); return cachedLRS; }
-    unsigned lastFullSeg() const;
-    bool matched(void *keyBuffer, unsigned &lastMatch) const;
     size32_t getSize() const;
-    bool isExact(unsigned length, unsigned start) const;  // Are corresponding bytes an exact match ?
-    void checkSize(size32_t keyedSize, char const * keyname);
-    void recalculateCache();
-    void finish(size32_t keyedSize);
-    void deserialize(MemoryBuffer &mb);
-    void serialize(MemoryBuffer &mb) const;
+    unsigned _lastRealSeg() const;
+    SegMonitorList(const SegMonitorList &_from, const char *fixedVals, unsigned sortFieldOffset);
+public:
+    SegMonitorList(const RtlRecord &_recInfo);
 
     // interface IIndexReadContext
     virtual void append(IKeySegmentMonitor *segment) override;
-    virtual unsigned ordinality() const override;
-    virtual IKeySegmentMonitor *item(unsigned i) const override;
+    virtual IIndexFilter *item(unsigned i) const override;
     virtual void append(FFoption option, const IFieldFilter * filter) override;
+
+    // interface IIndexFilterList
+
+    virtual void setLow(unsigned segno, void *keyBuffer) const override;
+    virtual unsigned setLowAfter(size32_t offset, void *keyBuffer) const override;
+    virtual bool incrementKey(unsigned segno, void *keyBuffer) const override;
+    virtual void endRange(unsigned segno, void *keyBuffer) const override;
+    virtual unsigned lastRealSeg() const override { assertex(!modified); return cachedLRS; }
+    unsigned lastFullSeg() const override;
+    virtual unsigned numFilterFields() const override { return segMonitors.length(); }
+    virtual IIndexFilterList *fixSortSegs(const char *fixedVals, unsigned sortFieldOffset) const override
+    {
+        return new SegMonitorList(*this, fixedVals, sortFieldOffset);
+    }
+    virtual void reset() override;
+    virtual void checkSize(size32_t keyedSize, char const * keyname) const override;
+    virtual void recalculateCache() override;
+    virtual void finish(size32_t keyedSize) override;
+    virtual void describe(StringBuffer &out) const override;
+    virtual bool matchesBuffer(const void *buffer, unsigned lastSeg, unsigned &matchSeg) const override;
+    virtual unsigned getFieldOffset(unsigned idx) const override { return recInfo.getFixedOffset(idx); }
+    virtual bool canMatch() const override;
 };
 
 interface IKeyManager : public IInterface, extends IIndexReadContext
@@ -254,12 +258,12 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual void resetCounts() = 0;
 
     virtual void setLayoutTranslator(const IDynamicTransform * trans) = 0;
-    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) = 0;
-    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) = 0;
     virtual void finishSegmentMonitors() = 0;
+    virtual void describeFilter(StringBuffer &out) const = 0;
 
     virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) = 0;
     virtual unsigned getPartition() = 0;  // Use PARTITION() to retrieve partno, if possible, or zero to mean read all
+
 };
 
 inline offset_t extractFpos(IKeyManager * manager)
@@ -272,9 +276,9 @@ inline offset_t extractFpos(IKeyManager * manager)
 
 class RtlRecord;
 
-extern jhtree_decl IKeyManager *createLocalKeyManager(const RtlRecord &_recInfo, IKeyIndex * _key, IContextLogger *ctx);
-extern jhtree_decl IKeyManager *createKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet * _key, unsigned sortFieldOffset, IContextLogger *ctx);
-extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo, IKeyIndex * _onekey, unsigned sortFieldOffset, IContextLogger *ctx);
+extern jhtree_decl IKeyManager *createLocalKeyManager(const RtlRecord &_recInfo, IKeyIndex * _key, IContextLogger *ctx, bool _newFilters);
+extern jhtree_decl IKeyManager *createKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet * _key, unsigned sortFieldOffset, IContextLogger *ctx, bool _newFilters);
+extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo, IKeyIndex * _onekey, unsigned sortFieldOffset, IContextLogger *ctx, bool _newFilters);
 
 class KLBlobProviderAdapter : implements IBlobProvider
 {

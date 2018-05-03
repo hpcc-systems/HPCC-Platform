@@ -2318,8 +2318,6 @@ public:
 
     //interface IIndexReadContext
     virtual void append(IKeySegmentMonitor *segment) override { throwUnexpected(); }
-    virtual unsigned ordinality() const override { throwUnexpected(); }
-    virtual IKeySegmentMonitor *item(unsigned idx) const override { throwUnexpected();  }
     virtual void append(FFoption option, const IFieldFilter * filter) override;
 
 protected:

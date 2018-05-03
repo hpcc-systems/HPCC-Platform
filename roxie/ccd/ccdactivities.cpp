@@ -936,16 +936,6 @@ public:
             postFilter.addFilter(*filter);
     }
 
-    virtual unsigned ordinality() const
-    {
-        throwUnexpected();
-    }
-
-    virtual IKeySegmentMonitor *item(unsigned idx) const
-    {
-        throwUnexpected();
-    }
-
     virtual void abort() 
     {
         CRoxieSlaveActivity::abort();
@@ -2432,6 +2422,7 @@ protected:
     Linked<IKeyArray> keyArray;
     const RtlRecord *keyRecInfo = nullptr;
     bool createSegmentMonitorsPending;
+    virtual bool hasNewSegmentMonitors() = 0;
 
     virtual void createSegmentMonitors() = 0;
     virtual void setPartNo(bool filechanged)
@@ -2455,7 +2446,7 @@ protected:
             }
             if (allKeys->numParts())
             {
-                tlk.setown(createKeyMerger(*keyRecInfo, allKeys, 0, &logctx));
+                tlk.setown(createKeyMerger(*keyRecInfo, allKeys, 0, &logctx, hasNewSegmentMonitors()));
                 createSegmentMonitorsPending = true;
             }
             else
@@ -2468,7 +2459,7 @@ protected:
             IKeyIndex *k = kib->queryPart(lastPartNo.fileNo);
             if (filechanged)
             {
-                tlk.setown(createLocalKeyManager(*keyRecInfo, k, &logctx));
+                tlk.setown(createLocalKeyManager(*keyRecInfo, k, &logctx, hasNewSegmentMonitors()));
                 createSegmentMonitorsPending = true;
             }
             else
@@ -2522,6 +2513,8 @@ protected:
 
     SmartStepExtra stepExtra; // just used for flags - a little unnecessary...
     const byte *steppingRow;
+
+    virtual bool hasNewSegmentMonitors() { return indexHelper->hasNewSegmentMonitors(); }
 
     bool checkLimit(unsigned __int64 limit)
     {
@@ -2716,7 +2709,7 @@ public:
                 i++;
             }
             if (allKeys->numParts())
-                tlk.setown(::createKeyMerger(*keyRecInfo, allKeys, steppingOffset, &logctx));
+                tlk.setown(::createKeyMerger(*keyRecInfo, allKeys, steppingOffset, &logctx, hasNewSegmentMonitors()));
             else
                 tlk.clear();
             createSegmentMonitorsPending = true;
@@ -4038,6 +4031,8 @@ public:
         }
     }
 
+    virtual bool hasNewSegmentMonitors() { return helper->hasNewSegmentMonitors(); }
+
     ~CRoxieKeyedJoinIndexActivity()
     {
     }
@@ -4157,12 +4152,6 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
             if (rootIndex)
                 rootIndex->mergeSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
-            if (logctx.queryTraceLevel() >= 20)
-            {
-                StringBuffer out;
-                printKeyedValues(out, tlk, helper->queryIndexRecordSize());
-                logctx.CTXLOG("Using filter %s", out.str());
-            }
 
             if (!resent && (atmost != (unsigned) -1) && ((atmost > preabortKeyedJoinsThreshold) || (joinFlags & JFcountmatchabortlimit) || (keepLimit != 0)))  
             {

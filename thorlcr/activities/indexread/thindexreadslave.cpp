@@ -244,7 +244,7 @@ public:
                 part.getCrc(crc);
 
                 Owned<IKeyIndex> keyIndex = createKeyIndex(filePath, crc, *lfile, false, false);
-                klManager.setown(createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr));
+                klManager.setown(createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, helper->hasNewSegmentMonitors()));
                 if ((localKey && partDescs.ordinality()>1) || seekGEOffset)
                 {
                     // use key merger
@@ -524,7 +524,7 @@ public:
         }
         if (keyIndexSet)
         {
-            keyMergerManager.setown(createKeyMerger(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, nullptr));
+            keyMergerManager.setown(createKeyMerger(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, nullptr, helper->hasNewSegmentMonitors()));
             ITranslator const *translator = translators.item(0);
             if (translator)
                 keyMergerManager->setLayoutTranslator(&translator->queryTranslator());

@@ -432,7 +432,7 @@ bool IndexDataSource::addFilter(unsigned column, unsigned matchLen, unsigned siz
 
 void IndexDataSource::applyFilter()
 {
-    manager.setown(createLocalKeyManager(diskRecordMeta->queryRecordAccessor(true), tlk, NULL));
+    manager.setown(createLocalKeyManager(diskRecordMeta->queryRecordAccessor(true), tlk, NULL, false));
     ForEachItemIn(i, values)
     {
         IStringSet & cur = values.item(i);

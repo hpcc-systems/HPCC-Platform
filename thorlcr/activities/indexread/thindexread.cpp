@@ -160,7 +160,7 @@ protected:
                 if (!keyIndex)
                     throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", index->queryLogicalName());
 
-                Owned <IKeyManager> tlk = createLocalKeyManager(indexBaseHelper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr);
+                Owned <IKeyManager> tlk = createLocalKeyManager(indexBaseHelper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, indexBaseHelper->hasNewSegmentMonitors());
                 indexBaseHelper->createSegmentMonitors(tlk);
                 tlk->finishSegmentMonitors();
                 tlk->reset();

@@ -106,7 +106,7 @@ public:
     virtual bool IsShared() const { return CInterface::IsShared(); }
 
 // IKeyIndex impl.
-    virtual IKeyCursor *getCursor(const SegMonitorList *segs) override;
+    virtual IKeyCursor *getCursor(const IIndexFilterList *filter) override;
 
     virtual size32_t keySize();
     virtual bool hasPayload();
@@ -130,7 +130,7 @@ public:
     virtual offset_t queryMetadataHead();
     virtual IPropertyTree * getMetadata();
 
-    bool bloomFilterReject(const SegMonitorList &segs) const;
+    bool bloomFilterReject(const IIndexFilterList &segs) const;
 
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
     virtual bool hasSpecialFileposition() const;
@@ -170,21 +170,20 @@ public:
     virtual CJHTreeNode *loadNode(offset_t offset);
 };
 
-class jhtree_decl CKeyCursor : public IKeyCursor, public CInterface
+class jhtree_decl CKeyCursor : public CInterfaceOf<IKeyCursor>
 {
 protected:
     CKeyIndex &key;
-    const SegMonitorList *segs;
+    const IIndexFilterList *filter;
     char *keyBuffer = nullptr;
     Owned<CJHTreeNode> node;
     unsigned int nodeKey;
 
     bool eof=false;
-    bool matched=false;
+    bool matched=false; //MORE - this should probably be renamed. It's tracking state from one call of lookup to the next.
 
 public:
-    IMPLEMENT_IINTERFACE;
-    CKeyCursor(CKeyIndex &_key, const SegMonitorList *segs);
+    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter);
     ~CKeyCursor();
 
     virtual bool next(char *dst, KeyStatsCollector &stats) override;
@@ -218,19 +217,19 @@ protected:
 
     inline void setLow(unsigned segNo)
     {
-        segs->setLow(segNo, keyBuffer);
+        filter->setLow(segNo, keyBuffer);
     }
     inline unsigned setLowAfter(size32_t offset)
     {
-        return segs->setLowAfter(offset, keyBuffer);
+        return filter->setLowAfter(offset, keyBuffer);
     }
     inline bool incrementKey(unsigned segno) const
     {
-        return segs->incrementKey(segno, keyBuffer);
+        return filter->incrementKey(segno, keyBuffer);
     }
     inline void endRange(unsigned segno)
     {
-        segs->endRange(segno, keyBuffer);
+        filter->endRange(segno, keyBuffer);
     }
 };
 
@@ -240,4 +239,43 @@ public:
     CPartialKeyCursor(const CKeyCursor &from, unsigned sortFieldOffset);
     ~CPartialKeyCursor();
 };
+
+// Specialization of a RowFilter allowing us to use them from JHTree. Allowed to assume that all keyed fields are fixed size (for now!)
+
+class IndexRowFilter : public RowFilter, public CInterfaceOf<IIndexFilterList>
+{
+public:
+    IndexRowFilter(const RtlRecord &_recInfo);
+    virtual void append(IKeySegmentMonitor *segment) override;
+    virtual const IIndexFilter *item(unsigned idx) const override;
+    virtual void append(FFoption option, const IFieldFilter * filter) override;
+
+    virtual void setLow(unsigned segno, void *keyBuffer) const override;
+    virtual unsigned setLowAfter(size32_t offset, void *keyBuffer) const override;
+    virtual bool incrementKey(unsigned segno, void *keyBuffer) const override;
+    virtual void endRange(unsigned segno, void *keyBuffer) const override;
+    virtual unsigned lastRealSeg() const override;
+    virtual unsigned lastFullSeg() const override;
+    virtual unsigned numFilterFields() const override;
+    virtual IIndexFilterList *fixSortSegs(const char *fixedVals, unsigned sortFieldOffset) const override;
+    virtual void reset() override;
+    virtual void checkSize(size32_t keyedSize, char const * keyname) const override;
+    virtual void recalculateCache() override;
+    virtual void finish(size32_t keyedSize) override;
+    virtual void describe(StringBuffer &out) const override;
+    virtual bool matchesBuffer(const void *buffer, unsigned lastSeg, unsigned &matchSeg) const override;
+    virtual unsigned getFieldOffset(unsigned idx) const override { return recInfo.getFixedOffset(idx); }
+    virtual bool canMatch() const override;
+
+protected:
+    IndexRowFilter(const IndexRowFilter &_from, const char *fixedVals, unsigned sortFieldOffset);
+
+    const RtlRecord &recInfo;
+    unsigned lastReal = 0;
+    unsigned lastFull = 0;
+    unsigned keyedSize = 0;
+    unsigned keySegCount = 0;
+
+};
+
 #endif

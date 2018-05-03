@@ -88,21 +88,21 @@ MODULE_EXIT()
 
 //#define DUMP_NODES
 
-SegMonitorList::SegMonitorList(const RtlRecord &_recInfo, bool _needWild) : recInfo(_recInfo), needWild(_needWild)
+SegMonitorList::SegMonitorList(const RtlRecord &_recInfo) : recInfo(_recInfo)
 {
     keySegCount = recInfo.getNumKeyedFields();
     reset();
 }
 
 SegMonitorList::SegMonitorList(const SegMonitorList &from, const char *fixedVals, unsigned sortFieldOffset)
-: recInfo(from.recInfo), needWild(from.needWild), keySegCount(from.keySegCount)
+: recInfo(from.recInfo), keySegCount(from.keySegCount)
 {
     ForEachItemIn(idx, from.segMonitors)
     {
         IKeySegmentMonitor &seg = from.segMonitors.item(idx);
         unsigned offset = seg.getOffset();
         if (offset < sortFieldOffset)
-            segMonitors.append(*createSingleKeySegmentMonitor(false, seg.getFieldIdx(), offset, seg.getSize(), fixedVals+offset));
+            segMonitors.append(*createSingleKeySegmentMonitor(false, seg.queryFieldIndex(), offset, seg.getSize(), fixedVals+offset));
         else
             segMonitors.append(OLINK(seg));
     }
@@ -110,12 +110,42 @@ SegMonitorList::SegMonitorList(const SegMonitorList &from, const char *fixedVals
     modified = false;
 }
 
-unsigned SegMonitorList::ordinality() const
+void SegMonitorList::describe(StringBuffer &out) const
 {
-    return segMonitors.length();
+    for (unsigned idx=0; idx < lastRealSeg(); idx++)
+    {
+        auto &filter = segMonitors.item(idx);
+        if (idx)
+            out.append(',');
+        out.appendf("%s=", recInfo.queryName(idx));
+        filter.describe(out, *recInfo.queryType(idx));
+    }
 }
 
-IKeySegmentMonitor *SegMonitorList::item(unsigned idx) const
+bool SegMonitorList::matchesBuffer(const void *buffer, unsigned lastSeg, unsigned &matchSeg) const
+{
+    if (segMonitors.length())
+    {
+        for (; matchSeg <= lastSeg; matchSeg++)
+        {
+            if (!segMonitors.item(matchSeg).matchesBuffer(buffer))
+                return false;
+        }
+    }
+    return true;
+}
+
+bool SegMonitorList::canMatch() const
+{
+    ForEachItemIn(idx, segMonitors)
+    {
+        if (segMonitors.item(idx).isEmpty())
+            return false;
+    }
+    return true;
+}
+
+IIndexFilter *SegMonitorList::item(unsigned idx) const
 {
     return &segMonitors.item(idx);
 }
@@ -132,24 +162,7 @@ size32_t SegMonitorList::getSize() const
         return 0;
 }
 
-bool SegMonitorList::isExact(unsigned len, unsigned start) const
-{
-    ForEachItemIn(idx, segMonitors)
-    {
-        IKeySegmentMonitor &seg = segMonitors.item(idx);
-        unsigned o = seg.getOffset();
-        unsigned s = seg.getSize();
-        if (o+s <= start)
-            continue;
-        if (o >= start+len)
-            return true;
-        if (!seg.isWellKeyed())
-            return false;
-    }
-    return true;
-}
-
-void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname)
+void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname) const
 {
     size32_t segSize = getSize();
     if (segSize != keyedSize)
@@ -284,32 +297,11 @@ void SegMonitorList::reset()
     modified = true;
 }
 
-void SegMonitorList::swapWith(SegMonitorList &other)
-{
-    reset();
-    other.segMonitors.swapWith(segMonitors);
-}
-
-void SegMonitorList::deserialize(MemoryBuffer &mb)
-{
-    unsigned num;
-    mb.read(num);
-    while (num--)
-        append(deserializeKeySegmentMonitor(mb));
-}
-
-void SegMonitorList::serialize(MemoryBuffer &mb) const
-{
-    mb.append((unsigned) ordinality());
-    ForEachItemIn(idx, segMonitors)
-        segMonitors.item(idx).serialize(mb);
-}
-
 // interface IIndexReadContext
 void SegMonitorList::append(IKeySegmentMonitor *segment)
 {
     modified = true;
-    unsigned fieldIdx = segment->getFieldIdx();
+    unsigned fieldIdx = segment->queryFieldIndex();
     unsigned offset = segment->getOffset();
     unsigned size = segment->getSize();
     while (segMonitors.length() < fieldIdx)
@@ -324,20 +316,8 @@ void SegMonitorList::append(IKeySegmentMonitor *segment)
 
 void SegMonitorList::append(FFoption option, const IFieldFilter * filter)
 {
-    UNIMPLEMENTED;
+    throwUnexpected();
 }
-
-bool SegMonitorList::matched(void *keyBuffer, unsigned &lastMatch) const
-{
-    lastMatch = 0;
-    for (; lastMatch < segMonitors.length(); lastMatch++)
-    {
-        if (!segMonitors.item(lastMatch).matchesBuffer(keyBuffer))
-            return false;
-    }
-    return true;
-}
-
 
 ///
 static UnexpectedVirtualFieldCallback unexpectedFieldCallback;
@@ -345,14 +325,14 @@ class jhtree_decl CKeyLevelManager : implements IKeyManager, public CInterface
 {
 protected:
     KeyStatsCollector stats;
-    SegMonitorList segs;
+    Owned <IIndexFilterList> filter;
     IKeyCursor *keyCursor;
     ConstPointerArray activeBlobs;
     __uint64 partitionFieldMask = 0;
     unsigned indexParts = 0;
     unsigned keyedSize;     // size of non-payload part of key
-    unsigned numsegs;
     bool started = false;
+    bool newFilters = false;
 
     Owned<const IDynamicTransform> layoutTrans;
     MemoryBuffer buf;  // used when translating
@@ -360,9 +340,12 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyLevelManager(const RtlRecord &_recInfo, IKeyIndex * _key, IContextLogger *_ctx) : stats(_ctx), segs(_recInfo, true)
+    CKeyLevelManager(const RtlRecord &_recInfo, IKeyIndex * _key, IContextLogger *_ctx, bool _newFilters) : stats(_ctx), newFilters(_newFilters)
     {
-        numsegs = 0;
+        if (newFilters)
+            filter.setown(new IndexRowFilter(_recInfo));
+        else
+            filter.setown(new SegMonitorList(_recInfo));
         keyCursor = NULL;
         keyedSize = 0;
         setKey(_key);
@@ -402,7 +385,7 @@ public:
         {
             assertex(_key->numParts()==1);
             IKeyIndex *ki = _key->queryPart(0);
-            keyCursor = ki->getCursor(&segs);
+            keyCursor = ki->getCursor(filter);
             if (keyedSize)
                 assertex(keyedSize == ki->keyedSize());
             else
@@ -417,7 +400,7 @@ public:
         if (partitionFieldMask)
         {
             hash64_t hash = HASH64_INIT;
-            if (getBloomHash(partitionFieldMask, segs, hash))
+            if (getBloomHash(partitionFieldMask, *filter, hash))
                 return (((unsigned) hash) % indexParts) + 1;  // NOTE - the Hash distribute function that distributes the index when building will truncate to 32-bits before taking modulus - so we must too!
         }
         return 0;
@@ -435,8 +418,7 @@ public:
             if (!started)
             {
                 started = true;
-                numsegs = segs.ordinality();
-                segs.checkSize(keyedSize, keyCursor->queryName());
+                filter->checkSize(keyedSize, keyCursor->queryName());
             }
             if (!crappyHack)
             {
@@ -447,30 +429,21 @@ public:
 
     virtual void releaseSegmentMonitors()
     {
-        segs.reset();
+        filter->reset();
         started = false;
     }
 
     virtual void append(IKeySegmentMonitor *segment) 
     { 
-        assertex(!started);
-        segs.append(segment);
+        assertex(!newFilters && !started);
+        filter->append(segment);
     }
 
 
-    virtual void append(FFoption option, const IFieldFilter * filter)
+    virtual void append(FFoption option, const IFieldFilter * fieldFilter)
     {
-        UNIMPLEMENTED;
-    }
-
-    virtual unsigned ordinality() const 
-    {
-        return segs.ordinality();
-    }
-
-    virtual IKeySegmentMonitor *item(unsigned idx) const
-    {
-        return segs.item(idx);
+        assertex(newFilters && !started);
+        filter->append(option, fieldFilter);
     }
 
     inline const byte *queryKeyBuffer()
@@ -567,20 +540,16 @@ public:
         layoutTrans.set(trans);
     }
 
-    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override
-    {
-        segs.swapWith(segmentMonitors);
-    }
-
-    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) override
-    {
-        segs.deserialize(mb);
-    }
-
     virtual void finishSegmentMonitors()
     {
-        segs.finish(keyedSize);
+        filter->finish(keyedSize);
     }
+
+    virtual void describeFilter(StringBuffer &out) const override
+    {
+        filter->describe(out);
+    }
+
 };
 
 
@@ -1158,9 +1127,9 @@ unsigned CKeyIndex::numPartitions()
 }
 
 
-IKeyCursor *CKeyIndex::getCursor(const SegMonitorList *segs)
+IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter)
 {
-    return new CKeyCursor(*this, segs);
+    return new CKeyCursor(*this, filter);
 }
 
 CJHTreeNode *CKeyIndex::getNode(offset_t offset, IContextLogger *ctx) 
@@ -1302,7 +1271,7 @@ void CKeyIndex::loadBloomFilters()
     bloomFilters.sort(IndexBloomFilter::compare);
 }
 
-bool CKeyIndex::bloomFilterReject(const SegMonitorList &segs) const
+bool CKeyIndex::bloomFilterReject(const IIndexFilterList &segs) const
 {
     ForEachItemIn(idx, bloomFilters)
     {
@@ -1407,15 +1376,15 @@ void KeyStatsCollector::reset()
     nullskips = 0;
 }
 
-CKeyCursor::CKeyCursor(CKeyIndex &_key, const SegMonitorList *_segs)
-    : key(OLINK(_key)), segs(_segs)
+CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter)
+    : key(OLINK(_key)), filter(_filter)
 {
     nodeKey = 0;
     keyBuffer = (char *) malloc(key.keySize());  // MORE - keyedSize would do eventually
 }
 
 CKeyCursor::CKeyCursor(const CKeyCursor &from)
-: key(OLINK(from.key)), segs(from.segs)
+: key(OLINK(from.key)), filter(from.filter)
 {
     nodeKey = from.nodeKey;
     node.set(from.node);
@@ -1437,7 +1406,7 @@ void CKeyCursor::reset()
 {
     node.clear();
     matched = false;
-    eof = key.bloomFilterReject(*segs);
+    eof = key.bloomFilterReject(*filter) || !filter->canMatch();
     if (!eof)
         setLow(0);
 }
@@ -1709,7 +1678,7 @@ const byte *CKeyCursor::loadBlob(unsigned __int64 blobid, size32_t &blobsize)
 
 bool CKeyCursor::lookup(bool exact, KeyStatsCollector &stats)
 {
-    return _lookup(exact, segs->lastRealSeg(), stats);
+    return _lookup(exact, filter->lastRealSeg(), stats);
 }
 
 bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats)
@@ -1735,16 +1704,7 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats)
         if (!eof)
         {
             unsigned i = 0;
-            matched = true;
-            if (segs->segMonitors.length())
-            {
-                for (; i <= lastSeg; i++)
-                {
-                    matched = segs->segMonitors.item(i).matchesBuffer(keyBuffer);
-                    if (!matched)
-                        break;
-                }
-            }
+            matched = filter->matchesBuffer(keyBuffer, lastSeg, i);
             if (matched)
             {
                 ret = true;
@@ -1754,7 +1714,7 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats)
             if (linuxYield)
                 sched_yield();
 #endif
-            eof = !segs->incrementKey(i, keyBuffer);
+            eof = !filter->incrementKey(i, keyBuffer);
             if (!exact)
             {
                 ret = true;
@@ -1805,7 +1765,7 @@ unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
     reset();
     unsigned __int64 result = 0;
     unsigned lseeks = 0;
-    unsigned lastRealSeg = segs->lastRealSeg();
+    unsigned lastRealSeg = filter->lastRealSeg();
     for (;;)
     {
         if (_lookup(true, lastRealSeg, stats))
@@ -1830,7 +1790,7 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector 
     reset();
     unsigned __int64 result = 0;
     unsigned lseeks = 0;
-    unsigned lastFullSeg = segs->lastFullSeg();
+    unsigned lastFullSeg = filter->lastFullSeg();
     if (lastFullSeg == (unsigned) -1)
     {
         stats.noteSeeks(1, 0, 0);
@@ -1891,13 +1851,8 @@ void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeySt
     {
         recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
     }
-    recstr.append ("\nusing segmonitors:\n");
-    for (i=0; i <= lastSeg; i++)
-    {
-        unsigned size = segs->segMonitors.item(i).getSize();
-        while (size--)
-            recstr.append( segs->segMonitors.item(i).isWild() ? '?' : '#');
-    }
+    recstr.append ("\nusing filter:\n");
+    filter->describe(recstr);
     if (stats.ctx)
         stats.ctx->CTXLOG("%d seeks to lookup record \n%s\n in key %s", numSeeks, recstr.str(), key.queryFileName());
     else
@@ -1931,17 +1886,9 @@ bool CKeyCursor::skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen
     if (!seeklen) return false;
 
     unsigned j = setLowAfter(seekOffset + seeklen);
-    bool canmatch = true;
-    unsigned lastSeg = segs->lastRealSeg();
-    for (; j <= lastSeg; j++)
-    {
-        canmatch = segs->segMonitors.item(j).matchesBuffer(keyBuffer);
-        if (!canmatch)
-        {
-            eof = !incrementKey(j);
-            break;
-        }
-    }
+    bool canmatch = filter->matchesBuffer(keyBuffer, filter->lastRealSeg(), j);
+    if (!canmatch)
+        eof = !incrementKey(j);
     matched = false;
     return true;
 }
@@ -1954,13 +1901,228 @@ IKeyCursor * CKeyCursor::fixSortSegs(unsigned sortFieldOffset)
 CPartialKeyCursor::CPartialKeyCursor(const CKeyCursor &from, unsigned sortFieldOffset)
 : CKeyCursor(from)
 {
-    segs = new SegMonitorList(*segs, keyBuffer, sortFieldOffset);
+    filter = filter->fixSortSegs(keyBuffer, sortFieldOffset);
 }
 
 CPartialKeyCursor::~CPartialKeyCursor()
 {
-    ::Release(segs);
+    ::Release(filter);
 }
+
+//-------------------------------------------------------
+
+IndexRowFilter::IndexRowFilter(const RtlRecord &_recInfo) : recInfo(_recInfo)
+{
+    keySegCount = recInfo.getNumKeyedFields();
+    lastReal = 0;
+    lastFull = 0;
+    keyedSize = 0;
+}
+
+IndexRowFilter::IndexRowFilter(const IndexRowFilter &from, const char *fixedVals, unsigned sortFieldOffset)
+: recInfo(from.recInfo), keySegCount(from.keySegCount)
+{
+    lastReal = 0;
+    lastFull = 0;
+    keyedSize = 0;
+    ForEachItemIn(idx, from.filters)
+    {
+        auto &filter = from.filters.item(idx);
+        unsigned field = filter.queryFieldIndex();
+        unsigned offset = recInfo.getFixedOffset(field);
+        if (offset < sortFieldOffset)
+            append(FFkeyed, createFieldFilter(field, *recInfo.queryType(field), fixedVals+offset));
+        else
+            append(FFkeyed, LINK(&filter));  // MORE - FFopt vs FFkeyed is dodgy
+    }
+}
+
+
+void IndexRowFilter::append(IKeySegmentMonitor *segment)
+{
+    throwUnexpected();
+}
+
+const IIndexFilter *IndexRowFilter::item(unsigned idx) const
+{
+    return &queryFilter(idx);
+}
+
+void IndexRowFilter::append(FFoption option, const IFieldFilter * filter)
+{
+    assertex(filter->queryType().isFixedSize());
+    unsigned idx = filter->queryFieldIndex();
+    while (idx > numFilterFields())
+    {
+        append(FFkeyed, createWildFieldFilter(numFilterFields(), *recInfo.queryType(numFilterFields())));
+    }
+    assertex(idx == numFilterFields());
+    if (!filter->isWild())
+    {
+        lastReal = idx;
+        if (option != FFopt || lastFull == idx-1)
+            lastFull = idx;
+    }
+    keyedSize += filter->queryType().getMinSize();
+    addFilter(*filter);
+}
+
+void IndexRowFilter::setLow(unsigned field, void *keyBuffer) const
+{
+    unsigned lim = numFilterFields();
+    while (field < lim)
+    {
+        unsigned offset = recInfo.getFixedOffset(field);
+        const IFieldFilter &filter = queryFilter(field);
+        filter.setLow(keyBuffer, offset);
+        field++;
+    }
+}
+
+unsigned IndexRowFilter::setLowAfter(size32_t offset, void *keyBuffer) const
+{
+    unsigned lim = filters.length();
+    unsigned field = 0;
+    unsigned skipped = 0;
+    unsigned fieldOffset = recInfo.getFixedOffset(field);
+    while (field < lim)
+    {
+        unsigned nextOffset = recInfo.getFixedOffset(field+1);
+        if (fieldOffset >= offset)
+            filters.item(field).setLow(keyBuffer, fieldOffset);
+        else if (nextOffset <= offset)
+            skipped++;
+        else
+        {
+            byte *temp = (byte *) alloca(nextOffset - fieldOffset);
+            filters.item(field).setLow(temp, 0);
+            memcpy((byte *)keyBuffer+offset, temp, nextOffset - offset);
+        }
+        field++;
+        fieldOffset = nextOffset;
+    }
+    return skipped;
+}
+
+bool IndexRowFilter::incrementKey(unsigned segno, void *keyBuffer) const
+{
+    // Increment the key buffer to next acceptable value
+    for(;;)
+    {
+        if (queryFilter(segno).incrementKey(keyBuffer, recInfo.getFixedOffset(segno)))
+        {
+            setLow(segno+1, keyBuffer);
+            return true;
+        }
+        if (!segno)
+            return false;
+        segno--;
+    }
+}
+
+void IndexRowFilter::endRange(unsigned field, void *keyBuffer) const
+{
+    unsigned lim = numFilterFields();
+    if (field < lim)
+    {
+        queryFilter(field).endRange(keyBuffer, recInfo.getFixedOffset(field));
+        field++;
+    }
+    while (field < lim)
+    {
+        queryFilter(field).setHigh(keyBuffer, recInfo.getFixedOffset(field));
+        field++;
+    }
+}
+
+unsigned IndexRowFilter::lastRealSeg() const
+{
+    return lastReal;
+}
+
+unsigned IndexRowFilter::lastFullSeg() const
+{
+    return lastFull;
+}
+
+unsigned IndexRowFilter::numFilterFields() const
+{
+    return RowFilter::numFilterFields();
+}
+
+IIndexFilterList *IndexRowFilter::fixSortSegs(const char *fixedVals, unsigned sortFieldOffset) const
+{
+    return new IndexRowFilter(*this, fixedVals, sortFieldOffset);
+}
+
+void IndexRowFilter::reset()
+{
+    RowFilter::clear();
+    lastReal = 0;
+    lastFull = 0;
+    keyedSize = 0;
+}
+
+void IndexRowFilter::checkSize(size32_t _keyedSize, char const * keyname) const
+{
+    if (_keyedSize != keyedSize)
+    {
+        StringBuffer err;
+        err.appendf("Key size mismatch on key %s - key size is %u, expected %u", keyname, _keyedSize, keyedSize);
+    }
+}
+
+void IndexRowFilter::recalculateCache()
+{
+    // Nothing to do. This probably should be moved to be local to SegMonitorList
+}
+
+void IndexRowFilter::finish(size32_t _keyedSize)
+{
+    while (numFilterFields() < keySegCount)
+    {
+        unsigned idx = numFilterFields();
+        append(FFkeyed, createWildFieldFilter(idx, *recInfo.queryType(idx)));
+    }
+}
+
+void IndexRowFilter::describe(StringBuffer &out) const
+{
+    for (unsigned idx=0; idx < lastRealSeg(); idx++)
+    {
+        auto &filter = queryFilter(idx);
+        if (idx)
+            out.append(',');
+        out.appendf("%s=", recInfo.queryName(idx));
+        filter.describe(out);
+    }
+}
+
+bool IndexRowFilter::matchesBuffer(const void *buffer, unsigned lastSeg, unsigned &matchSeg) const
+{
+    if (numFilterFields())
+    {
+        RtlFixedRow rowInfo(recInfo, buffer, numFilterFields());
+        for (; matchSeg <= lastSeg; matchSeg++)
+        {
+            if (!queryFilter(matchSeg).matches(rowInfo))
+                return false;
+        }
+    }
+    return true;
+}
+
+bool IndexRowFilter::canMatch() const
+{
+    ForEachItemIn(idx, filters)
+    {
+        if (filters.item(idx).isEmpty())
+            return false;
+    }
+    return true;
+}
+
+//-------------------------------------------------------
 
 class CLazyKeyIndex : implements IKeyIndex, public CInterface
 {
@@ -2003,7 +2165,7 @@ public:
 
     virtual bool IsShared() const { return CInterface::IsShared(); }
 
-    virtual IKeyCursor *getCursor(const SegMonitorList *segs) override { return checkOpen().getCursor(segs); }
+    virtual IKeyCursor *getCursor(const IIndexFilterList *filter) override { return checkOpen().getCursor(filter); }
     virtual size32_t keySize() { return checkOpen().keySize(); }
     virtual size32_t keyedSize() { return checkOpen().keyedSize(); }
     virtual bool hasPayload() { return checkOpen().hasPayload(); }
@@ -2336,10 +2498,10 @@ class CKeyMerger : public CKeyLevelManager
     {
         // Make sure that sortFromSeg is properly set
         sortFromSeg = (unsigned) -1;
-        ForEachItemIn(idx, segs.segMonitors)
+        unsigned numFilters = filter->numFilterFields();
+        for (unsigned idx = 0; idx < numFilters; idx++)
         {
-            IKeySegmentMonitor &seg = segs.segMonitors.item(idx);
-            unsigned offset = seg.getOffset();
+            unsigned offset = filter->getFieldOffset(idx);
             if (offset == sortFieldOffset)
             {
                 sortFromSeg = idx;
@@ -2352,13 +2514,13 @@ class CKeyMerger : public CKeyLevelManager
     }
 
 public:
-    CKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet *_keyset, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(_recInfo, NULL, _ctx), sortFieldOffset(_sortFieldOffset)
+    CKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet *_keyset, unsigned _sortFieldOffset, IContextLogger *_ctx, bool _newFilters) : CKeyLevelManager(_recInfo, NULL, _ctx, _newFilters), sortFieldOffset(_sortFieldOffset)
     {
         init();
         setKey(_keyset);
     }
 
-    CKeyMerger(const RtlRecord &_recInfo, IKeyIndex *_onekey, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(_recInfo, NULL, _ctx), sortFieldOffset(_sortFieldOffset)
+    CKeyMerger(const RtlRecord &_recInfo, IKeyIndex *_onekey, unsigned _sortFieldOffset, IContextLogger *_ctx, bool _newFilters) : CKeyLevelManager(_recInfo, NULL, _ctx, _newFilters), sortFieldOffset(_sortFieldOffset)
     {
         init();
         setKey(_onekey);
@@ -2529,11 +2691,11 @@ public:
     void resetSort(const void *seek, size32_t seekOffset, size32_t seeklen)
     {
         activekeys = 0;
-        segs.recalculateCache();
+        filter->recalculateCache();
         unsigned i;
         for (i = 0; i < numkeys; i++)
         {
-            keyCursor = keyset->queryPart(i)->getCursor(&segs);
+            keyCursor = keyset->queryPart(i)->getCursor(filter);
             keyCursor->reset();
             for (;;)
             {
@@ -2611,7 +2773,7 @@ public:
         if (!started)
         {
             started = true;
-            segs.checkSize(keyedSize, "[merger]"); //PG: not sure what keyname to use here
+            filter->checkSize(keyedSize, "[merger]"); //PG: not sure what keyname to use here
         }
         if (!crappyHack)
         {
@@ -2738,7 +2900,7 @@ public:
             unsigned keyno;
             mb.read(keyno);
             keyNoArray.append(keyno);
-            keyCursor = keyset->queryPart(keyno)->getCursor(&segs);
+            keyCursor = keyset->queryPart(keyno)->getCursor(filter);
             keyCursor->deserializeCursorPos(mb, stats);
             cursorArray.append(*keyCursor);
             mergeHeapArray.append(i);
@@ -2752,20 +2914,20 @@ public:
         CKeyLevelManager::finishSegmentMonitors();
         if (sortFieldOffset)
         {
-            segs.checkSize(keyedSize, "[merger]"); // Ensures trailing KSM is setup
+            filter->checkSize(keyedSize, "[merger]"); // Ensures trailing KSM is setup
             calculateSortSeg();
         }
     }
 };
 
-extern jhtree_decl IKeyManager *createKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet * _keys, unsigned _sortFieldOffset, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet * _keys, unsigned _sortFieldOffset, IContextLogger *_ctx, bool _newFilters)
 {
-    return new CKeyMerger(_recInfo, _keys, _sortFieldOffset, _ctx);
+    return new CKeyMerger(_recInfo, _keys, _sortFieldOffset, _ctx, _newFilters);
 }
 
-extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo, IKeyIndex * _onekey, unsigned _sortFieldOffset, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo, IKeyIndex * _onekey, unsigned _sortFieldOffset, IContextLogger *_ctx, bool _newFilters)
 {
-    return new CKeyMerger(_recInfo, _onekey, _sortFieldOffset, _ctx);
+    return new CKeyMerger(_recInfo, _onekey, _sortFieldOffset, _ctx, _newFilters);
 }
 
 class CKeyIndexSet : implements IKeyIndexSet, public CInterface
@@ -2793,9 +2955,9 @@ extern jhtree_decl IKeyIndexSet *createKeyIndexSet()
     return new CKeyIndexSet;
 }
 
-extern jhtree_decl IKeyManager *createLocalKeyManager(const RtlRecord &_recInfo, IKeyIndex *_key, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createLocalKeyManager(const RtlRecord &_recInfo, IKeyIndex *_key, IContextLogger *_ctx, bool newFilters)
 {
-    return new CKeyLevelManager(_recInfo, _key, _ctx);
+    return new CKeyLevelManager(_recInfo, _key, _ctx, newFilters);
 }
 
 class CKeyArray : implements IKeyArray, public CInterface
@@ -2851,7 +3013,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
                                " { \"name\": \"f2\", \"type\": \"ty2\", \"flags\": 4 } ] "
                                "}";
             Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false, nullptr);
-            Owned <IKeyManager> tlk1 = createKeyMerger(meta->queryRecordAccessor(true), keyset, 7, NULL);
+            Owned <IKeyManager> tlk1 = createKeyMerger(meta->queryRecordAccessor(true), keyset, 7, NULL, false);
             Owned<IStringSet> sset1 = createStringSet(7);
             sset1->addRange("0000003", "0000003");
             sset1->addRange("0000005", "0000006");
@@ -2888,7 +3050,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(!tlk1->lookup(true)); 
             ASSERT(!tlk1->lookup(true)); 
 
-            Owned <IKeyManager> tlk2 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL);
+            Owned <IKeyManager> tlk2 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false);
             tlk2->setKey(keyset);
             tlk2->deserializeCursorPos(mb);
             tlk2->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
@@ -2904,7 +3066,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(!tlk2->lookup(true)); 
             ASSERT(!tlk2->lookup(true)); 
 
-            Owned <IKeyManager> tlk3 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL);
+            Owned <IKeyManager> tlk3 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false);
             tlk3->setKey(keyset);
             tlk3->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
             tlk3->append(createKeySegmentMonitor(false, sset2.getLink(), 1, 7, 3));
@@ -2917,7 +3079,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(!tlk3->lookupSkip("081", 7, 3)); 
             ASSERT(!tlk3->lookup(true)); 
 
-            Owned <IKeyManager> tlk4 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL);
+            Owned <IKeyManager> tlk4 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false);
             tlk4->setKey(keyset);
             tlk4->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
             tlk4->append(createKeySegmentMonitor(false, sset3.getLink(), 1, 7, 3));
@@ -3047,14 +3209,14 @@ protected:
         buildTestKeys(variable);
         {
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
-            Owned <IKeyManager> tlk1 = createLocalKeyManager(recInfo, index1, NULL);
+            Owned <IKeyManager> tlk1 = createLocalKeyManager(recInfo, index1, NULL, false);
             Owned<IStringSet> sset1 = createStringSet(10);
             sset1->addRange("0000000001", "0000000100");
             tlk1->append(createKeySegmentMonitor(false, sset1.getClear(), 0, 0, 10));
             tlk1->finishSegmentMonitors();
             tlk1->reset();
 
-            Owned <IKeyManager> tlk1a = createLocalKeyManager(recInfo, index1, NULL);
+            Owned <IKeyManager> tlk1a = createLocalKeyManager(recInfo, index1, NULL, false);
             Owned<IStringSet> sset1a = createStringSet(8);
             sset1a->addRange("00000000", "00000001");
             tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 0, 0, 8));
@@ -3078,7 +3240,7 @@ protected:
 
 
             Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, false);
-            Owned <IKeyManager> tlk2 = createLocalKeyManager(recInfo, index2, NULL);
+            Owned <IKeyManager> tlk2 = createLocalKeyManager(recInfo, index2, NULL, false);
             Owned<IStringSet> sset2 = createStringSet(10);
             sset2->addRange("0000000001", "0000000100");
             ASSERT(sset2->numValues() == 65536);
@@ -3093,7 +3255,7 @@ protected:
                 both->addIndex(index1.getLink());
                 both->addIndex(index2.getLink());
                 Owned<IStringSet> sset3 = createStringSet(10);
-                tlk3.setown(createKeyMerger(recInfo, NULL, 0, NULL));
+                tlk3.setown(createKeyMerger(recInfo, NULL, 0, NULL, false));
                 tlk3->setKey(both);
                 sset3->addRange("0000000001", "0000000100");
                 tlk3->append(createKeySegmentMonitor(false, sset3.getClear(), 0, 0, 10));
@@ -3101,7 +3263,7 @@ protected:
                 tlk3->reset();
             }
 
-            Owned <IKeyManager> tlk2a = createLocalKeyManager(recInfo, index2, NULL);
+            Owned <IKeyManager> tlk2a = createLocalKeyManager(recInfo, index2, NULL, false);
             Owned<IStringSet> sset2a = createStringSet(10);
             sset2a->addRange("0000000048", "0000000048");
             ASSERT(sset2a->numValues() == 1);
@@ -3109,7 +3271,7 @@ protected:
             tlk2a->finishSegmentMonitors();
             tlk2a->reset();
 
-            Owned <IKeyManager> tlk2b = createLocalKeyManager(recInfo, index2, NULL);
+            Owned <IKeyManager> tlk2b = createLocalKeyManager(recInfo, index2, NULL, false);
             Owned<IStringSet> sset2b = createStringSet(10);
             sset2b->addRange("0000000047", "0000000049");
             ASSERT(sset2b->numValues() == 3);
@@ -3117,7 +3279,7 @@ protected:
             tlk2b->finishSegmentMonitors();
             tlk2b->reset();
 
-            Owned <IKeyManager> tlk2c = createLocalKeyManager(recInfo, index2, NULL);
+            Owned <IKeyManager> tlk2c = createLocalKeyManager(recInfo, index2, NULL, false);
             Owned<IStringSet> sset2c = createStringSet(10);
             sset2c->addRange("0000000047", "0000000047");
             tlk2c->append(createKeySegmentMonitor(false, sset2c.getClear(), 0, 0, 10));

@@ -19,23 +19,10 @@
 #define RTLKEY_INCL
 #include "eclrtl.hpp"
 
-enum KeySegmentMonitorSerializeType
-{
-    KSMST_none,                  // can't serialize
-    KSMST_WILDKEYSEGMENTMONITOR,
-    KSMST_SETKEYSEGMENTMONITOR,
-    KSMST_SINGLEKEYSEGMENTMONITOR,
-    KSMST_SINGLEBIGSIGNEDKEYSEGMENTMONITOR,
-    KSMST_SINGLELITTLESIGNEDKEYSEGMENTMONITOR,
-    KSMST_CSINGLELITTLEKEYSEGMENTMONITOR,
-    KSMST_max
-};
-
 interface ITransition : extends IInterface
 {
     virtual bool getState() const = 0;
     virtual const void *getValue() const = 0;
-    virtual MemoryBuffer &serialize(size32_t size, MemoryBuffer &buffer) const = 0;
 };
 
 interface IStringSet : public IInterface
@@ -64,12 +51,10 @@ interface IStringSet : public IInterface
     virtual int memcmp(const void *val1, const void *val2, size32_t size) const = 0; 
     virtual bool decrement(void *val) const = 0;
     virtual bool increment(void *val) const = 0;
-    virtual MemoryBuffer &serialize(MemoryBuffer &buffer) const = 0;
 };
 
 ECLRTL_API IStringSet *createStringSet(size32_t size);
 ECLRTL_API IStringSet *createStringSet(size32_t size, bool bigEndian, bool isSigned);
-ECLRTL_API IStringSet *deserializeStringSet(MemoryBuffer &mb);
 
 ECLRTL_API int memcmpbigsigned(const void *l, const void *r, unsigned size);
 ECLRTL_API int memcmplittleunsigned(const void *l, const void *r, unsigned size);
@@ -78,7 +63,17 @@ ECLRTL_API int memcmplittlesigned(const void *l, const void *r, unsigned size);
 class RtlRow;
 class RtlRecord;
 
-interface IKeySegmentMonitor : public IInterface
+// Common base interface between new and old-style field filters
+interface IIndexFilter : public IInterface
+{
+    virtual bool getBloomHash(hash64_t &hash) const = 0;
+    virtual unsigned queryFieldIndex() const = 0;
+
+    virtual bool isWild() const = 0;
+    virtual bool isEmpty() const = 0;
+};
+
+interface IKeySegmentMonitor : public IIndexFilter
 {
 public:
     virtual bool increment(void * expandedRow) const = 0;
@@ -86,32 +81,24 @@ public:
     virtual void setHigh(void * expandedRow) const = 0;
     virtual void endRange(void * expandedRow) const = 0;
 
-    virtual bool matchesBuffer(const void * expandedRow) const = 0;
     virtual bool matches(const RtlRow * rawRow) const = 0;
+    virtual bool matchesBuffer(const void * expandedRow) const = 0;
 
-    virtual bool isWild() const = 0;
-    virtual unsigned getFieldIdx() const = 0;
     virtual unsigned getOffset() const = 0;
     virtual unsigned getSize() const = 0;
-    virtual bool isEmpty() const = 0;
-    virtual bool equivalentTo(const IKeySegmentMonitor &other) const = 0;
     virtual bool isSigned() const = 0;
     virtual bool isLittleEndian() const = 0;
 
     virtual int docompare(const void * expandedLeft, const void * rawRight) const = 0;
-    virtual unsigned queryHashCode() const = 0;
     virtual bool isWellKeyed() const = 0;
     virtual bool isOptional() const = 0;
 
     virtual bool isSimple() const = 0;
     virtual void copy(void *expandedRow, const void *rawRow) const = 0;
-    virtual MemoryBuffer &serialize(MemoryBuffer &mb) const = 0;
-    virtual KeySegmentMonitorSerializeType serializeType() const = 0;
-    virtual IKeySegmentMonitor *clone() const = 0;
     virtual unsigned numFieldsRequired() const = 0;
-    virtual bool getBloomHash(hash64_t &hash) const = 0;
 
-    virtual bool setOffset(unsigned _offset) = 0;  // Used by old record layout translator - to be removed at some point
+    // Describe for the purposes of tracing/debugging
+    virtual StringBuffer &describe(StringBuffer &out, const RtlTypeInfo &type) const = 0;
 };
 
 interface IBlobProvider
@@ -136,8 +123,6 @@ interface IIndexReadContext
 {
 public:
     virtual void append(IKeySegmentMonitor *segment) = 0;
-    virtual unsigned ordinality() const = 0;
-    virtual IKeySegmentMonitor *item(unsigned idx) const = 0;
     virtual void append(FFoption option, const IFieldFilter * filter) = 0;
 };
 
@@ -238,8 +223,19 @@ interface IValueSet : public IInterface
     virtual bool matches(const byte * field, unsigned range) const = 0;
 
     virtual const RtlTypeInfo & queryType() const = 0;
+
+    // Is this a single-valued set?
+    virtual const void *querySingleValue() const = 0;
+
+    // jhtree usage
+    virtual void setLow(void *buffer, size32_t offset, const RtlTypeInfo &parentType) const = 0;
+    virtual bool incrementKey(void *buffer, size32_t offset, const RtlTypeInfo &parentType) const = 0;
+    virtual void endRange(void *buffer, size32_t offset, const RtlTypeInfo &parentType) const = 0;
+    virtual void setHigh(void *buffer, size32_t offset, const RtlTypeInfo &parentType) const = 0;
+
 };
 extern ECLRTL_API IValueSet * createValueSet(const RtlTypeInfo & type);
+extern ECLRTL_API IValueSet * createValueSet(const RtlTypeInfo & _type, MemoryBuffer & in);
 
 interface ISetCreator
 {
@@ -284,12 +280,11 @@ extern ECLRTL_API void deserializeSet(IValueSet & set, const char * filter);
  *
  * Example implementations include single value, sets of ranges, regex or wildcard
  */
-interface IFieldFilter : public IInterface
+interface IFieldFilter : public IIndexFilter
 {
 public:
 //Simple row matching
     virtual bool matches(const RtlRow & row) const = 0;
-    virtual unsigned queryFieldIndex() const = 0;
     virtual const RtlTypeInfo & queryType() const = 0;
     virtual int compareRow(const RtlRow & left, const RtlRow & right) const = 0;
     virtual int compareLowest(const RtlRow & left, unsigned range) const = 0;
@@ -304,6 +299,15 @@ public:
     virtual int findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const = 0;
     virtual unsigned queryScore() const = 0;
     virtual IFieldFilter *remap(unsigned newFieldIndex) const = 0;
+
+    // For use with jhtree
+    virtual void setLow(void *buffer, size32_t offset) const = 0;
+    virtual bool incrementKey(void *buffer, size32_t offset) const = 0;
+    virtual void endRange(void *buffer, size32_t offset) const = 0;
+    virtual void setHigh(void *buffer, size32_t offset) const = 0;
+
+    // Human-readable description for tracing/debugging
+    virtual StringBuffer &describe(StringBuffer &out) const = 0;
 };
 
 //More types of IFieldFilter to come later
@@ -316,7 +320,9 @@ extern ECLRTL_API IFieldFilter * createSubStringFieldFilter(unsigned fieldId, si
 
 extern ECLRTL_API IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const char * src);
 extern ECLRTL_API IFieldFilter * deserializeFieldFilter(const RtlRecord & record, const char * src);
+extern ECLRTL_API IFieldFilter * deserializeFieldFilter(const RtlRecord & searchRecord, MemoryBuffer & in);
 extern ECLRTL_API IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, MemoryBuffer & in);
+
 extern ECLRTL_API void readFieldFromFieldFilter(StringBuffer & fieldText, const char * & src);
 
 
