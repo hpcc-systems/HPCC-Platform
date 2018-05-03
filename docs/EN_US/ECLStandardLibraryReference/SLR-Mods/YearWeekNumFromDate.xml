@@ -22,7 +22,7 @@
           <entry><emphasis>date</emphasis></entry>
 
           <entry>The date (in Date_t format) for which to compute the week
-          number; must be greater than or equal to referenceDate.</entry>
+          number.</entry>
         </row>
 
         <row>
