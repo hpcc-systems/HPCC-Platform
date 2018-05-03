@@ -20,7 +20,19 @@
     <para>Standard arithmetic operators<indexterm>
         <primary>arithmetic operators</primary>
       </indexterm> are supported for use in expressions, listed here in their
-    evaluation precedence:</para>
+    evaluation precedence. </para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Note:</term>
+
+          <listitem>
+            <para>* , /, %, and DIV all have the same precedence and are left
+            associative. + and - have the same precedence and are left
+            associative.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
@@ -231,11 +243,11 @@
           <row>
             <entry>Equivalence<indexterm>
                 <primary>Equivalence</primary>
-              </indexterm> </entry>
+              </indexterm></entry>
 
             <entry>=</entry>
 
-            <entry>returns TRUE or FALSE. </entry>
+            <entry>returns TRUE or FALSE.</entry>
           </row>
 
           <row>
