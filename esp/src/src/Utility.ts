@@ -440,6 +440,9 @@ export function resolve(hpccWidget, callback) {
         case "GraphWidget":
             require(["hpcc/GraphWidget"], doLoad);
             break;
+        case "Graph7Widget":
+            require(["hpcc/Graph7Widget"], doLoad);
+            break;
         case "GridDetailsWidget":
             require(["hpcc/GridDetailsWidget"], doLoad);
             break;
