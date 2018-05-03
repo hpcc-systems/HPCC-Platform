@@ -31,6 +31,7 @@ set(SRCS
     ../../../platform/espcache.cpp
     ../../../platform/sechandler.cpp
     ../../../platform/txsummary.cpp
+    ../../../platform/persistent.cpp
     ../../../protocols/http/mapinfo.cpp
     ../../bindutil.cpp
     ../../http/client/httpclient.cpp

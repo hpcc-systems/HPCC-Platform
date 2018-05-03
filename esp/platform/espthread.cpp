@@ -53,14 +53,14 @@
 
 
 CEspProtocolThread::CEspProtocolThread(const char *name)
-: Thread("CEspProtocolThread"), m_name(name)
+: Thread("CEspProtocolThread"), m_name(name), keepAlive(false)
 {
     terminating = false;
 }
 
 
 CEspProtocolThread::CEspProtocolThread(ISocket *sock, const char *name)
-: Thread("CEspProtocolThread"), m_name(name)
+: Thread("CEspProtocolThread"), m_name(name), keepAlive(false)
 {
     terminating = false;
     setSocket(sock);
@@ -195,22 +195,24 @@ int CEspProtocolThread::run()
         ERRLOG("Unknown Exception in CEspProtocolThread::run while processing request.");
     }
 
-    try
+    if(!keepAlive)
     {
-        m_socket->shutdown();
-        m_socket->close();
+        try
+        {
+            m_socket->shutdown();
+            m_socket->close();
+        }
+        catch (IException *e)
+        {
+            StringBuffer estr;
+            DBGLOG("Exception(%d, %s) - in CEspProtocolThread::run while closing socket.", e->errorCode(), e->errorMessage(estr).str());
+            e->Release();
+        }
+        catch(...)
+        {
+            DBGLOG("General Exception - in CEspProtocolThread::run while closing socket.");
+        }
     }
-    catch (IException *e) 
-    {
-        StringBuffer estr;
-        DBGLOG("Exception(%d, %s) - in CEspProtocolThread::run while closing socket.", e->errorCode(), e->errorMessage(estr).str());
-        e->Release();
-    }
-    catch(...)
-    {
-        DBGLOG("General Exception - in CEspProtocolThread::run while closing socket.");
-    }
-
     Release();
     return 0;
 }

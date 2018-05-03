@@ -35,7 +35,7 @@ protected:
    StringAttr m_name;
 
     int run();
-
+    bool keepAlive = false;
 public:
     IMPLEMENT_IINTERFACE;
     

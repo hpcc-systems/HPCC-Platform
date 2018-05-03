@@ -49,7 +49,7 @@ void ActiveRequests::dec()
     atomic_dec(&gActiveRequests);
 }
 
-CEspApplicationPort::CEspApplicationPort(bool viewcfg) : bindingCount(0), defBinding(-1), viewConfig(viewcfg), rootAuth(false), navWidth(165), navResize(false), navScroll(false)
+CEspApplicationPort::CEspApplicationPort(bool viewcfg, CEspProtocol* prot) : bindingCount(0), defBinding(-1), viewConfig(viewcfg), rootAuth(false), navWidth(165), navResize(false), navScroll(false), protocol(prot)
 {
     build_ver = getBuildVersion();
 
@@ -632,11 +632,13 @@ CEspProtocol::CEspProtocol()
 CEspProtocol::~CEspProtocol()
 {
     clear();
+    if(m_persistentHandler)
+        m_persistentHandler->stop(true);
 }
 
 bool CEspProtocol::notifySelected(ISocket *sock,unsigned selected)
 {
-    return true;
+    return notifySelected(sock, selected, nullptr);
 }
 
 const char * CEspProtocol::getProtocolName()
@@ -663,7 +665,7 @@ void CEspProtocol::addBindingMap(ISocket *sock, IEspRpcBinding* binding, bool is
     }
     else
     {
-        apport = new CEspApplicationPort(m_viewConfig);
+        apport = new CEspApplicationPort(m_viewConfig, this);
         apport->appendBinding(entry, isdefault);
 
         CApplicationPortMap::value_type vt(port, apport);
@@ -675,4 +677,35 @@ CEspApplicationPort* CEspProtocol::queryApplicationPort(int port)
 {
     CApplicationPortMap::iterator apport_it = m_portmap.find(port);
     return (apport_it != m_portmap.end()) ? (*apport_it).second : NULL;
+}
+
+void CEspProtocol::addPersistent(ISocket* sock)
+{
+    if (m_persistentHandler != nullptr)
+        m_persistentHandler->add(sock);
+}
+
+void CEspProtocol::initPersistentHandler(IPropertyTree * proc_cfg)
+{
+    const char* idleTimeStr = nullptr;
+    const char* maxReqsStr = nullptr;
+    if (proc_cfg != nullptr)
+    {
+        idleTimeStr = proc_cfg->queryProp("@maxPersistentIdleTime");
+        maxReqsStr = proc_cfg->queryProp("@maxPersistentRequests");
+    }
+    //To disable persistent connections, set maxPersistentIdleTime or maxPersistentRequests to 0
+    int maxIdleTime = DEFAULT_MAX_PERSISTENT_IDLE_TIME;
+    if (idleTimeStr != nullptr && *idleTimeStr != '\0')
+        maxIdleTime = atoi(idleTimeStr);
+    int maxReqs = DEFAULT_MAX_PERSISTENT_REQUESTS;
+    if (maxReqsStr != nullptr && *maxReqsStr != '\0')
+        maxReqs = atoi(maxReqsStr);
+
+    if (maxIdleTime == 0 || maxReqs == 0)
+    {
+        DBGLOG("Persistent connection won't be enabled because maxPersistentIdleTime or maxPersistentRequests is set to 0");
+        return;
+    }
+    m_persistentHandler.setown(createPersistentHandler(this, maxIdleTime, maxReqs, static_cast<PersistentLogLevel>(getEspLogLevel())));
 }

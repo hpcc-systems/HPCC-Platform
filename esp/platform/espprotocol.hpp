@@ -24,6 +24,7 @@
 //SCM Interfaces
 #include "esp.hpp"
 #include "xslprocessor.hpp"
+#include "persistent.hpp"
 
 //STL
 #include <algorithm>
@@ -79,9 +80,9 @@ public:
     }
 };
 
+class CEspProtocol;
 
 //MAKEPointerArray(CEspBindingEntry*, CEspBindingArray);
-
 class CEspApplicationPort
 {
     CEspBindingEntry* bindings[100];
@@ -99,8 +100,9 @@ class CEspApplicationPort
 
     HINSTANCE hxsl;
     Owned<IXslProcessor> xslp;
+    CEspProtocol* protocol = nullptr;
 public:
-    CEspApplicationPort(bool viewcfg);
+    CEspApplicationPort(bool viewcfg, CEspProtocol* prot);
 
     ~CEspApplicationPort()
     {
@@ -127,6 +129,7 @@ public:
 
     CEspBindingEntry* queryBindingItem(int item){return (item<bindingCount) ? bindings[item] : NULL;}
     CEspBindingEntry* getDefaultBinding(){return bindings[(defBinding>=0) ? defBinding : 0];}
+    CEspProtocol* queryProtocol() { return protocol; }
 #ifdef _USE_OPENLDAP
     unsigned updatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& message);
     void onUpdatePasswordInput(IEspContext &context, StringBuffer &html);
@@ -140,7 +143,8 @@ typedef map<int, CEspApplicationPort*> CApplicationPortMap;
 
 class CEspProtocol : public CInterface,
     implements IEspProtocol,
-    implements ISocketSelectNotify
+    implements ISocketSelectNotify,
+    implements IPersistentSelectNotify
 {
 private:
     //map between socket port and one or more bindings
@@ -148,7 +152,8 @@ private:
     bool m_viewConfig;
     int m_MaxRequestEntityLength;
     IEspContainer *m_container;
-
+    unsigned m_nextSeq;
+    Owned<IPersistentHandler> m_persistentHandler;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -177,6 +182,7 @@ public:
     bool getViewConfig(){return m_viewConfig;}
 
     virtual bool notifySelected(ISocket *sock,unsigned selected);
+    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler) override { return false; };
 
     //IEspProtocol
     virtual const char * getProtocolName();
@@ -187,6 +193,9 @@ public:
     virtual void setMaxRequestEntityLength(int len) {m_MaxRequestEntityLength = len;};
     virtual int getMaxRequestEntityLength() { return m_MaxRequestEntityLength; }
     virtual void setContainer(IEspContainer* container) { m_container = container; }
+    virtual void initPersistentHandler(IPropertyTree * proc_cfg);
+    virtual bool persistentEnabled() { return m_persistentHandler != nullptr; }
+    virtual void addPersistent(ISocket* sock);
 };
 
 #endif
