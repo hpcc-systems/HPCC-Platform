@@ -29,6 +29,7 @@ class DECL_EXPORT SchemaValue
     public:
 
         SchemaValue(const std::string &name, bool isDefined = true);
+        SchemaValue(const SchemaValue &value);
         virtual ~SchemaValue() { }
         void setType(const std::shared_ptr<SchemaType> pType) { m_pType = pType; }
         const std::shared_ptr<SchemaType> &getType() const { return m_pType; }
@@ -75,6 +76,11 @@ class DECL_EXPORT SchemaValue
         void setAutoGenerateValue(const std::string &value) { m_autoGenerateValue = value; }
         const std::string &getAutoGenerateValue() const { return m_autoGenerateValue; }
         void getAllKeyRefValues(std::vector<std::string> &keyRefValues) const;
+        void setOnChangeType(const std::string &type) { m_onChangeType = type;  }
+        const std::string &getOnChangeType() const { return m_onChangeType;  }
+        bool isOnChangeSet() const { return !m_onChangeType.empty(); }
+        void setOnChangeData(const std::string &data) { m_onChangeData = data; }
+        const std::string &getOnChangeData() const { return m_onChangeData;  }
 
 
     protected:
@@ -87,6 +93,8 @@ class DECL_EXPORT SchemaValue
         std::string m_mirrorFromPath;
         std::string m_autoGenerateValue;
         std::string m_autoGenerateType;
+        std::string m_onChangeType;
+        std::string m_onChangeData;
 
         struct {
             unsigned m_required  : 1;

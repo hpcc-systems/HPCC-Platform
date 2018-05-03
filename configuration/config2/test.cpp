@@ -14,7 +14,7 @@
 
 // namespace pt = boost::property_tree;
 
-const std::string c_path = "configfiles/"; ///opt/HPCCSystems/componentfiles/config2xml/";
+const std::string c_path = "..\\..\\initfiles\\componentfiles\\config2xml\\"; ///opt/HPCCSystems/componentfiles/config2xml/";
 
 // void parseComponentXSD(pt::ptree &xsdTree);
 // void parseIncludes(pt::ptree &xsdTree);
@@ -22,6 +22,7 @@ const std::string c_path = "configfiles/"; ///opt/HPCCSystems/componentfiles/con
 #include "SchemaItem.hpp"
 #include "XSDSchemaParser.hpp"
 #include "XMLEnvironmentMgr.hpp"
+#include "InsertableItem.hpp"
 
 
 int main()
@@ -39,26 +40,49 @@ int main()
 
         //pCfgParser->parseEnvironmentConfig("newenv.xsd", "");
 
-        EnvironmentMgr *pEnvMgr = getEnvironmentMgrInstance("XML");
+        EnvironmentMgr *pEnvMgr = getEnvironmentMgrInstance(EnvironmentType::XML);
         std::vector<std::string> cfgParms;
         cfgParms.push_back("buildset.xml");  // not used right now
-        pEnvMgr->loadSchema(c_path, "newenv.xsd", cfgParms);
+        pEnvMgr->loadSchema(c_path, "environment.xsd", cfgParms);
         pEnvMgr->loadEnvironment(c_path + "/environment.xml");
+
+        std::vector<std::shared_ptr<EnvironmentNode>> nodes;
+        pEnvMgr->findNodes("/Environment/Software/EspService@buildSet=espsmc", nodes);
 
         // 158
         //auto pNode = envMgr.getNodeFromPath("158");
         // auto pNode = pEnvMgr->getEnvironmentNode("74");     // 29 is Hardware/Computer
-        auto pNode = pEnvMgr->getEnvironmentNode("35");
+        //auto pNode = pEnvMgr->getEnvironmentNode("35");
 
         //auto x = pNode->getAllFieldValues("name");
 
-        auto list = pNode->getInsertableItems();
+        //auto list = pNode->getInsertableItems();
 
         Status status;
-        auto pNewNode = pEnvMgr->addNewEnvironmentNode("35", "ws_ecl", status);
-        auto newList = pNewNode->getInsertableItems();
-        pEnvMgr->addNewEnvironmentNode("35", "ws_ecl", status);
-        pEnvMgr->addNewEnvironmentNode("35", "ws_ecl", status);
+        auto pNewNode = pEnvMgr->addNewEnvironmentNode("108", "espsmc", status);
+        //auto newList = pNewNode->getInsertableItems();
+        //pEnvMgr->addNewEnvironmentNode("35", "ws_ecl", status);
+        //pEnvMgr->addNewEnvironmentNode("35", "ws_ecl", status);
+
+        auto pNode = pEnvMgr->getEnvironmentNode("138");
+        std::vector<InsertableItem> espBindingItems;
+        pNode->getInsertableItems(espBindingItems);
+
+        /*for (auto it = espBindingItems.begin(); it != espBindingItems.end(); ++it)
+        {
+            if ((*it).m_pSchemaItem->getProperty("insertChoice") != "")
+            {
+                std::string choice = (*it).m_pSchemaItem->getProperty("insertChoice");
+                std::shared_ptr<SchemaValue> pSchemaValue = (*it).m_pSchemaItem->getAttribute(choice);
+                std::vector<AllowedValue> allowedValues;
+                pSchemaValue->getAllowedValues(allowedValues);
+            }
+        }*/
+
+
+
+        Status status2;
+        pNewNode = pEnvMgr->addNewEnvironmentNode("138", "espbinding@service=EclWatch1", status2);  // todo: when valildating, look at required flag first
 
 
         /*auto attributes = pNode->getAttributes();
@@ -91,7 +115,7 @@ int main()
 
         //pEnvMgr->saveEnvironment("testout.xml", status);
 
-        auto results = pEnvMgr->getEnvironmentNode(".");
+        //auto results = pEnvMgr->getEnvironmentNode(".");
 
     }
     catch (ParseException &e)

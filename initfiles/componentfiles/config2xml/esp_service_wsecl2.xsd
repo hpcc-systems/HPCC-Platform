@@ -38,6 +38,8 @@
                     <xs:attribute name="workunitTimeout" type="xs:unsignedInt" use="optional" default="600" hpcc:displayName="Workunit Timeout"
                                   hpcc:tooltip="Timeout (in seconds), for WsEcl to wait for workunit to complete (0 == wait forever)" />
 
+                    <xs:complexType name="espservice_options"/>
+
                 </xs:complexType>
 
                 <xs:key name="espservice_name_key" hpcc:allowDuplicate="true">

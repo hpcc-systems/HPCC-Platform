@@ -24,6 +24,8 @@
 #include "XSDValueSetParser.hpp"
 #include "SchemaTypeStringLimits.hpp"
 #include "SchemaTypeIntegerLimits.hpp"
+#include "EnvironmentEventHandlers.hpp"
+#include "Utils.hpp"
 
 namespace pt = boost::property_tree;
 
@@ -170,6 +172,10 @@ void XSDSchemaParser::parseXSD(const pt::ptree &keys)
         {
             parseKeyRef(it->second);
         }
+        else if (elemType == "xs:annotation")
+        {
+            parseAnnotation(it->second);
+        }
     }
 }
 
@@ -249,50 +255,22 @@ void XSDSchemaParser::parseComplexType(const pt::ptree &typeTree)
 
     if (!complexTypeName.empty())
     {
-        if (!className.empty())
-        {
-            if (className == "component")
-            {
-                std::shared_ptr<SchemaItem> pComponent = std::make_shared<SchemaItem>(complexTypeName, "component", m_pSchemaItem);
-                pComponent->setProperty("category", catName);
-                pComponent->setProperty("componentName", componentName);
-                pComponent->setProperty("displayName", displayName);
-                pComponent->setHidden(hidden);
-                pt::ptree componentTree = typeTree.get_child("", pt::ptree());
-                if (!componentTree.empty())
-                {
-                    std::shared_ptr<XSDComponentParser> pComponentXSDParaser = std::make_shared<XSDComponentParser>(std::dynamic_pointer_cast<SchemaItem>(pComponent));
-                    pComponentXSDParaser->parseXSD(typeTree);
-                    m_pSchemaItem->addSchemaType(pComponent, complexTypeName);
-                }
-                else
-                {
-                    throw(ParseException("Component definition empty: " + displayName));
-                }
-            }
-            else
-            {
-                throw(ParseException("Unrecognized class name for complex type: " + className));
-            }
-        }
+        std::shared_ptr<SchemaItem> pComplexType = std::make_shared<SchemaItem>(complexTypeName, "component", m_pSchemaItem);
+        pComplexType->setProperty("category", catName);
+        pComplexType->setProperty("componentName", componentName);
+        pComplexType->setProperty("displayName", displayName);
+        pComplexType->setHidden(hidden);
 
-        //
-        // This is a complex type definition of just regular XSD statements, no special format. Create a parser and parse it
-        // and add it to the
+        pt::ptree childTree = typeTree.get_child("", pt::ptree());
+        if (!childTree.empty())
+        {
+            std::shared_ptr<XSDSchemaParser> pXSDParaser = std::make_shared<XSDSchemaParser>(pComplexType);
+            pXSDParaser->parseXSD(childTree);
+            m_pSchemaItem->addSchemaType(pComplexType, complexTypeName);
+        }
         else
         {
-            std::shared_ptr<SchemaItem> pTypeItem = std::make_shared<SchemaItem>(complexTypeName, "", m_pSchemaItem);
-            pt::ptree childTree = typeTree.get_child("", pt::ptree());
-            if (!childTree.empty())
-            {
-                std::shared_ptr<XSDSchemaParser> pXSDParaser = std::make_shared<XSDSchemaParser>(pTypeItem);
-                pXSDParaser->parseXSD(childTree);
-                m_pSchemaItem->addSchemaType(pTypeItem, complexTypeName);
-            }
-            else
-            {
-                throw(ParseException("Complex type definition empty: " + displayName));
-            }
+            throw(ParseException("Complex type definition empty: " + displayName));
         }
     }
 
@@ -307,68 +285,77 @@ void XSDSchemaParser::parseComplexType(const pt::ptree &typeTree)
 
 void XSDSchemaParser::parseElement(const pt::ptree &elemTree)
 {
+    //
+    // Get a couple attributes to help figure out how to handle the element
     std::string elementName = elemTree.get("<xmlattr>.name", "");
-    std::string className = elemTree.get("<xmlattr>.hpcc:class", "");
     std::string category = elemTree.get("<xmlattr>.hpcc:category", "");
-    std::string displayName = elemTree.get("<xmlattr>.hpcc:displayName", "");
-    std::string tooltip = elemTree.get("<xmlattr>.hpcc:tooltip", "");
-    std::string typeName = elemTree.get("<xmlattr>.type", "");
-    unsigned minOccurs = elemTree.get("<xmlattr>.minOccurs", 1);
-    std::string maxOccursStr = elemTree.get("<xmlattr>.maxOccurs", "1");
-    unsigned maxOccurs = (maxOccursStr != "unbounded") ? stoi(maxOccursStr) : UINT_MAX;
 
-    std::shared_ptr<SchemaItem> pNewSchemaItem = std::make_shared<SchemaItem>(elementName, className, m_pSchemaItem);
-    pNewSchemaItem->setProperty("displayName", displayName);
-    pNewSchemaItem->setMinInstances(minOccurs);
-    pNewSchemaItem->setMaxInstances(maxOccurs);
-    pNewSchemaItem->setProperty("category", category);
-    pNewSchemaItem->setProperty("tooltip", tooltip);
-    pNewSchemaItem->setHidden(elemTree.get("<xmlattr>.hpcc:hidden", "false") == "true");
+    pt::ptree emptyTree;
+    pt::ptree childTree = elemTree.get_child("", emptyTree);
 
-    pt::ptree childTree = elemTree.get_child("", pt::ptree());
-
-    // special case to set the root since the top level schema can't specify it
-    if (category == "root")  // special case to set the root since the top level schema can't specify it
+    if (category == "root")
     {
         m_pSchemaItem->setProperty("name", elementName);
         parseXSD(childTree);
     }
     else
     {
+        std::string className = elemTree.get("<xmlattr>.hpcc:class", "");
+        std::string displayName = elemTree.get("<xmlattr>.hpcc:displayName", "");
+        std::string tooltip = elemTree.get("<xmlattr>.hpcc:tooltip", "");
+        std::string typeName = elemTree.get("<xmlattr>.type", "");
+        std::string componentName = elemTree.get("<xmlattr>.hpcc:componentName", "");
+        std::string itemType = elemTree.get("<xmlattr>.hpcc:itemType", "");
+        std::string insertLimitType = elemTree.get("<xmlattr>.hpcc:insertLimitType", "");
+        std::string insertLimitData = elemTree.get("<xmlattr>.hpcc:insertLimitData", "");
+        unsigned minOccurs = elemTree.get("<xmlattr>.minOccurs", 1);
+        std::string maxOccursStr = elemTree.get("<xmlattr>.maxOccurs", "1");
+        unsigned maxOccurs = (maxOccursStr != "unbounded") ? stoi(maxOccursStr) : UINT_MAX;
+        std::shared_ptr<SchemaItem> pNewSchemaItem = std::make_shared<SchemaItem>(elementName, className, m_pSchemaItem);
+
+        if (!className.empty()) pNewSchemaItem->setProperty("className", className);
+        if (!displayName.empty()) pNewSchemaItem->setProperty("displayName", displayName);
+        if (!tooltip.empty()) pNewSchemaItem->setProperty("tooltip", tooltip);
+        if (!componentName.empty()) pNewSchemaItem->setProperty("componentName", componentName);
+        if (!itemType.empty()) pNewSchemaItem->setProperty("itemType", itemType);
+        if (!insertLimitType.empty()) pNewSchemaItem->setProperty("insertLimitType", insertLimitType);
+        if (!insertLimitData.empty()) pNewSchemaItem->setProperty("insertLimitData", insertLimitData);
+        pNewSchemaItem->setMinInstances(minOccurs);
+        pNewSchemaItem->setMaxInstances(maxOccurs);
+
         //
-        // If a type is specified, then either it's a simple value type (which could be previously defined) for this element, or a named complex type.
+        // Type specified?
         if (!typeName.empty())
         {
+            //
+            // If a simple type, then it represents the element value type, so allocate a value object, set its type and add
+            // it to the item.
             const std::shared_ptr<SchemaType> pSimpleType = m_pSchemaItem->getSchemaValueType(typeName, false);
             if (pSimpleType != nullptr)
             {
                 std::shared_ptr<SchemaValue> pCfgValue = std::make_shared<SchemaValue>("");  // no name value since it's the element's value
                 pCfgValue->setType(pSimpleType);                      // will throw if type is not defined
                 pNewSchemaItem->setItemSchemaValue(pCfgValue);
+                std::shared_ptr<XSDSchemaParser> pXSDParaser = std::make_shared<XSDSchemaParser>(pNewSchemaItem);
+                pXSDParaser->parseXSD(childTree);
+                m_pSchemaItem->addChild(pNewSchemaItem);
             }
             else
             {
+                //
+                // Wasn't a simple type, complex?
                 std::shared_ptr<SchemaItem> pConfigType = m_pSchemaItem->getSchemaType(typeName, false);
                 if (pConfigType != nullptr)
                 {
                     //
-                    // Insert into this config element the component defined data (attributes, references, etc.)
-                    pNewSchemaItem->insertSchemaType(pConfigType);
-
-                    //
-                    // Set element min/max instances to that defined by the component type def (ignore values parsed above)
-                    pNewSchemaItem->setMinInstances(pConfigType->getMinInstances());
-                    pNewSchemaItem->setMaxInstances(pConfigType->getMaxInstances());
-
-                    //
-                    // If a component, then set element data (allow overriding with locally parsed values)
-                    if (pConfigType->getProperty("className") == "component")
+                    // A complex type was found. Insert it
+                    std::vector<std::shared_ptr<SchemaItem>> typeChildren;
+                    pConfigType->getChildren(typeChildren);
+                    for (auto childIt = typeChildren.begin(); childIt != typeChildren.end(); ++childIt)
                     {
-                        pNewSchemaItem->setProperty("name", (!elementName.empty()) ? elementName : pConfigType->getProperty("name"));
-                        pNewSchemaItem->setProperty("className", (!className.empty()) ? className : pConfigType->getProperty("className"));
-                        pNewSchemaItem->setProperty("category", (!category.empty()) ? category : pConfigType->getProperty("category"));
-                        pNewSchemaItem->setProperty("displayName", (!displayName.empty()) ? displayName : pConfigType->getProperty("displayName"));
-                        pNewSchemaItem->setProperty("componentName", pConfigType->getProperty("componentName"));
+                        std::shared_ptr<SchemaItem> pNewItem = std::make_shared<SchemaItem>(*(*childIt));
+                        pNewItem->setParent(m_pSchemaItem);
+                        m_pSchemaItem->addChild(pNewItem);
                     }
                 }
                 else
@@ -378,19 +365,134 @@ void XSDSchemaParser::parseElement(const pt::ptree &elemTree)
                 }
             }
         }
-
-        //
-        // Now, if there are children, create a parser and have at it
-        if (!childTree.empty())
+        else
         {
+            //
+            // No type, just continue parsing a new element
+            //pNewSchemaItem = std::make_shared<SchemaItem>(elementName, className, m_pSchemaItem);
             std::shared_ptr<XSDSchemaParser> pXSDParaser = std::make_shared<XSDSchemaParser>(pNewSchemaItem);
             pXSDParaser->parseXSD(childTree);
+            m_pSchemaItem->addChild(pNewSchemaItem);
         }
+    }
+}
+
+
+void XSDSchemaParser::parseAnnotation(const pt::ptree &elemTree)
+{
+    pt::ptree emptyTree;
+    const pt::ptree &keys = elemTree.get_child("", emptyTree);
+
+    //
+    // Parse app info sections
+    for (auto it = keys.begin(); it != keys.end(); ++it)
+    {
+        if (it->first == "xs:appinfo")
+        {
+            parseAppInfo(it->second);
+        }
+    }
+}
+
+
+
+void XSDSchemaParser::parseAppInfo(const pt::ptree &elemTree)
+{
+    std::string appInfoType = elemTree.get("<xmlattr>.hpcc:infoType", "");
+    pt::ptree emptyTree, childTree;
+
+    //
+    // Process the app info based on its type
+    if (appInfoType == "event")
+    {
+        childTree = elemTree.get_child("", emptyTree);
+        std::string eventType = getXSDAttributeValue(childTree, "eventType");
 
         //
-        // Add the element
-        m_pSchemaItem->addChild(pNewSchemaItem);
+        // Fir a create event type, get the eventAction attrbute to decide what to do
+        if (eventType == "create")
+        {
+            std::string eventAction = getXSDAttributeValue(childTree, "eventAction");
 
+            //
+            // addAttributeDependencies is used to set dependent values for an attribute based on the value of another attribute.
+            if (eventAction == "addAttributeDependencies")
+            {
+                std::shared_ptr<AttributeDependencyCreateEventHandler> pDep = std::make_shared<AttributeDependencyCreateEventHandler>();
+                pt::ptree dataTree = childTree.get_child("eventData", emptyTree);
+                for (auto it = dataTree.begin(); it != dataTree.end(); ++it)
+                {
+                    if (it->first == "itemType")
+                    {
+                        pDep->setItemType(it->second.data());
+                    }
+                    else if (it->first == "attribute")
+                    {
+                        std::string attrName = getXSDAttributeValue(it->second, "<xmlattr>.attributeName");
+                        std::string attrVal = getXSDAttributeValue(it->second, "<xmlattr>.attributeValue");
+                        std::string depAttr = getXSDAttributeValue(it->second, "<xmlattr>.dependentAttribute");
+                        std::string depVal = getXSDAttributeValue(it->second, "<xmlattr>.dependentValue");
+                        pDep->addDependency(attrName, attrVal, depAttr, depVal);
+                    }
+                }
+                m_pSchemaItem->addEventHandler(pDep);
+            }
+
+            //
+            // Insert XML is ued to insert XML ino the environment based on what's in the eventData section
+            else if (eventAction == "insertXML")
+            {
+                std::shared_ptr<InsertEnvironmentDataCreateEventHandler> pInsert = std::make_shared<InsertEnvironmentDataCreateEventHandler>();
+
+                pt::ptree dataTree = childTree.get_child("eventData", emptyTree);
+                for (auto it = dataTree.begin(); it != dataTree.end(); ++it)
+                {
+                    //
+                    // itemTye is the type of the item that was created for which the create event shall be sent.
+                    if (it->first == "itemType")
+                    {
+                        pInsert->setItemType(it->second.data());
+                    }
+
+                    //
+                    // The match section is optional. It is used to further qualify the conditions when XML is inserted. If missing,
+                    // the XML is inserted whenever a new node of "itemType" is inserted. When present, the following fields further
+                    // qualify when the XML is inserted.
+                    //
+                    //    matchItemAttribute  - name of attribute from created node whose value is compared with the value of an attribute in
+                    //                          another node (defined by matchLocalAttribte and matchPath)
+                    //    matchPath           - XPath to select the node for comparing attribute values
+                    //    matchLocalAttribute - name of attribute from node selected by matchPath for value comparison. This option is
+                    //                          optional. If not present, the name of the attribute for comparison in the selected node is
+                    //                          matchItemAttribute
+                    else if (it->first == "match")
+                    {
+                        std::string attrName = it->second.get("matchItemAttribute", "").data();
+                        pInsert->setItemAttributeName(attrName);
+                        std::string matchAttrName = it->second.get("matchLocalAttribute", "");
+                        if (!matchAttrName.empty())
+                        {
+                            pInsert->setMatchAttributeName(matchAttrName);
+                        }
+                        std::string path = it->second.get("matchPath", "");
+                        pInsert->setMatchPath(path);
+                    }
+
+                    //
+                    // the XML to be inserted. It is inserted based on the match section
+                    else if (it->first == "xml")
+                    {
+                        pt::ptree emptyTree;
+                        const pt::ptree &insertXMLTree = it->second.get_child("", emptyTree);
+
+                        std::ostringstream out;
+                        pt::write_xml(out, insertXMLTree);
+                        pInsert->setEnvironmentInsertData(out.str());
+                    }
+                }
+                m_pSchemaItem->addEventHandler(pInsert);
+            }
+        }
     }
 }
 
@@ -508,11 +610,13 @@ std::shared_ptr<SchemaValue> XSDSchemaParser::getSchemaValue(const pt::ptree &at
     pCfgValue->setAutoGenerateType(attr.get("<xmlattr>.hpcc:autoGenerateType", ""));
     pCfgValue->setAutoGenerateValue(attr.get("<xmlattr>.hpcc:autoGenerateValue", ""));
     pCfgValue->setDefaultValue(attr.get("<xmlattr>.default", ""));
+    pCfgValue->setOnChangeType(attr.get("<xmlattr>.hpcc:onChangeType", ""));
+    pCfgValue->setOnChangeData(attr.get("<xmlattr>.hpcc:onChangeData", ""));
 
     std::string modList = attr.get("<xmlattr>.hpcc:modifiers", "");
     if (modList.length())
     {
-        pCfgValue->setModifiers(split(modList, ","));
+        pCfgValue->setModifiers(splitString(modList, ","));
     }
 
     std::string typeName = attr.get("<xmlattr>.type", "");

@@ -33,5 +33,6 @@
 #define CFGMGR_ERROR_ENV_EXTERNAL_CHANGE     CONFIG_MGR_ERROR_START+10   // Environment was externally modified
 #define CFGMGR_ERROR_ENVIRONMENT_LOCKING     CONFIG_MGR_ERROR_START+11   // Error locking the enironment
 #define CFGMGR_ERROR_NODE_INVALID            CONFIG_MGR_ERROR_START+12   // Enironment node not valid
+#define CDGMGR_ERROR_PATH_INVALID            CONFIG_MGR_ERROR_START+13   // The path specified is not valid
 
 #endif

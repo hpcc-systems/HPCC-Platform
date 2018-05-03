@@ -30,6 +30,27 @@ SchemaValue::SchemaValue(const std::string &name, bool isDefined) :
 }
 
 
+SchemaValue::SchemaValue(const SchemaValue &value)
+{
+    m_pType = value.m_pType;
+    m_name = value.m_name;
+    m_displayName = value.m_displayName;
+    m_mirrorFromPath = value.m_mirrorFromPath;
+    m_autoGenerateValue = value.m_autoGenerateValue;
+    m_autoGenerateType = value.m_autoGenerateType;
+    m_onChangeData = value.m_onChangeData;
+    m_onChangeType = value.m_onChangeType;
+    bitMask = value.bitMask;
+    m_default = value.m_default;
+    m_tooltip = value.m_tooltip;
+    m_modifiers = value.m_modifiers;
+
+    // special processing? Maybe after inserting?
+    std::vector<std::shared_ptr<SchemaValue>> m_mirrorToSchemaValues;
+    std::vector<std::weak_ptr<SchemaValue>> m_pUniqueValueSetRefs;    // this value serves as the key from which values are valid
+}
+
+
 bool SchemaValue::isValueValid(const std::string &value, const EnvironmentValue *pEnvValue) const
 {
     bool isValid = true;   // assume valid
@@ -89,13 +110,6 @@ void SchemaValue::validate(Status &status, const std::string &id, const Environm
         }
         isValid = false;
     }
-
-    // get currentvalue from pEnvValue
-    // for keyed, make sure all values are unique
-    // call pType with value to see if good
-    // call pType->limits->toString(value) if bad to get message about whats bad
-    // add to status
-
 }
 
 
@@ -146,7 +160,7 @@ void SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
     {
         allowedValues = m_pType->getEnumeratedValues();
     }
-    else if (isFromUniqueValueSet() && pEnvValue != nullptr)
+    else if (isFromUniqueValueSet()) // && pEnvValue != nullptr)
     {
         std::vector<std::string> refValues;
         getAllKeyRefValues(refValues);

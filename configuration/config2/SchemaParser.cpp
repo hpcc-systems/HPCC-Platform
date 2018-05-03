@@ -33,18 +33,3 @@ bool SchemaParser::parse(const std::string &configPath, const std::string &maste
     }
     return rc;
 }
-
-
-std::vector<std::string> SchemaParser::split(const std::string  &input, const std::string  &delim)
-{
-    size_t  start = 0, end = 0, delimLen = delim.length();
-    std::vector<std::string> list;
-
-    while (end != std::string::npos)
-    {
-        end = input.find(delim, start);
-        list.push_back(input.substr(start, (end == std::string::npos) ? std::string::npos : end - start));
-        start = ((end > (std::string::npos - delimLen)) ? std::string::npos : end + delimLen);
-    }
-    return list;
-}
