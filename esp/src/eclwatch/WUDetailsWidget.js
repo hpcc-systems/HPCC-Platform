@@ -46,6 +46,8 @@ define([
     "hpcc/InfoGridWidget",
     "src/WsWorkunits",
 
+    "@hpcc-js/eclwatch",
+
     "dojo/text!../templates/WUDetailsWidget.html",
 
     "dijit/layout/BorderContainer",
@@ -73,6 +75,7 @@ define([
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 Clippy,
                 _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, DelayLoadWidget, InfoGridWidget, WsWorkunits,
+                hpccEclWatch,
                 template) {
     return declare("WUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -137,6 +140,10 @@ define([
             this.zapDialog = registry.byId(this.id + "ZapDialog");
 
             Clippy.attach(this.id + "ClippyButton");
+
+            this.wuStatus = new hpccEclWatch.WUStatus()
+                .baseUrl("")
+            ;
         },
 
         startup: function (args) {
@@ -276,6 +283,11 @@ define([
             this.infoGridWidget.init(params);
             this.checkIfClustersAllowed();
             this.checkThorLogStatus();
+            this.wuStatus
+                .target(this.id + "WUStatus")
+                .wuid(params.Wuid)
+                .lazyRender()
+                ;
         },
 
         initTab: function () {
