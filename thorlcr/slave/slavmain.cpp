@@ -836,7 +836,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             if (translator)
             {
                 MemoryBufferBuilder aBuilder(diskFetchRowMb, 0);
-                translator->translate(aBuilder, diskFetchRow);
+                LocalVirtualFieldCallback fieldCallback("<MORE>", requestHeader.fpos, 0);
+                translator->translate(aBuilder, fieldCallback, diskFetchRow);
                 diskFetchRow = reinterpret_cast<const byte *>(diskFetchRowMb.toByteArray());
             }
             size32_t fetchReplySz = sizeof(FetchReplyHeader);

@@ -111,11 +111,12 @@ extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val);
 interface IDynamicTransform : public IInterface
 {
     virtual void describe() const = 0;
-    virtual size32_t translate(ARowBuilder &builder, const byte *sourceRec) const = 0;
-    virtual size32_t translate(ARowBuilder &builder, const RtlRow &sourceRow) const = 0;
+    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const byte *sourceRec) const = 0;
+    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const RtlRow &sourceRow) const = 0;
     virtual bool canTranslate() const = 0;
     virtual bool needsTranslate() const = 0;
     virtual bool keyedTranslated() const = 0;
+    virtual bool needsNonVirtualTranslate() const = 0;
 };
 
 interface IKeyTranslator : public IInterface
@@ -181,5 +182,52 @@ extern ECLRTL_API void getFieldVal(size32_t & __lenResult, char * & __result, in
 extern ECLRTL_API int getFieldNum(const char *fieldName, IOutputMetaData &  metaVal);
 
 extern ECLRTL_API IRowStream * transformRecord(IEngineRowAllocator * resultAllocator,IOutputMetaData &  metaInput,IRowStream * input);
+
+//---------------------------------------------------------------------------------------------------------------------
+
+//Default implementations of the virtual field callbacks
+class ECLRTL_API NullVirtualFieldCallback : public CInterfaceOf<IVirtualFieldCallback>
+{
+public:
+    virtual const char * queryLogicalFilename(const void * row) override;
+    virtual unsigned __int64 getFilePosition(const void * row) override;
+    virtual unsigned __int64 getLocalFilePosition(const void * row) override;
+};
+
+class ECLRTL_API UnexpectedVirtualFieldCallback : public CInterfaceOf<IVirtualFieldCallback>
+{
+public:
+    virtual const char * queryLogicalFilename(const void * row) override;
+    virtual unsigned __int64 getFilePosition(const void * row) override;
+    virtual unsigned __int64 getLocalFilePosition(const void * row) override;
+};
+
+typedef UnexpectedVirtualFieldCallback IndexVirtualFieldCallback;
+
+//Backward compatibility implementation for fetch - only fileposition implemented.  Revisit later when all working.
+class ECLRTL_API FetchVirtualFieldCallback : public UnexpectedVirtualFieldCallback
+{
+public:
+    FetchVirtualFieldCallback(unsigned __int64 _filepos) : filepos(_filepos) {}
+
+    virtual unsigned __int64 getFilePosition(const void * row) override;
+private:
+    unsigned __int64 filepos;
+};
+
+class ECLRTL_API LocalVirtualFieldCallback : public CInterfaceOf<IVirtualFieldCallback>
+{
+public:
+    LocalVirtualFieldCallback(const char * _filename, unsigned __int64 _filepos, unsigned __int64 _localfilepos)
+    : filename(_filename), filepos(_filepos), localfilepos(_localfilepos) {}
+
+    virtual const char * queryLogicalFilename(const void * row) override;
+    virtual unsigned __int64 getFilePosition(const void * row) override;
+    virtual unsigned __int64 getLocalFilePosition(const void * row) override;
+private:
+    const char * filename;
+    unsigned __int64 filepos;
+    unsigned __int64 localfilepos;
+};
 
 #endif

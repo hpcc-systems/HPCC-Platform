@@ -8199,7 +8199,8 @@ bool CHThorDiskReadBaseActivity::openNext()
     localOffset = 0;
     saveOpenExc.clear();
     actualFilter.clear();
-    unsigned projectedCrc = helper.getFormatCrc();
+    unsigned diskCrc = helper.getDiskFormatCrc();
+    unsigned projectedCrc = helper.getProjectedFormatCrc();
 
     if (dfsParts||ldFile)
     {
@@ -8307,7 +8308,7 @@ bool CHThorDiskReadBaseActivity::openNext()
             {
                 if (translator->canTranslate())
                 {
-                    if (agent.rltEnabled()==RecordTranslationMode::None)
+                    if (translator->needsNonVirtualTranslate() && agent.rltEnabled()==RecordTranslationMode::None)
                     {
 #ifdef _DEBUG
                         translator->describe();
@@ -8579,7 +8580,7 @@ const void *CHThorDiskReadActivity::nextRow()
                         if (translator)
                         {
                             MemoryBufferBuilder aBuilder(translated, 0);
-                            translator->translate(aBuilder, next);
+                            translator->translate(aBuilder, *this, next);
                             next = reinterpret_cast<const byte *>(translated.toByteArray());
                         }
                         thisSize = helper.transform(outBuilder.ensureRow(), next);

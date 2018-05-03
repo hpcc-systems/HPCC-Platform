@@ -899,8 +899,8 @@ public:
     virtual void setVariableFileInfo()
     {
         unsigned channel = packet->queryHeader().channel;
-        unsigned formatCrc = basefactory->getFormatCrc(helper->getFormatCrc());
-        translators.setown(varFileInfo->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), false)); // MORE - FormatCRC may be wrong here. Needs to be crc of projected not expected
+        unsigned projectedCrc = helper->getProjectedFormatCrc();
+        translators.setown(varFileInfo->getTranslators(projectedCrc, basefactory->skipFileFormatCrcCheck(), helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), false));
         manager.setown(varFileInfo->getIndexManager(isOpt, channel, translators->queryActualLayout(0), false));
     }
 
@@ -1006,8 +1006,8 @@ public:
             if (datafile)
             {
                 unsigned channel = queryFactory.queryChannel();
-                unsigned formatCrc = getFormatCrc(helper->getFormatCrc());
-                translators.setown(datafile->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), getEnableFieldTranslation(), false));
+                unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
+                translators.setown(datafile->getTranslators(projectedFormatCrc, skipFileFormatCrcCheck(), helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), getEnableFieldTranslation(), false));
                 manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false)));
                 Owned<IPropertyTreeIterator> memKeyInfo = queryFactory.queryPackage().getInMemoryIndexInfo(_graphNode);
                 Owned<IPropertyTree> memKeyHint;
@@ -2405,7 +2405,7 @@ public:
 
     void init(IHThorIndexReadBaseArg * helper, IPropertyTree &graphNode)
     {
-        formatCrc = getFormatCrc(helper->getFormatCrc());
+        formatCrc = helper->getFormatCrc();
         projectedMeta = helper->queryProjectedDiskRecordSize();
         expectedMeta = helper->queryDiskRecordSize();
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0);
@@ -2416,7 +2416,7 @@ public:
             datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
             if (datafile)
             {
-                translators.setown(datafile->getTranslators(formatCrc, projectedMeta, expectedMeta, queryFactory.queryOptions().enableFieldTranslation, true));
+                translators.setown(datafile->getTranslators(formatCrc, skipFileFormatCrcCheck(), projectedMeta, expectedMeta, queryFactory.queryOptions().enableFieldTranslation, true));
                 keyArray.setown(datafile->getKeyArray(isOpt, queryFactory.queryChannel()));
             }
         }
@@ -2479,7 +2479,7 @@ protected:
     virtual void setVariableFileInfo()
     {
         const CRoxieKeyedActivityFactory &aFactory = *static_cast<const CRoxieKeyedActivityFactory *>(basefactory);
-        translators.setown(varFileInfo->getTranslators(aFactory.formatCrc, aFactory.projectedMeta, aFactory.expectedMeta, allowFieldTranslation, true));
+        translators.setown(varFileInfo->getTranslators(aFactory.formatCrc, false, aFactory.projectedMeta, aFactory.expectedMeta, allowFieldTranslation, true));
         keyArray.setown(varFileInfo->getKeyArray(isOpt, packet->queryHeader().channel));
     }
 
@@ -3583,8 +3583,8 @@ public:
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fname, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
             {
-                unsigned formatCrc = getFormatCrc(helper->getDiskFormatCrc());
-                translators.setown(datafile->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), getEnableFieldTranslation(), false));
+                unsigned formatCrc = helper->getDiskFormatCrc();
+                translators.setown(datafile->getTranslators(formatCrc, skipFileFormatCrcCheck(), helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), getEnableFieldTranslation(), false));
                 fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
             }
         }
@@ -3639,8 +3639,8 @@ public:
 
     virtual void setVariableFileInfo()
     {
-        unsigned formatCrc = basefactory->getFormatCrc(helper->getDiskFormatCrc());
-        translators.setown(varFileInfo->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), false));
+        unsigned formatCrc = helper->getDiskFormatCrc();
+        translators.setown(varFileInfo->getTranslators(formatCrc, basefactory->skipFileFormatCrcCheck(), helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), false));
         files.setown(varFileInfo->getIFileIOArray(isOpt, packet->queryHeader().channel));
     }
 
@@ -3739,7 +3739,8 @@ public:
         {
             MemoryBuffer buf;
             MemoryBufferBuilder aBuilder(buf, 0);
-            translator->translate(aBuilder, diskRow);
+            FetchVirtualFieldCallback fieldCallback(rawpos);
+            translator->translate(aBuilder, fieldCallback, diskRow);
             //  note the swapped parameters - left and right map to input and raw differently for JOIN vs FETCH
             IHThorFetchArg *h = (IHThorFetchArg *) helper;
             return h->transform(rowBuilder, buf.toByteArray(), inputData, rawpos);
@@ -3966,7 +3967,7 @@ public:
     {
         Owned<IHThorKeyedJoinArg> helper = (IHThorKeyedJoinArg *) helperFactory();
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
-        formatCrc = getFormatCrc(helper->getIndexFormatCrc());
+        formatCrc = helper->getIndexFormatCrc();
         projectedMeta = helper->queryProjectedIndexRecordSize();
         expectedMeta = helper->queryIndexRecordSize();
         if (!variableFileName)
@@ -3976,7 +3977,7 @@ public:
             datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
             {
-                translators.setown(datafile->getTranslators(formatCrc, projectedMeta, expectedMeta, queryFactory.queryOptions().enableFieldTranslation, true));
+                translators.setown(datafile->getTranslators(formatCrc, skipFileFormatCrcCheck(), projectedMeta, expectedMeta, queryFactory.queryOptions().enableFieldTranslation, true));
                 keyArray.setown(datafile->getKeyArray(isOpt, queryFactory.queryChannel()));
             }
         }
@@ -4318,8 +4319,8 @@ public:
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
             {
-                unsigned formatCrc = getFormatCrc(helper->getDiskFormatCrc());
-                translators.setown(datafile->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), getEnableFieldTranslation(), false));
+                unsigned formatCrc = helper->getDiskFormatCrc();
+                translators.setown(datafile->getTranslators(formatCrc, skipFileFormatCrcCheck(), helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), getEnableFieldTranslation(), false));
                 files.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
             }
         }
@@ -4384,8 +4385,8 @@ public:
 
     virtual void setVariableFileInfo()
     {
-        unsigned formatCrc = basefactory->getFormatCrc(helper->getDiskFormatCrc());
-        translators.setown(varFileInfo->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), false));
+        unsigned formatCrc = helper->getDiskFormatCrc();
+        translators.setown(varFileInfo->getTranslators(formatCrc, basefactory->skipFileFormatCrcCheck(), helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), false));
         files.setown(varFileInfo->getIFileIOArray(isOpt, packet->queryHeader().channel));
     }
 
@@ -4428,15 +4429,17 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
         prefetchSource.reset(pos);
         prefetcher->readAhead(prefetchSource);
         const byte *rawRHS = prefetchSource.queryRow();
+        const KeyedJoinHeader *headerPtr = (KeyedJoinHeader *) inputData;
+
         MemoryBuffer buf;
         if (translator)
         {
             MemoryBufferBuilder aBuilder(buf, 0);
-            translator->translate(aBuilder, rawRHS);
+            FetchVirtualFieldCallback fieldCallback(headerPtr->fpos);
+            translator->translate(aBuilder, fieldCallback, rawRHS);
             rawRHS = (const byte *) buf.toByteArray();
         }
 
-        const KeyedJoinHeader *headerPtr = (KeyedJoinHeader *) inputData;
         inputData = &headerPtr->rhsdata[0];
         if (inputFields.isVariableSize())
         {

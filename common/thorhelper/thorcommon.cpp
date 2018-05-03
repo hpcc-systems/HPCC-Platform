@@ -955,7 +955,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsig
     return new cRowInterfaces(meta,actid,heapFlags,context);
 };
 
-class CRowStreamReader : public CSimpleInterfaceOf<IExtRowStream>
+class CRowStreamReader : public CSimpleInterfaceOf<IExtRowStream>, implements IVirtualFieldCallback
 {
 protected:
     Linked<IFileIO> fileio;
@@ -970,6 +970,7 @@ protected:
     MemoryBuffer translateBuf;
     IOutputMetaData *actualFormat = nullptr;
     const IDynamicTransform *translator = nullptr;
+    IVirtualFieldCallback * fieldCallback;
     RowFilter actualFilter;
     RtlDynRow *filterRow = nullptr;
 
@@ -1099,8 +1100,8 @@ protected:
         return nullptr;
     }
 public:
-    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *_translatorContainer)
-        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(nullptr), emptyRowSemantics(_emptyRowSemantics), translatorContainer(_translatorContainer)
+    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *_translatorContainer, IVirtualFieldCallback * _fieldCallback)
+        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(nullptr), emptyRowSemantics(_emptyRowSemantics), translatorContainer(_translatorContainer), fieldCallback(_fieldCallback)
     {
 #ifdef TRACE_CREATE
         PROGLOG("CRowStreamReader %d = %p",++rdnum,this);
@@ -1132,6 +1133,8 @@ public:
 #endif
         delete filterRow;
     }
+
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IExtRowStream>)
 
     virtual void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows) override
     {
@@ -1165,7 +1168,7 @@ public:
                     if (row)
                     {
                         RtlDynamicRowBuilder rowBuilder(*allocator);
-                        size32_t size = translator->translate(rowBuilder, row);
+                        size32_t size = translator->translate(rowBuilder, *this, row);
                         prefetchBuffer.finishedRow();
                         return rowBuilder.finalizeRowClear(size);
                     }
@@ -1198,7 +1201,7 @@ public:
                     {
                         translateBuf.setLength(0);
                         MemoryBufferBuilder rowBuilder(translateBuf, 0);
-                        translator->translate(rowBuilder, row);
+                        translator->translate(rowBuilder, *this, row);
                         row = reinterpret_cast<const byte *>(translateBuf.toByteArray());
                     }
                     return row;
@@ -1276,6 +1279,31 @@ public:
             filterRow = new RtlDynRow(*actual);
         }
     }
+
+    //interface IVirtualFieldCallback
+    virtual const char * queryLogicalFilename(const void * row) override
+    {
+        if (fieldCallback)
+            return fieldCallback->queryLogicalFilename(row);
+        return ""; //MORE: HPCC-19588 should this value be passed in rather than relying on the callback?
+    }
+    virtual unsigned __int64 getFilePosition(const void * row) override
+    {
+        //This is a bit strange - I'm not sure this structure is really right.
+        //There are quite a few layers with file part handlers, stream readers etc.  They possibly should be combined for clarity.
+        if (fieldCallback)
+            return fieldCallback->getFilePosition(row);
+        unsigned __int64 baseOffset = 0; //MORE - should this value be passed in rather than relying on the callback?
+        return prefetchBuffer.tell() + baseOffset;
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row) override
+    {
+        if (fieldCallback)
+            return fieldCallback->getLocalFilePosition(row);
+        unsigned part = 0; //MORE - should this value be passed in rather than relying on the callback?
+        return makeLocalFposOffset(part, prefetchBuffer.tell());
+    }
+
 };
 
 class CLimitedRowStreamReader : public CRowStreamReader
@@ -1284,8 +1312,8 @@ class CLimitedRowStreamReader : public CRowStreamReader
     unsigned __int64 rownum;
 
 public:
-    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *translatorContainer)
-        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _emptyRowSemantics, translatorContainer)
+    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *translatorContainer, IVirtualFieldCallback * _fieldCallback)
+        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _emptyRowSemantics, translatorContainer, _fieldCallback)
     {
         maxrows = _maxrows;
         rownum = 0;
@@ -1316,7 +1344,7 @@ unsigned CRowStreamReader::rdnum;
 
 bool UseMemoryMappedRead = false;
 
-IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, IExpander *eexp, ITranslator *translatorContainer)
+IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, IExpander *eexp, ITranslator *translatorContainer, IVirtualFieldCallback * fieldCallback)
 {
     bool compressed = TestRwFlag(rwFlags, rw_compress);
     EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(rwFlags);
@@ -1327,9 +1355,9 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         if (!mmfile)
             return NULL;
         if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer);
+            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
         else
-            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer);
+            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
     }
     else
     {
@@ -1345,15 +1373,15 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         if (!fileio)
             return NULL;
         if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer);
+            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
         else
-            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer);
+            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
     }
 }
 
-IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowIf, unsigned rwFlags, IExpander *eexp, ITranslator *translatorContainer)
+IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowIf, unsigned rwFlags, IExpander *eexp, ITranslator *translatorContainer, IVirtualFieldCallback * fieldCallback)
 {
-    return createRowStreamEx(file, rowIf, 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, eexp, translatorContainer);
+    return createRowStreamEx(file, rowIf, 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, eexp, translatorContainer, fieldCallback);
 }
 
 // Memory map sizes can be big, restrict to 64-bit platforms.
@@ -1997,61 +2025,64 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
     return nullptr;
 }
 
-bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> *keyedTranslator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc)
+static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> *keyedTranslator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, bool skipFileFormatCrcCheck, unsigned publishedCrc)
 {
-    if (expectedCrc && (RecordTranslationMode::None != mode))
+    if (expectedCrc)
     {
-        if (RecordTranslationMode::AlwaysDisk == mode)
+        IOutputMetaData * sourceFormat = expectedFormat;
+        unsigned sourceCrc = expectedCrc;
+        if (!skipFileFormatCrcCheck)
         {
-            translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), publishedFormat->queryRecordAccessor(true)));
-            if (keyedTranslator)
-                keyedTranslator->setown(createKeyTranslator(publishedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
-            dbgassertex(translator->canTranslate()); // should have been previously checked at master
-        }
-        else if (RecordTranslationMode::AlwaysECL == mode)
-        {
-            translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
-            if (keyedTranslator)
-                keyedTranslator->setown(createKeyTranslator(publishedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
-            dbgassertex(translator->canTranslate()); // should have been previously checked at master
-        }
-        else if (publishedCrc && publishedCrc != expectedCrc)
-        {
-            if (publishedFormat)
+            if (mode != RecordTranslationMode::AlwaysECL)
             {
-                if (!projectedFormat)
-                    throw MakeStringException(0, "Record layout mismatch and  %s", tracing);
-                translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), publishedFormat->queryRecordAccessor(true)));
+                if (publishedFormat)
+                {
+                    sourceFormat = publishedFormat;
+                    sourceCrc = publishedCrc;
+                }
             }
-            if (!translator || !translator->canTranslate())
+        }
+
+        //MORE: HPCC-19590 Could avoid creating translator if (projectedCrc != sourceCrc).
+        //However that would allow false negatives if the format crcs happened to match, leading to crashes on untranslated files.
+        if (projectedFormat != sourceFormat)
+        {
+            translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), sourceFormat->queryRecordAccessor(true)));
+
+            if (!translator->canTranslate())
                 throw MakeStringException(0, "Untranslatable record layout mismatch detected for file %s", tracing);
+
             if (translator->needsTranslate())
             {
-                if (RecordTranslationMode::None == mode)
+                if ((RecordTranslationMode::None == mode) && translator->needsNonVirtualTranslate())
+                {
                     throw MakeStringException(0, "Translatable record layout mismatch detected for file %s, but translation disabled", tracing);
+                }
                 if (keyedTranslator)
-                    keyedTranslator->setown(createKeyTranslator(publishedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
+                    keyedTranslator->setown(createKeyTranslator(sourceFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
             }
+            else
+                translator.clear();
         }
     }
     return nullptr != translator.get();
 }
 
-bool getTranslators(Owned<const IDynamicTransform> &translator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc)
+bool getTranslators(Owned<const IDynamicTransform> &translator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, bool skipFileFormatCrcCheck, unsigned publishedCrc)
 {
-    return getTranslators(translator, nullptr, tracing, expectedFormat, publishedFormat, projectedFormat, mode, expectedCrc, publishedCrc);
+    return getTranslators(translator, nullptr, tracing, expectedFormat, publishedFormat, projectedFormat, mode, expectedCrc, skipFileFormatCrcCheck, publishedCrc);
 }
 
-bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> &keyedTranslator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc)
+bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> &keyedTranslator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, bool skipFileFormatCrcCheck, unsigned publishedCrc)
 {
-    return getTranslators(translator, &keyedTranslator, tracing, expectedFormat, publishedFormat, projectedFormat, mode, expectedCrc, publishedCrc);
+    return getTranslators(translator, &keyedTranslator, tracing, expectedFormat, publishedFormat, projectedFormat, mode, expectedCrc, skipFileFormatCrcCheck, publishedCrc);
 }
 
-ITranslator *getTranslators(const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc)
+ITranslator *getTranslators(const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, bool skipFileFormatCrcCheck, unsigned publishedCrc)
 {
     Owned<const IDynamicTransform> translator;
     Owned<const IKeyTranslator> keyedTranslator;
-    if (getTranslators(translator, &keyedTranslator, tracing, expectedFormat, publishedFormat, projectedFormat, mode, expectedCrc, publishedCrc))
+    if (getTranslators(translator, &keyedTranslator, tracing, expectedFormat, publishedFormat, projectedFormat, mode, expectedCrc, skipFileFormatCrcCheck, publishedCrc))
     {
         if (!publishedFormat)
             publishedFormat = expectedFormat;

@@ -46,7 +46,7 @@ END;
 
 
 
-d := dataset('victor::imga', Layout_imgdb, flat);
+d := dataset('victor::imga', Layout_imgdb, flat, virtual(legacy));
 
 // e := distribute(d, RANDOM());
 // output(e,,'victor::imga.dist', overwrite);
