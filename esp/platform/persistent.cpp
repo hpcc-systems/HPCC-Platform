@@ -28,15 +28,15 @@ class CPersistentInfo : implements IInterface, public CInterface
     friend class CPersistentHandler;
 public:
     IMPLEMENT_IINTERFACE;
-    CPersistentInfo(bool _inUse, int _timeUsed, int _useCount, SocketEndpoint* _ep)
+    CPersistentInfo(bool _inUse, unsigned _timeUsed, unsigned _useCount, SocketEndpoint* _ep)
         : inUse(_inUse), timeUsed(_timeUsed), useCount(_useCount), ep(_ep?(new SocketEndpoint(*_ep)):nullptr)
     {
     }
     virtual ~CPersistentInfo() { } //TODO remove trace
 protected:
     bool inUse;
-    int timeUsed;
-    int useCount;
+    unsigned timeUsed;
+    unsigned useCount;
     std::unique_ptr<SocketEndpoint> ep;
 };
 
@@ -45,16 +45,16 @@ using SockInfoMap = MapBetween<Linked<ISocket>, ISocket*, Owned<CPersistentInfo>
 class CPersistentHandler : implements IPersistentHandler, implements ISocketSelectNotify, public Thread
 {
 private:
-    static const int MAX_INFLIGHT_TIME = 600;
-    int m_maxIdleTime;
-    int m_maxReqs;
+    static const int MAX_INFLIGHT_TIME = 1800;
+    int m_maxIdleTime = DEFAULT_MAX_PERSISTENT_IDLE_TIME;
+    int m_maxReqs = DEFAULT_MAX_PERSISTENT_REQUESTS;
     Owned<ISocketSelectHandler> m_selectHandler;
     IPersistentSelectNotify* m_notify;
     Semaphore m_waitsem;
-    bool m_stop;
+    bool m_stop = false;
     SockInfoMap m_infomap;
     Mutex m_mutex;
-    PersistentLogLevel m_loglevel;
+    PersistentLogLevel m_loglevel = PersistentLogLevel::PLogNormal;
     static int CurID;
     int m_id = 0;
 public:
@@ -202,8 +202,6 @@ public:
             if (m_stop)
                 break;
             unsigned now = usTick()/1000;
-            unsigned oldest = now - m_maxIdleTime*1000;
-            unsigned oldest_inflight = now - MAX_INFLIGHT_TIME*1000;
             synchronized block(m_mutex);
             std::vector<ISocket*> socks1;
             std::vector<ISocket*> socks2;
@@ -212,9 +210,9 @@ public:
                 CPersistentInfo* info = si.getValue();
                 if (!info)
                     continue;
-                if(m_maxIdleTime > 0 && !info->inUse && info->timeUsed < oldest)
+                if(m_maxIdleTime > 0 && !info->inUse && info->timeUsed + m_maxIdleTime*1000 < now)
                     socks1.push_back(*(ISocket**)(si.getKey()));
-                if(info->inUse && info->timeUsed < oldest_inflight)
+                if(info->inUse && info->timeUsed + MAX_INFLIGHT_TIME*1000 < now)
                     socks2.push_back(*(ISocket**)(si.getKey()));
             }
             for (auto s:socks1)

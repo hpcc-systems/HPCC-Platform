@@ -100,7 +100,7 @@ class CEspApplicationPort
 
     HINSTANCE hxsl;
     Owned<IXslProcessor> xslp;
-    CEspProtocol* protocol;
+    CEspProtocol* protocol = nullptr;
 public:
     CEspApplicationPort(bool viewcfg, CEspProtocol* prot);
 

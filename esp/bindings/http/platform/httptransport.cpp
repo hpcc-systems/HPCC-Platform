@@ -322,7 +322,7 @@ and CHttpResponse
 ****************************************************************************/
 
 
-CHttpMessage::CHttpMessage(ISocket& socket) : m_socket(socket), m_persistentEligible(false)
+CHttpMessage::CHttpMessage(ISocket& socket) : m_socket(socket)
 {
     m_bufferedsocket.setown(createBufferedSocket(&socket));
     m_content_length = -1;
@@ -1818,6 +1818,33 @@ StringBuffer& CHttpRequest::constructHeaderBuffer(StringBuffer& headerbuf, bool 
     return headerbuf;
 }
 
+bool CHttpRequest::checkPersistentEligible()
+{
+    //Might be bad request
+    if(m_content_length == -1 && !(m_httpMethod.length() > 0 && stricmp(m_httpMethod.get(), "GET") == 0))
+        return false;
+
+    StringBuffer conheader;
+    getHeader("Connection", conheader);
+    conheader.trim().toLowerCase();
+    if(conheader.length() != 0)
+    {
+        if(strcmp(conheader.str(), "keep-alive") == 0)
+            return true;
+        else if(strcmp(conheader.str(), "close") == 0)
+            return false;
+    }
+
+    //HTTP 1.0 close by default
+    const char* httpver = nullptr;
+    if(m_version.length() > 5)
+        httpver = m_version.str() + 5;
+    if(httpver && strcmp(httpver, "1.0") == 0)
+        return false;
+
+    return true;
+}
+
 int CHttpRequest::processHeaders(IMultiException *me)
 {
     char oneline[MAX_HTTP_HEADER_LEN + 2];
@@ -1847,17 +1874,7 @@ int CHttpRequest::processHeaders(IMultiException *me)
     if(m_content_length > 0 && m_MaxRequestEntityLength > 0 && m_content_length > m_MaxRequestEntityLength && (!isUpload(false)))
         throw createEspHttpException(HTTP_STATUS_BAD_REQUEST_CODE, "The request length was too long.", HTTP_STATUS_BAD_REQUEST);
 
-    StringBuffer conheader;
-    getHeader("Connection", conheader);
-    float httpver = 1.0;
-    if(m_version.length() > 5)
-        httpver = atof(m_version.str()+5);
-    if(((httpver + 0.001 > 1.1 && (conheader.length() == 0 || stricmp(conheader.str(), "Close") != 0))
-                || (conheader.length() > 0 && stricmp(conheader.str(), "Keep-Alive") == 0))
-            && (m_content_length != -1 || (m_httpMethod.length()>0 && stricmp(m_httpMethod.get(), "GET") == 0)))
-        setPersistentEligible(true);
-    else
-        setPersistentEligible(false);
+    setPersistentEligible(checkPersistentEligible());
 
     return 0;
 }
@@ -2089,6 +2106,8 @@ StringBuffer& CHttpResponse::constructHeaderBuffer(StringBuffer& headerbuf, bool
 
     if(inclLen && m_content_length > 0)
         headerbuf.append("Content-Length: ").append(m_content_length).append("\r\n");
+    else
+        setPersistentEligible(false);
 
     if(!(m_persistentEnabled && getPersistentEligible()))
         headerbuf.append("Connection: close\r\n");
@@ -2289,11 +2308,12 @@ int CHttpResponse::processHeaders(IMultiException *me)
         lenread = m_bufferedsocket->readline(oneline, MAX_HTTP_HEADER_LEN, me);
     }
 
+    setPersistentEligible(true);
     StringBuffer conheader;
     getHeader("Connection", conheader);
-    if(conheader.length() == 0 || stricmp(conheader.str(), "Close") != 0)
-        setPersistentEligible(true);
-    else
+    if(conheader.length() != 0 && stricmp(conheader.str(), "Close") == 0)
+        setPersistentEligible(false);
+    if(m_content_length == 0)
         setPersistentEligible(false);
 
     return 0;

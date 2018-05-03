@@ -71,8 +71,8 @@ protected:
     StringAttr   m_paramstr;
     int m_supportClientXslt;
     bool         m_isForm;
-    bool         m_persistentEligible;
-    bool         m_persistentEnabled;
+    bool         m_persistentEligible = false;
+    bool         m_persistentEnabled = false;
 
     int m_paramCount;
     int m_attachCount;
@@ -315,6 +315,7 @@ private:
     virtual StringBuffer& constructHeaderBuffer(StringBuffer& headerbuf, bool inclLen);
     virtual int processHeaders(IMultiException *me);
     virtual void parseCookieHeader(char* cookiestr);
+    inline bool checkPersistentEligible();
 
 public:
     

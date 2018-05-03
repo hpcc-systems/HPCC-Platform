@@ -402,7 +402,7 @@ const char * CSecureHttpProtocol::getProtocolName()
  *  CHttpThread Implementation                                            *
  **************************************************************************/
 CHttpThread::CHttpThread(bool viewConfig) : 
-   CEspProtocolThread("Http Thread"), m_persistentHandler(nullptr)
+   CEspProtocolThread("Http Thread")
 {
     m_viewConfig = viewConfig;
     m_is_ssl = false;
@@ -410,7 +410,7 @@ CHttpThread::CHttpThread(bool viewConfig) :
 }
 
 CHttpThread::CHttpThread(ISocket *sock, bool viewConfig) : 
-   CEspProtocolThread(sock, "HTTP Thread"), m_persistentHandler(nullptr)
+   CEspProtocolThread(sock, "HTTP Thread")
 {
     m_viewConfig = viewConfig;
     m_is_ssl = false;

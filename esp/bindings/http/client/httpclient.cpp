@@ -40,12 +40,17 @@
 
 CHttpClientContext::CHttpClientContext()
 {
-    m_persistentHandler.setown(createPersistentHandler(nullptr));
+    initPersistentHandler();
 }
 
 CHttpClientContext::CHttpClientContext(IPropertyTree* config) : m_config(config)
 {
-    m_persistentHandler.setown(createPersistentHandler(nullptr));
+    initPersistentHandler();
+}
+
+void CHttpClientContext::initPersistentHandler()
+{
+    m_persistentHandler.setown(createPersistentHandler(nullptr, DEFAULT_MAX_PERSISTENT_IDLE_TIME, DEFAULT_MAX_PERSISTENT_REQUESTS, static_cast<PersistentLogLevel>(getEspLogLevel())));
 }
 
 CHttpClientContext::~CHttpClientContext()
@@ -243,7 +248,6 @@ int CHttpClient::connect(StringBuffer& errmsg)
     if(pSock)
     {
         m_isPersistentSocket = true;
-        DBGLOG("Reuse persistent connection %d", pSock->OShandle());
         m_socket = pSock.getLink();
     }
     else
@@ -262,7 +266,7 @@ int CHttpClient::connect(StringBuffer& errmsg)
                     m_socket->shutdown();
                     m_socket->close();
                     m_socket->Release();
-                    m_socket = NULL;
+                    m_socket = nullptr;
                 }
                 else
                 {
@@ -276,18 +280,18 @@ int CHttpClient::connect(StringBuffer& errmsg)
             ERRLOG("Error connecting to %s", ep.getUrlStr(url).str());
             DBGLOG(e);
             e->Release();
-            m_socket = NULL;
+            m_socket = nullptr;
             return -1;
         }
         catch(...)
         {
             StringBuffer url;
             ERRLOG("Unknown exception connecting to %s", ep.getUrlStr(url).str());
-            m_socket = NULL;
+            m_socket = nullptr;
             return -1;
         }
     }
-    if(m_socket == NULL)
+    if(m_socket == nullptr)
     {
         StringBuffer urlstr;
         DBGLOG(">>Can't connect to %s", ep.getUrlStr(urlstr).str());

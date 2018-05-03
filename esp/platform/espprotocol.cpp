@@ -707,5 +707,5 @@ void CEspProtocol::initPersistentHandler(IPropertyTree * proc_cfg)
         DBGLOG("Persistent connection won't be enabled because maxPersistentIdleTime or maxPersistentRequests is set to 0");
         return;
     }
-    m_persistentHandler.setown(createPersistentHandler(this, maxIdleTime, maxReqs, PersistentLogLevel::PLogMax));
+    m_persistentHandler.setown(createPersistentHandler(this, maxIdleTime, maxReqs, static_cast<PersistentLogLevel>(getEspLogLevel())));
 }

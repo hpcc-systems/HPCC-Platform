@@ -47,7 +47,7 @@ private:
     int m_MaxRequestEntityLength;
     bool m_is_ssl;
     ISecureSocketContext* m_ssctx;
-    IPersistentHandler* m_persistentHandler;
+    IPersistentHandler* m_persistentHandler = nullptr;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -87,7 +87,7 @@ private:
     CHttpThread(ISocket *sock, bool viewConfig);
     bool m_is_ssl;
     ISecureSocketContext* m_ssctx;
-    IPersistentHandler* m_persistentHandler;
+    IPersistentHandler* m_persistentHandler = nullptr;
 public:
     CHttpThread(ISocket *sock, CEspApplicationPort* apport, bool viewConfig, bool isSSL = false, ISecureSocketContext* ssctx = NULL, IPersistentHandler* persistentHandler = NULL);
     

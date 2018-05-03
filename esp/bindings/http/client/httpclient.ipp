@@ -33,6 +33,7 @@ private:
     Owned<IPropertyTree> m_config;
     CriticalSection m_sscrit;
     Owned<IPersistentHandler> m_persistentHandler;
+    void initPersistentHandler();
 
 #ifdef COOKIE_HANDLING
     ReadWriteLock m_rwlock;
@@ -102,9 +103,9 @@ private:
     StringAttr m_password;
     StringAttr m_realm;
     ISecureSocketContext *m_ssctx;
-    IPersistentHandler* m_persistentHandler;
-    bool m_isPersistentSocket;
-    int m_numRequests;
+    IPersistentHandler* m_persistentHandler = nullptr;
+    bool m_isPersistentSocket = false;
+    int m_numRequests = 0;
     SocketEndpoint m_ep;
 
     virtual int connect(StringBuffer& errmsg);

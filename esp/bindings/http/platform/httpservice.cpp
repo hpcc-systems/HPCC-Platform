@@ -1757,8 +1757,8 @@ const char* CEspHttpServer::readCookie(const char* cookieName, StringBuffer& coo
 
 bool CEspHttpServer::persistentEligible()
 {
-    if(m_request.get() != nullptr)
-        return m_request->getPersistentEligible();
+    if(m_request.get() != nullptr && m_response.get() != nullptr)
+        return m_request->getPersistentEligible() && m_response->getPersistentEligible();
     else
         return false;
 }
