@@ -5916,6 +5916,16 @@ IHqlExpression * HqlGram::createAssert(attribute & condAttr, attribute * msgAttr
     return createValue(no_assert, makeVoidType(), args);
 }
 
+IHqlExpression * HqlGram::castIndexTypes(IHqlExpression *sortList)
+{
+    HqlExprArray args;
+    ForEachChild(idx, sortList)
+    {
+        IHqlExpression *item = sortList->queryChild(idx);
+        args.append(*getHozedKeyValue(item));
+    }
+    return sortList->clone(args);
+}
 
 IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operator op, IHqlExpression * dataset, HqlExprArray & items, OwnedHqlExpr * joinedClause, OwnedHqlExpr * attributes)
 {

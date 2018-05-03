@@ -788,6 +788,7 @@ protected:
     void appendToActiveScope(IHqlExpression * arg);
     bool isVirtualFunction(DefineIdSt * defineid, const attribute & errpos);
     
+    IHqlExpression * castIndexTypes(IHqlExpression *sortList);
     IHqlExpression * processSortList(const attribute & errpos, node_operator op, IHqlExpression * dataset, HqlExprArray & items, OwnedHqlExpr *joinedClause, OwnedHqlExpr *attributes);
     void expandSortedAsList(HqlExprArray & args);
     bool expandWholeAndExcept(IHqlExpression * dataset, const attribute & errpos, HqlExprArray & parms);

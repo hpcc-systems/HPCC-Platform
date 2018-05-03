@@ -111,6 +111,7 @@ sequential(
   output(DG_VarOutRecs,,Files.DG_FileOut+'VAR',overwrite),
   buildindex(Files.DG_NormalVarIndex, overwrite),
   buildindex(Files.DG_TransVarIndex, overwrite),
+  buildindex(Files.DG_IntIndex, overwrite, BLOOM(DG_parentID));
   fileServices.AddFileRelationship( __nameof__(Files.DG_VarFile), __nameof__(Files.DG_NormalVarIndex), '', '', 'view', '1:1', false),
   fileServices.AddFileRelationship( __nameof__(Files.DG_VarFile), __nameof__(Files.DG_NormalVarIndex), '__fileposition__', '__filepos', 'link', '1:1', true),
 );
@@ -125,5 +126,6 @@ IF (createMultiPart,
         buildindex(LocalFiles.DG_TransIndexFileEvens,overwrite,NOROOT),
         buildindex(LocalFiles.DG_NormalVarIndex, overwrite,NOROOT,PARTITION(DG_firstname));
         buildindex(LocalFiles.DG_TransVarIndex, overwrite,NOROOT);
+        buildindex(LocalFiles.DG_IntIndex, overwrite,NOROOT,BLOOM(DG_parentId), PARTITION(DG_parentId));
    )
 );
