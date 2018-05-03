@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MonthWeekNumFromDate">
+  <title>MonthWeekNumFromDate</title>
+
+  <para><emphasis role="bold">STD.Date.MonthWeekNumFromDate<indexterm>
+      <primary>STD.MonthWeekNumFromDate</primary>
+    </indexterm><indexterm>
+      <primary>MonthWeekNumFromDate</primary>
+    </indexterm>(</emphasis> <emphasis role="bold">date,
+  startingDayOfWeek)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>The date (in Date_t format) for which to compute the week
+          number.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>startingDayOfWeek</emphasis></entry>
+
+          <entry>Optional, The index number of the first day of a week, 1-7,
+          where 1 = Sunday. Default is 1.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>The 1-based week number of the date, relative to the
+          beginning of the date's month.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WeekNumFromDate </emphasis> function returns
+  the 1-based week number of a date within the date's month. Week 1 always
+  contains the first day of the month, and week 2 begins on the following day
+  of the week indicated by the value of
+  <emphasis>startingDayOfWeek</emphasis>. </para>
+
+  <para>This is not an ISO-8601 implementation of computing week numbers
+  ("week dates").</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+startDate := STD.Date.Today();
+weekNum := STD.Date.MonthWeekNumFromDate(startDate,2);
+weekNum;
+</programlisting>
+
+  <para>See Also: <link
+  linkend="YearWeekNumFromDate">YearWeekNumFromDate</link></para>
+</sect1>
