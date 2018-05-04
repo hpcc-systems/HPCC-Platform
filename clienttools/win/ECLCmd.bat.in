@@ -1,0 +1,29 @@
+@echo off
+
+set "ECLCMD_VER=${majorver}.${minorver}"
+call :print_eclcmd_header
+
+set ECLBIN=%~dp0bin
+
+echo %PATH%|find /i "%ECLBIN%">nul || set PATH=%ECLBIN%;%PATH%
+exit /B 0
+
+@REM -------------------------------------------------------
+:print_eclcmd_header
+
+@REM Allow other HPCCSystems Clientools command prompts to override the banner text
+if "%ECLMD_BANNER_TEXT_ALT%"=="" (
+    set "__ECLCMD_BANNER_TEXT=HPCCSystems ECL Command Prompt v%ECLCMD_VER%"
+) else (
+    set "__ECLCMD_BANNER_TEXT=%ECLCMD_BANNER_TEXT_ALT%"
+)
+
+if "%ECLCMD_ARG_no_logo%"=="" (
+    @echo **********************************************************************
+    @echo ** %__ECLCMD_BANNER_TEXT%
+    @echo ** Copyright ^(c^) 2018 HPCCSystems
+    @echo **********************************************************************
+)
+
+set __ECLCMD_BANNER_TEXT=
+exit /B 0

@@ -13,4 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-add_subdirectory(install)
+set(ECLCMD "ECLCmd.bat")
+configure_file("${ECLCMD}.in" "${ECLCMD}")
+
+install( PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${ECLCMD} DESTINATION . )
