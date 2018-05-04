@@ -35,17 +35,19 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">IsValidDate</emphasis> function returns TRUE
+  <para>The <emphasis role="bold">IsValidTime</emphasis> function returns TRUE
   if the time is valid, by validating each of the individual components
-  (hours, minutes, and seconds)..</para>
+  (hours, minutes, and seconds).</para>
 
   <para>Example:</para>
 
   <programlisting format="linespecific">IMPORT STD;
-d1 := 19631122;
-d2 := 19990230;  
-firstTest := STD.Date.IsValidDate(d1);  //d1 is valid
-secondTest := STD.Date.IsValidDate(d2); //d2 is not valid
+
+t1 := 225922;
+t2 := 275922;
+
+firstTest := STD.Date.IsValidTime(t1); //true
+secondTest := STD.Date.IsValidTime(t2);//false
 </programlisting>
 
   <para></para>
