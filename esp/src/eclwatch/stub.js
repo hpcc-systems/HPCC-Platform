@@ -87,6 +87,13 @@ define([
         }).play();
     }
 
+    function initUnlockListener() {
+        var unlock = dom.byId("unlock");
+        on(unlock, "click", function (event) {
+            monitorLockClick.unlocked();
+        });
+    }
+
     function initUI() {
         var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
         var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
@@ -185,13 +192,6 @@ define([
                 stopLoading();
             }
         );
-    }
-
-    function initUnlockListener() {
-        var unlock = dom.byId("unlock");
-        on(unlock, "click", function (event) {
-            monitorLockClick.unlocked();
-        });
     }
 
     function parseUrl() {

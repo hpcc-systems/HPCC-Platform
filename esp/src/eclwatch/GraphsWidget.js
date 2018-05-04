@@ -20,7 +20,6 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
-    "dojo/has",
 
     "dijit/form/Button",
     "dijit/layout/ContentPane",
@@ -37,7 +36,7 @@ define([
 
     "@hpcc-js/eclwatch"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, has,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 Button, ContentPane,
                 selector,
                 GridDetailsWidget, ESPWorkunit, ESPQuery, ESPLogicalFile, DelayLoadWidget, ESPUtil, Utility,
@@ -53,7 +52,6 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
-            this.isIE8 = has("ie") === 8;
 
             this.timelinePane = new ContentPane({
                 id: this.id + "TimelinePane",
@@ -256,7 +254,7 @@ define([
             if (params && params.SubGraphId) {
                 title = params.SubGraphId + " - " + title;
             }
-            if (params && params.legacyMode || this.isIE8) {
+            if (params && params.legacyMode) {
                 delayWidget = "GraphTreeWidget";
                 title += " (L)";
                 delayProps = {};

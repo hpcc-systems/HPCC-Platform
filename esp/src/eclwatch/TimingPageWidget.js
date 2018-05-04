@@ -23,19 +23,22 @@ define([
 
     "dijit/registry",
     "dijit/layout/BorderContainer",
+    "dijit/layout/ContentPane",
 
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
     "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/TimingTreeMapWidget",
-    "src/ESPUtil"
+    "src/ESPUtil",
+
+    "@hpcc-js/eclwatch"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
-            registry, BorderContainer,
+            registry, BorderContainer, ContentPane,
             selector,
-            GridDetailsWidget, ESPWorkunit, DelayLoadWidget, TimingTreeMapWidget, ESPUtil) {
+            GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil,
+            hpccEclWatch) {
         return declare("TimingPageWidget", [GridDetailsWidget], {
             baseClass: "TimingPageWidget",
 
@@ -44,14 +47,25 @@ define([
 
             postCreate: function (args) {
                 this.inherited(arguments);
-                this.timingTreeMap = new TimingTreeMapWidget({
-                    id: this.id + "TimingTreeMap",
-                    region: "right",
+                this.timelinePane = new ContentPane({
+                    id: this.id + "TimelinePane",
+                    region: "top",
                     splitter: true,
-                    style: "width: 33%",
+                    style: "height: 120px",
                     minSize: 120
                 });
-                this.timingTreeMap.placeAt(this.gridTab, "last");
+                this.timelinePane.placeAt(this.gridTab, "last");
+                var context = this;
+                var origResize = this.timelinePane.resize;
+                this.timelinePane.resize = function() {
+                    origResize.apply(this, arguments);
+                    if (context.timeline) {
+                        context.timeline
+                            .resize()
+                            .lazyRender()
+                        ;
+                    }
+                }
             },
 
             //  Plugin wrapper  ---
@@ -70,19 +84,58 @@ define([
                     });
                 }
 
-                this.timingTreeMap.init(lang.mixin(params, {
-                    query: {
-                        graphsOnly: false
-                    }
-                }));
-                this.timingTreeMap.onClick = function (value) {
-                    context.syncSelectionFrom(context.timingTreeMap);
-                }
-                this.timingTreeMap.onDblClick = function (item) {
-                    context._onOpen(item, {
-                        SubGraphId: item.SubGraphId
-                    });
-                }
+                this.timeline = new hpccEclWatch.WUTimeline()
+                    .target(this.id + "TimelinePane")
+                    .overlapTolerence(1)
+                    .baseUrl("")
+                    .wuid(params.Wuid)
+                    .request({
+                        ScopeFilter: {
+                            MaxDepth: 2,
+                            ScopeTypes: []
+                        },
+                        NestedFilter: {
+                            Depth: 0,
+                            ScopeTypes: []
+                        },
+                        PropertiesToReturn: {
+                            AllProperties: true,
+                            AllStatistics: true,
+                            AllHints: true,
+                            Properties: ["WhenStarted", "TimeElapsed"]
+                        },
+                        ScopeOptions: {
+                            IncludeId: true,
+                            IncludeScope: true,
+                            IncludeScopeType: true
+                        },
+                        PropertyOptions: {
+                            IncludeName: true,
+                            IncludeRawValue: true,
+                            IncludeFormatted: true,
+                            IncludeMeasure: true,
+                            IncludeCreator: false,
+                            IncludeCreatorType: false
+                        }
+                    })
+                    .on("dblclick", function(item, d3Event, origDblClick) {
+                        if (item && d3Event && d3Event.ctrlKey) {
+                            var scope = item[3];
+                            var descendents = scope.ScopeName.split(":");
+                            for (var i = 0; i < descendents.length; ++i) {
+                                const scopeName = descendents[i];
+                                if (scopeName.indexOf("graph") === 0) {
+                                    var tab = context.ensurePane({ Name: scopeName }, { SubGraphId: item[0] });
+                                    context.selectChild(tab);         
+                                    break;
+                                }
+                            }
+                        } else {
+                            origDblClick.call(context.timeline, item, d3Event);
+                        }
+                    }, true)
+                    .render()
+                ;
 
                 var statsTabID = this.createChildTabID("Stats");
                 var statsTab = new DelayLoadWidget({
@@ -168,7 +221,6 @@ define([
                         onGetTimers: function (timers) {
                             context.store.setData(timers);
                             context.grid.refresh();
-                            context.timingTreeMap.loadTimers(timers);
                         }
                     });
                 }
@@ -181,17 +233,6 @@ define([
                 if (sourceControl === this.grid) {
                     arrayUtil.forEach(sourceControl.getSelected(), function (item, idx) {
                         timerItems.push(item);
-                    });
-                }
-                if (sourceControl === this.timingTreeMap) {
-                    arrayUtil.forEach(sourceControl.getSelected(), function (item, idx) {
-                        if (item.children) {
-                            arrayUtil.forEach(item.children, function (childItem, idx) {
-                                timerItems.push(childItem);
-                            });
-                        } else {
-                            timerItems.push(item);
-                        }
                     });
                 }
 
