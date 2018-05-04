@@ -35,10 +35,31 @@ IF ( COUCHBASEEMBED )
         set(LIBCOUCHBASE_LIB_SONAME ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so.2)
         set(LIBCOUCHBASE_LIB_REAL ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so.2.0.38)
     endif()
+
+    set(SSL_INC "")
+    if (OPENSSL_INCLUDE_DIR)
+       set (SSL_INC "-DOPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}")
+    endif()
+
+    set(SSL_LIB "")
+    if (OPENSSL_LIBRARIES)
+       set (SSL_LIB "-DOPENSSL_LIBRARIES=${OPENSSL_LIBRARIES}")
+    endif()
+
+    set(SSL2_LIB "")
+    if (OPENSSL_SSL_LIBRARY)
+       set (SSL2_LIB "-DOPENSSL_SSL_LIBRARY=${OPENSSL_SSL_LIBRARY}")
+    endif()
+
+    set(CYP_LIB "")
+    if (OPENSSL_CRYPTO_LIBRARY)
+       set (CYP_LIB "-DOPENSSL_CRYPTO_LIBRARY=${OPENSSL_CRYPTO_LIBRARY}")
+    endif()
+
     add_custom_command(
         OUTPUT ${LIBCOUCHBASE_LIB}
         COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build
-        COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build && ${CMAKE_COMMAND} ${CMAKE_CURRENT_SOURCE_DIR}/libcouchbase && ${CMAKE_MAKE_PROGRAM}
+        COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build && ${CMAKE_COMMAND} ${SSL2_LIB} ${SSL_INC} ${SSL_LIB}  ${CMAKE_CURRENT_SOURCE_DIR}/libcouchbase && ${CMAKE_MAKE_PROGRAM}
         COMMENT Building libcouchbase for import)
     add_custom_target(libcouchbase-build ALL DEPENDS ${LIBCOUCHBASE_LIB})
     add_library(libcouchbase SHARED IMPORTED)
