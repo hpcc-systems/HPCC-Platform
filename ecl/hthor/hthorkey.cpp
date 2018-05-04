@@ -679,11 +679,11 @@ const IDynamicTransform * CHThorIndexReadActivityBase::getLayoutTranslator(IDist
 
     if(agent.rltEnabled() == RecordTranslationMode::None)
     {
-        verifyFormatCrc(helper.getFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, true);
+        verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, true);
         return NULL;
     }
 
-    if(verifyFormatCrc(helper.getFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false))
+    if(verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false))
         return NULL;
 
     IPropertyTree &props = f->queryAttributes();

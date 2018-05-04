@@ -229,6 +229,7 @@ extern IPropertyTree *topology;
 extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
 
+extern bool alwaysTrustFormatCrcs;
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
 extern bool logFullQueries;

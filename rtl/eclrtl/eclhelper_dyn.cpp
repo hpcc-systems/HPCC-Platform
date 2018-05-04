@@ -211,7 +211,7 @@ public:
     {
         return projected;
     }
-    virtual unsigned getFormatCrc() override final
+    virtual unsigned getProjectedFormatCrc() override final
     {
         return 0;  // engines should treat 0 as 'ignore'
     }

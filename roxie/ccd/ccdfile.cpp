@@ -2076,7 +2076,7 @@ public:
         else
             mb.append(false);
     }
-    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, bool skipFileFormatCrcCheck, IOutputMetaData *projected, IOutputMetaData *expected, RecordTranslationMode mode, bool isIndex) const override
+    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, IOutputMetaData *projected, int expectedFormatCrc, IOutputMetaData *expected, bool skipFileFormatCrcCheck, RecordTranslationMode mode, bool isIndex) const override
     {
         // NOTE - projected and expected and anything fetched from them such as type info may reside in dynamically loaded (and unloaded)
         // query DLLs - this means it is not safe to include them in any sort of cache that might outlive the current query.
@@ -2092,41 +2092,46 @@ public:
             {
                 const char *subname = subNames.item(idx);
                 int thisFormatCrc = 0;
+                bool actualUnknown = true;
                 if (!skipFileFormatCrcCheck)
                 {
                     if (mode != RecordTranslationMode::AlwaysECL)
                     {
                         if (diskTypeInfo.item(idx))
-                        {
                             actual = diskTypeInfo.item(idx);
-                            thisFormatCrc = formatCrcs.item(idx);
-                        }
+                        else
+                            actualUnknown = false;
+                        thisFormatCrc = formatCrcs.item(idx);
                     }
                 }
-
                 assertex(actual);
-
                 if ((thisFormatCrc != prevFormatCrc) || (idx == 0))  // Check if same translation as last subfile
                 {
                     translator.clear();
                     keyedTranslator.clear();
-                    //MORE: Could potentially avoid this if thisFormatCrc == expectedFormatCrc and projectedFormatCrc == expectedFormatCrc
-                    translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
-                    if (traceLevel > 5)
-                        translator->describe();
-
-                    if (!translator || !translator->canTranslate())
-                        throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
-                    if (translator->needsTranslate())
+                    if (thisFormatCrc == expectedFormatCrc && projectedFormatCrc == expectedFormatCrc && (actualUnknown || alwaysTrustFormatCrcs))
                     {
-                        if (mode == RecordTranslationMode::None && translator->needsNonVirtualTranslate())
-                            throw MakeStringException(ROXIE_MISMATCH, "Translatable record layout mismatch detected for file %s, but translation disabled", subname);
-                        if (isIndex && translator->keyedTranslated())
-                            throw MakeStringException(ROXIE_MISMATCH, "Record layout mismatch detected in keyed fields for file %s", subname);
-                        keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
+                        if (traceLevel > 5)
+                            DBGLOG("Assume no translation required, crc's match");
                     }
                     else
-                        translator.clear();
+                    {
+                        translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
+                        if (traceLevel > 5)
+                            translator->describe();
+                        if (!translator || !translator->canTranslate())
+                            throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
+                        else if (translator->needsTranslate())
+                        {
+                            if (mode == RecordTranslationMode::None && translator->needsNonVirtualTranslate())
+                                throw MakeStringException(ROXIE_MISMATCH, "Translatable record layout mismatch detected for file %s, but translation disabled", subname);
+                            if (isIndex && translator->keyedTranslated())
+                                throw MakeStringException(ROXIE_MISMATCH, "Record layout mismatch detected in keyed fields for file %s", subname);
+                            keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
+                        }
+                        else
+                            translator.clear();
+                    }
                 }
                 prevFormatCrc = thisFormatCrc;
             }

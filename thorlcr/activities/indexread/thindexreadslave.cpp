@@ -107,7 +107,7 @@ protected:
     // return a ITranslator based on published format in part and expected/format
     ITranslator *getTranslators(IPartDescriptor &partDesc)
     {
-        unsigned expectedFormatCrc = helper->getFormatCrc();
+        unsigned expectedFormatCrc = helper->getDiskFormatCrc();
         IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
         IPropertyTree const &props = partDesc.queryOwner().queryProperties();
         Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
@@ -146,7 +146,7 @@ public:
             }
             RecordTranslationMode translationMode = getTranslationMode(*this);
             IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
-            unsigned expectedFormatCrc = helper->getFormatCrc();
+            unsigned expectedFormatCrc = helper->getDiskFormatCrc();
 
             unsigned p = partNum;
             while (p<partDescs.ordinality()) // will process all parts if localMerge

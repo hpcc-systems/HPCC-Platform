@@ -90,7 +90,7 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
 {
     virtual void serializePartial(MemoryBuffer &mb, unsigned channel, bool localInfoOnly) const = 0;
 
-    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, bool skipFileFormatCrcCheck, IOutputMetaData *projected, IOutputMetaData *expected, RecordTranslationMode mode, bool isIndex) const = 0;
+    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, IOutputMetaData *projected, int expectedFormatCrc, IOutputMetaData *expected, bool skipFileFormatCrcCheck, RecordTranslationMode mode, bool isIndex) const = 0;
     virtual IFileIOArray *getIFileIOArray(bool isOpt, unsigned channel) const = 0;
     virtual IKeyArray *getKeyArray(bool isOpt, unsigned channel) const = 0;
     virtual IFilePartMap *getFileMap() const = 0;
