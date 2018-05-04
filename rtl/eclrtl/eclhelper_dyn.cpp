@@ -382,8 +382,7 @@ extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(IPropertyTree &xgmml)
     const char *fileName = xgmml.queryProp("att[@name=\"_fileName\"]/@value");
     unsigned __int64 chooseN = xgmml.getPropInt64("att[@name=\"chooseN\"]/@value", -1);
     unsigned __int64 skipN = xgmml.getPropInt64("att[@name=\"skipN\"]/@value", -1);
-    unsigned __int64 rowLimit = xgmml.getPropInt64("att[@name=\"rowLimit\"]/@value", -1);
-    Owned<CDynamicDiskReadArg> ret = new CDynamicDiskReadArg(fileName, in.getClear(), LINK(out), LINK(out), chooseN, skipN, rowLimit);
+    Owned<CDynamicDiskReadArg> ret = new CDynamicDiskReadArg(fileName, in.getClear(), LINK(out), LINK(out), chooseN, skipN, (unsigned __int64) -1);
     Owned<IPropertyTreeIterator> filters = xgmml.getElements("att[@name=\"keyfilter\"]");
     ForEach(*filters)
         ret->addFilter(filters->query().queryProp("@value"));

@@ -25,9 +25,13 @@
 #include "jtime.hpp"
 
 #include "dafdesc.hpp"
+#include "rtlcommon.hpp"
 #include "rtlkey.hpp"
 #include "rtlrecord.hpp"
 #include "eclhelper.hpp" // tmp for IHThor..Arg interfaces.
+
+#include "rmtfile.hpp"
+#include "sockfile.hpp"
 
 #include "thormisc.hpp"
 #include "thmfilemanager.hpp"
@@ -56,6 +60,9 @@ protected:
     unsigned numSegFieldsUsed = 0;
     bool needTransform = false;
     rowcount_t totalProgress = 0;
+    rowcount_t stopAfter = 0;
+    rowcount_t remoteLimit = 0;
+    rowcount_t limit = 0;
 
     // return a ITranslator based on published format in part and expected/format
     ITranslator *getTranslators(IPartDescriptor &partDesc)
@@ -226,8 +233,7 @@ void CDiskRecordPartHandler::getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescri
 
 void CDiskRecordPartHandler::open()
 {
-    CDiskPartHandlerBase::open();
-
+    // free last part and note progress
     Owned<IExtRowStream> partStream;
     {
         CriticalBlock block(statsCs);
@@ -237,46 +243,96 @@ void CDiskRecordPartHandler::open()
         activity.totalProgress += partStream->queryProgress();
     partStream.clear();
 
-    unsigned rwFlags = DEFAULT_RWFLAGS;
+    unsigned rwFlags = 0;
     if (checkFileCrc) // NB: if compressed, this will be turned off by base class
         rwFlags |= rw_crc;
     if (activity.grouped)
         rwFlags |= rw_grouped;
 
+    IOutputMetaData *projectedFormat = activity.helper->queryProjectedDiskRecordSize();
+    IOutputMetaData *expectedFormat = activity.helper->queryDiskRecordSize();
     Owned<ITranslator> translator = activity.getTranslators(*partDesc);
-    if (compressed)
+    IOutputMetaData *actualFormat = translator ? &translator->queryActualFormat() : expectedFormat;
+    bool canSerializeTypeInfo = actualFormat->queryTypeInfo()->canSerialize() && projectedFormat->queryTypeInfo()->canSerialize();
+    if (canSerializeTypeInfo)
     {
-        rwFlags |= rw_compress;
-        partStream.setown(createRowStream(iFile, activity.queryProjectedDiskRowInterfaces(), rwFlags, activity.eexp, translator, this));
-        if (!partStream.get())
+        for (unsigned copy=0; copy<partDesc->numCopies(); copy++)
         {
-            if (!blockCompressed)
-                throw MakeStringException(-1,"Unsupported compressed file format: %s", filename.get());
-            else
-                throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
-        }
-    }
-    else
-        partStream.setown(createRowStream(iFile, activity.queryProjectedDiskRowInterfaces(), rwFlags, nullptr, translator, this));
+            RemoteFilename rfn;
+            partDesc->getFilename(copy, rfn);
 
-    if (!partStream)
-        throw MakeActivityException(&activity, 0, "Failed to open file '%s'", filename.get());
-    ActPrintLog(&activity, "%s[part=%d]: %s (%s)", kindStr, which, activity.isFixedDiskWidth ? "fixed" : "variable", filename.get());
-    if (activity.isFixedDiskWidth) 
-    {
-        if (!compressed || blockCompressed)
-        {
-            unsigned fixedSize = activity.diskRowMinSz;
-            if (partDesc->queryProperties().hasProp("@size"))
+            StringBuffer path;
+            if (!rfn.isLocal() || testForceRemote(rfn.getLocalPath(path)))
             {
-                offset_t lsize = partDesc->queryProperties().getPropInt64("@size");
-                if (0 != lsize % fixedSize)
-                    throw MakeActivityException(&activity, TE_BadFileLength, "Fixed length file %s [DFS size=%" I64F "d] is not a multiple of fixed record size : %d", filename.get(), lsize, fixedSize);
+                // Open a stream from remote file, having passed actual, expected, projected, and filters to it
+                SocketEndpoint ep(rfn.queryEndpoint());
+                setDafsEndpointPort(ep);
+
+                RowFilter actualFilter;
+                if (activity.fieldFilters.ordinality())
+                {
+                    if (actualFormat != expectedFormat && translator->queryKeyedTranslator())
+                        translator->queryKeyedTranslator()->translate(actualFilter, activity.fieldFilters);
+                    else
+                        actualFilter.appendFilters(activity.fieldFilters);
+                }
+                Owned<IFileIO> iFileIO = createRemoteFilteredFile(ep, path, actualFormat, projectedFormat, actualFilter, compressed, activity.grouped, activity.remoteLimit);
+                if (iFileIO)
+                {
+                    rfn.getPath(path);
+                    filename.set(path);
+                    checkFileCrc = false;
+
+                    // JCSMORE - needTransform - see CDiskPartHandler::nextRow(), may need/want to differentiate if only transform is only remote
+
+                    partStream.setown(createRowStreamEx(iFileIO, activity.queryProjectedDiskRowInterfaces(), 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, nullptr, this));
+                    ActPrintLog(&activity, "%s[part=%d]: reading remote dafilesrv file '%s' (logical file = %s)", kindStr, which, path.str(), activity.logicalFilename.get());
+                    break;
+                }
             }
         }
     }
 
-    partStream->setFilters(activity.fieldFilters);
+    if (!partStream)
+    {
+        CDiskPartHandlerBase::open(); // NB: base opens an IFile
+
+        rwFlags |= DEFAULT_RWFLAGS;
+
+        if (compressed)
+        {
+            rwFlags |= rw_compress;
+            partStream.setown(createRowStream(iFile, activity.queryProjectedDiskRowInterfaces(), rwFlags, activity.eexp, translator, this));
+            if (!partStream.get())
+            {
+                if (!blockCompressed)
+                    throw MakeStringException(-1,"Unsupported compressed file format: %s", filename.get());
+                else
+                    throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
+            }
+        }
+        else
+            partStream.setown(createRowStream(iFile, activity.queryProjectedDiskRowInterfaces(), rwFlags, nullptr, translator, this));
+
+        if (!partStream)
+            throw MakeActivityException(&activity, 0, "Failed to open file '%s'", filename.get());
+        ActPrintLog(&activity, "%s[part=%d]: %s (%s)", kindStr, which, activity.isFixedDiskWidth ? "fixed" : "variable", filename.get());
+        if (activity.isFixedDiskWidth)
+        {
+            if (!compressed || blockCompressed)
+            {
+                unsigned fixedSize = activity.diskRowMinSz;
+                if (partDesc->queryProperties().hasProp("@size"))
+                {
+                    offset_t lsize = partDesc->queryProperties().getPropInt64("@size");
+                    if (0 != lsize % fixedSize)
+                        throw MakeActivityException(&activity, TE_BadFileLength, "Fixed length file %s [DFS size=%" I64F "d] is not a multiple of fixed record size : %d", filename.get(), lsize, fixedSize);
+                }
+            }
+        }
+
+        partStream->setFilters(activity.fieldFilters);
+    }
 
     {
         CriticalBlock block(statsCs);
@@ -423,8 +479,6 @@ public:
 
 public:
     bool unsorted = false, countSent = false;
-    rowcount_t limit = 0;
-    rowcount_t stopAfter = 0;
     IRowStream *out = nullptr;
 
     IHThorDiskReadArg *helper;
@@ -503,6 +557,12 @@ public:
         else
             limit = (rowcount_t)helper->getRowLimit();
         stopAfter = (rowcount_t)helper->getChooseNLimit();
+        if (!helper->transformMayFilter())
+        {
+            remoteLimit = stopAfter;
+            if (limit && (limit < remoteLimit))
+                remoteLimit = limit+1; // 1 more to ensure triggered when received back. // JCSMORE remote side could handle skip too..
+        }
         out = createSequentialPartHandler(partHandler, partDescs, grouped); // **
     }
     virtual bool isGrouped() const override { return grouped; }
@@ -529,7 +589,8 @@ public:
         rowcount_t c = getDataLinkCount();
         if (stopAfter && (c >= stopAfter))  // NB: only slave limiter, global performed in chained choosen activity
             return NULL;
-        if (c >= limit) { // NB: only slave limiter, global performed in chained limit activity
+        if (c >= limit) // NB: only slave limiter, global performed in chained limit activity
+        {
             helper->onLimitExceeded();
             return NULL;
         }
@@ -614,8 +675,6 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
     };
 
     IHThorDiskNormalizeArg *helper;
-    rowcount_t limit = 0;
-    rowcount_t stopAfter = 0;
     IRowStream *out = nullptr;
 
 public:
@@ -685,7 +744,8 @@ public:
         rowcount_t c = getDataLinkCount();
         if (stopAfter && (c >= stopAfter)) // NB: only slave limiter, global performed in chained choosen activity
             return NULL;
-        if (c >= limit) { // NB: only slave limiter, global performed in chained limit activity
+        if (c >= limit) // NB: only slave limiter, global performed in chained limit activity
+        {
             helper->onLimitExceeded();
             return NULL;
         }
@@ -859,7 +919,7 @@ class CDiskCountSlave : public CDiskReadSlaveActivityRecord
     typedef CDiskReadSlaveActivityRecord PARENT;
 
     IHThorDiskCountArg *helper;
-    rowcount_t stopAfter = 0, preknownTotalCount = 0;
+    rowcount_t preknownTotalCount = 0;
     bool eoi = false, totalCountKnown = false;
 
 public:
@@ -901,6 +961,8 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
         stopAfter = (rowcount_t)helper->getChooseNLimit();
+        if (!helper->hasFilter())
+            remoteLimit = stopAfter;
         eoi = false;
         if (!helper->canMatchAny())
         {

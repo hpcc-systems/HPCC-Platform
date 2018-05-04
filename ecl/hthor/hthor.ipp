@@ -2254,6 +2254,8 @@ protected:
     bool grouped;
     enum ReadType:byte { rt_unknown, rt_binary, rt_csv, rt_xml } readType = rt_unknown;
 
+    unsigned __int64 stopAfter = 0;
+    unsigned __int64 remoteLimit = 0;
     unsigned __int64 localOffset;
     unsigned __int64 offsetOfPart;
     StringBuffer mangledHelperFileName;
@@ -2265,6 +2267,7 @@ protected:
     IPointerArrayOf<IOutputMetaData> actualLayouts;  // Do we need to keep more than one?
     IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
     RowFilter actualFilter;               // This refers to the actual disk layout
+
     void close();
     virtual void open();
     void resolve();
@@ -2356,7 +2359,6 @@ protected:
     unsigned __int64 lastGroupProcessed;
     RtlDynamicRowBuilder outBuilder;
     unsigned __int64 limit;
-    unsigned __int64 stopAfter;
 
 public:
     CHThorDiskReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind);
@@ -2394,7 +2396,6 @@ protected:
     size32_t            maxDiskSize;
     CSVSplitter         csvSplitter;    
     unsigned __int64 limit;
-    unsigned __int64 stopAfter;
     size32_t maxRowSize;
 };
 
@@ -2434,7 +2435,6 @@ protected:
     Owned<IXMLParse> xmlParser;
     Owned<IColumnProvider> lastMatch;
     unsigned __int64 limit;
-    unsigned __int64 stopAfter;
 };
 
 
@@ -2445,7 +2445,6 @@ protected:
     IHThorDiskNormalizeArg &helper;
     RtlDynamicRowBuilder outBuilder;
     unsigned __int64 limit;
-    unsigned __int64 stopAfter;
     size32_t lastSizeRead;
     bool expanding;
 
@@ -2492,7 +2491,6 @@ class CHThorDiskCountActivity : public CHThorBinaryDiskReadBase
 protected:
     IHThorDiskCountArg &helper;
     bool finished;
-    unsigned __int64 stopAfter;
 
     virtual void gatherInfo(IFileDescriptor * fileDesc);
 
