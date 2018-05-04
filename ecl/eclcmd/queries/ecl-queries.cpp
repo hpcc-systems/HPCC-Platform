@@ -1135,7 +1135,7 @@ public:
             "   <target>               the target the query you wish to recreate is in\n"
             "   <query>                the query ID of the query you wish to recreate\n"
             "   <destination-target>   the target you want to move the new query to\n"
-            "                          (if different from the source target\n"
+            "                          (if different from the source target)\n"
             " Options:\n"
             "   -A, --activate         Activate query when published (default)\n"
             "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
