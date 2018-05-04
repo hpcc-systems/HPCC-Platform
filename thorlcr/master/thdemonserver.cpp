@@ -88,9 +88,10 @@ private:
     void reportStatus(IWorkUnit *wu, CGraphBase &graph, unsigned startTime, bool finished, bool success=true)
     {
         const char *graphname = graph.queryJob().queryGraphName();
+        unsigned wfid = graph.queryJob().getWfid();
         StringBuffer timer, graphScope;
         formatGraphTimerLabel(timer, graphname, 0, graph.queryGraphId());
-        formatGraphTimerScope(graphScope, graphname, 0, graph.queryGraphId());
+        formatGraphTimerScope(graphScope, wfid, graphname, 0, graph.queryGraphId());
         unsigned duration = msTick()-startTime;
         updateWorkunitTimeStat(wu, SSTsubgraph, graphScope, StTimeElapsed, timer, milliToNano(duration));
 
@@ -125,12 +126,14 @@ private:
         {
             try
             {
-                IConstWorkUnit &currentWU = activeGraphs.item(0).queryJob().queryWorkUnit();
-                const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
+                CJobBase & activeJob = activeGraphs.item(0).queryJob();
+                IConstWorkUnit &currentWU = activeJob.queryWorkUnit();
+                const char *graphName = ((CJobMaster &)activeJob).queryGraphName();
+                unsigned wfid = activeJob.getWfid();
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), 0, graph.queryGraphId());
+                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId());
                     reportGraph(stats->queryStatsBuilder(), &graph, finished);
                 }
                 Owned<IWorkUnit> wu = &currentWU.lock();
@@ -156,8 +159,9 @@ private:
         {
             IConstWorkUnit &currentWU = graph->queryJob().queryWorkUnit();
             const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
+            unsigned wfid = graph->queryJob().getWfid();
             {
-                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), 0, graph->queryGraphId());
+                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId());
                 reportGraph(stats->queryStatsBuilder(), graph, finished);
             }
 
@@ -166,7 +170,7 @@ private:
             {
                 StringBuffer graphScope;
                 const char *graphname = graph->queryJob().queryGraphName();
-                formatGraphTimerScope(graphScope, graphname, 0, graph->queryGraphId());
+                formatGraphTimerScope(graphScope, wfid, graphname, 0, graph->queryGraphId());
                 wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
             }
             reportStatus(wu, *graph, startTime, finished, success);

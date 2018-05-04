@@ -8033,8 +8033,10 @@ StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, un
     return str;
 }
 
-StringBuffer &formatGraphTimerScope(StringBuffer &str, const char *graphName, unsigned subGraphNum, unsigned __int64 subId)
+StringBuffer &formatGraphTimerScope(StringBuffer &str, unsigned wfid, const char *graphName, unsigned subGraphNum, unsigned __int64 subId)
 {
+    if (wfid)
+        str.append(WorkflowScopePrefix).append(wfid).append(":");
     str.append(graphName);
     if (subId) str.append(":sg").append(subId);
     return str;
