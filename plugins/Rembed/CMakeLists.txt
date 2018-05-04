@@ -43,6 +43,7 @@ if(REMBED)
             ./../../system/mp
             ./../../system/jlib)
 
+        set_property (SOURCE Rembed.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-format-nonliteral")
         add_definitions(-D_USRDLL -DREMBED_EXPORTS)
         if(RCPP_LIBRARY STREQUAL "")
             add_definitions(-DRCPP_HEADER_ONLY)
