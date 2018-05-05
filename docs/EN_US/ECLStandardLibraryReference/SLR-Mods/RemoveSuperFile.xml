@@ -11,7 +11,7 @@
     </indexterm><indexterm>
       <primary>RemoveSuperFile</primary>
     </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
-  <emphasis role="bold">[</emphasis> <emphasis>, delete</emphasis> <emphasis
+  <emphasis role="bold">[</emphasis> <emphasis>, del</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>, removecontents</emphasis> <emphasis
   role="bold">])</emphasis></para>
 
@@ -38,7 +38,7 @@
         </row>
 
         <row>
-          <entry><emphasis>delete</emphasis></entry>
+          <entry><emphasis>del</emphasis></entry>
 
           <entry>A boolean flag specifying whether to delete the
           <emphasis>subfile</emphasis> from disk or just remove it from the
