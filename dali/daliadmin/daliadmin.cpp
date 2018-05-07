@@ -171,7 +171,10 @@ static const char *splitpath(const char *path,StringBuffer &head,StringBuffer &t
 {
     if (path[0]!='/')
         path = tmp.append('/').append(path).str();
-    return splitXPath(path, head);
+    const char *tail = splitXPath(path, head);
+    if (!tail)
+        throw MakeStringException(0, "Expecting xpath tail node in: %s", path);
+    return tail;
 }
 
 // NB: there's strtoll under Linux
@@ -271,8 +274,6 @@ static void import(const char *path,const char *src,bool add)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     if (!add) {
         Owned<IRemoteConnection> bconn = querySDS().connect(remLeading(path),myProcessSession(),RTM_LOCK_READ|RTM_SUB, daliConnectTimeoutMs);
         if (bconn) {
@@ -330,8 +331,6 @@ static void _delete_(const char *path,bool backup)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -364,8 +363,6 @@ static void set(const char *path,const char *val)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -389,8 +386,6 @@ static void get(const char *path)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -411,8 +406,6 @@ static void bget(const char *path,const char *outfn)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -480,8 +473,6 @@ static void wget(const char *path)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -527,8 +518,6 @@ static void delv(const char *path)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
