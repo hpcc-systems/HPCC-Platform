@@ -78,9 +78,20 @@ define([
 
         initalized: false,
         loaded: false,
+        userName: null,
 
         buildRendering: function (args) {
             this.inherited(arguments);
+        },
+
+        _onMine: function (event) {
+            if (event) {
+                this.filter.setValue(this.id + "PublishedBy", this.userName);
+                this.filter._onFilterApply();
+            } else {
+                this.filter._onFilterClear();
+                this.filter._onFilterApply();
+            }
         },
 
         postCreate: function (args) {
@@ -169,6 +180,8 @@ define([
             topic.subscribe("hpcc/ecl_wu_published", function (topic) {
                 context.refreshGrid();
             });
+
+            this.userName = dojoConfig.username;
         },
 
         initTab: function () {

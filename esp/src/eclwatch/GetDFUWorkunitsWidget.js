@@ -75,6 +75,7 @@ define([
         filter: null,
         clusterTargetSelect: null,
         stateTargetSelect: null,
+        username: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -86,6 +87,16 @@ define([
             this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
             this.downListForm = registry.byId(this.id + "DownListForm");
             this.fileName = registry.byId(this.id + "FileName");
+        },
+
+        _onMine: function (event) {
+            if (event) {
+                this.filter.setValue(this.id + "Owner", this.userName);
+                this.filter._onFilterApply();
+            } else {
+                this.filter._onFilterClear();
+                this.filter._onFilterApply();
+            }
         },
 
         startup: function (args) {
@@ -252,6 +263,7 @@ define([
                     context.refreshGrid();
                 }
             });
+            this.userName = dojoConfig.username;
         },
 
         initTab: function () {
