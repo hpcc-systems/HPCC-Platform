@@ -313,14 +313,14 @@ STD.BLAS.dasum(9, test_data, 1); //sums the absolute values of the matrix, and r
           <row>
             <entry><emphasis>X</emphasis></entry>
 
-            <entry>The increment for x, 1 in the case of an actual
-            vector</entry>
+            <entry>The column major matrix holding the vector X</entry>
           </row>
 
           <row>
             <entry><emphasis>incX</emphasis></entry>
 
-            <entry>The column major matrix holding the vector X</entry>
+            <entry>The increment for x, 1 in the case of an actual
+            vector</entry>
           </row>
 
           <row>
