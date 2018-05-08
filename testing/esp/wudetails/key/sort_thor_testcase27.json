@@ -18,6 +18,8 @@ testCase(ScopeFilter={
     'AllStatistics': '1',
     'AllAttributes': '1',
     'AllHints': None,
+    'AllScopes': None,
+    'AllProperties': None,
     'MinVersion': None,
     'Measure': None,
     'Properties': None,

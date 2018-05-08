@@ -8,9 +8,11 @@ testCase(ScopeFilter={
     'Depth': None,
     'ScopeTypes': None
 }, PropertiesToReturn={
-    'AllStatistics': '1',
-    'AllAttributes': '1',
-    'AllHints': '1',
+    'AllStatistics': None,
+    'AllAttributes': None,
+    'AllHints': None,
+    'AllScopes': None,
+    'AllProperties': '1',
     'MinVersion': None,
     'Measure': None,
     'Properties': None,
@@ -92,18 +94,26 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1',
-                'Id': 'graph1',
-                'ScopeType': 'graph',
+                'ScopeName': 'w1',
+                'Id': 'w1',
+                'ScopeType': 'workflow',
                 'Properties': {
                     'Property': [
                         {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
+                            'Name': 'IsScheduled',
+                            'RawValue': 'true',
+                            'Formatted': 'true',
+                            'Measure': None,
                             'Creator': '{masked}',
-                            'CreatorType': 'hthor'
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'State',
+                            'RawValue': 'done',
+                            'Formatted': 'done',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -119,6 +129,14 @@ testCase(ScopeFilter={
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'hthor'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
                             'Creator': '{masked}',
                             'CreatorType': 'hthor'
                         }
@@ -205,17 +223,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '2',
-                            'Formatted': '2',
+                            'Name': 'IdSource',
+                            'RawValue': 'a2',
+                            'Formatted': 'a2',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '3',
-                            'Formatted': '3',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -278,17 +296,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '3',
-                            'Formatted': '3',
+                            'Name': 'IdSource',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '4',
-                            'Formatted': '4',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a4',
+                            'Formatted': 'a4',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -349,6 +367,30 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "DATASET([{'C','G'},...], myrec);\n",
+                            'Formatted': "DATASET([{'C','G'},...], myrec);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '5',
+                            'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -390,6 +432,30 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "DEDUP(LEFT.value2  IN  ['G', 'C', 'X'] AND RIGHT.value2  IN  ['X', 'B', 'C'], all);\n",
+                            'Formatted': "DEDUP(LEFT.value2  IN  ['G', 'C', 'X'] AND RIGHT.value2  IN  ['X', 'B', 'C'], all);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '1..5[tiny]',
+                            'Formatted': '1..5[tiny]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -420,6 +486,22 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '16',
                             'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'OUTPUT(..., workunit);\n',
+                            'Formatted': 'OUTPUT(..., workunit);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '2',
+                            'Formatted': '2',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -507,17 +589,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '6',
-                            'Formatted': '6',
+                            'Name': 'IdSource',
+                            'RawValue': 'a6',
+                            'Formatted': 'a6',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '7',
-                            'Formatted': '7',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a7',
+                            'Formatted': 'a7',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -580,17 +662,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '7',
-                            'Formatted': '7',
+                            'Name': 'IdSource',
+                            'RawValue': 'a7',
+                            'Formatted': 'a7',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '8',
-                            'Formatted': '8',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a8',
+                            'Formatted': 'a8',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -651,6 +733,30 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "DATASET([{'C','G'},...], myrec);\n",
+                            'Formatted': "DATASET([{'C','G'},...], myrec);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '5',
+                            'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -692,6 +798,30 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "DEDUP(LEFT.value2  IN  ['G', 'C'] AND RIGHT.value2  IN  ['X', 'B'], all);\n",
+                            'Formatted': "DEDUP(LEFT.value2  IN  ['G', 'C'] AND RIGHT.value2  IN  ['X', 'B'], all);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '1..5[tiny]',
+                            'Formatted': '1..5[tiny]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -722,6 +852,22 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '16',
                             'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'OUTPUT(..., workunit);\n',
+                            'Formatted': 'OUTPUT(..., workunit);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '2',
+                            'Formatted': '2',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -809,17 +955,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '10',
-                            'Formatted': '10',
+                            'Name': 'IdSource',
+                            'RawValue': 'a10',
+                            'Formatted': 'a10',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '11',
-                            'Formatted': '11',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a11',
+                            'Formatted': 'a11',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -882,17 +1028,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '11',
-                            'Formatted': '11',
+                            'Name': 'IdSource',
+                            'RawValue': 'a11',
+                            'Formatted': 'a11',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '12',
-                            'Formatted': '12',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a12',
+                            'Formatted': 'a12',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -953,6 +1099,30 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "DATASET([{'C','G'},...], myrec);\n",
+                            'Formatted': "DATASET([{'C','G'},...], myrec);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '5',
+                            'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -994,6 +1164,30 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "DEDUP(LEFT.value2  IN  ['X', 'B'] AND RIGHT.value2  IN  ['G', 'C'], all);\n",
+                            'Formatted': "DEDUP(LEFT.value2  IN  ['X', 'B'] AND RIGHT.value2  IN  ['G', 'C'], all);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '1..5[tiny]',
+                            'Formatted': '1..5[tiny]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -1027,6 +1221,22 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'OUTPUT(..., workunit);\n',
+                            'Formatted': 'OUTPUT(..., workunit);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -1050,31 +1260,6 @@ testCase(ScopeFilter={
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': 'sz',
-                            'Creator': '{masked}',
-                            'CreatorType': 'eclcc'
-                        },
-                        {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'eclcc'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'compile:write c++',
-                'Id': 'write c++',
-                'ScopeType': 'compile',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
                             'Creator': '{masked}',
                             'CreatorType': 'eclcc'
                         },
@@ -1142,6 +1327,31 @@ testCase(ScopeFilter={
             {
                 'ScopeName': 'compile:parse',
                 'Id': 'parse',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:write c++',
+                'Id': 'write c++',
                 'ScopeType': 'compile',
                 'Properties': {
                     'Property': [

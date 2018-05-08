@@ -11,6 +11,8 @@ testCase(ScopeFilter={
     'AllStatistics': None,
     'AllAttributes': None,
     'AllHints': '1',
+    'AllScopes': None,
+    'AllProperties': None,
     'MinVersion': None,
     'Measure': None,
     'Properties': None,
@@ -34,6 +36,12 @@ testCase(ScopeFilter={
     'WUID': '{masked WUID - matches request}',
     'Scopes': {
         'Scope': [
+            {
+                'ScopeName': 'w1',
+                'Id': 'w1',
+                'ScopeType': 'workflow',
+                'Properties': None
+            },
             {
                 'ScopeName': 'w1:graph1',
                 'Id': 'graph1',
