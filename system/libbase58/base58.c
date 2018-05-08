@@ -17,7 +17,9 @@ typedef SSIZE_T ssize_t;
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
+#ifndef _WIN32
 #include <alloca.h>
+#endif
 #include <memory>
 
 #include "libbase58.h"
