@@ -63,7 +63,8 @@ requiredJobs = ( ('childds1',      ('roxie','thor','hthor')),
                  ('sort',          ('roxie','thor','hthor')),
                  ('key',           ('roxie','thor','hthor')),
                  ('dict1',         ('roxie','thor','hthor')),
-                 ('indexread2-multiPart(true)',('roxie', 'thor','hthor') ) )
+                 ('indexread2-multiPart(true)',('roxie', 'thor','hthor')),
+                 ('sets',           ('roxie','thor','hthor')) )
 
 maskValueFields = ('Definition','SizePeakMemory', 'WhenFirstRow', 'TimeElapsed', 'TimeTotalExecute', 'TimeFirstExecute', 'TimeLocalExecute',
                    'WhenStarted', 'TimeMinLocalExecute', 'TimeMaxLocalExecute', 'TimeAvgLocalExecute', 'SkewMinLocalExecute', 'SkewMaxLocalExecute',
@@ -432,6 +433,20 @@ testCases = [
                  scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
                  propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
              ),
+             testCase(
+                 scopeFilter(MaxDepth='999'),
+                 nestedFilter(),
+                 propertiesToReturn(Properties=[{'Property':'IdDependencyList'}]),
+                 scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
+                 propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
+             ),
+             testCase(
+                 scopeFilter(MaxDepth='999'),
+                 nestedFilter(),
+                 propertiesToReturn(Properties=[{'Property':'IdDependency'}]),
+                 scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
+                 propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
+             ),
             ]
 
 def ExecTestCase(jobname, wuid, tcase, tcasename):
@@ -541,6 +556,11 @@ for jobname, wuid in wu.items():
             tcasename = 'testcase' + str(index+1)
             success = ExecTestCase(jobname, wuid, t, tcasename)
             stats.addCount(success)
+    if (jobname == 'sets_thor'):
+        success = ExecTestCase(jobname, wuid, testCases[30], 'testcase31')
+        stats.addCount(success)
+        success = ExecTestCase(jobname, wuid, testCases[31], 'testcase32')
+        stats.addCount(success)
     else:
         success = ExecTestCase(jobname, wuid, testCases[0], 'testcase1')
         stats.addCount(success)
