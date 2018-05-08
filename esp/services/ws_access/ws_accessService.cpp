@@ -1977,7 +1977,7 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
 
             ISecResource* r = rlist->addResource(namebuf.str());
             r->setDescription(req.getDescription());
-            secmgr->addResourcesEx(rtype, *usr, rlist, PT_ADMINISTRATORS_ONLY, req.getBasedn());
+            secmgr->addResourcesEx(rtype, *usr, rlist, PT_DEFAULT, req.getBasedn());
 
             if(str2type(req.getRtype()) == RT_FILE_SCOPE && newResources.ordinality())
             {

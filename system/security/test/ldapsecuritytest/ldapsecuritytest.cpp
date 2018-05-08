@@ -350,7 +350,7 @@ int main(int argc, char* argv[])
             if(username != NULL && *username != '\0')
                 usr.setown(secmgr->createUser(username));
 
-            bool ok = secmgr->addResourceEx(rtype, *usr, resource, PT_ADMINISTRATORS_ONLY, NULL);
+            bool ok = secmgr->addResourceEx(rtype, *usr, resource, PT_DEFAULT, NULL);
             if(!ok)
                 printf("resource not added\n");
             else
