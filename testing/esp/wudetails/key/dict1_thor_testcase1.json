@@ -9,8 +9,9 @@ testCase(ScopeFilter={
     'ScopeTypes': None
 }, PropertiesToReturn={
     'AllStatistics': '1',
-    'AllAttributes': '1',
+    'AllProperties': '1',
     'AllHints': '1',
+    'AllScopes': None,
     'MinVersion': None,
     'Measure': None,
     'Properties': None,
@@ -92,7 +93,32 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1',
+                'ScopeName': 'w1',
+                'Id': 'w1',
+                'ScopeType': 'workflow',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IsScheduled',
+                            'RawValue': 'true',
+                            'Formatted': 'true',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'State',
+                            'RawValue': 'done',
+                            'Formatted': 'done',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1',
                 'Id': 'graph1',
                 'ScopeType': 'graph',
                 'Properties': {
@@ -125,7 +151,7 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1:sg1',
+                'ScopeName': 'w1:graph1:sg1',
                 'Id': 'sg1',
                 'ScopeType': 'subgraph',
                 'Properties': {
@@ -150,716 +176,55 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e2_0',
-                'Id': 'e2_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'NumMinRowsProcessed',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumMaxRowsProcessed',
-                            'RawValue': '12',
-                            'Formatted': '12',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumAvgRowsProcessed',
-                            'RawValue': '3',
-                            'Formatted': '3',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMinRowsProcessed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMaxRowsProcessed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMinRowsProcessed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMaxRowsProcessed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumRowsProcessed',
-                            'RawValue': '12',
-                            'Formatted': '12',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumSlaves',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumStarts',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumStops',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:e3_0',
-                'Id': 'e3_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'NumMinRowsProcessed',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumMaxRowsProcessed',
-                            'RawValue': '12',
-                            'Formatted': '12',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumAvgRowsProcessed',
-                            'RawValue': '3',
-                            'Formatted': '3',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMinRowsProcessed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMaxRowsProcessed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMinRowsProcessed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMaxRowsProcessed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumRowsProcessed',
-                            'RawValue': '12',
-                            'Formatted': '12',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumSlaves',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumStarts',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumStops',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:e4_0',
-                'Id': 'e4_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'NumRowsProcessed',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumSlaves',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumStarts',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumStops',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:e5_0',
-                'Id': 'e5_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'NumRowsProcessed',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumSlaves',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumStarts',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumStops',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:a2',
-                'Id': 'a2',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'TimeMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'TimeMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'TimeAvgLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:a3',
-                'Id': 'a3',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'TimeMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'TimeMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'TimeAvgLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumMinGroups',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumMaxGroups',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumAvgGroups',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumMinGroupMax',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumMaxGroupMax',
-                            'RawValue': '12',
-                            'Formatted': '12',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumAvgGroupMax',
-                            'RawValue': '3',
-                            'Formatted': '3',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMinGroupMax',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMaxGroupMax',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMinGroupMax',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMaxGroupMax',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:a4',
-                'Id': 'a4',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'TimeMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'TimeMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'TimeAvgLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:a5',
-                'Id': 'a5',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'TimeMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'TimeMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'TimeAvgLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:a6',
-                'Id': 'a6',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'TimeMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'TimeMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'TimeAvgLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'SkewMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'skw',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMinLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NodeMaxLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'node',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w1:graph1',
-                'Id': 'graph1',
-                'ScopeType': 'graph',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'w1:graph1:sg1',
-                'Id': 'sg1',
-                'ScopeType': 'subgraph',
-                'Properties': None
-            },
-            {
                 'ScopeName': 'w1:graph1:sg1:e2_0',
                 'Id': 'e2_0',
                 'ScopeType': 'edge',
                 'Properties': {
                     'Property': [
                         {
-                            'Name': 'Source',
-                            'RawValue': '2',
-                            'Formatted': '2',
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '12',
+                            'Formatted': '12',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a2',
+                            'Formatted': 'a2',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '3',
-                            'Formatted': '3',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -890,17 +255,49 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
-                            'Name': 'Source',
-                            'RawValue': '3',
-                            'Formatted': '3',
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '12',
+                            'Formatted': '12',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '4',
-                            'Formatted': '4',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a4',
+                            'Formatted': 'a4',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -931,17 +328,49 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
-                            'Name': 'Source',
-                            'RawValue': '4',
-                            'Formatted': '4',
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a4',
+                            'Formatted': 'a4',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '5',
-                            'Formatted': '5',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a5',
+                            'Formatted': 'a5',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -972,17 +401,49 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
-                            'Name': 'Source',
-                            'RawValue': '5',
-                            'Formatted': '5',
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a5',
+                            'Formatted': 'a5',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '6',
-                            'Formatted': '6',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a6',
+                            'Formatted': 'a6',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1013,6 +474,30 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
+                            'Name': 'TimeMinLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'TimeMaxLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'TimeAvgLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
                             'Name': 'Label',
                             'RawValue': 'Inline Dataset',
                             'Formatted': 'Inline Dataset',
@@ -1021,9 +506,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(2,13)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(2,13)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1032,6 +517,30 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '148',
                             'Formatted': '148',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'DATASET([{1,...},...], { unsigned8 top, DICTIONARY({ string8 name, unsigned8 iq }) nest });\n',
+                            'Formatted': 'DATASET([{1,...},...], { unsigned8 top, DICTIONARY({ string8 name, unsigned8 iq }) nest });\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '12..?(268)',
+                            'Formatted': '12..?(268)',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '12',
+                            'Formatted': '12',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1046,6 +555,78 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
+                            'Name': 'TimeMinLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'TimeMaxLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'TimeAvgLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumMinGroups',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumMaxGroups',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumAvgGroups',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumMinGroupMax',
+                            'RawValue': '12',
+                            'Formatted': '12',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumMaxGroupMax',
+                            'RawValue': '12',
+                            'Formatted': '12',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'NumAvgGroupMax',
+                            'RawValue': '12',
+                            'Formatted': '12',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
                             'Name': 'Label',
                             'RawValue': 'Group',
                             'Formatted': 'Group',
@@ -1054,9 +635,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(22,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(22,1)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1065,6 +646,30 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '15',
                             'Formatted': '15',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'GROUP(top);\n',
+                            'Formatted': 'GROUP(top);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '12..?(268)',
+                            'Formatted': '12..?(268)',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1079,6 +684,30 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
+                            'Name': 'TimeMinLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'TimeMaxLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'TimeAvgLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
                             'Name': 'Label',
                             'RawValue': 'Grouped Rollup',
                             'Formatted': 'Grouped Rollup',
@@ -1087,9 +716,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(22,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(22,1)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1098,6 +727,38 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '8',
                             'Formatted': '8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsGrouped',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'ROLLUP(true, t(LEFT, RIGHT));\n',
+                            'Formatted': 'ROLLUP(true, t(LEFT, RIGHT));\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '12..?(268)',
+                            'Formatted': '12..?(268)',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1112,6 +773,30 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
+                            'Name': 'TimeMinLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'TimeMaxLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'TimeAvgLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
                             'Name': 'Label',
                             'RawValue': 'Degroup',
                             'Formatted': 'Degroup',
@@ -1120,9 +805,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(22,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(22,1)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1131,6 +816,30 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '14',
                             'Formatted': '14',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'GROUP();\n',
+                            'Formatted': 'GROUP();\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '12..?(268)',
+                            'Formatted': '12..?(268)',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1145,6 +854,30 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
+                            'Name': 'TimeMinLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'TimeMaxLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
+                            'Name': 'TimeAvgLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'thor'
+                        },
+                        {
                             'Name': 'Label',
                             'RawValue': 'Output\nResult #1',
                             'Formatted': 'Output\nResult #1',
@@ -1153,25 +886,25 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(1,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(1,1)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'dict1',
-                            'Formatted': 'dict1',
+                            'Name': 'EclNameList',
+                            'RawValue': '["dict1"]',
+                            'Formatted': '["dict1"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(22,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/dict1.ecl(22,1)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1180,6 +913,22 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '16',
                             'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'OUTPUT(..., workunit);\n',
+                            'Formatted': 'OUTPUT(..., workunit);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '12..?(268)',
+                            'Formatted': '12..?(268)',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1206,31 +955,6 @@ testCase(ScopeFilter={
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': 'sz',
-                            'Creator': '{masked}',
-                            'CreatorType': 'eclcc'
-                        },
-                        {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'eclcc'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'compile:write c++',
-                'Id': 'write c++',
-                'ScopeType': 'compile',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
                             'Creator': '{masked}',
                             'CreatorType': 'eclcc'
                         },
@@ -1298,6 +1022,31 @@ testCase(ScopeFilter={
             {
                 'ScopeName': 'compile:parse',
                 'Id': 'parse',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:write c++',
+                'Id': 'write c++',
                 'ScopeType': 'compile',
                 'Properties': {
                     'Property': [

@@ -9,8 +9,9 @@ testCase(ScopeFilter={
     'ScopeTypes': None
 }, PropertiesToReturn={
     'AllStatistics': '1',
-    'AllAttributes': '1',
+    'AllProperties': '1',
     'AllHints': '1',
+    'AllScopes': None,
     'MinVersion': None,
     'Measure': None,
     'Properties': None,
@@ -92,18 +93,26 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1',
-                'Id': 'graph1',
-                'ScopeType': 'graph',
+                'ScopeName': 'w1',
+                'Id': 'w1',
+                'ScopeType': 'workflow',
                 'Properties': {
                     'Property': [
                         {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
+                            'Name': 'IsScheduled',
+                            'RawValue': 'true',
+                            'Formatted': 'true',
+                            'Measure': None,
                             'Creator': '{masked}',
-                            'CreatorType': 'hthor'
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'State',
+                            'RawValue': 'done',
+                            'Formatted': 'done',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -121,6 +130,14 @@ testCase(ScopeFilter={
                             'Measure': 'ts',
                             'Creator': '{masked}',
                             'CreatorType': 'hthor'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'hthor'
                         }
                     ]
                 }
@@ -132,17 +149,17 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
-                            'Name': 'Source',
-                            'RawValue': '5',
-                            'Formatted': '5',
+                            'Name': 'IdSource',
+                            'RawValue': 'a9',
+                            'Formatted': 'a9',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '12',
-                            'Formatted': '12',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a13',
+                            'Formatted': 'a13',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -181,17 +198,17 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
-                            'Name': 'Source',
-                            'RawValue': '5',
-                            'Formatted': '5',
+                            'Name': 'IdSource',
+                            'RawValue': 'a11',
+                            'Formatted': 'a11',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '12',
-                            'Formatted': '12',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a15',
+                            'Formatted': 'a15',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -238,17 +255,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '12',
-                            'Formatted': '12',
+                            'Name': 'IdSource',
+                            'RawValue': 'a16',
+                            'Formatted': 'a16',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '1',
-                            'Formatted': '1',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -352,17 +369,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '2',
-                            'Formatted': '2',
+                            'Name': 'IdSource',
+                            'RawValue': 'a2',
+                            'Formatted': 'a2',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '3',
-                            'Formatted': '3',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -425,17 +442,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '3',
-                            'Formatted': '3',
+                            'Name': 'IdSource',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '17',
-                            'Formatted': '17',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a17',
+                            'Formatted': 'a17',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -474,17 +491,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(42,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(42,1)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'in',
-                            'Formatted': 'in',
+                            'Name': 'EclNameList',
+                            'RawValue': '["in"]',
+                            'Formatted': '["in"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -493,6 +510,30 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "DATASET([{'Anderson       '},...], { string15 fname });\n",
+                            'Formatted': "DATASET([{'Anderson       '},...], { string15 fname });\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '15',
+                            'Formatted': '15',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '3',
+                            'Formatted': '3',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -515,17 +556,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(69,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(69,1)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'p1',
-                            'Formatted': 'p1',
+                            'Name': 'EclNameList',
+                            'RawValue': '["p1"]',
+                            'Formatted': '["p1"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -534,6 +575,30 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '7',
                             'Formatted': '7',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'PROJECT(t1(LEFT));\n',
+                            'Formatted': 'PROJECT(t1(LEFT));\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '27',
+                            'Formatted': '27',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '3',
+                            'Formatted': '3',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -611,17 +676,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '6',
-                            'Formatted': '6',
+                            'Name': 'IdSource',
+                            'RawValue': 'a6',
+                            'Formatted': 'a6',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '7',
-                            'Formatted': '7',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a7',
+                            'Formatted': 'a7',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -684,17 +749,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '7',
-                            'Formatted': '7',
+                            'Name': 'IdSource',
+                            'RawValue': 'a7',
+                            'Formatted': 'a7',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '8',
-                            'Formatted': '8',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a8',
+                            'Formatted': 'a8',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -757,17 +822,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '8',
-                            'Formatted': '8',
+                            'Name': 'IdSource',
+                            'RawValue': 'a8',
+                            'Formatted': 'a8',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '9',
-                            'Formatted': '9',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a9',
+                            'Formatted': 'a9',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -830,17 +895,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '9',
-                            'Formatted': '9',
+                            'Name': 'IdSource',
+                            'RawValue': 'a9',
+                            'Formatted': 'a9',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '10',
-                            'Formatted': '10',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a10',
+                            'Formatted': 'a10',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -903,17 +968,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '10',
-                            'Formatted': '10',
+                            'Name': 'IdSource',
+                            'RawValue': 'a10',
+                            'Formatted': 'a10',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '11',
-                            'Formatted': '11',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a11',
+                            'Formatted': 'a11',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -953,8 +1018,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'NumIndexSeeks',
-                            'RawValue': '9',
-                            'Formatted': '9',
+                            'RawValue': '6',
+                            'Formatted': '6',
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'hthor'
@@ -976,9 +1041,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,33)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,33)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -987,6 +1052,54 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '77',
                             'Formatted': '77',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdParentActivity',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsCoLocal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "INDEX({ string25 lname, string15 fname }, RECORD\n  string tfn;\n  string2 state;\n  unsigned8 blobfield;\n  big_endian unsigned integer8 __filepos;\n END, '~regress::multi::DG_FetchIndex1');\nFILTER(lname != LEFT.fname);\n",
+                            'Formatted': "INDEX({ string25 lname, string15 fname }, RECORD\n  string tfn;\n  string2 state;\n  unsigned8 blobfield;\n  big_endian unsigned integer8 __filepos;\n END, '~regress::multi::DG_FetchIndex1');\nFILTER(lname != LEFT.fname);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '154..?(410)',
+                            'Formatted': '154..?(410)',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Filename',
+                            'RawValue': '~regress::multi::DG_FetchIndex1',
+                            'Formatted': '~regress::multi::DG_FetchIndex1',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1009,9 +1122,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,28)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,28)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1020,6 +1133,46 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '3',
                             'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdParentActivity',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsCoLocal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'SORT(lname, fname);\n',
+                            'Formatted': 'SORT(lname, fname);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '154..?(410)',
+                            'Formatted': '154..?(410)',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1042,9 +1195,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,22)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,22)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1053,6 +1206,46 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '4',
                             'Formatted': '4',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdParentActivity',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsCoLocal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'DEDUP(lname);\n',
+                            'Formatted': 'DEDUP(lname);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '154..?(410)',
+                            'Formatted': '154..?(410)',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1075,9 +1268,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,22)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,22)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1086,6 +1279,54 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '99',
                             'Formatted': '99',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdParentActivity',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsCoLocal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'spillgraphresult(graph(), 2);\n',
+                            'Formatted': 'spillgraphresult(graph(), 2);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '154..?(410)',
+                            'Formatted': '154..?(410)',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsSpill',
+                            'RawValue': '1',
+                            'Formatted': '1',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1114,6 +1355,46 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdParentActivity',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsCoLocal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'TABLE({ integer8 value := COUNT(group) });\n',
+                            'Formatted': 'TABLE({ integer8 value := COUNT(group) });\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '8',
+                            'Formatted': '8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -1136,6 +1417,62 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '94',
                             'Formatted': '94',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsInternal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdParentActivity',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsCoLocal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'SetGraphResult(1);\n',
+                            'Formatted': 'SetGraphResult(1);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '8',
+                            'Formatted': '8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsSpill',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsAccessedFromChild',
+                            'RawValue': '1',
+                            'Formatted': '1',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1207,17 +1544,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '13',
-                            'Formatted': '13',
+                            'Name': 'IdSource',
+                            'RawValue': 'a13',
+                            'Formatted': 'a13',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '14',
-                            'Formatted': '14',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a14',
+                            'Formatted': 'a14',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1280,17 +1617,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '14',
-                            'Formatted': '14',
+                            'Name': 'IdSource',
+                            'RawValue': 'a14',
+                            'Formatted': 'a14',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '15',
-                            'Formatted': '15',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a15',
+                            'Formatted': 'a15',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1353,17 +1690,17 @@ testCase(ScopeFilter={
                             'CreatorType': 'hthor'
                         },
                         {
-                            'Name': 'Source',
-                            'RawValue': '15',
-                            'Formatted': '15',
+                            'Name': 'IdSource',
+                            'RawValue': 'a15',
+                            'Formatted': 'a15',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Target',
-                            'RawValue': '16',
-                            'Formatted': '16',
+                            'Name': 'IdTarget',
+                            'RawValue': 'a16',
+                            'Formatted': 'a16',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1402,9 +1739,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,22)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,22)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1413,6 +1750,54 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '93',
                             'Formatted': '93',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdParentActivity',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsCoLocal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'GetGraphResult(2);\n',
+                            'Formatted': 'GetGraphResult(2);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '154..?(410)',
+                            'Formatted': '154..?(410)',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdChildGraph',
+                            'RawValue': '4',
+                            'Formatted': '4',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1435,17 +1820,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,5)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(56,5)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'deduped',
-                            'Formatted': 'deduped',
+                            'Name': 'EclNameList',
+                            'RawValue': '["deduped"]',
+                            'Formatted': '["deduped"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1454,6 +1839,46 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '7',
                             'Formatted': '7',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdParentActivity',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsCoLocal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'NEWTABLE({ string25 lname := lname, string15 fname := fname });\n',
+                            'Formatted': 'NEWTABLE({ string25 lname := lname, string15 fname := fname });\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '40',
+                            'Formatted': '40',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1516,17 +1941,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(65,5)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(65,5)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'joinedchildren',
-                            'Formatted': 'joinedchildren',
+                            'Name': 'EclNameList',
+                            'RawValue': '["joinedchildren"]',
+                            'Formatted': '["joinedchildren"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1535,6 +1960,62 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '159',
                             'Formatted': '159',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdParentActivity',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsCoLocal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsOrdered',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'JOIN(LEFT.lname = RIGHT.lname AND LEFT.fname = RIGHT.fname AND RIGHT.__filepos != cntdedup, t2(LEFT, RIGHT, 0));\n',
+                            'Formatted': 'JOIN(LEFT.lname = RIGHT.lname AND LEFT.fname = RIGHT.fname AND RIGHT.__filepos != cntdedup, t2(LEFT, RIGHT, 0));\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '48',
+                            'Formatted': '48',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Indexname',
+                            'RawValue': '~regress::multi::DG_FetchIndex1',
+                            'Formatted': '~regress::multi::DG_FetchIndex1',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1563,6 +2044,38 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdParentActivity',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsCoLocal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'SetGraphResult(0);\n',
+                            'Formatted': 'SetGraphResult(0);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '48',
+                            'Formatted': '48',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -1582,9 +2095,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(70,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/indexread2.ecl(70,1)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1593,6 +2106,22 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '16',
                             'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'OUTPUT(..., workunit);\n',
+                            'Formatted': 'OUTPUT(..., workunit);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '27',
+                            'Formatted': '27',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1619,31 +2148,6 @@ testCase(ScopeFilter={
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': 'sz',
-                            'Creator': '{masked}',
-                            'CreatorType': 'eclcc'
-                        },
-                        {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'eclcc'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'compile:write c++',
-                'Id': 'write c++',
-                'ScopeType': 'compile',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
                             'Creator': '{masked}',
                             'CreatorType': 'eclcc'
                         },
@@ -1711,6 +2215,31 @@ testCase(ScopeFilter={
             {
                 'ScopeName': 'compile:parse',
                 'Id': 'parse',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:write c++',
+                'Id': 'write c++',
                 'ScopeType': 'compile',
                 'Properties': {
                     'Property': [

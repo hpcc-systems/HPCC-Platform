@@ -9,8 +9,9 @@ testCase(ScopeFilter={
     'ScopeTypes': None
 }, PropertiesToReturn={
     'AllStatistics': '1',
-    'AllAttributes': '1',
+    'AllProperties': '1',
     'AllHints': '1',
+    'AllScopes': None,
     'MinVersion': None,
     'Measure': None,
     'Properties': None,
@@ -140,7 +141,57 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1',
+                'ScopeName': 'w1',
+                'Id': 'w1',
+                'ScopeType': 'workflow',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'State',
+                            'RawValue': 'done',
+                            'Formatted': 'done',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2',
+                'Id': 'w2',
+                'ScopeType': 'workflow',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IdDependencyList',
+                            'RawValue': '["w1"]',
+                            'Formatted': '["w1"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsScheduled',
+                            'RawValue': 'true',
+                            'Formatted': 'true',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'State',
+                            'RawValue': 'done',
+                            'Formatted': 'done',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1',
                 'Id': 'graph1',
                 'ScopeType': 'graph',
                 'Properties': {
@@ -173,13 +224,234 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1:sg1',
+                'ScopeName': 'w2:graph1:e7_19',
+                'Id': 'e7_19',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a7',
+                            'Formatted': 'a7',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a19',
+                            'Formatted': 'a19',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsDependency',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1:e10_14',
+                'Id': 'e10_14',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a10',
+                            'Formatted': 'a10',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a14',
+                            'Formatted': 'a14',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsDependency',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1:e11_13',
+                'Id': 'e11_13',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a11',
+                            'Formatted': 'a11',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a13',
+                            'Formatted': 'a13',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1:e11_17',
+                'Id': 'e11_17',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a11',
+                            'Formatted': 'a11',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a17',
+                            'Formatted': 'a17',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1:e11_18',
+                'Id': 'e11_18',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a11',
+                            'Formatted': 'a11',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a18',
+                            'Formatted': 'a18',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1:sg1',
                 'Id': 'sg1',
                 'ScopeType': 'subgraph',
                 'Properties': None
             },
             {
-                'ScopeName': 'graph1:sg1:e2_0',
+                'ScopeName': 'w2:graph1:sg1:e2_0',
                 'Id': 'e2_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -215,12 +487,44 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a2',
+                            'Formatted': 'a2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e3_0',
+                'ScopeName': 'w2:graph1:sg1:e3_0',
                 'Id': 'e3_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -256,12 +560,44 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a4',
+                            'Formatted': 'a4',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e3_1',
+                'ScopeName': 'w2:graph1:sg1:e3_1',
                 'Id': 'e3_1',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -297,12 +633,85 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a11',
+                            'Formatted': 'a11',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e4_1',
+                'ScopeName': 'w2:graph1:sg1:e4_0',
+                'Id': 'e4_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a4',
+                            'Formatted': 'a4',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a5',
+                            'Formatted': 'a5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1:sg1:e4_1',
                 'Id': 'e4_1',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -338,12 +747,126 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a4',
+                            'Formatted': 'a4',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a8',
+                            'Formatted': 'a8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e8_0',
+                'ScopeName': 'w2:graph1:sg1:e5_0',
+                'Id': 'e5_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a5',
+                            'Formatted': 'a5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a6',
+                            'Formatted': 'a6',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1:sg1:e6_0',
+                'Id': 'e6_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a6',
+                            'Formatted': 'a6',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a7',
+                            'Formatted': 'a7',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1:sg1:e8_0',
                 'Id': 'e8_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -379,12 +902,44 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a8',
+                            'Formatted': 'a8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a9',
+                            'Formatted': 'a9',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e9_0',
+                'ScopeName': 'w2:graph1:sg1:e9_0',
                 'Id': 'e9_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -420,12 +975,44 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a9',
+                            'Formatted': 'a9',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a10',
+                            'Formatted': 'a10',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e10_0',
+                'ScopeName': 'w2:graph1:sg1:e10_0',
                 'Id': 'e10_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -466,7 +1053,7 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e11_0',
+                'ScopeName': 'w2:graph1:sg1:e11_0',
                 'Id': 'e11_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -507,7 +1094,7 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e11_1',
+                'ScopeName': 'w2:graph1:sg1:e11_1',
                 'Id': 'e11_1',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -548,7 +1135,7 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:a2',
+                'ScopeName': 'w2:graph1:sg1:a2',
                 'Id': 'a2',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -600,12 +1187,60 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Inline Dataset',
+                            'Formatted': 'Inline Dataset',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,14)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,14)"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '148',
+                            'Formatted': '148',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'DATASET(4, createmain(COUNTER, 3));\n',
+                            'Formatted': 'DATASET(4, createmain(COUNTER, 3));\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '4',
+                            'Formatted': '4',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:a3',
+                'ScopeName': 'w2:graph1:sg1:a3',
                 'Id': 'a3',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -649,12 +1284,60 @@ testCase(ScopeFilter={
                             'Measure': 'ns',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Split',
+                            'Formatted': 'Split',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,7)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,7)"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'ds;\n',
+                            'Formatted': 'ds;\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:a4',
+                'ScopeName': 'w2:graph1:sg1:a4',
                 'Id': 'a4',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -698,30 +1381,223 @@ testCase(ScopeFilter={
                             'Measure': 'ns',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Split',
+                            'Formatted': 'Split',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,7)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,7)"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'SPLIT();\n',
+                            'Formatted': 'SPLIT();\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:a5',
+                'ScopeName': 'w2:graph1:sg1:a5',
                 'Id': 'a5',
                 'ScopeType': 'activity',
-                'Properties': None
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Filter',
+                            'Formatted': 'Filter',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(52,17)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(52,17)"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '5',
+                            'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "FILTER(asserttrue(....seq > 10, 'seq > 10'));\n",
+                            'Formatted': "FILTER(asserttrue(....seq > 10, 'seq > 10'));\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
             },
             {
-                'ScopeName': 'graph1:sg1:a6',
+                'ScopeName': 'w2:graph1:sg1:a6',
                 'Id': 'a6',
                 'ScopeType': 'activity',
-                'Properties': None
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Count',
+                            'Formatted': 'Count',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '125',
+                            'Formatted': '125',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'TABLE({ integer8 value := COUNT(group) });\n',
+                            'Formatted': 'TABLE({ integer8 value := COUNT(group) });\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '8',
+                            'Formatted': '8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
             },
             {
-                'ScopeName': 'graph1:sg1:a7',
+                'ScopeName': 'w2:graph1:sg1:a7',
                 'Id': 'a7',
                 'ScopeType': 'activity',
-                'Properties': None
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': "Output\nInternal('spill2')",
+                            'Formatted': "Output\nInternal('spill2')",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '16',
+                            'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsInternal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "OUTPUT(..., named('spill2'), __compressed__);\n",
+                            'Formatted': "OUTPUT(..., named('spill2'), __compressed__);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '8',
+                            'Formatted': '8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'NumGlobalUses',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
             },
             {
-                'ScopeName': 'graph1:sg1:a8',
+                'ScopeName': 'w2:graph1:sg1:a8',
                 'Id': 'a8',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -765,12 +1641,60 @@ testCase(ScopeFilter={
                             'Measure': 'ns',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Filter',
+                            'Formatted': 'Filter',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(47,14)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(47,14)"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '5',
+                            'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "FILTER(asserttrue(....seq < 10, 'seq < 10'));\n",
+                            'Formatted': "FILTER(asserttrue(....seq < 10, 'seq < 10'));\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:a9',
+                'ScopeName': 'w2:graph1:sg1:a9',
                 'Id': 'a9',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -822,12 +1746,52 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Count',
+                            'Formatted': 'Count',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '125',
+                            'Formatted': '125',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'TABLE({ integer8 value := COUNT(group) });\n',
+                            'Formatted': 'TABLE({ integer8 value := COUNT(group) });\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '8',
+                            'Formatted': '8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:a10',
+                'ScopeName': 'w2:graph1:sg1:a10',
                 'Id': 'a10',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -871,12 +1835,60 @@ testCase(ScopeFilter={
                             'Measure': 'ns',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': "Output\nInternal('spill1')",
+                            'Formatted': "Output\nInternal('spill1')",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '16',
+                            'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsInternal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "OUTPUT(..., named('spill1'), __compressed__);\n",
+                            'Formatted': "OUTPUT(..., named('spill1'), __compressed__);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '8',
+                            'Formatted': '8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'NumGlobalUses',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:a11',
+                'ScopeName': 'w2:graph1:sg1:a11',
                 'Id': 'a11',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -920,18 +1932,74 @@ testCase(ScopeFilter={
                             'Measure': 'ns',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Spill Write',
+                            'Formatted': 'Spill Write',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '196',
+                            'Formatted': '196',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsInternal',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "OUTPUT(..., , '~spill::3', __compressed__);\n",
+                            'Formatted': "OUTPUT(..., , '~spill::3', __compressed__);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Filename',
+                            'RawValue': '~spill::3',
+                            'Formatted': '~spill::3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsSpill',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg12',
+                'ScopeName': 'w2:graph1:sg12',
                 'Id': 'sg12',
                 'ScopeType': 'subgraph',
                 'Properties': None
             },
             {
-                'ScopeName': 'graph1:sg12:e13_0',
+                'ScopeName': 'w2:graph1:sg12:e13_0',
                 'Id': 'e13_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -967,12 +2035,44 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a13',
+                            'Formatted': 'a13',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a14',
+                            'Formatted': 'a14',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg12:e14_0',
+                'ScopeName': 'w2:graph1:sg12:e14_0',
                 'Id': 'e14_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -1008,12 +2108,44 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a14',
+                            'Formatted': 'a14',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a15',
+                            'Formatted': 'a15',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg12:e15_0',
+                'ScopeName': 'w2:graph1:sg12:e15_0',
                 'Id': 'e15_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -1054,7 +2186,7 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1:sg12:a13',
+                'ScopeName': 'w2:graph1:sg12:a13',
                 'Id': 'a13',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -1098,12 +2230,92 @@ testCase(ScopeFilter={
                             'Measure': 'ns',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Read',
+                            'Formatted': 'Read',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '195',
+                            'Formatted': '195',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "DATASET('~spill::3', { unsigned8 seq, DATASET(idrec) ids }, THOR, __compressed__);\n",
+                            'Formatted': "DATASET('~spill::3', { unsigned8 seq, DATASET(idrec) ids }, THOR, __compressed__);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,1)"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["ds"]',
+                            'Formatted': '["ds"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Filename',
+                            'RawValue': '~spill::3',
+                            'Formatted': '~spill::3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsSpill',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SignedBy',
+                            'RawValue': 'hpcc',
+                            'Formatted': 'hpcc',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg12:a14',
+                'ScopeName': 'w2:graph1:sg12:a14',
                 'Id': 'a14',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -1147,12 +2359,60 @@ testCase(ScopeFilter={
                             'Measure': 'ns',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Filter',
+                            'Formatted': 'Filter',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(48,8)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(48,8)"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '5',
+                            'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'FILTER(seq != <...>.value  +  100000);\n',
+                            'Formatted': 'FILTER(seq != <...>.value  +  100000);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg12:a15',
+                'ScopeName': 'w2:graph1:sg12:a15',
                 'Id': 'a15',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -1196,18 +2456,58 @@ testCase(ScopeFilter={
                             'Measure': 'ns',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Output\nResult #1',
+                            'Formatted': 'Output\nResult #1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(48,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(48,1)"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '16',
+                            'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'OUTPUT(..., workunit);\n',
+                            'Formatted': 'OUTPUT(..., workunit);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg16',
+                'ScopeName': 'w2:graph1:sg16',
                 'Id': 'sg16',
                 'ScopeType': 'subgraph',
                 'Properties': None
             },
             {
-                'ScopeName': 'graph1:sg16:e17_0',
+                'ScopeName': 'w2:graph1:sg16:e17_0',
                 'Id': 'e17_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -1243,12 +2543,142 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'True',
+                            'Formatted': 'True',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a17',
+                            'Formatted': 'a17',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a20',
+                            'Formatted': 'a20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg16:e20_0',
+                'ScopeName': 'w2:graph1:sg16:e18_0',
+                'Id': 'e18_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a18',
+                            'Formatted': 'a18',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a19',
+                            'Formatted': 'a19',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1:sg16:e19_0',
+                'Id': 'e19_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'False',
+                            'Formatted': 'False',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a19',
+                            'Formatted': 'a19',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a20',
+                            'Formatted': 'a20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w2:graph1:sg16:e20_0',
                 'Id': 'e20_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -1284,12 +2714,44 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a20',
+                            'Formatted': 'a20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a21',
+                            'Formatted': 'a21',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg16:e21_0',
+                'ScopeName': 'w2:graph1:sg16:e21_0',
                 'Id': 'e21_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -1330,1471 +2792,127 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1:sg16:a17',
-                'Id': 'a17',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenFirstRow',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeTotalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeFirstExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg16:a18',
-                'Id': 'a18',
-                'ScopeType': 'activity',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'graph1:sg16:a19',
-                'Id': 'a19',
-                'ScopeType': 'activity',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'graph1:sg16:a20',
-                'Id': 'a20',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenFirstRow',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeTotalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeFirstExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg16:a21',
-                'Id': 'a21',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenFirstRow',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeTotalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeFirstExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1',
-                'Id': 'graph1',
-                'ScopeType': 'graph',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'w2:graph1:e7_19',
-                'Id': 'e7_19',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '16',
-                            'Formatted': '16',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'IsDependency',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:e10_14',
-                'Id': 'e10_14',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '12',
-                            'Formatted': '12',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'IsDependency',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:e11_13',
-                'Id': 'e11_13',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '12',
-                            'Formatted': '12',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:e11_17',
-                'Id': 'e11_17',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '16',
-                            'Formatted': '16',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:e11_18',
-                'Id': 'e11_18',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '16',
-                            'Formatted': '16',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '2',
-                            'Formatted': '2',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1',
-                'Id': 'sg1',
-                'ScopeType': 'subgraph',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:e2_0',
-                'Id': 'e2_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '2',
-                            'Formatted': '2',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '3',
-                            'Formatted': '3',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:e3_0',
-                'Id': 'e3_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '3',
-                            'Formatted': '3',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:e3_1',
-                'Id': 'e3_1',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '3',
-                            'Formatted': '3',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '11',
-                            'Formatted': '11',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:e4_0',
-                'Id': 'e4_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '5',
-                            'Formatted': '5',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:e4_1',
-                'Id': 'e4_1',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '8',
-                            'Formatted': '8',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:e5_0',
-                'Id': 'e5_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '5',
-                            'Formatted': '5',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '6',
-                            'Formatted': '6',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:e6_0',
-                'Id': 'e6_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '6',
-                            'Formatted': '6',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '7',
-                            'Formatted': '7',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:e8_0',
-                'Id': 'e8_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '8',
-                            'Formatted': '8',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '9',
-                            'Formatted': '9',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:e9_0',
-                'Id': 'e9_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '9',
-                            'Formatted': '9',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '10',
-                            'Formatted': '10',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:a2',
-                'Id': 'a2',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Inline Dataset',
-                            'Formatted': 'Inline Dataset',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '148',
-                            'Formatted': '148',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:a3',
-                'Id': 'a3',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Split',
-                            'Formatted': 'Split',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '6',
-                            'Formatted': '6',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:a4',
-                'Id': 'a4',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Split',
-                            'Formatted': 'Split',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '6',
-                            'Formatted': '6',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:a5',
-                'Id': 'a5',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Filter',
-                            'Formatted': 'Filter',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '5',
-                            'Formatted': '5',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:a6',
-                'Id': 'a6',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Count',
-                            'Formatted': 'Count',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '125',
-                            'Formatted': '125',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:a7',
-                'Id': 'a7',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': "Output\nInternal('spill2')",
-                            'Formatted': "Output\nInternal('spill2')",
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '16',
-                            'Formatted': '16',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:a8',
-                'Id': 'a8',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Filter',
-                            'Formatted': 'Filter',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '5',
-                            'Formatted': '5',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:a9',
-                'Id': 'a9',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Count',
-                            'Formatted': 'Count',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '125',
-                            'Formatted': '125',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:a10',
-                'Id': 'a10',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': "Output\nInternal('spill1')",
-                            'Formatted': "Output\nInternal('spill1')",
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '16',
-                            'Formatted': '16',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg1:a11',
-                'Id': 'a11',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Disk Write\nSpill File',
-                            'Formatted': 'Disk Write\nSpill File',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '2',
-                            'Formatted': '2',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg12',
-                'Id': 'sg12',
-                'ScopeType': 'subgraph',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'w2:graph1:sg12:e13_0',
-                'Id': 'e13_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '13',
-                            'Formatted': '13',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '14',
-                            'Formatted': '14',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg12:e14_0',
-                'Id': 'e14_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '14',
-                            'Formatted': '14',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '15',
-                            'Formatted': '15',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg12:a13',
-                'Id': 'a13',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Read\nSpill',
-                            'Formatted': 'Read\nSpill',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '71',
-                            'Formatted': '71',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'ds',
-                            'Formatted': 'ds',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg12:a14',
-                'Id': 'a14',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Filter',
-                            'Formatted': 'Filter',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '5',
-                            'Formatted': '5',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg12:a15',
-                'Id': 'a15',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Output\nResult #1',
-                            'Formatted': 'Output\nResult #1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Kind',
-                            'RawValue': '16',
-                            'Formatted': '16',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg16',
-                'Id': 'sg16',
-                'ScopeType': 'subgraph',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'w2:graph1:sg16:e17_0',
-                'Id': 'e17_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'True',
-                            'Formatted': 'True',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Source',
-                            'RawValue': '17',
-                            'Formatted': '17',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '20',
-                            'Formatted': '20',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg16:e18_0',
-                'Id': 'e18_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '18',
-                            'Formatted': '18',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '19',
-                            'Formatted': '19',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg16:e19_0',
-                'Id': 'e19_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'False',
-                            'Formatted': 'False',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Source',
-                            'RawValue': '19',
-                            'Formatted': '19',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '20',
-                            'Formatted': '20',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '1',
-                            'Formatted': '1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w2:graph1:sg16:e20_0',
-                'Id': 'e20_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '20',
-                            'Formatted': '20',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '21',
-                            'Formatted': '21',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
                 'ScopeName': 'w2:graph1:sg16:a17',
                 'Id': 'a17',
                 'ScopeType': 'activity',
                 'Properties': {
                     'Property': [
                         {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
                             'Name': 'Label',
-                            'RawValue': 'Read\nSpill',
-                            'Formatted': 'Read\nSpill',
+                            'RawValue': 'Read',
+                            'Formatted': 'Read',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
                             'Name': 'Kind',
-                            'RawValue': '71',
-                            'Formatted': '71',
+                            'RawValue': '195',
+                            'Formatted': '195',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'EclText',
+                            'RawValue': "DATASET('~spill::3', { unsigned8 seq, DATASET(idrec) ids }, THOR, __compressed__);\n",
+                            'Formatted': "DATASET('~spill::3', { unsigned8 seq, DATASET(idrec) ids }, THOR, __compressed__);\n",
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'ds',
-                            'Formatted': 'ds',
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,1)"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["ds"]',
+                            'Formatted': '["ds"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Filename',
+                            'RawValue': '~spill::3',
+                            'Formatted': '~spill::3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsSpill',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SignedBy',
+                            'RawValue': 'hpcc',
+                            'Formatted': 'hpcc',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2810,32 +2928,80 @@ testCase(ScopeFilter={
                     'Property': [
                         {
                             'Name': 'Label',
-                            'RawValue': 'Read\nSpill',
-                            'Formatted': 'Read\nSpill',
+                            'RawValue': 'Read',
+                            'Formatted': 'Read',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
                             'Name': 'Kind',
-                            'RawValue': '71',
-                            'Formatted': '71',
+                            'RawValue': '195',
+                            'Formatted': '195',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'EclText',
+                            'RawValue': "DATASET('~spill::3', { unsigned8 seq, DATASET(idrec) ids }, THOR, __compressed__);\n",
+                            'Formatted': "DATASET('~spill::3', { unsigned8 seq, DATASET(idrec) ids }, THOR, __compressed__);\n",
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'ds',
-                            'Formatted': 'ds',
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(34,1)"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["ds"]',
+                            'Formatted': '["ds"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Filename',
+                            'RawValue': '~spill::3',
+                            'Formatted': '~spill::3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsSpill',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SignedBy',
+                            'RawValue': 'hpcc',
+                            'Formatted': 'hpcc',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2858,9 +3024,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(56,27)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(56,27)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2869,6 +3035,30 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'FILTER(seq != <...>.value  +  100000, hint(testhintissupported(1)));\n',
+                            'Formatted': 'FILTER(seq != <...>.value  +  100000, hint(testhintissupported(1)));\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2891,6 +3081,46 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
                             'Name': 'Label',
                             'RawValue': 'If',
                             'Formatted': 'If',
@@ -2899,17 +3129,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(56,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(56,1)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'cond',
-                            'Formatted': 'cond',
+                            'Name': 'EclNameList',
+                            'RawValue': '["cond"]',
+                            'Formatted': '["cond"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2918,6 +3148,38 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '28',
                             'Formatted': '28',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': "IF(STORED('truevalue'), ds, ...);\n",
+                            'Formatted': "IF(STORED('truevalue'), ds, ...);\n",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsGraphIndependent',
+                            'RawValue': '1',
+                            'Formatted': '1',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2932,6 +3194,46 @@ testCase(ScopeFilter={
                 'Properties': {
                     'Property': [
                         {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
                             'Name': 'Label',
                             'RawValue': 'Output\nResult #2',
                             'Formatted': 'Output\nResult #2',
@@ -2940,9 +3242,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'DefinitionList',
+                            'RawValue': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(57,1)"]',
+                            'Formatted': '["/home/shamser/HPCC-Platform/testing/regress/ecl/childds1.ecl(57,1)"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2951,6 +3253,22 @@ testCase(ScopeFilter={
                             'Name': 'Kind',
                             'RawValue': '16',
                             'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'OUTPUT(..., workunit);\n',
+                            'Formatted': 'OUTPUT(..., workunit);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2977,31 +3295,6 @@ testCase(ScopeFilter={
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': 'sz',
-                            'Creator': '{masked}',
-                            'CreatorType': 'eclcc'
-                        },
-                        {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'eclcc'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'compile:write c++',
-                'Id': 'write c++',
-                'ScopeType': 'compile',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
                             'Creator': '{masked}',
                             'CreatorType': 'eclcc'
                         },
@@ -3069,6 +3362,31 @@ testCase(ScopeFilter={
             {
                 'ScopeName': 'compile:parse',
                 'Id': 'parse',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:write c++',
+                'Id': 'write c++',
                 'ScopeType': 'compile',
                 'Properties': {
                     'Property': [

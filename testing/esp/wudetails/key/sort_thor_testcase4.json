@@ -9,8 +9,9 @@ testCase(ScopeFilter={
     'ScopeTypes': None
 }, PropertiesToReturn={
     'AllStatistics': None,
-    'AllAttributes': None,
+    'AllProperties': None,
     'AllHints': '1',
+    'AllScopes': None,
     'MinVersion': None,
     'Measure': None,
     'Properties': None,
@@ -34,6 +35,12 @@ testCase(ScopeFilter={
     'WUID': '{masked WUID - matches request}',
     'Scopes': {
         'Scope': [
+            {
+                'ScopeName': 'w1',
+                'Id': 'w1',
+                'ScopeType': 'workflow',
+                'Properties': None
+            },
             {
                 'ScopeName': 'w1:graph1',
                 'Id': 'graph1',

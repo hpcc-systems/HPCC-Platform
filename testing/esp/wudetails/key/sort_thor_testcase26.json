@@ -11,8 +11,9 @@ testCase(ScopeFilter={
     'ScopeTypes': None
 }, PropertiesToReturn={
     'AllStatistics': None,
-    'AllAttributes': None,
+    'AllProperties': None,
     'AllHints': None,
+    'AllScopes': None,
     'MinVersion': None,
     'Measure': None,
     'Properties': {
@@ -49,93 +50,5 @@ testCase(ScopeFilter={
     'Exceptions': None,
     'MaxVersion': '{masked number}',
     'WUID': '{masked WUID - matches request}',
-    'Scopes': {
-        'Scope': [
-            {
-                'ScopeName': 'graph1:sg1',
-                'Id': 'sg1',
-                'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:e2_0',
-                'Id': 'e2_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'NumStarts',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumStops',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:e3_0',
-                'Id': 'e3_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'NumStarts',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        },
-                        {
-                            'Name': 'NumStops',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'thor'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:a2',
-                'Id': 'a2',
-                'ScopeType': 'activity',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'graph1:sg1:a3',
-                'Id': 'a3',
-                'ScopeType': 'activity',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'graph1:sg1:a4',
-                'Id': 'a4',
-                'ScopeType': 'activity',
-                'Properties': None
-            }
-        ]
-    }
+    'Scopes': None
 }

@@ -16,8 +16,9 @@ testCase(ScopeFilter={
     'ScopeTypes': None
 }, PropertiesToReturn={
     'AllStatistics': '1',
-    'AllAttributes': '1',
+    'AllProperties': '1',
     'AllHints': None,
+    'AllScopes': None,
     'MinVersion': None,
     'Measure': None,
     'Properties': None,
