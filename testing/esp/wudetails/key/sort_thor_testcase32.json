@@ -1,5 +1,5 @@
 testCase(ScopeFilter={
-    'MaxDepth': '2',
+    'MaxDepth': '999',
     'Scopes': None,
     'Ids': None,
     'ScopeTypes': None,
@@ -14,12 +14,11 @@ testCase(ScopeFilter={
     'AllScopes': None,
     'MinVersion': None,
     'Measure': None,
-    'Properties': {
-        'Property': [
-            'WhenStarted',
-            'WhenCreated'
-        ]
-    },
+    'Properties': [
+        {
+            'Property': 'IdDependency'
+        }
+    ],
     'ExtraProperties': None
 }, ScopeOptions={
     'IncludeMatchedScopesInResults': '1',
@@ -27,12 +26,12 @@ testCase(ScopeFilter={
     'IncludeId': '1',
     'IncludeScopeType': '1'
 }, PropertyOptions={
-    'IncludeName': None,
-    'IncludeRawValue': None,
+    'IncludeName': '1',
+    'IncludeRawValue': '1',
     'IncludeFormatted': None,
-    'IncludeMeasure': None,
-    'IncludeCreator': None,
-    'IncludeCreatorType': None
+    'IncludeMeasure': '1',
+    'IncludeCreator': '1',
+    'IncludeCreatorType': '1'
 })
 {
     'Exceptions': None,
@@ -41,63 +40,22 @@ testCase(ScopeFilter={
     'Scopes': {
         'Scope': [
             {
-                'ScopeName': None,
-                'Id': None,
-                'ScopeType': 'global',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenCreated',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'ScopeName': 'w1',
+                'Id': 'w1',
+                'ScopeType': 'workflow',
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1',
                 'Id': 'graph1',
                 'ScopeType': 'graph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg1',
                 'Id': 'sg1',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg1:e2_0',
@@ -133,18 +91,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg5',
                 'Id': 'sg5',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg5:e6_0',
@@ -180,18 +127,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg9',
                 'Id': 'sg9',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg9:e10_0',
@@ -227,18 +163,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg13',
                 'Id': 'sg13',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg13:e14_0',
@@ -274,18 +199,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg17',
                 'Id': 'sg17',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg17:e18_0',
@@ -321,18 +235,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg21',
                 'Id': 'sg21',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg21:e22_0',
@@ -368,18 +271,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg25',
                 'Id': 'sg25',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg25:e26_0',
@@ -415,18 +307,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg29',
                 'Id': 'sg29',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg29:e30_0',
@@ -498,18 +379,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg36',
                 'Id': 'sg36',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg36:e37_0',
@@ -533,18 +403,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg39',
                 'Id': 'sg39',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg39:e40_0',
@@ -592,18 +451,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg44',
                 'Id': 'sg44',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg44:e45_0',
@@ -651,18 +499,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg49',
                 'Id': 'sg49',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg49:e50_0',
@@ -710,18 +547,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg54',
                 'Id': 'sg54',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg54:e55_0',
@@ -769,18 +595,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg59',
                 'Id': 'sg59',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg59:e60_0',
@@ -828,18 +643,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg64',
                 'Id': 'sg64',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg64:e65_0',
@@ -887,18 +691,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg69',
                 'Id': 'sg69',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg69:e70_0',
@@ -946,18 +739,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg74',
                 'Id': 'sg74',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg74:e75_0',
@@ -981,18 +763,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg77',
                 'Id': 'sg77',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg77:e78_0',
@@ -1136,18 +907,7 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg90',
                 'Id': 'sg90',
                 'ScopeType': 'subgraph',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
+                'Properties': None
             },
             {
                 'ScopeName': 'w1:graph1:sg90:e91_0',
@@ -1165,109 +925,6 @@ testCase(ScopeFilter={
                 'ScopeName': 'w1:graph1:sg90:a92',
                 'Id': 'a92',
                 'ScopeType': 'activity',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'compile',
-                'Id': 'compile',
-                'ScopeType': 'compile',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'compile:compile c++',
-                'Id': 'compile c++',
-                'ScopeType': 'compile',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'compile:generate',
-                'Id': 'generate',
-                'ScopeType': 'compile',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'compile:parse',
-                'Id': 'parse',
-                'ScopeType': 'compile',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'compile:write c++',
-                'Id': 'write c++',
-                'ScopeType': 'compile',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': None,
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'Environment_Initialize',
-                'Id': 'Environment_Initialize',
-                'ScopeType': 'section',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'Process',
-                'Id': 'Process',
-                'ScopeType': 'section',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'SDS_Initialize',
-                'Id': 'SDS_Initialize',
-                'ScopeType': 'section',
                 'Properties': None
             }
         ]
