@@ -1433,6 +1433,9 @@ public:
                 {
                 }
             }
+
+            //Create base LDAP OU tree. Specify PT_DEFAULT to ensure each OU
+            //grants access to both Administrators and to Authenticated Users
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_DEFAULT);
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_DEFAULT);
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_VIEW_SCOPE), PT_DEFAULT);
