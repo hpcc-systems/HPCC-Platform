@@ -91,6 +91,7 @@ define([
         i18n: nlsHPCC,
         pathSepCharG: "/",
         updatedFilter: null,
+        username: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -460,6 +461,18 @@ define([
                     context.createNewSuperRadio.set("checked", false);
                 }
             });
+
+            this.userName = dojoConfig.username;
+        },
+
+        _onMine: function (event) {
+            if (event) {
+                this.filter.setValue(this.id + "Owner", this.userName);
+                this.filter._onFilterApply();
+            } else {
+                this.filter._onFilterClear();
+                this.filter._onFilterApply();
+            }
         },
 
         initTab: function() {
