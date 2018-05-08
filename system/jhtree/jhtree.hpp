@@ -30,7 +30,7 @@
 #include "errorlist.h"
 
 class BloomFilter;
-class IIndexFilterList;
+interface IIndexFilterList;
 
 interface jhtree_decl IDelayedFile : public IInterface
 {
