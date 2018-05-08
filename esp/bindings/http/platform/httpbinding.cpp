@@ -490,7 +490,7 @@ void EspHttpBinding::setABoolHash(const char* csv, BoolHash& hash) const
     {
         const char* s = aList.item(i);
         bool* found = hash.getValue(s);
-        if (!found || !*found);
+        if (!found || !*found)
             hash.setValue(s, true);
     }
 }

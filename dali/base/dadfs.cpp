@@ -1909,7 +1909,7 @@ public:
         {
             CDfsLogicalFileName dlfn;
             dlfn.set(base, "dummyfilename"); // makeScopeQuery expects a lfn to a file, 'dummyfilename' will not be used
-            dlfn.makeScopeQuery(lockPath, DXB_Scope);
+            dlfn.makeScopeQuery(lockPath, true);
         }
         else
             lockPath.append(querySdsFilesRoot());
