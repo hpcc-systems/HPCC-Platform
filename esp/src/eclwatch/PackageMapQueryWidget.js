@@ -30,20 +30,20 @@ define([
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
+
+    "dgrid/selector",
+
     "dojox/form/Uploader",
     "dojox/form/uploader/FileList",
-    "dojox/grid/EnhancedGrid",
-    "dojox/grid/enhanced/plugins/Pagination",
-    "dojox/grid/enhanced/plugins/IndirectSelection",
-    "dojo/data/ItemFileWriteStore",
 
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
-    "hpcc/PackageMapDetailsWidget",
     "hpcc/PackageMapValidateWidget",
     "src/WsPackageMaps",
     "src/ESPPackageProcess",
     "hpcc/SFDetailsWidget",
+    "src/ESPUtil",
+    "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/PackageMapQueryWidget.html",
 
@@ -57,9 +57,9 @@ define([
     "dijit/TooltipDialog"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domForm, ObjectStore, on, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-    Uploader, FileUploader, EnhancedGrid, Pagination, IndirectSelection, ItemFileWriteStore,
-    _TabContainerWidget, DelayLoadWidget, PackageMapDetailsWidget, PackageMapValidateWidget,
-    WsPackageMaps, ESPPackageProcess, SFDetailsWidget,
+    selector,
+    Uploader, FileUploader,
+    _TabContainerWidget, DelayLoadWidget, PackageMapValidateWidget, WsPackageMaps, ESPPackageProcess, SFDetailsWidget, ESPUtil, FilterDropDownWidget,
     template) {
     return declare("PackageMapQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -68,16 +68,10 @@ define([
         packagesTab: null,
         packagesGrid: null,
         tabMap: [],
-        targets: null,
-        processesToList: [],
-        processesToAdd: [],
-        targetSelected: 'ANY',
-        processSelected: 'ANY',
-        processFilters: null,
         addPackageMapDialog: null,
         validateTab: null,
         validateTabInitialized: false,
-        params: null,
+        filter: null,
 
         buildRendering: function (args) {
             this.inherited(arguments);
@@ -87,41 +81,14 @@ define([
             this.inherited(arguments);
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.tabContainer = registry.byId(this.id + "TabContainer");
-            this.packagesTab = registry.byId(this.id + "Packages");
+            this.packagesTab = registry.byId(this.id + "_Packages");
             this.packagesGrid = registry.byId(this.id + "PackagesGrid");
-            //this.packagesGrid.canSort = function(col){return false;};
             this.targetSelect = registry.byId(this.id + "TargetSelect");
             this.processSelect = registry.byId(this.id + "ProcessSelect");
-            //this.processFilterSelect = registry.byId(this.id + "ProcessFilterSelect");
-            this.addPackageMapDialog = registry.byId(this.id+"AddProcessMapDialog");
-            this.addPackageMapTargetSelect = registry.byId(this.id + "AddProcessMapTargetSelect");
-            this.addPackageMapProcessSelect = registry.byId(this.id + "AddProcessMapProcessSelect");
-
-            var context = this;
-            this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if ((nval.id !== context.id + "Packages") && (!nval.initalized)) {
-                    nval.init(nval.params, context.targets);
-                }
-                context.selectedTab = nval;
-            });
-        },
-
-        startup: function (args) {
-            this.inherited(arguments);
-            this.refreshActionState();
-        },
-
-        resize: function (args) {
-            this.inherited(arguments);
-            this.borderContainer.resize();
-        },
-
-        layout: function (args) {
-            this.inherited(arguments);
-        },
-
-        destroy: function (args) {
-            this.inherited(arguments);
+            this.addPackageTargetSelect = registry.byId(this.id + "AddProcessMapTargetSelect");
+            this.addPackageProcessSelect = registry.byId(this.id + "AddProcessMapProcessSelect");
+            this.addPackageMapDialog = registry.byId(this.id + "AddProcessMapDialog");
+            this.filter = registry.byId(this.id + "Filter");
         },
 
         onRowDblClick: function (item) {
@@ -134,29 +101,15 @@ define([
             this.tabContainer.selectChild(tab);
         },
 
-        _onChangeTarget: function (event) {
-            this.updateProcessSelections(this.processSelect, this.processesToList, this.targetSelect.getValue());
-            this.refreshGrid();
-        },
-
-        _onChangeProcess: function (event) {
-            this.refreshGrid();
-        },
-
-        _onChangeAddProcessMapTarget: function (event) {
-            this.updateProcessSelections(this.addPackageMapProcessSelect, this.processesToAdd, this.addPackageMapTargetSelect.getValue());
-        },
-
         _onRefresh: function (event) {
-            this.packagesGrid.rowSelectCell.toggleAllSelection(false);
             this.refreshGrid();
         },
 
         _onOpen: function (event) {
-            var selections = this.packagesGrid.selection.getSelected();
+            var selections = this.packagesGrid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.showPackageMapDetails(selections[i].Id, {
+                var tab = this.ensurePane(selections[i].Id, {
                     target: selections[i].Target,
                     process: selections[i].Process,
                     active: selections[i].Active,
@@ -167,11 +120,11 @@ define([
                 }
             }
             if (firstTab) {
-                this.tabContainer.selectChild(firstTab, true);
+                this.selectChild(firstTab);
             }
         },
+
         _onAdd: function (event) {
-            this.initAddProcessMapInput();
             this.addPackageMapDialog.show();
 
             var context = this;
@@ -193,33 +146,11 @@ define([
                 this.addPackageMapDialog.onCancel();
             });
         },
-        initAddProcessMapInput: function () {
-            var defaultTarget = null;
-            for (var i = 0; i < this.targets.length; ++i) {
-                var target = this.targets[i];
-                if (target.Type === 'roxie') {//only roxie has package map for now.
-                    this.addPackageMapTargetSelect.options.push({label: target.Name, value: target.Name});
-                    if (defaultTarget == null)
-                        defaultTarget = target;
-                }
-            }
-            if (defaultTarget != null) {
-                this.addPackageMapTargetSelect.set("value", defaultTarget.Name);
-                if (defaultTarget.Processes !== undefined)
-                    this.addProcessSelections(this.addPackageMapProcessSelect, this.processesToAdd, defaultTarget.Processes.Item);
-            }
-            registry.byId(this.id+"AddProcessMapId").set('value', '');
-            registry.byId(this.id+"AddProcessMapDaliIP").set('value', '');
-            registry.byId(this.id+"AddProcessMapActivate").set('checked', 'checked');
-            registry.byId(this.id+"AddProcessMapOverWrite").set('checked', '');
-            registry.byId(this.id+"AddProcessMapFileUploader").reset();
-            registry.byId(this.id+"AddProcessMapFileUploader").set('url', '');
-            registry.byId(this.id+"AddProcessMapForm").set('action', '');
-            registry.byId(this.id+"AddProcessMapDialogSubmit").set('disabled', true);
-        },
+
         _onAddProcessMapIdKeyUp: function () {
             this._onCheckAddProcessMapInput();
         },
+
         _onCheckAddProcessMapInput: function () {
             var id = registry.byId(this.id+"AddProcessMapId").get('value');
             var files = registry.byId(this.id+"AddProcessMapFileUploader").getFileList();
@@ -238,10 +169,10 @@ define([
             else
                 registry.byId(this.id+"AddProcessMapDialogSubmit").set('disabled', false);
         },
+
         _onAddPackageMapSubmit: function () {
             var target = this.addPackageMapTargetSelect.getValue();
             var id = registry.byId(this.id+"AddProcessMapId").get('value');
-            //var process = registry.byId(this.id+"AddProcessMapProcess").get('value');
             var process = this.addPackageMapProcessSelect.getValue();
             var daliIp = registry.byId(this.id+"AddProcessMapDaliIP").get('value');
             var activate = registry.byId(this.id+"AddProcessMapActivate").get('checked');
@@ -314,34 +245,6 @@ define([
             });
         },
 
-        getSelections: function () {
-            this.targets = [];
-            ///this.processes = new Array();
-            this.processFilters = [];
-
-            var context = this;
-            WsPackageMaps.GetPackageMapSelectOptions({
-                includeTargets: true,
-                IncludeProcesses: true,
-                IncludeProcessFilters: true
-            }).then(function (response) {
-                if (lang.exists("Targets.TargetData", response.GetPackageMapSelectOptionsResponse)) {
-                    context.targets = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
-                    context.initSelections();
-                }
-                context.targetSelect.set("value", context.targetSelected);
-                if (lang.exists("ProcessFilters.Item", response.GetPackageMapSelectOptionsResponse)) {
-                    context.processFilters = response.GetPackageMapSelectOptionsResponse.ProcessFilters.Item;
-                }
-                context.initPackagesGrid();
-                context.initTabs();
-                return response;
-            }, function (err) {
-                context.showErrors(err);
-                return err;
-            });
-        },
-
         addProcessSelections: function (processSelect, processes, processData) {
             for (var i = 0; i < processData.length; ++i) {
                 var process = processData[i];
@@ -352,70 +255,49 @@ define([
             }
         },
 
-        updateProcessSelections: function (processSelect, processes, targetName) {
-            var options = processSelect.getOptions();
-            for (var ii = 0; ii < options.length; ++ii) {
-                var value = options[ii].value;
-                processSelect.removeOption(value);
-            }
-            var foundRoxie = false;
-            var defaultProcess = 'ANY';
-            processes.length = 0;
-            for (var i = 0; i < this.targets.length; ++i) {
-                var target = this.targets[i];
-                if ((target.Processes !== undefined) && ((targetName === 'ANY') || (targetName === target.Name))) {
-                    this.addProcessSelections(processSelect, processes, target.Processes.Item);
-                    if (targetName !== 'ANY') {
-                        defaultProcess = target.Processes.Item[0];
-                        break;
-                    } else if ((defaultProcess === 'ANY') || (!foundRoxie && (target.Type === 'roxie'))){
-                        defaultProcess = target.Processes.Item[0];
-                        if (target.Type === 'roxie')
-                            foundRoxie = true;
-                    }
-                }
-            }
-            processSelect.options.push({label: this.i18n.ANY, value: 'ANY' });
-            processSelect.set("value", defaultProcess);
-        },
-
-        initSelections: function () {
-            if (this.targets.length < 1)
-                return;
-            var foundRoxie = false;
-            for (var i = 0; i < this.targets.length; ++i) {
-                var target = this.targets[i];
-                this.targetSelect.options.push({label: target.Name, value: target.Name});
-                if ((this.targetSelected === 'ANY') || (!foundRoxie && (target.Type === 'roxie'))) {
-                    this.targetSelected = target.Name;
-                    if (target.Type === 'roxie')
-                        foundRoxie = true;
-                }
-                if (target.Processes !== undefined)
-                    this.addProcessSelections(this.processSelect, this.processesToList, target.Processes.Item);
-            }
-            this.targetSelect.options.push({label: this.i18n.ANY, value: 'ANY' });
-        },
-
         init: function (params) {
+            var context = this;
             if (this.inherited(arguments))
                 return;
 
             this.params = params;
-            this.getSelections();
+
+            this.targetSelect.init({
+                GetPackageMapTargets: true
+            });
+            this.processSelect.init({
+                GetPackageMapProcesses: true
+            });
+
+            this.addPackageTargetSelect.init({
+                GetPackageMapTargets: true
+            });
+
+            this.addPackageProcessSelect.init({
+                GetPackageMapProcesses: true
+            });
+
+            this.initPackagesGrid();
+
+            this.filter.on("clear", function (evt) {
+                context._onFilterType();
+                context.refreshGrid();
+            });
+            this.filter.on("apply", function (evt) {
+                context.refreshGrid();
+            });
         },
 
-        initTabs: function() {
-            this.params.targets = this.targets;
-            if (!this.validateTabInitialized) {
-                this.validateTabInitialized = true;
-                this.validateTab = this.initValidateTab("ValidatePackageMap", {
-                    title: "Validate Package Map",
-                    params: this.params
-                });
+        initTab: function () {
+            var currSel = this.getSelectedChild();
+            if (currSel && !currSel.initalized) {
+                if (currSel.id === this.packagesTab.id) {
+                } else {
+                    if (!currSel.initalized) {
+                        currSel.init(currSel.params);
+                    }
+                }
             }
-
-            this.tabContainer.selectChild(this.packagesTab);
         },
 
         initValidateTab: function (id, params) {
@@ -431,106 +313,106 @@ define([
             return retVal;
         },
 
-        initPackagesGrid: function() {
-            this.packagesGrid.setStructure([
-                { name: this.i18n.PackageMap, field: "Id", width: "40%" },
-                { name: this.i18n.Target, field: "Target", width: "15%" },
-                { name: this.i18n.ProcessFilter, field: "Process", width: "15%" },
-                {
-                    name: this.i18n.Active,
-                    field: "Active",
-                    width: "10%",
-                    formatter: function (active) {
-                        if (active === true) {
-                            return "A";
-                        }
-                        return "";
-                    }
-                },
-                { name: this.i18n.Description, field: "Description", width: "20%" }
-            ]);
-            var objStore = ESPPackageProcess.CreatePackageMapQueryObjectStore();
-            this.packagesGrid.setStore(objStore);
-
+        initPackagesGrid: function () {
             var context = this;
-            this.packagesGrid.on("RowDblClick", function (evt) {
-                if (context.onRowDblClick) {
-                    var idx = evt.rowIndex;
-                    var item = this.getItem(idx);
-                    context.onRowDblClick(item);
+            this.store = ESPPackageProcess.CreatePackageMapQueryObjectStore();
+            this.packagesGrid = new declare([ESPUtil.Grid(true, true)])({
+                store: this.store,
+                query: this.getFilter(),
+                columns: {
+                    col1: selector({
+                        width: 27,
+                        selectorType: 'checkbox'
+                    }),
+                    Id: {
+                        width: "40%",
+                        sortable: false,
+                        label: this.i18n.PackageMap,
+                        formatter: function (Id, idx) {
+                            return "<a href='#' class='dgrid-row-url'>" + Id + "</a>";
+                        }
+                    },
+                    Target: {
+                        width: "15%",
+                        sortable: false,
+                        label: this.i18n.Target
+                    },
+                    Process: {
+                        width: "15%",
+                        sortable: false,
+                        label: this.i18n.ProcessFilter
+                    },
+                    Active: {
+                        width: "10%",
+                        sortable: false,
+                        label: this.i18n.Active,
+                        formatter: function (active) {
+                            if (active === true) {
+                                return "A";
+                            }
+                            return "";
+                        }
+                    },
+                    Description: {
+                        width: "20%",
+                        sortable: false,
+                        label: this.i18n.Description,
+                    }
                 }
-            }, true);
+            }, this.id + "PackagesGrid");
 
-            dojo.connect(this.packagesGrid.selection, 'onSelected', function (idx) {
-                context.refreshActionState();
+            this.packagesGrid.on(".dgrid-row-url:click", function (evt) {
+                if (context._onRowDblClick) {
+                    var item = context.packagesGrid.row(evt).data;
+                    context._onRowDblClick(item.Id, item.Target, item.Process, item.Active);
+                }
             });
-            dojo.connect(this.packagesGrid.selection, 'onDeselected', function (idx) {
+            this.packagesGrid.on(".dgrid-row:dblclick", function (evt) {
+                if (context._onRowDblClick) {
+                    var item = context.packagesGrid.row(evt).data;
+                    context._onRowDblClick(item.Id, item.Target, item.Process, item.Active);
+                }
+            });
+
+            this.packagesGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
 
             this.packagesGrid.startup();
         },
 
-        getFilter: function () {
-            this.targetSelected  = this.targetSelect.getValue();
-            this.processSelected  = this.processSelect.getValue();
-            //var processFilterSelected  = this.processFilterSelect.getValue();
-            var processFilterSelected  = "*";
-            if ((this.targetSelected === " ") || (this.targetSelected === "ANY"))
-                this.targetSelected = "";
-            if ((this.processSelected === " ") || (this.processSelected === "ANY"))
-                this.processSelected = "";
-            if (processFilterSelected === "")
-                processFilterSelected = "*";
-            return {Target: this.targetSelected, Process: this.processSelected, ProcessFilter: processFilterSelected};
+        _onRowDblClick: function (id, target, process, active ) {
+            var packageTab = this.ensurePane(id, {
+                target: target,
+                process: process,
+                active: active,
+                packageMap: id
+            });
+            this.selectChild(packageTab);
         },
 
-        refreshGrid: function (args) {
-            this.packagesGrid.setQuery(this.getFilter());
-            var context = this;
-            setTimeout(function () {
-                context.refreshActionState()
-            }, 200);
+        getFilter: function () {
+            return {
+                Target: this.targetSelect.getValue(),
+                Process: this.processSelect.getValue(),
+                ProcessFilter: "*"
+            };
+        },
+
+        refreshGrid: function (clearSelection) {
+            this.packagesGrid.set("query", this.getFilter());
+            if (clearSelection) {
+                this.packagesGrid.clearSelection();
+            }
         },
 
         refreshActionState: function () {
-            var selection = this.packagesGrid.selection.getSelected();
+            var selection = this.packagesGrid.getSelected();
             var hasSelection = (selection.length > 0);
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
             registry.byId(this.id + "Delete").set("disabled", !hasSelection);
             registry.byId(this.id + "Activate").set("disabled", selection.length !== 1);
             registry.byId(this.id + "Deactivate").set("disabled", selection.length !== 1);
-        },
-
-        showPackageMapDetails: function (id, params) {
-            id = this.createChildTabID(id);
-            params.tabId = id;
-
-            var retVal = this.tabMap[id];
-            if (retVal)
-                return retVal;
-
-            var context = this;
-            retVal = new PackageMapDetailsWidget({
-                id: id,
-                title: params.packageMap,
-                closable: true,
-                onClose: function () {
-                    delete context.tabMap[id];
-                    return true;
-                },
-                params: params
-            });
-
-            this.tabMap[id] = retVal;
-            this.tabContainer.addChild(retVal, 2);
-
-            var handle = topic.subscribe("packageMapDeleted", function(tabId){
-                context.packageMapDeleted(tabId);
-                handle.remove();
-            });
-
-            return retVal;
         },
 
         packageMapDeleted: function (tabId) {
@@ -546,10 +428,25 @@ define([
         },
 
         addPackageMapCallback: function (event) {
-            //var processFilter = this.addPackageMapProcessSelect.getValue();
             this.addPackageMapDialog.onCancel();
-            this.packagesGrid.rowSelectCell.toggleAllSelection(false);
             this.refreshGrid();
+        },
+
+        ensurePane: function (id, params) {
+            id = this.createChildTabID(id);
+            var retVal = registry.byId(id);
+            if (!retVal) {
+                var context = this;
+                retVal = new DelayLoadWidget({
+                    id: id,
+                    title: params.packageMap,
+                    closable: true,
+                    delayWidget: "PackageMapDetailsWidget",
+                    params: params
+                });
+                this.addChild(retVal, 1);
+            }
+            return retVal;
         }
     });
 });
