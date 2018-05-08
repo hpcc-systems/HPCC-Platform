@@ -42,11 +42,11 @@ public:
     EclCachedDefinition(IEclCachedDefinitionCollection * _collection, IEclSource * _definition)
     : collection(_collection), definition(_definition) {}
 
-    virtual bool isUpToDate(__uint64 optionHash) const override;
+    virtual bool isUpToDate(hash64_t optionHash) const override;
     virtual IEclSource * queryOriginal() const override { return definition; }
 
 protected:
-    virtual bool calcUpToDate(__uint64 optionHash) const;
+    virtual bool calcUpToDate(hash64_t optionHash) const;
 
 protected:
     mutable bool cachedUpToDate = false;
@@ -55,7 +55,7 @@ protected:
     Linked<IEclSource> definition;
 };
 
-bool EclCachedDefinition::isUpToDate(__uint64 optionHash) const
+bool EclCachedDefinition::isUpToDate(hash64_t optionHash) const
 {
     //MORE: Improve thread safety if this object is shared between multiple threads.
     if (!cachedUpToDate)
@@ -78,7 +78,7 @@ bool EclCachedDefinition::isUpToDate(__uint64 optionHash) const
     return upToDate;
 }
 
-bool EclCachedDefinition::calcUpToDate(__uint64 optionHash) const
+bool EclCachedDefinition::calcUpToDate(hash64_t optionHash) const
 {
     if (!definition)
         return false;
@@ -124,7 +124,7 @@ public:
     }
 
 protected:
-    virtual bool calcUpToDate(__uint64 optionHash) const override
+    virtual bool calcUpToDate(hash64_t optionHash) const override
     {
         if (!cacheTree)
             return false;
@@ -138,6 +138,7 @@ protected:
 
 private:
     Linked<IPropertyTree> cacheTree;
+    mutable Owned<IFileContents> simplified;
 };
 
 timestamp_type EclXmlCachedDefinition::getTimeStamp() const
@@ -149,7 +150,15 @@ timestamp_type EclXmlCachedDefinition::getTimeStamp() const
 
 IFileContents * EclXmlCachedDefinition::querySimplifiedEcl() const
 {
-    return nullptr;
+    if (!cacheTree)
+        return nullptr;
+    if (simplified)
+        return simplified;
+    const char * ecl = cacheTree->queryProp("Simplified");
+    if (!ecl)
+        return nullptr;
+    simplified.setown(createFileContentsFromText(ecl, NULL, false, NULL, 0));
+    return simplified;
 }
 
 void EclXmlCachedDefinition::queryDependencies(StringArray & values) const
@@ -333,43 +342,8 @@ void convertSelectsToPath(StringBuffer & filename, const char * eclPath)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static IHqlExpression * createSimplifiedDefinition(ITypeInfo * type)
+static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type, bool implicitConstantType=false)
 {
-#if 0 //Testing!
-    try
-    {
-        //MORE: For records should use
-        //OwnedHqlExpr actualRecord = getUnadornedRecordOrField(actual->queryRecord());
-        return createNullExpr(type);
-    }
-    catch (IException * e)
-    {
-        e->Release();
-    }
-#endif
-
-    return nullptr;
-}
-
-IHqlExpression * createSimplifiedDefinition(IHqlExpression * expr)
-{
-    if (!expr)
-        return nullptr;
-
-    if (expr->isFunction())
-    {
-        if (expr->getOperator() != no_funcdef)
-            return nullptr;
-        OwnedHqlExpr newBody = createSimplifiedDefinition(expr->queryChild(0));
-        if (newBody)
-            return replaceChild(expr, 0, newBody);
-        return nullptr;
-    }
-
-    ITypeInfo * type = expr->queryType();
-    if (!type)
-        return nullptr;
-
     switch (type->getTypeCode())
     {
     case type_scope: // These may be possible - if the scope is not a forward scope or derived from another scope
@@ -379,15 +353,95 @@ IHqlExpression * createSimplifiedDefinition(IHqlExpression * expr)
     case type_token:
         //Possible, but the default testing code doesn't work
         return nullptr;
+    case type_int:
+        if (implicitConstantType)
+        {
+            // This code is here to ensure the simplified definition is compatible with the expression parsed from
+            // its ECL representation. ECL integer constants cannot specify a type - and are always parsed as int8,
+            // so the constants are created as int8 for consistency.
+            Owned<ITypeInfo> tempType = makeIntType(8, true);
+            return createNullExpr(tempType);
+        }
+        return createNullExpr(type);
     }
-
-    OwnedHqlExpr simple = createSimplifiedDefinition(type);
-    if (simple)
-        return expr->cloneAllAnnotations(simple);
 
     return nullptr;
 }
 
+static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr, bool implicitConstantType=false)
+{
+    if (expr->isFunction())
+    {
+        if (!expr->isFunctionDefinition())
+            return nullptr;
+        OwnedHqlExpr newBody = createSimplifiedBodyDefinition(expr->queryChild(0)->queryBody());
+        if (!newBody)
+            return nullptr;
+
+        IHqlExpression * params = expr->queryChild(1);
+        HqlExprArray funcArgs;
+        HqlExprArray dummyAttrs;
+        ForEachChild(i, params)
+        {
+            IHqlExpression * param = params->queryChild(i)->queryBody();
+            type_t tc = param->queryType()->getTypeCode();
+
+            switch (tc)
+            {
+            case type_scope:
+            case type_table:
+            case type_row:
+            case type_set:
+            case type_record:
+            case type_enumerated:
+            case type_groupedtable:
+                return nullptr;
+            }
+            funcArgs.append(*createParameter(param->queryId(),(unsigned)expr->querySequenceExtra(), getFullyUnqualifiedType(param->queryType()), dummyAttrs));
+        }
+
+        OwnedHqlExpr formals = createSortList(funcArgs);
+
+        IHqlExpression * origDefaults = expr->queryChild(2);
+        OwnedHqlExpr newDefaults;
+        if (origDefaults && origDefaults->numChildren())
+        {
+            HqlExprArray newDefaultsArray;
+            ForEachChild(idx, origDefaults)
+            {
+                IHqlExpression * defaultValue = origDefaults->queryChild(idx);
+                if (defaultValue->getOperator() == no_omitted)
+                    newDefaultsArray.append(*(LINK(defaultValue)));
+                else
+                {
+                    OwnedHqlExpr newDefault = createSimplifiedBodyDefinition(defaultValue->queryBody(), true);
+                    if (!newDefault)
+                        return nullptr;
+                    newDefaultsArray.append(*(newDefault.getClear()));
+                }
+            }
+            newDefaults.setown(createSortList(newDefaultsArray));
+        }
+        return createFunctionDefinition(expr->queryId(), newBody.getClear(), formals.getClear(), newDefaults.getClear(), nullptr);
+    }
+    if (expr->getOperator()==no_typedef || expr->getOperator()==no_enum)
+        return nullptr;
+    ITypeInfo * type = getFullyUnqualifiedType(expr->queryType());
+    if (!type)
+        return nullptr;
+
+    return createSimplifiedDefinitionFromType(type, implicitConstantType);
+}
+
+IHqlExpression * createSimplifiedDefinition(IHqlExpression * expr)
+{
+    if (!expr)
+        return nullptr;
+    OwnedHqlExpr simple = createSimplifiedBodyDefinition(expr);
+    if (simple)
+        return expr->cloneAnnotation(simple);
+    return nullptr;
+}
 //---------------------------------------------------------------------------------------------------------------------
 
 /*
@@ -404,6 +458,7 @@ static const char * splitFullname(StringBuffer & module, const char * fullname)
     else
         return fullname;
 }
+
 
 void getFileContentText(StringBuffer & result, IFileContents * contents)
 {

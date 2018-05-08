@@ -245,6 +245,7 @@ public:
         cclogFilename.append("cc.").append((unsigned)GetCurrentProcessId()).append(".log");
         defaultAllowed[false] = true;  // May want to change that?
         defaultAllowed[true] = true;
+        optMetaLocation.set(".eclcc/metacache");
     }
     ~EclCC()
     {
@@ -406,6 +407,10 @@ protected:
     bool optCheckIncludePaths = true;
     bool optXml = false;
     bool optTraceCache = false;
+    bool optVerifySimplified = false;
+    bool optRegenerateCache = false;
+    bool optIgnoreCache = false;
+
     mutable bool daliConnected = false;
     mutable bool disconnectReported = false;
     int argc;
@@ -1147,7 +1152,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         setActiveSource(instance.inputFile->queryFilename());
 
     Owned<IEclCachedDefinitionCollection> cache;
-    __uint64 optionHash = 0;
+    hash64_t optionHash = 0;
     if (optMetaLocation)
     {
         //Update the hash to include information about which options affect how symbols are processed.  It should only include options that
@@ -1166,7 +1171,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
         optionHash = rtlHash64Data(sizeof(optLegacyImport), &optLegacyImport, optionHash);
         optionHash = rtlHash64Data(sizeof(optLegacyWhen), &optLegacyWhen, optionHash);
-
         //And create a cache instances
         cache.setown(createEclFileCachedDefinitionCollection(instance.dataServer, optMetaLocation));
     }
@@ -1205,6 +1209,14 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         HqlParseContext parseCtx(instance.dataServer, &instance, instance.archive, statsTarget);
         parseCtx.cache = cache;
         parseCtx.optionHash = optionHash;
+        if (optSyntax)
+            parseCtx.setSyntaxChecking();
+        if (optVerifySimplified)
+            parseCtx.setCheckSimpleDef();
+        if (optRegenerateCache)
+            parseCtx.setRegenerateCache();
+        if (optIgnoreCache)
+            parseCtx.setIgnoreCache();
         if (optFastSyntax)
             parseCtx.setFastSyntax();
         parseCtx.timeParser = instance.wu->getDebugValueBool("timeParser", false);
@@ -1232,7 +1244,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             parseCtx.setGatherMeta(options);
         }
 
-        if (optMetaLocation)
+        if (optMetaLocation && !instance.fromArchive)
             parseCtx.setCacheLocation(optMetaLocation);
 
         setLegacyEclSemantics(instance.legacyImport, instance.legacyWhen);
@@ -2546,8 +2558,12 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optIncludeMeta, "-meta") || iter.matchFlag(optIncludeMeta, "--meta"))
         {
         }
-        else if (iter.matchOption(optMetaLocation, "--metacache"))
+        else if (iter.matchOption(tempArg, "--metacache"))
         {
+            if (!tempArg.isEmpty())
+                optMetaLocation.set(tempArg);
+            else
+                optMetaLocation.clear();
         }
         else if (iter.matchFlag(optGenerateMeta, "-M"))
         {
@@ -2636,6 +2652,15 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
                 return 1;
         }
         else if (iter.matchFlag(optTraceCache, "--tracecache"))
+        {
+        }
+        else if (iter.matchFlag(optVerifySimplified, "--internalverifysimplified"))
+        {
+        }
+        else if (iter.matchFlag(optRegenerateCache, "--regeneratecache"))
+        {
+        }
+        else if (iter.matchFlag(optIgnoreCache, "--internalignorecache"))  // may generate cache but don't use to simplified expressions
         {
         }
         else if (iter.matchFlag(logVerbose, "-v") || iter.matchFlag(logVerbose, "--verbose"))

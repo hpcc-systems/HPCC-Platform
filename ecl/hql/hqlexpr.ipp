@@ -1911,7 +1911,9 @@ public:
 
 class HqlGramCtx;
 extern void defineSymbol(IIdAtom * id, IHqlExpression *value);
-extern void parseAttribute(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IIdAtom * id);
+extern void parseAttribute(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IIdAtom * id, const char * fullName);
+extern IHqlExpression * parseDefinition(const char * ecl, IIdAtom * name, MultiErrorReceiver &errors);
+extern bool verifySimpifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplifiedDefinition, HqlLookupContext & ctx);
 extern bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpression * forwardSymbol, HqlLookupContext & ctx);
 
 IHqlExpression *createAttribute(node_operator op, IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3);

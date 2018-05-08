@@ -28,7 +28,7 @@ interface IEclCachedDefinition : public IInterface
 public:
     virtual timestamp_type getTimeStamp() const = 0;
     virtual IEclSource * queryOriginal() const = 0;
-    virtual bool isUpToDate(__uint64 optionHash) const = 0;
+    virtual bool isUpToDate(hash64_t optionHash) const = 0;
     virtual IFileContents * querySimplifiedEcl() const = 0;
     virtual void queryDependencies(StringArray & values) const = 0;
     virtual bool hasKnownDependents() const = 0;
