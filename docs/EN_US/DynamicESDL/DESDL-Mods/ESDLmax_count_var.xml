@@ -6,8 +6,9 @@
 
   <para><indexterm>
       <primary>max_count_var</primary>
-    </indexterm>The max_count_var attribute is used to specify the expected
-  max items in a dataset (ESParray).</para>
+    </indexterm>The max_count_var attribute is used to specify a variable (an
+  ECL Attribute) cotaining the value of the expected max items in a dataset
+  (ESParray).</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
@@ -15,4 +16,7 @@
 
   <para>Roxie will define the constant iesp.Constants.JD.MaxRecords and change
   it at will without affecting ESP.</para>
+
+  <para>See Also: <link linkend="ESParray">ESParray</link>, <link
+  linkend="ESDL_Attributes_max_count">max_count</link></para>
 </sect1>

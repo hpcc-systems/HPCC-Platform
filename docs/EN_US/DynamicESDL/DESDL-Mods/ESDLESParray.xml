@@ -9,6 +9,9 @@
     </indexterm>A structure for unbounded arrays. Arrays support inheritance
   and can be nested.</para>
 
+  <para>Either [max_count_var(k)] or [max_count_var(k)] is required for an
+  ESPArray when k&gt;1.</para>
+
   <para><emphasis role="bold">Example:</emphasis></para>
 
   <programlisting>
@@ -22,7 +25,7 @@
      int Age;
  };
   
- ESParray&lt;ESPstruct NameBlock, Name&gt; Names;
+ ESParray [max_count(20)] &lt;ESPstruct NameBlock, Name&gt; Names;
 
    </programlisting>
 
@@ -42,4 +45,8 @@
     &lt;Age&gt;33&lt;/Age&gt;
   &lt;/Name&gt;
 &lt;/Names&gt;</programlisting></para>
+
+  <para>See Also: <link
+  linkend="ESDL_Attributes_max_count_var">max_count_var</link>, <link
+  linkend="ESDL_Attributes_max_count">max_count</link> </para>
 </sect1>
