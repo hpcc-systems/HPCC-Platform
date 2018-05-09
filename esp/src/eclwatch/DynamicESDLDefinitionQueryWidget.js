@@ -5,6 +5,11 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
 
+    "dijit/registry",
+    "dijit/form/CheckBox",
+
+    "dgrid/selector",
+
     "hpcc/GridDetailsWidget",
     "src/WsESDLConfig",
     "src/ESPUtil",
@@ -12,87 +17,100 @@ define([
     "src/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
+    registry, Checkbox,
+    selector,
     GridDetailsWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget, Utility) {
-        return declare("DynamicESDLWidget", [GridDetailsWidget], {
-            i18n: nlsHPCC,
+    return declare("DynamicESDLWidget", [GridDetailsWidget], {
+        i18n: nlsHPCC,
 
-            gridTitle: nlsHPCC.title_DefinitionExplorer,
-            idProperty: "Name",
+        gridTitle: nlsHPCC.title_DefinitionExplorer,
+        idProperty: "Name",
 
-            init: function (params) {
-                var context = this;
-                if (this.inherited(arguments))
-                    return;
+        init: function (params) {
+            var context = this;
+            if (this.inherited(arguments))
+                return;
 
-                this._refreshActionState();
-                this.refreshGrid();
-            },
+            this._refreshActionState();
+            this.refreshGrid();
+        },
 
-            postCreate: function (args) {
-                var context = this;
-                this.inherited(arguments);
-                this.definitionWidget = new DynamicESDLDefinitionDetailsWidget({
-                    id: this.id + "_DefinitionDetails",
-                    region: "right",
-                    splitter: true,
-                    style: "width: 80%",
-                    minSize: 240
-                });
-                this.definitionWidget.placeAt(this.gridTab, "last");
-                this.refreshGrid();
-            },
+        postCreate: function (args) {
+            var context = this;
+            this.inherited(arguments);
+            this.definitionWidget = new DynamicESDLDefinitionDetailsWidget({
+                id: this.id + "_DefinitionDetails",
+                region: "right",
+                splitter: true,
+                style: "width: 80%",
+                minSize: 240
+            });
+            this.definitionWidget.placeAt(this.gridTab, "last");
+            this.refreshGrid();
+        },
 
-            createGrid: function (domID) {
-                var context = this;
-                var retVal = new declare([ESPUtil.Grid(false, true)])({
-                    store: this.store,
-                    columns: {
-                        Name: { label: this.i18n.Name, sortable: true, width: 200 }
+        createGrid: function (domID) {
+            var context = this;
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
+                store: this.store,
+                selectionMode: "single",
+                columns: {
+                    col1: selector({
+                        width: 27,
+                        selectorType: 'checkbox'
+                    }),
+                    Name: {
+                        label: this.i18n.Name,
+                        sortable: true,
+                        width: 200
                     }
-                }, domID);
+                }
+            }, domID);
 
-                retVal.on("dgrid-select", function (evt) {
-                    var selection = context.grid.getSelected();
-                    if (selection) {
-                        context.definitionWidget.init({
-                            Id: selection[0].Name
-                        });
-                    }
-                });
-                return retVal;
-            },
+            retVal.on("dgrid-select", function (evt) {
+                var selection = context.grid.getSelected();
+                if (selection) {
+                    context.definitionWidget.init({
+                        Id: selection[0].Name
+                    });
+                }
+            });
+            return retVal;
+        },
 
-            _onRefresh: function () {
-                this.refreshGrid();
-            },
+        _onRefresh: function () {
+            this.refreshGrid();
+        },
 
-            refreshGrid: function (args) {
-                var context = this;
-                WsESDLConfig.ListESDLDefinitions({
-                    request: {
-                        ver_: "1.3"
-                    }
-                }).then(function (response) {
-                    var results = [];
-                    if (lang.exists("ListESDLDefinitionsResponse.Definitions.Definition", response)) {
-                        arrayUtil.forEach(response.ListESDLDefinitionsResponse.Definitions.Definition, function (item, idx) {
-                            var Def = {
-                                Id: idx,
-                                Name: item.Id
-                            }
-                            results.push(Def);
-                        });
-                        Utility.alphanumSort(results, "Name");
-                    }
-                    context.store.setData(results);
-                    context.grid.refresh();
-                    if (context.params.firstLoad && results.length) {
-                        var firstRowSelection = context.store.query({ Id: results[0].Id });
-                        if (firstRowSelection.length) {
-                            context.grid.select({ Name: firstRowSelection[0].Name });
+        refreshGrid: function (args) {
+            var context = this;
+            WsESDLConfig.ListESDLDefinitions({
+                request: {}
+            }).then(function (response) {
+                var results = [];
+                if (lang.exists("ListESDLDefinitionsResponse.Definitions.Definition", response)) {
+                    arrayUtil.forEach(response.ListESDLDefinitionsResponse.Definitions.Definition, function (item, idx) {
+                        var Def = {
+                            Id: idx,
+                            Name: item.Id
                         }
+                        results.push(Def);
+                    });
+                    Utility.alphanumSort(results, "Name");
+                }
+                context.store.setData(results);
+                context.grid.refresh();
+                if (context.params.firstLoad && results.length) {
+                    var firstRowSelection = context.store.query({
+                        Id: results[0].Id
+                    });
+                    if (firstRowSelection.length) {
+                        context.grid.select({
+                            Name: firstRowSelection[0].Name
+                        });
                     }
-                });
-            }
-        });
+                }
+            });
+        }
     });
+});
