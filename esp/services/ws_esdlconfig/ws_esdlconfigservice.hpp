@@ -67,7 +67,8 @@ public:
         return true;
     }
 private:
-    bool m_isDetachedFromDali;
+    //Service will be attached to Dali until told otherwise
+    bool m_isDetachedFromDali = false;
 };
 
 #endif //_ESPWIZ_WsESDLConfig_HPP__
