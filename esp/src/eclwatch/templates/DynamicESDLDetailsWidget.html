@@ -3,20 +3,45 @@
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
             <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props="title:'${i18n.Summary}'" data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
-                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                    <div id="${id}DeleteBinding" data-dojo-attach-event="onClick:_onDeleteBinding" data-dojo-props="disabled: true" data-dojo-type="dijit.form.Button">${i18n.DeleteBinding}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false"
+                        data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
                 </div>
-                <div id="${id}_Details" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane"></div>
+                <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <h2>
+                        <span id="${id}Id" style="margin-left:20px;" class="bold">${i18n.ID}</span>
+                        <button id="${id}ClippyButton" class="clippy" data-clipboard-target="#${id}Id">
+                            <img src="${dojoConfig.urlInfo.resourcePath}/img/clippy.png" alt="Copy to clipboard">
+                        </button>
+                    </h2>
+                    <form id="${id}SummaryForm">
+                        <ul>
+                            <li>
+                                <label class="Prompt" for="${id}EspProcName">${i18n.ESPProcessName}:</label>
+                                <div id="${id}EspProcName"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}ServiceName">${i18n.ServiceName}:</label>
+                                <div id="${id}ServiceName"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}EspPort">${i18n.Port}:</label>
+                                <div id="${id}EspPort"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}Owner">${i18n.Binding}:</label>
+                                <div id="${id}BindingName"></div>
+                            </li>
+                        </ul>
+                    </form>
+                </div>
             </div>
-            <div id="${id}_Binding" title="${i18n.Binding}" data-dojo-type="dijit.layout.BorderContainer">
-                <div id="${id}SubmitPane" class="edgePanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
-                    <div id="${id}StackController" style="width: 100%" data-dojo-props="containerId:'${id}OverviewTabContainer'" data-dojo-type="dijit.layout.StackController"></div>
-                </div>
-                <div id="${id}OverviewTabContainer" data-dojo-props="region: 'center', tabPosition: 'bottom'" data-dojo-type="dijit.layout.StackContainer">
-                    <div id="${id}Configuration" data-dojo-props="showTitle: true, disabled: false, title: '${i18n.Configuration}'" data-dojo-type="DynamicESDLMethodWidget"></div>
-                    <div id="${id}Definition" data-dojo-props="showTitle: true, disabled: false, title: '${i18n.Definition}'" data-dojo-type="ECLSourceWidget"></div>
-                </div>
+            <div id="${id}_Configuration" title="${i18n.title_BindingConfiguration}" data-dojo-props="delayWidget: 'DynamicESDLMethodWidget', disabled: true"
+                data-dojo-type="DelayLoadWidget">
+            </div>
+            <div id="${id}_Definition" title="${i18n.title_BindingDefinition}" data-dojo-props="delayWidget: 'ECLSourceWidget', disabled: true"
+                data-dojo-type="DelayLoadWidget">
             </div>
         </div>
     </div>
