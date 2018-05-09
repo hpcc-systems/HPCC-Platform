@@ -51,6 +51,7 @@
 #include <poll.h>
 #endif
 #include <limits.h>
+#include <list>
 
 #include "jmutex.hpp"
 #include "jsocket.hpp"
@@ -3881,6 +3882,7 @@ protected:
     }
 
 public:
+    bool finished;
     void triggerselect()
     {
         if (tickwait)
@@ -4131,6 +4133,7 @@ public:
         dummysockopen = false;
         opendummy();
         terminating = false;
+        finished = false;
         waitingchange = 0;
         selectvarschange = false;
         validateselecterror = 0;
@@ -4547,6 +4550,7 @@ public:
             else
                 e->Release();
         }
+        finished = true;
         return 0;
     }
 };
@@ -4763,6 +4767,7 @@ public:
     {
         dummysockopen = false;
         terminating = false;
+        finished = false;
         waitingchange = 0;
         selectvarschange = false;
         validateselecterror = 0;
@@ -4883,8 +4888,7 @@ public:
             // and more than one thread is present
             unsigned n = items.ordinality();
             if (n == 0 && numThreads > 1)
-                terminating = true;
-            triggerselect();
+                stop(false);
             return true;
         }
         return false;
@@ -5124,13 +5128,14 @@ public:
             EXCLOG(e,"CSocketEpollThread");
             termexcept.setown(e);
         }
+        finished = true;
         return 0;
     }
 };
 
 class CSocketEpollHandler: implements ISocketSelectHandler, public CInterface
 {
-    CIArrayOf<CSocketEpollThread> threads;
+    std::list<Owned<CSocketEpollThread>> threads;
     CriticalSection sect;
     bool started;
     StringAttr epolltrace;
@@ -5145,7 +5150,7 @@ public:
     ~CSocketEpollHandler()
     {
         stop(true);
-        threads.kill();
+        threads.clear();
     }
 
     void start()
@@ -5154,9 +5159,11 @@ public:
         if (!started)
         {
             started = true;
-            ForEachItemIn(i,threads)
+            std::list<Owned<CSocketEpollThread>>::iterator it = threads.begin();
+            while (it != threads.end())
             {
-                threads.item(i).start();
+                (*it)->start();
+                it++;
             }
         }
     }
@@ -5173,22 +5180,36 @@ public:
         // seem not as important, but we are still serializing on
         // nfy events and spreading those over threads may help,
         // especially with SSL as avail_read() could block more.
-        unsigned nt = threads.ordinality();
-        bool added=false;
-        ForEachItemIn(i,threads)
+        unsigned nt = threads.size();
+        bool added = false;
+        bool removed = false;
+        std::list<Owned<CSocketEpollThread>>::iterator it = threads.begin();
+        while (it != threads.end())
         {
             if (added)
             {
-                if (threads.item(i).remove(sock, nt))
-                    return;
+                if (!removed)
+                {
+                    if ((*it)->remove(sock, nt) && sock)
+                        removed = true;
+                }
+                if ( ((*it)->finished) && ((*it)->join(0)) )
+                    it = threads.erase(it);
+                else
+                    it++;
             }
             else
-                added = threads.item(i).add(sock,mode,nfy);
+            {
+                added = (*it)->add(sock, mode, nfy);
+                it++;
+            }
         }
+
         if (added)
             return;
-        CSocketEpollThread *thread = new CSocketEpollThread(epolltrace, hdlPerThrd);
-        threads.append(*thread);
+
+        Owned<CSocketEpollThread> thread = new CSocketEpollThread(epolltrace, hdlPerThrd);
+        threads.push_back(thread);
         if (started)
             thread->start();
         thread->add(sock,mode,nfy);
@@ -5197,24 +5218,37 @@ public:
     void remove(ISocket *sock)
     {
         CriticalBlock block(sect);
-        unsigned nt = threads.ordinality();
-        ForEachItemIn(i,threads)
+        unsigned nt = threads.size();
+        bool removed = false;
+        std::list<Owned<CSocketEpollThread>>::iterator it = threads.begin();
+        while (it != threads.end())
         {
-            if (threads.item(i).remove(sock, nt))
-                break;
+            if (!removed)
+            {
+                if ((*it)->remove(sock, nt) && sock)
+                    removed = true;
+            }
+            if ( ((*it)->finished) && ((*it)->join(0)) )
+                it = threads.erase(it);
+            else
+                it++;
         }
     }
 
     void stop(bool wait)
     {
         CriticalBlock block(sect);
-        ForEachItemIn(i,threads)
+        std::list<Owned<CSocketEpollThread>>::iterator it = threads.begin();
+        while (it != threads.end())
         {
-            CSocketEpollThread &t=threads.item(i);
             {
                 CriticalUnblock unblock(sect);
-                t.stop(wait);           // not quite as quick as could be if wait true
+                (*it)->stop(wait);         // not quite as quick as could be if wait true
             }
+            if (wait)
+                it = threads.erase(it);
+            else
+                it++;
         }
     }
 };
