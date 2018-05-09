@@ -27,11 +27,13 @@ import glob
 
 from hpcc.util import argparse
 from hpcc.regression.regress import Regression
-from hpcc.util.ecl.file import ECLFile
-from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress, checkClusters, checkHpccStatus, getEclRunArgs
+from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath
+from hpcc.util.util import getRealIPAddress, checkClusters, checkHpccStatus
+from hpcc.util.util import getEclRunArgs, isSudoer
 from hpcc.util.expandcheck import ExpandCheck
 from hpcc.common.error import Error
 from hpcc.common.config import Config
+from hpcc.common.logger import Logger
 
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
@@ -116,7 +118,7 @@ class RegressMain:
                     logging.error("%s. No ECL file match for cluster:'%s'!" % (1,  self.args.target))
                     raise Error("4001")
             except IOError:
-                logging.error("%s. Query %s does not exist!" % (1,  eclfile.getBaseEcl()))
+                logging.error("%s. Some query does not exist!" % (0))
                 exit()
 
     def setup(self):
@@ -143,6 +145,7 @@ class RegressMain:
         description = 'HPCC Platform Regression suite'
         pythonVer = getVersionNumbers()
         defaultConfigFile="ecl-test.json"
+        self.log = Logger('info')
 
         if (pythonVer['main'] <= 2) and (pythonVer['minor'] <=6) and (pythonVer['patch'] <6):
             print "\nError!"
@@ -193,6 +196,9 @@ class RegressMain:
                                 nargs=1,  default = ['none'],   metavar="class[,class,...]")
         executionParser.add_argument('--jobnamesuffix', help="Specify workunit job name suffix.", default='',
                                 metavar="suffix")
+        executionParser.add_argument('--flushDiskCache', help="Flush OS (Linux) Disk Cache before execute ECL code (sudo privileges needed). Ignored when --pq <n>  > 1"
+                                , action = 'store_true')
+
 
         parser = argparse.ArgumentParser(prog=prog, description=description,  parents=[helperParser, commonParser,  executionParser])
 
@@ -262,6 +268,17 @@ class RegressMain:
         if ('server' in self.args) and (self.args.server != None):
             self.config.set('espIp',  self.args.server)
             pass
+
+        if self.args.flushDiskCache and not isSudoer():
+            err = Error("7000")
+            logging.error("%s. clearOSCache error:%s" % (-1,  err))
+            exit(err.getErrorCode())
+
+        # There is no sense to clear disk cache if same test runnnig parallel by versioning
+        if self.args.pq > 1:
+            self.args.flushDiskCache = False
+
+        self.config.set('log',  self.log)
         setConfig(self.config)
 
         # Process target parameter
@@ -329,11 +346,14 @@ class RegressMain:
                 self.run()
         except Error as e:
             logging.critical(e)
-            exit(e.getErrorCode());
+            logging.critical(traceback.format_exc())
+            exit(e.getErrorCode())
         except Exception as e:
-            logging.critical("Regression Test Engine internal error")
+            err = Error("6007")
+            logging.critical(" RegressMain error:%s" % (-1,  err))
             logging.critical(e)
             logging.critical(traceback.format_exc())
+            exit(e.getErrorCode())
         except KeyboardInterrupt:
             logging.critical("Keyboard Interrupt Caught.")
         finally:

@@ -22,6 +22,8 @@ import platform
 import logging
 import os
 import subprocess
+import sys
+import traceback
 
 from ..common.error import Error
 from ..common.shell import Shell
@@ -297,3 +299,31 @@ def checkHpccStatus():
 
     finally:
         pass
+
+def isSudoer():
+    retVal = False
+    if 'linux' in sys.platform :
+        myProc = subprocess.Popen(["timeout -k 2 2 sudo id && echo Access granted || echo Access denied"], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (myStdout,  myStderr) = myProc.communicate()
+        result = "returncode:" + str(myProc.returncode) + ", stdout:\n'" + myStdout + "', stderr:\n'" + myStderr + "'."
+        logging.debug("%3d. isSudoer() result is: '%s'",  -1, result)
+        if 'Access denied' not in myStdout:
+            retVal = True
+
+    return retVal
+
+def clearOSCache():
+    if 'linux' in sys.platform :
+        if isSudoer():
+            myProc = subprocess.Popen(["free; sudo -S sync; echo 3 | sudo tee /proc/sys/vm/drop_caches; free"], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (myStdout,  myStderr) = myProc.communicate()
+            result = "returncode:" + str(myProc.returncode) + ", stdout:\n'" + myStdout + "', stderr:\n'" + myStderr + "'."
+            logging.debug("%3d. clearOSCache() result is: '%s'",  -1, result)
+        else:
+            err = Error("7000")
+            logging.error("%s. clearOSCache error:%s" % (-1,  err))
+            logging.critical(traceback.format_exc())
+            raise Error(err)
+    else:
+        logging.debug("%3d. clearOSCache() not supported on %s.",  -1, sys.platform)
+    pass

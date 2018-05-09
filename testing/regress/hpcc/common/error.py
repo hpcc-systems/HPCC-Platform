@@ -35,7 +35,9 @@ ERROR = {
     "6003": "Parameter error when try to call ecl command!",
     "6004": "Can't connect to remote HPCC System!",
     "6005": "Syntax error in //skip tag!",
-    "6006": "Error in build suite"
+    "6006": "Error in build suite",
+    "6007": "Regression Test Engine internal error",
+    "7000": "You have not enough privilege to use '--flushDiskCache' parameter. Check sudoer settings or try it with sudo."
 }
 
 

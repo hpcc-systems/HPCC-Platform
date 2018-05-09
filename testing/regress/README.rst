@@ -28,6 +28,7 @@ Result:
 |                       [--runclass class[,class,...]]
 |                       [--excludeclass class[,class,...]]
 |                       [--handleEclccWarningFile]
+|                       [--flushDiskCache]
 |                       {list,setup,run,query} ...
 | 
 |       HPCC Platform Regression suite
@@ -63,6 +64,8 @@ Result:
 |        --handleEclccWarningFile, -w
 |                                 Create/overwrite/delete ECLCC warning file.
 |        --jobnamesuffix suffix   Specify workunit job name suffix.
+|        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code
+|                                 (sudo privileges needed). Ignored when --pq <n> > 1
 |
 
 Important!
@@ -91,10 +94,10 @@ Result:
 |
 |       usage: ecl-test list [-h] [--config [CONFIG]] [--loglevel [{info,debug}]]
 |                            [--runclass class[,class,...]]
-|                     [--excludeclass class[,class,...]]
-|                     [--jobnamesuffix suffix] [--clusters] [--setup] [--run]
-|                     [--target [target_cluster_list | all]]
-|                     [--createEclRunArg]
+|                            [--excludeclass class[,class,...]]
+|                            [--jobnamesuffix suffix] [--flushDiskCache] [--clusters]
+|                            [--setup] [--run] [--target [target_cluster_list | all]]
+|                            [--createEclRunArg]
 |
 |       optional arguments:
 |        -h, --help               Show this help message and exit
@@ -109,6 +112,8 @@ Result:
 |                                 'none'
 |        --jobnamesuffix suffix
 |                                 Specify workunit job name suffix.
+|        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code
+|                                 (sudo privileges needed). Ignored when --pq <n> > 1
 |        --clusters               Print target clusters from config (ecl-test.json by
 |                                 default).
 |        --setup                  Print testcases executed in setup.
@@ -143,7 +148,9 @@ Result:
 |                             [--noversion]
 |                             [--runclass class[,class,...]]
 |                             [--excludeclass class[,class,...]]
+|                             [--jobnamesuffix suffix] [--flushDiskCache]
 |                             [--target [target_cluster_list | all]]
+|                             [--handleEclccWarningFile]
 |
 |       optional arguments:
 |        -h, --help               Show this help message and exit
@@ -166,11 +173,15 @@ Result:
 |                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 Exclude subclass(es) of the suite. Default value is 'none'
-|        --handleEclccWarningFile, -w
-|                                 Create/overwrite/delete ECLCC warning file.
 |        --jobnamesuffix suffix   Specify workunit job name suffix.
+|        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code
+|                                 (sudo privileges needed). Ignored when --pq <n> > 1
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 Run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
+|                                 Run the setup on target cluster(s). If target = 'all'
+|                                 then run setup on all clusters. If not defined then
+|                                 default value(s) come from config (ecl-test.json by default).
+|        --handleEclccWarningFile, -w
+|                                 Create/overwrite/delete ECLCC warning file
 |
 
 Parameters of Regression Suite run sub-command:
@@ -191,12 +202,12 @@ Result:
 |                           [--ignoreResult]
 |                           [-X name1=value1[,name2=value2...]]
 |                           [-f optionA=valueA[,optionB=valueB...]]
-|                           [--pq threadNumber]
-|                           [--noversion]
-|                           [--runclass class[,class,...]]
+|                           [--pq threadNumber] [--noversion]
+|                           [--server [networkAddress]] [--runclass class[,class,...]]
 |                           [--excludeclass class[,class,...]]
-|                           [--target [target_cluster_list | all]]
-|                           [--publish]
+|                           [--jobnamesuffix suffix] [--flushDiskCache]
+|                           [--target [target_cluster_list | all]] [--publish]
+|                           [--handleEclccWarningFile]
 |
 |       optional arguments:
 |        -h, --help               Show this help message and exit
@@ -215,16 +226,23 @@ Result:
 |                                 Set an ECL option (equivalent to #option).
 |        --pq threadNumber        Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |        --noversion              Avoid version expansion of queries. Execute them as a standard test.
+|        --server [networkAddress]
+|                                 ESP server address. Default value (espIp) defined in
+|                                 ecl-test.json config file.
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 Exclude subclass(es) of the suite. Default value is 'none'
+|        --jobnamesuffix suffix   Specify workunit job name suffix.
+|        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code
+|                                 (sudo privileges needed). Ignored when --pq <n> > 1
+|        --target [target_cluster_list | all], -t [target_cluster_list | all]
+|                                 Run the cluster(s) suite. If target = 'all' then run
+|                                 suite on all clusters. If not defined then default
+|                                 value(s) come from config (ecl-test.json by default).
+|        --publish, -p            Publish compiled query instead of run.
 |        --handleEclccWarningFile, -w
 |                                 Create/overwrite/delete ECLCC warning file.
-|        --jobnamesuffix suffix   Specify workunit job name suffix.
-|        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 Run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
-|        --publish, -p            Publish compiled query instead of run.
 |
 
 
@@ -246,12 +264,13 @@ Result:
 |                             [--ignoreResult]
 |                             [-X name1=value1[,name2=value2...]]
 |                             [-f optionA=valueA[,optionB=valueB...]]
-|                             [--pq threadNumber]
-|                             [--noversion]
+|                             [--pq threadNumber]  [--noversion]
+|                             [--server [networkAddress]]
 |                             [--runclass class[,class,...]]
 |                             [--excludeclass class[,class,...]]
-|                             [--target [target_cluster_list | all]]
-|                             [--publish]
+|                             [--jobnamesuffix suffix] [--flushDiskCache]
+|                             [--target [target_cluster_list | all]] [--publish]
+|                             [--handleEclccWarningFile]
 |                             ECL_query [ECL_query ...]
 |
 |       positional arguments:
@@ -274,16 +293,22 @@ Result:
 |                                 Set an ECL option (equivalent to #option).
 |        --pq threadNumber        Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |        --noversion              Avoid version expansion of queries. Execute them as a standard test.
+|        --server [networkAddress]
+|                                 ESP server address. Default value (espIp) defined in ecl-test.json config file.
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 Exclude subclass(es) of the suite. Default value is 'none'
-|        --handleEclccWarningFile, -w
-|                                 Create/overwrite/delete ECLCC warning file.
-|        --jobnamesuffix suffix   Specify workunit job name suffix.
+|        --jobnamesuffix suffix
+|                                 Specify workunit job name suffix.
+|        --flushDiskCache         Flush OS (Linux) Disk Cache before execute ECL code (sudo privileges needed). Ignored when --pq <n> > 1
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 Run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
-|        --publish, -p            Publish compiled query instead of run.
+|                                 Target cluster(s) for query to run. If target = 'all'
+|                                 then run query on all clusters. If not defined then
+|                                 default value(s) come from config (ecl-test.json by default).
+|         --publish, -p           Publish compiled query instead of run.
+|         --handleEclccWarningFile, -w
+|                                 Create/overwrite/delete ECLCC warning file.
 |
 
 Steps to run Regression Suite
@@ -626,6 +651,7 @@ The format of the output is the same as 'run', except there is a log, result and
     The regression suite engine executes the file once for each //version line in the file. It is compiled with command line option -Dn1=v1 -Dn2=v2 etc.
     The string value should quoted with \'.
     Optionally 'no<target>' exclusion info can add at the end of tag.
+    Special variable 'flushDiskCache' with 'true' can be used to force OS (Linux) disk cache flush beforeore execute ECl code.
 //version <n1>=<v1>,<n2>=<v2>,...[,no<target>[,no<target>]]
 
     This tag should use when a test case intentionally fails to handle it as pass.
