@@ -344,6 +344,7 @@ define({root:
     Login: "Login",
     Logout: "Log Out",
     Logs: "Logs",
+    LogVisualization: "Log Visualization",
     log_analysis_1: "log_analysis_1*",
     LostFile: "Lost Files",
     LostFile2: "Lost Files",
