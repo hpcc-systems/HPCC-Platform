@@ -336,7 +336,18 @@ public:
             threadstate->frame = NULL;
     }
 
-    PyObject *getNamedTupleType(const RtlTypeInfo *type)
+
+    PyObject *getActivityContextTupleType()
+    {
+        // Note - we do not need (and must not have) a lock protecting this. It is protected by the Python GIL,
+        // and if we add our own lock we are liable to deadlock as the code within Py_CompileStringFlags may
+        // temporarily release then re-acquire the GIL.
+        if (!activityContextTupleType)
+            activityContextTupleType.setown(getNamedTupleType("isLocal,numSlaves,numStrands,slave,strand"));
+        return activityContextTupleType.get();
+    }
+
+    PyObject *getNamedTupleType(const char *names)
     {
         // It seems the customized namedtuple types leak, and they are slow to create, so take care to reuse
         // Note - we do not need (and must not have) a lock protecting this. It is protected by the Python GIL,
@@ -353,6 +364,28 @@ public:
             assertex(PyCallable_Check(namedtuple));
         }
 
+        OwnedPyObject pnames = PyString_FromString(names);
+        OwnedPyObject mynamedtupletype;
+        checkPythonError();
+        mynamedtupletype.set(PyDict_GetItem(namedtupleTypes, pnames));   // NOTE - returns borrowed reference
+        if (!mynamedtupletype)
+        {
+            OwnedPyObject recname = PyString_FromString("namerec");     // MORE - do we care what the name is?
+            OwnedPyObject ntargs = PyTuple_Pack(2, recname.get(), pnames.get());
+            checkPythonError();
+            OwnedPyX<PyFrameObject> frame = pushDummyFrame();
+            mynamedtupletype.setown(PyObject_CallObject(namedtuple, ntargs));
+            popDummyFrame(frame);
+            checkPythonError();
+            PyDict_SetItem(namedtupleTypes, pnames, mynamedtupletype);
+        }
+        checkPythonError();
+        assertex(PyCallable_Check(mynamedtupletype));
+        return mynamedtupletype.getClear();
+    }
+
+    PyObject *getNamedTupleType(const RtlTypeInfo *type)
+    {
         const RtlFieldInfo * const *fields = type->queryFields();
         if (!fields && type->queryChildType())
             fields = type->queryChildType()->queryFields();
@@ -366,23 +399,9 @@ public:
             names.append(field->name);
             fields++;
         }
-        OwnedPyObject pnames = PyString_FromString(names.str());
-        OwnedPyObject mynamedtupletype;
-        mynamedtupletype.set(PyDict_GetItem(namedtupleTypes, pnames));   // NOTE - returns borrowed reference
-        if (!mynamedtupletype)
-        {
-            OwnedPyObject recname = PyString_FromString("namerec");     // MORE - do we care what the name is?
-            OwnedPyObject ntargs = PyTuple_Pack(2, recname.get(), pnames.get());
-            OwnedPyX<PyFrameObject> frame = pushDummyFrame();
-            mynamedtupletype.setown(PyObject_CallObject(namedtuple, ntargs));
-            popDummyFrame(frame);
-            checkPythonError();
-            PyDict_SetItem(namedtupleTypes, pnames, mynamedtupletype);
-        }
-        checkPythonError();
-        assertex(PyCallable_Check(mynamedtupletype));
-        return mynamedtupletype.getClear();
+        return getNamedTupleType(names.str());
     }
+
     PyObject *compileScript(const char *text, const char *parameters)
     {
         // Note - we do not need (and must not have) a lock protecting this. It is protected by the Python GIL,
@@ -475,6 +494,7 @@ protected:
     OwnedPyObject namedtupleTypes; // dictionary of return values from namedtuple()
     OwnedPyObject compiledScripts; // dictionary of previously compiled scripts
     OwnedPyObject preservedScopes; // dictionary of preserved scopes
+    OwnedPyObject activityContextTupleType; // type used for activity context
 } globalState;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -1260,10 +1280,12 @@ public:
         if (!resultIterator)
             return NULL;
         OwnedPyObject row = PyIter_Next(resultIterator);
+        checkPythonError();
         if (!row)
             return NULL;
         RtlDynamicRowBuilder rowBuilder(resultAllocator);
         size32_t len = py2embed::getRowResult(row, rowBuilder);
+        checkPythonError();
         return rowBuilder.finalizeRowClear(len);
     }
     virtual void stop()
@@ -1290,6 +1312,23 @@ public:
     : sharedCtx(_sharedCtx)
     {
         PyEval_RestoreThread(sharedCtx->threadState);
+    }
+
+    virtual void setActivityOptions(const IThorActivityContext *ctx)
+    {
+        OwnedPyObject mynamedtupletype = globalState.getActivityContextTupleType();
+        OwnedPyObject args = PyTuple_New(5);
+        OwnedPyObject isLocal;
+        isLocal.set(ctx->isLocal() ? Py_True : Py_False);
+        PyTuple_SET_ITEM((PyTupleObject *) args.get(), 0, isLocal.getClear());
+        PyTuple_SET_ITEM((PyTupleObject *) args.get(), 1, PyInt_FromLong(ctx->numSlaves()));
+        PyTuple_SET_ITEM((PyTupleObject *) args.get(), 2, PyInt_FromLong(ctx->numStrands()));
+        PyTuple_SET_ITEM((PyTupleObject *) args.get(), 3, PyInt_FromLong(ctx->querySlave()));
+        PyTuple_SET_ITEM((PyTupleObject *) args.get(), 4, PyInt_FromLong(ctx->queryStrand()));
+        OwnedPyObject activityTuple = PyObject_CallObject(mynamedtupletype, args);  // Creates a namedtuple from the supplied tuple
+        checkPythonError();
+        PyDict_SetItemString(locals, "__activity__", activityTuple.getClear());
+        checkPythonError();
     }
 
     void setScopes(ICodeContext *codeCtx, const char *_options)
@@ -1614,6 +1653,12 @@ public:
     {
         script.setown(sharedCtx->compileEmbeddedScript(lenChars, utf, argstring));
     }
+    virtual void setActivityOptions(const IThorActivityContext *ctx) override
+    {
+        Python27EmbedContextBase::setActivityOptions(ctx);
+        argstring.append("__activity__");
+    }
+
 
     virtual void callFunction()
     {
@@ -1694,11 +1739,11 @@ private:
 class Python27EmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) override
     {
-        return createFunctionContextEx(NULL, flags, options);
+        return createFunctionContextEx(nullptr, nullptr, flags, options);
     }
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
         checkThreadContext();
         Owned<Python27EmbedContextBase> ret;
@@ -1707,9 +1752,11 @@ public:
         else
             ret.setown(new Python27EmbedScriptContext(threadContext));
         ret->setScopes(ctx, options);
+        if (activityCtx)
+            ret->setActivityOptions(activityCtx);
         return ret.getClear();
     }
-    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         throwUnexpected();
     }

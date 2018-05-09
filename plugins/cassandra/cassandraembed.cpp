@@ -1300,8 +1300,8 @@ protected:
 class CassandraEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    CassandraEmbedFunctionContext(const IContextLogger &_logctx, unsigned _flags, const char *options)
-      : logctx(_logctx), flags(_flags), nextParam(0), numParams(0), batchMode((CassBatchType) -1), pageSize(0)
+    CassandraEmbedFunctionContext(const IContextLogger &_logctx, const IThorActivityContext *_activityCtx, unsigned _flags, const char *options)
+      : logctx(_logctx), activityCtx(_activityCtx), flags(_flags), nextParam(0), numParams(0), batchMode((CassBatchType) -1), pageSize(0)
     {
         StringArray opts;
         opts.appendList(options, ",");
@@ -1761,9 +1761,8 @@ public:
     virtual void compileEmbeddedScript(size32_t chars, const char *_script)
     {
         // Incoming script is not necessarily null terminated. Note that the chars refers to utf8 characters and not bytes.
-        size32_t len = rtlUtf8Size(chars, _script);
-        queryString.set(_script, len);
-        const char *script = queryString.get(); // Now null terminated
+        rtlSubstituteActivityContext(queryString, activityCtx, chars, _script);
+        const char *script = queryString.str(); // Now null terminated
         if ((flags & (EFnoreturn|EFnoparams)) == (EFnoreturn|EFnoparams))
         {
             for (;;)
@@ -1803,7 +1802,7 @@ public:
         {
             StringBuffer msg;
             E->errorMessage(msg);
-            msg.appendf(" (processing query %s)", queryString.get());
+            msg.appendf(" (processing query %s)", queryString.str());
             throw makeStringException(E->errorCode(), msg);
         }
     }
@@ -1908,10 +1907,11 @@ protected:
     Owned<CassandraStatementInfo> stmtInfo;
     Owned<CassandraDatasetBinder> inputStream;
     const IContextLogger &logctx;
+    const IThorActivityContext *activityCtx;
     unsigned flags;
     unsigned nextParam;
     unsigned numParams;
-    StringAttr queryString;
+    StringBuffer queryString;
     CassBatchType batchMode;
     unsigned pageSize;
 };
@@ -1919,18 +1919,18 @@ protected:
 class CassandraEmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) override
     {
-        return createFunctionContextEx(NULL, flags, options);
+        return createFunctionContextEx(nullptr, nullptr, flags, options);
     }
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
         if (flags & EFimport)
             UNSUPPORTED("IMPORT");
         else
-            return new CassandraEmbedFunctionContext(ctx ? ctx->queryContextLogger() : queryDummyContextLogger(), flags, options);
+            return new CassandraEmbedFunctionContext(ctx ? ctx->queryContextLogger() : queryDummyContextLogger(), activityCtx, flags, options);
     }
-    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         throwUnexpected();
     }

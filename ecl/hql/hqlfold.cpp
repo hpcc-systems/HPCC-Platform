@@ -1662,7 +1662,7 @@ IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, IT
 
     Owned<IEmbedContext> __plugin = (IEmbedContext *) plugin->getIntValue();  // We declared as int since ecl has no pointer type - not sure what the clean fix is here...
     DummyContext dummyContext;
-    Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(&dummyContext,flags,optionsStr.str());
+    Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(&dummyContext,nullptr,flags,optionsStr.str());
 
     IValue *query = body->queryChild(0)->queryValue();
     assertex(query);

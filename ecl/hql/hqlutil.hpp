@@ -254,7 +254,8 @@ extern HQL_API bool isTimed(IHqlExpression * expr);
 inline bool isInternalEmbedAttr(IAtom *name)
 {
     return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom || 
-           name == importAtom || name==foldAtom || name==timeAtom || name==prebindAtom || name == activityAtom;
+           name == importAtom || name==foldAtom || name==timeAtom || name==prebindAtom ||
+           name == activityAtom || name == localAtom || name == parallelAtom;
 }
 
 

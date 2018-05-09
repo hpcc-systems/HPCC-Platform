@@ -117,6 +117,7 @@ public:
     StringBuffer &  toUpperCase();
     StringBuffer &  replace(char oldChar, char newChar);
     StringBuffer &  replaceString(const char* oldStr, const char* newStr);
+    StringBuffer &  replaceStringNoCase(const char* oldStr, const char* newStr);
     char *          reserve(size32_t size);
     char *          reserveTruncate(size32_t size);
     void            setown(StringBuffer &other);

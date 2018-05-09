@@ -3228,16 +3228,16 @@ protected:
 class JavaEmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) override
     {
-        return createFunctionContextEx(NULL, flags, options);
+        return createFunctionContextEx(nullptr, nullptr, flags, options);
     }
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
         assertex(flags & EFimport);
         return new JavaEmbedImportContext(queryContext(), NULL, options);
     }
-    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         Owned<JavaEmbedServiceContext> serviceContext = new JavaEmbedServiceContext(queryContext(), service, options);
         serviceContext->init();
