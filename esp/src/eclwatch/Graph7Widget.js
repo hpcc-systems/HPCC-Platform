@@ -98,9 +98,9 @@ define([
                     return;
 
                 this.graph = new hpccEclWatch.WUGraph()
-                    .target(`${this.id}GraphContentPane`)
+                    .target(this.id + "GraphContentPane")
                     .baseUrl("")
-                    .render(w => {
+                    .render(function(w) {
                         w
                             .wuid(params.Wuid)
                             .graphID(params.GraphName)
