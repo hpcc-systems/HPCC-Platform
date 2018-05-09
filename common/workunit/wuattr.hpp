@@ -134,7 +134,7 @@ enum WuAttr : unsigned
     WaCriticalSection,
     WaMax
 };
-
+inline WuAttr & operator++(WuAttr & x) { assert(x<WaMax); x = (WuAttr)(x+1); return x; }
 extern WORKUNIT_API const char * queryWuAttributeName(WuAttr kind);
 extern WORKUNIT_API WuAttr queryWuAttribute(const char * kind, WuAttr dft);
 extern WORKUNIT_API const char * queryAttributeValue(IPropertyTree & src, WuAttr kind, StringBuffer & scratchpad); // may return pointer to scratchpad if necessary
@@ -146,6 +146,7 @@ extern WORKUNIT_API void setAttributeValueBool(IPropertyTree & tgt, WuAttr kind,
 extern WORKUNIT_API void setAttributeValueInt(IPropertyTree & tgt, WuAttr kind, __int64 value);
 
 extern WORKUNIT_API bool isListAttribute(WuAttr kind);
+extern WORKUNIT_API bool isMultiAttribute(WuAttr kind);
 extern WORKUNIT_API WuAttr getListAttribute(WuAttr kind);
 
 #endif

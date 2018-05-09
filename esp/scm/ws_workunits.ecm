@@ -2148,15 +2148,37 @@ ESPResponse [exceptions_inline] WUDetailsResponse
 };
 
 // ----------------------------------------------------------------------------------
+ESPenum WUDetailsAttrValueType : string
+{
+    Single("Single"),
+    List("List"),
+    Multi("Multi"),
+};
+
+ESPStruct WUDetailsMetaProperty
+{
+    string Name;
+    ESPenum WUDetailsAttrValueType ValueType;
+};
+
+ESPStruct WUDetailsActivityInfo
+{
+    unsigned Kind;
+    string Name;
+    boolean IsSink;
+    boolean IsSource;
+};
+
 ESPRequest WUDetailsMetaRequest
 {
 };
 
 ESPResponse [exceptions_inline] WUDetailsMetaResponse
 {
-    ESParray<string, Property> Properties;
+    ESParray<ESPStruct WUDetailsMetaProperty, Property> Properties;
     ESParray<string, ScopeType> ScopeTypes;
     ESParray<string, Measure> Measures;
+    ESParray<ESPStruct WUDetailsActivityInfo, Activity> Activities;
 };
 
 ESPStruct [nil_remove] WUEclDefinitionActionResult
@@ -2286,7 +2308,7 @@ ESPservice [
     ESPmethod [cache_seconds(60), min_ver("1.57")] WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
     ESPmethod [cache_seconds(60), min_ver("1.61")] WUGetNumFileToCopy(WUGetNumFileToCopyRequest, WUGetNumFileToCopyResponse);
     ESPmethod [min_ver("1.71")] WUDetails(WUDetailsRequest, WUDetailsResponse);
-    ESPmethod [min_ver("1.71")] WUDetailsMeta(WUDetailsMetaRequest, WUDetailsMetaResponse);
+    ESPmethod [cache_seconds(600),min_ver("1.71")] WUDetailsMeta(WUDetailsMetaRequest, WUDetailsMetaResponse);
     ESPmethod [min_ver("1.72")] WUEclDefinitionAction(WUEclDefinitionActionRequest, WUEclDefinitionActionResponse);
 };
 
