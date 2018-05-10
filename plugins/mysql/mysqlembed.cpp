@@ -1385,8 +1385,8 @@ static void initializeMySqlThread()
 class MySQLEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    MySQLEmbedFunctionContext(const char *options)
-      : nextParam(0)
+    MySQLEmbedFunctionContext(const IThorActivityContext *_ctx, const char *options)
+      : nextParam(0), activityCtx(_ctx)
     {
         initializeMySqlThread();
         conn.setown(MySQLConnection::findCachedConnection(options, false));
@@ -1594,7 +1594,16 @@ public:
     }
     virtual void compileEmbeddedScript(size32_t chars, const char *script)
     {
-        size32_t len = rtlUtf8Size(chars, script);
+        StringBuffer scriptStr;
+        size32_t len;
+        if (activityCtx)
+        {
+            rtlSubstituteActivityContext(scriptStr, activityCtx, chars, script);
+            script = scriptStr.str();
+            len = scriptStr.length();
+        }
+        else
+            len = rtlUtf8Size(chars, script);
         for (;;)
         {
             Owned<MySQLStatement> stmt  = new MySQLStatement(mysql_stmt_init(*conn));
@@ -1655,24 +1664,25 @@ protected:
     Owned<MySQLConnection> conn;
     Owned<MySQLPreparedStatement> stmtInfo;
     Owned<MySQLDatasetBinder> inputStream;
+    const IThorActivityContext *activityCtx;
     int nextParam;
 };
 
 class MySQLEmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) override
     {
-        return createFunctionContextEx(NULL, flags, options);
+        return createFunctionContextEx(nullptr, nullptr, flags, options);
     }
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
         if (flags & EFimport)
             UNSUPPORTED("IMPORT");
         else
-            return new MySQLEmbedFunctionContext(options);
+            return new MySQLEmbedFunctionContext(activityCtx, options);
     }
-    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         throwUnexpected();
     }

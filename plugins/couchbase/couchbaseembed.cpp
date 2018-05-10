@@ -1493,12 +1493,12 @@ namespace couchbaseembed
     class CouchbaseEmbedContext : public CInterfaceOf<IEmbedContext>
     {
     public:
-        virtual IEmbedFunctionContext * createFunctionContext(unsigned flags, const char *options)
+        virtual IEmbedFunctionContext * createFunctionContext(unsigned flags, const char *options) override
         {
-            return createFunctionContextEx(NULL, flags, options);
+            return createFunctionContextEx(nullptr, nullptr, flags, options);
         }
 
-        virtual IEmbedFunctionContext * createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+        virtual IEmbedFunctionContext * createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
         {
             if (flags & EFimport)
             {
@@ -1510,7 +1510,7 @@ namespace couchbaseembed
                 return new CouchbaseEmbedFunctionContext(ctx ? ctx->queryContextLogger() : queryDummyContextLogger(), options, flags);
         }
 
-        virtual IEmbedServiceContext * createServiceContext(const char *service, unsigned flags, const char *options)
+        virtual IEmbedServiceContext * createServiceContext(const char *service, unsigned flags, const char *options) override
         {
             throwUnexpected();
             return nullptr;

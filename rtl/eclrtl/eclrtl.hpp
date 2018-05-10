@@ -852,10 +852,11 @@ interface IEmbedServiceContext : extends IInterface
 enum EmbedFlags { EFembed = 1, EFimport = 2, EFnoreturn = 4, EFnoparams = 8 }; // For createFunctionContext flags
 
 interface ICodeContext;
+interface IThorActivityContext;
 interface IEmbedContext : extends IInterface
 {
     virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) = 0; // legacy
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options) = 0;
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext * activityCtx, unsigned flags, const char *options) = 0;
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) = 0;
     // MORE - add syntax checked here!
 };
@@ -863,5 +864,6 @@ interface IEmbedContext : extends IInterface
 typedef IEmbedContext * (* GetEmbedContextFunction)();
 
 ECLRTL_API void rtlSubstituteEmbeddedScript(size32_t &__lenResult, char * &__result, size32_t scriptChars, const char *script, size32_t outFieldsChars, const char *outFields, size32_t searchChars, const char *search);
+ECLRTL_API void rtlSubstituteActivityContext(StringBuffer &, const IThorActivityContext *ctx, size32_t scriptChars, const char *script);
 
 #endif

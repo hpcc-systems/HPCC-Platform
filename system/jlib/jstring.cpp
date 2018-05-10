@@ -947,6 +947,33 @@ StringBuffer &replaceString(StringBuffer & result, size32_t lenSource, const cha
     return result;
 }
 
+StringBuffer &replaceStringNoCase(StringBuffer & result, size32_t lenSource, const char *source, size32_t lenOldStr, const char* oldStr, size32_t lenNewStr, const char* newStr)
+{
+    if (lenSource)
+    {
+        size32_t left = lenSource;
+        while (left >= lenOldStr)
+        {
+            if (memicmp(source, oldStr, lenOldStr)==0)
+            {
+                result.append(lenNewStr, newStr);
+                source += lenOldStr;
+                left -= lenOldStr;
+            }
+            else
+            {
+                result.append(*source);
+                source++;
+                left--;
+            }
+        }
+
+        // there are no more possible replacements, make sure we keep the end of the original buffer
+        result.append(left, source);
+    }
+    return result;
+}
+
 // this method will replace all occurrences of "oldStr" with "newStr"
 StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newStr)
 {
@@ -956,6 +983,19 @@ StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newSt
         size32_t oldlen = oldStr ? strlen(oldStr) : 0;
         size32_t newlen = newStr ? strlen(newStr) : 0;
         ::replaceString(temp, curLen, buffer, oldlen, oldStr, newlen, newStr);
+        swapWith(temp);
+    }
+    return *this;
+}
+
+StringBuffer & StringBuffer::replaceStringNoCase(const char* oldStr, const char* newStr)
+{
+    if (curLen)
+    {
+        StringBuffer temp;
+        size32_t oldlen = oldStr ? strlen(oldStr) : 0;
+        size32_t newlen = newStr ? strlen(newStr) : 0;
+        ::replaceStringNoCase(temp, curLen, buffer, oldlen, oldStr, newlen, newStr);
         swapWith(temp);
     }
     return *this;

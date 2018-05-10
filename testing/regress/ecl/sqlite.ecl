@@ -29,7 +29,7 @@ IMPORT SqLite3;
 
 // This is the record structure in ECL that will correspond to the rows in the SQLite dataset
 // Note that the default values specified in the fields will be used when a NULL value is being
-// returned from MySQL
+// returned from SQLite
 
 childrec := RECORD
    string name,
