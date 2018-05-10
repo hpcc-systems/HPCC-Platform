@@ -2995,6 +2995,7 @@ extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager)
         CIndexLookup(IKeyManager *_keyManager) : keyManager(_keyManager)
         {
         }
+        virtual void ensureAvailable() override { }
         virtual unsigned __int64 getCount() override
         {
             return keyManager->getCount();

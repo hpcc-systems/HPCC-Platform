@@ -8282,12 +8282,17 @@ bool CHThorDiskReadBaseActivity::openNext()
                         StringBuffer path;
                         rfilename.getLocalPath(path);
 
-                        inputfileio.setown(createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit));
-                        if (inputfileio)
+                        Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
+                        if (remoteFileIO)
                         {
+                            StringBuffer tmp;
+                            remoteFileIO->addVirtualFieldMapping("logicalFilename", mangledHelperFileName.str());
+                            remoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(offsetOfPart).str());
+                            remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
                             actualDiskMeta.set(projectedDiskMeta);
                             expectedDiskMeta = projectedDiskMeta;
                             actualFilter.clear();
+                            inputfileio.setown(remoteFileIO.getClear());
                         }
                     }
                     if (inputfileio)

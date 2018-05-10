@@ -276,16 +276,28 @@ void CDiskRecordPartHandler::open()
                     else
                         actualFilter.appendFilters(activity.fieldFilters);
                 }
-                Owned<IFileIO> iFileIO = createRemoteFilteredFile(ep, path, actualFormat, projectedFormat, actualFilter, compressed, activity.grouped, activity.remoteLimit);
-                if (iFileIO)
+                Owned<IRemoteFileIO> iRemoteFileIO = createRemoteFilteredFile(ep, path, actualFormat, projectedFormat, actualFilter, compressed, activity.grouped, activity.remoteLimit);
+                if (iRemoteFileIO)
                 {
+                    StringBuffer tmp;
+                    iRemoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFilename.get());
+                    iRemoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(fileBaseOffset).str());
+                    iRemoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(partDesc->queryPartIndex()).str());
                     rfn.getPath(path);
                     filename.set(path);
                     checkFileCrc = false;
 
-                    // JCSMORE - needTransform - see CDiskPartHandler::nextRow(), may need/want to differentiate if only transform is only remote
-
-                    partStream.setown(createRowStreamEx(iFileIO, activity.queryProjectedDiskRowInterfaces(), 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, nullptr, this));
+                    try
+                    {
+                        iRemoteFileIO->ensureAvailable(); // force open now, because want to failover to other copies if fails (e.g. remote part is missing)
+                    }
+                    catch (IException *e)
+                    {
+                        EXCLOG(e, nullptr);
+                        e->Release();
+                        continue; // try next copy and ultimately failover to local when no more copies
+                    }
+                    partStream.setown(createRowStreamEx(iRemoteFileIO, activity.queryProjectedDiskRowInterfaces(), 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, nullptr, this));
                     ActPrintLog(&activity, "%s[part=%d]: reading remote dafilesrv file '%s' (logical file = %s)", kindStr, which, path.str(), activity.logicalFilename.get());
                     break;
                 }

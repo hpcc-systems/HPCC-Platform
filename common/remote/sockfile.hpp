@@ -80,7 +80,12 @@ extern REMOTE_API ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms); 
 extern REMOTE_API ISocket *checkSocketSecure(ISocket *socket);
 interface IOutputMetaData;
 class RowFilter;
-extern REMOTE_API IFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseNLimit);
+interface IRemoteFileIO : extends IFileIO
+{
+    virtual void addVirtualFieldMapping(const char *fieldName, const char *fieldValue) = 0;
+    virtual void ensureAvailable() = 0;
+};
+extern REMOTE_API IRemoteFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseNLimit);
 
 interface IIndexLookup;
 extern REMOTE_API IIndexLookup *createRemoteFilteredKey(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseNLimit);

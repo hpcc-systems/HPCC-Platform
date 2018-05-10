@@ -201,6 +201,16 @@ public:
                             Owned<IIndexLookup> indexLookup = createRemoteFilteredKey(ep, lPath, actualFormat, projectedFormat, actualFilter, remoteLimit);
                             if (indexLookup)
                             {
+                                try
+                                {
+                                    indexLookup->ensureAvailable();
+                                }
+                                catch (IException *e)
+                                {
+                                    EXCLOG(e, nullptr);
+                                    e->Release();
+                                    continue; // try next copy and ultimately failover to local when no more copies
+                                }
                                 ActPrintLog("[part=%d]: reading remote dafilesrv index '%s' (logical file = %s)", partNum, path.str(), logicalFilename.get());
                                 partNum = p;
                                 return indexLookup.getClear();
