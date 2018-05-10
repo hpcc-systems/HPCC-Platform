@@ -21,10 +21,11 @@ import logging
 import os
 import sys
 import inspect
+import traceback
 
 from ...common.shell import Shell
 from ...common.error import Error
-from ...util.util import queryWuid, getConfig
+from ...util.util import queryWuid, getConfig, clearOSCache
 
 import xml.etree.ElementTree as ET
 
@@ -96,6 +97,9 @@ class ECLcmd(Shell):
         state = ""
         results=''
         try:
+            if eclfile.flushDiskCache():
+                clearOSCache()
+                pass
             #print "runCmd:", args
             results, stderr = self.__ECLcmd()(*args)
             logging.debug("%3d. results:'%s'", eclfile.getTaskId(),  results)
@@ -139,6 +143,11 @@ class ECLcmd(Shell):
         except Error as err:
             data = str(err)
             logging.error("------" + err + "------")
+            raise err
+        except:
+            err = Error("6007")
+            logging.critical(err)
+            logging.critical(traceback.format_exc())
             raise err
         finally:
             res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())

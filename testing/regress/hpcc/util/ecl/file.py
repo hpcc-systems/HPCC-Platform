@@ -89,6 +89,10 @@ class ECLFile:
         if self.jobNameSuffix != '':
             self.jobNameSuffix = '-' + self.jobNameSuffix
 
+        self.isFlushDiskCache = False
+        if self.args.flushDiskCache:
+            self.isFlushDiskCache = True
+
         #If there is a --publish CL parameter then force publish this ECL file
         self.forcePublish=False
         if 'publish' in self.args:
@@ -498,6 +502,13 @@ class ECLFile:
         self.elapsTime = time
 
     def setJobnameVersion(self,  version):
+        # Overrides the global flushDiskCache parameter if --pq <= 1
+        # There is no sense to clear disk cache if same test running parallel by versioning
+        if ('flushDiskCache=true' in version) and (self.args.pq in (0, 1)):
+            self.isFlushDiskCache = True
+        if 'flushDiskCache=false' in version:
+            self.isFlushDiskCache = False
+
         # convert this kind of version string
         #  'multiPart=false,useSequential=true'
         # to this
@@ -626,3 +637,7 @@ class ECLFile:
     def getEclccWarningChanges(self):
         # return with self.eclccWarningChanges
         return self.eclccWarningChanges+"\n"
+
+    def flushDiskCache(self):
+        logging.debug("%3d. isFlushDiskCache (ecl:'%s'): '%s')" % (self.taskId,  self.ecl, str(self.isFlushDiskCache)))
+        return self.isFlushDiskCache

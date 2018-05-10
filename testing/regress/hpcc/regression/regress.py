@@ -26,7 +26,6 @@ import threading
 import inspect
 
 from ..common.error import Error
-from ..common.logger import Logger
 from ..common.report import Report
 from ..regression.suite import Suite
 from ..util.ecl.cc import ECLCC
@@ -50,7 +49,11 @@ class Regression:
         self.args = args
         self.config = getConfig()
         self.suites = {}
-        self.log = Logger(args.loglevel)
+
+        # Use the existing logger instance
+        self.log = self.config.log
+        self.log.setLevel(args.loglevel)
+
         if args.timeout == '0':
             self.timeout = int(self.config.timeout);
         else:
@@ -249,7 +252,7 @@ class Regression:
                             self.taskParam[startThreadId]['jobName'] = query.getJobname()
                             self.taskParam[startThreadId]['retryCount'] = int(self.config.maxAttemptCount)
                             self.exitmutexes[startThreadId].acquire()
-                            sysThreadId = thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  startThreadId))
+                            thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  startThreadId))
                             started = True
                             break
 
@@ -438,6 +441,11 @@ class Regression:
             suite.close()
             self.closeLogging()
 
+        except Error as e:
+            self.StopTimeoutThread()
+            suite.close()
+            raise(e)
+
         except Exception as e:
             self.StopTimeoutThread()
             suite.close()
@@ -474,7 +482,7 @@ class Regression:
                 self.timeouts[threadId] = self.timeout
             self.retryCount = int(self.config.maxAttemptCount)
             self.exitmutexes[threadId].acquire()
-            sysThreadId = thread.start_new_thread(self.runQuery, (cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
+            thread.start_new_thread(self.runQuery, (cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
             time.sleep(0.1)
             self.CheckTimeout(cnt, threadId,  eclfile)
 
