@@ -4014,23 +4014,21 @@ bool CWsWorkunitsEx::onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequ
 {
     try
     {
-        StringArray statistics;
+        StringArray properties;
         for (unsigned i=StatisticKind::StKindAll+1; i<StatisticKind::StMax;++i)
         {
             const char * s = queryStatisticName((StatisticKind)i);
             if (s && *s)
-                statistics.append(s);
+                properties.append(s);
         }
-        resp.setStatistics(statistics);
 
-        StringArray attributes;
         for (unsigned i=WuAttr::WaAll+1; i<WuAttr::WaMax; ++i)
         {
             const char * s = queryWuAttributeName((WuAttr)i);
             if (s && *s)
-                attributes.append(s);
+                properties.append(s);
         }
-        resp.setAttributes(attributes);
+        resp.setProperties(properties);
 
         StringArray scopeTypes;
         for (unsigned i=StatisticScopeType::SSTall+1; i<StatisticScopeType::SSTmax; ++i)
