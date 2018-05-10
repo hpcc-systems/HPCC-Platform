@@ -1735,7 +1735,6 @@ void SourceBuilder::doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * e
         {
             iterctx.addQuotedLiteral("byte * src;");
             associateFilePositions(iterctx, "activity->fpp", "activity->src");      // in case no projection in first()
-            translator.associateBlobHelper(iterctx, tableExpr, "fpp");
             firstFunc.ctx.addQuotedLiteral("src = (byte *)_src;");
         }
         else
@@ -3864,6 +3863,8 @@ void IndexReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (requiresOrderedMerge) flags.append("|TIRorderedmerge");
     if (translator.queryOptions().createValueSets)
         flags.append("|TIRnewfilters");
+    if (containsOperator(expr, no_id2blob))
+        flags.append("|TIRusesblob");
 
     if (flags.length())
         translator.doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);

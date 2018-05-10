@@ -1139,6 +1139,7 @@ enum
     TIRorderedmerge     = 0x00008000,
     TIRunordered        = 0x00010000,
     TIRnewfilters       = 0x00020000,               // Uses new style field filters
+    TIRusesblob         = 0x00040000,               // Uses blob in the transform/projected row
 };
 
 //flags for thor index write
