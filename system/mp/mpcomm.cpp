@@ -712,19 +712,19 @@ class CMPPacketReader;
 
 class CMPChannel: public CInterface
 {
-    ISocket *channelsock;
+    ISocket *channelsock = nullptr;
     CMPServer *parent;
     Mutex sendmutex;
     Semaphore sendwaitingsig;
-    unsigned sendwaiting;               // number waiting on sendwaitingsem (for multi/single clashes to resolve)
+    unsigned sendwaiting = 0;           // number waiting on sendwaitingsem (for multi/single clashes to resolve)
     CriticalSection connectsect;
     CMPPacketReader *reader;
-    bool master;                        // i.e. connected originally
-    mptag_t multitag;                   // current multi send in progress
-    bool closed;
+    bool master = false;                // i.e. connected originally
+    mptag_t multitag = TAG_NULL;        // current multi send in progress
+    bool closed = false;
     IArrayOf<ISocket> keptsockets;
     CriticalSection attachsect;
-    unsigned __int64 attachaddrval;
+    unsigned __int64 attachaddrval = 0;
     SocketEndpoint attachep;
     atomic_t attachchk;
 
@@ -1148,11 +1148,11 @@ public:
             if (parent)
                 parent->checkclosed = true;
             s=channelsock;
-            channelsock = NULL;
+            channelsock = nullptr;
             {
                 CriticalBlock block(attachsect);
                 attachaddrval = 0;
-                attachep.set(NULL);
+                attachep.set(nullptr);
                 atomic_set(&attachchk, 0);
             }
             if (!keepsocket) {
@@ -1593,20 +1593,13 @@ public:
 };
 
 
-CMPChannel::CMPChannel(CMPServer *_parent,SocketEndpoint &_remoteep) 
+CMPChannel::CMPChannel(CMPServer *_parent,SocketEndpoint &_remoteep) : parent(_parent), remoteep(_remoteep)
 {
-    channelsock = NULL;
-    parent = _parent;
-    remoteep = _remoteep;
     localep.set(parent->getPort());
-    multitag = TAG_NULL;
     reader = new CMPPacketReader(this);
-    closed = false;
-    master = false;
-    sendwaiting = 0;
-    attachaddrval = 0;
-    attachep.set(NULL);
+    attachep.set(nullptr);
     atomic_set(&attachchk, 0);
+    lastxfer = msTick();
 }
 
 void CMPChannel::reset()
@@ -1614,15 +1607,16 @@ void CMPChannel::reset()
     reader->shutdown(); // clear as early as possible
     closeSocket(false, true);
     reader->Release();
-    channelsock = NULL;
+    channelsock = nullptr;
     multitag = TAG_NULL;
     reader = new CMPPacketReader(this);
     closed = false;
     master = false;
     sendwaiting = 0;
     attachaddrval = 0;
-    attachep.set(NULL);
+    attachep.set(nullptr);
     atomic_set(&attachchk, 0);
+    lastxfer = msTick();
 }
 
 
