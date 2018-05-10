@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ToLocalTime">
+  <!--This is a template for STD library method mod files-->
+
+  <title>ToLocalTime</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.ToLocalTime<indexterm>
+      <primary>STD.Date.TimeZone.ToLocalTime</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.ToLocalTime</primary>
+    </indexterm><indexterm>
+      <primary>ToLocalTime</primary>
+    </indexterm>(</emphasis> <emphasis>utcTime, toTimeZoneAbbrev,
+  </emphasis>[<emphasis>toLocation</emphasis> ]<emphasis role="bold">
+  )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>utcTime</emphasis></entry>
+
+          <entry>REQUIRED. The UTC time value (in Time_t format) to
+          adjust.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toTimeZoneAbbrev</emphasis></entry>
+
+          <entry>REQUIRED. The time zone abbreviation designated as the ending
+          point; must be a non-empty uppercase string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toLocation</emphasis></entry>
+
+          <entry>OPTIONAL. The name of the location that goes along with
+          toTimeZoneAbbrev; if a location is not provided or is an empty
+          string, the first record matching toTimeZoneAbbrev is used.</entry>
+        </row>
+
+        <row>
+          <entry>Returns:</entry>
+
+          <entry>The given UTC time value (in <link
+          linkend="Time_Data_Types">Time_t</link> format) adjusted to the time
+          zone defined by toTimeZoneAbbrev and toLocation; if the time zone
+          cannot be found then the original time value is returned
+          unchanged</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">STD.Date.TimeZone.ToLocalTime</emphasis>
+  function converts a UTC time to a time designated by a time zone
+  abbreviation and optional location.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.Date.TimeZone.ToLocalTime(205246,'CST','NORTH AMERICA');</programlisting>
+
+  <para>See Also: <link linkend="AdjustTimeTZ">AdjustTimeTZ</link>, <link
+  linkend="ToUTCTime">ToUTCTime</link></para>
+</sect1>

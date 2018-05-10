@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FindTZData">
+  <!--This is a template for STD library method mod files-->
+
+  <title>FindTZData</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.FindTZData<indexterm>
+      <primary>STD.Date.TimeZone.FindTZData</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.FindTZData</primary>
+    </indexterm><indexterm>
+      <primary>FindTZData</primary>
+    </indexterm>(</emphasis> <emphasis>timeZoneAbbrev, </emphasis>
+  [<emphasis>location</emphasis> ]<emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>timeZoneAbbrev</emphasis></entry>
+
+          <entry>REQUIRED. The time zone abbreviation to search for; must be a
+          non-empty uppercase string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>location</emphasis></entry>
+
+          <entry>OPTIONAL. The name of the location to search for; if a
+          location is not provided or is an empty string, all records matching
+          only the abbreviation are returned.</entry>
+        </row>
+
+        <row>
+          <entry>Returns:</entry>
+
+          <entry>A new DATASET(TZDataLayout) containing the found records.
+          <programlisting>EXPORT TZDataLayout := RECORD
+    STRING5         tzAbbrev;       // Time zone abbreviation; always uppercase
+                                    // may be duplicated between records
+    INTEGER4        secondsOffset;  // Number of seconds east (positive) 
+                                    // or west (negative) of UTC
+    SET OF STRING15 locations;      // Names of locations that use the given 
+                                    //time zone abbreviation
+END;
+</programlisting></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis
+  role="bold">STD.Date.TimeZone.TZDataForLocation</emphasis> function returns
+  the time zone records for a given abbreviation and optional location. A
+  location should be provided as a method of differentiation if the
+  abbreviation has duplicate entries.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.Date.TimeZone.FindTZData('CST','NORTH AMERICA');</programlisting>
+
+  <para>See Also: <link
+  linkend="TZDataForLocation">TZDataForLocation</link></para>
+</sect1>

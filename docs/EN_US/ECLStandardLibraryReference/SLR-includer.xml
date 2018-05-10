@@ -462,6 +462,42 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/YearWeekNumFromDate.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <!-- TimeZone Module methods **** -->
+    
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/UniqueTZAbbreviations.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/UniqueTZLocations.xml"
+		                xmlns:xi="http://www.w3.org/2001/XInclude" />
+   
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/TZDataForLocation.xml"
+		                xmlns:xi="http://www.w3.org/2001/XInclude" />
+   
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/FindTZData.xml"
+		                xmlns:xi="http://www.w3.org/2001/XInclude" />
+ 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/SecondsBetweenTZ.xml"
+		                xmlns:xi="http://www.w3.org/2001/XInclude" />
+		                
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/AdjustTimeTZ.xml"
+		                xmlns:xi="http://www.w3.org/2001/XInclude" />
+		                
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ToLocalTime.xml"
+		                xmlns:xi="http://www.w3.org/2001/XInclude" />		                
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ToUTCTime.xml"
+		                xmlns:xi="http://www.w3.org/2001/XInclude" />		                
+		                		                
+		<xi:include href="ECLStandardLibraryReference/SLR-Mods/AppendTZOffset.xml"
+				                xmlns:xi="http://www.w3.org/2001/XInclude" />		                
+				                
+		<xi:include href="ECLStandardLibraryReference/SLR-Mods/AppendTZAdjustedTime.xml"
+				                xmlns:xi="http://www.w3.org/2001/XInclude" />		                
+		
+		
+		
+		        
+    
   </chapter>
 
   <chapter id="Cluster_Handling">
@@ -558,11 +594,9 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetUniqueInteger.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-  
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetEspUrl.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-  
-  
   </chapter>
 
   <chapter id="Debugging">
@@ -627,9 +661,10 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WorkunitTimings.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
-  <xi:include href="ECLStandardLibraryReference/SLR-Mods/BLAS.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-  <xi:include href="ECLStandardLibraryReference/SLR-Mods/Math.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+  <xi:include href="ECLStandardLibraryReference/SLR-Mods/BLAS.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="ECLStandardLibraryReference/SLR-Mods/Math.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 </book>
