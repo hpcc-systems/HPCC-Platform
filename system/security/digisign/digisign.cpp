@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 #include "jliball.hpp"
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL) && !defined(_WIN32) && !defined(__APPLE__)
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -25,7 +25,7 @@
 #include <mutex>
 
 
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
+#if defined(_USE_OPENSSL) && !defined(_WIN32) && !defined(__APPLE__)
 
 #define EVP_CLEANUP(key,ctx) EVP_PKEY_free(key);       \
                              EVP_MD_CTX_destroy(ctx);
