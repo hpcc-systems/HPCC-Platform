@@ -1293,7 +1293,12 @@ bool CSocket::connect_timeout( unsigned timeout, bool noexception)
             else if (rc<0)
             {
                 err = ERRNO();
-                LOGERR2(err,2,"::select/poll");
+                if (err != JSE_INTR)
+                {
+                    LOGERR2(err,2,"::select/poll");
+                    errclose();
+                    break;
+                }
             }
         }
         if (err==0)
@@ -1427,8 +1432,11 @@ void CSocket::connect_wait(unsigned timems)
                 if (rc<0)
                 {
                     err = ERRNO();
-                    LOGERR2(err,2,"::select/poll");
-                    break;
+                    if (err != JSE_INTR)
+                    {
+                        LOGERR2(err,2,"::select/poll");
+                        break;
+                    }
                 }
                 if (!timeoutms)
                 {
@@ -1569,7 +1577,7 @@ int CSocket::logPollError(unsigned revents, const char *rwstr)
     else if (revents & POLLNVAL)
     {
         StringBuffer errStr;
-        errStr.appendf("%s POLLINVAL", rwstr);
+        errStr.appendf("%s POLLNVAL", rwstr);
         LOGERR2(999,3,errStr.str());
     }
     else
@@ -3965,11 +3973,17 @@ public:
             return true;
         else if (rc>0)
         {
-            if ( !(fds[0].revents & POLLNVAL) ) // TODO: MCK - also check POLLERR here ?
+            if ( !(fds[0].revents & POLLNVAL) ) // MCK - skip POLLERR here
             {
                 // PROGLOG("CSocketBaseThread: poll handle %d selected(2) %d",sock,rc);
                 return true;
             }
+        }
+        else
+        {
+            int err = ERRNO();
+            if (err == JSE_INTR)
+                return true; // assume ok until next time called
         }
         StringBuffer sockstr;
         const char *tracename = sockstr.append((unsigned)sock).str();
@@ -6442,7 +6456,15 @@ public:
                 else
                 {   // select/poll failed
                     err = ERRNO();
-                    LOGERR(err,2,"CSocketConnectWait ::select/poll");
+                    if (err != JSE_INTR)
+                    {
+                        LOGERR(err,2,"CSocketConnectWait ::select/poll");
+                        sock->errclose();
+                        isopen = false;
+                        if (!oneshot)
+                            connectimedout = true;
+                        break;
+                    }
                 }
             }
             if (err==0)
