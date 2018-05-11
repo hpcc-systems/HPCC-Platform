@@ -2079,9 +2079,10 @@ ESPStruct WUExtraProperties
 ESPStruct WUPropertiesToReturn
 {
     bool AllStatistics(false);
-    bool AllProperties(false);
+    bool AllAttributes(false);
     bool AllHints(false);
     bool AllScopes(false);
+    bool AllProperties(false);
     [optional] uint64 MinVersion;       // Only return properties where the version is later than this version.
     [optional] string Measure;          // E.g. Time, Num, Size
     [optional] ESParray<string, Property> Properties; // a list of properties to return
@@ -2153,8 +2154,7 @@ ESPRequest WUDetailsMetaRequest
 
 ESPResponse [exceptions_inline] WUDetailsMetaResponse
 {
-    ESParray<string, Statistic> Statistics;
-    ESParray<string, Attribute> Attributes;
+    ESParray<string, Property> Properties;
     ESParray<string, ScopeType> ScopeTypes;
     ESParray<string, Measure> Measures;
 };

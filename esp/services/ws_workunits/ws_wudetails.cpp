@@ -164,8 +164,9 @@ void WUDetailsVisitor::noteHint(const char * kind, const char * value)
 void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & propertiesToReturn)
 {
     const bool allStatistics = propertiesToReturn.getAllStatistics();
-    const bool allProperties = propertiesToReturn.getAllProperties();
-    if (allStatistics && allProperties)
+    const bool allAttributes = propertiesToReturn.getAllAttributes();
+
+    if (propertiesToReturn.getAllProperties() || (allStatistics && allAttributes) )
         return;
 
     IArrayOf<IConstWUExtraProperties> & extraProperties = propertiesToReturn.getExtraProperties();
@@ -199,7 +200,7 @@ void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & prop
                 const WuAttr wa = queryWuAttribute(props[idx2], WaMax);
                 if (wa==WaMax)
                     throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid property name (%s) in ExtraProperties",props[idx2]);
-                if (!allProperties)
+                if (!allAttributes)
                 {
                     extraAttributes[sst].insert(wa);
                     extraAttributesRequested = true;
@@ -379,14 +380,23 @@ void WUDetails::buildWuScopeFilter(IConstWUScopeFilter & requestScopeFilter, ICo
         }
     }
 
-    if (propertiesToReturn.getAllStatistics())
-        wuScopeFilter.addOutputProperties(PTstatistics);
+    WuPropertyTypes wuPropertyTypeMask = PTnone;
     if (propertiesToReturn.getAllProperties())
-        wuScopeFilter.addOutputProperties(PTattributes);
-    if (propertiesToReturn.getAllHints())
-        wuScopeFilter.addOutputProperties(PThints);
-    if (propertiesToReturn.getAllScopes())
-        wuScopeFilter.addOutputProperties(PTscope);
+    {
+        wuPropertyTypeMask = PTstatistics|PTattributes|PThints|PTscope;
+    }
+    else
+    {
+        if (propertiesToReturn.getAllStatistics())
+            wuPropertyTypeMask |= PTstatistics;
+        if (propertiesToReturn.getAllAttributes())
+            wuPropertyTypeMask |= PTattributes;
+        if (propertiesToReturn.getAllHints())
+            wuPropertyTypeMask |= PThints;
+        if (propertiesToReturn.getAllScopes())
+            wuPropertyTypeMask |= PTscope;
+    }
+    wuScopeFilter.addOutputProperties(wuPropertyTypeMask);
 
     wuScopeFilter.finishedFilter();
 }
