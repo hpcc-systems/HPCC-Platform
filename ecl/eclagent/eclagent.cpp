@@ -1929,7 +1929,7 @@ void EclAgent::doProcess()
         WorkunitUpdate w = updateWorkUnit();
 
         addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
-        updateWorkunitTimeStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedTimer.elapsedNs());
+        updateWorkunitStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedTimer.elapsedNs());
         addTimings();
 
         switch (w->getState())

@@ -12373,6 +12373,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
             {
                 contents = cachecontents;
                 alreadySimplified = true;
+                ctx.incrementAttribsFromCache();
             }
         }
     }
@@ -12398,17 +12399,21 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     OwnedHqlExpr parsed = scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
     bool canCache = parsed && (parsed->getOperator() != no_forwardscope) && !alreadySimplified;
     bool isMacro = parsed && parsed->isMacro();
-    OwnedHqlExpr simplified;
+    ctx.incrementAttribsProcessed();
     if (canCache && (ctx.syntaxChecking() || ctx.hasCacheLocation()))
     {
-        simplified.setown(createSimplifiedDefinition(parsed));
+        OwnedHqlExpr simplified = createSimplifiedDefinition(parsed);
 
         if (simplified)
         {
+            ctx.incrementAttribsSimplified();
+
             if (ctx.hasCacheLocation())
                 attrCtx.createCache(simplified, isMacro);
+
             if (ctx.checkSimpleDef())
                 verifySimpifiedDefinition(parsed, simplified, attrCtx);
+
             if (simplified != parsed && ctx.syntaxChecking() && !ctx.ignoreCache())
                 scope->defineSymbol(LINK(simplified));
         }

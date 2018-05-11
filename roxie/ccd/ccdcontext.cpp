@@ -1493,7 +1493,7 @@ public:
                     StringBuffer graphScope;
                     graphScope.append(WorkflowScopePrefix).append(getWorkflowId()).append(":").append(graphName);
                     progressWorkUnit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTimeStamp, 1, 0, StatsMergeAppend);
-                    updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphScope, StTimeElapsed, graphDesc, elapsedTime);
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StTimeElapsed, graphDesc, elapsedTime);
                     addTimeStamp(progressWorkUnit, SSTgraph, graphName, StWhenFinished, getWorkflowId());
                 }
                 graph->reset();
