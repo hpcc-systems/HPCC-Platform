@@ -2608,6 +2608,20 @@ IIdAtom * HqlGram::createUnnamedFieldId()
 }
 
 
+void HqlGram::checkDefaultValueVirtualAttr(const attribute &errpos, IHqlExpression * attrs)
+{
+    IHqlExpression * defaultAttr = queryAttributeInList(defaultAtom, attrs);
+    IHqlExpression * virtualAttr = queryAttributeInList(virtualAtom, attrs);
+    IHqlExpression * blobAttr = queryAttributeInList(blobAtom, attrs);
+
+    if (defaultAttr && (virtualAttr || blobAttr))
+    {
+        if (virtualAttr)
+            reportError(ERR_DEFAULT_VIRTUAL_CLASH, errpos, "VIRTUAL fields cannot have explicit default values");
+        else
+            reportError(ERR_DEFAULT_VIRTUAL_CLASH, errpos, "BLOB fields cannot have explicit default values");
+    }
+}
 
 /* In parms: type, value: linked */
 void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type, IHqlExpression * _value, IHqlExpression *attrs)
@@ -2661,6 +2675,8 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
             }
         }
     }
+
+    checkDefaultValueVirtualAttr(errpos, attrs);
 
     switch (fieldType->getTypeCode())
     {
@@ -2774,6 +2790,8 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
 
+    checkDefaultValueVirtualAttr(errpos, attrs);
+
     //An explicitly link counted dataset type should ensure the field is linkcounted
     if (isLinkedRowset(dsType) && !queryAttributeInList(_linkCounted_Atom, attrs))
         attrs = createComma(attrs, getLinkCountedAttr());
@@ -2805,6 +2823,8 @@ void HqlGram::addDictionaryField(const attribute &errpos, IIdAtom * name, ITypeI
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
+
+    checkDefaultValueVirtualAttr(errpos, attrs);
 
     if (isLinkedRowset(dictType) && !queryAttributeInList(_linkCounted_Atom, attrs))
         attrs = createComma(attrs, getLinkCountedAttr());
