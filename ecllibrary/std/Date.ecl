@@ -2069,7 +2069,7 @@ ENDMACRO;
  *          {Std.Date.Time_t time, STRING tz}
  *      );
  *
- *  utcRewriteDS := Std.Date.TimeZone.AppendTZAdjustedTime(ds, tz, time, utc_time);
+ *  utcRewriteDS := Std.Date.TimeZone.AppendTZAdjustedTime(ds, time, tz, utc_time);
  *  OUTPUT(utcRewriteDS, NAMED('utc_result'));
  *
  *  ptRewriteDS := Std.Date.TimeZone.AppendTZAdjustedTime

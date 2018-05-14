@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SecondsBetweenTZ">
+  <!--This is a template for STD library method mod files-->
+
+  <title>SecondsBetweenTZ</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.SecondsBetweenTZ<indexterm>
+      <primary>STD.Date.TimeZone.SecondsBetweenTZ</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.SecondsBetweenTZ</primary>
+    </indexterm><indexterm>
+      <primary>SecondsBetweenTZ</primary>
+    </indexterm>(</emphasis> <emphasis>fromTimeZoneAbbrev, toTimeZoneAbbrev,
+  </emphasis> [<emphasis>fromLocation</emphasis>, ]
+  [<emphasis>toLocation</emphasis> ]<emphasis role="bold"> )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>fromTimeZoneAbbrev</emphasis></entry>
+
+          <entry>REQUIRED. The time zone abbreviation designated as the
+          starting point; must be a non-empty uppercase string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toTimeZoneAbbrev</emphasis></entry>
+
+          <entry>REQUIRED. The time zone abbreviation designated as the ending
+          point; must be a non-empty uppercase string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fromLocation</emphasis></entry>
+
+          <entry>OPTIONAL. The name of the location that goes along with
+          fromTimeZoneAbbrev; if a location is not provided or is an empty
+          string, the first record matching fromTimeZoneAbbrev is
+          used.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toLocation</emphasis></entry>
+
+          <entry>OPTIONAL. The name of the location that goes along with
+          toTimeZoneAbbrev; if a location is not provided or is an empty
+          string, the first record matching toTimeZoneAbbrev is used.</entry>
+        </row>
+
+        <row>
+          <entry>Returns:</entry>
+
+          <entry>The number of seconds between the two time zones; returns
+          zero if either time zone cannot be found</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis
+  role="bold">STD.Date.TimeZone.SecondsBetweenTZ</emphasis> function computes
+  the offset, in seconds, between two different time zones. Each time zone is
+  designated by a required time zone abbreviation and an optional location
+  name. The result is the number of seconds (which can be either positive or
+  negative) that would have to be applied to a time when traveling from
+  <emphasis>fromTimeZoneAbbrev</emphasis> to
+  <emphasis>toTimeZoneAbbrev</emphasis>.</para>
+
+  <para>Be aware that some time zones explicitly represent daylight savings
+  time, so it is entirely possible to change not only time zones but DST
+  observance as well in a single call.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">MPORT STD;
+STD.Date.TimeZone.SecondsBetweenTZ('CST','IST','NORTH AMERICA','');</programlisting>
+
+  <para>See Also: <link linkend="AdjustTimeTZ">AdjustTimeTZ</link></para>
+</sect1>
