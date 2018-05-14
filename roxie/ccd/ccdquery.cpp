@@ -988,6 +988,10 @@ protected:
             ForEach(*edges)
             {
                 IPropertyTree &edge = edges->query();
+                //Ignore edges that represent dependencies from parent activities to child activities.
+                if (edge.getPropInt("att[@name=\"_childGraph\"]/@value", 0))
+                    continue;
+
                 unsigned sourceActivity = edge.getPropInt("@source", 0);
                 unsigned targetActivity = edge.getPropInt("@target", 0);
                 unsigned source = activities->findActivityIndex(sourceActivity);
@@ -1051,6 +1055,7 @@ protected:
         ForEach(*dependencies)
         {
             IPropertyTree &edge = dependencies->query();
+            //Ignore edges that represent dependencies from parent activities to child activities.
             if (!edge.getPropInt("att[@name=\"_childGraph\"]/@value", 0))
             {
                 unsigned sourceIdx = edge.getPropInt("att[@name=\"_sourceIndex\"]/@value", 0);

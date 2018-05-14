@@ -7344,6 +7344,8 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * sourceActi
             throwError1(HQLERR_DependencyWithinGraph, sinkActivity->queryGraphId());
         graphTree = sinkGraphTree;
     }
+    if (sourceActivity->queryContainerId() == sinkActivity->queryActivityId())
+        graphTree = sinkGraphTree;
 
     unsigned outputIndex = 0;
     if (kind != childAtom)
