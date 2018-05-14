@@ -2437,27 +2437,22 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
     }
 
     Owned<IResultSetFactory> factory = getResultSetFactory(username, password);
+    Owned<IConstWUResultIterator> results = &cw->getResults();
+    ForEach(*results)
+    {
+        IConstWUResult &ds = results->query();
+        if (ds.getResultSequence()>=0 && (ds.getResultStatus() != ResultStatusUndefined))
+        {
+            SCMStringBuffer name;
+            ds.getResultName(name);
+            Owned<INewResultSet> nr = factory->createNewResultSet(&ds, cw->queryWuid());
+            const IProperties *xmlns = ds.queryResultXmlns();
+            writeResultXml(writer, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL, xmlns);
+        }
+    }
+
     switch (cw->getState())
     {
-        case WUStateCompleted:
-        case WUStateWait:
-        {
-            Owned<IConstWUResultIterator> results = &cw->getResults();
-            ForEach(*results)
-            {
-                IConstWUResult &ds = results->query();
-                if (ds.getResultSequence()>=0 && (ds.getResultStatus() != ResultStatusUndefined))
-                {
-                    SCMStringBuffer name;
-                    ds.getResultName(name);
-                    Owned<INewResultSet> nr = factory->createNewResultSet(&ds, cw->queryWuid());
-                    const IProperties *xmlns = ds.queryResultXmlns();
-                    writeResultXml(writer, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL, xmlns);
-                }
-            }
-        }
-        break;
-
         case WUStateAborted:
             writer.outputBeginNested("Exception", false);
             writer.outputCString("System", "Source");
