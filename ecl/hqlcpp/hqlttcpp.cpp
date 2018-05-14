@@ -1124,13 +1124,14 @@ void ThorScalarTransformer::doAnalyseExpr(IHqlExpression * expr)
     {
     case no_thor:
         {
-            ITypeInfo * type = expr->queryType();
-            if (type && (type->isScalar() || type->getTypeCode() == type_row))
+            if (!expr->isAction())
                 seenCandidate = true;
             //No point looking further than a no_thor they don't (currently) get nested within each other.
             return;
         }
     }
+    if (seenCandidate)
+        return;
 
     HoistingHqlTransformer::doAnalyseExpr(expr);
 }
@@ -1188,9 +1189,7 @@ IHqlExpression * ThorScalarTransformer::createTransformed(IHqlExpression * expr)
         }
     case no_thor:
         {
-            ITypeInfo * type = expr->queryType();
-//          if (isUsedUnconditionally(expr) && type && (type->isScalar() || type->getTypeCode() == type_row))
-            if ((type->isScalar() || type->getTypeCode() == type_row))
+            if (!expr->isAction())
             {
                 //only other solution is to have some kind of graph result which is returned.
                 assertex(options.workunitTemporaries);
