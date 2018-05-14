@@ -196,6 +196,10 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_count.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_count_var.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
