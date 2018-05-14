@@ -1947,10 +1947,6 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
     ForEach(*edges)
     {
         IPropertyTree &edge = edges->query();
-        //Ignore edges that represent dependencies from parent activities to child activities.
-        if (edge.getPropBool("att[@name=\"_childGraph\"]/@value", false))
-            continue;
-
         unsigned sourceOutput = edge.getPropInt("att[@name=\"_sourceIndex\"]/@value", 0);
         unsigned targetInput = edge.getPropInt("att[@name=\"_targetIndex\"]/@value", 0);
         CGraphElementBase *source = queryElement(edge.getPropInt("@source"));
