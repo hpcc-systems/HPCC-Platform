@@ -2985,6 +2985,39 @@ extern jhtree_decl IKeyArray *createKeyArray()
     return new CKeyArray;
 }
 
+
+extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager)
+{
+    class CIndexLookup : public CSimpleInterfaceOf<IIndexLookup>
+    {
+        Linked<IKeyManager> keyManager;
+    public:
+        CIndexLookup(IKeyManager *_keyManager) : keyManager(_keyManager)
+        {
+        }
+        virtual unsigned __int64 getCount() override
+        {
+            return keyManager->getCount();
+        }
+        virtual unsigned __int64 checkCount(unsigned __int64 limit) override
+        {
+            return keyManager->checkCount(limit);
+        }
+        virtual const void *nextKey() override
+        {
+            if (keyManager->lookup(true))
+                return keyManager->queryKeyBuffer();
+            else
+                return nullptr;
+        }
+        virtual unsigned querySeeks() const override { return keyManager->querySeeks(); }
+        virtual unsigned queryScans() const override { return keyManager->queryScans(); }
+        virtual unsigned querySkips() const override { return keyManager->querySkips(); }
+    };
+    return new CIndexLookup(keyManager);
+}
+
+
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 

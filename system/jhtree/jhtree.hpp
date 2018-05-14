@@ -232,6 +232,16 @@ public:
     virtual bool canMatch() const override;
 };
 
+interface IIndexLookup : extends IInterface // similar to a small subset of IKeyManager
+{
+    virtual const void *nextKey() = 0;
+    virtual unsigned __int64 getCount() = 0;
+    virtual unsigned __int64 checkCount(unsigned __int64 limit) = 0;
+    virtual unsigned querySeeks() const = 0;
+    virtual unsigned queryScans() const = 0;
+    virtual unsigned querySkips() const = 0;
+};
+
 interface IKeyManager : public IInterface, extends IIndexReadContext
 {
     virtual void reset(bool crappyHack = false) = 0;
@@ -295,6 +305,8 @@ public:
 
 extern jhtree_decl bool isCompressedIndex(const char *filename);
 extern jhtree_decl bool isIndexFile(IFile *filename);
+
+extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager);
 
 #define JHTREE_KEY_NOT_SORTED JHTREE_ERROR_START
 
