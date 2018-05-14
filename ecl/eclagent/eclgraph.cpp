@@ -814,6 +814,9 @@ void EclSubGraph::createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IProp
     {
         IPropertyTree &edge = iter2->query();
 
+        if (edge.getPropBool("att[@name=\"_childGraph\"]/@value", false))
+            continue;
+
         unsigned sourceId = edge.getPropInt("@source");
         unsigned targetId = edge.getPropInt("@target");
         unsigned sourceOutput = edge.getPropInt("att[@name=\"_sourceIndex\"]/@value", 0);
