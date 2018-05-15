@@ -256,7 +256,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     m_cfg.setown(procpt);
 
     loadBuiltIns();   
-   
+
     // load options
     const char* level = m_cfg->queryProp("@logLevel");
     m_options.logLevel = level ? atoi(level) : LogMin;
@@ -465,32 +465,35 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
                 ptree = &pt_iter->query();
                 if (ptree)
                 {
-                    binding_cfg *bcfg = new binding_cfg;
-                    
+                    OwnedPtr<binding_cfg> bcfg(new binding_cfg);
                     ptree->getProp("@name", bcfg->name);
-                    ptree->getProp("@type", bcfg->type);
-                    ptree->getProp("@plugin", bcfg->plugin);
-                    fixPlugin(bcfg->plugin);
-                    bcfg->isDefault = ptree->getPropBool("@defaultBinding", false);
-                    
-                    StringBuffer addr;
-                    ptree->getProp("@netAddress", addr);
-                    if(strcmp(addr.str(), ".") == 0)
-                    {
-                        bcfg->address.append("0.0.0.0");
-                    }
+                    bcfg->port = ptree->getPropInt("@port", 0);
+                    if (bcfg->port == 0)
+                        DBGLOG("Binding %s is configured with port 0, do not load it.", bcfg->name.str());
                     else
                     {
-                        bcfg->address.append(addr.str());
+                        ptree->getProp("@type", bcfg->type);
+                        ptree->getProp("@plugin", bcfg->plugin);
+                        fixPlugin(bcfg->plugin);
+                        bcfg->isDefault = ptree->getPropBool("@defaultBinding", false);
+
+                        StringBuffer addr;
+                        ptree->getProp("@netAddress", addr);
+                        if (strcmp(addr.str(), ".") == 0)
+                        {
+                            // Here we interpret '.' as binding to all interfaces, so convert it to "0.0.0.0"
+                            bcfg->address.append("0.0.0.0");
+                        }
+                        else
+                        {
+                            bcfg->address.append(addr.str());
+                        }
+
+                        ptree->getProp("@service", bcfg->service_name);
+                        ptree->getProp("@protocol", bcfg->protocol_name);
+
+                        m_bindings.push_back(bcfg.getClear());
                     }
-                    
-                    StringBuffer portstr;
-                    ptree->getProp("@port", portstr);
-                    bcfg->port = atoi(portstr.str());
-                    ptree->getProp("@service", bcfg->service_name);
-                    ptree->getProp("@protocol", bcfg->protocol_name);
-                    
-                    m_bindings.push_back(bcfg);
                 }
                 
                 pt_iter->next();
@@ -559,7 +562,7 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
 
     if(sit == m_services.end())
     {
-        DBGLOG("Warning: Service %s not found for the binding", xcfg.service_name.str());
+        DBGLOG("Warning: Service %s not found for binding %s", xcfg.service_name.str(), xcfg.name.str());
     }
     else
     {
@@ -568,7 +571,7 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
 
     if(pit == m_protocols.end())
     {
-        throw MakeStringException(-1, "Protocol %s not found for the binding", xcfg.protocol_name.str());
+        throw MakeStringException(-1, "Protocol %s not found for binding %s", xcfg.protocol_name.str(), xcfg.name.str());
     }
     else
     {
@@ -715,6 +718,37 @@ void CEspConfig::loadBindings()
 #endif
         iter++;
     }
+}
+
+void CEspConfig::startEsdlMonitor()
+{
+    start_esdl_monitor_t xproc = nullptr;
+    Owned<IEspPlugin> pplg = getPlugin("esdl_svc_engine");
+    if (pplg)
+    {
+        DBGLOG("Plugin esdl_svc_engine loaded.");
+        xproc = (start_esdl_monitor_t) pplg->getProcAddress("startEsdlMonitor");
+    }
+    else
+        throw MakeStringException(-1, "Plugin esdl_svc_engine can't be loaded");
+
+    if (xproc)
+    {
+        DBGLOG("Procedure startEsdlMonitor loaded, now calling it...");
+        xproc();
+    }
+    else
+        throw MakeStringException(-1, "procedure startEsdlMonitor can't be loaded");
+}
+
+void CEspConfig::stopEsdlMonitor()
+{
+    stop_esdl_monitor_t xproc = nullptr;
+    Owned<IEspPlugin> pplg = getPlugin("esdl_svc_engine");
+    if (pplg)
+        xproc = (stop_esdl_monitor_t) pplg->getProcAddress("stopEsdlMonitor");
+    if (xproc)
+        xproc();
 }
 
 class ESPxsltIncludeHandler : public CInterface, implements IIncludeHandler
@@ -1101,3 +1135,14 @@ bool CEspConfig::canAllBindingsDetachFromDali()
     }
     return true;
 }
+
+IEspRpcBinding* CEspConfig::queryBinding(const char* name)
+{
+    for (auto binding : m_bindings)
+    {
+        if (strcmp(binding->name.str(), name) == 0)
+            return binding->bind.get();
+    }
+    return nullptr;
+}
+

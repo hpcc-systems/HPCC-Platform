@@ -111,7 +111,6 @@ public:
     {
         return true;
     }
-    bool rootAuth(IEspContext* ctx);
 
     virtual int processRequest();
 

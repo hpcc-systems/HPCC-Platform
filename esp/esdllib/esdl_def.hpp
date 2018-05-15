@@ -84,6 +84,7 @@ interface IEsdlDefObject : extends IInterface
     virtual const char *queryProp(const char *name)=0;
     virtual bool hasProp(const char *name)=0;
     virtual int getPropInt(const char *pname, int def = 0)=0;
+    virtual bool getPropBool(const char *pname, bool def = false)=0;
     virtual void toXML(StringBuffer &xml, double version = 0, IProperties *opts=NULL, unsigned flags=0)=0;
     virtual EsdlDefTypeId getEsdlType()=0;
     virtual bool checkVersion(double ver)=0;
@@ -217,6 +218,8 @@ interface IEsdlDefinition : extends IInterface
     virtual bool hasXMLDefintionLoaded(const char *esdlDefName, int ver)=0;
     virtual bool hasXMLDefintionLoaded(const char *esdlDefId)=0;
     virtual EsdlBasicElementType translateSimpleType(const char *type)=0;
+
+    virtual bool isShared() = 0;
 };
 
 esdl_decl IEsdlDefinition *createNewEsdlDefinition(const char *esdl_ns=NULL);

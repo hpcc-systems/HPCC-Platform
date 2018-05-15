@@ -96,37 +96,6 @@ CEspHttpServer::~CEspHttpServer()
     }
 }
 
-bool CEspHttpServer::rootAuth(IEspContext* ctx)
-{
-    if (!m_apport->rootAuthRequired())
-        return true;
-
-    bool ret=false;
-    EspHttpBinding* thebinding=getBinding();
-    if (thebinding)
-    {
-        thebinding->populateRequest(m_request.get());
-        if(!thebinding->authRequired(m_request.get()) || thebinding->doAuth(ctx))
-            ret=true;
-        else
-        {
-            ISecUser *user = ctx->queryUser();
-            if (user && user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
-            {
-                m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
-                ret = true;
-            }
-            else
-            {
-                DBGLOG("User authentication required");
-                m_response->sendBasicChallenge(thebinding->getChallengeRealm(), true);
-            }
-        }
-    }
-
-    return ret;
-}
-
 const char* getSubServiceDesc(sub_service stype)
 {
 #define DEF_CASE(s) case s: return #s;
@@ -242,8 +211,8 @@ int CEspHttpServer::processRequest()
 
     try
     {
-        
-        EspHttpBinding* thebinding=NULL;
+        EspHttpBinding* thebinding = nullptr;
+        Owned<IInterface> theBindingHolder; //hold on to the binding in case it gets released in the middle of processing a request
         
         StringBuffer method;
         m_request->getMethod(method);
@@ -322,6 +291,8 @@ int CEspHttpServer::processRequest()
         {
             int ordinality=m_apport->getBindingCount();
             bool isSubService = false;
+            EspHttpBinding* exactBinding = nullptr;
+            bool exactIsSubService = false;
             if (ordinality>0)
             {
                 if (ordinality==1)
@@ -336,25 +307,44 @@ int CEspHttpServer::processRequest()
                 else
                 {
                     EspHttpBinding* lbind=NULL;
-                    for (int index=0; !thebinding && index<ordinality; index++)
+                    for (int index=0; !exactBinding && index<ordinality; index++)
                     {
                         CEspBindingEntry *entry = m_apport->queryBindingItem(index);
                         lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : NULL;
                         if (lbind)
                         {
-                            if (!thebinding && lbind->isValidServiceName(*ctx, serviceName.str()))
+                            if (lbind->isValidServiceName(*ctx, serviceName.str()))
                             {
-                                thebinding=lbind;
-                                StringBuffer bindSvcName;
-                                if (stricmp(serviceName, lbind->getServiceName(bindSvcName)))
-                                    isSubService = true;
+                                if (!thebinding)
+                                {
+                                    thebinding=lbind;
+                                    StringBuffer bindSvcName;
+                                    if (!streq(serviceName, lbind->getServiceName(bindSvcName)))
+                                        isSubService = true;
+                                }
+                                if (methodName.length() != 0 && lbind->isMethodInService(*ctx, serviceName.str(), methodName.str()))
+                                {
+                                    exactBinding = lbind;
+                                    StringBuffer bindSvcName;
+                                    if (!streq(serviceName, lbind->getServiceName(bindSvcName)))
+                                        exactIsSubService = true;
+                                }
                             }                           
                         }
                     }
                 }
+                if (exactBinding)
+                {
+                    thebinding = exactBinding;
+                    isSubService = exactIsSubService;
+                }
                 if (!thebinding && m_defaultBinding)
                     thebinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
             }
+
+            if (thebinding)
+                theBindingHolder.set(dynamic_cast<IInterface*>(thebinding));
+
             checkSetCORSAllowOrigin(m_request, m_response);
 
             if (thebinding!=NULL)

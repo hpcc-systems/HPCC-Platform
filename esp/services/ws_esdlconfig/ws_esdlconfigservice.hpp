@@ -38,7 +38,7 @@ class CWsESDLConfigEx : public CWsESDLConfig
 private:
     Owned<IEsdlStore> m_esdlStore;
     IPropertyTree * getEspProcessRegistry(const char * espprocname, const char * espbingingport, const char * servicename);
-    int getBindingXML(const char * espProcName, const char * espBindingName, StringBuffer & bindingXml, StringBuffer & msg);
+    int getBindingXML(const char * bindingId, StringBuffer & bindingXml, StringBuffer & msg);
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsESDLConfigEx(){};
@@ -67,7 +67,6 @@ public:
         return true;
     }
 private:
-    //Service will be attached to Dali until told otherwise
     bool m_isDetachedFromDali = false;
 };
 

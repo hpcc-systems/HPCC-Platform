@@ -25,7 +25,7 @@
 #ifdef ESDL_ENGINE_EXPORTS
  #define esdl_engine_decl DECL_EXPORT
 #else
- #define esdl_engine_decl
+ #define esdl_engine_decl DECL_IMPORT
 #endif
 
 interface IEsdlStore : public IInterface
@@ -33,33 +33,39 @@ interface IEsdlStore : public IInterface
     virtual void fetchDefinition(const char* definitionId, StringBuffer& esxdl) = 0;
     virtual void fetchLatestDefinition(const char* definitionName, StringBuffer& esxdl) = 0;
     virtual IPropertyTree* fetchBinding(const char* espProcess, const char* espStaticBinding) = 0;
+    virtual IPropertyTree* fetchBinding(const char* bindingId) = 0;
     virtual bool definitionExists(const char* definitionId) = 0;
     virtual bool isMethodDefined(const char* definitionId, StringBuffer & esdlServiceName, const char* methodName) = 0;
-    virtual bool addDefinition(IPropertyTree* definitionRegistry, const char* definitionName, IPropertyTree* definitionInfo, StringBuffer &newId, unsigned &newSeq, const char* userid, bool deleteprev, StringBuffer & message) = 0;
+    virtual bool addDefinition(const char* definitionName, IPropertyTree* definitionInfo, StringBuffer &newId, unsigned &newSeq, const char* userid, bool deleteprev, StringBuffer & message) = 0;
+    virtual int configureMethod(const char* bindingId, const char* methodName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) = 0;
     virtual int configureMethod(const char* espProcName, const char* espBindingName, const char* definitionId, const char* methodName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) = 0;
     virtual int bindService(const char* bindingName, IPropertyTree* methodsConfig, const char* espProcName, const char* espPort, const char* definitionId,
                        const char* esdlServiceName, StringBuffer& message, bool overwrite, const char* user) = 0;
     virtual bool deleteDefinition(const char* definitionId, StringBuffer& errmsg, StringBuffer* defxml) = 0;
     virtual bool deleteBinding(const char* bindingId, StringBuffer& errmsg, StringBuffer* bindingxml) = 0;
-    virtual IPropertyTree* getDefinitionRegistry(bool readonly) = 0;
     virtual IPropertyTree* getBindingTree(const char* espProcName, const char* espBindingName, StringBuffer& msg) = 0;
+    virtual IPropertyTree* getBindingTree(const char* bindingId, StringBuffer& msg) = 0;
     virtual IPropertyTree* getDefinitions() = 0;
     virtual IPropertyTree* getBindings() = 0;
 };
 
-enum EsdlNotifyType
+enum class EsdlNotifyType
 {
-    BindingUpdate = 1,
-    BindingDelete = 2,
-    DefinitionUpdate = 3,
+    BindingAdd = 1,
+    BindingUpdate = 2,
+    BindingDelete = 3,
+    DefinitionAdd = 4,
+    DefinitionUpdate = 5,
+    DefinitionDelete = 6
 };
 
 struct EsdlNotifyData
 {
     EsdlNotifyType type;
     StringBuffer id;
-    StringBuffer espBinding;
+    StringBuffer name;
     StringBuffer espProcess;
+    unsigned port;
 };
 
 interface IEsdlListener
@@ -74,6 +80,6 @@ interface IEsdlSubscription : public IInterface
 };
 
 esdl_engine_decl IEsdlStore* createEsdlCentralStore();
-esdl_engine_decl IEsdlSubscription* createEsdlSubscription(IEsdlListener* listener, const char* process, const char* binding);
+esdl_engine_decl IEsdlSubscription* createEsdlSubscription(IEsdlListener* listener);
 
 #endif // _ESDL_STORE_HPP__

@@ -262,9 +262,11 @@ SCMinterface IEspProtocol(IInterface)
 {
    const char * getProtocolName();
    void addBindingMap(ISocket *sock, IEspRpcBinding* binding, bool isdefault);
+   int removeBindingMap(int port, IEspRpcBinding* binding);
    void clearBindingMap();
    void init(IPropertyTree *cfg, const char *process, const char *protocol);
    void setContainer(IEspContainer *container);
+   int countBindings(int port);
 };
 
 
@@ -364,6 +366,11 @@ SCMinterface IEspServer(IInterface)
 {
    void addProtocol(IEspProtocol &prot);
    void addBinding(const char * name, const char * host, unsigned short port, IEspProtocol &prot, IEspRpcBinding &bind, bool isdefault, IPropertyTree* cfgtree);
+   void removeBinding(unsigned short port, IEspRpcBinding& bind);
+   IEspProtocol* queryProtocol(const char* name);
+   IEspRpcBinding* queryBinding(const char* name);
+   const char* getProcName();
+   virtual IPropertyTree* queryProcConfig();
 };
 
 SCMinterface IEspServiceCfg(IInterface)

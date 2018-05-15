@@ -938,3 +938,8 @@ const char* getBuildLevel()
 {
     return g_buildLevel.str();
 }
+
+IEspServer* queryEspServer()
+{
+    return dynamic_cast<IEspServer*>(getESPContainer());
+}

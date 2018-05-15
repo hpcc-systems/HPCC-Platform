@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-You must have configured an instance of dynamicEsdl in this environment.  Either through configmgr or by editing environment.xml.  This document assumes dynamicESDL is running on "myesp" port 8088.
+You must have configured at least one instance of dynamicESDL in this environment.  Either through configmgr or by editing environment.xml. The instance can be bound on port 0, or on the same port as where you're planning to run your service, or both. The purpose of the instance is to provide the configuration needed for your service. If there's an instance configured on the same port, that instance's configuration will be used, otherwise the configuration of the instance on port 0 will be used. This document assumes you're planning to bind your service to esp process "myesp" and port 8088.
 
 Run the following from the node running the eclwatch server:
 
@@ -37,7 +37,7 @@ esdl ecl esdl_example.esdl .
 ecl publish roxie RoxieEchoPersonInfo.ecl
 
 5. Publish the esdl defined service to dynamicESDL:
- esdl publish esdl_example.esdl EsdlExample --overwrite
+esdl publish esdl_example.esdl EsdlExample --overwrite
 
 5. Bind both java and roxie implementations to DynamicESDL
 esdl bind-service myesp 8088 esdlexample.1 EsdlExample --config esdl_binding.xml --overwrite

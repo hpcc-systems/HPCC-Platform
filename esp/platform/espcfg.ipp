@@ -239,6 +239,7 @@ public:
     void loadProtocols();
     void loadServices();
     void loadBindings();
+    void startEsdlMonitor();
 
     void loadAll()
     {
@@ -255,6 +256,8 @@ public:
         }
         loadProtocols();
         loadBindings();
+        if(useDali)
+            startEsdlMonitor();
 
         if (m_cfg->getPropBool("@ensureESPCache", false) && !checkESPCache())
             throw MakeStringException(-1, "Failed in checking ESP cache service using %s", m_cfg->queryProp("@espCacheInitString"));
@@ -281,12 +284,15 @@ public:
     void unloadServices();
     void unloadProtocols();
     void saveAttachState();
+    void stopEsdlMonitor();
 
     void clear()
     {
         unloadBindings();
         unloadServices();
         unloadProtocols();
+        if(useDali)
+           stopEsdlMonitor();
 
         serverstatus=NULL;
         
@@ -309,7 +315,20 @@ public:
         closeEnvironment();
     }
 
+    IPropertyTree* queryProcConfig()
+    {
+        return m_cfg.get();
+    }
 
+    IEspProtocol* queryProtocol(const char* name)
+    {
+        map<string, protocol_cfg*>::iterator pit = m_protocols.find(name);
+        if (pit != m_protocols.end())
+            return (*pit).second->prot;
+        return nullptr;
+    }
+
+    IEspRpcBinding* queryBinding(const char* name);
 };
 
 
