@@ -11399,7 +11399,7 @@ public:
         {
             for (;;)
             {
-                const void *in = inputStream->nextRow();
+                OwnedConstRoxieRow in = inputStream->nextRow();
                 if (!in)
                 {
                     if (anyThisGroup)
@@ -11407,36 +11407,38 @@ public:
                         anyThisGroup = false;
                         return NULL;
                     }
-                    in = inputStream->nextRow();
+                    in.setown(inputStream->nextRow());
                     if (!in)
                     {
                         eof = true;
                         return NULL;                // eof...
                     }
                 }
-                unsigned outSize;
-                RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                try
+                if (likely(helper.canMatch(in)))
                 {
-                    outSize = helper.transform(rowBuilder, in);
-                    ReleaseRoxieRow(in);
-                }
-                catch (IException *E)
-                {
-                    throw makeWrappedException(E);
-                }
-
-                if (outSize)
-                {
-                    anyThisGroup = true;
-                    processed++;
-                    if (processed==rowLimit)
+                    unsigned outSize;
+                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                    try
                     {
-                        if (traceLevel > 4)
-                            DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
-                        helper.onLimitExceeded();
+                        outSize = helper.transform(rowBuilder, in);
                     }
-                    return rowBuilder.finalizeRowClear(outSize);
+                    catch (IException *E)
+                    {
+                        throw makeWrappedException(E);
+                    }
+
+                    if (outSize)
+                    {
+                        anyThisGroup = true;
+                        processed++;
+                        if (processed==rowLimit)
+                        {
+                            if (traceLevel > 4)
+                                DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                            helper.onLimitExceeded();
+                        }
+                        return rowBuilder.finalizeRowClear(outSize);
+                    }
                 }
             }
         }
@@ -22006,10 +22008,15 @@ public:
             if (nextRec)
             {
                 someInGroup = true;
-                transformedSize = readHelper->transform(rowBuilder, nextRec);
-                reader->finishedRow();
-                if (transformedSize)
-                    break;
+                if (likely(readHelper->canMatch(nextRec)))
+                {
+                    transformedSize = readHelper->transform(rowBuilder, nextRec);
+                    reader->finishedRow();
+                    if (transformedSize)
+                        break;
+                }
+                else
+                    reader->finishedRow();
             }
             else if (isGrouped)
             {
@@ -23266,33 +23273,41 @@ public:
                 size32_t transformedSize;
                 RtlDynamicRowBuilder rowBuilder(owner.rowAllocator);
                 byte const * keyRow = tlk->queryKeyBuffer();
-                try
+                if (likely(owner.readHelper.canMatch(keyRow)))
                 {
-                    transformedSize = owner.readHelper.transform(rowBuilder, keyRow);
-                    owner.callback.finishedRow();
-                }
-                catch (IException *E)
-                {
-                    throw owner.makeWrappedException(E);
-                }
-                if (transformedSize)
-                {
-                    OwnedConstRoxieRow result = rowBuilder.finalizeRowClear(transformedSize);
-                    matched++;
-                    if (matched > owner.rowLimit)
+                    try
                     {
-                        owner.onLimitExceeded(false); // Should throw exception
-                        throwUnexpected();
+                        transformedSize = owner.readHelper.transform(rowBuilder, keyRow);
+                        owner.callback.finishedRow();
                     }
-                    if (matched > owner.choosenLimit) // MORE - bit of a strange place to check
+                    catch (IException *E)
                     {
-                        break;
+                        throw owner.makeWrappedException(E);
                     }
-                    owner.accepted++;
-                    return result.getClear();
+                    if (transformedSize)
+                    {
+                        OwnedConstRoxieRow result = rowBuilder.finalizeRowClear(transformedSize);
+                        matched++;
+                        if (matched > owner.rowLimit)
+                        {
+                            owner.onLimitExceeded(false); // Should throw exception
+                            throwUnexpected();
+                        }
+                        if (matched > owner.choosenLimit) // MORE - bit of a strange place to check
+                        {
+                            break;
+                        }
+                        owner.accepted++;
+                        return result.getClear();
+                    }
+                    else
+                        owner.rejected++;
                 }
                 else
+                {
+                    owner.callback.finishedRow(); // since filter might have accessed a blob
                     owner.rejected++;
+                }
             }
             EOFseen = true;
             return NULL;
@@ -23776,64 +23791,72 @@ public:
             }
 
             byte const * keyRow = tlk->queryKeyBuffer();
+            if (likely(indexHelper.canMatch(keyRow)))
+            {
 #ifdef _DEBUG
-//          StringBuffer recstr;
-//          unsigned size = (tlk->queryRecordSize()<80)  ? tlk->queryRecordSize() : 80;
-//          for (unsigned i = 0; i < size; i++)
-//          {
-//              recstr.appendf("%02x ", ((unsigned char *) keyRow)[i]);
-//          }
-//          DBGLOG("nextRowGE Got %s", recstr.str());
-            if (originalRawSeek && memcmp(keyRow + seekGEOffset, originalRawSeek, seekSize) < 0)
-                assertex(!"smart seek failure");
+    //          StringBuffer recstr;
+    //          unsigned size = (tlk->queryRecordSize()<80)  ? tlk->queryRecordSize() : 80;
+    //          for (unsigned i = 0; i < size; i++)
+    //          {
+    //              recstr.appendf("%02x ", ((unsigned char *) keyRow)[i]);
+    //          }
+    //          DBGLOG("nextRowGE Got %s", recstr.str());
+                if (originalRawSeek && memcmp(keyRow + seekGEOffset, originalRawSeek, seekSize) < 0)
+                    assertex(!"smart seek failure");
 #endif
-            size32_t transformedSize;
-            rowBuilder.ensureRow();
-            try
-            {
-                transformedSize =indexHelper.transform(rowBuilder, keyRow);
-                //if the post filter causes a mismatch, and the stepping condition no longer matches
-                //then return a mismatch record - so the join code can start seeking on the other input.
-                if (transformedSize == 0 && optimizeSteppedPostFilter && stepExtra.returnMismatches())
+                size32_t transformedSize;
+                rowBuilder.ensureRow();
+                try
                 {
-                    if (memcmp(keyRow + seekGEOffset, originalRawSeek, seekSize) != 0)
+                    transformedSize =indexHelper.transform(rowBuilder, keyRow);
+                    //if the post filter causes a mismatch, and the stepping condition no longer matches
+                    //then return a mismatch record - so the join code can start seeking on the other input.
+                    if (transformedSize == 0 && optimizeSteppedPostFilter && stepExtra.returnMismatches())
                     {
-                        transformedSize = indexHelper.unfilteredTransform(rowBuilder, keyRow);
-                        if (transformedSize != 0)
-                            wasCompleteMatch = false;
+                        if (memcmp(keyRow + seekGEOffset, originalRawSeek, seekSize) != 0)
+                        {
+                            transformedSize = indexHelper.unfilteredTransform(rowBuilder, keyRow);
+                            if (transformedSize != 0)
+                                wasCompleteMatch = false;
+                        }
                     }
+                    callback.finishedRow();
                 }
-                callback.finishedRow();
-            }
-            catch (IException *E)
-            {
-                throw makeWrappedException(E);
-            }
-            if (transformedSize)
-            {
-                accepted++;
-                if (accepted > rowLimit)
+                catch (IException *E)
                 {
-                    if ((indexHelper.getFlags() & (TIRlimitskips|TIRlimitcreates)) != 0)
-                    {
-                        throwUnexpected(); // should not have used simple variant if maySkip set...
-                    }
-                    if (traceLevel > 4)
-                        DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
-                    indexHelper.onLimitExceeded();
-                    break;
+                    throw makeWrappedException(E);
                 }
-                processed++;
-#ifdef _DEBUG
-//              const byte *ret = (const byte *) out.get();
-//              CommonXmlWriter xmlwrite(XWFnoindent|XWFtrim|XWFopt);
-//              queryOutputMeta()->toXML(ret, xmlwrite);
-//              DBGLOG("ROW: {%p} %s", ret, xmlwrite.str());
-#endif
-                return rowBuilder.finalizeRowClear(transformedSize);
+                if (transformedSize)
+                {
+                    accepted++;
+                    if (accepted > rowLimit)
+                    {
+                        if ((indexHelper.getFlags() & (TIRlimitskips|TIRlimitcreates)) != 0)
+                        {
+                            throwUnexpected(); // should not have used simple variant if maySkip set...
+                        }
+                        if (traceLevel > 4)
+                            DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                        indexHelper.onLimitExceeded();
+                        break;
+                    }
+                    processed++;
+    #ifdef _DEBUG
+    //              const byte *ret = (const byte *) out.get();
+    //              CommonXmlWriter xmlwrite(XWFnoindent|XWFtrim|XWFopt);
+    //              queryOutputMeta()->toXML(ret, xmlwrite);
+    //              DBGLOG("ROW: {%p} %s", ret, xmlwrite.str());
+    #endif
+                    return rowBuilder.finalizeRowClear(transformedSize);
+                }
+                else
+                    rejected++;
             }
             else
+            {
+                callback.finishedRow(); // since filter might have accessed a blob
                 rejected++;
+            }
             rawSeek = NULL;
         }
         onEOF();

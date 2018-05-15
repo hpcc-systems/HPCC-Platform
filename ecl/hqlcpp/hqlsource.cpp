@@ -218,6 +218,7 @@ bool isSimpleSource(IHqlExpression * expr)
 
 static bool isSimpleProjectingDiskRead(IHqlExpression * expr)
 {
+    bool projected = false;
     for (;;)
     {
         switch (expr->getOperator())
@@ -226,8 +227,13 @@ static bool isSimpleProjectingDiskRead(IHqlExpression * expr)
             return true;
         case no_hqlproject:
         case no_newusertable:
+            if (projected)
+                return false;
             //MORE: HPCC-18469 Check if the transform only assigns fields with the same name from source to the target
-            return false;
+            if (!isSimpleProject(expr))
+                return false;
+            projected = true;
+            break;
         default:
             return false;
         }
@@ -755,6 +761,9 @@ public:
     virtual void buildTransform(IHqlExpression * expr) = 0;
     virtual void analyse(IHqlExpression * expr);
 
+    void buildCanMatch(IHqlExpression * expr);
+    void buildMatchFilter(BuildCtx & ctx, IHqlExpression * expr);
+
     void buildFilenameMember();
     void appendFilter(SharedHqlExpr & unkeyedFilter, IHqlExpression * expr);
     void buildKeyedLimitHelper(IHqlExpression * expr);
@@ -770,7 +779,7 @@ public:
     bool recordHasVirtualsOrDeserialize()                               { return fieldInfo.hasVirtualsOrDeserialize(); }
     bool isSourceInvariant(IHqlExpression * dataset, IHqlExpression * expr);
     bool hasExistChoosenLimit() { return (choosenValue && getIntValue(choosenValue) == 1); }
-
+    bool isRootSelector(IHqlExpression * expr) const;
 
 protected:
     void assignLocalExtract(BuildCtx & ctx, ParentExtract * extractBuilder, IHqlExpression * dataset, const char * argName);
@@ -814,6 +823,7 @@ public:
     HqlExprAttr     keyedLimitExpr;
     HqlExprAttr     choosenValue;
     HqlExprAttr     preloadSize;
+    HqlExprAttr     firstTransformer;
     HqlExprAttr     lastTransformer;
     HqlExprAttr     alreadyDoneFlag;
     HqlExprArray    originalFilters;
@@ -847,6 +857,7 @@ public:
     bool            isVirtualLogicalFilenameUsed;
     bool            requiresOrderedMerge;
     bool            newDiskReadMapping;
+    bool            extractCanMatch = false;
 protected:
     HqlCppTranslator & translator;
 };
@@ -894,6 +905,13 @@ bool SourceBuilder::isSourceInvariant(IHqlExpression * dataset, IHqlExpression *
         if (!dataset)
             return true;
     }
+}
+
+bool SourceBuilder::isRootSelector(IHqlExpression * expr) const
+{
+    if (!tableExpr)
+        return false;
+    return (expr->queryNormalizedSelector() == tableExpr->queryNormalizedSelector());
 }
 
 void SourceBuilder::analyse(IHqlExpression * expr)
@@ -982,7 +1000,8 @@ void SourceBuilder::analyse(IHqlExpression * expr)
 
             if (unkeyedFilter)
             {
-                transformCanFilter = true;
+                if (!extractCanMatch || !isRootSelector(expr))
+                    transformCanFilter = true;
                 originalFilters.append(*LINK(expr));
                 mappedFilters.append(*unkeyedFilter.getClear());
             }
@@ -1047,11 +1066,15 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     case no_hqlproject:
         needToCallTransform = true;
         needDefaultTransform = false;
+        if (!firstTransformer)
+            firstTransformer.set(expr);
         lastTransformer.set(expr);
         break;
     case no_newusertable:
         needToCallTransform = true;
         needDefaultTransform = false;
+        if (!firstTransformer)
+            firstTransformer.set(expr);
         lastTransformer.set(expr);
         break;
     case no_aggregate:
@@ -1059,6 +1082,8 @@ void SourceBuilder::analyse(IHqlExpression * expr)
             needToCallTransform = true;
             needDefaultTransform = false;
             aggregation = true;
+            if (!firstTransformer)
+                firstTransformer.set(expr);
             lastTransformer.set(expr);
             break;
         }
@@ -1067,6 +1092,8 @@ void SourceBuilder::analyse(IHqlExpression * expr)
             needToCallTransform = true;
             needDefaultTransform = false;
             aggregation = true;
+            if (!firstTransformer)
+                firstTransformer.set(expr);
             lastTransformer.set(expr);
 
             IHqlExpression * transform = expr->queryChild(2);
@@ -1088,6 +1115,8 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     case no_fetch:
         needToCallTransform = true;
         needDefaultTransform = false;
+        if (!firstTransformer)
+            firstTransformer.set(expr);
         lastTransformer.set(expr);
         break;
     case no_compound_diskread:
@@ -1434,7 +1463,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
         break;
     case no_filter:
         {
-            if (!ignoreFilters)
+            if (!ignoreFilters && (!extractCanMatch || !isRootSelector(expr)))
             {
                 LinkedHqlExpr cond;
                 if (useFilterMappings)
@@ -1692,6 +1721,71 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
         break;
     default:
         throwUnexpectedOp(op);
+    }
+}
+
+
+void SourceBuilder::buildMatchFilter(BuildCtx & ctx, IHqlExpression * expr)
+{
+    expr = expr->queryBody();
+    node_operator op = expr->getOperator();
+
+    switch (op)
+    {
+    case no_cachealias:
+        buildMatchFilter(ctx, expr->queryChild(1));
+        return;
+    case no_newkeyindex:
+    case no_table:
+    case no_fetch:
+    case no_select:     // handled below
+    case no_null:
+    case no_anon:
+    case no_pseudods:
+    case no_workunit_dataset:
+    case no_getgraphresult:
+    case no_call:
+    case no_externalcall:
+    case no_rows:
+    case no_libraryinput:
+        return;
+    default:
+        buildMatchFilter(ctx, expr->queryChild(0));
+        break;
+    }
+
+    switch (op)
+    {
+    case no_filter:
+        {
+            LinkedHqlExpr cond;
+            if (useFilterMappings)
+            {
+                unsigned match = originalFilters.find(*expr);
+                if (match != NotFound)
+                    cond.set(&mappedFilters.item(match));
+            }
+            else
+            {
+                HqlExprArray args;
+                unwindRealChildren(args, expr, 1);
+                cond.setown(createBalanced(no_and, queryBoolType(), args));
+            }
+
+            if (cond)
+            {
+                IHqlExpression * ds = expr->queryChild(0);
+                OwnedHqlExpr test = getInverse(cond);
+                if (translator.queryOptions().foldFilter)
+                    test.setown(foldScopedHqlExpression(translator.queryErrorProcessor(), ds->queryNormalizedSelector(), test));
+
+                if (translator.options.spotCSE)
+                    test.setown(spotScalarCSE(test, ds, translator.queryOptions().spotCseInIfDatasetConditions));
+
+                translator.buildFilteredReturn(ctx, test, queryBoolExpr(false));
+            }
+        }
+        break;
     }
 }
 
@@ -2072,6 +2166,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     {
         buildMembers(expr);
         buildTransform(expr);
+        buildCanMatch(expr);
         buildFlagsMember(expr);
 
         if (tableExpr && (activityKind < TAKchildread || activityKind > TAKchildthroughnormalize))
@@ -2613,6 +2708,32 @@ void SourceBuilder::buildNormalizeHelpers(IHqlExpression * expr)
 }
 
 
+void SourceBuilder::buildCanMatch(IHqlExpression * expr)
+{
+    if (extractCanMatch)
+    {
+        MemberFunction func(translator, instance->startctx);
+        func.start("virtual bool canMatch(const void * _left) override");
+        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        translator.bindTableCursor(func.ctx, tableExpr, "left");
+
+        //This will have no ill effect for disk read, and is used for blob lookup
+        translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
+        buildTransformFpos(func.ctx);
+
+        unsigned mark = func.numStmts();
+        buildMatchFilter(func.ctx, firstTransformer ? firstTransformer->queryChild(0) : expr);
+        if (func.numStmts() != mark)
+        {
+            func.ctx.addReturn(queryBoolExpr(true));
+            translator.doBuildBoolFunction(instance->classctx, "hasMatchFilter", true);
+        }
+        else
+            func.setIncluded(false);
+    }
+}
+
+
 void SourceBuilder::buildGroupAggregateTransformBody(BuildCtx & transformCtx, IHqlExpression * expr, bool useExtract, bool bindInputRow)
 {
     buildTransformBody(transformCtx, expr, false, false, bindInputRow);
@@ -2985,7 +3106,8 @@ class DiskReadBuilder : public DiskReadBuilderBase
 public:
     DiskReadBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
+        extractCanMatch = (modeOp == no_thor) || (modeOp == no_flat);
     }
 
     virtual void buildTransform(IHqlExpression * expr);
@@ -3119,7 +3241,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
 
         //MORE: This shouldn't always need to be serialized - but engines crash at the moment if not
         const bool forceAllProjectedSerialized = true;
-        if ((!tableExpr->hasAttribute(_spill_Atom) && !isSimpleProjectingDiskRead(expr)) || forceAllProjectedSerialized)
+        //Reading from a spill file uses the in-memory format to optimize on-demand spilling.
+        bool optimizeInMemorySpill = !targetHThor() && tableExpr->hasAttribute(_spill_Atom);
+        bool useInMemoryFormat = optimizeInMemorySpill || isSimpleProjectingDiskRead(expr);
+        if (forceAllProjectedSerialized || !useInMemoryFormat)
         {
             //else if the the table isn't serialized, then map to a serialized table, and then project to the real format
             if (recordRequiresSerialization(tableExpr->queryRecord(), diskAtom))
@@ -3931,7 +4056,8 @@ class NewIndexReadBuilder : public IndexReadBuilderBase
 public:
     NewIndexReadBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : IndexReadBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
+        extractCanMatch = true;
     }
 
     virtual void analyseGraph(IHqlExpression * expr)

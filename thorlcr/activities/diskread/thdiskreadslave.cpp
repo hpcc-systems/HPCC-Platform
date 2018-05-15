@@ -56,9 +56,10 @@ protected:
     IConstArrayOf<IFieldFilter> fieldFilters;
     bool grouped;
     bool isFixedDiskWidth;
+    bool needTransform = false;
+    bool hasMatchFilter = false;
     size32_t diskRowMinSz;
     unsigned numSegFieldsUsed = 0;
-    bool needTransform = false;
     rowcount_t totalProgress = 0;
     rowcount_t stopAfter = 0;
     rowcount_t remoteLimit = 0;
@@ -404,14 +405,19 @@ public:
                                 if (!row)
                                     break;
                             }
-                            // NB: rows from prefetch are filtered and translated
-                            size32_t sz = activity.helper->transform(outBuilder.ensureRow(), row);
-                            CDiskRecordPartHandler::prefetchDone();
-                            if (sz)
+                            if (likely(!activity.hasMatchFilter || activity.helper->canMatch(row)))
                             {
-                                firstInGroup = false;
-                                return outBuilder.finalizeRowClear(sz);  
+                                // NB: rows from prefetch are filtered and translated
+                                size32_t sz = activity.helper->transform(outBuilder.ensureRow(), row);
+                                CDiskRecordPartHandler::prefetchDone();
+                                if (sz)
+                                {
+                                    firstInGroup = false;
+                                    return outBuilder.finalizeRowClear(sz);
+                                }
                             }
+                            else
+                                CDiskRecordPartHandler::prefetchDone();
                         }
                     }
                     else
@@ -432,8 +438,11 @@ public:
                                 if (!row)
                                     break;
                             }
-                            firstInGroup = false;
-                            return row.getClear();
+                            if (likely(!activity.hasMatchFilter || activity.helper->canMatch(row)))
+                            {
+                                firstInGroup = false;
+                                return row.getClear();
+                            }
                         }
                     }
                 }
@@ -501,6 +510,7 @@ public:
         unsorted = 0 != (TDRunsorted & helper->getFlags());
         grouped = 0 != (TDXgrouped & helper->getFlags());
         needTransform = helper->needTransform() || (TDRkeyed & helper->getFlags());
+        hasMatchFilter = helper->hasMatchFilter();
         appendOutputLinked(this);
     }
     ~CDiskReadSlaveActivity()

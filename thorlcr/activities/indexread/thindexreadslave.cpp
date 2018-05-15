@@ -484,21 +484,27 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
             const void *r = nextKey();
             if (!r)
                 break;
-            if (needTransform)
+            if (likely(helper->canMatch(r)))
             {
-                size32_t sz = helper->transform(ret, r);
-                if (sz)
+                if (needTransform)
                 {
-                    callback.finishedRow();
+                    size32_t sz = helper->transform(ret, r);
+                    if (sz)
+                    {
+                        callback.finishedRow();
+                        return ret.finalizeRowClear(sz);
+                    }
+                }
+                else
+                {
+                    callback.finishedRow(); // since filter might have accessed a blob
+                    size32_t sz = queryRowMetaData()->getRecordSize(r);
+                    memcpy(ret.ensureCapacity(sz, NULL), r, sz);
                     return ret.finalizeRowClear(sz);
                 }
             }
             else
-            {
-                size32_t sz = queryRowMetaData()->getRecordSize(r);
-                memcpy(ret.ensureCapacity(sz, NULL), r, sz);
-                return ret.finalizeRowClear(sz);
-            }
+                callback.finishedRow(); // since filter might have accessed a blob
         }
         return nullptr;
     }
@@ -549,37 +555,43 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
             if (seek && memcmp((byte *)r + seekGEOffset, seek, seekSize) < 0)
                 assertex(!"smart seek failure");
 #endif
-            if (needTransform)
+            if (likely(helper->canMatch(r)))
             {
-                size32_t sz = helper->transform(ret, r);
-                if (sz)
+                if (needTransform)
                 {
-                    callback.finishedRow();
-                    return ret.finalizeRowClear(sz);
-                }
-                else
-                {
-                    if (optimizeSteppedPostFilter && stepExtra.returnMismatches())
+                    size32_t sz = helper->transform(ret, r);
+                    if (sz)
                     {
-                        if (memcmp(ret.getSelf() + seekGEOffset, seek, seekSize) != 0)
+                        callback.finishedRow();
+                        return ret.finalizeRowClear(sz);
+                    }
+                    else
+                    {
+                        if (optimizeSteppedPostFilter && stepExtra.returnMismatches())
                         {
-                            size32_t sz = helper->unfilteredTransform(ret, r);
-                            if (sz)
+                            if (memcmp(ret.getSelf() + seekGEOffset, seek, seekSize) != 0)
                             {
-                                wasCompleteMatch = false;
-                                callback.finishedRow();
-                                return ret.finalizeRowClear(sz);
+                                size32_t sz = helper->unfilteredTransform(ret, r);
+                                if (sz)
+                                {
+                                    wasCompleteMatch = false;
+                                    callback.finishedRow();
+                                    return ret.finalizeRowClear(sz);
+                                }
                             }
                         }
                     }
                 }
+                else
+                {
+                    callback.finishedRow(); // since filter might have accessed a blob
+                    size32_t sz = queryRowMetaData()->getRecordSize(r);
+                    memcpy(ret.ensureCapacity(sz, NULL), r, sz);
+                    return ret.finalizeRowClear(sz);
+                }
             }
             else
-            {
-                size32_t sz = queryRowMetaData()->getRecordSize(r);
-                memcpy(ret.ensureCapacity(sz, NULL), r, sz);
-                return ret.finalizeRowClear(sz);
-            }
+                callback.finishedRow(); // since filter might have accessed a blob
         }
         return nullptr;
     }

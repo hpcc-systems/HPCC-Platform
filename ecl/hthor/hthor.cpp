@@ -8594,8 +8594,8 @@ const void *CHThorDiskReadActivity::nextRow()
                     prefetcher->readAhead(prefetchBuffer);
                     const byte * next = prefetchBuffer.queryRow();
                     size32_t sizeRead = prefetchBuffer.queryRowSize();
-                    size32_t thisSize;
-                    if (segMonitorsMatch(next)) // NOTE - keyed fields are checked pre-translation
+                    size32_t thisSize = 0;
+                    if (likely(segMonitorsMatch(next))) // NOTE - keyed fields are checked pre-translation
                     {
                         MemoryBuffer translated;
                         if (translator)
@@ -8604,10 +8604,9 @@ const void *CHThorDiskReadActivity::nextRow()
                             translator->translate(aBuilder, *this, next);
                             next = reinterpret_cast<const byte *>(translated.toByteArray());
                         }
-                        thisSize = helper.transform(outBuilder.ensureRow(), next);
+                        if (likely(helper.canMatch(next)))
+                            thisSize = helper.transform(outBuilder.ensureRow(), next);
                     }
-                    else
-                        thisSize = 0;
                     bool eog = false;
                     if (grouped)
                         prefetchBuffer.read(sizeof(eog), &eog);
@@ -8645,21 +8644,24 @@ const void *CHThorDiskReadActivity::nextRow()
             {
                 queryUpdateProgress();
 
-                if (!inputstream->eos())
+                while (!inputstream->eos())
                 {
                     size32_t sizeRead = deserializer->deserialize(outBuilder.ensureRow(), deserializeSource);
                     //In this case size read from disk == size created in memory
                     localOffset += sizeRead;
+                    OwnedConstRoxieRow ret = outBuilder.finalizeRowClear(sizeRead);
                     if ((processed - initialProcessed)>=limit)
                     {
-                        outBuilder.clear();
                         if ( agent.queryCodeContext()->queryDebugContext())
                             agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
                         helper.onLimitExceeded();
                         return NULL;
                     }
-                    processed++;
-                    return outBuilder.finalizeRowClear(sizeRead);
+                    if (likely(helper.canMatch(ret)))
+                    {
+                        processed++;
+                        return ret.getClear();
+                    }
                 }
                 eofseen = !openNext();
             }

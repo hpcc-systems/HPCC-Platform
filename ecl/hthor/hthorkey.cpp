@@ -882,54 +882,63 @@ const void *CHThorIndexReadActivity::nextRow()
             if ((keyedLimit != (unsigned __int64) -1) && keyedProcessed > keyedLimit)
                 helper.onKeyedLimitExceeded();
             byte const * keyRow = klManager->queryKeyBuffer();
-            if (needTransform)
+            if (likely(helper.canMatch(keyRow)))
             {
-                try
+                if (needTransform)
                 {
-                    size32_t recSize;
-                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    recSize = helper.transform(rowBuilder, keyRow);
-                    callback.finishedRow();
-                    if (recSize)
+                    try
                     {
-                        processed++;
-                        if ((processed-initialProcessed) > rowLimit)
+                        size32_t recSize;
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        recSize = helper.transform(rowBuilder, keyRow);
+                        callback.finishedRow();
+                        if (recSize)
                         {
-                            helper.onLimitExceeded();
-                            if ( agent.queryCodeContext()->queryDebugContext())
-                                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                            processed++;
+                            if ((processed-initialProcessed) > rowLimit)
+                            {
+                                helper.onLimitExceeded();
+                                if ( agent.queryCodeContext()->queryDebugContext())
+                                    agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                            }
+                            return rowBuilder.finalizeRowClear(recSize);
                         }
-                        return rowBuilder.finalizeRowClear(recSize);
+                        else
+                        {
+                            postFiltered++;
+                        }
                     }
-                    else
+                    catch(IException * e)
                     {
-                        postFiltered++;
+                        throw makeWrappedException(e);
                     }
                 }
-                catch(IException * e)
+                else
                 {
-                    throw makeWrappedException(e);
+                    callback.finishedRow(); // since filter might have accessed a blob
+                    processed++;
+                    if ((processed-initialProcessed) > rowLimit)
+                    {
+                        helper.onLimitExceeded();
+                        if ( agent.queryCodeContext()->queryDebugContext())
+                            agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                    }
+                    try
+                    {
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        size32_t finalSize = cloneRow(rowBuilder, keyRow, outputMeta);
+                        return rowBuilder.finalizeRowClear(finalSize);
+                    }
+                    catch(IException * e)
+                    {
+                        throw makeWrappedException(e);
+                    }
                 }
             }
             else
             {
-                processed++;
-                if ((processed-initialProcessed) > rowLimit)
-                {
-                    helper.onLimitExceeded();
-                    if ( agent.queryCodeContext()->queryDebugContext())
-                        agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
-                }
-                try
-                {
-                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    size32_t finalSize = cloneRow(rowBuilder, keyRow, outputMeta);
-                    return rowBuilder.finalizeRowClear(finalSize);
-                }
-                catch(IException * e)
-                {
-                    throw makeWrappedException(e);
-                }
+                callback.finishedRow(); // since filter might have accessed a blob
+                postFiltered++;
             }
         }
         else if (!nextPart())
@@ -971,54 +980,63 @@ const void *CHThorIndexReadActivity::nextRowGE(const void * seek, unsigned numFi
             keyedProcessed++;
             if ((keyedLimit != (unsigned __int64) -1) && keyedProcessed > keyedLimit)
                 helper.onKeyedLimitExceeded();
-            if (needTransform)
+            if (likely(helper.canMatch(row)))
             {
-                try
+                if (needTransform)
                 {
-                    size32_t recSize;
-                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    recSize = helper.transform(rowBuilder, row);
-                    callback.finishedRow();
-                    if (recSize)
+                    try
                     {
-                        processed++;
-                        if ((processed-initialProcessed) > rowLimit)
+                        size32_t recSize;
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        recSize = helper.transform(rowBuilder, row);
+                        callback.finishedRow();
+                        if (recSize)
                         {
-                            helper.onLimitExceeded();
-                            if ( agent.queryCodeContext()->queryDebugContext())
-                                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                            processed++;
+                            if ((processed-initialProcessed) > rowLimit)
+                            {
+                                helper.onLimitExceeded();
+                                if ( agent.queryCodeContext()->queryDebugContext())
+                                    agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                            }
+                            return rowBuilder.finalizeRowClear(recSize);
                         }
-                        return rowBuilder.finalizeRowClear(recSize);
+                        else
+                        {
+                            postFiltered++;
+                        }
                     }
-                    else
+                    catch(IException * e)
                     {
-                        postFiltered++;
+                        throw makeWrappedException(e);
                     }
                 }
-                catch(IException * e)
+                else
                 {
-                    throw makeWrappedException(e);
+                    callback.finishedRow(); // since filter might have accessed a blob
+                    processed++;
+                    if ((processed-initialProcessed) > rowLimit)
+                    {
+                        helper.onLimitExceeded();
+                        if ( agent.queryCodeContext()->queryDebugContext())
+                            agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                    }
+                    try
+                    {
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        size32_t finalSize = cloneRow(rowBuilder, row, outputMeta);
+                        return rowBuilder.finalizeRowClear(finalSize);
+                    }
+                    catch(IException * e)
+                    {
+                        throw makeWrappedException(e);
+                    }
                 }
             }
             else
             {
-                processed++;
-                if ((processed-initialProcessed) > rowLimit)
-                {
-                    helper.onLimitExceeded();
-                    if ( agent.queryCodeContext()->queryDebugContext())
-                        agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
-                }
-                try
-                {
-                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    size32_t finalSize = cloneRow(rowBuilder, row, outputMeta);
-                    return rowBuilder.finalizeRowClear(finalSize);
-                }
-                catch(IException * e)
-                {
-                    throw makeWrappedException(e);
-                }
+                callback.finishedRow(); // since filter might have accessed a blob
+                postFiltered++;
             }
         }
         else if (!nextPart())
