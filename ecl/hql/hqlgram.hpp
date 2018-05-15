@@ -777,6 +777,8 @@ protected:
     void checkOutputRecord(attribute & errpos, bool outerLevel);
     void checkSoapRecord(attribute & errpos);
     IHqlExpression * checkOutputRecord(IHqlExpression *record, const attribute & errpos, bool & allConstant, bool outerLevel);
+    void checkDefaultValueVirtualAttr(const attribute &errpos, IHqlExpression * attrs);
+
     void doAddAssignment(IHqlExpression * transform, IHqlExpression * field, IHqlExpression * rhs, const attribute& errpos);
     void doAddAssignall(IHqlExpression* assignall, IHqlExpression *tgt, IHqlExpression *src,const attribute& errpos);
     void doAddAssignSelf(IHqlExpression* assignall, IHqlExpression *tgt, IHqlExpression *src,const attribute& errpos);
