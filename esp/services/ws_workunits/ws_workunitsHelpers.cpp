@@ -948,7 +948,7 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
 
     getEventScheduleFlag(info);
 
-    if (version > 1.27)
+    if ((version > 1.27) && ((version < 1.73) || (flags & WUINFO_IncludeTotalClusterTime)))
     {
         unsigned totalThorTimeMS = getTotalThorTime();
         if (totalThorTimeMS)
