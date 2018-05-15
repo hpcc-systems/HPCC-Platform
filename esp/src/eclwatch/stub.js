@@ -166,9 +166,11 @@ define([
                     var lock = dom.byId("Lock");
                     idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
                     monitorLockClick = new ESPUtil.MonitorLockClick();
-                    on(lock, "click", function (event) {
+                    if (lock){
+                        on(lock, "click", function (event) {
                         monitorLockClick.locked();
-                    });
+                         });
+                    }
                     monitorLockClick.on("unlocked", function (){
                         idleWatcher.start();
                     });
