@@ -915,7 +915,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         StringBuffer graphTimeStr;
         formatGraphTimerLabel(graphTimeStr, graphName);
 
-        updateWorkunitTimeStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs, wfid);
+        updateWorkunitStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs, wfid);
 
         addTimeStamp(wu, SSTgraph, graphName, StWhenFinished, wfid);
         

@@ -93,7 +93,7 @@ private:
         formatGraphTimerLabel(timer, graphname, 0, graph.queryGraphId());
         formatGraphTimerScope(graphScope, wfid, graphname, 0, graph.queryGraphId());
         unsigned duration = msTick()-startTime;
-        updateWorkunitTimeStat(wu, SSTsubgraph, graphScope, StTimeElapsed, timer, milliToNano(duration));
+        updateWorkunitStat(wu, SSTsubgraph, graphScope, StTimeElapsed, timer, milliToNano(duration));
 
         if (finished)
         {

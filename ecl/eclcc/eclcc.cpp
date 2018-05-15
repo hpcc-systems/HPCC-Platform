@@ -410,6 +410,7 @@ protected:
     bool optVerifySimplified = false;
     bool optRegenerateCache = false;
     bool optIgnoreCache = false;
+    bool optExtraStats = false;
 
     mutable bool daliConnected = false;
     mutable bool disconnectReported = false;
@@ -1304,7 +1305,14 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             unsigned __int64 parseTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
             instance.stats.parseTime = (unsigned)nanoToMilli(parseTimeNs);
 
-            updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile:parse", StTimeElapsed, NULL, parseTimeNs);
+            updateWorkunitStat(instance.wu, SSTcompilestage, "compile:parse", StTimeElapsed, NULL, parseTimeNs);
+
+            if (optExtraStats)
+            {
+                updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsSimplified, NULL, parseCtx.numAttribsSimplified);
+                updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsProcessed, NULL, parseCtx.numAttribsProcessed);
+                updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsFromCache, NULL, parseCtx.numAttribsFromCache);
+            }
 
             if (exportDependencies)
             {
@@ -1320,7 +1328,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
                 saveXML(dependenciesName.str(), parseCtx.nestedDependTree);
             }
-
 
             if (optGenerateMeta)
                 instance.generatedMeta.setown(parseCtx.getClearMetaTree());
@@ -1411,7 +1418,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     unsigned __int64 totalTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
     instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
     //MORE: This is done too late..
-    updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
+    updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
 }
 
 void EclCC::processDefinitions(EclRepositoryArray & repositories)
@@ -2661,6 +2668,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optIgnoreCache, "--internalignorecache"))  // may generate cache but don't use to simplified expressions
+        {
+        }
+        else if (iter.matchFlag(optExtraStats, "--internalextrastats"))
         {
         }
         else if (iter.matchFlag(logVerbose, "-v") || iter.matchFlag(logVerbose, "--verbose"))

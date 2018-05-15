@@ -1227,7 +1227,7 @@ void EclGraph::execute(const byte * parentExtract)
             formatGraphTimerLabel(description, queryGraphName(), 0, 0);
 
             unsigned __int64 elapsedNs = milliToNano(elapsed);
-            updateWorkunitTimeStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs, agent->getWorkflowId());
+            updateWorkunitStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs, agent->getWorkflowId());
         }
 
         if (agent->queryRemoteWorkunit())
@@ -1443,7 +1443,7 @@ IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const cha
 
 void EclGraph::updateWUStatistic(IWorkUnit *lockedwu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * descr, unsigned __int64 value)
 {
-    updateWorkunitTimeStat(lockedwu, scopeType, scope, kind, descr, value, agent->getWorkflowId());
+    updateWorkunitStat(lockedwu, scopeType, scope, kind, descr, value, agent->getWorkflowId());
 }
 
 IThorChildGraph * EclGraph::resolveChildQuery(unsigned subgraphId)

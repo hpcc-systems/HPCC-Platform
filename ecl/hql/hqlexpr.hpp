@@ -918,7 +918,7 @@ public:
     void beginMetaScope() { metaStack.append(*new FileParseMeta); }
     void beginMetaScope(FileParseMeta & active) { metaStack.append(OLINK(active)); }
     void endMetaScope() { metaStack.pop(); }
-    void createCache(IHqlExpression * simplifiedDefinition, bool isMacro);
+    bool createCache(IHqlExpression * simplifiedDefinition, bool isMacro);
     inline FileParseMeta & curMeta() { return metaStack.tos(); }
     inline bool hasCacheLocation( ) const { return !metaOptions.cacheLocation.isEmpty();}
 public:
@@ -947,6 +947,9 @@ public:
     CIArrayOf<FileParseMeta> metaStack;
     IEclCachedDefinitionCollection * cache = nullptr;
     hash64_t optionHash = 0;
+    unsigned numAttribsSimplified = 0;
+    unsigned numAttribsProcessed = 0;
+    unsigned numAttribsFromCache = 0;
 
 private:
     void createDependencyEntry(IHqlScope * scope, IIdAtom * name);
@@ -1017,8 +1020,11 @@ public:
     inline bool hasCacheLocation() const { return parseCtx.hasCacheLocation();}
     inline bool checkSimpleDef() const { return parseCtx.checkSimpleDef; }
     inline bool ignoreCache() const { return parseCtx.ignoreCache; }
-    inline void createCache(IHqlExpression * simplified, bool isMacro) { parseCtx.createCache(simplified, isMacro); }
+    inline bool createCache(IHqlExpression * simplified, bool isMacro) { return parseCtx.createCache(simplified, isMacro); }
     void reportTiming(const char * name);
+    inline void incrementAttribsSimplified() { ++parseCtx.numAttribsSimplified; };
+    inline void incrementAttribsProcessed() { ++parseCtx.numAttribsProcessed; };
+    inline void incrementAttribsFromCache() { ++parseCtx.numAttribsFromCache; };
 protected:
 
     inline IPropertyTree * queryArchive() const { return parseCtx.archive; }

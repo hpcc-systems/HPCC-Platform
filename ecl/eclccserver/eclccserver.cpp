@@ -413,7 +413,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
 
                 cycle_t elapsedCycles = get_cycles_now() - startCycles;
-                updateWorkunitTimeStat(workunit, SSTcompilestage, "compile", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
+                updateWorkunitStat(workunit, SSTcompilestage, "compile", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
 
                 workunit->commit();
                 return true;

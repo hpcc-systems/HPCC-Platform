@@ -1070,7 +1070,7 @@ bool HqlParseContext::checkEndMeta()
     return wasGathering;
 }
 
-void HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool isMacro)
+bool HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool isMacro)
 {
     assertex(simplifiedDefinition);
 
@@ -1079,13 +1079,13 @@ void HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool is
 
     getCacheBaseFilename(fullName, baseFilename);
     if (!baseFilename)
-        return;
+        return false;
 
     if (!regenerateCache)
     {
         Owned<IEclCachedDefinition> cached = cache->getDefinition(fullName);
         if (cached->isUpToDate(optionHash))
-            return;
+            return false;
     }
 
     StringBuffer ecl;
@@ -1126,6 +1126,7 @@ void HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool is
         stream->flush();
     }
     cacheFile->rename(filename);
+    return true;
 }
 
 void HqlParseContext::finishMeta(bool isSeparateFile, bool success, bool generateMeta)

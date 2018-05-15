@@ -839,6 +839,9 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(UniqueAnalyseExprs) },
     { NUMSTAT(UniqueTransformExprs) },
     { NUMSTAT(DuplicateKeys) },
+    { NUMSTAT(AttribsProcessed) },
+    { NUMSTAT(AttribsSimplified) },
+    { NUMSTAT(AttribsFromCache) },
 };
 
 
