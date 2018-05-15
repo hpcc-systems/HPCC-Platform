@@ -977,7 +977,8 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsig
     return new cRowInterfaces(meta,actid,heapFlags,context);
 };
 
-class CRowStreamReader : public CSimpleInterfaceOf<IExtRowStream>, implements IVirtualFieldCallback
+static NullVirtualFieldCallback nullVirtualFieldCallback;
+class CRowStreamReader : public CSimpleInterfaceOf<IExtRowStream>
 {
 protected:
     Linked<IFileIO> fileio;
@@ -1145,6 +1146,8 @@ public:
         prefetcher.setown(actualFormat->createDiskPrefetcher());
         if (prefetcher)
             prefetchBuffer.setStream(strm);
+        if (!fieldCallback)
+            fieldCallback = &nullVirtualFieldCallback;
     }
 
     ~CRowStreamReader()
@@ -1189,7 +1192,7 @@ public:
                     if (row)
                     {
                         RtlDynamicRowBuilder rowBuilder(*allocator);
-                        size32_t size = translator->translate(rowBuilder, *this, row);
+                        size32_t size = translator->translate(rowBuilder, *fieldCallback, row);
                         prefetchBuffer.finishedRow();
                         return rowBuilder.finalizeRowClear(size);
                     }
@@ -1222,7 +1225,7 @@ public:
                     {
                         translateBuf.setLength(0);
                         MemoryBufferBuilder rowBuilder(translateBuf, 0);
-                        translator->translate(rowBuilder, *this, row);
+                        translator->translate(rowBuilder, *fieldCallback, row);
                         row = reinterpret_cast<const byte *>(translateBuf.toByteArray());
                     }
                     return row;
@@ -1300,31 +1303,6 @@ public:
             filterRow = new RtlDynRow(*actual);
         }
     }
-
-    //interface IVirtualFieldCallback
-    virtual const char * queryLogicalFilename(const void * row) override
-    {
-        if (fieldCallback)
-            return fieldCallback->queryLogicalFilename(row);
-        return ""; //MORE: HPCC-19588 should this value be passed in rather than relying on the callback?
-    }
-    virtual unsigned __int64 getFilePosition(const void * row) override
-    {
-        //This is a bit strange - I'm not sure this structure is really right.
-        //There are quite a few layers with file part handlers, stream readers etc.  They possibly should be combined for clarity.
-        if (fieldCallback)
-            return fieldCallback->getFilePosition(row);
-        unsigned __int64 baseOffset = 0; //MORE - should this value be passed in rather than relying on the callback?
-        return prefetchBuffer.tell() + baseOffset;
-    }
-    virtual unsigned __int64 getLocalFilePosition(const void * row) override
-    {
-        if (fieldCallback)
-            return fieldCallback->getLocalFilePosition(row);
-        unsigned part = 0; //MORE - should this value be passed in rather than relying on the callback?
-        return makeLocalFposOffset(part, prefetchBuffer.tell());
-    }
-
 };
 
 class CLimitedRowStreamReader : public CRowStreamReader
