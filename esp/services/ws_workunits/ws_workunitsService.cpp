@@ -1567,6 +1567,8 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                     flags|=WUINFO_IncludeHelpers;
                 if (req.getIncludeAllowedClusters())
                     flags|=WUINFO_IncludeAllowedClusters;
+                if (req.getIncludeTotalClusterTime())
+                    flags|=WUINFO_IncludeTotalClusterTime;
 
                 WsWuInfo winfo(context, wuid.str());
                 winfo.getInfo(resp.updateWorkunit(), flags);

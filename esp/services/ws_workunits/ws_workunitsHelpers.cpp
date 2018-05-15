@@ -948,7 +948,9 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
 
     getEventScheduleFlag(info);
 
-    if (version > 1.27)
+    //The TotalClusterTime should always be returned between versions 1.27 and 1.73.
+    //After version 1.73, it should be returned only if IncludeTotalClusterTime is true.
+    if ((version > 1.27) && ((version < 1.73) || (flags & WUINFO_IncludeTotalClusterTime)))
     {
         unsigned totalThorTimeMS = getTotalThorTime();
         if (totalThorTimeMS)
