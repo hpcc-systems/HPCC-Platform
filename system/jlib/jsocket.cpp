@@ -4888,7 +4888,8 @@ public:
             // and more than one thread is present
             unsigned n = items.ordinality();
             if (n == 0 && numThreads > 1)
-                stop(false);
+                terminating = true;
+            triggerselect();
             return true;
         }
         return false;
