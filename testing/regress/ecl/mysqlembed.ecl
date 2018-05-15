@@ -82,8 +82,8 @@ ENDEMBED;
 
 // NOTE - while this works as a test case you really don't want to be using the modulo in this way to pull a dataset in parallel, as it won't be able to be indexed efficiently in MySQL
 
-streamed dataset(childrec) testMySQLDS2a() := EMBED(mysql : server(myServer),user(myUser),database(myDB),PROJECTED('[]'), activity, local(true))
-  SELECT [] from tbl1 where (NOT __ACTIVITY__.ISLOCAL) OR (value % __activity__.numSlaves = __activity__.slave);
+streamed dataset(childrec) testMySQLDS2a() := EMBED(mysql : server(myServer),user(myUser),database(myDB),PROJECTED('[]'), activity, local(false))
+  SELECT [] from tbl1 where (value is NULL and __activity__.slave=0) OR (value % __activity__.numSlaves = __activity__.slave);
 ENDEMBED;
 
 ds3query := u'SELECT ** FROM tbl1;' : STORED('ds3query');
@@ -171,7 +171,7 @@ sequential (
   PARALLEL (
   OUTPUT(testMySQLDS()),
   COUNT(testMySQLDS2()),
-  OUTPUT(testMySQLDS2a()),
+  OUTPUT(SORT(testMySQLDS2a(), name)),
   OUTPUT(testMySQLDS3(), {name}),
   OUTPUT(testMySQLRow().name),
   OUTPUT(testMySQLParms('name1', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße')),
