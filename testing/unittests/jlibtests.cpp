@@ -1385,4 +1385,200 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
 
 
 
+#include "jdebug.hpp"
+#include "jmutex.hpp"
+
+
+class AtomicTimingTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(AtomicTimingTest);
+        CPPUNIT_TEST(runAllTests);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+
+    class CasCounter
+    {
+    public:
+        CasCounter() = default;
+        CasCounter(unsigned __int64 _value) : value{_value} {}
+
+        operator unsigned __int64() { return value; }
+        unsigned __int64 operator = (unsigned __int64 _value)
+        {
+            value = _value;
+            return _value;
+        }
+
+        unsigned __int64 operator ++(int)
+        {
+            unsigned __int64 expected = value.load();
+            while (!value.compare_exchange_weak(expected, expected + 1))
+            {
+            }
+            return expected+1;
+        }
+
+        std::atomic<unsigned __int64> value = { 0 };
+    };
+
+    template <typename LOCK, typename BLOCK, typename COUNTER, unsigned NUMVALUES, unsigned NUMLOCKS>
+    class LockTester
+    {
+    public:
+        LockTester()
+        {
+            value1 = 0;
+        }
+
+        class LockTestThread : public Thread
+        {
+        public:
+            LockTestThread(Semaphore & _startSem, Semaphore & _endSem, LOCK & _lock1, COUNTER & _value1, LOCK & _lock2, COUNTER * _extraValues, unsigned _numIterations)
+                : startSem(_startSem), endSem(_endSem),
+                  lock1(_lock1), value1(_value1),
+                  lock2(_lock2), extraValues(_extraValues),
+                  numIterations(_numIterations)
+            {
+            }
+
+            virtual void execute()
+            {
+                {
+                    BLOCK block(lock1);
+                    value1++;
+                    if (NUMVALUES >= 2)
+                        extraValues[1]++;
+                    if (NUMVALUES >= 3)
+                        extraValues[2]++;
+                    if (NUMVALUES >= 4)
+                        extraValues[3]++;
+                    if (NUMVALUES >= 5)
+                        extraValues[4]++;
+                }
+                if (NUMLOCKS == 2)
+                {
+                    BLOCK block(lock2);
+                    extraValues[1]++;
+                }
+            }
+
+            virtual int run()
+            {
+                startSem.wait();
+                for (unsigned i = 0; i < numIterations; i++)
+                    execute();
+                endSem.signal();
+                return 0;
+            }
+
+        protected:
+            Semaphore & startSem;
+            Semaphore & endSem;
+            LOCK & lock1;
+            LOCK & lock2;
+            COUNTER & value1;
+            COUNTER * extraValues;
+            const unsigned numIterations;
+        };
+
+        unsigned __int64 run(const char * title, unsigned numThreads, unsigned numIterations)
+        {
+            value1 = 0;
+            for (unsigned ix = 1; ix < NUMVALUES; ix++)
+                extraValues[ix] = 0;
+            for (unsigned i = 0; i < numThreads; i++)
+            {
+                LockTestThread * next = new LockTestThread(startSem, endSem, lock, value1, lock, extraValues, numIterations);
+                threads.append(*next);
+                next->start();
+            }
+
+            cycle_t startCycles = get_cycles_now();
+            startSem.signal(numThreads);
+            for (unsigned i2 = 0; i2 < numThreads; i2++)
+                endSem.wait();
+            cycle_t endCycles = get_cycles_now();
+            unsigned __int64 expected = (unsigned __int64)numIterations * numThreads;
+            unsigned __int64 averageTime = cycle_to_nanosec(endCycles - startCycles) / (numIterations * numThreads);
+            printf("%s@%u/%u threads(%u) %" I64F "uns/iteration lost(%" I64F "d)\n", title, NUMVALUES, NUMLOCKS, numThreads, averageTime, expected - value1);
+            for (unsigned i3 = 0; i3 < numThreads; i3++)
+                threads.item(i3).join();
+            return averageTime;
+        }
+
+    protected:
+        CIArrayOf<LockTestThread> threads;
+        Semaphore startSem;
+        Semaphore endSem;
+        LOCK lock;
+        COUNTER value1;
+        COUNTER extraValues[NUMVALUES];
+    };
+
+    #define DO_TEST(LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS)   \
+    { \
+        const char * title = #LOCK "," #COUNTER;\
+        LockTester<LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS> tester;\
+        uncontendedTimes.append(tester.run(title, 1, numIterations));\
+        minorTimes.append(tester.run(title, 2, numIterations));\
+        typicalTimes.append(tester.run(title, numCores / 2, numIterations));\
+        tester.run(title, numCores, numIterations);\
+        tester.run(title, numCores + 1, numIterations);\
+        contendedTimes.append(tester.run(title, numCores * 2, numIterations));\
+    }
+
+    class Null
+    {};
+
+    const unsigned numIterations = 1000000;
+    const unsigned numCores = getAffinityCpus();
+    void runAllTests()
+    {
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 1);
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 2, 1);
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 5, 1);
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 2);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 1);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 2, 1);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 5, 1);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 2);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 1);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 2, 1);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 5, 1);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 2);
+        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, 1, 1);
+        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, 5, 1);
+        DO_TEST(Null, Null, CasCounter, 1, 1);
+        DO_TEST(Null, Null, CasCounter, 5, 1);
+        DO_TEST(Null, Null, unsigned __int64, 1, 1);
+        DO_TEST(Null, Null, unsigned __int64, 2, 1);
+        DO_TEST(Null, Null, unsigned __int64, 5, 1);
+
+        printf("Summary\n");
+        summariseTimings("Uncontended", uncontendedTimes);
+        summariseTimings("Minor", minorTimes);
+        summariseTimings("Typical", typicalTimes);
+        summariseTimings("Over", contendedTimes);
+    }
+
+    void summariseTimings(const char * option, UInt64Array & times)
+    {
+        printf("%11s 1x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u)   "
+                    "5x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u)\n", option,
+                    times.item(0), times.item(4), times.item(8), times.item(12), times.item(14),
+                    times.item(2), times.item(6), times.item(10), times.item(13), times.item(15));
+    }
+
+private:
+    UInt64Array uncontendedTimes;
+    UInt64Array minorTimes;
+    UInt64Array typicalTimes;
+    UInt64Array contendedTimes;
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingTest, "AtomicTimingTest");
+
+
 #endif // _USE_CPPUNIT
