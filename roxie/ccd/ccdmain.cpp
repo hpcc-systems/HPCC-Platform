@@ -101,6 +101,7 @@ CriticalSection ccdChannelsCrit;
 IPropertyTree* ccdChannels;
 StringArray allQuerySetNames;
 
+bool alwaysTrustFormatCrcs;
 bool allFilesDynamic;
 bool lockSuperFiles;
 bool useRemoteResources;
@@ -686,6 +687,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
+        alwaysTrustFormatCrcs = topology->getPropBool("@alwaysTrustFormatCrcs", true);
         allFilesDynamic = topology->getPropBool("@allFilesDynamic", false);
         lockSuperFiles = topology->getPropBool("@lockSuperFiles", false);
         ignoreOrphans = topology->getPropBool("@ignoreOrphans", true);

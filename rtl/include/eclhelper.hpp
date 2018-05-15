@@ -1736,6 +1736,7 @@ struct IHThorFetchContext
     virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;   // Projected layout
     virtual unsigned getFetchFlags() { return 0; }              
     virtual unsigned getDiskFormatCrc() { return 0; }
+    virtual unsigned getProjectedFormatCrc() { return getDiskFormatCrc(); }  // Should really be crc of queryProjectedDiskRecordSize layout
     virtual void getFileEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 };
 
@@ -1755,6 +1756,7 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
     virtual unsigned getJoinLimit() = 0;                                        // if a key joins more than this limit no records are output (0 = no limit)
     virtual unsigned getKeepLimit() = 0;                                        // limit to number of matches that are kept (0 = no limit)
     virtual unsigned getIndexFormatCrc() = 0;
+    virtual unsigned getProjectedIndexFormatCrc() { return getIndexFormatCrc(); }  // Should really be crc of queryIndexReadInputRecordSize layout (?)
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
 
     // For the data going to the fetch remote activity:
@@ -2338,7 +2340,8 @@ struct IHThorIndexReadBaseArg : extends IHThorCompoundBaseArg
     virtual IOutputMetaData * queryDiskRecordSize() = 0;            // Expected layout
     virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;   // Projected layout
     virtual unsigned getFlags() = 0;
-    virtual unsigned getFormatCrc() = 0;
+    virtual unsigned getProjectedFormatCrc() = 0;                   // Corresponding to projectedDiskRecordSize
+    virtual unsigned getDiskFormatCrc() { return getProjectedFormatCrc(); }  // Should correspond to queryDiskRecordSize() meta really - codegen needs to fix that
     virtual void setCallback(IThorIndexCallback * callback) = 0;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
 

@@ -3816,7 +3816,7 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
 
     buildKeyedLimitHelper(expr);
 
-    translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", true, tableExpr, tableExpr, 1);
+    translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", true, tableExpr, tableExpr, 1);
     IHqlExpression * originalKey = queryAttributeChild(tableExpr, _original_Atom, 0);
     translator.buildSerializedLayoutMember(instance->classctx, originalKey->queryRecord(), "getIndexLayout", numKeyedFields(originalKey));
 
