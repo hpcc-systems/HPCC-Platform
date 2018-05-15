@@ -10122,14 +10122,14 @@ IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
         //But currently painful in one context, so allow it to be omitted.
         Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
         HqlDummyLookupContext localCtx(errorReporter);
-        HqlLookupContext * activeContext = context ? context : &localCtx;
+        HqlLookupContext & activeContext = context ? *context : localCtx.ctx();
         HqlExprArray syms;
         getSymbols(syms);
         syms.sort(compareSymbolsByName);            // Make errors consistent
         ForEachItemIn(i, syms)
         {
             IIdAtom * cur = syms.item(i).queryId();
-            ::Release(lookupSymbol(cur, LSFsharedOK, *activeContext));
+            ::Release(lookupSymbol(cur, LSFsharedOK, activeContext));
             //Could have been fully resolved while looking up a symbol!
             if (resolvedAll)
                 return resolved;

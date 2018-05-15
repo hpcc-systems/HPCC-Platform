@@ -1041,14 +1041,20 @@ public:
     HqlLookupContext * container = nullptr;
 };
 
-class HqlDummyLookupContext : public HqlLookupContext
+
+//This is not derived from HqlLookupContext to ensure that dummyCtx is created before the HqlLookupContext
+class HqlDummyLookupContext
 {
 public:
-    //Potentially problematic - dummyCtx not created at the point the constructor is called.
-    HqlDummyLookupContext(IErrorReceiver * _errs) : HqlLookupContext(dummyCtx, _errs) {}
+    HqlDummyLookupContext(IErrorReceiver * _errs) : lookupCtx(dummyCtx, _errs) {}
+
+    HqlLookupContext & ctx() { return lookupCtx; }
+    operator HqlLookupContext & () { return lookupCtx; } // implicit cast to a HqlLookupContext
 
 private:
+    // construction order is significant
     HqlDummyParseContext dummyCtx;
+    HqlLookupContext lookupCtx;
 };
 
 enum
