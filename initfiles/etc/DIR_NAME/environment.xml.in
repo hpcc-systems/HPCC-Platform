@@ -430,6 +430,7 @@
                   required="Read"
                   resource="WsEclAccess"/>
    </EspBinding>
+   @WSSQL_SERVICE_BLOCK_S@
    <EspBinding defaultForPort="true"
                defaultServiceVersion=""
                name="myws_sqlbinding"
@@ -461,6 +462,7 @@
                          resource="OthersWorkunitsAccess"
                          service="ws_sql"/>
    </EspBinding>
+   @WSSQL_SERVICE_BLOCK_E@
    <EspControlBinding defaultForPort="true"
                defaultServiceVersion=""
                name="espcontrol"
@@ -744,6 +746,7 @@
                   resource="WsEclAccess"/>
    </Properties>
   </EspService>
+  @WSSQL_SERVICE_BLOCK_S@
   <EspService build="_"
               buildSet="ws_sql"
               description="myws_sql"
@@ -773,6 +776,7 @@
                          service="ws_sql"/>
    </Properties>
   </EspService>
+  @WSSQL_SERVICE_BLOCK_E@
   
   <DafilesrvProcess build="_"
                     buildSet="dafilesrv"
