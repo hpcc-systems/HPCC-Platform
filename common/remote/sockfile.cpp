@@ -41,6 +41,7 @@
 
 #include "remoteerr.hpp"
 #include <atomic>
+#include <unordered_map>
 
 #include "rtldynfield.hpp"
 #include "rtlds_imp.hpp"
@@ -1783,7 +1784,7 @@ void CEndpointCS::beforeDispose()
     table.removeExact(this);
 }
 
-class CRemoteFilteredFileIOBase : public CRemoteBase, implements IFileIO
+class CRemoteFilteredFileIOBase : public CRemoteBase, implements IRemoteFileIO
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -1794,7 +1795,7 @@ public:
     {
         // NB: inputGrouped == outputGrouped for now, but may want output to be ungrouped
 
-        openRequest(request);
+        openRequest();
         request.appendf("\"format\" : \"binary\",\n"
             "\"node\" : {\n"
             " \"fileName\" : \"%s\"", filename);
@@ -1883,17 +1884,49 @@ public:
          */
         return 0;
     }
+// IRemoteFileIO
+    virtual void addVirtualFieldMapping(const char *fieldName, const char *fieldValue) override
+    {
+        virtualFields[fieldName] = fieldValue;
+    }
+    virtual void ensureAvailable() override
+    {
+        if (firstRequest)
+            handleFirstRequest();
+    }
 protected:
-    StringBuffer &openRequest(StringBuffer &request)
+    StringBuffer &openRequest()
     {
         return request.append("{\n");
     }
-    StringBuffer &closeRequest(StringBuffer &request)
+    StringBuffer &closeRequest()
     {
         return request.append("\n }\n");
     }
+    void addVirtualFields()
+    {
+        request.append(", \n \"virtualFields\" : {\n");
+        bool first=true;
+        for (auto &e : virtualFields)
+        {
+            if (!first)
+                request.append(",\n");
+            request.appendf("  \"%s\" : \"%s\"", e.first.c_str(), e.second.c_str());
+            first = false;
+        }
+        request.append(" }");
+    }
+    void handleFirstRequest()
+    {
+        firstRequest = false;
+        addVirtualFields();
+        closeRequest();
+        sendRequest(0, nullptr);
+    }
     void refill()
     {
+        if (firstRequest)
+            handleFirstRequest();
         size32_t cursorLength;
         reply.read(cursorLength);
         if (!cursorLength)
@@ -1950,6 +1983,9 @@ protected:
     size32_t bufRemaining = 0;
     unsigned bufPos = 0;
     bool eof = false;
+
+    bool firstRequest = true;
+    std::unordered_map<std::string, std::string> virtualFields;
 };
 
 class CRemoteFilteredFileIO : public CRemoteFilteredFileIOBase
@@ -1965,8 +2001,6 @@ public:
             " \"compressed\" : \"%s\",\n"
             " \"inputGrouped\" : \"%s\",\n"
             " \"outputGrouped\" : \"%s\"", boolToStr(compressed), boolToStr(grouped), boolToStr(grouped));
-        closeRequest(request);
-        sendRequest(0, nullptr);
     }
 };
 
@@ -1997,7 +2031,7 @@ protected:
     const RtlRecord &recInfo;
 };
 
-extern IFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
+extern IRemoteFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
 {
     try
     {
@@ -2020,8 +2054,6 @@ public:
         : CRemoteFilteredFileIOBase(ep, filename, actual, projected, fieldFilters, chooseN)
     {
         request.appendf(",\n \"kind\" : \"indexread\"");
-        closeRequest(request);
-        sendRequest(0, nullptr);
     }
 };
 
@@ -2034,14 +2066,12 @@ public:
         : CRemoteFilteredFileIOBase(ep, filename, actual, actual, fieldFilters, rowLimit)
     {
         request.appendf(",\n \"kind\" : \"indexcount\"");
-        closeRequest(request);
-        sendRequest(0, nullptr);
     }
 };
 
 class CRemoteKey : public CSimpleInterfaceOf<IIndexLookup>
 {
-    Owned<IFileIO> fileIO;
+    Owned<IRemoteFileIO> iRemoteFileIO;
     offset_t pos = 0;
     Owned<ISourceRowPrefetcher> prefetcher;
     CThorContiguousRowBuffer prefetchBuffer;
@@ -2058,15 +2088,19 @@ public:
     {
         for (unsigned f=0; f<_fieldFilters.numFilterFields(); f++)
             fieldFilters.addFilter(OLINK(_fieldFilters.queryFilter(f)));
-        fileIO.setown(new CRemoteFilteredKeyIO(ep, filename, actual, projected, fieldFilters, rowLimit));
-        if (!fileIO)
+        iRemoteFileIO.setown(new CRemoteFilteredKeyIO(ep, filename, actual, projected, fieldFilters, rowLimit));
+        if (!iRemoteFileIO)
             throw MakeStringException(0, "Unable to open remote key part: '%s'", filename.get());
-        strm.setown(createFileSerialStream(fileIO));
+        strm.setown(createFileSerialStream(iRemoteFileIO));
         prefetcher.setown(projected->createDiskPrefetcher());
         assertex(prefetcher);
         prefetchBuffer.setStream(strm);
     }
 // IIndexLookup
+    virtual void ensureAvailable() override
+    {
+        iRemoteFileIO->ensureAvailable(); // will throw an exception if fails
+    }
     virtual unsigned __int64 getCount() override
     {
         return checkCount(0);
@@ -3925,6 +3959,8 @@ protected:
     bool eofSeen = false;
     const RtlRecord *record = nullptr;
     RowFilter filters;
+    // virtual field values
+    StringAttr logicalFilename;
 
     void initCommon(IPropertyTree &config)
     {
@@ -3935,6 +3971,7 @@ protected:
         Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
         ForEach(*filterIter)
             filters.addFilter(*record, filterIter->query().queryProp(nullptr));
+        logicalFilename.set(config.queryProp("virtualFields/logicalFilename"));
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IRemoteActivity>)
@@ -3966,8 +4003,7 @@ public:
 //interface IVirtualFieldCallback
     virtual const char * queryLogicalFilename(const void * row) override
     {
-        const char * filename = nullptr; // MORE: This needs to be passed from the client to dafilesrv
-        return filename ? filename : "";
+        return logicalFilename.str();
     }
     virtual unsigned __int64 getFilePosition(const void * row) override
     {
@@ -3995,6 +4031,9 @@ class CRemoteDiskReadActivity : public CRemoteDiskBaseActivity
     mutable bool eogPending = false;
     mutable bool someInGroup = false;
     RtlDynRow *filterRow = nullptr;
+    // virtual field values
+    unsigned partNum = 0;
+    offset_t baseFpos = 0;
 
     void checkOpen()
     {
@@ -4062,6 +4101,9 @@ public:
         outMeta.setown(getTypeInfoOutputMetaData(config, "output", outputGrouped));
         if (!outMeta)
             outMeta.set(inMeta);
+
+        partNum = config.getPropInt("virtualFields/partNum");
+        baseFpos = (offset_t)config.getPropInt64("virtualFields/baseFpos");
 
         initCommon(config);
         if (config.hasProp("keyFilter"))
@@ -4149,13 +4191,11 @@ public:
 //interface IVirtualFieldCallback
     virtual unsigned __int64 getFilePosition(const void * row) override
     {
-        unsigned __int64 baseOffset = 0; // MORE: This needs to be passed from the client to dafilesrv
-        return prefetchBuffer.tell() + baseOffset;
+        return prefetchBuffer.tell() + baseFpos;
     }
     virtual unsigned __int64 getLocalFilePosition(const void * row) override
     {
-        unsigned part = 0; // MORE: This needs to be passed from the client to dafilesrv
-        return makeLocalFposOffset(part, prefetchBuffer.tell());
+        return makeLocalFposOffset(partNum, prefetchBuffer.tell());
     }
 };
 

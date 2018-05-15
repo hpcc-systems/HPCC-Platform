@@ -234,6 +234,7 @@ public:
 
 interface IIndexLookup : extends IInterface // similar to a small subset of IKeyManager
 {
+    virtual void ensureAvailable() = 0;
     virtual const void *nextKey() = 0;
     virtual unsigned __int64 getCount() = 0;
     virtual unsigned __int64 checkCount(unsigned __int64 limit) = 0;
