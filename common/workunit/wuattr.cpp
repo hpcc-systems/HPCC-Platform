@@ -312,6 +312,12 @@ bool isListAttribute(WuAttr kind)
     return (info.multiKind != WaNone) && (info.multiKind == kind);
 }
 
+bool isMultiAttribute(WuAttr kind)
+{
+    const WuAttrInfo & info = attrInfo[kind-WaNone];
+    return (info.singleKind != WaNone) && (info.singleKind == kind);
+}
+
 WuAttr getListAttribute(WuAttr kind)
 {
     const WuAttrInfo & info = attrInfo[kind-WaNone];

@@ -42,6 +42,7 @@
 #include "roxiecontrol.hpp"
 
 #include "deftype.hpp"
+#include "thorcommon.hpp"
 #include "thorxmlwrite.hpp"
 #include "fvdatasource.hpp"
 #include "fvresultset.ipp"
@@ -4014,39 +4015,66 @@ bool CWsWorkunitsEx::onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequ
 {
     try
     {
-        StringArray properties;
-        for (unsigned i=StatisticKind::StKindAll+1; i<StatisticKind::StMax;++i)
+        IArrayOf<IEspWUDetailsMetaProperty> properties;
+        for (unsigned sk=StKindAll+1; sk<StMax;++sk)
         {
-            const char * s = queryStatisticName((StatisticKind)i);
+            const char * s = queryStatisticName((StatisticKind)sk);
             if (s && *s)
-                properties.append(s);
+            {
+                Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
+                property->setName(s);
+                property->setValueType(CWUDetailsAttrValueType_Single);
+                properties.append(*property.getClear());
+            }
         }
 
-        for (unsigned i=WuAttr::WaAll+1; i<WuAttr::WaMax; ++i)
+        for (WuAttr attr=WaKind; attr<WaMax; ++attr)
         {
-            const char * s = queryWuAttributeName((WuAttr)i);
-            if (s && *s)
-                properties.append(s);
+            Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
+            const char * s = queryWuAttributeName(attr);
+            assertex(s && *s);
+            property->setName(s);
+            if (isListAttribute(attr))
+                property->setValueType(CWUDetailsAttrValueType_List);
+            else if (isMultiAttribute(attr))
+                property->setValueType(CWUDetailsAttrValueType_Multi);
+            else
+                property->setValueType(CWUDetailsAttrValueType_Single);
+            properties.append(*property.getClear());
         }
         resp.setProperties(properties);
 
         StringArray scopeTypes;
-        for (unsigned i=StatisticScopeType::SSTall+1; i<StatisticScopeType::SSTmax; ++i)
+        for (unsigned sst=SSTall+1; sst<SSTmax; ++sst)
         {
-            const char * s = queryScopeTypeName((StatisticScopeType)i);
+            const char * s = queryScopeTypeName((StatisticScopeType)sst);
             if (s && *s)
                 scopeTypes.append(s);
         }
         resp.setScopeTypes(scopeTypes);
 
         StringArray measures;
-        for (unsigned i=StatisticMeasure::SMeasureAll+1; i<StatisticMeasure::SMeasureMax; ++i)
+        for (unsigned measure=SMeasureAll+1; measure<SMeasureMax; ++measure)
         {
-            const char *s = queryMeasureName((StatisticMeasure)i);
+            const char *s = queryMeasureName((StatisticMeasure)measure);
             if (s && *s)
                 measures.append(s);
         }
         resp.setMeasures(measures);
+        IArrayOf<IConstWUDetailsActivityInfo> activities;
+        for (unsigned kind=((unsigned)ThorActivityKind::TAKnone)+1; kind< TAKlast; ++kind)
+        {
+            Owned<IEspWUDetailsActivityInfo> activity = createWUDetailsActivityInfo("","");
+            const char * name = getActivityText(static_cast<ThorActivityKind>(kind));
+            assertex(name && *name);
+            activity->setKind(kind);
+            activity->setName(name);
+            activity->setIsSink(isActivitySink(static_cast<ThorActivityKind>(kind)));
+            activity->setIsSource(isActivitySource(static_cast<ThorActivityKind>(kind)));
+            activities.append(*activity.getClear());
+        }
+        resp.setActivities(activities);
+
     }
     catch(IException* e)
     {
