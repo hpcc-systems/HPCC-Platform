@@ -960,7 +960,7 @@ bool leftRecordIsSubsetOfRight(IHqlExpression * left, IHqlExpression * right)
     return true;
 }
 
-static bool isTrivialTransform(IHqlExpression * expr, IHqlExpression * selector)
+static bool isTrivialTransform(IHqlExpression * expr, IHqlExpression * selector, bool allowDeserialize)
 {
     ForEachChild(i, expr)
     {
@@ -969,7 +969,7 @@ static bool isTrivialTransform(IHqlExpression * expr, IHqlExpression * selector)
         {
         case no_assignall:
             {
-                if (!isTrivialTransform(cur, selector))
+                if (!isTrivialTransform(cur, selector, allowDeserialize))
                     return false;
                 break;
             }
@@ -977,14 +977,38 @@ static bool isTrivialTransform(IHqlExpression * expr, IHqlExpression * selector)
             {
                 IHqlExpression * lhs = cur->queryChild(0);
                 IHqlExpression * rhs = cur->queryChild(1);
-                if ((lhs->getOperator() != no_select) || (rhs->getOperator() != no_select))
-                    return false;
-                if (lhs->queryChild(1) != rhs->queryChild(1))
-                    return false;
-                if (rhs->queryChild(0) != selector)
+                if (lhs->getOperator() != no_select)
                     return false;
                 if (lhs->queryChild(0)->getOperator() != no_self)
                     return false;
+                IHqlExpression * leftField = lhs->queryChild(1);
+                switch (rhs->getOperator())
+                {
+                case no_select:
+                {
+                    if (rhs->queryChild(0) != selector)
+                        return false;
+                    IHqlExpression * rightField = rhs->queryChild(1);
+                    if (leftField != rightField)
+                        return false;
+                    break;
+                }
+                case no_createrow:
+                {
+                    IHqlExpression * rightRecord = selector->queryRecord();
+                    if (!rightRecord)
+                        return false;
+                    IHqlExpression * rightField = rightRecord->querySimpleScope()->lookupSymbol(leftField->queryId());
+                    if (!rightField)
+                        return false;
+                    OwnedHqlExpr nestedSelector = createSelectExpr(LINK(selector), LINK(rightField));
+                    if (!isTrivialTransform(rhs->queryChild(0), nestedSelector, allowDeserialize))
+                        return false;
+                    break;
+                }
+                default:
+                    return false;
+                }
                 break;
             }
         case no_attr:
@@ -1039,7 +1063,7 @@ bool isSimpleProject(IHqlExpression * expr)
     default:
         return false;
     }
-    return isTrivialTransform(queryNewColumnProvider(expr), selector);
+    return isTrivialTransform(queryNewColumnProvider(expr), selector, false);
 }
 
 bool transformReturnsSide(IHqlExpression * expr, node_operator side, unsigned inputIndex)
@@ -1049,7 +1073,7 @@ bool transformReturnsSide(IHqlExpression * expr, node_operator side, unsigned in
         return false;
 
     OwnedHqlExpr selector = createSelector(side, ds, querySelSeq(expr));
-    return isTrivialTransform(queryNewColumnProvider(expr), selector);
+    return isTrivialTransform(queryNewColumnProvider(expr), selector, false);
 }
 
 IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * field, bool okToSkipRow)
