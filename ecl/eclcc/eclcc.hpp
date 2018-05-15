@@ -90,6 +90,7 @@ const char * const helpText[] = {
     "?!  --fastsyntax  Delay expanding functions when parsing.  May speed up processing for some queries",
     "    -help, --help Display this message",
     "    -help -v      Display verbose help message",
+    "!   --ignoreunknownimport Do not report an error on an unknown import",
     "!   -internal     Run internal tests",
     "?!  -legacy       Use legacy import and when semantics (deprecated)",
     "!   --leakcheck   Clean up memory since checking for memory leaks",

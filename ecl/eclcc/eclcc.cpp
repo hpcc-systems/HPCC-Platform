@@ -180,8 +180,9 @@ class EclCC;
 struct EclCompileInstance : public CInterfaceOf<ICodegenContextCallback>
 {
 public:
-    EclCompileInstance(EclCC & _eclcc, IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen, bool _ignoreSignatures, bool _optXml) :
-      eclcc(_eclcc), inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename), legacyImport(_legacyImport), legacyWhen(_legacyWhen), ignoreSignatures(_ignoreSignatures), optXml(_optXml)
+    EclCompileInstance(EclCC & _eclcc, IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen, bool _ignoreSignatures, bool _optIgnoreUnknownImport, bool _optXml) :
+      eclcc(_eclcc), inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename),
+      legacyImport(_legacyImport), legacyWhen(_legacyWhen), ignoreSignatures(_ignoreSignatures), ignoreUnknownImport(_optIgnoreUnknownImport), optXml(_optXml)
 {
         stats.parseTime = 0;
         stats.generateTime = 0;
@@ -409,6 +410,7 @@ protected:
     bool optTraceCache = false;
     bool optVerifySimplified = false;
     bool optRegenerateCache = false;
+    bool optIgnoreUnknownImport = false;
     bool optIgnoreCache = false;
     bool optExtraStats = false;
 
@@ -2012,7 +2014,7 @@ bool EclCC::processFiles()
     else if (inputFiles.ordinality() == 0)
     {
         assertex(optQueryRepositoryReference);
-        EclCompileInstance info(*this, NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optXml);
+        EclCompileInstance info(*this, NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optIgnoreUnknownImport, optXml);
         processReference(info, optQueryRepositoryReference);
         ok = (errs->errCount() == 0);
 
@@ -2020,7 +2022,7 @@ bool EclCC::processFiles()
     }
     else
     {
-        EclCompileInstance info(*this, &inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optXml);
+        EclCompileInstance info(*this, &inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optIgnoreUnknownImport, optXml);
         processFile(info);
         ok = (errs->errCount() == 0);
 
@@ -2517,6 +2519,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchPathFlag(includeLibraryPath, "-I"))
         {
         }
+        else if (iter.matchFlag(optIgnoreUnknownImport, "--ignoreunknownimport"))
+        {
+        }
         else if (iter.matchFlag(optKeywords, "--keywords"))
         {
         }
@@ -2828,7 +2833,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             }
 
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
-            EclCompileInstance info(*this, &file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optXml);
+            EclCompileInstance info(*this, &file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optIgnoreUnknownImport, optXml);
             info.metaOutputFilename.set(metaFilename);
             processFile(info);
             if (info.wu &&
