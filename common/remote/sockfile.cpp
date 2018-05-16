@@ -1927,7 +1927,10 @@ protected:
     void refill()
     {
         if (firstRequest)
+        {
             handleFirstRequest();
+            return;
+        }
         size32_t cursorLength;
         reply.read(cursorLength);
         if (!cursorLength)
