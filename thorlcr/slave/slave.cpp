@@ -766,9 +766,11 @@ public:
                 ret = createStreamedIteratorSlave(this);
                 break;
             case TAKexternalprocess:
-            case TAKexternalsink:
             case TAKexternalsource:
                 ret = createExternalSlave(this);
+                break;
+            case TAKexternalsink:
+                ret = createExternalSinkSlave(this);
                 break;
             default:
                 throw MakeStringException(TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));
