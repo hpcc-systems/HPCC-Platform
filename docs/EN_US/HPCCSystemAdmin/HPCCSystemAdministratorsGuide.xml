@@ -1114,29 +1114,78 @@
 
       <para>The default envrionment.conf:</para>
 
-      <para><programlisting>## HPCC Systems default environment configuration file 
+      <para><programlisting>## Default environment configuration file for OpenHPCC
 
-[DEFAULT SETTINGS]
+[DEFAULT]
 configs=/etc/HPCCSystems
 path=/opt/HPCCSystems
 classpath=/opt/HPCCSystems/classes
 runtime=/var/lib/HPCCSystems
 lock=/var/lock/HPCCSystems
-# Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,
-#                           COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+# Supported logging fields: 
+#   AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
 logfields=TIM+DAT+MLT+MID+PID+TID+COD+QUO+PFX
 pid=/var/run/HPCCSystems
 log=/var/log/HPCCSystems
 user=hpcc
 group=hpcc
-home=/Users
+#umask=022
+#nice=0
+home=/home
 environment=environment.xml
 sourcedir=/etc/HPCCSystems/source
 blockname=HPCCSystems
 interface=*
 # enable epoll method for notification events (true/false)
 use_epoll=true
+# allow kernel pagecache flushing where enabled (true/false)
+allow_pgcache_flush=true
+# report UDP network stats
+udp_stats=true
+mpStart=7101
+mpEnd=7500
+mpSoMaxConn=128
+mpTraceLevel=0
+# enable SSL for dafilesrv remote file access 
+#     (SSLNone/false | SSLOnly/true | SSLFirst | UnsecureFirst)
+# Enabling requires setting the HPCCPassPhrase, HPCCCertFile, and HPCCPrivateKeyFile values
+#dfsUseSSL=SSLNone
+
+#Specify location of HPCC PKI public/private key files
+# note: if HPCCPassPhrase specified it must be encrypted
+#HPCCPassPhrase=
+#HPCCCertificateFile=/home/hpcc/.ssh/cert.cer
+#HPCCPublicKeyFile=/home/hpcc/.ssh/id_rsa.pub
+#HPCCPrivateKeyFile=/home/hpcc/.ssh/id_rsa
+
+jvmoptions=-XX:-UsePerfData
+#Options to enable remote debugging of Java service or application
+#jvmoptions=-XX:-UsePerfData -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=2000
+#JNI_PATH=/absolute/path/to/alternative/libjvm.so
+
+# Although HPCC platform includes plugins for both Python2 and Python3, 
+# only one may be safely enabled at a time
+# as the Python libraries export the same symbols for both versions. 
+# Enabling both may lead to unpredicatable results
+# including segfaults or undefined symbol errors.
+#
+# If you would prefer to use python 3 and disable python2, change the line below to read
+#  additionalPlugins=python3
+#
+# Multiple paths can be specified (separate with :, or ; on Windows).
+# Relative paths are assumed to be relative to /opt/HPCCSystems/versioned
+additionalPlugins=python2
+
+# To en-/disable Drop Zone restriction.
+# Default is enabled (true).
+useDropZoneRestriction=true
+# If set, will force matching local file paths to become remote reads, e.g:
+#forceRemotePattern=/var/lib/HPCCSystems/hpcc-data/eclagent/*
+
 </programlisting></para>
+
+      <para>The default environment.conf file includes several comments and
+      explanations for many of the values defined in it.</para>
 
       <sect2 id="SysAdm_Paths">
         <title>Path considerations</title>
@@ -1161,6 +1210,22 @@ lock=/var/lock/HPCCSystems</programlisting>
 
         <para>The log file, <emphasis>hpcc-init.log</emphasis> is written to
         the HPCCSystems path.</para>
+      </sect2>
+
+      <sect2 id="Using_nice">
+        <title>Using nice</title>
+
+        <para>The HPCC platform supports <emphasis>nice</emphasis>-based
+        priorities using the nice Linux utility which invokes scripts and
+        programs with specified priorities. The priority assigned to a process
+        indicates to the CPU to provide more or less time than to other
+        processes. A nice value of -20 is the highest priority, and a value of
+        19 is the lowest.</para>
+
+        <para>The default environment.conf file is delivered with the nice
+        value disabled. If you wish to use nice to prioritize HPCC processes,
+        you need to modify the environment.conf file to enable nice. You can
+        also adjust the nice value in environment.conf.</para>
       </sect2>
 
       <sect2 id="SysAdm_OtherEnv.conf">
@@ -1238,12 +1303,10 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
                 xpointer="xpointer(//*[@id='ssl4esp'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
- 				
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
                 xpointer="xpointer(//*[@id='User_Security_Maint'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
