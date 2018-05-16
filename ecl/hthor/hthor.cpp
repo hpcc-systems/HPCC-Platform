@@ -166,6 +166,16 @@ ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logica
     return ldFile.getClear();
 }
 
+bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn, StringBuffer &localPath)
+{
+    if (!agent.queryWorkUnit()->getDebugValueBool("forceRemoteDisabled", false))
+    {
+        if (!rfn.isLocal() || agent.queryWorkUnit()->getDebugValueBool("forceRemoteRead", testForceRemote(rfn.getLocalPath(localPath))))
+            return true;
+    }
+    return false;
+}
+
 //=====================================================================================================
 
 CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind) : agent(_agent), help(_help),  outputMeta(help.queryOutputMeta()), kind(_kind), activityId(_activityId), subgraphId(_subgraphId)
@@ -8185,14 +8195,6 @@ void CHThorDiskReadBaseActivity::closepart()
     inputfile.clear();
 }
 
-
-bool CHThorDiskReadBaseActivity::forceRemote(const RemoteFilename &rfn) const
-{
-    StringBuffer localPath;
-    rfn.getLocalPath(localPath);
-    return testForceRemote(localPath);
-}
-
 bool CHThorDiskReadBaseActivity::openNext()
 {
     offsetOfPart += localOffset;
@@ -8256,7 +8258,9 @@ bool CHThorDiskReadBaseActivity::openNext()
                     inputfile.setown(createIFile(rfilename));
 
                     // NB: only binary handles can be remotely processed by dafilesrv at the moment
-                    if ((rt_binary != readType) || !canSerializeTypeInfo || (rfilename.isLocal() && !forceRemote(rfilename)))
+
+                    StringBuffer path;
+                    if ((rt_binary != readType) || !canSerializeTypeInfo || !isRemoteReadCandidate(agent, rfilename, path))
                     {
                         if (compressed)
                         {
@@ -8279,14 +8283,12 @@ bool CHThorDiskReadBaseActivity::openNext()
                         // Open a stream from remote file, having passed actual, expected, projected, and filters to it
                         SocketEndpoint ep(rfilename.queryEndpoint());
                         setDafsEndpointPort(ep);
-                        StringBuffer path;
-                        rfilename.getLocalPath(path);
 
                         Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
                         if (remoteFileIO)
                         {
                             StringBuffer tmp;
-                            remoteFileIO->addVirtualFieldMapping("logicalFilename", mangledHelperFileName.str());
+                            remoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFileName.str());
                             remoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(offsetOfPart).str());
                             remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
                             actualDiskMeta.set(projectedDiskMeta);

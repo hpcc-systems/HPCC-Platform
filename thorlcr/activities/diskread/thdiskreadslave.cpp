@@ -262,7 +262,7 @@ void CDiskRecordPartHandler::open()
             partDesc->getFilename(copy, rfn);
 
             StringBuffer path;
-            if (!rfn.isLocal() || testForceRemote(rfn.getLocalPath(path)))
+            if (isRemoteReadCandidate(activity, rfn, path))
             {
                 // Open a stream from remote file, having passed actual, expected, projected, and filters to it
                 SocketEndpoint ep(rfn.queryEndpoint());

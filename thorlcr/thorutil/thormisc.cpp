@@ -1467,3 +1467,13 @@ const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &part
     unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
     return getTranslators(fname, expectedFormat, actualFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
 }
+
+bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn, StringBuffer &localPath)
+{
+    if (!activity.getOptBool(THOROPT_FORCE_REMOTE_DISABLED))
+    {
+        if (!rfn.isLocal() || activity.getOptBool(THOROPT_FORCE_REMOTE_READ, testForceRemote(rfn.getLocalPath(localPath))))
+            return true;
+    }
+    return false;
+}
