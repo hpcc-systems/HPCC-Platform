@@ -55,6 +55,9 @@ public:
     bool onListESDLBindings(IEspContext &context, IEspListESDLBindingsRequest&req, IEspListESDLBindingsResponse &resp);
     bool onListDESDLEspBindings(IEspContext &context, IEspListDESDLEspBindingsReq&req, IEspListDESDLEspBindingsResp &resp);
 
+    bool addESDLBindingContentsHistory(IPropertyTree * publishedEntryTree, IEspESDLBindingContents& esdlbindingcontents);
+    void addPublishHistory(IPropertyTree * publishedEntryTree, IEspPublishHistory &resp);
+
     bool attachServiceToDali() override
     {
         m_isDetachedFromDali = false;

@@ -194,7 +194,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         Owned<IUserDescriptor> userdesc;
         const char *user = context.queryUserId();
         const char *password = context.queryPassword();
-        if (user && *user && *password && *password)
+        if (user && *user)
         {
             userdesc.setown(createUserDescriptor());
             userdesc->set(user, password, context.querySessionToken(), context.querySignature());
@@ -284,7 +284,11 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
 
                 try
                 {
-                    m_esdlStore->fetchDefinition(newqueryid.toLowerCase(), definitionxml);
+                    Owned<IPropertyTree> definitionTree;
+                    definitionTree.set(m_esdlStore->fetchDefinition(newqueryid.toLowerCase()));
+                    if(definitionTree)
+                        toXML(definitionTree, definitionxml);
+
                     msg.appendf("\nSuccessfully fetched ESDL Defintion: %s from Dali.", newqueryid.str());
 
                     if (definitionxml.length() == 0 )
@@ -294,44 +298,71 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
                     }
                     else
                     {
-                        resp.setXMLDefinition(definitionxml.str());
-                        Owned<IPropertyTree> definitionTree = createPTreeFromXMLString(definitionxml.str(), ipt_caseInsensitive);
+                        if (ver >= 1.4)
+                            resp.updateDefinition().setInterface(definitionxml.str());
+                        else
+                            resp.setXMLDefinition(definitionxml.str());
 
                         if (definitionTree)
                         {
                             try
                             {
-                                Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlService/EsdlMethod");
-                                IArrayOf<IEspMethodConfig> list;
-                                ForEach(*iter)
+                                if (ver >= 1.4)
                                 {
-                                    Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
-                                    IPropertyTree &item = iter->query();
-                                    methodconfig->setName(item.queryProp("@name"));
-                                    list.append(*methodconfig.getClear());
+                                    IEspPublishHistory& defhistory = resp.updateDefinition().updateHistory();
+                                    addPublishHistory(definitionTree, defhistory);
+
+                                    IArrayOf<IEspESDLService> respservicesresp;
+                                    Owned<IPropertyTreeIterator> serviceiter = definitionTree->getElements("esxdl/EsdlService");
+                                    ForEach(*serviceiter)
+                                    {
+                                        Owned<IEspESDLService> esdlservice = createESDLService("","");
+                                        IPropertyTree &curservice = serviceiter->query();
+                                        esdlservice->setName(curservice.queryProp("@name"));
+
+                                        Owned<IPropertyTreeIterator> methoditer = curservice.getElements("EsdlMethod");
+                                        IArrayOf<IEspMethodConfig> respmethodsarray;
+                                        ForEach(*methoditer)
+                                        {
+                                            Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
+                                            IPropertyTree &item = methoditer->query();
+                                            methodconfig->setName(item.queryProp("@name"));
+                                            respmethodsarray.append(*methodconfig.getClear());
+                                        }
+                                        esdlservice->setMethods(respmethodsarray);
+                                        respservicesresp.append(*esdlservice.getClear());
+                                    }
+
+                                    resp.updateDefinition().setServices(respservicesresp);
                                 }
-                                resp.setMethods(list);
+                                else
+                                {
+                                    StringArray esdlServices;
+                                    Owned<IPropertyTreeIterator> serviceiter = definitionTree->getElements("Exsdl/EsdlService");
+                                    ForEach(*serviceiter)
+                                    {
+                                        IPropertyTree &curservice = serviceiter->query();
+                                        esdlServices.append(curservice.queryProp("@name"));
+
+                                        Owned<IPropertyTreeIterator> iter = curservice.getElements("EsdlMethod");
+                                        IArrayOf<IEspMethodConfig> list;
+                                        ForEach(*iter)
+                                        {
+                                            Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
+                                            IPropertyTree &item = iter->query();
+                                            methodconfig->setName(item.queryProp("@name"));
+                                            list.append(*methodconfig.getClear());
+                                        }
+                                        resp.setMethods(list);
+                                    }
+                                    resp.setESDLServices(esdlServices);
+                                }
                             }
                             catch (...)
                             {
                                 msg.append("\nEncountered error while parsing fetching available methods");
                             }
 
-                            try
-                            {
-                                StringArray esdlServices;
-                                Owned<IPropertyTreeIterator> serviceiter = definitionTree->getElements("EsdlService");
-                                ForEach(*serviceiter)
-                                {
-                                    IPropertyTree &item = serviceiter->query();
-                                    esdlServices.append(item.queryProp("@name"));
-                                }
-                                resp.setESDLServices(esdlServices);
-                            }
-                            catch (...)
-                            {
-                                msg.append("\nEncountered error while parsing fetching EsdlServices");
-                            }
                         }
                         else
                             msg.append("\nCould not fetch available methods");
@@ -485,6 +516,9 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
                     Owned<IPropertyTree> esdlbindingtree = m_esdlStore->getBindingTree(espProcName.str(), espBindingName.str(), msg);
                     if (esdlbindingtree)
                     {
+                        if ( ver >= 1.4)
+                            addPublishHistory(esdlbindingtree,resp.updateESDLBinding().updateHistory());
+
                         IArrayOf<IEspMethodConfig> iesmethods;
 
                         IPropertyTree * def = esdlbindingtree->queryPropTree("Definition[1]");
@@ -501,7 +535,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
                             StringBuffer definition;
                             try
                             {
-                                m_esdlStore->fetchDefinition(defid.toLowerCase(), definition);
+                                m_esdlStore->fetchDefinitionXML(defid.toLowerCase(), definition);
                             }
                             catch (...)
                             {
@@ -789,7 +823,10 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                             StringBuffer msg;
                             Owned<IPropertyTree> esdlbindingtree;
                             if (ver >= 1.4)
+                            {
                                 esdlbindingtree.setown(m_esdlStore->getBindingTree(bindingId, msg));
+                                addPublishHistory(esdlbindingtree, resp.updateESDLBinding().updateHistory());
+                            }
                             else
                                 esdlbindingtree.setown(m_esdlStore->getBindingTree(espProcName.str(), espBindingName.str(), msg));
                             if (esdlbindingtree)
@@ -809,7 +846,7 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                                     StringBuffer definition;
                                     try
                                     {
-                                        m_esdlStore->fetchDefinition(defid.toLowerCase(), definition);
+                                        m_esdlStore->fetchDefinitionXML(defid.toLowerCase(), definition);
                                     }
                                     catch (...)
                                     {
@@ -1001,6 +1038,12 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                     resp.updateESDLBinding().updateDefinition().setId(defid);
                     resp.updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));
 
+                    if(ver >= 1.4)
+                    {
+                        IEspPublishHistory& defhistory = resp.updateESDLBinding().updateDefinition().updateHistory();
+                        addPublishHistory(def, defhistory);
+                    }
+
                     IArrayOf<IEspMethodConfig> iesmethods;
 
                     if (ver >= 1.2 && req.getReportMethodsAvailable())
@@ -1008,7 +1051,7 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                         StringBuffer definition;
                         try
                         {
-                            m_esdlStore->fetchDefinition(defid.toLowerCase(), definition);
+                            m_esdlStore->fetchDefinitionXML(defid.toLowerCase(), definition);
                         }
                         catch (...)
                         {
@@ -1085,7 +1128,7 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                         StringBuffer definition;
                         try
                         {
-                            m_esdlStore->fetchDefinition(defid.toLowerCase(), definition);
+                            m_esdlStore->fetchDefinitionXML(defid.toLowerCase(), definition);
                             resp.updateESDLBinding().updateDefinition().setInterface(definition.str());
                             msg.append("\nFetched ESDL Biding definition.");
                         }
@@ -1094,6 +1137,10 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                             msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
                         }
                     }
+
+                    if ( ver >= 1.4)
+                        addPublishHistory(esdlbindingtree,resp.updateESDLBinding().updateHistory());
+
                     resp.updateESDLBinding().updateConfiguration().setMethods(iesmethods);
                     resp.updateStatus().setCode(0);
                 }
@@ -1140,6 +1187,19 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
     }
 
     return true;
+}
+
+void CWsESDLConfigEx::addPublishHistory(IPropertyTree * publishedEntryTree, IEspPublishHistory & history)
+{
+    if (publishedEntryTree)
+    {
+         history.setLastEditBy(publishedEntryTree->queryProp("@lastEditedBy"));
+         history.setCreatedTime(publishedEntryTree->queryProp("@created"));
+         history.setPublishBy(publishedEntryTree->queryProp("@publishedBy"));
+         history.setLastEditTime(publishedEntryTree->queryProp("@lastEdit"));
+    }
+    else
+        ESPLOG(LogMin, "Could not fetch ESDL publish history!");
 }
 
 bool CWsESDLConfigEx::onEcho(IEspContext &context, IEspEchoRequest &req, IEspEchoResponse &resp)
@@ -1309,6 +1369,7 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
     StringBuffer message;
     int respcode = 0;
 
+    Owned<IPropertyTree> definitionTree;
     try
     {
         if (ver >= 1.3)
@@ -1323,19 +1384,27 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
                 }
             }
         }
-        resp.setId(id.str());
-
-        if (strchr (id.str(), '.'))
-            m_esdlStore->fetchDefinition(id.toLowerCase(), definition);
+        if (ver > 1.3)
+            resp.updateDefinition().setId(id.str());
         else
-            m_esdlStore->fetchLatestDefinition(id.toLowerCase(), definition);
+            resp.setId(id.str());
 
-        message.setf("Successfully fetched ESDL Defintion: %s from Dali.", id.str());
-        if (definition.length() == 0 )
+        definitionTree.set(m_esdlStore->fetchDefinition(id.toLowerCase()));
+
+        if (definitionTree)
         {
-            respcode = -1;
-            message.append("\nDefinition appears to be empty!");
+            toXML(definitionTree, definition, 0,0);
+
+            if (definition.length() == 0 )
+            {
+                respcode = -1;
+                message.append("\nDefinition appears to be empty!");
+            }
+            else
+                message.setf("Successfully fetched ESDL Defintion: %s from Dali.", id.str());
         }
+        else
+            throw MakeStringException(-1, "Could not fetch ESDL definition '%s' from Dali.", id.str());
     }
     catch(IException* e)
     {
@@ -1353,23 +1422,55 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
         throw MakeStringException(-1, "Unexpected error while attempting to fetch ESDL definition.");
     }
 
-    resp.setXMLDefinition(definition.str());
     if (ver >= 1.2)
     {
-        if (definition.length() > 0)
+        if(ver >= 1.4)
         {
-            Owned<IPropertyTree> definitionTree = createPTreeFromXMLString(definition.str(), ipt_caseInsensitive);
+            resp.updateDefinition().setInterface(definition.str());
+
+            IEspPublishHistory& defhistory = resp.updateDefinition().updateHistory();
+            addPublishHistory(definitionTree, defhistory);
+        }
+        else
+            resp.setXMLDefinition(definition.str());
+
+        if (definition.length() != 0)
+        {
             if (req.getReportMethodsAvailable())
             {
-                if (definitionTree)
+                try
                 {
-                    try
+                    VStringBuffer xpath("esxdl/EsdlService");
+                    if (serviceName && *serviceName)
+                        xpath.appendf("[@name='%s']", serviceName);
+
+                    if ( ver >= 1.4)
                     {
-                        StringBuffer xpath;
-                        if (serviceName && *serviceName)
-                            xpath.appendf("EsdlService[@name='%s']/EsdlMethod", serviceName);
-                        else
-                            xpath.set("EsdlService/EsdlMethod");
+                        Owned<IPropertyTreeIterator> services = definitionTree->getElements(xpath.str());
+                        IArrayOf<IEspESDLService> servicesarray;
+                        ForEach(*services)
+                        {
+                            IPropertyTree &curservice = services->query();
+                            Owned<IEspESDLService> esdlservice = createESDLService("","");
+                            esdlservice->setName(curservice.queryProp("@name"));
+
+                            Owned<IPropertyTreeIterator> methods = curservice.getElements("EsdlMethod");
+                            IArrayOf<IEspMethodConfig> methodsarray;
+                            ForEach(*methods)
+                            {
+                                Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
+                                IPropertyTree &method = methods->query();
+                                methodconfig->setName(method.queryProp("@name"));
+                                methodsarray.append(*methodconfig.getClear());
+                            }
+                            esdlservice->setMethods(methodsarray);
+                            servicesarray.append(*esdlservice.getClear());
+                        }
+                        resp.updateDefinition().setServices(servicesarray);
+                    }
+                    else
+                    {
+                        xpath.append("/EsdlMethod");
                         Owned<IPropertyTreeIterator> iter = definitionTree->getElements(xpath.str());
                         IArrayOf<IEspMethodConfig> list;
                         ForEach(*iter)
@@ -1381,13 +1482,11 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
                         }
                         resp.setMethods(list);
                     }
-                    catch (...)
-                    {
-                        message.append("\nEncountered error while parsing fetching available methods");
-                    }
                 }
-                else
-                    message.append("\nCould not fetch available methods");
+                catch (...)
+                {
+                    message.append("\nEncountered error while parsing fetching available methods");
+                }
             }
 
             if (definitionTree)
@@ -1434,6 +1533,9 @@ bool CWsESDLConfigEx::onListESDLDefinitions(IEspContext &context, IEspListESDLDe
     Owned<IPropertyTree> esdlDefinitions = m_esdlStore->getDefinitions();
     if(esdlDefinitions.get() == nullptr)
         return false;
+
+    double ver = context.getClientVersion();
+
     Owned<IPropertyTreeIterator> iter = esdlDefinitions->getElements("Definition");
     IArrayOf<IEspESDLDefinition> list;
     ForEach(*iter)
@@ -1443,7 +1545,15 @@ bool CWsESDLConfigEx::onListESDLDefinitions(IEspContext &context, IEspListESDLDe
         esdldefinition->setId(item.queryProp("@id"));
         esdldefinition->setName(item.queryProp("@name"));
         esdldefinition->setSeq(item.getPropInt("@seq"));
+
+        if(ver >= 1.4)
+        {
+            IEspPublishHistory& defhistory = esdldefinition->updateHistory();
+            addPublishHistory(&item, defhistory);
+        }
+
         list.append(*esdldefinition.getClear());
+
     }
     resp.setDefinitions(list);
 
@@ -1454,6 +1564,8 @@ bool CWsESDLConfigEx::onListDESDLEspBindings(IEspContext &context, IEspListDESDL
 {
     if (m_isDetachedFromDali)
         throw MakeStringException(-1, "Cannot list ESDL ESP Bindings. ESP is currently detached from DALI.");
+
+    double ver = context.getClientVersion();
 
     bool includeESDLBindings = req.getIncludeESDLBindingInfo();
     IArrayOf<IEspESPServerEx> allESPServers;
@@ -1500,6 +1612,9 @@ bool CWsESDLConfigEx::onListDESDLEspBindings(IEspContext &context, IEspListDESDL
                         desdlespbinding->updateESDLBinding().updateDefinition().setId(defid);
                         desdlespbinding->updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));
 
+                        if (ver >= 1.4)
+                            addPublishHistory(esdlbindingtree,desdlespbinding->updateESDLBinding().updateHistory());
+
                         IArrayOf<IEspMethodConfig> iesmethods;
                         Owned<IPropertyTreeIterator> iter = esdlbindingtree->getElements("Definition[1]/Methods/Method");
                         ForEach(*iter)
@@ -1533,7 +1648,7 @@ bool CWsESDLConfigEx::onListDESDLEspBindings(IEspContext &context, IEspListDESDL
                         StringBuffer definition;
                         try
                         {
-                            m_esdlStore->fetchDefinition(defid.toLowerCase(), definition);
+                            m_esdlStore->fetchDefinitionXML(defid.toLowerCase(), definition);
                             if (definition.length() != 0)
                             {
                                 desdlespbinding->updateESDLBinding().updateDefinition().setInterface(definition.str());
@@ -1642,10 +1757,17 @@ bool CWsESDLConfigEx::onListESDLBindings(IEspContext &context, IEspListESDLBindi
             else
                 esdlbinding->setPort(0);
             esdlbinding->setEspBinding(item.queryProp("@espbinding"));
+
+            if( ver >= 1.4)
+            {
+                IEspPublishHistory& bindhistory = esdlbinding->updateHistory();
+                addPublishHistory(&item, bindhistory);
+            }
             list.append(*esdlbinding.getClear());
         }
         list.sort(bindingCompareFunc);
     }
+
     if (ver >= 1.4)
     {
         StringArray allProcNamesSorted;

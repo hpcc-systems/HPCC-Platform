@@ -1050,7 +1050,7 @@ bool EsdlBindingImpl::loadDefinitions(const char * espServiceName, Owned<IEsdlDe
             else
                 PROGLOG("Esdl definition %s not found in shared cache, loading it from store", id);
             StringBuffer esdlXML;
-            m_pCentralStore->fetchDefinition(id, esdlXML);
+            m_pCentralStore->fetchDefinitionXML(id, esdlXML);
             if (!esdlXML.length())
             {
                 Owned<IPropertyTree> esdlDefintion;
