@@ -41,6 +41,7 @@
 
 #include "remoteerr.hpp"
 #include <atomic>
+#include <string>
 #include <unordered_map>
 
 #include "rtldynfield.hpp"
