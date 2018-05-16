@@ -78,7 +78,7 @@ protected:
     IArrayOf<IStringSet> values;
     Owned<DataSourceMetaData> diskMeta;
     HqlExprAttr diskRecord;
-    Owned<IRtlFieldTypeDeserializer> deserializer;
+    Owned<IRtlFieldTypeDeserializer> deserializer;  // Must be destroyed after diskRecordMeta
     Owned<IOutputMetaData> diskRecordMeta;
     Owned<IDistributedFile> df;
     Linked<FVDataSource> original;
