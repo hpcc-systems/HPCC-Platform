@@ -39,6 +39,8 @@ private:
     Owned<IEsdlStore> m_esdlStore;
     IPropertyTree * getEspProcessRegistry(const char * espprocname, const char * espbingingport, const char * servicename);
     int getBindingXML(const char * bindingId, StringBuffer & bindingXml, StringBuffer & msg);
+    ReadWriteLock m_attachedStateRWLock;
+
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsESDLConfigEx(){};
@@ -57,13 +59,17 @@ public:
 
     bool attachServiceToDali() override
     {
+        WriteLockBlock wblock(m_attachedStateRWLock);
         m_isDetachedFromDali = false;
+        m_esdlStore->setAttachedState(true);
         return true;
     }
 
     bool detachServiceFromDali() override
     {
+        WriteLockBlock wblock(m_attachedStateRWLock);
         m_isDetachedFromDali = true;
+        m_esdlStore->setAttachedState(false);
         return true;
     }
 private:
