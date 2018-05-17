@@ -281,17 +281,15 @@ public:
         PyEval_InitThreads();
         preservedScopes.setown(PyDict_New());
         tstate = PyEval_SaveThread();
+        skipPythonCleanup = queryEnvironmentConf().getPropBool("skipPythonCleanup", true);
         initialized = true;
     }
     ~Python27GlobalState()
     {
-        if (keepLoadedHandle)
-            FreeSharedObject(keepLoadedHandle);  // Must be process termination - ok to free now (and helps stop lockups at closedown in some Python libraries eg Tensorflow).
-
         if (threadContext)
             delete threadContext;   // The one on the main thread won't get picked up by the thread hook mechanism
         threadContext = NULL;
-        if (initialized)
+        if (initialized && !skipPythonCleanup)
         {
             PyEval_RestoreThread(tstate);
             // Finish the Python Interpreter
@@ -300,9 +298,9 @@ public:
             compiledScripts.clear();
             preservedScopes.clear();
             Py_Finalize();
+            if (pythonLibrary)
+                FreeSharedObject(pythonLibrary);
         }
-        if (pythonLibrary)
-            FreeSharedObject(pythonLibrary);
     }
     bool isInitialized()
     {
@@ -489,6 +487,7 @@ protected:
     }
     PyThreadState *tstate = nullptr;
     bool initialized = false;
+    bool skipPythonCleanup = true; // Tensorflow seems to often lockup in the python cleanup process.
     HINSTANCE pythonLibrary = 0;
     OwnedPyObject namedtuple;      // collections.namedtuple
     OwnedPyObject namedtupleTypes; // dictionary of return values from namedtuple()
