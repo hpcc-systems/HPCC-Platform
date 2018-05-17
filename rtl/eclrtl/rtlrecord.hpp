@@ -294,7 +294,7 @@ public:
     }
     explicit operator bool() { return row != nullptr; }
 protected:
-    RtlRow(const RtlRecord & _info);  // for use by fixed-only case
+    RtlRow(const RtlRecord & _info, const void *_row);  // for use by fixed-only case
 
     const RtlRecord & info;
     const byte * row;

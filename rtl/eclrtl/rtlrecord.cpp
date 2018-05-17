@@ -633,8 +633,10 @@ RtlRow::RtlRow(const RtlRecord & _info, const void * optRow, unsigned numOffsets
 
 size_t RtlRow::noVariableOffsets [1] = {0};
 
-RtlRow::RtlRow(const RtlRecord & _info) : info(_info), variableOffsets(noVariableOffsets)
+RtlRow::RtlRow(const RtlRecord & _info, const void *_row) : info(_info), variableOffsets(noVariableOffsets)
 {
+    row = (const byte *)_row;
+
 }
 
 __int64 RtlRow::getInt(unsigned field) const
@@ -737,9 +739,8 @@ void RtlRow::lazyCalcOffsets(unsigned _numFieldsUsed) const
 }
 
 RtlFixedRow::RtlFixedRow(const RtlRecord & _info, const void *_row, unsigned _numFieldsUsed)
-: RtlRow(_info)
+: RtlRow(_info, _row)
 {
-    row = (const byte *) _row;
     numFieldsUsed = _numFieldsUsed;
     dbgassertex(info.isFixedOffset(numFieldsUsed));
 }

@@ -850,7 +850,7 @@ private:
                     init = malloc(initLength);
                     memcpy(init, type.readDirect(initLength), initLength);
                 }
-                if (fieldFlags & RFTMhasVirtualInitializer)
+                else if (fieldFlags & RFTMhasVirtualInitializer)
                 {
                     byte virtualKind;
                     type.read(virtualKind);
