@@ -4055,20 +4055,28 @@ class CRemoteDiskReadActivity : public CRemoteDiskBaseActivity
             cursorDirty = false;
             return;
         }
+
         OwnedIFile iFile = createIFile(fileName);
-        if (compressed)
+        iFileIO.setown(createCompressedFileReader(iFile));
+        if (iFileIO)
         {
-            iFileIO.setown(createCompressedFileReader(iFile));
-            if (!iFileIO)
-                throw MakeStringException(0, "Failed to open compressed file: '%s'", fileName.get());
+            if (!compressed)
+            {
+                WARNLOG("meta info did not mark file '%s' as compressed, but detected file as compressed", fileName.get());
+                compressed = true;
+            }
         }
         else
         {
             iFileIO.setown(iFile->open(IFOread));
             if (!iFileIO)
                 throw MakeStringException(1, "Failed to open: '%s'", fileName.get());
+            if (compressed)
+            {
+                WARNLOG("meta info marked file '%s' as compressed, but detected file as uncompressed", fileName.get());
+                compressed = false;
+            }
         }
-
         inputStream.setown(createFileSerialStream(iFileIO, startPos));
         prefetchBuffer.setStream(inputStream);
         prefetcher.setown(inMeta->createDiskPrefetcher());
