@@ -2196,6 +2196,7 @@ CMPServer::~CMPServer()
         LOG(MCdebugInfo(100), unknownJob, "MP: Orphan check\n%s",buf.str());
 #endif
     _releaseAll();
+    selecthandler->stop(true);
     selecthandler->Release();
     notifyclosedthread->stop();
     notifyclosedthread->Release();

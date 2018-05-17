@@ -1093,103 +1093,112 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
         else
         {
-            Owned<IPropertyTreeIterator> roxieFarms = topology->getElements("./RoxieFarmProcess");
-            ForEach(*roxieFarms)
+            try
             {
-                IPropertyTree &roxieFarm = roxieFarms->query();
-                unsigned listenQueue = roxieFarm.getPropInt("@listenQueue", DEFAULT_LISTEN_QUEUE_SIZE);
-                unsigned numThreads = roxieFarm.getPropInt("@numThreads", numServerThreads);
-                unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
-                unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
-                // NOTE: farmer name [@name=] is not copied into topology
-                const IpAddress &ip = getNodeAddress(myNodeIndex);
-                if (!roxiePort)
+                Owned<IPropertyTreeIterator> roxieFarms = topology->getElements("./RoxieFarmProcess");
+                ForEach(*roxieFarms)
                 {
-                    roxiePort = port;
-                    ownEP.set(roxiePort, ip);
-                }
-                bool suspended = roxieFarm.getPropBool("@suspended", false);
-                Owned <IHpccProtocolListener> roxieServer;
-                if (port)
-                {
-                    const char *protocol = roxieFarm.queryProp("@protocol");
-                    StringBuffer certFileName;
-                    StringBuffer keyFileName;
-                    StringBuffer passPhraseStr;
-                    if (protocol && streq(protocol, "ssl"))
+                    IPropertyTree &roxieFarm = roxieFarms->query();
+                    unsigned listenQueue = roxieFarm.getPropInt("@listenQueue", DEFAULT_LISTEN_QUEUE_SIZE);
+                    unsigned numThreads = roxieFarm.getPropInt("@numThreads", numServerThreads);
+                    unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
+                    unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
+                    // NOTE: farmer name [@name=] is not copied into topology
+                    const IpAddress &ip = getNodeAddress(myNodeIndex);
+                    if (!roxiePort)
                     {
-#ifdef _USE_OPENSSL
-                        const char *certFile = roxieFarm.queryProp("@certificateFileName");
-                        if (!certFile)
-                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFileName tag", port);
-                        if (isAbsolutePath(certFile))
-                            certFileName.append(certFile);
-                        else
-                            certFileName.append(codeDirectory.str()).append(certFile);
-                        if (!checkFileExists(certFileName.str()))
-                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFile (%s)", port, certFileName.str());
-
-                        const char *keyFile = roxieFarm.queryProp("@privateKeyFileName");
-                        if (!keyFile)
-                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFileName tag", port);
-                        if (isAbsolutePath(keyFile))
-                            keyFileName.append(keyFile);
-                        else
-                            keyFileName.append(codeDirectory.str()).append(keyFile);
-                        if (!checkFileExists(keyFileName.str()))
-                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFile (%s)", port, keyFileName.str());
-
-                        const char *passPhrase = roxieFarm.queryProp("@passphrase");
-                        if (!isEmptyString(passPhrase))
-                            decrypt(passPhraseStr, passPhrase);
-#else
-                        WARNLOG("Skipping Roxie SSL Farm Listener on port %d : OpenSSL disabled in build", port);
-                        continue;
-#endif
+                        roxiePort = port;
+                        ownEP.set(roxiePort, ip);
                     }
-                    const char *soname =  roxieFarm.queryProp("@so");
-                    const char *config  = roxieFarm.queryProp("@config");
-                    Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
-                    roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhraseStr.str()));
-                }
-                else
-                    roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
-
-                IHpccProtocolMsgSink *sink = roxieServer->queryMsgSink();
-                const char *aclName = roxieFarm.queryProp("@aclName");
-                if (aclName && *aclName)
-                {
-                    Owned<IPropertyTree> aclInfo = createPTree("AccessInfo", ipt_lowmem);
-                    getAccessList(aclName, topology, aclInfo);
-                    Owned<IPropertyTreeIterator> accesses = aclInfo->getElements("Access");
-                    ForEach(*accesses)
+                    bool suspended = roxieFarm.getPropBool("@suspended", false);
+                    Owned <IHpccProtocolListener> roxieServer;
+                    if (port)
                     {
-                        IPropertyTree &access = accesses->query();
-                        try
+                        const char *protocol = roxieFarm.queryProp("@protocol");
+                        StringBuffer certFileName;
+                        StringBuffer keyFileName;
+                        StringBuffer passPhraseStr;
+                        if (protocol && streq(protocol, "ssl"))
                         {
-                            sink->addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode"));
+    #ifdef _USE_OPENSSL
+                            const char *certFile = roxieFarm.queryProp("@certificateFileName");
+                            if (!certFile)
+                                throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFileName tag", port);
+                            if (isAbsolutePath(certFile))
+                                certFileName.append(certFile);
+                            else
+                                certFileName.append(codeDirectory.str()).append(certFile);
+                            if (!checkFileExists(certFileName.str()))
+                                throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFile (%s)", port, certFileName.str());
+
+                            const char *keyFile = roxieFarm.queryProp("@privateKeyFileName");
+                            if (!keyFile)
+                                throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFileName tag", port);
+                            if (isAbsolutePath(keyFile))
+                                keyFileName.append(keyFile);
+                            else
+                                keyFileName.append(codeDirectory.str()).append(keyFile);
+                            if (!checkFileExists(keyFileName.str()))
+                                throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFile (%s)", port, keyFileName.str());
+
+                            const char *passPhrase = roxieFarm.queryProp("@passphrase");
+                            if (!isEmptyString(passPhrase))
+                                decrypt(passPhraseStr, passPhrase);
+    #else
+                            WARNLOG("Skipping Roxie SSL Farm Listener on port %d : OpenSSL disabled in build", port);
+                            continue;
+    #endif
                         }
-                        catch (IException *E)
+                        const char *soname =  roxieFarm.queryProp("@so");
+                        const char *config  = roxieFarm.queryProp("@config");
+                        Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
+                        roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhraseStr.str()));
+                    }
+                    else
+                        roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
+
+                    IHpccProtocolMsgSink *sink = roxieServer->queryMsgSink();
+                    const char *aclName = roxieFarm.queryProp("@aclName");
+                    if (aclName && *aclName)
+                    {
+                        Owned<IPropertyTree> aclInfo = createPTree("AccessInfo", ipt_lowmem);
+                        getAccessList(aclName, topology, aclInfo);
+                        Owned<IPropertyTreeIterator> accesses = aclInfo->getElements("Access");
+                        ForEach(*accesses)
                         {
-                            StringBuffer s, x;
-                            E->errorMessage(s);
-                            E->Release();
-                            toXML(&access, x, 0, 0);
-                            throw MakeStringException(ROXIE_ACL_ERROR, "Error in access statement %s: %s", x.str(), s.str());
+                            IPropertyTree &access = accesses->query();
+                            try
+                            {
+                                sink->addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode"));
+                            }
+                            catch (IException *E)
+                            {
+                                StringBuffer s, x;
+                                E->errorMessage(s);
+                                E->Release();
+                                toXML(&access, x, 0, 0);
+                                throw MakeStringException(ROXIE_ACL_ERROR, "Error in access statement %s: %s", x.str(), s.str());
+                            }
                         }
                     }
+                    socketListeners.append(*roxieServer.getLink());
+                    time(&startupTime);
+                    roxieServer->start();
                 }
-                socketListeners.append(*roxieServer.getLink());
-                time(&startupTime);
-                roxieServer->start();
+                writeSentinelFile(sentinelFile);
+                DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
+                DBGLOG("Waiting for queries");
+                if (pingInterval)
+                    startPingTimer();
+                LocalIAbortHandler abortHandler(waiter);
+                waiter.wait();
             }
-            writeSentinelFile(sentinelFile);
-            DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
-            DBGLOG("Waiting for queries");
-            if (pingInterval)
-                startPingTimer();
-            LocalIAbortHandler abortHandler(waiter);
-            waiter.wait();
+            catch (IException *E)
+            {
+                StringBuffer x;
+                DBGLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
+                E->Release();
+            }
         }
         shuttingDown = true;
         if (pingInterval)
