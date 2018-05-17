@@ -45,6 +45,10 @@ jvmoptions=-XX:-UsePerfData
 #jvmoptions=-XX:-UsePerfData -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=2000
 #JNI_PATH=/absolute/path/to/alternative/libjvm.so
 
+# Python plugins can call python cleanup code on exit, but this seems to cause lockups in some Tensorflow examples
+# In most cases, skipping the cleanup is harmless and avoids these lockups
+skipPythonCleanup=true
+
 # Although HPCC platform includes plugins for both Python2 and Python3, only one may be safely enabled at a time
 # as the Python libraries export the same symbols for both versions. Enabling both may lead to unpredicatable results
 # including segfaults or undefined symbol errors.
