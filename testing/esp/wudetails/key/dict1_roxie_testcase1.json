@@ -8,9 +8,11 @@ testCase(ScopeFilter={
     'Depth': None,
     'ScopeTypes': None
 }, PropertiesToReturn={
-    'AllStatistics': '1',
-    'AllAttributes': '1',
-    'AllHints': '1',
+    'AllStatistics': None,
+    'AllAttributes': None,
+    'AllHints': None,
+    'AllScopes': None,
+    'AllProperties': '1',
     'MinVersion': None,
     'Measure': None,
     'Properties': None,
@@ -140,7 +142,32 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1',
+                'ScopeName': 'w1',
+                'Id': 'w1',
+                'ScopeType': 'workflow',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'IsScheduled',
+                            'RawValue': 'true',
+                            'Formatted': 'true',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'State',
+                            'RawValue': 'done',
+                            'Formatted': 'done',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1',
                 'Id': 'graph1',
                 'ScopeType': 'graph',
                 'Properties': {
@@ -173,13 +200,13 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1:sg1',
+                'ScopeName': 'w1:graph1:sg1',
                 'Id': 'sg1',
                 'ScopeType': 'subgraph',
                 'Properties': None
             },
             {
-                'ScopeName': 'graph1:sg1:e2_0',
+                'ScopeName': 'w1:graph1:sg1:e2_0',
                 'Id': 'e2_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -215,12 +242,44 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a2',
+                            'Formatted': 'a2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e3_0',
+                'ScopeName': 'w1:graph1:sg1:e3_0',
                 'Id': 'e3_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -256,12 +315,44 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a4',
+                            'Formatted': 'a4',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:e4_0',
+                'ScopeName': 'w1:graph1:sg1:e4_0',
                 'Id': 'e4_0',
                 'ScopeType': 'edge',
                 'Properties': {
@@ -302,7 +393,7 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'graph1:sg1:a2',
+                'ScopeName': 'w1:graph1:sg1:a2',
                 'Id': 'a2',
                 'ScopeType': 'activity',
                 'Properties': {
@@ -354,224 +445,7 @@ testCase(ScopeFilter={
                             'Measure': 'cnt',
                             'Creator': '{masked}',
                             'CreatorType': 'roxie'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:a3',
-                'Id': 'a3',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenFirstRow',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
                         },
-                        {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeTotalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeFirstExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'NumAllocations',
-                            'RawValue': '11',
-                            'Formatted': '11',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'graph1:sg1:a4',
-                'Id': 'a4',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenFirstRow',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeTotalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeFirstExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'TimeLocalExecute',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        },
-                        {
-                            'Name': 'NumAllocations',
-                            'RawValue': '11',
-                            'Formatted': '11',
-                            'Measure': 'cnt',
-                            'Creator': '{masked}',
-                            'CreatorType': 'roxie'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w1:graph1',
-                'Id': 'graph1',
-                'ScopeType': 'graph',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'w1:graph1:sg1',
-                'Id': 'sg1',
-                'ScopeType': 'subgraph',
-                'Properties': None
-            },
-            {
-                'ScopeName': 'w1:graph1:sg1:e2_0',
-                'Id': 'e2_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '2',
-                            'Formatted': '2',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '3',
-                            'Formatted': '3',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w1:graph1:sg1:e3_0',
-                'Id': 'e3_0',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Source',
-                            'RawValue': '3',
-                            'Formatted': '3',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Target',
-                            'RawValue': '4',
-                            'Formatted': '4',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'w1:graph1:sg1:a2',
-                'Id': 'a2',
-                'ScopeType': 'activity',
-                'Properties': {
-                    'Property': [
                         {
                             'Name': 'Label',
                             'RawValue': 'Inline Dataset',
@@ -595,6 +469,30 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'DATASET([{1,...},...], { unsigned8 top, DICTIONARY({ string8 name, unsigned8 iq }) nest });\n',
+                            'Formatted': 'DATASET([{1,...},...], { unsigned8 top, DICTIONARY({ string8 name, unsigned8 iq }) nest });\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '12',
+                            'Formatted': '12',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -605,6 +503,54 @@ testCase(ScopeFilter={
                 'ScopeType': 'activity',
                 'Properties': {
                     'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '11',
+                            'Formatted': '11',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
                         {
                             'Name': 'Label',
                             'RawValue': 'Rollup',
@@ -628,6 +574,30 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'ROLLUP(LEFT.top = RIGHT.top, t(LEFT, RIGHT));\n',
+                            'Formatted': 'ROLLUP(LEFT.top = RIGHT.top, t(LEFT, RIGHT));\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'PredictedCount',
+                            'RawValue': '0..?[disk]',
+                            'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -638,6 +608,54 @@ testCase(ScopeFilter={
                 'ScopeType': 'activity',
                 'Properties': {
                     'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '11',
+                            'Formatted': '11',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
                         {
                             'Name': 'Label',
                             'RawValue': 'Output\nResult #1',
@@ -677,6 +695,22 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclText',
+                            'RawValue': 'OUTPUT(..., workunit);\n',
+                            'Formatted': 'OUTPUT(..., workunit);\n',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'RecordSize',
+                            'RawValue': '20',
+                            'Formatted': '20',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -700,31 +734,6 @@ testCase(ScopeFilter={
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': 'sz',
-                            'Creator': '{masked}',
-                            'CreatorType': 'eclcc'
-                        },
-                        {
-                            'Name': 'TimeElapsed',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ns',
-                            'Creator': '{masked}',
-                            'CreatorType': 'eclcc'
-                        }
-                    ]
-                }
-            },
-            {
-                'ScopeName': 'compile:write c++',
-                'Id': 'write c++',
-                'ScopeType': 'compile',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'WhenStarted',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': 'ts',
                             'Creator': '{masked}',
                             'CreatorType': 'eclcc'
                         },
@@ -792,6 +801,31 @@ testCase(ScopeFilter={
             {
                 'ScopeName': 'compile:parse',
                 'Id': 'parse',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:write c++',
+                'Id': 'write c++',
                 'ScopeType': 'compile',
                 'Properties': {
                     'Property': [

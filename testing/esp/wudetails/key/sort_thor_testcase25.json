@@ -1,7 +1,7 @@
 testCase(ScopeFilter={
     'MaxDepth': '2',
     'Scopes': {
-        'Scope': 'graph1:sg1'
+        'Scope': 'w1:graph1:sg1'
     },
     'Ids': None,
     'ScopeTypes': None,
@@ -13,6 +13,8 @@ testCase(ScopeFilter={
     'AllStatistics': '1',
     'AllAttributes': '1',
     'AllHints': None,
+    'AllScopes': None,
+    'AllProperties': None,
     'MinVersion': None,
     'Measure': None,
     'Properties': None,
@@ -37,7 +39,7 @@ testCase(ScopeFilter={
     'Scopes': {
         'Scope': [
             {
-                'ScopeName': 'graph1:sg1',
+                'ScopeName': 'w1:graph1:sg1',
                 'Id': 'sg1',
                 'ScopeType': 'subgraph',
                 'Properties': {

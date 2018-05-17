@@ -218,14 +218,14 @@ testCase = namedtuple('testCase', ['ScopeFilter',
 
 #scopeFilter(MaxDepth='999', Scopes=set(), Ids=set(), ScopeTypes=set()),
 #nestedFilter(Depth='999', ScopeTypes=set()),
-#propertiesToReturn(AllStatistics='1', AllAttributes='1', AllHints='1', MinVersion='0', Measure='', Properties=set(), ExtraProperties=set()),
+#propertiesToReturn(AllProperties='1', MinVersion='0', Measure='', Properties=set(), ExtraProperties=set()),
 #scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
 #propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeFormatted='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
 testCases = [ 
              testCase(
                  scopeFilter(MaxDepth='999'),
                  nestedFilter(),
-                 propertiesToReturn(AllStatistics='1', AllAttributes='1', AllHints='1'),
+                 propertiesToReturn(AllProperties='1'),
                  scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
                  propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeFormatted='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
              ),
@@ -251,16 +251,16 @@ testCases = [
                  propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
              ),
              testCase(
-                 scopeFilter(MaxDepth='999', Scopes={'Scope':'graph1'}),
+                 scopeFilter(MaxDepth='999', Scopes={'Scope':'w1:graph1'}),
                  nestedFilter(),
-                 propertiesToReturn(AllStatistics='1', AllAttributes='1', AllHints='1'),
+                 propertiesToReturn(AllProperties='1'),
                  scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
                  propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
              ),
              testCase(
                  scopeFilter(MaxDepth='1', ScopeTypes={'ScopeType':'graph'}),
                  nestedFilter(Depth='1'),
-                 propertiesToReturn(AllStatistics='1', AllAttributes='1', AllHints='1'),
+                 propertiesToReturn(AllProperties='1'),
                  scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
                  propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
              ),
@@ -391,14 +391,14 @@ testCases = [
                  propertyOptions(IncludeCreatorType='0')
              ),
              testCase(
-                 scopeFilter(MaxDepth='2', Scopes={'Scope':'graph1:sg1'}),
+                 scopeFilter(MaxDepth='2', Scopes={'Scope':'w1:graph1:sg1'}),
                  nestedFilter(Depth=0),
                  propertiesToReturn(AllStatistics='1', AllAttributes='1'),
                  scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
                  propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
              ),
              testCase(
-                 scopeFilter(MaxDepth='2', Scopes={'Scope':'graph1:sg1'}),
+                 scopeFilter(MaxDepth='2', Scopes={'Scope':'w1:graph1:sg1'}),
                  nestedFilter(Depth=1),
                  propertiesToReturn(Properties={'Property':['WhenStarted','WhenCreated']}, ExtraProperties={'Extra':{'scopeType':'edge','Properties':{'Property':['NumStarts','NumStops']}}}),
                  scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
