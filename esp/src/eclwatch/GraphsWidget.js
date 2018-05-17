@@ -102,20 +102,25 @@ define([
                 .overlapTolerence(1)
                 .baseUrl("")
                 .wuid(params.Wuid)
-                .on("dblclick", function(item, d3Event, origDblClick) {
-                    if (item && d3Event && d3Event.ctrlKey) {
-                        var scope = item[3];
-                        var descendents = scope.ScopeName.split(":");
-                        for (var i = 0; i < descendents.length; ++i) {
-                            const scopeName = descendents[i];
-                            if (scopeName.indexOf("graph") === 0) {
-                                var tab = context.ensurePane({ Name: scopeName }, { SubGraphId: item[0] });
+                .on("dblclick", function(row, col, sel) {
+                    if (row && row.__lparam && event && event.ctrlKey) {
+                        var scope = row.__lparam;
+                        switch(scope.ScopeType) {
+                            case "graph":
+                                var tab = context.ensurePane({ Name: row.label });
                                 context.selectChild(tab);         
-                                break;
+                            break;
+                            default:
+                                var descendents = scope.ScopeName.split(":");
+                                for (var i = 0; i < descendents.length; ++i) {
+                                    var scopeName = descendents[i];
+                                    if (scopeName.indexOf("graph") === 0) {
+                                        var tab = context.ensurePane({ Name: scopeName }, { SubGraphId: row.label });
+                                        context.selectChild(tab);         
+                                        break;
+                                    }
+                                }
                             }
-                        }
-                    } else {
-                        origDblClick.call(context.timeline, item, d3Event);
                     }
                 }, true)
                 .render()

@@ -20,240 +20,243 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
+    "dojo/store/Memory",
+    "dojo/store/Observable",
 
     "dijit/registry",
     "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
 
     "dgrid/selector",
 
-    "hpcc/GridDetailsWidget",
+    "hpcc/_TabContainerWidget",
     "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
     "src/ESPUtil",
+    "src/Timings",
 
-    "@hpcc-js/eclwatch"
+    "@hpcc-js/comms",
+    "@hpcc-js/common",
+    "@hpcc-js/eclwatch",
+    "@hpcc-js/chart",
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
-            registry, BorderContainer, ContentPane,
-            selector,
-            GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil,
-            hpccEclWatch) {
-        return declare("TimingPageWidget", [GridDetailsWidget], {
+    "dojo/text!../templates/TimingPageWidget.html",
+
+    "dijit/layout/BorderContainer",
+    "dijit/layout/ContentPane",
+    "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
+    "dijit/form/Button",
+    "dijit/form/Select"
+
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, Memory, Observable,
+    registry, BorderContainer, TabContainer, ContentPane,
+    selector,
+    _TabContainerWidget, ESPWorkunit, DelayLoadWidget, ESPUtil, srcTimings,
+    hpccComms, hpccCommon, hpccEclWatch, hpccChart,
+    template) {
+        return declare("TimingPageWidget", [_TabContainerWidget], {
+            templateString: template,
             baseClass: "TimingPageWidget",
+            i18n: nlsHPCC,
 
-            gridTitle: nlsHPCC.Timers,
-            idProperty: "__hpcc_id",
+            buildRendering: function (args) {
+                this.inherited(arguments);
+            },
 
             postCreate: function (args) {
                 this.inherited(arguments);
-                this.timelinePane = new ContentPane({
-                    id: this.id + "TimelinePane",
-                    region: "top",
-                    splitter: true,
-                    style: "height: 120px",
-                    minSize: 120
-                });
-                this.timelinePane.placeAt(this.gridTab, "last");
                 var context = this;
+
+                this.borderContainer = registry.byId(this.id + "BorderContainer");
+                this.timingsTab = registry.byId(this.id + "_Timings");
+                this.timelinePane = registry.byId(this.id + "TimelinePane");
+                this.timingTab2 = registry.byId(this.id + "TimingTab2");
+
                 var origResize = this.timelinePane.resize;
-                this.timelinePane.resize = function() {
+                this.timelinePane.resize = function () {
                     origResize.apply(this, arguments);
-                    if (context.timeline) {
-                        context.timeline
-                            .resize()
-                            .lazyRender()
-                        ;
+                    if (context._timings) {
+                        context._timings
+                            .resizeTimeline()
+                            ;
+                    }
+                }
+
+                var origResize2 = this.timelinePane.resize;
+                this.timingTab2.resize = function () {
+                    origResize2.apply(this, arguments);
+                    if (context._timings) {
+                        context._timings
+                            .resizeChart()
+                            ;
                     }
                 }
             },
 
-            //  Plugin wrapper  ---
+            startup: function (args) {
+                this.inherited(arguments);
+            },
+
+            resize: function (args) {
+                this.inherited(arguments);
+                this.borderContainer.resize();
+            },
+
+            layout: function (args) {
+                this.inherited(arguments);
+            },
+
+            destroy: function (args) {
+                this.inherited(arguments);
+            },
+
+            //  Implementation  ---
+            _onRefresh: function () {
+                this.refreshGrid(true);
+            },
+
+            _onMetricsType: function (evt) {
+                this._metricFilter = evt.target.value;
+                this.refreshGrid();
+            },
+
+            _onReset: function () {
+                this.doReset();
+            },
+
             init: function (params) {
                 if (this.inherited(arguments))
                     return;
 
                 var context = this;
+                this._timings = new srcTimings.Timings(params.Wuid, this.id + "TimelinePane", this.id + "Chart", this.id + "MetricsType");
+                this._timings.click = function (row, col, sel) {
+                    context.refreshGrid();
+                }
+
+                var store = new Memory({
+                    idProperty: "__hpcc_id",
+                    data: []
+                });
+                this.store = Observable(store);
+                this.grid = new declare([ESPUtil.Grid(false, true)])({
+                    store: this.store
+                }, this.id + "Grid");
+                this.grid.on(".dgrid-row-url:click", function (evt) {
+                    var row = context.grid.row(evt).data;
+                    var tab = context.ensurePane(row.Name, row);
+                    if (tab) {
+                        context.selectChild(tab);
+                    }
+                });
+                this.grid.startup();
+
                 if (params.Wuid) {
                     this.wu = ESPWorkunit.Get(params.Wuid);
+                    this.wu2 = hpccComms.Workunit.attach({ baseUrl: "" }, params.Wuid);
                     var monitorCount = 4;
                     this.wu.monitor(function () {
                         if (context.wu.isComplete() || ++monitorCount % 5 === 0) {
-                            context.refreshGrid();
+                            context.refreshGrid(true);
                         }
                     });
                 }
-
-                this.timeline = new hpccEclWatch.WUTimeline()
-                    .target(this.id + "TimelinePane")
-                    .overlapTolerence(1)
-                    .baseUrl("")
-                    .wuid(params.Wuid)
-                    .request({
-                        ScopeFilter: {
-                            MaxDepth: 2,
-                            ScopeTypes: []
-                        },
-                        NestedFilter: {
-                            Depth: 0,
-                            ScopeTypes: []
-                        },
-                        PropertiesToReturn: {
-                            AllProperties: true,
-                            AllStatistics: true,
-                            AllHints: true,
-                            Properties: ["WhenStarted", "TimeElapsed"]
-                        },
-                        ScopeOptions: {
-                            IncludeId: true,
-                            IncludeScope: true,
-                            IncludeScopeType: true
-                        },
-                        PropertyOptions: {
-                            IncludeName: true,
-                            IncludeRawValue: true,
-                            IncludeFormatted: true,
-                            IncludeMeasure: true,
-                            IncludeCreator: false,
-                            IncludeCreatorType: false
-                        }
-                    })
-                    .on("dblclick", function(item, d3Event, origDblClick) {
-                        if (item && d3Event && d3Event.ctrlKey) {
-                            var scope = item[3];
-                            var descendents = scope.ScopeName.split(":");
-                            for (var i = 0; i < descendents.length; ++i) {
-                                const scopeName = descendents[i];
-                                if (scopeName.indexOf("graph") === 0) {
-                                    var tab = context.ensurePane({ Name: scopeName }, { SubGraphId: item[0] });
-                                    context.selectChild(tab);         
-                                    break;
-                                }
-                            }
-                        } else {
-                            origDblClick.call(context.timeline, item, d3Event);
-                        }
-                    }, true)
-                    .render()
-                ;
-
-                var statsTabID = this.createChildTabID("Stats");
-                var statsTab = new DelayLoadWidget({
-                    id: statsTabID,
-                    title: this.i18n.Stats,
-                    closable: false,
-                    delayWidget: "WUStatsWidget",
-                    hpcc: {
-                        type: "stats",
-                        params: this.params
-                    }
-                });
-                this.addChild(statsTab);
-                this._refreshActionState();
             },
 
-            createGrid: function (domID) {
+            refreshGrid: function (forceRefresh) {
                 var context = this;
-                var retVal = new declare([ESPUtil.Grid(false, true)])({
-                    store: this.store,
-                    columns: {
-                        col1: selector({
-                            width: 27,
-                            selectorType: "checkbox",
-                            disabled: function (item) {
-                                return false;//!item.GraphName;
-                            }
-                        }),
+                this._timings.refresh(forceRefresh).then(function (data) {
+                    context.grid.set("columns", {
                         __hpcc_id: { label: "##", width: 45 },
                         Name: {
-                            label: this.i18n.Name,
+                            label: context.i18n.Name,
                             sortable: true,
                             formatter: function (Name, row) {
-                                if (row.GraphName) {
-                                    return "<a href='#' class='dgrid-row-url'>" + Name + "</a>";
+                                switch (row.Type) {
+                                    case "graph":
+                                    case "subgraph":
+                                    case "activity":
+                                    case "edge":
+                                        return "<a href='#" + Name + "' class='dgrid-row-url'>" + Name + "</a>";
                                 }
                                 return Name;
                             }
                         },
-                        Seconds: { label: this.i18n.TimeSeconds, width: 124 }
-                    }
-                }, domID);
-
-                retVal.on(".dgrid-row:click", function (evt) {
-                    context.syncSelectionFrom(context.grid);
-                });
-
-                retVal.on(".dgrid-row-url:click", function (evt) {
-                    if (context._onRowDblClick) {
-                        var row = retVal.row(evt).data;
-                        context._onRowDblClick(row);
-                    }
-                });
-                return retVal;
-            },
-
-            createDetail: function (id, row, params) {
-                if (row.GraphName) {
-                    var localParams = {
-                        Wuid: this.wu.Wuid,
-                        GraphName: row.GraphName,
-                        SubGraphId: row.SubGraphId ? row.SubGraphId : null,
-                        SafeMode: (params && params.safeMode) ? true : false
-                    }
-                    return new DelayLoadWidget({
-                        id: id,
-                        title: row.Name,
-                        closable: true,
-                        delayWidget: "GraphTreeWidget",
-                        hpcc: {
-                            type: "graph",
-                            params: localParams
+                        Seconds: {
+                            label: context._timings._metricSelectLabel,
+                            width: 240
                         }
                     });
-                }
-                return null;
+                    context.store.setData(data.map(function (row, i) {
+                        var GraphName;
+                        var SubGraphId;
+                        var ActivityId;
+                        switch (row.type) {
+                            case "graph":
+                                GraphName = row.id;
+                                break;
+                            case "subgraph":
+                                GraphName = context._timings.graphID(row.name);
+                                SubGraphId = row.id;
+                                break;
+                            case "activity":
+                            case "edge":
+                                GraphName = context._timings.graphID(row.name);
+                                SubGraphId = context._timings.subgraphID(row.name);
+                                ActivityId = row.id;
+                                break;
+                        }
+                        return {
+                            __hpcc_id: i + 1,
+                            Name: row.id,
+                            Seconds: row[context._timings._metricSelectValue],
+                            Type: row.type,
+                            Scope: row.name,
+                            GraphName: GraphName,
+                            SubGraphId: SubGraphId,
+                            ActivityId: ActivityId
+                        }
+                    }));
+                    context.grid.refresh();
+                });
             },
 
-            refreshGrid: function (args) {
-                if (this.wu) {
+            initTab: function () {
+                var currSel = this.getSelectedChild();
+                if (currSel && !currSel.initalized) {
+                    if (currSel.id === this.timingsTab.id) {
+                    } else {
+                        if (!currSel.initalized) {
+                            currSel.init(currSel.params);
+                        }
+                    }
+                }
+            },
+
+            ensurePane: function (id, params) {
+                var retVal = registry.byId(id);
+                if (!retVal) {
                     var context = this;
-                    this.wu.getInfo({
-                        onGetTimers: function (timers) {
-                            context.store.setData(timers);
-                            context.grid.refresh();
+                    retVal = new DelayLoadWidget({
+                        id: this.createChildTabID(id),
+                        title: id,
+                        closable: true,
+                        delayWidget: "Graph7Widget",
+                        params: {
+                            Wuid: this.wu.Wuid,
+                            GraphName: params.GraphName,
+                            SubGraphId: params.SubGraphId,
+                            ActivityId: params.ActivityId
                         }
                     });
-                }
-            },
-
-            syncSelectionFrom: function (sourceControl) {
-                var timerItems = [];
-
-                //  Get Selected Items  ---
-                if (sourceControl === this.grid) {
-                    arrayUtil.forEach(sourceControl.getSelected(), function (item, idx) {
-                        timerItems.push(item);
-                    });
-                }
-
-                //  Set Selected Items  ---
-                if (sourceControl !== this.grid) {
-                    this.grid.setSelected(timerItems);
-                }
-                if (sourceControl !== this.timingTreeMap) {
-                    this.timingTreeMap.setSelectedGraphs(timerItems);
-                }
-            },
-
-            refreshActionState: function (selection) {
-                var hasGraphSelection = false;
-                arrayUtil.some(selection, function (item, idx) {
-                    if (item.GraphName) {
-                        hasGraphSelection = true;
-                        return true;
+                    if (retVal) {
+                        this.addChild(retVal);
                     }
-                }, this);
-                registry.byId(this.id + "Open").set("disabled", !hasGraphSelection);
+                }
+                return retVal;
             }
+
         });
     });
