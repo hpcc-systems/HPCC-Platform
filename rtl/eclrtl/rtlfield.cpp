@@ -1637,7 +1637,7 @@ size32_t RtlVarStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializ
         return offset + size;
     }
     else
-        return offset + in.readVStr(builder, offset, 0);
+        return offset + in.readVStr(builder, offset, offset);
 }
 
 void RtlVarStringTypeInfo::readAhead(IRowPrefetcherSource & in) const
@@ -2475,7 +2475,7 @@ size32_t RtlVarUnicodeTypeInfo::deserialize(ARowBuilder & builder, IRowDeseriali
         return offset + size;
     }
     else
-        return offset + in.readVUni(builder, offset, 0);
+        return offset + in.readVUni(builder, offset, offset);
 }
 
 void RtlVarUnicodeTypeInfo::readAhead(IRowPrefetcherSource & in) const
@@ -2601,7 +2601,7 @@ size32_t RtlUtf8TypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSou
 {
     assertex(!isFixedSize());
     size32_t thisLength = in.readSize();
-    size32_t size = in.readUtf8(builder, offset + sizeof(size_t), 0, thisLength);
+    size32_t size = in.readUtf8(builder, offset + sizeof(size32_t), offset + sizeof(size32_t), thisLength);
     rtlWriteSize32t(builder.getSelf() + offset, thisLength);
     return offset + sizeof(size32_t) + size;
 }

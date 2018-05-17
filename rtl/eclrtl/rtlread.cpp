@@ -77,6 +77,8 @@ size32_t CThorStreamDeserializerSource::readPackedInt(void * ptr)
 
 size32_t CThorStreamDeserializerSource::readUtf8(ARowBuilder & target, size32_t offset, size32_t fixedSize, size32_t len)
 {
+    //Fixed size is offset + the extra space that follows the utf8 which we want to guarantee exists.
+    dbgassertex(fixedSize >= offset);
     //The len is the number of utf characters, size depends on which characters are included.
     size32_t totalSize = 0;
     for (;;)
@@ -103,6 +105,8 @@ size32_t CThorStreamDeserializerSource::readUtf8(ARowBuilder & target, size32_t 
 
 size32_t CThorStreamDeserializerSource::readVStr(ARowBuilder & target, size32_t offset, size32_t fixedSize)
 {
+    //Fixed size is offset + the extra space that follows the utf8 which we want to guarantee exists.
+    dbgassertex(fixedSize >= offset);
     size32_t totalSize = 0;
     for (;;)
     {
@@ -122,6 +126,8 @@ size32_t CThorStreamDeserializerSource::readVStr(ARowBuilder & target, size32_t 
 
 size32_t CThorStreamDeserializerSource::readVUni(ARowBuilder & target, size32_t offset, size32_t fixedSize)
 {
+    //Fixed size is offset + the extra space that follows the utf8 which we want to guarantee exists.
+    dbgassertex(fixedSize >= offset);
     size32_t totalSize = 0;
     bool done = false;
     for (;;)
@@ -163,15 +169,20 @@ void CThorStreamDeserializerSource::skip(size32_t size)
 void CThorStreamDeserializerSource::skipPackedInt()
 {
     throwUnexpected();
+/*
+    //Could be coded as:
     size32_t available;
     const byte * temp = doPeek(1, available);
     size32_t size = rtlGetPackedSizeFromFirst(*temp);
     in->skip(size);
+ */
 }
 
 void CThorStreamDeserializerSource::skipUtf8(size32_t len)
 {
     throwUnexpected();
+/*
+    //Could be coded as:
     for (;;)
     {
         if (len == 0)
@@ -185,10 +196,13 @@ void CThorStreamDeserializerSource::skipUtf8(size32_t len)
         {
             copyLen += readUtf8Size(cur+copyLen);   // This function only accesses the first byte
             len--;
+            if (len == 0)
+                break;
         }
 
         in->skip(copyLen);
     }
+ */
 }
 
 void CThorStreamDeserializerSource::skipVStr()
