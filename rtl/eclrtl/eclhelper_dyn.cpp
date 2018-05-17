@@ -43,6 +43,7 @@ public:
     CDeserializedOutputMetaData(MemoryBuffer &binInfo, bool isGrouped, IThorIndexCallback *callback);
     CDeserializedOutputMetaData(IPropertyTree &jsonInfo, bool isGrouped, IThorIndexCallback *callback);
     CDeserializedOutputMetaData(const char *json, bool isGrouped, IThorIndexCallback *callback);
+    ~CDeserializedOutputMetaData();
 
     virtual const RtlTypeInfo * queryTypeInfo() const override { return typeInfo; }
     virtual unsigned getMetaFlags() override { return flags; }
@@ -75,6 +76,13 @@ CDeserializedOutputMetaData::CDeserializedOutputMetaData(const char *json, bool 
     typeInfo = deserializer->deserialize(json);
     if (isGrouped)
         flags |= MDFgrouped;
+}
+
+CDeserializedOutputMetaData::~CDeserializedOutputMetaData()
+{
+    // The record accessors need to be released before the deserializer is released
+    delete recordAccessor[0]; delete recordAccessor[1];
+    recordAccessor[0] = recordAccessor[1] = nullptr;
 }
 
 extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &binInfo, bool isGrouped, IThorIndexCallback *callback)

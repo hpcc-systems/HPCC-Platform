@@ -90,7 +90,7 @@ private:
     char*      toFree[MAXARGS] = {};
     int        numToFree;
     bool       hasMeta;
-    Owned<IRtlFieldTypeDeserializer> deserializer;
+    Owned<IRtlFieldTypeDeserializer> deserializer;  // Must be destroyed after metas
     IArrayOf<IOutputMetaData> metas;
 #ifdef MAXFPREGS
  #ifdef FPREG_FIXEDSIZE
