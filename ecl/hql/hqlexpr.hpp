@@ -1915,6 +1915,7 @@ inline int boolToInt(bool x)                    { return x ? 1 : 0; }
 extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, IHqlExpression * value, IHqlExpression * parms, IHqlExpression * defaults, IHqlExpression * attrs);
 extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, HqlExprArray & args);
 extern HQL_API IHqlExpression * queryNonDelayedBaseAttribute(IHqlExpression * expr);
+extern HQL_API IHqlExpression * getFunctionBodyAttribute(IHqlExpression* body, IAtom* atom);
 extern HQL_API bool functionBodyUsesContext(IHqlExpression * body);
 extern HQL_API bool functionBodyIsActivity(IHqlExpression * body);
 extern HQL_API bool functionCallIsActivity(IHqlExpression * call);
@@ -1967,6 +1968,7 @@ extern HQL_API void ensureSymbolsDefined(IHqlExpression * scope, HqlLookupContex
 extern HQL_API void ensureSymbolsDefined(IHqlScope * scope, HqlLookupContext & ctx);
 extern HQL_API IHqlExpression * queryBoolExpr(bool value);
 extern HQL_API IHqlExpression * queryBoolAttribute(IHqlExpression * expr, IAtom * name);    // true expr, false expr or NULL
+extern HQL_API bool getBoolAttributeValue(IHqlExpression * attr);
 extern HQL_API bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft=false);
 extern HQL_API bool getBoolAttributeInList(IHqlExpression * expr, IAtom * name, bool dft);
 

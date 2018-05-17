@@ -8437,6 +8437,18 @@ bool functionBodyUsesContext(IHqlExpression * body)
     }
 }
 
+IHqlExpression* getFunctionBodyAttribute(IHqlExpression* body, IAtom* atom) 
+{
+    switch (body->getOperator())
+    {
+    case no_outofline:
+    case no_funcdef:
+        return getFunctionBodyAttribute(body->queryChild(0),atom);
+    default:
+        return body->queryAttribute(atom);
+    }
+}
+
 bool functionBodyIsActivity(IHqlExpression * body)
 {
     switch (body->getOperator())
@@ -13046,6 +13058,10 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
         attrs.append(*LINK(cachedContextAttribute));
     if (functionBodyIsActivity(body))
         attrs.append(*createAttribute(activityAtom));
+    
+    IHqlExpression* passParamAttr = getFunctionBodyAttribute(body, passParameterMetaAtom);
+    if (passParamAttr != NULL && getBoolAttributeValue(passParamAttr))
+        attrs.append(*createAttribute(passParameterMetaAtom));
 
     IHqlExpression *child = body->queryChild(0);
     if (child && child->getOperator()==no_embedbody)
@@ -16717,7 +16733,7 @@ bool isKeyedCountAggregate(IHqlExpression * aggregate)
 }
 
 
-static bool getBoolAttributeValue(IHqlExpression * attr)
+bool getBoolAttributeValue(IHqlExpression * attr)
 {
     IHqlExpression * value = attr->queryChild(0);
     //No argument implies true
