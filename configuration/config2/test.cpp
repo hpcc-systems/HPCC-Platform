@@ -47,7 +47,7 @@ int main()
         pEnvMgr->loadEnvironment(c_path + "/environment.xml");
 
         std::vector<std::shared_ptr<EnvironmentNode>> nodes;
-        pEnvMgr->findNodes("/Environment/Software/EspService@buildSet=espsmc", nodes);
+        pEnvMgr->fetchNodes("/Environment/Software/EspService@buildSet=espsmc", nodes);
 
         // 158
         //auto pNode = envMgr.getNodeFromPath("158");
@@ -59,7 +59,7 @@ int main()
         //auto list = pNode->getInsertableItems();
 
         Status status;
-        auto pNewNode = pEnvMgr->addNewEnvironmentNode("108", "espsmc", status);
+        //auto pNewNode = pEnvMgr->addNewEnvironmentNode("108", "espsmc", status);
         //auto newList = pNewNode->getInsertableItems();
         //pEnvMgr->addNewEnvironmentNode("35", "ws_ecl", status);
         //pEnvMgr->addNewEnvironmentNode("35", "ws_ecl", status);
@@ -82,7 +82,7 @@ int main()
 
 
         Status status2;
-        pNewNode = pEnvMgr->addNewEnvironmentNode("138", "espbinding@service=EclWatch1", status2);  // todo: when valildating, look at required flag first
+        //pNewNode = pEnvMgr->addNewEnvironmentNode("138", "espbinding@service=EclWatch1", status2);  // todo: when valildating, look at required flag first
 
 
         /*auto attributes = pNode->getAttributes();

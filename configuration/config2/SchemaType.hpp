@@ -44,6 +44,8 @@ class DECL_EXPORT SchemaType
         bool isEnumerated() const { return m_pLimits->isEnumerated(); }
         const std::vector<AllowedValue> getEnumeratedValues() const { return m_pLimits->getEnumeratedValues(); }
         const std::string getLimitString() const { return m_pLimits->getLimitString();  }
+        const std::string &getValidateMsg() const { return m_pLimits->getValidateMsg(); }
+        const std::string &getValidateMsgType() const { return m_pLimits->getValidateMsgType(); }
 
 
     private:

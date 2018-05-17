@@ -47,6 +47,7 @@ class DECL_EXPORT EnvironmentValue
         void validate(Status &status, const std::string &myId) const;
         void getAllValuesForSiblings(std::vector<std::string> &result) const;
         std::string getNodeId() const;
+        std::shared_ptr<EnvironmentNode> getEnvironmentNode() const { return m_pMyEnvNode.lock(); }
         void initialize();
 
     private:

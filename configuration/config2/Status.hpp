@@ -57,6 +57,7 @@ class DECL_EXPORT Status
         bool isOk() const { return m_highestMsgLevel <= statusMsg::warning; }
         bool isError() const { return m_highestMsgLevel >= statusMsg::error; }
         std::string getStatusTypeString(enum statusMsg::msgLevel status) const;
+        enum statusMsg::msgLevel getMsgLevelFromString(const std::string &status) const;
         std::vector<statusMsg> getMessages() const;
         void add(const std::vector<statusMsg> msgs);
 

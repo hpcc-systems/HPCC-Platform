@@ -367,7 +367,7 @@ void SchemaItem::resetEnvironment()
 
 void SchemaItem::fetchSchemaValues(const std::string &path, std::vector<std::shared_ptr<SchemaValue>> &schemaValues)
 {
-    bool rootPath = path[0] == '/';
+    bool rootPath = path[0] == '/';   //todo: convert this to use the findSchemaRoot below
 
     //
     // If path is from the root, and we aren't the root, pass the request to our parent
@@ -584,7 +584,7 @@ void SchemaItem::processEvent(const std::string &eventType, const std::shared_pt
     // Loop through any event handlers we may have
     for (auto eventIt = m_eventHandlers.begin(); eventIt != m_eventHandlers.end(); ++eventIt)
     {
-        (*eventIt)->handleEvent(eventType, pEventSourceNode);
+        (*eventIt)->processEvent(eventType, pEventSourceNode);
     }
 
     //

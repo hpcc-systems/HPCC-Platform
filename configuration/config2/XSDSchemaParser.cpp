@@ -322,6 +322,7 @@ void XSDSchemaParser::parseElement(const pt::ptree &elemTree)
         if (!insertLimitData.empty()) pNewSchemaItem->setProperty("insertLimitData", insertLimitData);
         pNewSchemaItem->setMinInstances(minOccurs);
         pNewSchemaItem->setMaxInstances(maxOccurs);
+        pNewSchemaItem->setHidden(elemTree.get("<xmlattr>.hpcc:hidden", "false") == "true");
 
         //
         // Type specified?
@@ -434,6 +435,18 @@ void XSDSchemaParser::parseAppInfo(const pt::ptree &elemTree)
                         std::string depVal = getXSDAttributeValue(it->second, "<xmlattr>.dependentValue");
                         pDep->addDependency(attrName, attrVal, depAttr, depVal);
                     }
+                    else if (it->first == "match")
+                    {
+                        std::string attrName = it->second.get("eventNodeAttribute", "").data();
+                        pDep->setEventNodeAttributeName(attrName);
+                        std::string matchAttrName = it->second.get("targetAttribute", "");
+                        if (!matchAttrName.empty())
+                        {
+                            pDep->setTargetAttributeName(matchAttrName);
+                        }
+                        std::string path = it->second.get("targetPath", "");
+                        pDep->setTargetPath(path);
+                    }
                 }
                 m_pSchemaItem->addEventHandler(pDep);
             }
@@ -467,15 +480,15 @@ void XSDSchemaParser::parseAppInfo(const pt::ptree &elemTree)
                     //                          matchItemAttribute
                     else if (it->first == "match")
                     {
-                        std::string attrName = it->second.get("matchItemAttribute", "").data();
-                        pInsert->setItemAttributeName(attrName);
-                        std::string matchAttrName = it->second.get("matchLocalAttribute", "");
+                        std::string attrName = it->second.get("eventNodeAttribute", "").data();
+                        pInsert->setEventNodeAttributeName(attrName);
+                        std::string matchAttrName = it->second.get("targetAttribute", "");
                         if (!matchAttrName.empty())
                         {
-                            pInsert->setMatchAttributeName(matchAttrName);
+                            pInsert->setTargetAttributeName(matchAttrName);
                         }
-                        std::string path = it->second.get("matchPath", "");
-                        pInsert->setMatchPath(path);
+                        std::string path = it->second.get("targetPath", "");
+                        pInsert->setTargetPath(path);
                     }
 
                     //
@@ -491,6 +504,40 @@ void XSDSchemaParser::parseAppInfo(const pt::ptree &elemTree)
                     }
                 }
                 m_pSchemaItem->addEventHandler(pInsert);
+            }
+
+            //
+            // addAttributeDependencies is used to set dependent values for an attribute based on the value of another attribute.
+            else if (eventAction == "setAttributeValue")
+            {
+                std::shared_ptr<AttributeSetValueCreateEventHandler> pSetAttrValue = std::make_shared<AttributeSetValueCreateEventHandler>();
+                pt::ptree dataTree = childTree.get_child("eventData", emptyTree);
+                for (auto it = dataTree.begin(); it != dataTree.end(); ++it)
+                {
+                    if (it->first == "itemType")
+                    {
+                        pSetAttrValue->setItemType(it->second.data());
+                    }
+                    else if (it->first == "attribute")
+                    {
+                        std::string attrName = getXSDAttributeValue(it->second, "<xmlattr>.attributeName");
+                        std::string attrVal = getXSDAttributeValue(it->second, "<xmlattr>.attributeValue");
+                        pSetAttrValue->addAttributeValue(attrName, attrVal);
+                    }
+                    else if (it->first == "match")
+                    {
+                        std::string attrName = it->second.get("eventNodeAttribute", "").data();
+                        pSetAttrValue->setEventNodeAttributeName(attrName);
+                        std::string matchAttrName = it->second.get("targetAttribute", "");
+                        if (!matchAttrName.empty())
+                        {
+                            pSetAttrValue->setTargetAttributeName(matchAttrName);
+                        }
+                        std::string path = it->second.get("targetPath", "");
+                        pSetAttrValue->setTargetPath(path);
+                    }
+                }
+                m_pSchemaItem->addEventHandler(pSetAttrValue);
             }
         }
     }
@@ -558,7 +605,7 @@ void XSDSchemaParser::parseIntegerTypeLimits(const pt::ptree &restrictTree, std:
             pIntegerLimits->setMaxExclusive(it->second.get<int>("<xmlattr>.value"));
         else if (restrictionType == "xs:enumeration")
         {
-            pIntegerLimits->addAllowedValue(it->second.get("<xmlattr>.value", "badbadbad"), it->second.get("<xmlattr>.hpcc:description", ""));
+            parseAllowedValue(it->second, &(*pIntegerLimits));
         }
         else if (restrictionType != "<xmlattr>")
         {
@@ -585,7 +632,7 @@ void XSDSchemaParser::parseStringTypeLimits(const pt::ptree &restrictTree, std::
             pStringLimits->addPattern(it->second.get("<xmlattr>.value", "0"));
         else if (restrictionType == "xs:enumeration")
         {
-            pStringLimits->addAllowedValue(it->second.get("<xmlattr>.value", "badbadbad"), it->second.get("<xmlattr>.hpcc:description", ""));
+            parseAllowedValue(it->second, &(*pStringLimits));
         }
         else if (restrictionType != "<xmlattr>")
         {
@@ -593,6 +640,31 @@ void XSDSchemaParser::parseStringTypeLimits(const pt::ptree &restrictTree, std::
             throw(ParseException(msg));
         }
     }
+}
+
+
+void XSDSchemaParser::parseAllowedValue(const pt::ptree &allowedValueTree, SchemaTypeLimits *pTypeLimits)
+{
+    AllowedValue allowedValue;
+
+    //
+    // Parse the value for the enumeration, the add to the allowed values for the limits for this type. Note that enumerations
+    // are enhanced with additional information for the UI.
+    allowedValue.m_value = allowedValueTree.get("<xmlattr>.value", "");
+    allowedValue.m_displayName = allowedValueTree.get("<xmlattr>.hpcc:displayName", allowedValue.m_value);
+    allowedValue.m_description = allowedValueTree.get("<xmlattr>.hpcc:description", "");
+    allowedValue.m_userMessage = allowedValueTree.get("<xmlattr>.hpcc:userMessage", "");
+    allowedValue.m_userMessageType = allowedValueTree.get("<xmlattr>.hpcc:userMessageType", allowedValue.m_userMessage.empty() ? "" : "info");
+
+    //
+    // Value is required. Throw an exception if not found
+    if (allowedValue.m_value.empty())
+    {
+        std::string msg = "Missing value attribute for enumeration";
+        throw(ParseException(msg));
+    }
+
+    pTypeLimits->addAllowedValue(allowedValue);
 }
 
 
@@ -610,8 +682,10 @@ std::shared_ptr<SchemaValue> XSDSchemaParser::getSchemaValue(const pt::ptree &at
     pCfgValue->setAutoGenerateType(attr.get("<xmlattr>.hpcc:autoGenerateType", ""));
     pCfgValue->setAutoGenerateValue(attr.get("<xmlattr>.hpcc:autoGenerateValue", ""));
     pCfgValue->setDefaultValue(attr.get("<xmlattr>.default", ""));
-    pCfgValue->setOnChangeType(attr.get("<xmlattr>.hpcc:onChangeType", ""));
-    pCfgValue->setOnChangeData(attr.get("<xmlattr>.hpcc:onChangeData", ""));
+    pCfgValue->setCodeDefault(attr.get("<xmlattr>.hpcc:codeDefault", ""));
+    pCfgValue->setValueLimitRuleType(attr.get("<xmlattr>.hpcc:valueLimitRuleType", ""));
+    pCfgValue->setValueLimitRuleData(attr.get("<xmlattr>.hpcc:valueLimitRuleData", ""));
+    pCfgValue->setRequiredIfSet(attr.get("<xmlattr>.hpcc:requiredIfSet", ""));
 
     std::string modList = attr.get("<xmlattr>.hpcc:modifiers", "");
     if (modList.length())

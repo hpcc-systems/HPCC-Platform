@@ -64,6 +64,20 @@ std::string Status::getStatusTypeString(enum statusMsg::msgLevel status) const
     return result;
 }
 
+
+enum statusMsg::msgLevel Status::getMsgLevelFromString(const std::string &status) const
+{
+    enum statusMsg::msgLevel lvl;
+    if (status == "info")          { lvl = statusMsg::info;     }
+    else if (status == "warning")  { lvl = statusMsg::warning;  }
+    else if (status == "error")    { lvl = statusMsg::error;    }
+    else if (status == "fatal")    { lvl = statusMsg::fatal;    }
+    else                           { lvl = statusMsg::fatal;    }
+
+    return lvl;
+}
+
+
 void Status::add(const std::vector<statusMsg> msgs)
 {
     for (auto msgIt = msgs.begin(); msgIt != msgs.end(); ++msgIt)

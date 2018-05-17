@@ -16,6 +16,10 @@
 #    limitations under the License.
 ################################################################################
 -->
+
+
+Add a key for dali server names named dali_name that can be referred to from elsewhere that needs to select a dali.
+
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
 
     <xs:element name="DaliServerProcess">

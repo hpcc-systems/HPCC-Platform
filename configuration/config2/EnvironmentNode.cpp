@@ -318,12 +318,12 @@ void EnvironmentNode::getInsertableItems(std::vector<InsertableItem> &insertable
         {
             if (findIt->second < (*cfgIt)->getMaxInstances())
             {
-                insertableItems.push_back(InsertableItem(*cfgIt));
+                insertableItems.push_back(InsertableItem(shared_from_this(), *cfgIt));
             }
         }
         else
         {
-            insertableItems.push_back(InsertableItem(*cfgIt));
+            insertableItems.push_back(InsertableItem(shared_from_this(), *cfgIt));
         }
     }
 }
@@ -357,7 +357,7 @@ void EnvironmentNode::initialize()
 void EnvironmentNode::fetchNodes(const std::string &path, std::vector<std::shared_ptr<EnvironmentNode>> &nodes) const
 {
     //
-    // If path starts with / and we are not the root, get the root and do the fetch
+    // If path starts with / and we are not the root, get the root and do the find
     if (path[0] == '/')
     {
         std::string remainingPath = path.substr(1);
@@ -386,18 +386,20 @@ void EnvironmentNode::fetchNodes(const std::string &path, std::vector<std::share
         // Parent ?
         if (path[1] == '.')
         {
-            if (!m_pParent.expired())
+            //
+            // Path must be at least 4 characters in length to support the leading ../<remaining path>
+            if (!m_pParent.expired() && path.length() >= 4)
             {
-                m_pParent.lock()->fetchNodes(path.substr(2), nodes);
+                m_pParent.lock()->fetchNodes(path.substr(3), nodes);  // note skipping over '..'
             }
             else
             {
-                throw new ParseException("Attempt to navigate to parent with no parent");
+                throw new ParseException("Attempt to navigate to parent with no parent or path is incomplete");
             }
         }
         else
         {
-            fetchNodes(path.substr(1), nodes); // do the fetch from here stripping the '.' indicator
+            fetchNodes(path.substr(1), nodes); // do the find from here stripping the '.' indicator
         }
     }
 
@@ -406,7 +408,7 @@ void EnvironmentNode::fetchNodes(const std::string &path, std::vector<std::share
     else
     {
         std::string nodeName = path;
-        std::string remainingPath, attributeName, attributeValue;
+        std::string remainingPath, searchAttrName, searchAttrValue;
 
         //
         // Get our portion of the path which is up to the next / or the remaining string and
@@ -423,13 +425,13 @@ void EnvironmentNode::fetchNodes(const std::string &path, std::vector<std::share
         size_t atPos = nodeName.find_first_of('@');
         if (atPos != std::string::npos)
         {
-            attributeName = nodeName.substr(atPos + 1);
+            searchAttrName = nodeName.substr(atPos + 1);
             nodeName.erase(atPos, std::string::npos);
-            size_t equalPos = attributeName.find_first_of('=');
+            size_t equalPos = searchAttrName.find_first_of('=');
             if (equalPos != std::string::npos)
             {
-                attributeValue = attributeName.substr(equalPos + 1);
-                attributeName.erase(equalPos, std::string::npos);
+                searchAttrValue = searchAttrName.substr(equalPos + 1);
+                searchAttrName.erase(equalPos, std::string::npos);
             }
         }
 
@@ -440,21 +442,24 @@ void EnvironmentNode::fetchNodes(const std::string &path, std::vector<std::share
 
         //
         // If there is an attribute specified, dig deeper
-        if (!attributeName.empty())
+        if (!searchAttrName.empty())
         {
             auto childNodeIt = childNodes.begin();
             while (childNodeIt != childNodes.end())
             {
-                std::shared_ptr<EnvironmentValue> pValue = (*childNodeIt)->getAttribute(attributeName);
+                std::shared_ptr<EnvironmentValue> pValue = (*childNodeIt)->getAttribute(searchAttrName);
                 if (pValue)
                 {
-                    if (!attributeValue.empty() && pValue->getValue() != attributeValue)
+                    //
+                    // The attribute value must be present and, if necessary, must match the search value
+                    std::string curAttrValue = pValue->getValue();
+                    if (!curAttrValue.empty() && (searchAttrValue.empty() || (searchAttrValue == curAttrValue)))
                     {
-                        childNodeIt = childNodes.erase(childNodeIt);
+                        ++childNodeIt;  // keep it
                     }
                     else
                     {
-                        ++childNodeIt;
+                        childNodeIt = childNodes.erase(childNodeIt);
                     }
                 }
                 else

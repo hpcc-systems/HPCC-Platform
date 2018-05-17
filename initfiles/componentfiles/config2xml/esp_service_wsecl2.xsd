@@ -3,17 +3,16 @@
     xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
     xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:complexType name="ws_ecl" hpcc:class="component" hpcc:category="espservice" hpcc:componentName="ws_ecl" hpcc:displayName="WS ECL??" hpcc:namePrefix="myeclWatch">
+    <xs:complexType name="ws_ecl">
         <xs:sequence>
-            <xs:element name="EspService" maxOccurs="unbounded" hpcc:docid="MyWS2-T03">
+            <xs:element name="EspService" maxOccurs="unbounded" hpcc:class="component" hpcc:category="ESP Service" hpcc:displayName="WS ECL??" hpcc:componentName="ws_ecl" hpcc:docid="MyWS2-T03">
                 <xs:complexType>
                     <xs:sequence>
 
                         <xs:element name="ProcessCluster" minOccurs="0" maxOccurs="unbounded" hpcc:displayName="VIPS" hpcc:class="valueSet" hpcc:docid="MyWS2-T01">
                             <xs:complexType>
                                 <xs:attribute name="name" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="proc"/>
-                                <xs:attribute name="roxie" type="xs:string" use="required" hpcc:displayName="Roxie" hpcc:tooltip=""
-                                              hpcc:category="select" hpcc:keyref="keyref to roxie names"/> <!-- type=xpathType /Environment/Software/RoxieCluster[@name!=$./*ProcessCluster/@roxie] -->
+                                <xs:attribute name="roxie" type="xs:string" use="required" hpcc:displayName="Roxie" hpcc:tooltip=""/>
                                 <xs:attribute name="vip" type="xs:string" use="required" hpcc:displayName="VIP" hpcc:tooltip=""/>
                                 <xs:attribute name="dnsInterval" type="xs:integer" use="optional" hpcc:displayName="DNS Cache timeout interval"
                                               hpcc:tooltip="DNS lookup cache timeout in seconds. Set to 0 to resolve DNS for every transaction.  Set to -1 (default) to keep DNS lookup cached indefinitely."/>
@@ -24,8 +23,8 @@
 
                         <xs:element name="Target" minOccurs="0" maxOccurs="unbounded" hpcc:displayName="Restrict To Target(s)" hpcc:docid="MyWS2-T02">
                             <xs:complexType>
-                                <xs:attribute name="name" type="xs:string" use="required" hpcc:category="select" hpcc:keyref="keyref to thor names (hthor, thor, roxie, see configmgr)"
-                                              hpcc:tooltip="WsEcl will only display specified targets, if none specified WsEcl will display all targets."/> <!-- type="topologyClusterType" -->
+                                <xs:attribute name="name" type="xs:string" use="required" hpcc:keyref="keyref to thor names (hthor, thor, roxie, see configmgr)"
+                                    hpcc:tooltip="WsEcl will only display specified targets, if none specified WsEcl will display all targets."/> <!-- type="topologyClusterType" -->
                             </xs:complexType>
                         </xs:element>
                     </xs:sequence>

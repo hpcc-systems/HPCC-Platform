@@ -518,7 +518,10 @@ bool Cws_config2Ex::onFetchNodes(IEspContext &context, IEspFetchNodesRequest &re
     StringArray ids;
     for ( auto &&pNode : nodes)
     {
-        ids.append(pNode->getId().c_str());
+        if (!pNode->getSchemaItem()->isHidden())
+        {
+            ids.append(pNode->getId().c_str());
+        }
     }
     resp.setNodeIds(ids);
 
@@ -649,6 +652,7 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
     pNode->getInsertableItems(insertableList);
     for (auto it=insertableList.begin(); it!=insertableList.end(); ++it)
     {
+        bool addItem = true;
         std::shared_ptr<SchemaItem> pSchemaItem = (*it).m_pSchemaItem;
         Owned<IEspInsertItemType> pInsertInfo = createInsertItemType();
         pInsertInfo->setName(pSchemaItem->getProperty("displayName").c_str());
@@ -657,12 +661,11 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
         pInsertInfo->setCategory(pSchemaItem->getProperty("category").c_str());
         pInsertInfo->setRequired(pSchemaItem->isRequired());
         pInsertInfo->setTooltip(pSchemaItem->getProperty("tooltip").c_str());
-        std::string limitType = pSchemaItem->getProperty("insertLimitType");
-        if (!limitType.empty())
+        if (it->m_limitChoices)
         {
             pInsertInfo->setFixedChoices(true);
             IArrayOf<IEspChoiceLimitType> fixedChoices;
-            for (auto &&fc : (*it).m_itemLimits)
+            for (auto &fc : (*it).m_itemLimits)
             {
                 Owned<IEspChoiceLimitType> pChoice = createChoiceLimitType();
                 pChoice->setDisplayName(fc.itemName.c_str());
@@ -671,8 +674,13 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
                 fixedChoices.append(*pChoice.getLink());
             }
             pInsertInfo->setChoiceList(fixedChoices);
+            addItem = fixedChoices.ordinality() != 0;
         }
-        newNodes.append(*pInsertInfo.getLink());
+
+        if (addItem)
+        {
+            newNodes.append(*pInsertInfo.getLink());
+        }
     }
     resp.setInsertable(newNodes);
 
@@ -779,9 +787,11 @@ void Cws_config2Ex::getAttributes(const std::vector<std::shared_ptr<EnvironmentV
         pAttribute->setRequired(pSchemaValue->isRequired());
         pAttribute->setReadOnly(pSchemaValue->isReadOnly());
         pAttribute->setHidden(pSchemaValue->isHidden());
+        pAttribute->setDeprecated(pSchemaValue->isDeprecated());
+        pAttribute->setGroup(pSchemaValue->getGroup().c_str());
 
         std::vector<AllowedValue> allowedValues;
-        pSchemaValue->getAllowedValues(allowedValues, pAttr.get());
+        pSchemaValue->getAllowedValues(allowedValues, pAttr->getEnvironmentNode());
         if (!allowedValues.empty())
         {
             IArrayOf<IEspChoiceType> choices;
@@ -791,6 +801,24 @@ void Cws_config2Ex::getAttributes(const std::vector<std::shared_ptr<EnvironmentV
                 pChoice->setDisplayName((*valueIt).m_displayName.c_str());
                 pChoice->setValue((*valueIt).m_value.c_str());
                 pChoice->setDesc((*valueIt).m_description.c_str());
+                pChoice->setMsg((*valueIt).m_userMessage.c_str());
+                pChoice->setMsgType((*valueIt).m_userMessageType.c_str());
+
+                //
+                // Add dependencies
+                if ((*valueIt).hasDependencies())
+                {
+                    IArrayOf<IEspDependentValueType> dependencies;
+                    for (auto &depIt: (*valueIt).getDependencies())
+                    {
+                        Owned<IEspDependentValueType> pDep = createDependentValueType();
+                        pDep->setAttributeName(depIt.m_attribute.c_str());
+                        pDep->setAttributeValue(depIt.m_value.c_str());
+                        dependencies.append(*pDep.getLink());
+                    }
+                    pChoice->setDependencies(dependencies);
+                }
+
                 choices.append(*pChoice.getLink());
             }
             pAttribute->updateType().updateLimits().setChoiceList(choices);

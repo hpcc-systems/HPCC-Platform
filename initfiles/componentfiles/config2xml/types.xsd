@@ -25,61 +25,99 @@
             <xs:maxInclusive value="100"/>
         </xs:restriction>
     </xs:simpleType>
+
+    <xs:simpleType name="yesno">
+        <xs:restriction base="xs:string">
+            <xs:minInclusive value="yes" hpcc:displayName="Yes"/>
+            <xs:maxInclusive value="no" hpcc:displayName="No"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="nodeName">
         <xs:restriction base="xs:string">
             <xs:pattern value="[a-zA-z0-9_\-]+"/>
             <!-- need regex to eliminate special characters -->
         </xs:restriction>
     </xs:simpleType>
+
     <xs:simpleType name="version">
         <xs:restriction base="xs:string">
             <xs:pattern value=""/>
             <!-- regex for d[.d[.d[.d]]] -->
         </xs:restriction>
     </xs:simpleType>
+
     <xs:simpleType name="ipV4Address">
         <xs:restriction base="xs:token">
             <xs:pattern value="/^0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])$/"/>
         </xs:restriction>
     </xs:simpleType>
+
     <xs:simpleType name="absolutePath">
         <xs:restriction base="xs:string">
             <xs:pattern value="/^\\/.*/"/>
         </xs:restriction>
     </xs:simpleType>
+
+    <xs:simpleType name="relativePath">
+        <xs:restriction base="xs:string">
+            <!-- xs:pattern value="/^\\/.*/"/   Need one! -->
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="AutoTimeStampType">
         <xs:restriction base="xs:string" hpcc:autoType="timestamp"/>
     </xs:simpleType>
+
     <xs:simpleType name="AutoComputerType">
         <xs:restriction base="xs:string" hpcc:autoType="requestIP"/>
     </xs:simpleType>
+
     <xs:simpleType name="AutoUseridType">
         <xs:restriction base="xs:string" hpcc:autoType="requestUser"/>
     </xs:simpleType>
+
     <xs:attributeGroup name="computerNode">
         <xs:attribute name="name" type="nodeName" use="required"/>
         <xs:attribute name="netAddress" type="ipV4Address" use="required"/>
     </xs:attributeGroup>
+
     <xs:attributeGroup name="computerNodeReference">
         <xs:attribute name="computer" type="nodeName" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer@name"/>
         <xs:attribute name="netAddress" type="ipV4Address" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer@netAddress"/>
     </xs:attributeGroup>
-    <xs:complexType name="usernotes">
+
+    <xs:complexType name="hwinstance">
         <xs:sequence>
-            <xs:element name="Note" type="xs:string" minOccurs="0"/>
+            <xs:element name="Instance" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:attributeGroup ref="computerNodeReference"/>
+                </xs:complexType>
+            </xs:element>
         </xs:sequence>
-        <xs:attribute name="severity" use="optional" default="Minor" hpcc:displayName="Severity" hpcc:tooltip="Significance of this note">
-            <xs:simpleType>
-                <xs:restriction base="xs:string">
-                    <xs:enumeration value="Minor"/>
-                    <xs:enumeration value="Normal"/>
-                    <xs:enumeration value="Critical"/>
-                </xs:restriction>
-            </xs:simpleType>
-        </xs:attribute>
-        <xs:attribute name="date" type="AutoTimeStampType" use="optional" hpcc:displayName="Date/Time" hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
-        <xs:attribute name="computer" type="AutoComputerType" use="optional" hpcc:displayName="Computer" hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
-        <xs:attribute name="user" type="AutoUseridType" use="optional" hpcc:displayName="User" hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
+    </xs:complexType>
+
+    <xs:complexType name="usernotes">
+        <xs:seqeunce>
+            <xs:element name="Notes" maxOccurs="unbounded"/>
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="Note" type="xs:string" minOccurs="0"/>
+                </xs:sequence>
+                <xs:attribute name="severity" use="optional" default="Minor" hpcc:displayName="Severity" hpcc:tooltip="Significance of this note">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="Minor"/>
+                            <xs:enumeration value="Normal"/>
+                            <xs:enumeration value="Critical"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+                <xs:attribute name="date" type="AutoTimeStampType" use="optional" hpcc:displayName="Date/Time" hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
+                <xs:attribute name="computer" type="AutoComputerType" use="optional" hpcc:displayName="Computer" hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
+                <xs:attribute name="user" type="AutoUseridType" use="optional" hpcc:displayName="User" hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
+            </xs:complexType>
+        </xs:seqeunce>
     </xs:complexType>
 
     <xs:complexType name="espservice_properties">
@@ -146,6 +184,7 @@
             </xs:element>
         </xs:sequence>
     </xs:complexType>
+
     <xs:attributeGroup name="buildInfo">
         <xs:attribute name="build" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="fixedValue" hpcc:autoGenerateValue="_"/>
         <xs:attribute name="buildSet" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="configProperty" hpcc:autoGenerateValue="componentName"/>
