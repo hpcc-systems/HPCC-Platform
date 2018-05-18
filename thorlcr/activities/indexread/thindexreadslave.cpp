@@ -170,7 +170,7 @@ public:
                         rfn.getPath(path);
 
                         StringBuffer lPath;
-                        if (!rfn.isLocal() || testForceRemote(rfn.getLocalPath(lPath)))
+                        if (isRemoteReadCandidate(*this, rfn, lPath))
                         {
                             // Open a stream from remote file, having passed actual, expected, projected, and filters to it
                             SocketEndpoint ep(rfn.queryEndpoint());

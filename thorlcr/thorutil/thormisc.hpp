@@ -85,7 +85,7 @@
 #define THOROPT_KEYLOOKUP_MAX_QUEUED  "keyLookupMaxQueued"      // Total maximum number of rows (across all parts/threads) to queue              (default = 10000)
 #define THOROPT_KEYLOOKUP_MAX_DONE    "keyLookupMaxDone"        // Maximum number of done items pending to be ready by next activity             (default = 10000)
 #define THOROPT_REMOTE_KEYED_LOOKUP   "remoteKeyedLookup"       // Send key request to remote node unless part is local                          (default = true)
-#define THOROPT_REMOTE_KEYED_FETCH   "remoteKeyedFetch"         // Send fetch request to remote node unless part is local                        (default = true)
+#define THOROPT_REMOTE_KEYED_FETCH    "remoteKeyedFetch"        // Send fetch request to remote node unless part is local                        (default = true)
 #define THOROPT_FORCE_REMOTE_KEYED_LOOKUP "forceRemoteKeyedLookup" // force all keyed lookups, even where part local to be sent as if remote     (default = false)
 #define THOROPT_FORCE_REMOTE_KEYED_FETCH "forceRemoteKeyedFetch" // force all keyed fetches, even where part local to be sent as if remote       (default = false)
 #define THOROPT_KEYLOOKUP_MAX_LOCAL_HANDLERS "maxLocalHandlers" // maximum number of handlers dealing with local parts                           (default = 10)
@@ -93,6 +93,8 @@
 #define THOROPT_KEYLOOKUP_MAX_FETCH_LOCAL_HANDLERS "maxLocalFetchHandlers" // maximum number of fetch handlers dealing with local parts          (default = 10)
 #define THOROPT_KEYLOOKUP_MAX_FETCH_REMOTE_HANDLERS "maxRemoteFetchHandlers" // maximum number of fetch handlers per remote slave                (default = 2)
 #define THOROPT_KEYLOOKUP_COMPRESS_MESSAGES "keyedJoinCompressMsgs" // compress key and fetch request messages                                   (default = true)
+#define THOROPT_FORCE_REMOTE_DISABLED "forceRemoteDisabled"     // disable remote (via dafilesrv) reads (NB: takes precedence over forceRemoteRead) (default = false)
+#define THOROPT_FORCE_REMOTE_READ     "forceRemoteRead"         // force remote (via dafilesrv) read (NB: takes precedence over environment.conf setting) (default = false)
 
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
@@ -521,6 +523,7 @@ extern graph_decl IThorException *checkAndCreateOOMContextException(CActivityBas
 extern graph_decl RecordTranslationMode getTranslationMode(CActivityBase &activity);
 extern graph_decl void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const char *fname, IArrayOf<IPartDescriptor> &partDescriptors, RecordTranslationMode translationMode, IOutputMetaData *expectedFormat, IOutputMetaData *projectedFormat, unsigned expectedFormatCrc);
 extern graph_decl const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &partDesc, RecordTranslationMode translationMode, IOutputMetaData *expectedFormat, IOutputMetaData *projectedFormat, unsigned expectedFormatCrc);
+extern graph_decl bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn, StringBuffer &localPath);
 
 #endif
 
