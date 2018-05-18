@@ -87,8 +87,7 @@
             </row>
           </tbody>
         </tgroup>
-      </informaltable>
-      <!--  ***this whole thing should be a comment!
+      </informaltable><!--  ***this whole thing should be a comment!
       /sect2 id="configuration-manager"/
         <title>Dependencies and packages</title>
 
@@ -131,8 +130,8 @@
       another process. With the ECL Compiler, you do not need a supercomputer
       cluster to develop and run ECL code.</para>
 
-      <para>Running the ECL Compiler without any options (or specifying --help)
-      will display the syntax.</para>
+      <para>Running the ECL Compiler without any options (or specifying
+      --help) will display the syntax.</para>
 
       <para><programlisting>C:\eclcc&gt;eclcc -help
 </programlisting></para>
@@ -518,6 +517,14 @@
               </row>
 
               <row>
+                <entry>--expand &lt;path&gt;</entry>
+
+                <entry>Expand the contents of an archive to the specified
+                directory. The contents of the submitted query will output to
+                stdout.</entry>
+              </row>
+
+              <row>
                 <entry>--fastsyntax</entry>
 
                 <entry>Delay expanding functions when parsing. May speed up
@@ -549,17 +556,13 @@
               </row>
             </tbody>
           </tgroup>
-        </informaltable> 
-        
-        <!-- GP-HPCC-19224 --> 
-      </para> 
-        
-        <?hard-pagebreak ?> <para>Other options
-      (continued):</para> 
-      
-    
-      <para> 
-  <informaltable colsep="1" frame="all" rowsep="1">
+        </informaltable><!-- GP-HPCC-19224 --></para>
+
+      <?hard-pagebreak ?>
+
+      <para>Other options (continued):</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
@@ -708,7 +711,7 @@
               </row>
             </tbody>
           </tgroup>
-        </informaltable></para>   
+        </informaltable></para>
 
       <para></para>
     </sect1>
