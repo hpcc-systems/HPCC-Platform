@@ -90,6 +90,13 @@
                 <xsl:with-param name="authMethod" select="$authNode/@method"/>
                 <xsl:with-param name="service" select="Properties/@type"/>
             </xsl:call-template>
+            <xsl:if test="$bindingNode/CustomBindingParameter">
+                <CustomBindingParameters>
+                    <xsl:for-each select="$bindingNode/CustomBindingParameter">
+                        <xsl:copy-of select="."/>
+                    </xsl:for-each>
+                </CustomBindingParameters>
+            </xsl:if>
         </EspBinding>
     </xsl:template>
 </xsl:stylesheet>
