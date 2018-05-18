@@ -150,7 +150,7 @@ public:
         bool filescope = stricmp(key,"Scope")==0;
         bool wuscope = stricmp(key,"workunit")==0;
 
-        if (checkScopeScans() && (filescope || wuscope)) {
+        if (filescope || wuscope) {
             SecAccessFlags perm = SecAccess_None;
             unsigned start = msTick();
             if (filescope)
