@@ -37,7 +37,7 @@ include_directories(
     ${HPCC_SOURCE_DIR}/system/security/shared
     ${HPCC_SOURCE_DIR}/system/include
     ${HPCC_SOURCE_DIR}/common/remote
-    ${HPCC_SOURCE_DIR}/clients
+    ${HPCC_SOURCE_DIR}/esp/clients
     ${HPCC_SOURCE_DIR}/dali/base
     ${HPCC_SOURCE_DIR}/common/dllserver
     ${HPCC_SOURCE_DIR}/esp/bindings
