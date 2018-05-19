@@ -1466,6 +1466,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     authReq.ctx->setUserID(userName.str());
     authReq.authBinding->populateRequest(m_request.get());
     authReq.ctx->setSessionToken(sessionID);
+    authReq.ctx->queryUser()->setAuthenticateStatus(AS_AUTHENTICATED);
 
     ESPLOG(LogMax, "Authenticated for %s<%u> %s@%s", PropSessionID, sessionID, userName.str(), sessionTree->queryProp(PropSessionNetworkAddress));
     if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "login"))
