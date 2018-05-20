@@ -56,6 +56,8 @@ public:
         defaultXmlReadFlags = ctx.ctxGetPropBool("@defaultStripLeadingWhitespace", true) ? ptr_ignoreWhiteSpace : ptr_none;
         trapTooManyActiveQueries = ctx.ctxGetPropBool("@trapTooManyActiveQueries", true);
         numRequestArrayThreads = ctx.ctxGetPropInt("@requestArrayThreads", 5);
+        maxHttpConnectionRequests = ctx.ctxGetPropInt("@maxHttpConnectionRequests", 10);
+        maxHttpKeepAliveWait = ctx.ctxGetPropInt("@maxHttpKeepAliveWait", 5000);
     }
     IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const char *certFile=nullptr, const char *keyFile=nullptr, const char *passPhrase=nullptr)
     {
@@ -67,6 +69,8 @@ public:
     PTreeReaderOptions defaultXmlReadFlags;
     unsigned maxBlockSize;
     unsigned numRequestArrayThreads;
+    unsigned maxHttpConnectionRequests = 10;
+    unsigned maxHttpKeepAliveWait = 5000;
     bool trapTooManyActiveQueries;
 };
 
@@ -1701,6 +1705,8 @@ private:
         IpAddress peer;
         bool continuationNeeded = false;
         bool isStatus = false;
+        unsigned remainingHttpConnectionRequests = global->maxHttpConnectionRequests ? global->maxHttpConnectionRequests : 1;
+        unsigned readWait = WAIT_FOREVER;
 
         Owned<IHpccProtocolMsgContext> msgctx = sink->createMsgContext(startTime);
         IContextLogger &logctx = *msgctx->queryLogContext();
@@ -1715,7 +1721,7 @@ readAnother:
             if (client)
             {
                 client->querySocket()->getPeerAddress(peer);
-                if (!client->readBlock(rawText.clear(), WAIT_FOREVER, &httpHelper, continuationNeeded, isStatus, global->maxBlockSize))
+                if (!client->readBlock(rawText.clear(), readWait, &httpHelper, continuationNeeded, isStatus, global->maxBlockSize))
                 {
                     if (traceLevel > 8)
                     {
@@ -1745,6 +1751,13 @@ readAnother:
         }
 
         bool isHTTP = httpHelper.isHttp();
+        if (isHTTP)
+        {
+            if (httpHelper.allowKeepAlive())
+                client->setHttpKeepAlive(remainingHttpConnectionRequests > 1);
+            else
+                remainingHttpConnectionRequests = 1;
+        }
 
         TextMarkupFormat mlResponseFmt = MarkupFmt_Unknown;
         TextMarkupFormat mlRequestFmt = MarkupFmt_Unknown;
@@ -2083,6 +2096,12 @@ readAnother:
                     unsigned replyLen = 0;
                     client->write(&replyLen, sizeof(replyLen));
                 }
+                if (--remainingHttpConnectionRequests > 0)
+                {
+                    readWait = global->maxHttpKeepAliveWait;
+                    goto readAnother;
+                }
+
                 client.clear();
             }
             catch (IException * E)
