@@ -2747,7 +2747,6 @@ void ScopeFilter::addScopeType(StatisticScopeType scopeType)
     if (scopeType == SSTall)
         return;
 
-    dbgassertex(!scopes && !ids);
     scopeTypes.append(scopeType);
 }
 
