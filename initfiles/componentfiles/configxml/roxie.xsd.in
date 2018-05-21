@@ -718,6 +718,20 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="maxHttpConnectionRequests" type="xs:nonNegativeInteger" use="optional" default="10">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Max number of query requests per persistent http connection</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="maxHttpKeepAliveWait" type="xs:nonNegativeInteger" use="optional" default="5000">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Max number of miliseconds to wait for addtional requests on a persistent http connection</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="maxLocalFilesOpen" type="xs:nonNegativeInteger" use="optional" default="4000">
       <xs:annotation>
         <xs:appinfo>

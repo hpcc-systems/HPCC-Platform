@@ -86,6 +86,8 @@
                 logQueueLen="512"
                 lowTimeout="10000"
                 maxBlockSize="10000000"
+                maxHttpConnectionRequests="10"
+                maxHttpKeepAliveWait="5000"
                 maxLocalFilesOpen="4000"
                 maxLockAttempts="5"
                 maxRemoteFilesOpen="1000"
