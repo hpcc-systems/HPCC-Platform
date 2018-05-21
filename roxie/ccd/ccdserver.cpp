@@ -12333,6 +12333,17 @@ public:
         }
         // New record layout info
         setRtlFormat(properties, helper.queryDiskRecordSize());
+        // Bloom info
+        const IBloomBuilderInfo * const *bloomFilters = helper.queryBloomInfo();
+        while (bloomFilters && *bloomFilters)
+        {
+            const IBloomBuilderInfo *info = *bloomFilters++;
+            IPropertyTree *bloom = properties.addPropTree("Bloom");
+            bloom->setPropInt64("@bloomFieldMask", info->getBloomFields());
+            bloom->setPropInt64("@bloomLimit", info->getBloomLimit());  // MORE - if we didn't actually build because of the limit that might be interesting. Though that's going to vary by part.
+            VStringBuffer pval("%f", info->getBloomProbability());
+            bloom->setProp("@bloomProbability", pval.str());
+        }
     }
 
     IUserDescriptor *queryUserDescriptor() const
