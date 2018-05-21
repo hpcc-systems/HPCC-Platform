@@ -95,15 +95,15 @@ extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 #define UNSUPPORTED(feature) throw MakeStringException(MSGAUD_user, 0, "Rembed: UNSUPPORTED feature: %s", feature)
 #define FAIL(msg) throw MakeStringException(MSGAUD_user, 0, "Rembed: Rcpp error: %s", msg)
 
+using Rcpp::_;
+
 namespace Rembed
 {
-// Copied from Rcpp 3.3's environment.h, in case an older version of Rcpp is in use
+// Copied from Rcpp 0.12.15's meat/Environment.h, in case an older version of Rcpp is in use
 inline Rcpp::Environment _new_env(SEXP parent, int size = 29) {
-    Rcpp::Shield<SEXP> sizeSEXP(Rf_ScalarInteger(size));
-    Rcpp::Shield<SEXP> parentSEXP(parent);
-    return R_NewHashedEnv(parentSEXP, sizeSEXP);
+    Rcpp::Function newEnv("new.env", R_BaseNamespace);
+    return newEnv(_["size"] = size, _["parent"] = parent);
 }
-
 
 
 __declspec(noreturn) static void failx(const char *msg, ...) __attribute__((format(printf, 1, 2), noreturn));
