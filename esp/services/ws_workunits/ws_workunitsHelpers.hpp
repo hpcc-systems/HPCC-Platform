@@ -128,6 +128,7 @@ private:
 #define WUINFO_IncludeECL               0x4000
 #define WUINFO_IncludeHelpers           0x8000
 #define WUINFO_IncludeAllowedClusters   0x10000
+#define WUINFO_IncludeTotalClusterTime  0x20000
 #define WUINFO_All                      0xFFFFFFFF
 
 class WsWuInfo

@@ -821,6 +821,7 @@ ESPrequest WUInfoRequest
     [min_ver("1.66")] bool IncludeECL(true);
     [min_ver("1.66")] bool IncludeHelpers(true);
     [min_ver("1.66")] bool IncludeAllowedClusters(true);
+    [min_ver("1.73")] bool IncludeTotalClusterTime(true);
     [min_ver("1.16")] bool SuppressResultSchemas(false);
     [min_ver("1.25")] string ThorSlaveIP;
 };
@@ -2224,7 +2225,7 @@ ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
 // ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.72"), default_client_version("1.72"),
+    version("1.73"), default_client_version("1.73"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
