@@ -264,6 +264,16 @@ public:
                 if (helper->getPartitionFieldMask())
                     props.setPropInt64("@partitionFieldMask", helper->getPartitionFieldMask());
             }
+            const IBloomBuilderInfo * const *bloomFilters = helper->queryBloomInfo();
+            while (bloomFilters && *bloomFilters)
+            {
+                const IBloomBuilderInfo *info = *bloomFilters++;
+                IPropertyTree *bloom = props.addPropTree("Bloom");
+                bloom->setPropInt64("@bloomFieldMask", info->getBloomFields());
+                bloom->setPropInt64("@bloomLimit", info->getBloomLimit());  // MORE - if we didn't actually build because of the limit that might be interesting. Though that's going to vary by part.
+                VStringBuffer pval("%f", info->getBloomProbability());
+                bloom->setProp("@bloomProbability", pval.str());
+            }
             container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
             if (!dlfn.isExternal())
                 queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc);
