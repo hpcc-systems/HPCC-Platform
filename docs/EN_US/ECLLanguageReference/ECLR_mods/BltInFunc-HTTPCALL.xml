@@ -149,8 +149,9 @@
                 <primary>HTTPHEADER</primary>
               </indexterm></emphasis></entry>
 
-            <entry>Specifies header information to be passed to the
-            service.</entry>
+            <entry>Specifies header information to be passed to the service.
+            HTTPCALL supports multiple instances of the HTTPHEADER option if
+            you need to specify multiple key/value header strings. </entry>
           </row>
         </tbody>
       </tgroup>
@@ -172,9 +173,8 @@ OUTPUT(raw);
 
 ////Using HTTPHEADER to pass Authorization info
 raw2 := HTTPCALL('http://api.worldbank.org/sources', 'GET', 'text/xml', 
-                 OutRec1, HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ='));
+                 OutRec1, HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ='),
+                          HTTPHEADER('MyLiteral','FOO'));
 
-OUTPUT(raw2);
-
-</programlisting>
+OUTPUT(raw2);</programlisting>
 </sect1>

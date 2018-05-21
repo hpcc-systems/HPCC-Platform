@@ -403,8 +403,9 @@
                 <primary>HTTPHEADER</primary>
               </indexterm></emphasis></entry>
 
-            <entry>Specifies header information to be passed to the
-            service.</entry>
+            <entry>Specifies header information to be passed to the service.
+            SOAPCALL supports multiple instances of the HTTPHEADER option if
+            you need to specify multiple key/value header strings. </entry>
           </row>
         </tbody>
       </tgroup>
@@ -495,7 +496,8 @@ OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP))
 
 //Using HTTPHEADER to pass Authorization info
 OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),
-                HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ=')))
+                HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ='),
+                HTTPHEADER('MyLiteral','FOO')));
 
 </programlisting>
   </sect2>
