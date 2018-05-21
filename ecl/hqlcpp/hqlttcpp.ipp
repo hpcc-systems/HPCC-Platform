@@ -1298,8 +1298,6 @@ void migrateExprToNaturalLevel(WorkflowItem & curWorkflow, IWorkUnit * wu, HqlCp
 void removeTrivialGraphs(WorkflowItem & curWorkflow);
 void extractWorkflow(HqlCppTranslator & translator, HqlExprArray & exprs, WorkflowArray & out);
 void optimizeActivities(unsigned wfid, HqlExprArray & exprs, bool optimizeCountCompare, bool optimizeNonEmpty);
-IHqlExpression * insertImplicitProjects(HqlCppTranslator & translator, IHqlExpression * expr, bool optimizeSpills);
-void insertImplicitProjects(HqlCppTranslator & translator, HqlExprArray & exprs);
 
 bool reportSemanticErrors(IHqlExpression * expr, IErrorReceiver & errors);
 

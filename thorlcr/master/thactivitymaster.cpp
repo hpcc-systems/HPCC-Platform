@@ -644,7 +644,7 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned ex
                 const char *subname = f->queryLogicalName();
                 translator.clear();
                 keyedTranslator.clear();
-                getTranslators(translator, keyedTranslator, subname, expectedFormatCrc, expected, dfsCrc, actualFormat, projectedFormatCrc, projected, mode, false);
+                getTranslators(translator, keyedTranslator, subname, expectedFormatCrc, expected, dfsCrc, actualFormat, projectedFormatCrc, projected, mode);
             }
         }
         prevFormatCrc = dfsCrc;

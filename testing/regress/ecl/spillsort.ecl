@@ -29,7 +29,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 //--- end of version configuration ---
 
 #option ('hthorSpillThreshold',3000);
-#option ('layoutTranslationEnabled', useTranslation);
+#option ('layoutTranslation', useTranslation);
 
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);

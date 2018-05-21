@@ -233,9 +233,9 @@ public:
 
     virtual void updateWULogfile()                  { return ctx->updateWULogfile(); }
 
-    virtual RecordTranslationMode rltEnabled() const override
+    virtual RecordTranslationMode getLayoutTranslationMode() const override
     {
-        return ctx->rltEnabled();
+        return ctx->getLayoutTranslationMode();
     }
 
 protected:
@@ -507,7 +507,7 @@ public:
     virtual IEngineContext *queryEngineContext() { return this; }
     virtual char *getDaliServers();
 
-    virtual RecordTranslationMode rltEnabled() const override;
+    virtual RecordTranslationMode getLayoutTranslationMode() const override;
     unsigned __int64 queryStopAfter() { return stopAfter; }
 
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)

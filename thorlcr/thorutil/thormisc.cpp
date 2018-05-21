@@ -1427,7 +1427,7 @@ IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IExce
 RecordTranslationMode getTranslationMode(CActivityBase &activity)
 {
     StringBuffer val;
-    activity.getOpt("layoutTranslationEnabled", val);
+    activity.getOpt("layoutTranslation", val);
     return getTranslationMode(val);
 }
 
@@ -1452,7 +1452,7 @@ void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const
         if (!translatorContainer)
         {
             Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
-            translatorContainer.setown(getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode, false));
+            translatorContainer.setown(getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode));
             if (translatorContainer)
                 translatorTable.replace(*new CITranslatorMapping(*translatorContainer.getLink(), publishedFormatCrc));
         }
@@ -1465,7 +1465,7 @@ const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &part
     IPropertyTree const &props = partDesc.queryOwner().queryProperties();
     Owned<IOutputMetaData> actualFormat = getDaliLayoutInfo(props);
     unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
-    return getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, actualFormat, projectedFormatCrc, projectedFormat, translationMode, false);
+    return getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, actualFormat, projectedFormatCrc, projectedFormat, translationMode);
 }
 
 bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn, StringBuffer &localPath)

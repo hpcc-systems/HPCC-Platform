@@ -295,7 +295,6 @@ QueryOptions::QueryOptions()
     checkingHeap = defaultCheckingHeap;
     disableLocalOptimizations = defaultDisableLocalOptimizations;
     enableFieldTranslation = fieldTranslationEnabled;
-    skipFileFormatCrcCheck = false;
     stripWhitespaceFromStoredDataset = ((ptr_ignoreWhiteSpace & defaultXmlReadFlags) != 0);
     timeActivities = defaultTimeActivities;
     traceEnabled = defaultTraceEnabled;
@@ -326,7 +325,6 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     checkingHeap = other.checkingHeap;
     disableLocalOptimizations = other.disableLocalOptimizations;
     enableFieldTranslation = other.enableFieldTranslation;
-    skipFileFormatCrcCheck = other.skipFileFormatCrcCheck;
     stripWhitespaceFromStoredDataset = other.stripWhitespaceFromStoredDataset;
     timeActivities = other.timeActivities;
     traceEnabled = other.traceEnabled;
@@ -366,8 +364,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
 
     updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
     updateFromWorkUnit(disableLocalOptimizations, wu, "disableLocalOptimizations");
-    updateFromWorkUnit(enableFieldTranslation, wu, "layoutTranslationEnabled");  // Name is different for compatibility reasons
-    updateFromWorkUnit(skipFileFormatCrcCheck, wu, "skipFileFormatCrcCheck");
+    updateFromWorkUnit(enableFieldTranslation, wu, "layoutTranslation");  // Name is different for compatibility reasons
     updateFromWorkUnit(stripWhitespaceFromStoredDataset, wu, "stripWhitespaceFromStoredDataset");
     updateFromWorkUnit(timeActivities, wu, "timeActivities");
     updateFromWorkUnit(traceEnabled, wu, "traceEnabled");
@@ -426,7 +423,6 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
         // Note: disableLocalOptimizations is not permitted at context level (too late)
         // Note: enableFieldTranslation is not permitted at context level (generally too late anyway)
-        // Note: skipFileFormatCrcCheck is not permitted at context level (generally too late anyway)
         updateFromContext(stripWhitespaceFromStoredDataset, ctx, "_StripWhitespaceFromStoredDataset", "@stripWhitespaceFromStoredDataset");
         updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
         updateFromContext(traceEnabled, ctx, "@traceEnabled", "_TraceEnabled");

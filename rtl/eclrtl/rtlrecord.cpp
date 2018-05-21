@@ -309,6 +309,10 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
             break;
         }
     }
+
+    //Zero length records cause problems (allocation, and indicating if skipped) => force the length to 1 byte so it is possible to tell
+    if (numFields == 0)
+        fixedOffsets[0] = 1;
 }
 
 

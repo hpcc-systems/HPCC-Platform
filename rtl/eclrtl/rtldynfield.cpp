@@ -38,9 +38,9 @@ extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *val)
 {
     if (!val || strToBool(val) || strieq(val, "payload"))
         return RecordTranslationMode::Payload;
-    else if (strieq(val, "alwaysDisk"))
+    else if (strieq(val, "alwaysDisk") || strieq(val, "disk"))
         return RecordTranslationMode::AlwaysDisk;
-    else if (strieq(val, "alwaysECL"))
+    else if (strieq(val, "alwaysECL") || strieq(val, "ecl"))
         return RecordTranslationMode::AlwaysECL;
     else
         return RecordTranslationMode::None;
@@ -1552,6 +1552,17 @@ private:
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo)
 {
     return new GeneralRecordTranslator(_destRecInfo, _srcRecInfo);
+}
+
+extern ECLRTL_API void throwTranslationError(const RtlRecord & destRecInfo, const RtlRecord & srcRecInfo, const char * filename)
+{
+    Owned<const IDynamicTransform> translator = createRecordTranslator(destRecInfo, srcRecInfo);
+#ifdef _DEBUG
+    translator->describe();
+#endif
+    if (!translator->canTranslate())
+        throw MakeStringException(0, "Untranslatable record layout mismatch detected for: %s", filename);
+    throw MakeStringException(0, "Translatable key layout mismatch reading file %s but translation disabled", filename);
 }
 
 class TranslatedRowStream : public CInterfaceOf<IRowStream>

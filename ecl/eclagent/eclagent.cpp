@@ -701,14 +701,16 @@ void EclAgent::abort()
         activeGraph->abort();
 }
 
-RecordTranslationMode EclAgent::rltEnabled() const
+RecordTranslationMode EclAgent::getLayoutTranslationMode() const
 {
     IConstWorkUnit *wu = queryWorkUnit();
     SCMStringBuffer val;
-    if(wu->hasDebugValue("layoutTranslationEnabled"))
-        wu->getDebugValue("layoutTranslationEnabled", val);
+    if(wu->hasDebugValue("layoutTranslation"))
+        wu->getDebugValue("layoutTranslation", val);
     else
-        wu->getDebugValue("hthorLayoutTranslationEnabled", val);
+    {
+        // more should read from the configuration?
+    }
     return getTranslationMode(val.str());
 }
 

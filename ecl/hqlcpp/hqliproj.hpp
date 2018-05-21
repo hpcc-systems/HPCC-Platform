@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+#ifndef __HQLIPROJ_HPP_
+#define __HQLIPROJ_HPP_
 
-//Test reading a file containg a child and grand-child *dictionary* with a dataset definition
+IHqlExpression * insertImplicitProjects(HqlCppTranslator & translator, IHqlExpression * expr, bool optimizeSpills);
+void insertImplicitProjects(HqlCppTranslator & translator, HqlExprArray & exprs);
 
-import Setup.SerialTest;
+/* calculate the minimum set of fields that are required as input to this activity */
+IHqlExpression * getMinimumInputRecord(HqlCppTranslator & translator, IHqlExpression * expr);
 
-#option ('layoutTranslation', 'ecl');
-
-inDs := DATASET(SerialTest.DictFilename, SerialTest.LibraryDsRec, THOR);
-
-output(TABLE(inDs, { owner, cnt := COUNT(books) }));
+#endif

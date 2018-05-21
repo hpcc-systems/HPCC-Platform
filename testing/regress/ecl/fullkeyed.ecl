@@ -34,7 +34,7 @@ forceRemoteKeyedFetch := #IFDEFINED(root.forceRemoteKeyedLookup, false);
 
 #option('forceRemoteKeyedLookup', forceRemoteKeyedLookup);
 #option('forceRemoteKeyedFetch', forceRemoteKeyedFetch);
-#option ('layoutTranslationEnabled', useTranslation);
+#option ('layoutTranslation', useTranslation);
 #onwarning (4522, ignore);
 
 import $.setup;

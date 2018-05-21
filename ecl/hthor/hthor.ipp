@@ -21,8 +21,7 @@
    hthorDiskWriteSizeLimit
    hthorSpillThreshold
    outputLimit (for pipe)
-   skipFileFormatCrcCheck
-   layoutTranslationEnabled and hthorLayoutTranslationEnabled (former takes priority)
+   layoutTranslation
    hthorMemoryLimit
  */
 
@@ -171,7 +170,7 @@ static bool verifyFormatCrc(unsigned helperCrc, IDistributedFile * df, char cons
 
 static bool verifyFormatCrcSuper(unsigned helperCrc, IDistributedFile * df, bool isIndex, bool fail)
 {
-    if(!df) return true;
+    if(!df || (helperCrc == 0)) return true;
     IDistributedSuperFile * super = df->querySuperFile();
     if(super)
     {

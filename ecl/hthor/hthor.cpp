@@ -560,7 +560,7 @@ void CHThorDiskWriteActivity::open()
     unsigned rwFlags = rw_autoflush;
     if (grouped)
         rwFlags |= rw_grouped;
-    if (!(helper.getFlags() & TDRnocrccheck))
+    if (true) // MORE: Should this be controlled by an activity hint/flag?
         rwFlags |= rw_crc;
     IExtRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
@@ -8102,7 +8102,7 @@ void CHThorDiskReadBaseActivity::resolve()
                 }
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
-                if(agent.rltEnabled()==RecordTranslationMode::None && !agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
+                if(agent.getLayoutTranslationMode()==RecordTranslationMode::None)
                     verifyRecordFormatCrc();
             }
         }
@@ -8212,7 +8212,7 @@ bool CHThorDiskReadBaseActivity::openNext()
     localOffset = 0;
     saveOpenExc.clear();
     actualFilter.clear();
-    unsigned diskCrc = helper.getDiskFormatCrc();
+    unsigned expectedCrc = helper.getDiskFormatCrc();
     unsigned projectedCrc = helper.getProjectedFormatCrc();
 
     if (dfsParts||ldFile)
@@ -8321,21 +8321,20 @@ bool CHThorDiskReadBaseActivity::openNext()
                 closepart();
             }
 
+            //Check if the file requires translation, but translation is disabled
+            if (actualCrc && expectedCrc && (actualCrc != expectedCrc) && (agent.getLayoutTranslationMode()==RecordTranslationMode::None))
+            {
+                IOutputMetaData * expectedDiskMeta = helper.queryDiskRecordSize();
+                throwTranslationError(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true), logicalFileName.str());
+            }
+
+            //The projected format will often not match the expected format, and if it differs it must be translated
             if (projectedCrc && actualCrc != projectedCrc)
                 translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
+
             if (translator && translator->needsTranslate())
             {
-                if (translator->canTranslate())
-                {
-                    if (translator->needsNonVirtualTranslate() && agent.rltEnabled()==RecordTranslationMode::None)
-                    {
-#ifdef _DEBUG
-                        translator->describe();
-#endif
-                        throw MakeStringException(0, "Translatable key layout mismatch reading file %s but translation disabled", logicalFileName.str());
-                    }
-                }
-                else
+                if (!translator->canTranslate())
                     throw MakeStringException(0, "Untranslatable key layout mismatch reading file %s", logicalFileName.str());
             }
             else
@@ -8388,6 +8387,23 @@ bool CHThorDiskReadBaseActivity::openNext()
                 E->Release();
             else
                 saveOpenExc.setown(E);
+        }
+
+        //A spill file - actual will always equal expected, so keyed translator will never be used.
+        keyedTranslator.clear();
+
+        //The projected format will often not match the expected format, and if it differs it must be translated
+        translator.clear();
+        if (projectedCrc != expectedCrc)
+            translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
+
+        if (translator && translator->needsTranslate())
+        {
+            assertex(translator->canTranslate());
+        }
+        else
+        {
+            translator.clear();
         }
         partNum++;
         if (checkOpenedFile(file.str(), NULL))

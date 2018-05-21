@@ -2033,22 +2033,22 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
     return nullptr;
 }
 
-static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> *keyedTranslator, const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode, bool skipFileFormatCrcCheck)
+static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> *keyedTranslator, const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode)
 {
     if (expectedCrc)
     {
         IOutputMetaData * sourceFormat = expectedFormat;
         unsigned sourceCrc = expectedCrc;
-        if (!skipFileFormatCrcCheck)
+        if (mode != RecordTranslationMode::AlwaysECL)
         {
-            if (mode != RecordTranslationMode::AlwaysECL)
+            if (publishedFormat)
             {
-                if (publishedFormat)
-                {
-                    sourceFormat = publishedFormat;
-                    sourceCrc = publishedCrc;
-                }
+                sourceFormat = publishedFormat;
+                sourceCrc = publishedCrc;
             }
+
+            if (publishedCrc && expectedCrc && (publishedCrc != expectedCrc) && (RecordTranslationMode::None == mode))
+                throwTranslationError(publishedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true), tracing);
         }
 
         //This has a very low possibility of format crcs accidentally matching, which could lead to a crashes on an untranslated files.
@@ -2061,10 +2061,6 @@ static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<con
 
             if (translator->needsTranslate())
             {
-                if ((RecordTranslationMode::None == mode) && translator->needsNonVirtualTranslate())
-                {
-                    throw MakeStringException(0, "Translatable record layout mismatch detected for file %s, but translation disabled", tracing);
-                }
                 if (keyedTranslator && (sourceFormat != expectedFormat))
                 {
                     Owned<const IKeyTranslator> _keyedTranslator = createKeyTranslator(sourceFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true));
@@ -2079,21 +2075,21 @@ static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<con
     return nullptr != translator.get();
 }
 
-bool getTranslators(Owned<const IDynamicTransform> &translator, const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode, bool skipFileFormatCrcCheck)
+bool getTranslators(Owned<const IDynamicTransform> &translator, const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode)
 {
-    return getTranslators(translator, nullptr, tracing, expectedCrc, expectedFormat, publishedCrc, publishedFormat, projectedCrc, projectedFormat, mode, skipFileFormatCrcCheck);
+    return getTranslators(translator, nullptr, tracing, expectedCrc, expectedFormat, publishedCrc, publishedFormat, projectedCrc, projectedFormat, mode);
 }
 
-bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> &keyedTranslator, const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode, bool skipFileFormatCrcCheck)
+bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> &keyedTranslator, const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode)
 {
-    return getTranslators(translator, &keyedTranslator, tracing, expectedCrc, expectedFormat, publishedCrc, publishedFormat, projectedCrc, projectedFormat, mode, skipFileFormatCrcCheck);
+    return getTranslators(translator, &keyedTranslator, tracing, expectedCrc, expectedFormat, publishedCrc, publishedFormat, projectedCrc, projectedFormat, mode);
 }
 
-ITranslator *getTranslators(const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode, bool skipFileFormatCrcCheck)
+ITranslator *getTranslators(const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode)
 {
     Owned<const IDynamicTransform> translator;
     Owned<const IKeyTranslator> keyedTranslator;
-    if (getTranslators(translator, &keyedTranslator, tracing, expectedCrc, expectedFormat, publishedCrc, publishedFormat, projectedCrc, projectedFormat, mode, skipFileFormatCrcCheck))
+    if (getTranslators(translator, &keyedTranslator, tracing, expectedCrc, expectedFormat, publishedCrc, publishedFormat, projectedCrc, projectedFormat, mode))
     {
         if (!publishedFormat)
             publishedFormat = expectedFormat;

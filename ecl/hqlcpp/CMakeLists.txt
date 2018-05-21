@@ -87,6 +87,7 @@ set (    SRCS
          hqlgraph.ipp
          hqlhoist.hpp
          hqlhtcpp.ipp
+         hqliproj.hpp
          hqliproj.ipp
          hqliter.ipp
          hqllib.ipp

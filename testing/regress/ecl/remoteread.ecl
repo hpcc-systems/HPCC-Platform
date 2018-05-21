@@ -18,7 +18,7 @@
 //version optRemoteRead=false
 //version optRemoteRead=true
 
-#option('layoutTranslationEnabled', true);
+#option('layoutTranslation', true);
 
 import ^ as root;
 optRemoteRead := #IFDEFINED(root.optRemoteRead, false);
