@@ -1072,8 +1072,6 @@ bool HqlParseContext::checkEndMeta()
 
 bool HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool isMacro)
 {
-    assertex(simplifiedDefinition);
-
     StringBuffer fullName;
     StringBuffer baseFilename;
 
@@ -1089,12 +1087,15 @@ bool HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool is
     }
 
     StringBuffer ecl;
-    regenerateDefinition(simplifiedDefinition, ecl);
-    if (checkSimpleDef)
+    if (simplifiedDefinition)
     {
-        ecl.append("\n/* Simplified expression IR:\n");
-        EclIR::getIRText(ecl, 0, queryLocationIndependent(simplifiedDefinition));
-        ecl.append("*/\n");
+        regenerateDefinition(simplifiedDefinition, ecl);
+        if (checkSimpleDef)
+        {
+            ecl.append("\n/* Simplified expression IR:\n");
+            EclIR::getIRText(ecl, 0, queryLocationIndependent(simplifiedDefinition));
+            ecl.append("*/\n");
+        }
     }
 
     recursiveCreateDirectoryForFile(baseFilename);

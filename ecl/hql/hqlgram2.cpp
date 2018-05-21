@@ -12348,6 +12348,9 @@ extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlL
         }
         E->Release();
     }
+    if (ctx.hasCacheLocation())
+        moduleCtx.createCache(nullptr, false);
+
     moduleCtx.noteEndModule(success);
 }
 
@@ -12423,13 +12426,11 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     if (canCache && (ctx.syntaxChecking() || ctx.hasCacheLocation()))
     {
         OwnedHqlExpr simplified = createSimplifiedDefinition(parsed);
-
+        if (ctx.hasCacheLocation())
+            attrCtx.createCache(simplified, isMacro);
         if (simplified)
         {
             ctx.incrementAttribsSimplified();
-
-            if (ctx.hasCacheLocation())
-                attrCtx.createCache(simplified, isMacro);
 
             if (ctx.checkSimpleDef())
                 verifySimpifiedDefinition(parsed, simplified, attrCtx);
