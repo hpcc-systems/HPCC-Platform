@@ -34,7 +34,8 @@
             "soapcall_multihttpheader.ecl:TargetIP=."
         ],
         "engineParams":[
-            "failOnLeaks"
+            "failOnLeaks",
+            "disableLocalOptimizations"
         ]
     }
 }
