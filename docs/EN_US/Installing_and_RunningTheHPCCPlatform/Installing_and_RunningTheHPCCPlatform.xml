@@ -37,7 +37,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -480,7 +480,7 @@
                   </figure></para>
 
                 <para>Follow the link to the HPCC System's portal download
-                page. </para>
+                page.</para>
 
                 <para>Alternatively, you could use your browser to go directly
                 to <ulink
@@ -645,31 +645,9 @@
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>Enter the <emphasis role="bold">Login ID</emphasis> and
+                <para>Enter your <emphasis role="bold">Login ID</emphasis> and
                 <emphasis role="bold">Password</emphasis> provided in the
                 Login dialog.</para>
-
-                <informaltable colsep="1" rowsep="1">
-                  <tgroup cols="2">
-                    <colspec colwidth="80pt" />
-
-                    <colspec colwidth="100pt" />
-
-                    <tbody>
-                      <row>
-                        <entry>Login ID</entry>
-
-                        <entry>hpccdemo</entry>
-                      </row>
-
-                      <row>
-                        <entry>Password</entry>
-
-                        <entry>hpccdemo</entry>
-                      </row>
-                    </tbody>
-                  </tgroup>
-                </informaltable>
 
                 <figure>
                   <title>Login Window</title>
@@ -759,8 +737,8 @@
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>Click on the workunit number tab and then on the Result
-                1 tab to see the output.</para>
+                <para>Click on the workunit number tab to see the
+                output.</para>
 
                 <para><figure>
                     <title>Completed job output</title>
