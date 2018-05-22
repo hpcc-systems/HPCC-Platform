@@ -611,8 +611,8 @@ void checkSuperFileOwnership(IDistributedFile &file)
     }
 }
 
-void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned expectedFormatCrc, unsigned projectedFormatCrc,
-                               IOutputMetaData *projected, IOutputMetaData *expected, bool index)
+void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned expectedFormatCrc, IOutputMetaData *expected,
+                               unsigned projectedFormatCrc, IOutputMetaData *projected, bool index)
 {
     IDistributedFile *f = file;
     IDistributedSuperFile *super = f->querySuperFile();
@@ -644,7 +644,7 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned ex
                 const char *subname = f->queryLogicalName();
                 translator.clear();
                 keyedTranslator.clear();
-                getTranslators(translator, keyedTranslator, subname, expected, actualFormat, projected, mode, expectedFormatCrc, false, dfsCrc);
+                getTranslators(translator, keyedTranslator, subname, expectedFormatCrc, expected, dfsCrc, actualFormat, projectedFormatCrc, projected, mode, false);
             }
         }
         prevFormatCrc = dfsCrc;

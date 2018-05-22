@@ -335,9 +335,10 @@ public:
         if (files)
         {
             unsigned expectedFormatCrc = fetchBaseHelper->getDiskFormatCrc();
+            unsigned projectedFormatCrc = fetchBaseHelper->getProjectedFormatCrc();
             IOutputMetaData *projectedFormat = fetchBaseHelper->queryProjectedDiskRecordSize();
             RecordTranslationMode translationMode = getTranslationMode(*this);
-            getLayoutTranslations(translators, fetchBaseHelper->getFileName(), parts, translationMode, fetchBaseHelper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
+            getLayoutTranslations(translators, fetchBaseHelper->getFileName(), parts, translationMode, expectedFormatCrc, fetchBaseHelper->queryDiskRecordSize(), projectedFormatCrc, projectedFormat);
             ForEachItemIn(p, parts)
             {
                 const ITranslator *translator = translators.item(p);

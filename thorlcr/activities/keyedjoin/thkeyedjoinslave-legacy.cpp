@@ -727,9 +727,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 aborted = false;
                 threaded.start();
                 unsigned expectedFormatCrc = owner.helper->getDiskFormatCrc();
+                unsigned projectedFormatCrc = owner.helper->getProjectedFormatCrc();
                 IOutputMetaData *projectedFormat = owner.helper->queryProjectedDiskRecordSize();
                 RecordTranslationMode translationMode = getTranslationMode(owner);
-                getLayoutTranslations(translators, owner.helper->getFileName(), owner.dataParts, translationMode, owner.helper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
+                getLayoutTranslations(translators, owner.helper->getFileName(), owner.dataParts, translationMode, expectedFormatCrc, owner.helper->queryDiskRecordSize(), projectedFormatCrc, projectedFormat);
                 ForEachItemIn(p, owner.dataParts)
                 {
                     const ITranslator *translator = translators.item(p);
@@ -1258,6 +1259,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             reset();
             owner.getKeyIndexes(partKeyIndexes);
             RecordTranslationMode translationMode = getTranslationMode(owner);
+            unsigned projectedFormatCrc = owner.helper->getProjectedIndexFormatCrc();
             IOutputMetaData *projectedFormat = owner.helper->queryProjectedIndexRecordSize();
             unsigned expectedFormatCrc = owner.helper->getIndexFormatCrc();
             if (owner.localKey && (partKeyIndexes.ordinality() > 1))
@@ -1266,7 +1268,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 ForEachItemIn(i, partKeyIndexes)
                     partKeySet->addIndex(LINK(&partKeyIndexes.item(i)));
                 partManager.setown(createKeyMerger(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, owner.helper->hasNewSegmentMonitors()));
-                Owned<const ITranslator> translator = getLayoutTranslation(owner.helper->getFileName(), owner.indexParts.item(0), translationMode, owner.helper->queryIndexRecordSize(), projectedFormat, expectedFormatCrc);
+                Owned<const ITranslator> translator = getLayoutTranslation(owner.helper->getFileName(), owner.indexParts.item(0), translationMode, expectedFormatCrc, owner.helper->queryIndexRecordSize(), projectedFormatCrc, projectedFormat);
                 if (translator)
                     partManager->setLayoutTranslator(&translator->queryTranslator());
                 translators.append(translator.getClear());
@@ -1274,7 +1276,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             else
             {
                 partManager.setown(createLocalKeyManager(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), nullptr, nullptr, owner.helper->hasNewSegmentMonitors()));
-                getLayoutTranslations(translators, owner.helper->getFileName(), owner.indexParts, translationMode, owner.helper->queryIndexRecordSize(), projectedFormat, expectedFormatCrc);
+                getLayoutTranslations(translators, owner.helper->getFileName(), owner.indexParts, translationMode, expectedFormatCrc, owner.helper->queryIndexRecordSize(), projectedFormatCrc, projectedFormat);
             }
         }
         ~CKeyLocalLookup()

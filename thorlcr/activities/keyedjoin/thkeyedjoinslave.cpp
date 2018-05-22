@@ -744,11 +744,12 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
             Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
             unsigned expectedFormatCrc = helper->getIndexFormatCrc();
+            unsigned projectedFormatCrc = helper->getProjectedIndexFormatCrc();
             IOutputMetaData *projectedFormat = helper->queryProjectedIndexRecordSize();
 
             RecordTranslationMode translationMode = getTranslationMode(activity);
             const char *fname = helper->getIndexFileName();
-            translator.setown(getTranslators(fname, helper->queryIndexRecordSize(), publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc));
+            translator.setown(getTranslators(fname, expectedFormatCrc, helper->queryIndexRecordSize(), publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode, false));
             if (translator)
                 keyManager.setLayoutTranslator(&translator->queryTranslator());
         }
@@ -992,12 +993,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 IPropertyTree &props = part.queryOwner().queryProperties();
                 unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
                 Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
-                unsigned expectedFormatCrc = helper->getIndexFormatCrc();
+                unsigned projectedFormatCrc = helper->getProjectedIndexFormatCrc();
                 IOutputMetaData *projectedFormat = helper->queryProjectedIndexRecordSize();
+                unsigned expectedFormatCrc = helper->getIndexFormatCrc();
 
                 RecordTranslationMode translationMode = getTranslationMode(activity);
 
-                Owned<const ITranslator> translator = getTranslators(fname, helper->queryIndexRecordSize(), publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
+                Owned<const ITranslator> translator = getTranslators(fname, expectedFormatCrc, helper->queryIndexRecordSize(), publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode, false);
                 if (translator)
                 {
                     if (!publishedFormat->queryTypeInfo()->canSerialize() || !projectedFormat->queryTypeInfo()->canSerialize())
@@ -1271,12 +1273,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 IPropertyTree &props = part.queryOwner().queryProperties();
                 unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
                 Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
-                unsigned expectedFormatCrc = helper->getDiskFormatCrc();
+                unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
                 IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
+                unsigned expectedFormatCrc = helper->getDiskFormatCrc();
 
                 RecordTranslationMode translationMode = getTranslationMode(activity);
 
-                Owned<const ITranslator> translator = getTranslators(fname, helper->queryDiskRecordSize(), publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
+                Owned<const ITranslator> translator = getTranslators(fname, expectedFormatCrc, helper->queryDiskRecordSize(), publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode, false);
                 if (translator)
                 {
                     if (!publishedFormat->queryTypeInfo()->canSerialize() || !projectedFormat->queryTypeInfo()->canSerialize())
@@ -1620,16 +1623,17 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
 
             partIO.stream = createFileSerialStream(partIO.iFileIO, 0, (offset_t)-1, 0);
 
+            unsigned expectedFormatCrc = helper->getDiskFormatCrc();
             IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();
             // NB: potentially translation per part could be different if dealing with superkeys
             IPropertyTree &props = part.queryOwner().queryProperties();
             unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
             Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
-            unsigned expectedFormatCrc = helper->getDiskFormatCrc();
+            unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
             IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
             RecordTranslationMode translationMode = getTranslationMode(*this);
             const char *fname = helper->getFileName();
-            partIO.translator = getTranslators(fname, expectedFormat, publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
+            partIO.translator = getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode, false);
             if (partIO.translator)
             {
                 partIO.prefetcher = partIO.translator->queryActualFormat().createDiskPrefetcher();

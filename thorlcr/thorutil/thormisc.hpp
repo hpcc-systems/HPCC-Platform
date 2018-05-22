@@ -521,8 +521,8 @@ extern graph_decl bool isOOMException(IException *e);
 extern graph_decl IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IException *e, const char *msg, rowcount_t numRows, IOutputMetaData *meta, const void *row);
 
 extern graph_decl RecordTranslationMode getTranslationMode(CActivityBase &activity);
-extern graph_decl void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const char *fname, IArrayOf<IPartDescriptor> &partDescriptors, RecordTranslationMode translationMode, IOutputMetaData *expectedFormat, IOutputMetaData *projectedFormat, unsigned expectedFormatCrc);
-extern graph_decl const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &partDesc, RecordTranslationMode translationMode, IOutputMetaData *expectedFormat, IOutputMetaData *projectedFormat, unsigned expectedFormatCrc);
+extern graph_decl void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const char *fname, IArrayOf<IPartDescriptor> &partDescriptors, RecordTranslationMode translationMode, unsigned expectedFormatCrc, IOutputMetaData *expectedFormat, unsigned projectedFormatCrc, IOutputMetaData *projectedFormat);
+extern graph_decl const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &partDesc, RecordTranslationMode translationMode, unsigned expectedFormatCrc, IOutputMetaData *expectedFormat, unsigned projectedFormatCrc, IOutputMetaData *projectedFormat);
 extern graph_decl bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn, StringBuffer &localPath);
 
 #endif
