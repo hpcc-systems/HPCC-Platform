@@ -81,7 +81,7 @@
 		<xsl:apply-templates select="EsdlResponse"/>
 
 		<xsl:text disable-output-escaping="yes">
-end;
+END;
 
 </xsl:text>
           <xsl:call-template name="doNotChangeManuallyComment"/>
@@ -185,6 +185,10 @@ end;
 	</xsl:template>
 
 	<xsl:template match="EsdlRequest">
+        <xsl:if test="not(node())">
+        <xsl:text disable-output-escaping="yes">/*Empty record generated from empty EsdlRequest
+</xsl:text>
+        </xsl:if>
         <xsl:text disable-output-escaping="yes">EXPORT t_</xsl:text><xsl:call-template name="output_ecl_name"/><xsl:text disable-output-escaping="yes"> := RECORD</xsl:text>
 		<xsl:if test="@base_type"><xsl:call-template name="output_ecl_base_type"/></xsl:if>
 		<xsl:if test="@max_len"><xsl:text disable-output-escaping="yes">, MAXLENGTH (</xsl:text><xsl:value-of select="@max_len"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:if>
@@ -192,11 +196,20 @@ end;
 </xsl:text>
 		<xsl:apply-templates select="*"/>
         <xsl:text disable-output-escaping="yes">END;
-
+</xsl:text>
+        <xsl:if test="not(node())">
+        <xsl:text disable-output-escaping="yes">*/
+</xsl:text>
+        </xsl:if>
+<xsl:text disable-output-escaping="yes">
 </xsl:text>
 	</xsl:template>
 
 	<xsl:template match="EsdlResponse">
+        <xsl:if test="not(node())">
+        <xsl:text disable-output-escaping="yes">/*Empty record generated from empty EsdlResponse
+</xsl:text>
+        </xsl:if>
         <xsl:text disable-output-escaping="yes">EXPORT t_</xsl:text><xsl:call-template name="output_ecl_name"/><xsl:text disable-output-escaping="yes"> := RECORD</xsl:text>
 		<xsl:if test="@base_type"><xsl:call-template name="output_ecl_base_type"/></xsl:if>
 		<xsl:if test="@max_len"><xsl:text disable-output-escaping="yes">, MAXLENGTH (</xsl:text><xsl:value-of select="@max_len"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:if>
@@ -204,7 +217,12 @@ end;
 </xsl:text>
 		<xsl:apply-templates select="*"/>
         <xsl:text disable-output-escaping="yes">END;
-
+</xsl:text>
+        <xsl:if test="not(node())">
+        <xsl:text disable-output-escaping="yes">*/
+</xsl:text>
+        </xsl:if>
+<xsl:text disable-output-escaping="yes">
 </xsl:text>
 	</xsl:template>
 
