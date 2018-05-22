@@ -462,6 +462,7 @@ define([
                         if (data) {
                             cookie("ECLWatchUser", "", { expires: -1 });
                             cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
+                            cookie("ESPAuthenticated", "", { expires: -1 });
                             window.location.reload();
                         }
                     });
