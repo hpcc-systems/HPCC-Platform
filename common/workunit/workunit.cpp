@@ -2877,6 +2877,8 @@ bool WuScopeFilter::matchOnly(StatisticScopeType scopeType) const
 //Called once the filter has been updated to optimize the filter
 void WuScopeFilter::finishedFilter()
 {
+    scopeFilter.finishedFilter();
+
     assertex(!optimized);
     optimized = true;
 
