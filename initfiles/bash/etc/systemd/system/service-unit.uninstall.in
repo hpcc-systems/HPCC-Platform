@@ -1,0 +1,3 @@
+if [[ -e /bin/systemctl ]]; then
+    removeSymlink "/etc/systemd/system/@component@@*.service"
+fi

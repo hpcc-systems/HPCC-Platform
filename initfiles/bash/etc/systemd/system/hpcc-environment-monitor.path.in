@@ -1,0 +1,8 @@
+[Unit]
+Description=monitor for @CONFIG_DIR@/@ENV_XML_FILE@ modification
+
+[Path]
+PathModified=@CONFIG_DIR@/@ENV_XML_FILE@
+
+[Install]
+WantedBy=multi-user.target
