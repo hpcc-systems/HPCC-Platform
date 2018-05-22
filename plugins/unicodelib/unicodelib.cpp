@@ -93,6 +93,7 @@ static const char * EclDefinition =
 "  string UnicodeVersion():c,pure,entrypoint='ulUnicodeVersion';\n"
 "  unicode UnicodeLocaleRemoveSuffix(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleRemoveSuffix';\n"
 "  unicode UnicodeLocaleRepeat(const unicode src, unsigned4 n) : c, pure,entrypoint='ulUnicodeLocaleRepeat'; \n"
+"  unsigned4 UnicodeLocaleFindCount(const unicode src, const unicode hit, const string form) :c,pure,entrypoint='ulUnicodeLocaleFindCount';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -909,6 +910,44 @@ void excludeLastWord(RuleBasedBreakIterator& bi, UnicodeString & toProcess)
     }
     //Called if the string has no words.
     toProcess.removeBetween(0, bi.last());
+}
+
+unsigned findCount(UnicodeString const & source, UnicodeString const & seek)
+{
+    if (source.isEmpty() || seek.isEmpty())
+        return 0;
+
+    int32_t sourceLength = source.countChar32();
+    int32_t seekLength = seek.countChar32();
+    if (sourceLength < seekLength)
+        return 0;
+
+    int32_t matches = 0;
+    int32_t max = source.length() - seekLength;
+    StringCharacterIterator it(source);
+    UChar32 startChar = seek.char32At(0);
+    int32_t idx = 0;
+    while (idx <= max)
+    {
+        if (it.current32() == startChar)
+        {
+            int32_t endPos = source.moveIndex32(idx, seekLength);
+            if (!source.compareCodePointOrder(idx, endPos - idx, seek))
+            {
+                matches++;
+                idx = it.move32(seekLength, CharacterIterator::kCurrent);
+            }
+            else
+            {
+                idx = it.move32(1, CharacterIterator::kCurrent);
+            }
+        }
+        else
+        {
+            idx = it.move32(1, CharacterIterator::kCurrent);
+        }
+    }
+    return matches;
 }
 
 void excludeNthWord(RuleBasedBreakIterator& bi, UnicodeString & source, unsigned n)
@@ -1789,4 +1828,17 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRepeat(unsigned & tgtLen, UCh
 
     tgtLen = resultLen;
     tgt = result;
+}
+
+UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleFindCount(unsigned srcLen, UChar const * src, unsigned hitLen, UChar const * hit, unsigned formLen, char const * form)
+{
+    UnicodeString source(src, srcLen);
+    UnicodeString sought(hit, hitLen);
+    if (formLen == 3 || formLen == 4)
+    {
+        normalizationFormCheck(source, form);
+        normalizationFormCheck(sought, form);
+    }
+
+    return findCount(source, sought);
 }

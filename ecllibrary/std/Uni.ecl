@@ -492,4 +492,16 @@ EXPORT RemoveSuffix(unicode src, unicode suff, string form) :=
 EXPORT Repeat(unicode src, unsigned4 n) :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleRepeat(src, n);
 
+/**
+ * Returns the number of occurences of the second string within the first string.
+ *
+ * @param src           The string that is searched.
+ * @param hit           The string being sought.
+ * @param form          The optional, specified normalization form.
+ * @return              The number of occurences, matches.
+ */
+
+EXPORT unsigned4 FindCount(unicode src, unicode hit, string form) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleFindCount(src, hit, form);
+
 END;
