@@ -16,6 +16,7 @@
 ############################################################################## */
 
 //Test serialization of various record/dataset types, including default values
+IMPORT Std;
 
 s := service
    string dumpRecordType(virtual record val) : eclrtl,pure,library='eclrtl',entrypoint='dumpRecordType',fold;
@@ -54,14 +55,16 @@ end;
 
 d := dataset([],{ string stringField; string20 field2, string20 field3, embedded dataset(r) child });
 
-f := s.dumpRecordType(d[1]);     // folded
+dtype := Std.Type.VRec(RECORDOF(d));
+
+f := dtype.serializeJson();     // folded
 nf := s.dumpRecordTypeNF(d[1]);  // not folded
 
 f;
 nf;
 f = nf;
 
-fd := s.serializeRecordType(d[1]);     // folded
+fd := dtype.serialize();     // folded
 nfd := s.serializeRecordTypeNF(d[1]);  // not folded
 
 fd;

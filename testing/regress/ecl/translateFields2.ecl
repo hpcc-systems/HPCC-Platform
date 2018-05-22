@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+IMPORT Std;
 // Test various record translations using ifblocks
 
 phonerecord := RECORD
@@ -69,8 +70,4 @@ d := dataset([
   ], mainrec);
 d;
 
-s := SERVICE
-   streamed dataset(outrec) stransform(streamed dataset input) : eclrtl,pure,library='eclrtl',entrypoint='transformRecord',passParameterMeta(true);
-END;
-
-s.stransform(d);
+Std.Type.vrec(outrec).translate(d);

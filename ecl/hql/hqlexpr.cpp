@@ -4878,6 +4878,7 @@ void CHqlRealExpression::onAppendOperand(IHqlExpression & child, unsigned whichO
             case no_attr:
             case no_attr_expr:
             case no_attr_link:
+            case no_param:
                 break;
             default:
                 UNIMPLEMENTED;

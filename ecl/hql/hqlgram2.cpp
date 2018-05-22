@@ -7317,7 +7317,7 @@ bool HqlGram::checkValidFieldValue(const attribute &errpos, IHqlExpression *valu
 
 IHqlExpression * HqlGram::checkOutputRecord(IHqlExpression *record, const attribute & errpos, bool & allConstant, bool outerLevel)
 {
-    assertex(record->getOperator()==no_record||record->getOperator()==no_null);
+    assertex(record->getOperator()==no_record||record->getOperator()==no_null||record->getOperator()==no_param);
 
     HqlExprArray children;
     unsigned numkids = record->numChildren();
