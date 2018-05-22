@@ -42,6 +42,10 @@ extern bool trimXPathToParentSDSElement(const char *element, const char * xpath,
 
 class CEsdlSDSStore : implements IEsdlStore, public CInterface
 {
+private:
+    ReadWriteLock m_attachedStateRWLock;
+    bool m_isAttachedToDali = true;
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -59,6 +63,10 @@ public:
 
         DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s ", definitionId);
 
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process esdlstore fetchDefinition (%s) request while ESP is detached from DALI", definitionId);
+
         //There shouldn't be multiple entries here, but if so, we'll use the first one
         VStringBuffer xpath("%s[@id='%s'][1]/esxdl", ESDL_DEF_PATH, definitionId);
         Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
@@ -74,6 +82,10 @@ public:
             throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, definition name is not available");
 
         DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali based on name: %s ", definitionName);
+
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process esdlstore fetchLatestDefinition request while ESP is detached from DALI");
 
         Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
@@ -104,6 +116,11 @@ public:
     virtual IPropertyTree* fetchBinding(const char* espProcess, const char* espStaticBinding) override
     {
         VStringBuffer xpath("%s[@espprocess='%s'][@espbinding='%s'][1]", ESDL_BINDING_PATH, espProcess, espStaticBinding);
+
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process esdlstore fetchBinding request while ESP is detached from DALI");
+
         try
         {
             Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
@@ -253,6 +270,10 @@ public:
         StringBuffer lcid (definitionId);
         lcid.toLowerCase();
         VStringBuffer xpath("%s[@id='%s']", ESDL_DEF_PATH, lcid.str());
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process esdlstore definitionexists request while ESP is detached from DALI");
+
         Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
 
         if (globalLock)
@@ -269,6 +290,10 @@ public:
         StringBuffer lcdefid (definitionId);
         lcdefid.toLowerCase();
         VStringBuffer xpath("%s[@id='%s']/esxdl", ESDL_DEF_PATH, lcdefid.str());
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process esdlstore isMethodDefined request while ESP is detached from DALI");
+
         Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
 
         if (globalLock)
@@ -314,6 +339,10 @@ public:
         VStringBuffer rxpath("%sBinding[@id='%s']/Definition/Methods[1]", ESDL_BINDINGS_ROOT_PATH, bindingId);
 
         Owned<IRemoteConnection> conn;
+
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process CONFIGURE METHOD request while ESP is detached from DALI");
 
         try
         {
@@ -491,6 +520,11 @@ public:
                 }
             }
         }
+
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process BIND SERVICE request while ESP is detached from DALI");
+
         Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
            throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
@@ -621,6 +655,10 @@ public:
         }
 
         VStringBuffer xpath("%s[@id='%s']", ESDL_BINDING_PATH, bindingId);
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process ESDL getBindingTree request while ESP is detached from DALI");
+
         Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
         {
@@ -633,6 +671,10 @@ public:
 
     virtual bool deleteDefinition(const char* definitionId, StringBuffer& errmsg, StringBuffer* defxml) override
     {
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process DELETE ESDL DEFINITION '%s' request while ESP is detached from DALI", definitionId);
+
         if (!definitionId || !*definitionId)
             return false;
         bool ret = false;
@@ -672,6 +714,10 @@ public:
 
     virtual bool deleteBinding(const char* bindingId, StringBuffer& errmsg, StringBuffer* bindingxml) override
     {
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process DELETE ESDL Binding request while ESP is detached from DALI");
+
         if (!bindingId || !*bindingId)
             return false;
         bool ret = false;
@@ -715,6 +761,10 @@ public:
 
     virtual IPropertyTree* getDefinitions() override
     {
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process GET ESDL DEFINITIONS request while ESP is detached from DALI");
+
         Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
@@ -724,6 +774,10 @@ public:
 
     virtual IPropertyTree* getBindings() override
     {
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process GET ESDL BINDINGS request while ESP is detached from DALI");
+
         Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
@@ -731,11 +785,22 @@ public:
         return createPTreeFromIPT(conn->queryRoot());
     }
 
+    bool setAttachedState(bool isAttached) override
+    {
+        WriteLockBlock wlock(m_attachedStateRWLock);
+        m_isAttachedToDali = isAttached;
+        return true;
+    }
+
 private:
     bool isDefinitionBound(const char* esdldefid)
     {
         if (!esdldefid || !*esdldefid)
                return false;
+
+        ReadLockBlock rblock(m_attachedStateRWLock);
+        if (!m_isAttachedToDali)
+            throw MakeStringException(-1, "Cannot process ISDEFINITIONBOUND request while ESP is detached from DALI");
 
         Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
