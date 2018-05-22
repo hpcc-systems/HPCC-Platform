@@ -362,7 +362,7 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
-	        <xs:element name="AuthDomain"  maxOccurs="unbounded">
+                <xs:element name="AuthDomain" maxOccurs="unbounded">
 	          <xs:annotation>
 	            <xs:appinfo>
 	              <title>AuthDomain</title>
@@ -532,8 +532,7 @@
                         </xs:attribute>
                         <xs:attribute name="organizationalUnit" type="xs:string" use="optional">
                             <xs:annotation>
-                                <xs:appinfo>
-                            </xs:appinfo>
+                                <xs:appinfo/>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="city" type="xs:string" use="optional">
@@ -934,6 +933,20 @@
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>The maximum number of cached items inside one page cache. 0 means no cache.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="maxPersistentIdleTime" type="xs:integer" use="optional" default="60">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The maximum idle time in seconds (-1 for unlimited, 0 to disable).</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="maxPersistentRequests" type="xs:integer" use="optional" default="100">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum number of query requests per persistent http connection. (-1 for unlimited, 0 to disable).</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
