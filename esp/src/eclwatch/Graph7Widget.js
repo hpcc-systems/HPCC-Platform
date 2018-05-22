@@ -100,12 +100,16 @@ define([
                 this.graph = new hpccEclWatch.WUGraph()
                     .target(this.id + "GraphContentPane")
                     .baseUrl("")
-                    .render(function(w) {
+                    .render(function (w) {
                         w
                             .wuid(params.Wuid)
                             .graphID(params.GraphName)
                             .subgraphID(params.SubGraphId)
-                            .render()
+                            .render(function (w) {
+                                if (params.ActivityId) {
+                                    w.selection(params.ActivityId);
+                                }
+                            })
                             ;
                     })
                     ;
