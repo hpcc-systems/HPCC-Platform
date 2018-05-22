@@ -1603,34 +1603,54 @@ static int bindingCompareFunc(IInterface * const *_itm1, IInterface * const* _it
         return 0;
 }
 
+
+void getAllEspProcessesSorted(StringArray& processes)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
+    if (!conn)
+        throw MakeStringException(-1, "Unable to connect to /Environment/Software dali path");
+    Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("EspProcess");
+    ForEach (*iter)
+    {
+        IPropertyTree &item = iter->query();
+        processes.append(item.queryProp("@name"));
+    }
+
+    processes.sortAscii();
+}
+
 bool CWsESDLConfigEx::onListESDLBindings(IEspContext &context, IEspListESDLBindingsRequest&req, IEspListESDLBindingsResponse &resp)
 {
     if (m_isDetachedFromDali)
         throw MakeStringException(-1, "Cannot list ESDL Bindings. ESP is currently detached from DALI.");
 
-    Owned<IPropertyTree> esdlBindings = m_esdlStore->getBindings();
-    if (esdlBindings.get() == nullptr)
-        return false;
-    Owned<IPropertyTreeIterator> iter = esdlBindings->getElements("Binding");
     double ver = context.getClientVersion();
+    Owned<IPropertyTree> esdlBindings = m_esdlStore->getBindings();
     IArrayOf<IEspESDLBinding> list;
-    ForEach(*iter)
+    if (esdlBindings.get() != nullptr)
     {
-        IPropertyTree &item = iter->query();
-        Owned<IEspESDLBinding> esdlbinding = createESDLBinding("","");
-        esdlbinding->setId(item.queryProp("@id"));
-        esdlbinding->setEspProcess(item.queryProp("@espprocess"));
-        const char* portstr = item.queryProp("@port");
-        if (portstr && *portstr)
-            esdlbinding->setPort(atoi(portstr));
-        else
-            esdlbinding->setPort(0);
-        esdlbinding->setEspBinding(item.queryProp("@espbinding"));
-        list.append(*esdlbinding.getClear());
+        Owned<IPropertyTreeIterator> iter = esdlBindings->getElements("Binding");
+        ForEach(*iter)
+        {
+            IPropertyTree &item = iter->query();
+            Owned<IEspESDLBinding> esdlbinding = createESDLBinding("","");
+            esdlbinding->setId(item.queryProp("@id"));
+            esdlbinding->setEspProcess(item.queryProp("@espprocess"));
+            const char* portstr = item.queryProp("@port");
+            if (portstr && *portstr)
+                esdlbinding->setPort(atoi(portstr));
+            else
+                esdlbinding->setPort(0);
+            esdlbinding->setEspBinding(item.queryProp("@espbinding"));
+            list.append(*esdlbinding.getClear());
+        }
+        list.sort(bindingCompareFunc);
     }
-    list.sort(bindingCompareFunc);
     if (ver >= 1.4)
     {
+        StringArray allProcNamesSorted;
+        getAllEspProcessesSorted(allProcNamesSorted);
+        unsigned procNameInd = 0;
         IArrayOf<IConstEspProcessStruct>& processes = resp.getEspProcesses();
         IConstESDLBinding* lastBinding = nullptr;
         Owned<IEspEspProcessStruct> currentProcess = nullptr;
@@ -1641,8 +1661,23 @@ bool CWsESDLConfigEx::onListESDLBindings(IEspContext &context, IEspListESDLBindi
             bool processCreated = false;
             if (!lastBinding || (strcmp(lastBinding->getEspProcess(), binding->getEspProcess()) != 0))
             {
+                const char* curProc = binding->getEspProcess();
+
+                //Include empty ESP processes that are alphabetically smaller than current non-empty process
+                for ( ; procNameInd < allProcNamesSorted.length() && strcmp(allProcNamesSorted.item(procNameInd), curProc) < 0; procNameInd++)
+                {
+                    currentProcess.setown(createEspProcessStruct());
+                    currentProcess->setName(allProcNamesSorted.item(procNameInd));
+                    processes.append(*currentProcess.getLink());
+                }
+
+                if (procNameInd < allProcNamesSorted.length() && streq(allProcNamesSorted.item(procNameInd), curProc))
+                {
+                    procNameInd++;
+                }
+
                 currentProcess.setown(createEspProcessStruct());
-                currentProcess->setName(binding->getEspProcess());
+                currentProcess->setName(curProc);
                 processes.append(*currentProcess.getLink());
                 processCreated = true;
             }
@@ -1658,6 +1693,14 @@ bool CWsESDLConfigEx::onListESDLBindings(IEspContext &context, IEspListESDLBindi
             IArrayOf<IConstESDLBinding>& bindings = currentPort->getBindings();
             bindings.append(*LINK(binding));
             lastBinding = binding;
+        }
+
+        //Include remaining empty ESP processes
+        for ( ; procNameInd < allProcNamesSorted.length(); procNameInd++)
+        {
+            currentProcess.setown(createEspProcessStruct());
+            currentProcess->setName(allProcNamesSorted.item(procNameInd));
+            processes.append(*currentProcess.getLink());
         }
     }
     else
