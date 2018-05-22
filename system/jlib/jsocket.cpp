@@ -3882,7 +3882,7 @@ protected:
     }
 
 public:
-    bool finished;
+    bool finished = false;
     void triggerselect()
     {
         if (tickwait)
@@ -4133,7 +4133,6 @@ public:
         dummysockopen = false;
         opendummy();
         terminating = false;
-        finished = false;
         waitingchange = 0;
         selectvarschange = false;
         validateselecterror = 0;
@@ -4767,7 +4766,6 @@ public:
     {
         dummysockopen = false;
         terminating = false;
-        finished = false;
         waitingchange = 0;
         selectvarschange = false;
         validateselecterror = 0;
@@ -4868,9 +4866,9 @@ public:
 
     bool remove(ISocket *sock, unsigned numThreads)
     {
+        CriticalBlock block(sect);
         if (terminating)
             return false;
-        CriticalBlock block(sect);
         if (sock==NULL)
         { // wait until no changes outstanding
             while (selectvarschange)
@@ -4897,8 +4895,6 @@ public:
 
     bool add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
-        if (terminating)
-            return false;
         if ( !sock || !nfy ||
              !(mode & (SELECTMODE_READ|SELECTMODE_WRITE|SELECTMODE_EXCEPT)) )
         {
@@ -4907,6 +4903,8 @@ public:
             return false;
         }
         CriticalBlock block(sect);
+        if (terminating)
+            return false;
         removeSock(sock);
         unsigned n = items.ordinality();
         // new handler thread
@@ -5191,7 +5189,7 @@ public:
             {
                 if (!removed)
                 {
-                    if ((*it)->remove(sock, nt) && sock)
+                    if ((*it)->remove(sock, nt))
                         removed = true;
                 }
                 if ( ((*it)->finished) && ((*it)->join(0)) )
