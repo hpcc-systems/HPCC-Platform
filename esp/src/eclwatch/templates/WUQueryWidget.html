@@ -32,7 +32,7 @@
                         <input id="${id}LastNDays" title="${i18n.LastNDays}:" name="LastNDays" data-dojo-props="dtrim: true, placeHolder:'2'" data-dojo-type="dijit.form.TextBox" />
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <img src="eclwatch/img/person.png" style="vertical-align: middle" alt="${i18n.Mine}">
+                    <img src="${dojoConfig.urlInfo.resourcePath}/img/person.png" style="vertical-align: middle" alt="${i18n.Mine}">
                     <label for="Mine" class="bold" style="vertical-align: middle;">${i18n.Mine}</label>
                     <input id="${id}Mine" name="Owner" title="${i18n.Mine}" data-dojo-attach-event="onChange:_onMine" data-dojo-type="dijit.form.CheckBox" />
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
