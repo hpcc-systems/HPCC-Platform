@@ -164,8 +164,8 @@ define([
         refreshUserName: function () {
             if (this.userName) {
                 dom.byId(this.id + "UserID").textContent = this.userName;
-            } else if (dojo.cookie("ESPUserName")) {
-                domConstruct.place("<span>" + dojo.cookie("ESPUserName") + "</span>", this.id + "UserID", "replace");
+            } else if (cookie("ESPUserName")) {
+                domConstruct.place("<span>" + cookie("ESPUserName") + "</span>", this.id + "UserID", "replace");
             } else {
                 dom.byId(this.id + "UserID").textContent = "";
             }

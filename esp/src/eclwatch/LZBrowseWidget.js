@@ -32,6 +32,7 @@ define([
     "dijit/MenuItem",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
+    "dijit/form/ValidationTextBox",
 
     "dgrid/tree",
     "dgrid/editor",
@@ -72,7 +73,7 @@ define([
 
     "hpcc/TableContainer"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, iframe, on, topic,
-                registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+                registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, ValidationTextBox,
                 tree, editor, selector,
                 _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, SelectionGridWidget, FilterDropDownWidget, Utility,
                 template) {
@@ -760,7 +761,7 @@ define([
                         label: this.i18n.RowTag,
                         width:100,
                         autoSave: true,
-                        editor: dijit.form.ValidationTextBox,
+                        editor: "dijit.form.ValidationTextBox",
                         editorArgs: {
                             required: true,
                             placeholder: this.i18n.RequiredForXML,
