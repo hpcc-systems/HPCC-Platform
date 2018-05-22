@@ -251,6 +251,7 @@ typedef unsigned long MaxCard;
 
 #define likely(x)       (x)
 #define unlikely(x)     (x)
+inline int daemon(int, int) { return -1; }
 
 // **** END   OF WIN32 SPECIFIC SECTION ****
 #else
