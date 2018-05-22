@@ -1073,9 +1073,14 @@ public:
 
     size32_t doTransform(IMessagePacker * output, const void *src) const
     {
-        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
-        unsigned transformedSize = helper->transform(rowBuilder, src);
-        return rowBuilder.writeToOutput(transformedSize, false);
+        if (likely(helper->canMatch(src)))
+        {
+            OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
+            unsigned transformedSize = helper->transform(rowBuilder, src);
+            return rowBuilder.writeToOutput(transformedSize, false);
+        }
+        else
+            return 0;
     }
 
 };
@@ -2728,7 +2733,7 @@ public:
 class CRoxieIndexReadActivity : public CRoxieIndexActivity, implements IIndexReadActivityInfo
 {
 protected:
-    IHThorCompoundReadExtra * readHelper;
+    IHThorIndexReadArg * readHelper;
 
 public:
     CRoxieIndexReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
@@ -2860,8 +2865,12 @@ public:
                                 assertex(!steppingRow);
                                 break;
                             }
+
                             rowBuilder.ensureRow();
-                            transformedSize = readHelper->transform(rowBuilder, keyRow);
+                            transformedSize = 0;
+                            if (likely(readHelper->canMatch(keyRow)))
+                                transformedSize = readHelper->transform(rowBuilder, keyRow);
+
                             callback.finishedRow();
                             if (transformedSize)
                             {

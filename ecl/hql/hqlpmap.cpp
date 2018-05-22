@@ -990,7 +990,11 @@ static bool isTrivialTransform(IHqlExpression * expr, IHqlExpression * selector,
                         return false;
                     IHqlExpression * rightField = rhs->queryChild(1);
                     if (leftField != rightField)
-                        return false;
+                    {
+                        if (!allowDeserialize)
+                            return false;
+                        UNIMPLEMENTED; // Implement when projected fields can be in-memory form (HPCC-19743)
+                    }
                     break;
                 }
                 case no_createrow:
@@ -1006,6 +1010,7 @@ static bool isTrivialTransform(IHqlExpression * expr, IHqlExpression * selector,
                         return false;
                     break;
                 }
+                //MORE: no_hqlproject?
                 default:
                     return false;
                 }

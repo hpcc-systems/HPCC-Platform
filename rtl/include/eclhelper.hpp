@@ -44,8 +44,8 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      203
-#define MIN_ACTIVITY_INTERFACE_VERSION  203             //minimum value that is compatible with current interface
+#define ACTIVITY_INTERFACE_VERSION      204
+#define MIN_ACTIVITY_INTERFACE_VERSION  204             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
 
@@ -2332,6 +2332,8 @@ struct IHThorCompoundBaseArg : public IHThorArg
 {
     virtual bool canMatchAny()                              { return true; }
     virtual void createSegmentMonitors(IIndexReadContext *ctx) {}
+    virtual bool canMatch(const void * row)                 { return true; }
+    virtual bool hasMatchFilter()                           { return false; }
 };
 
 struct IHThorIndexReadBaseArg : extends IHThorCompoundBaseArg

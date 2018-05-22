@@ -278,16 +278,21 @@ int main(int argc, const char **argv)
                     }
                     else if (helper)
                     {
-                        MemoryBuffer buf;
-                        MemoryBufferBuilder aBuilder(buf, 0);
-                        if (helper->transform(aBuilder, (const byte *) buffer))
+                        if (helper->canMatch(buffer))
                         {
-                            outmeta->toXML((const byte *) buf.toByteArray(), *writer.get());
-                            printf("%s\n", writer->str());
-                            writer->clear();
+                            MemoryBuffer buf;
+                            MemoryBufferBuilder aBuilder(buf, 0);
+                            if (helper->transform(aBuilder, (const byte *) buffer))
+                            {
+                                outmeta->toXML((const byte *) buf.toByteArray(), *writer.get());
+                                printf("%s\n", writer->str());
+                                writer->clear();
+                            }
+                            else
+                                count++;  // Don't count this row as it was postfiltered
                         }
                         else
-                            count++;  // Don't count this row as it was postfiltered
+                            count++;
                     }
                     else
                         printf("%.*s  :%" I64F "u\n", size, buffer, seq);
