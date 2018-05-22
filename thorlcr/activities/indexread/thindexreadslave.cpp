@@ -107,15 +107,16 @@ protected:
     // return a ITranslator based on published format in part and expected/format
     ITranslator *getTranslators(IPartDescriptor &partDesc)
     {
-        unsigned expectedFormatCrc = helper->getDiskFormatCrc();
+        unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
         IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
         IPropertyTree const &props = partDesc.queryOwner().queryProperties();
         Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
         unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
         RecordTranslationMode translationMode = getTranslationMode(*this);
+        unsigned expectedFormatCrc = helper->getDiskFormatCrc();
         IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();
 
-        Owned<ITranslator> ret = ::getTranslators("rowstream", expectedFormat, publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
+        Owned<ITranslator> ret = ::getTranslators("rowstream", expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode, false);
         if (!ret)
             return nullptr;
         if (!ret->queryTranslator().canTranslate())
@@ -145,16 +146,16 @@ public:
                     return nullptr;
             }
             RecordTranslationMode translationMode = getTranslationMode(*this);
-            IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
             unsigned expectedFormatCrc = helper->getDiskFormatCrc();
+            IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();
+            unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
+            IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
 
             unsigned p = partNum;
             while (p<partDescs.ordinality()) // will process all parts if localMerge
             {
                 IPartDescriptor &part = partDescs.item(p++);
 
-                IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
-                IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();
                 Owned<ITranslator> translator = getTranslators(part);
                 IOutputMetaData *actualFormat = translator ? &translator->queryActualFormat() : expectedFormat;
                 bool canSerializeTypeInfo = actualFormat->queryTypeInfo()->canSerialize() && projectedFormat->queryTypeInfo()->canSerialize();
@@ -237,7 +238,7 @@ public:
                     if (!keyIndexSet)
                     {
                         keyIndexSet.setown(createKeyIndexSet());
-                        Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), part, translationMode, helper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
+                        Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), part, translationMode, expectedFormatCrc, expectedFormat, projectedFormatCrc, projectedFormat);
                         translators.append(translator.getClear());
                     }
                     keyIndexSet->addIndex(keyIndex.getClear());
@@ -246,7 +247,7 @@ public:
                 }
                 else
                 {
-                    Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), part, translationMode, helper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
+                    Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), part, translationMode, expectedFormatCrc, expectedFormat, projectedFormatCrc, projectedFormat);
                     if (translator)
                         klManager->setLayoutTranslator(&translator->queryTranslator());
                     translators.append(translator.getClear());

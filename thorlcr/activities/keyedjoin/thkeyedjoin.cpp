@@ -338,7 +338,7 @@ public:
                     remoteKeyedFetch = false;
                 }
                 //MORE: Change to getIndexProjectedFormatCrc once we support projected rows for indexes?
-                checkFormatCrc(this, indexFile, helper->getIndexFormatCrc(), helper->getIndexFormatCrc(), helper->queryProjectedIndexRecordSize(), helper->queryIndexRecordSize(), true);
+                checkFormatCrc(this, indexFile, helper->getIndexFormatCrc(), helper->queryIndexRecordSize(), helper->getProjectedIndexFormatCrc(), helper->queryProjectedIndexRecordSize(), true);
                 indexFileDesc.setown(indexFile->getFileDescriptor());
 
                 unsigned superIndexWidth = 0;

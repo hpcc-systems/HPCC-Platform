@@ -1431,7 +1431,7 @@ RecordTranslationMode getTranslationMode(CActivityBase &activity)
     return getTranslationMode(val);
 }
 
-void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const char *fname, IArrayOf<IPartDescriptor> &partDescriptors, RecordTranslationMode translationMode, IOutputMetaData *expectedFormat, IOutputMetaData *projectedFormat, unsigned expectedFormatCrc)
+void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const char *fname, IArrayOf<IPartDescriptor> &partDescriptors, RecordTranslationMode translationMode, unsigned expectedFormatCrc, IOutputMetaData *expectedFormat, unsigned projectedFormatCrc, IOutputMetaData *projectedFormat)
 {
     if (0 == partDescriptors.ordinality())
         return;
@@ -1452,7 +1452,7 @@ void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const
         if (!translatorContainer)
         {
             Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
-            translatorContainer.setown(getTranslators(fname, expectedFormat, publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc));
+            translatorContainer.setown(getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode, false));
             if (translatorContainer)
                 translatorTable.replace(*new CITranslatorMapping(*translatorContainer.getLink(), publishedFormatCrc));
         }
@@ -1460,12 +1460,12 @@ void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const
     }
 }
 
-const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &partDesc, RecordTranslationMode translationMode, IOutputMetaData *expectedFormat, IOutputMetaData *projectedFormat, unsigned expectedFormatCrc)
+const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &partDesc, RecordTranslationMode translationMode, unsigned expectedFormatCrc, IOutputMetaData *expectedFormat, unsigned projectedFormatCrc, IOutputMetaData *projectedFormat)
 {
     IPropertyTree const &props = partDesc.queryOwner().queryProperties();
     Owned<IOutputMetaData> actualFormat = getDaliLayoutInfo(props);
     unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
-    return getTranslators(fname, expectedFormat, actualFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
+    return getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, actualFormat, projectedFormatCrc, projectedFormat, translationMode, false);
 }
 
 bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn, StringBuffer &localPath)

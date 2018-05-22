@@ -223,7 +223,7 @@ public:
                     nofilter = true;
             }
             //MORE: Change index getFormatCrc once we support projected rows for indexes.
-            checkFormatCrc(this, index, indexBaseHelper->getDiskFormatCrc(), indexBaseHelper->getProjectedFormatCrc(), indexBaseHelper->queryProjectedDiskRecordSize(), indexBaseHelper->queryDiskRecordSize(), true);
+            checkFormatCrc(this, index, indexBaseHelper->getDiskFormatCrc(), indexBaseHelper->queryDiskRecordSize(), indexBaseHelper->getProjectedFormatCrc(), indexBaseHelper->queryProjectedDiskRecordSize(), true);
             if ((container.queryLocalOrGrouped() || indexBaseHelper->canMatchAny()) && index->numParts())
             {
                 fileDesc.setown(getConfiguredFileDescriptor(*index));

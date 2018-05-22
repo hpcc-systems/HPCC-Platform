@@ -145,7 +145,7 @@ public:
             assertex(!isLocal);
             buildTlk = false;
             Owned<IDistributedFile> _f = queryThorFileManager().lookup(container.queryJob(), diName);
-            checkFormatCrc(this, _f, helper->getFormatCrc(), helper->getFormatCrc(), nullptr, nullptr, true);
+            checkFormatCrc(this, _f, helper->getFormatCrc(), nullptr, helper->getFormatCrc(), nullptr, true);
             IDistributedFile *f = _f->querySuperFile();
             if (!f) f = _f;
             Owned<IDistributedFilePart> existingTlk = f->getPart(f->numParts()-1);

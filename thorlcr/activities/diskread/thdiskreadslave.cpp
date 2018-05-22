@@ -67,14 +67,15 @@ protected:
     // return a ITranslator based on published format in part and expected/format
     ITranslator *getTranslators(IPartDescriptor &partDesc)
     {
-        unsigned expectedFormatCrc = helper->getDiskFormatCrc();
+        unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
         IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
         IPropertyTree const &props = partDesc.queryOwner().queryProperties();
         Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
         unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
         RecordTranslationMode translationMode = getTranslationMode(*this);
+        unsigned expectedFormatCrc = helper->getDiskFormatCrc();
         IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();
-        return ::getTranslators("rowstream", expectedFormat, publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
+        return ::getTranslators("rowstream", expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode, false);
     }
 public:
     CDiskReadSlaveActivityRecord(CGraphElementBase *_container, IHThorArg *_helper=NULL) 
