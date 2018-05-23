@@ -18,18 +18,18 @@
 
 ESPstruct StatusMsgType
 {
-    string msgLevel;                // message level ("info", "warning", "error", "fatal")
-    string nodeId;                  // node identifier that generated this status message
-    string nodeName("");            // node name (not unique, use nodeID to retrieve node)
-    string attribute("");           // name of node's attribute generating the message ("" for the node itself)
-    string msg;                     // the message
-    ESParray<string, parentId> parentIdList;
+    string MsgLevel;                // message level ("info", "warning", "error", "fatal")
+    string NodeId;                  // node identifier that generated this status message
+    string NodeName("");            // node name (not unique, use nodeID to find node)
+    string Attribute("");           // name of node's attribute generating the message ("" for the node itself)
+    string Msg;                     // the message
+    ESParray<string, parentId> ParentIdList;
 };
 
 ESPstruct StatusType
 {
-    bool error(false);    // true if a message exsits in status (below) with a message level of error or higher
-    ESParray<ESPstruct StatusMsgType, StatusMsg> status;
+    bool Error(false);    // true if a message exsits in status (below) with a message level of error or higher
+    ESParray<ESPstruct StatusMsgType, StatusMsg> Status;
 };
 
 
@@ -40,7 +40,7 @@ ESPresponse [exceptions_inline] EmptyResponse
 
 ESPresponse StatusResponse
 {
-    ESPstruct StatusType status;
+    ESPstruct StatusType Status;
 };
 
 
@@ -49,24 +49,24 @@ ESPresponse StatusResponse
 
 ESPrequest OpenSessionRequest
 {
-    string username;
-    string schemaPath("");        // location of configuration schema environmentFiles
-    string masterSchemaFile("");  // name of master schema control file
-    string sourcePath("");        // path to envrionment files
-    string activePath("");        // path to active environment file ("" for none)
+    string Username;
+    string SchemaPath("");        // location of configuration schema environmentFiles
+    string MasterSchemaFile("");  // name of master schema control file
+    string SourcePath("");        // path to envrionment files
+    string ActivePath("");        // path to active environment file ("" for none)
 };
 
 
 ESPresponse [exceptions_inline] OpenSessionResponse
 {
-    string sessionId;
+    string SessionId;
 };
 
 
 ESPrequest CloseSessionRequest
 {
-    string sessionId;
-    bool forceClose(false);    // set to true for force the closure of a modified environment w/o saving
+    string SessionId;
+    bool   ForceClose(false);    // set to true for force the closure of a modified environment w/o saving
 };
 
 
@@ -77,16 +77,16 @@ ESPrequest ListOpenSessionsRequest
 
 ESPstruct OpenSessionInfo
 {
-    string username;
-    string curEnvironmentFile("");
-    bool   locked;
-    bool   modified;
+    string Username;
+    string CurEnvironmentFile("");
+    bool   Locked;
+    bool   Modified;
 };
 
 
 ESPresponse [exceptions_inline] ListOpenSessionsResponse
 {
-    ESParray<ESPstruct OpenSessionInfo, SessionInfo> openSessions;
+    ESParray<ESPstruct OpenSessionInfo, SessionInfo> OpenSessions;
 };
 
 
@@ -95,142 +95,156 @@ ESPresponse [exceptions_inline] ListOpenSessionsResponse
 
 ESPrequest NodeRequest
 {
-    string sessionId;
-    string nodeId;
+    string SessionId;
+    string NodeId;
 };
 
 
 ESPrequest RemoveNodeRequest
 {
-    string sessionId;
-    string sessionLockKey;
-    string nodeId;
+    string SessionId;
+    string SessionLockKey;
+    string NodeId;
+};
+
+
+ESPstruct DependentValueType
+{
+    string AttributeName;
+    string AttributeValue;
 };
 
 
 ESPstruct ChoiceType
 {
-    string displayName;
-    string value;
-    string desc("");
+    string DisplayName;
+    string Value;
+    string Desc("");
+    string MsgType("");
+    string Msg("");
+    ESParray<ESPstruct DependentValueType, dependentValue> Dependencies;
 };
+
 
 
 ESPstruct LimitsType
 {
-    bool   minValid(false);
-    bool   maxValid(false);
-    int    min(0);
-    int    max(0);
-    ESParray<ESPstruct ChoiceType, Choice> choiceList;
-    ESParray<string, Expr> regex;
+    bool   MinValid(false);
+    bool   MaxValid(false);
+    int    Min(0);
+    int    Max(0);
+    ESParray<ESPstruct ChoiceType, Choice> ChoiceList;
+    ESParray<string, Expr> Regex;
 };
 
 
 ESPstruct TypeInfo
 {
-    string name;
-    ESPstruct LimitsType limits;
-    ESParray<string, Modifier> modifiers;
+    string Name;
+    ESPstruct LimitsType Limits;
+    ESParray<string, Modifier> Modifiers;
 };
 
 
 ESPstruct NodeInfoType
 {
-    string    name("");
-    string    nodeType("");
-    string    class("");
-    string    category("");
-    bool      hidden(false);
-    string    tooltip("");
+    string    Name("");
+    string    NodeType("");
+    string    Class("");
+    string    Category("");
+    bool      Hidden(false);
+    string    Tooltip("");
 };
 
 
 ESPstruct NodeType
 {
-    string    nodeId;
-    int       numChildren(0);
-    ESPstruct NodeInfoType nodeInfo;
+    string    NodeId;
+    int       NumChildren(0);
+    ESPstruct NodeInfoType NodeInfo;
 };
 
 
 ESPstruct ChoiceLimitType
 {
-    string    displayName;
-    string    itemType;
+    string    DisplayName;
+    string    ItemType;
 };
 
 
 ESPstruct InsertItemType
 {
-    string    name("");
-    string    nodeType("");
-    string    class("");
-    string    category("");
-    bool      required(false);
-    string    tooltip("");
-    ESParray<ESPstruct ChoiceLimitType, Choice> choiceList;
-    bool      fixedChoices(false);
+    string    Name("");
+    string    NodeType("");
+    string    Class("");
+    string    Category("");
+    bool      Required(false);
+    string    Tooltip("");
+    ESParray<ESPstruct ChoiceLimitType, ChoiceLimit> ChoiceList;
+    bool      FixedChoices(false);
 };
 
 
 ESPstruct AttributeType
 {
-    string     displayName;
-    string     name;
+    string     DisplayName;
+    string     Name;
+    string     Group("");
     string     tooltip("");
-    ESPstruct  TypeInfo type;
-    string currentValue("");
-    string defaultValue("");
-    bool   required(true);
-    bool   readOnly(false);
-    bool   hidden(false);
+    ESPstruct  TypeInfo Type;
+    string     CurrentValue("");
+    string     DefaultValue("");
+    string     CodeDefault("");
+    bool       Required(true);
+    bool       ReadOnly(false);
+    bool       Hidden(false);
+    bool       Deprecated(false);
 };
 
 
 ESPstruct AttributeValueType
 {
-    string    name;
-    string    value;
+    string    Name;
+    string    Value;
 };
 
 
 ESPresponse [exceptions_inline] GetNodeResponse : StatusResponse
 {
-    string nodeId;
-    ESPstruct NodeInfoType nodeInfo;
-    ESParray<ESPstruct AttributeType, Attribute> attributes;
-    ESParray<ESPstruct NodeType, Child> children;
-    ESParray<ESPstruct InsertItemType, Item> insertable;         // list of insertable elements under this node
-    bool localValueDefined(false);                               // true if the node is configured to have a value (not usually true)
-    ESPstruct AttributeType value;                               // this would be <element>value</element> not normal, see valueDefined
+    string NodeId;
+    ESPstruct NodeInfoType NodeInfo;
+    ESParray<ESPstruct AttributeType, Attribute> Attributes;
+    ESParray<ESPstruct NodeType, Child> Children;
+    ESParray<ESPstruct InsertItemType, Item> Insertable;         // list of insertable elements under this node
+    bool LocalValueDefined(false);                               // true if the node is configured to have a value (not usually true)
+    ESPstruct AttributeType Value;                               // this would be <element>value</element> not normal, see valueDefined
 };
 
 
 ESPrequest InsertNodeRequest  // response is same as GetPathRequest
 {
-    string sessionId;
-    string sessionLockKey;
-    string parentNodeId;
-    string nodeType;  // name of new instance to create
+    string SessionId;
+    string SessionLockKey;
+    string ParentNodeId;
+    string NodeType;  // name of new instance to create
 };
 
 
 ESPrequest SetValuesRequest
 {
-    string sessionId;
-    string sessionLockKey;
-    string nodeId;
-    ESParray<ESPstruct AttributeValueType, Attribute> attributeValues;
-    bool allowInvalid(false);  // true to allow setting an invalid value
-    bool forceCreate(false);   // force creaation of new value if not defined
-    string localValue("");
+    string SessionId;
+    string SessionLockKey;
+    string NodeId;
+    ESParray<ESPstruct AttributeValueType, Attribute> AttributeValues;
+    bool AllowInvalid(false);  // true to allow setting an invalid value
+    bool ForceCreate(false);   // force creaation of new value if not defined
+    string LocalValue("");
 };
 
 
 ESPresponse [exceptions_inline] GetParentsResponse
 {
-    ESParray<string, parentId> parentIdList;
+    ESParray<string, parentId> ParentIdList;
 };
 
 
@@ -239,107 +253,107 @@ ESPresponse [exceptions_inline] GetParentsResponse
 
 ESPstruct EnvironmentFileType
 {
-    string    filename;
-    bool      isActive(false);  // True if this is the current active environment
+    string    Filename;
+    bool      IsActive(false);  // True if this is the current active environment
 };
 
 
 ESPrequest CommonSessionRequest
 {
-    string sessionId;
+    string SessionId;
 };
 
 
 ESPresponse [exceptions_inline] GetEnvironmentListResponse
 {
-    ESParray<ESPstruct EnvironmentFileType, EnvironmentFile> environmentFiles;
+    ESParray<ESPstruct EnvironmentFileType, EnvironmentFile> EnvironmentFiles;
 };
 
 
 ESPrequest OpenEnvironmentFileRequest
 {
-    string sessionId;
-    string filename;
+    string SessionId;
+    string Filename;
 };
 
 
 ESPresponse [exceptions_inline] OpenEnvironmentFileResponse
 {
-    string rootNodeId;
+    string RootNodeId;
 };
 
 
 ESPrequest CloseEnvironmentFileRequest
 {
-    string sessionId;
-    string sessionLockKey;                // required if existing environment is modified and discarding changes
-    bool   discardChanges(false);         // discard modifications
+    string SessionId;
+    string SessionLockKey;                // required if existing environment is modified and discarding changes
+    bool   DiscardChanges(false);         // discard modifications
 };
 
 
 ESPrequest SaveEnvironmentFileRequest
 {
-    string sessionId;
-    string sessionLockKey;          // required if saving existing environment and it has been modified
-    string filename("");            // empty string means to overwrite the existing file
+    string SessionId;
+    string SessionLockKey;          // required if saving existing environment and it has been modified
+    string Filename("");            // empty string means to overwrite the existing file
 };
 
 
 ESPresponse [exceptions_inline] LockSessionResponse
 {
-    string sessionLockKey;       // filled in when a session is sucessfully locked
+    string SessionLockKey;       // filled in when a session is sucessfully locked
 };
 
 
 ESPrequest UnlockSessionRequest
 {
-    string sessionId;
-    string sessionLockKey;
+    string SessionId;
+    string SessionLockKey;
 };
 
 
 ESPrequest ValidateEnvironmentRequest
 {
-    string sessionId;
-    bool   includeHiddenNodes(false);   // includes hidden nodes (hidden attributes always included)
+    string SessionId;
+    bool   IncludeHiddenNodes(false);   // includes hidden nodes (hidden attributes always included)
 };
 
 
 ESPrequest GetTreeRequest
 {
-    string sessionId;
-    string nodeId;
-    bool   includeAttributes;
-    int    numLevels(1);
+    string SessionId;
+    string NodeId;
+    bool   IncludeAttributes;
+    int    NumLevels(1);
 };
 
 
 ESPstruct TreeElementType
 {
-    string    nodeId;
-    ESPstruct NodeInfoType nodeInfo;
-    ESParray<ESPstruct AttributeType, attribute> attributes;
-    ESParray<ESPstruct TreeElementType, Node> children;
+    string    NodeId;
+    ESPstruct NodeInfoType NodeInfo;
+    ESParray<ESPstruct AttributeType, attribute> Attributes;
+    ESParray<ESPstruct TreeElementType, Node> Children;
 };
 
 
 ESPresponse [exceptions_inline] GetTreeResponse
 {
-    ESPstruct TreeElementType tree;
+    ESPstruct TreeElementType Tree;
 };
 
 
 ESPrequest FetchNodesRequest
 {
-    string sessionId;
-    string startingNodeId("");   // optional starting node for the fetch, "" for none
-    string path;                 // path to search (uses XPath syntax). If startingNodeId specified, path may not start at root ("/")
+    string SessionId;
+    string StartingNodeId("");   // optional starting node for the fetch, "" for none
+    string Path;                 // path to search (uses XPath syntax). If startingNodeId specified, path may not start at root ("/")
 };
 
 
 ESPresponse [exceptions_inline] FetchNodesResponse
 {
-    ESParray<string, nodeId> nodeIds;
+    ESParray<string, nodeId> NodeIds;
 };
 
 

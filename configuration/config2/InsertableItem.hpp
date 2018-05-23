@@ -22,6 +22,8 @@ limitations under the License.
 #include "SchemaItem.hpp"
 #include <vector>
 
+class EnvironmentNode;
+
 struct InsertItemLimitChoice
 {
     InsertItemLimitChoice(const std::string &item, const std::string &attrName, const std::string &attrVal) :
@@ -34,9 +36,11 @@ struct InsertItemLimitChoice
 
 struct InsertableItem
 {
-    InsertableItem(const std::shared_ptr<SchemaItem> &pSchemaItem);
+    InsertableItem(std::shared_ptr<const EnvironmentNode> pParentEnvNode, const std::shared_ptr<SchemaItem> &pSchemaItem);
+    std::shared_ptr<const EnvironmentNode> m_pParentEnvNode;
     std::shared_ptr<SchemaItem> m_pSchemaItem;
     std::vector<InsertItemLimitChoice> m_itemLimits;
+    bool m_limitChoices;
 };
 
 #endif

@@ -22,6 +22,7 @@
 #include <vector>
 #include <string>
 #include "platform.h"
+#include "Status.hpp"
 
 
 class EnvironmentValue;
@@ -37,12 +38,16 @@ struct DECL_EXPORT DependentValue
 
 struct DECL_EXPORT AllowedValue
 {
+    AllowedValue() {}
     AllowedValue(const std::string &value, const std::string &desc="") : m_value(value), m_displayName(value), m_description(desc) { }
     void addDependentValue(const std::string &attribute, const std::string &value);
     const std::vector<DependentValue> &getDependencies() const { return m_dependencies;  }
+    bool hasDependencies() const { return m_dependencies.size() > 0; }
     std::string m_displayName;
     std::string m_value;
     std::string m_description;
+    std::string m_userMessageType;
+    std::string m_userMessage;
     std::vector<DependentValue> m_dependencies;
 };
 
@@ -54,6 +59,7 @@ class DECL_EXPORT SchemaTypeLimits
         SchemaTypeLimits() { }
         virtual ~SchemaTypeLimits() { }
         void addAllowedValue(const std::string &value, const std::string &desc="") { m_enumeratedValues.push_back(AllowedValue(value, desc)); }
+        void addAllowedValue(const AllowedValue &val) { m_enumeratedValues.push_back(val); }
         void addDependentAttributeValue(const std::string &value, const std::string &depAttr, const std::string &depAttrVal);
         std::vector<AllowedValue> getEnumeratedValues() const;
         bool isEnumerated() const { return !m_enumeratedValues.empty(); }
@@ -63,6 +69,8 @@ class DECL_EXPORT SchemaTypeLimits
         virtual bool isMinSet() const { return false; }
         virtual int getMax() const { return 0; }
         virtual int getMin() const { return 0; }
+        const std::string &getValidateMsg() const { return m_validateMsg; }
+        const std::string &getValidateMsgType() const { return m_validateMsgType; }
 
 
     protected:
@@ -74,6 +82,8 @@ class DECL_EXPORT SchemaTypeLimits
     protected:
 
         std::vector<AllowedValue> m_enumeratedValues;
+        mutable std::string m_validateMsg;
+        mutable std::string m_validateMsgType;
 };
 
 

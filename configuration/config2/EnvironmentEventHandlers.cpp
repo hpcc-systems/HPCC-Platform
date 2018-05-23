@@ -20,9 +20,50 @@ limitations under the License.
 #include "EnvironmentValue.hpp"
 
 
-bool CreateEnvironmentEventHandler::handleEvent(const std::string &eventType, std::shared_ptr<EnvironmentNode> pEventNode)
+void MatchEnvironmentEventHandler::processEvent(const std::string &eventType, std::shared_ptr<EnvironmentNode> pEventNode)
 {
-    return pEventNode->getSchemaItem()->getItemType() == m_itemType;
+    if (m_eventType == eventType && pEventNode->getSchemaItem()->getItemType() == m_itemType)
+    {
+        //
+        // If an event node attribute was defined, go check it
+        if (!m_eventNodeAttribute.empty())
+        {
+            //
+            // We need to check aginst an attribute in the event node. Build a list of comparison nodes using the
+            // target path
+            std::vector<std::shared_ptr<EnvironmentNode>> matchNodes;
+            pEventNode->fetchNodes(m_targetPath, matchNodes);
+            for (auto &nodeIt: matchNodes)
+            {
+                std::shared_ptr<EnvironmentValue> pItemAttr = pEventNode->getAttribute(m_targetAttribute);
+                if (pItemAttr)
+                {
+                    std::shared_ptr<EnvironmentValue> pMatchAttr =  nodeIt->getAttribute(m_targetAttribute);
+                    if (pMatchAttr)
+                    {
+                        if (pMatchAttr->getValue() == pItemAttr->getValue())
+                        {
+                            doHandleEvent(pEventNode);
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            doHandleEvent(pEventNode);
+        }
+    }
+}
+
+
+void MatchEnvironmentEventHandler::setEventNodeAttributeName(const std::string &name)
+{
+    m_eventNodeAttribute = name;
+    if (m_targetAttribute.empty())
+    {
+        m_targetAttribute = name;
+    }
 }
 
 
@@ -39,79 +80,43 @@ void AttributeDependencyCreateEventHandler::addDependency(const std::string &att
 }
 
 
-bool AttributeDependencyCreateEventHandler::handleEvent(const std::string &eventType, std::shared_ptr<EnvironmentNode> pEventNode)
+void AttributeDependencyCreateEventHandler::doHandleEvent(std::shared_ptr<EnvironmentNode> pEventNode)
 {
-    bool rc = false;
-    if (CreateEnvironmentEventHandler::handleEvent(eventType, pEventNode))
+    for (auto attrIt = m_depAttrVals.begin(); attrIt != m_depAttrVals.end(); ++attrIt)
     {
-        for (auto attrIt = m_depAttrVals.begin(); attrIt != m_depAttrVals.end(); ++attrIt)
+        std::shared_ptr<EnvironmentValue> pAttr = pEventNode->getAttribute(attrIt->first);
+        if (pAttr && pAttr->getSchemaValue()->getType()->isEnumerated())
         {
-            std::shared_ptr<EnvironmentValue> pAttr = pEventNode->getAttribute(attrIt->first);
-            if (pAttr && pAttr->getSchemaValue()->getType()->isEnumerated())
+            for (auto valueIt = attrIt->second.begin(); valueIt != attrIt->second.end(); ++valueIt)
             {
-                rc = true;   // we handled at least one
-                for (auto valueIt = attrIt->second.begin(); valueIt != attrIt->second.end(); ++valueIt)
-                {
-                    pAttr->getSchemaValue()->getType()->getLimits()->addDependentAttributeValue(valueIt->first, valueIt->second.first, valueIt->second.second);
-                }
+                pAttr->getSchemaValue()->getType()->getLimits()->addDependentAttributeValue(valueIt->first, valueIt->second.first, valueIt->second.second);
             }
         }
-    }
-    return rc;
-}
-
-
-void InsertEnvironmentDataCreateEventHandler::setItemAttributeName(const std::string &name)
-{
-    m_itemAttribute = name;
-    if (m_matchAttribute.empty())
-    {
-        m_matchAttribute = name;
     }
 }
 
 
-bool InsertEnvironmentDataCreateEventHandler::handleEvent(const std::string &eventType, std::shared_ptr<EnvironmentNode> pEventNode)
+void InsertEnvironmentDataCreateEventHandler::doHandleEvent(std::shared_ptr<EnvironmentNode> pEventNode)
 {
-    bool rc = false;
-    if (CreateEnvironmentEventHandler::handleEvent(eventType, pEventNode))
+    pEventNode->addEnvironmentInsertData(m_envData);
+}
+
+
+void AttributeSetValueCreateEventHandler::addAttributeValue(const std::string &attrName, const std::string &attrVal)
+{
+    m_attrVals.push_back({attrName, attrVal});
+}
+
+
+void AttributeSetValueCreateEventHandler::doHandleEvent(std::shared_ptr<EnvironmentNode> pEventNode)
+{
+
+    for (auto &attrValPair : m_attrVals)
     {
-        if (!m_itemAttribute.empty())
+        std::shared_ptr<EnvironmentValue> pAttr = pEventNode->getAttribute(attrValPair.first);
+        if (pAttr)
         {
-            std::vector<std::shared_ptr<EnvironmentNode>> matchNodes;
-
-            if (!m_matchPath.empty())
-            {
-                pEventNode->fetchNodes(m_matchPath, matchNodes);
-            }
-            else
-            {
-                matchNodes.push_back(pEventNode);
-            }
-
-            for (auto nodeIt = matchNodes.begin(); nodeIt != matchNodes.end(); ++nodeIt)
-            {
-                if (!m_itemAttribute.empty())
-                {
-                    std::shared_ptr<EnvironmentValue> pItemAttr = pEventNode->getAttribute(m_itemAttribute);
-                    if (pItemAttr)
-                    {
-                        std::shared_ptr<EnvironmentValue> pMatchAttr = (*nodeIt)->getAttribute(m_matchAttribute);
-                        if (pMatchAttr)
-                        {
-                            if (pMatchAttr->getValue() == pItemAttr->getValue())
-                            {
-                                pEventNode->addEnvironmentInsertData(m_envData);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            pEventNode->addEnvironmentInsertData(m_envData);
+            pAttr->setValue(attrValPair.second, nullptr);
         }
     }
-    return rc;
 }

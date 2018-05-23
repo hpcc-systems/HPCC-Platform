@@ -25,6 +25,7 @@ std::vector<AllowedValue> SchemaTypeLimits::getEnumeratedValues() const
 
 bool SchemaTypeLimits::isValueValid(const std::string &testValue) const
 {
+    m_validateMsg = m_validateMsgType = "";
     bool rc = isValidEnumeratedValue(testValue);
     if (rc)
     {
@@ -42,7 +43,12 @@ bool SchemaTypeLimits::isValidEnumeratedValue(const std::string &testValue) cons
         rc = false;
         for (auto it = m_enumeratedValues.begin(); it != m_enumeratedValues.end() && !rc; ++it)
         {
-            rc = (testValue == (*it).m_value);
+            if (testValue == it->m_value)
+            {
+                rc = true;
+                m_validateMsg = it->m_userMessage;
+                m_validateMsgType = it->m_userMessageType;
+            }
         }
     }
     return rc;

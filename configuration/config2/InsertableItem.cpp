@@ -16,20 +16,22 @@ limitations under the License.
 ############################################################################## */
 
 #include "InsertableItem.hpp"
+#include "EnvironmentNode.hpp"
 
-InsertableItem::InsertableItem(const std::shared_ptr<SchemaItem> &pSchemaItem) :
-    m_pSchemaItem(pSchemaItem)
+
+InsertableItem::InsertableItem(std::shared_ptr<const EnvironmentNode> pParentEnvNode, const std::shared_ptr<SchemaItem> &pSchemaItem) :
+    m_pParentEnvNode(pParentEnvNode), m_pSchemaItem(pSchemaItem), m_limitChoices(false)
 {
-
-    std::string insertLimitType = pSchemaItem->getProperty("insertLimitType");
+    std::string insertLimitType = m_pSchemaItem->getProperty("insertLimitType");
     if (!insertLimitType.empty())
     {
+        m_limitChoices = true;
         if (insertLimitType == "attribute")
         {
-            std::string attributeName = pSchemaItem->getProperty("insertLimitData");
-            std::shared_ptr<SchemaValue> pSchemaValue = pSchemaItem->getAttribute(attributeName);
+            std::string attributeName = m_pSchemaItem->getProperty("insertLimitData");
+            std::shared_ptr<SchemaValue> pSchemaValue = m_pSchemaItem->getAttribute(attributeName);
             std::vector<AllowedValue> allowedValues;
-            pSchemaValue->getAllowedValues(allowedValues);
+            pSchemaValue->getAllowedValues(allowedValues, m_pParentEnvNode);
             for (auto &&av : allowedValues)
             {
                 m_itemLimits.push_back(InsertItemLimitChoice(av.m_value, attributeName, av.m_value));

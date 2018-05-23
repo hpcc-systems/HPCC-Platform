@@ -22,6 +22,7 @@ limitations under the License.
 #include <string>
 #include <map>
 #include <memory>
+#include <vector>
 
 class EnvironmentNode;
 
@@ -31,7 +32,8 @@ class EnvironmentEventHandler
 
         EnvironmentEventHandler(const std::string &type) : m_eventType(type) {}
         virtual ~EnvironmentEventHandler() {}
-        virtual bool handleEvent(const std::string &eventType, std::shared_ptr<EnvironmentNode> pEnvNode) { return false; }
+        virtual void processEvent(const std::string &eventType, std::shared_ptr<EnvironmentNode> pEventNode) = 0;
+        virtual void doHandleEvent(std::shared_ptr<EnvironmentNode> pEventNode) = 0;
 
 
     protected:
@@ -40,31 +42,37 @@ class EnvironmentEventHandler
 };
 
 
-class CreateEnvironmentEventHandler : public EnvironmentEventHandler
+class MatchEnvironmentEventHandler : public EnvironmentEventHandler
 {
     public:
 
-        CreateEnvironmentEventHandler() : EnvironmentEventHandler("create") {}
-        virtual ~CreateEnvironmentEventHandler() {}
+        MatchEnvironmentEventHandler() : EnvironmentEventHandler("create") {}
+        virtual ~MatchEnvironmentEventHandler() {}
         void setItemType(const std::string &type) { m_itemType = type; }
+        void setEventNodeAttributeName(const std::string &name);
+        void setTargetAttributeName(const std::string &name) { m_targetAttribute = name; }
+        void setTargetPath(const std::string &path) { m_targetPath = path; }
 
-        virtual bool handleEvent(const std::string &eventType, std::shared_ptr<EnvironmentNode> pEnvNode);
+        virtual void processEvent(const std::string &eventType, std::shared_ptr<EnvironmentNode> pEventNode);
 
 
     protected:
 
         std::string m_itemType;
+        std::string m_targetPath;
+        std::string m_eventNodeAttribute;
+        std::string m_targetAttribute;
 };
 
 
-class AttributeDependencyCreateEventHandler : public CreateEnvironmentEventHandler
+class AttributeDependencyCreateEventHandler : public MatchEnvironmentEventHandler
 {
     public:
 
         AttributeDependencyCreateEventHandler() {}
         virtual ~AttributeDependencyCreateEventHandler() {}
         void addDependency(const std::string &attrName, const std::string &attrValr, const std::string &depAttr, const std::string &depVal);
-        virtual bool handleEvent(const std::string &eventType, std::shared_ptr<EnvironmentNode> pEnvNode);
+        virtual void doHandleEvent(std::shared_ptr<EnvironmentNode> pEventNode);
 
 
     protected:
@@ -73,25 +81,35 @@ class AttributeDependencyCreateEventHandler : public CreateEnvironmentEventHandl
 };
 
 
-class InsertEnvironmentDataCreateEventHandler : public CreateEnvironmentEventHandler
+class InsertEnvironmentDataCreateEventHandler : public MatchEnvironmentEventHandler
 {
     public:
 
         InsertEnvironmentDataCreateEventHandler() {}
         virtual ~InsertEnvironmentDataCreateEventHandler() {}
         void setEnvironmentInsertData(const std::string &envData) { m_envData = envData;  }
-        void setMatchPath(const std::string &path) { m_matchPath = path; }
-        void setItemAttributeName(const std::string &name);
-        void setMatchAttributeName(const std::string &name) { m_matchAttribute = name; }
-        virtual bool handleEvent(const std::string &envType, std::shared_ptr<EnvironmentNode> pEventNode);
+        virtual void doHandleEvent(std::shared_ptr<EnvironmentNode> pEventNode);
 
 
     protected:
 
         std::string m_envData;
-        std::string m_matchPath;
-        std::string m_itemAttribute;
-        std::string m_matchAttribute;
+};
+
+
+class AttributeSetValueCreateEventHandler : public MatchEnvironmentEventHandler
+{
+    public:
+
+        AttributeSetValueCreateEventHandler() {}
+        virtual ~AttributeSetValueCreateEventHandler() {}
+        void addAttributeValue(const std::string &attrName, const std::string &attrValr);
+        virtual void doHandleEvent(std::shared_ptr<EnvironmentNode> pEventNode);
+
+
+    protected:
+
+        std::vector<std::pair<std::string, std::string>> m_attrVals;
 };
 
 #endif

@@ -21,6 +21,6 @@ limitations under the License.
 
 #include <vector>
 
-std::vector<std::string> splitString(const std::string  &input, const std::string  &delim);
+std::vector<std::string> splitString(const std::string  &input, const std::string delim);
 
 #endif
