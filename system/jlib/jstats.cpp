@@ -2725,7 +2725,9 @@ void ScopeFilter::addScope(const char * scope)
         return;
     }
 
-    dbgassertex(!ids && !scopeTypes); // Illegal to specify scopes and ids or scope Types.
+    if (ids)
+        throw makeStringExceptionV(0, "Cannot filter by id and scope in the same request");
+
     unsigned depth = queryScopeDepth(scope);
     if ((scopes.ordinality() == 0) || (depth < minDepth))
         minDepth = depth;
@@ -2752,7 +2754,9 @@ void ScopeFilter::addScopeType(StatisticScopeType scopeType)
 
 void ScopeFilter::addId(const char * id)
 {
-    dbgassertex(!scopes && !scopeTypes);
+    if (scopes)
+        throw makeStringExceptionV(0, "Cannot filter by id and scope in the same request");
+
     ids.append(id);
 }
 
@@ -2763,6 +2767,18 @@ void ScopeFilter::setDepth(unsigned low, unsigned high)
 
     minDepth = low;
     maxDepth = high;
+}
+
+
+void ScopeFilter::intersectDepth(const unsigned low, const unsigned high)
+{
+    if (low > high)
+        throw makeStringExceptionV(0, "Depth parameters in wrong order %u..%u", low, high);
+
+    if (minDepth < low)
+        minDepth = low;
+    if (maxDepth > high)
+        maxDepth = high;
 }
 
 
@@ -2835,6 +2851,35 @@ int ScopeFilter::compareDepth(unsigned depth) const
     if (depth > maxDepth)
         return +1;
     return 0;
+}
+
+void ScopeFilter::finishedFilter()
+{
+    //If scopeTypes are provided, then this code ensure that any scopes and ids match them
+    //but that would have little benefit, and would cause complications if the only id was removed
+
+    //Some scope types can only exist at a single level.
+    if (scopeTypes.ordinality() == 1)
+    {
+        switch (scopeTypes.item(0))
+        {
+        case SSTglobal:
+            intersectDepth(0, 0);
+            break;
+        case SSTworkflow:
+            intersectDepth(1, 1);
+            break;
+        case SSTgraph:
+            intersectDepth(2, 2);
+            break;
+        case SSTsubgraph:
+            intersectDepth(3, UINT_MAX);
+            break;
+        case SSTactivity:
+            intersectDepth(4, UINT_MAX);
+            break;
+        }
+    }
 }
 
 bool ScopeFilter::hasSingleMatch() const

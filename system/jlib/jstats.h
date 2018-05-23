@@ -300,8 +300,13 @@ public:
     int compareDepth(unsigned depth) const; // -1 too shallow, 0 a match, +1 too deep
     bool hasSingleMatch() const;
     bool canAlwaysPreFilter() const;
+    void finishedFilter();
+
     const StringArray & queryScopes() const { return scopes; }
     bool matchOnly(StatisticScopeType scopeType) const;
+
+protected:
+    void intersectDepth(unsigned _minDepth, unsigned _maxDepth);
 
 protected:
     UnsignedArray scopeTypes;
