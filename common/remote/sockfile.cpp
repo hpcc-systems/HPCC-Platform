@@ -4224,6 +4224,7 @@ class CRemoteIndexBaseActivity : public CRemoteDiskBaseActivity
 protected:
     bool isTlk = false;
     bool allowPreload = false;
+    unsigned crc = 0;
     Owned<IKeyIndex> keyIndex;
     Owned<IKeyManager> keyManager;
 
@@ -4231,7 +4232,15 @@ protected:
     {
         if (opened)
             return;
-        keyIndex.setown(createKeyIndex(fileName, 0, isTlk, allowPreload)); // JCSMORE crc
+        Owned<IFile> indexFile = createIFile(fileName);
+        CDateTime modTime;
+        indexFile->getTime(nullptr, &modTime, nullptr);
+        time_t modTimeTT = modTime.getSimple();
+        CRC32 crc32(crc);
+        crc32.tally(sizeof(time_t), &modTimeTT);
+        crc = crc32.get();
+
+        keyIndex.setown(createKeyIndex(fileName, crc, isTlk, allowPreload));
         keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true));
         filters.createSegmentMonitors(keyManager);
         keyManager->finishSegmentMonitors();
@@ -4251,6 +4260,7 @@ public:
     {
         isTlk = config.getPropBool("isTlk");
         allowPreload = config.getPropBool("allowPreload");
+        crc = config.getPropInt("crc");
     }
 };
 
