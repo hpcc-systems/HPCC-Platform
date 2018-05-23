@@ -78,7 +78,7 @@ public:
     }
     virtual unsigned getFlags() override
     {
-        return TDRnocrccheck;
+        return 0;
     }
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * src) override
     {

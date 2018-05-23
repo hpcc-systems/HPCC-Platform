@@ -100,7 +100,6 @@ public:
     bool checkingHeap;
     bool disableLocalOptimizations;
     RecordTranslationMode enableFieldTranslation;
-    bool skipFileFormatCrcCheck;
     bool stripWhitespaceFromStoredDataset;
     bool timeActivities;
     bool allSortsMaySpill;
@@ -268,20 +267,6 @@ public:
     {
         // Default is no additional information
     }
-
-    unsigned getFormatCrc(unsigned helperCrc) const
-    {
-        if (queryFactory.queryOptions().skipFileFormatCrcCheck)
-            return 0;
-        else
-            return helperCrc;
-    }
-
-    unsigned skipFileFormatCrcCheck() const
-    {
-        return queryFactory.queryOptions().skipFileFormatCrcCheck;
-    }
-
 
     RecordTranslationMode getEnableFieldTranslation() const
     {

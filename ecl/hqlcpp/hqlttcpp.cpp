@@ -41,6 +41,7 @@
 #include "hqlerror.hpp"
 #include "hqlalias.hpp"
 #include "hqlir.hpp"
+#include "hqliproj.hpp"
 
 #define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea

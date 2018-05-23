@@ -333,7 +333,12 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         const IDynamicTransform *queryTranslator(const char *tracing)
         {
             if (RecordTranslationMode::None == translationMode)
+            {
+                //Check if the file requires translation, but translation is disabled
+                if (publishedFormatCrc && expectedFormatCrc && (publishedFormatCrc != expectedFormatCrc))
+                    throwTranslationError(publishedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true), tracing);
                 return nullptr;
+            }
             else if (!translator)
             {
                 if (RecordTranslationMode::AlwaysDisk == translationMode)
@@ -347,11 +352,6 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                     translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), publishedFormat->queryRecordAccessor(true)));
                     if (!translator->canTranslate())
                         throw MakeStringException(0, "Untranslatable record layout mismatch detected for: %s", tracing);
-                    if (translator->needsTranslate())
-                    {
-                        if (RecordTranslationMode::None == translationMode)
-                            throw MakeStringException(0, "Translatable record layout mismatch detected for file: %s, but translation disabled", tracing);
-                    }
                 }
                 dbgassertex(translator->canTranslate());
             }

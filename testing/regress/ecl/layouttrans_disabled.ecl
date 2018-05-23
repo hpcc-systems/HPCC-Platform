@@ -33,7 +33,7 @@ import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
 
 // this would use RLT, but we have not enabled it, so it should fail
-#option ('layoutTranslationEnabled', false);
+#option ('layoutTranslation', false);
 
 DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname,__filepos},Files.DG_FetchIndex1Name);
 

@@ -1264,8 +1264,8 @@ void ComplexImplicitProjectInfo::setMatchingOutput(ComplexImplicitProjectInfo * 
 //-----------------------------------------------------------------------------------------------
 
 static HqlTransformerInfo implicitProjectTransformerInfo("ImplicitProjectTransformer");
-ImplicitProjectTransformer::ImplicitProjectTransformer(HqlCppTranslator & _translator, bool _optimizeSpills)
-: NewHqlTransformer(implicitProjectTransformerInfo), translator(_translator)
+ImplicitProjectTransformer::ImplicitProjectTransformer(HqlCppTranslator & _translator, bool _optimizeSpills, bool _calculatingMinimumFields)
+: NewHqlTransformer(implicitProjectTransformerInfo), translator(_translator), calculatingMinimumFields(_calculatingMinimumFields)
 {
     const HqlCppOptions & transOptions = translator.queryOptions();
     targetClusterType = translator.getTargetClusterType();
@@ -2046,6 +2046,8 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
             return AnyTypeActivity;
         return NonActivity;
     case no_table:
+        if (calculatingMinimumFields)
+            return CompoundableActivity;
         switch (expr->queryChild(2)->getOperator())
         {
         case no_thor:
@@ -2395,7 +2397,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
             {
             case no_newusertable:
             case no_hqlproject:
-                if (extra->okToOptimize())
+                if (extra->okToOptimize() && !calculatingMinimumFields)
                     extra->inputs.item(0).stopOptimizeCompound(false);
                 break;
             case no_newaggregate:
@@ -3250,6 +3252,41 @@ IHqlExpression * ImplicitProjectTransformer::process(IHqlExpression * expr)
 }
 
 
+IHqlExpression * ImplicitProjectTransformer::getMinimumInputRecord(IHqlExpression * expr)
+{
+    analyse(expr, 0);           // gather a list of activities, and link them together.
+
+    //Indicate all the fields are required in the output project, and then walk the inputs calculating which fields are required.
+    ComplexImplicitProjectInfo * exprExtra = queryBodyComplexExtra(expr);
+    if (expr->isDataset())
+        exprExtra->addAllOutputs();
+    percolateFields();
+
+    //Search for the first compoundable activity since preserve meta and other oddities may mean it isn't the root table.
+    IHqlExpression * root = queryRoot(expr);
+    assertex(root);
+    IHqlExpression * ds = expr;
+    for (;;)
+    {
+        ComplexImplicitProjectInfo * nextExtra = queryBodyComplexExtra(ds);
+        if (nextExtra->kind == CompoundableActivity)
+            break;
+        ds = ds->queryChild(0);
+    }
+
+    //Create a record that contains all the fields that were required to calculate the expression
+    ComplexImplicitProjectInfo * dsExtra = queryBodyComplexExtra(ds);
+    UsedFieldSet & resultFields = dsExtra->outputFields;
+    resultFields.calcFinalRecord(false, false, false);
+    IHqlExpression * result = resultFields.queryFinalRecord();
+
+    //Avoid creating a reduced record if the output record contains any weird type options.
+    if (!isSensibleRecord(result))
+        result = expr->queryChild(0)->queryRecord();
+
+    return LINK(result);
+}
+
 void ImplicitProjectTransformer::traceActivities()
 {
     ForEachItemIn(i, activities)
@@ -3347,13 +3384,13 @@ IHqlExpression * insertImplicitProjects(HqlCppTranslator & translator, IHqlExpre
 #if defined(POST_COMMON_ANNOTATION)
     HqlExprArray ret;
     {
-        ImplicitProjectTransformer transformer(translator, optimizeSpills);
+        ImplicitProjectTransformer transformer(translator, optimizeSpills, false);
         ret.append(*transformer.process(expr));
     }
     normalizeAnnotations(translator, ret);
     return createActionList(ret);
 #else
-    ImplicitProjectTransformer transformer(translator, optimizeSpills);
+    ImplicitProjectTransformer transformer(translator, optimizeSpills, false);
     return transformer.process(expr);
 #endif
 }
@@ -3390,3 +3427,10 @@ void insertImplicitProjects(HqlCppTranslator & translator, HqlExprArray & exprs)
     would need matchesSelector(list, selector) which worked recursively.  
 
   */
+
+
+IHqlExpression * getMinimumInputRecord(HqlCppTranslator &  translator, IHqlExpression * expr)
+{
+    ImplicitProjectTransformer transformer(translator, false, true);
+    return transformer.getMinimumInputRecord(expr);
+}

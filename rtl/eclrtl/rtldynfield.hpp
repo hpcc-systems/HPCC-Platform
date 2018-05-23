@@ -149,6 +149,8 @@ interface IKeyTranslator : public IInterface
 };
 
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
+extern ECLRTL_API void throwTranslationError(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, const char * filename);
+
 extern ECLRTL_API const IKeyTranslator *createKeyTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
 
 extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer(IThorIndexCallback *callback);

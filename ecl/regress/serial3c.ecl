@@ -17,7 +17,6 @@
 
 //Test reading a file containg a child and grand-child *dataset* with a dictionary definition
 
-#option ('skipFileFormatCrcCheck', true);
 #option ('pickBestEngine', false);
 
 IMPORT SerialTest;

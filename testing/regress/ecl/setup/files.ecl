@@ -55,7 +55,7 @@ SHARED STRING _indexPrefix := '~regress::' +
         '::' + EmptyString;
 
 #IF (forceLayoutTranslation != 0)
-  SHARED setLayout := #option('layoutTranslationEnabled', CASE(forceLayoutTranslation,1=>v'alwaysECL',2=>v'alwaysDisk',v''));
+  SHARED setLayout := #option('layoutTranslation', CASE(forceLayoutTranslation,1=>v'alwaysECL',2=>v'alwaysDisk',v''));
   EXPORT filePrefix := WHEN(#IFDEFINED(root.filePrefix, _filePrefix), setLayout);
   EXPORT indexPrefix := WHEN(#IFDEFINED(root.filePrefix, _indexPrefix), setLayout);
 #else      

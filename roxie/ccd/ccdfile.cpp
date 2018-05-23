@@ -2076,7 +2076,7 @@ public:
         else
             mb.append(false);
     }
-    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, IOutputMetaData *projected, int expectedFormatCrc, IOutputMetaData *expected, bool skipFileFormatCrcCheck, RecordTranslationMode mode, bool isIndex) const override
+    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, IOutputMetaData *projected, int expectedFormatCrc, IOutputMetaData *expected, RecordTranslationMode mode, bool isIndex) const override
     {
         // NOTE - projected and expected and anything fetched from them such as type info may reside in dynamically loaded (and unloaded)
         // query DLLs - this means it is not safe to include them in any sort of cache that might outlive the current query.
@@ -2093,22 +2093,25 @@ public:
                 const char *subname = subNames.item(idx);
                 int thisFormatCrc = 0;
                 bool actualUnknown = true;
-                if (!skipFileFormatCrcCheck)
+                if (mode != RecordTranslationMode::AlwaysECL)
                 {
-                    if (mode != RecordTranslationMode::AlwaysECL)
-                    {
-                        if (diskTypeInfo.item(idx))
-                            actual = diskTypeInfo.item(idx);
-                        else
-                            actualUnknown = false;
-                        thisFormatCrc = formatCrcs.item(idx);
-                    }
+                    if (diskTypeInfo.item(idx))
+                        actual = diskTypeInfo.item(idx);
+                    else
+                        actualUnknown = false;
+                    thisFormatCrc = formatCrcs.item(idx);
                 }
+
                 assertex(actual);
                 if ((thisFormatCrc != prevFormatCrc) || (idx == 0))  // Check if same translation as last subfile
                 {
                     translator.clear();
                     keyedTranslator.clear();
+
+                    //Check if the file requires translation, but translation is disabled
+                    if (thisFormatCrc && expectedFormatCrc && (thisFormatCrc != expectedFormatCrc) && (mode == RecordTranslationMode::None))
+                        throwTranslationError(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true), subname);
+
                     if (thisFormatCrc == expectedFormatCrc && projectedFormatCrc == expectedFormatCrc && (actualUnknown || alwaysTrustFormatCrcs))
                     {
                         if (traceLevel > 5)
@@ -2123,8 +2126,6 @@ public:
                             throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
                         else if (translator->needsTranslate())
                         {
-                            if (mode == RecordTranslationMode::None && translator->needsNonVirtualTranslate())
-                                throw MakeStringException(ROXIE_MISMATCH, "Translatable record layout mismatch detected for file %s, but translation disabled", subname);
                             if (isIndex && translator->keyedTranslated())
                                 throw MakeStringException(ROXIE_MISMATCH, "Record layout mismatch detected in keyed fields for file %s", subname);
                             keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));

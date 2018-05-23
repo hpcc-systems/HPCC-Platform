@@ -29,7 +29,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 
 //--- end of version configuration ---
 
-#option ('layoutTranslationEnabled', useTranslation);
+#option ('layoutTranslation', useTranslation);
 #onwarning (4523, ignore);
 #onwarning (5402, ignore);
 

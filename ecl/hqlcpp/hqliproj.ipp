@@ -345,8 +345,9 @@ class ImplicitProjectTransformer : public NewHqlTransformer
     typedef NewHqlTransformer Parent;
 
 public:
-    ImplicitProjectTransformer(HqlCppTranslator & _translator, bool _optimizeSpills);
+    ImplicitProjectTransformer(HqlCppTranslator & _translator, bool _optimizeSpills, bool _calculatingMinimumFields);
 
+    IHqlExpression * getMinimumInputRecord(IHqlExpression * expr);
     IHqlExpression * process(IHqlExpression * expr);
 
     virtual void analyseExpr(IHqlExpression * expr);
@@ -396,6 +397,7 @@ protected:
     ClusterType targetClusterType;
     ImplicitProjectOptions options;
     bool allowActivity;
+    bool calculatingMinimumFields;
 };
 
 

@@ -25,7 +25,7 @@ multiPart := #IFDEFINED(root.multiPart, false);
 
 #onwarning(2036, ignore);
 #onwarning(4522, ignore);
-#option ('layoutTranslationEnabled', true);
+#option ('layoutTranslation', true);
 import $.Setup;
 
 boolean useLocal := false;

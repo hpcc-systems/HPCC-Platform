@@ -1095,7 +1095,7 @@ enum
     TDRcountkeyedlimit  = 0x00008000,
     TDRkeyedlimitskips  = 0x00010000,
     TDRlimitskips       = 0x00020000,
-    TDRnocrccheck       = 0x00040000,
+    //unused              0x00040000,
     TDRaggregateexists  = 0x00080000,       // only aggregate is exists()
     TDRgroupmonitors    = 0x00100000,       // are segement monitors created for all group by conditions.
     TDRlimitcreates     = 0x00200000,

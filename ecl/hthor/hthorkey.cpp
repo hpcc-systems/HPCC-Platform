@@ -674,10 +674,10 @@ void CHThorIndexReadActivityBase::getLayoutTranslators()
 
 const IDynamicTransform * CHThorIndexReadActivityBase::getLayoutTranslator(IDistributedFile * f)
 {
-    if(agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
+    if(agent.getLayoutTranslationMode() == RecordTranslationMode::AlwaysECL)
         return NULL;
 
-    if(agent.rltEnabled() == RecordTranslationMode::None)
+    if(agent.getLayoutTranslationMode() == RecordTranslationMode::None)
     {
         verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, true);
         return NULL;
@@ -2442,10 +2442,9 @@ protected:
     {
         actualDiskMeta.set(helper.queryDiskRecordSize());
         translator.clear();
-        if (agent.rltEnabled()==RecordTranslationMode::None)
+        if (agent.getLayoutTranslationMode()==RecordTranslationMode::None)
         {
-            if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
-                ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), f, false, true);
+            ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), f, false, true);
         }
         else
         {
@@ -2459,7 +2458,7 @@ protected:
                     translator.setown(createRecordTranslator(helper.queryProjectedDiskRecordSize()->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
                     if (translator->canTranslate())
                     {
-                        if (agent.rltEnabled()==RecordTranslationMode::None)
+                        if (agent.getLayoutTranslationMode()==RecordTranslationMode::None)
                             throw MakeStringException(0, "Translatable file layout mismatch reading file %s but translation disabled", f->queryLogicalName());
 #ifdef _DEBUG
                         translator->describe();
@@ -4058,12 +4057,12 @@ public:
 protected:
     virtual const IDynamicTransform * getLayoutTranslator(IDistributedFile * f) override
     {
-        if(agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
+        if(agent.getLayoutTranslationMode() == RecordTranslationMode::AlwaysECL)
         {
             return NULL;
         }
 
-        if(agent.rltEnabled() == RecordTranslationMode::None)
+        if(agent.getLayoutTranslationMode() == RecordTranslationMode::None)
         {
             verifyFormatCrc(helper.getIndexFormatCrc(), f, super ? super->queryLogicalName() : NULL, true, true);
             return NULL;
@@ -4111,10 +4110,9 @@ protected:
     {
         actualDiskMeta.set(helper.queryDiskRecordSize());
         translator.clear();
-        if (agent.rltEnabled()==RecordTranslationMode::None)
+        if (agent.getLayoutTranslationMode()==RecordTranslationMode::None)
         {
-            if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
-                ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), f, false, true);
+            ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), f, false, true);
         }
         else
         {
@@ -4128,7 +4126,7 @@ protected:
                     translator.setown(createRecordTranslator(helper.queryProjectedDiskRecordSize()->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
                     if (translator->canTranslate())
                     {
-                        if (agent.rltEnabled()==RecordTranslationMode::None)
+                        if (agent.getLayoutTranslationMode()==RecordTranslationMode::None)
                             throw MakeStringException(0, "Translatable file layout mismatch reading file %s but translation disabled", f->queryLogicalName());
                     }
                     else

@@ -50,6 +50,7 @@
 #include "hqliter.ipp"
 #include "thorcommon.hpp"
 #include "hqlinline.hpp"
+#include "hqliproj.hpp"
 
 //#define FLATTEN_DATASETS
 //#define HACK_TO_IGNORE_TABLE
@@ -834,6 +835,8 @@ public:
     HqlExprAttr     physicalRecord;
     LinkedHqlExpr   expectedRecord;
     LinkedHqlExpr   projectedRecord;
+    LinkedHqlExpr   tableSelector;
+    LinkedHqlExpr   projectedSelector;
     HqlExprAttr     steppedExpr;
     Linked<BuildCtx> globaliterctx;
     HqlExprCopyArray parentCursors;
@@ -1269,7 +1272,7 @@ void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression *
         {
             if (newDiskReadMapping)
             {
-                translator.bindTableCursor(transformCtx, tableExpr, "left");
+                translator.bindTableCursor(transformCtx, projectedSelector, "left");
             }
             else
             {
@@ -1517,8 +1520,12 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
     case no_hqlproject:
         {
             IHqlExpression * dataset = expr->queryChild(0);
+            IHqlExpression * datasetSelector = dataset->queryNormalizedSelector();
             IHqlExpression * selSeq = querySelSeq(expr);
             OwnedHqlExpr leftSelect = createSelector(no_left, dataset, querySelSeq(expr));
+
+            if ((projectedSelector != tableSelector) && (expr == firstTransformer))
+                datasetSelector = projectedSelector;
 
             //Following is a bit nasty....
             //Converting the no_hqlproject to a no_newusertable means that some of the expressions
@@ -1527,7 +1534,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
             //e.g. project(i(x), transform(exists(i....))) - see jholt25.xhql
             //And unfortunately it fails silently.
             //So we use queryReplaceSelector which fails if an ambiguity is introduced by the replacement
-            OwnedHqlExpr newSelect = ensureActiveRow(dataset->queryNormalizedSelector());
+            OwnedHqlExpr newSelect = ensureActiveRow(datasetSelector);
             OwnedHqlExpr transform = queryNewReplaceSelector(expr->queryChild(1), leftSelect, newSelect);
 
             BuildCtx subctx(ctx);       // buildTargetCursor adds group if necessary
@@ -1537,7 +1544,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
             if (!transform)
             {
                 //The replace introduced an ambiguity => need to use the unmapped expression.
-                BoundRow * prevCursor = translator.resolveSelectorDataset(ctx, dataset->queryNormalizedSelector());
+                BoundRow * prevCursor = translator.resolveSelectorDataset(ctx, datasetSelector);
                 transform.set(expr->queryChild(1));
 
                 translator.rebindTableCursor(subctx, dataset, prevCursor, no_left, selSeq);
@@ -1563,7 +1570,13 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
             Linked<BoundRow> tempRow;
             Linked<BoundRow> rowBuilder;
             buildTargetCursor(tempRow, rowBuilder, subctx, expr);
-            IHqlExpression * transform = expr->queryChild(2);
+            LinkedHqlExpr transform = expr->queryChild(2);
+            if (tableExpr && (expr == firstTransformer))
+            {
+                if (tableSelector != projectedSelector)
+                    transform.setown(newReplaceSelector(transform, tableSelector, projectedSelector));
+            }
+
             if (returnIfFilterFails)
             {
                 translator.associateSkipReturnMarker(subctx, failedFilterValue, NULL);      // failedFilterValue already handles clearing the result
@@ -1782,6 +1795,8 @@ void SourceBuilder::buildMatchFilter(BuildCtx & ctx, IHqlExpression * expr)
                 if (translator.options.spotCSE)
                     test.setown(spotScalarCSE(test, ds, translator.queryOptions().spotCseInIfDatasetConditions));
 
+                if (tableSelector != projectedSelector)
+                    test.setown(newReplaceSelector(test, tableSelector, projectedSelector));
                 translator.buildFilteredReturn(ctx, test, queryBoolExpr(false));
             }
         }
@@ -2715,7 +2730,10 @@ void SourceBuilder::buildCanMatch(IHqlExpression * expr)
         MemberFunction func(translator, instance->startctx);
         func.start("virtual bool canMatch(const void * _left) override");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-        translator.bindTableCursor(func.ctx, tableExpr, "left");
+        if (newDiskReadMapping)
+            translator.bindTableCursor(func.ctx, projectedSelector, "left");
+        else
+            translator.bindTableCursor(func.ctx, tableExpr, "left");
 
         //This will have no ill effect for disk read, and is used for blob lookup
         translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
@@ -2802,6 +2820,8 @@ void SourceBuilder::gatherVirtualFields(bool ignoreVirtuals, bool ensureSerializ
         expectedRecord.set(physicalRecord);
         projectedRecord.set(physicalRecord);
     }
+    tableSelector.set(tableExpr->queryNormalizedSelector());
+    projectedSelector.set(tableSelector);
 }
 
 
@@ -3110,9 +3130,34 @@ public:
         extractCanMatch = (modeOp == no_thor) || (modeOp == no_flat);
     }
 
-    virtual void buildTransform(IHqlExpression * expr);
-    virtual void buildMembers(IHqlExpression * expr);
+protected:
+    virtual void buildTransform(IHqlExpression * expr) override;
+    virtual void buildMembers(IHqlExpression * expr) override;
+    virtual void analyseGraph(IHqlExpression * expr) override;
 };
+
+
+void DiskReadBuilder::analyseGraph(IHqlExpression * expr)
+{
+    DiskReadBuilderBase::analyseGraph(expr);
+    if (newDiskReadMapping && extractCanMatch && firstTransformer)
+    {
+        //Calculate the minimum set of fields required by any post-filters and projects.
+        projectedRecord.setown(getMinimumInputRecord(translator, firstTransformer));
+        if (projectedRecord != firstTransformer->queryChild(0)->queryRecord())
+        {
+            OwnedHqlExpr selSeq = createUniqueSelectorSequence();
+            projectedSelector.setown(createSelector(no_left, projectedRecord, selSeq));
+
+            //Check if projecting the input fields to the minimum now means the transform can be removed.
+            if ((firstTransformer == lastTransformer) && (projectedRecord == firstTransformer->queryRecord()))
+            {
+                if (isSimpleProject(firstTransformer))
+                    needToCallTransform = false;
+            }
+        }
+    }
+}
 
 
 void DiskReadBuilder::buildMembers(IHqlExpression * expr)

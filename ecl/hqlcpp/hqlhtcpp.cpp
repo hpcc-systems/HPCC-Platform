@@ -57,6 +57,7 @@
 #include "hqlusage.hpp"
 #include "hqlhoist.hpp"
 #include "hqlcppds.hpp"
+#include "hqliproj.hpp"
 
 //The following are include to ensure they call compile...
 #include "eclhelper.hpp"
