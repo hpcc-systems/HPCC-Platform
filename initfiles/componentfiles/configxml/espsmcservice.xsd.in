@@ -165,7 +165,7 @@
             </xs:appinfo>
          </xs:annotation>
 
-        <xs:attribute name="integrateKibana" type="xs:boolean" use="required" default="true">
+        <xs:attribute name="integrateKibana" type="xs:boolean" use="required" default="false">
             <xs:annotation>
                 <xs:appinfo>
                     <required>true</required>
