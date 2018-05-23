@@ -4227,7 +4227,7 @@ class CRemoteIndexBaseActivity : public CRemoteDiskBaseActivity
 protected:
     bool isTlk = false;
     bool allowPreload = false;
-    unsigned crc = 0;
+    unsigned fileCrc = 0;
     Owned<IKeyIndex> keyIndex;
     Owned<IKeyManager> keyManager;
 
@@ -4239,9 +4239,9 @@ protected:
         CDateTime modTime;
         indexFile->getTime(nullptr, &modTime, nullptr);
         time_t modTimeTT = modTime.getSimple();
-        CRC32 crc32(crc);
+        CRC32 crc32(fileCrc);
         crc32.tally(sizeof(time_t), &modTimeTT);
-        crc = crc32.get();
+        unsigned crc = crc32.get();
 
         keyIndex.setown(createKeyIndex(fileName, crc, isTlk, allowPreload));
         keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true));
@@ -4263,7 +4263,7 @@ public:
     {
         isTlk = config.getPropBool("isTlk");
         allowPreload = config.getPropBool("allowPreload");
-        crc = config.getPropInt("crc");
+        fileCrc = config.getPropInt("crc");
     }
 };
 
