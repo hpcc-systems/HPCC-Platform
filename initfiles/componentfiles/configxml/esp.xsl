@@ -85,6 +85,29 @@
 
             <xsl:call-template name="addEnvironmentInfo"/>
 
+            <xsl:if test="ESPCacheGroup[1]">
+               <xsl:value-of disable-output-escaping="yes" select="$break" />
+               <xsl:value-of disable-output-escaping="yes" select="$indent" />
+               <xsl:value-of disable-output-escaping="yes" select="$indent" />
+               <xsl:value-of disable-output-escaping="yes" select="$indent" />
+               <ESPCache>
+                  <xsl:for-each select="ESPCacheGroup">
+                    <xsl:variable name="ecgid" select="current()/@id"/>
+                    <xsl:variable name="ecgInitString" select="current()/@initString"/>
+                    <xsl:value-of disable-output-escaping="yes" select="$break" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <Group id="{$ecgid}" initString="{$ecgInitString}"/>
+                  </xsl:for-each>
+                  <xsl:value-of disable-output-escaping="yes" select="$break" />
+                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
+               </ESPCache>
+            </xsl:if>
+
             <xsl:if test="./Authentication/@method='ldap' or ./Authentication/@method='ldaps' or ./Authentication/@method='secmgrPlugin'">
               <xsl:value-of disable-output-escaping="yes" select="$break" />
               <xsl:value-of disable-output-escaping="yes" select="$indent" />
@@ -350,6 +373,9 @@
 
     <!--don't produce in output -->
     <xsl:template match="@buildSet|@maxRequestEntityLength"/>
+
+    <!--don't produce in output -->
+    <xsl:template match="EspProcess/ESPCacheGroup"/>
 
     <!--don't produce in output -->
     <xsl:template match="EspProcess/AuthDomain"/>
