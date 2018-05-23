@@ -612,7 +612,7 @@ ESPresponse [nil_remove, exceptions_inline] TpDropZoneQueryResponse
     ESParray<ESPstruct TpDropZone>    TpDropZones;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.27"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.27"), cache_group("ESPWsTP"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/targetclusters.xslt")] TpTargetClusterQuery(TpTargetClusterQueryRequest, TpTargetClusterQueryResponse);
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/topology.xslt")] TpClusterQuery(TpClusterQueryRequest, TpClusterQueryResponse);
@@ -624,8 +624,8 @@ ESPservice [auth_feature("DEFERRED"), noforms, version("1.27"), exceptions_inlin
 
     ESPmethod [cache_seconds(180), cache_global(1), min_ver("1.26")] TpDropZoneQuery(TpDropZoneQueryRequest, TpDropZoneQueryResponse);
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/services.xslt")] TpServiceQuery(TpServiceQueryRequest, TpServiceQueryResponse);
-    ESPmethod TpSetMachineStatus(TpSetMachineStatusRequest, TpSetMachineStatusResponse);
-    ESPmethod TpSwapNode(TpSwapNodeRequest, TpSwapNodeResponse);
+    ESPmethod [clear_cache_group] TpSetMachineStatus(TpSetMachineStatusRequest, TpSetMachineStatusResponse);
+    ESPmethod [clear_cache_group] TpSwapNode(TpSwapNodeRequest, TpSwapNodeResponse);
     ESPmethod [cache_seconds(180)] TpXMLFile(TpXMLFileRequest, TpXMLFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/tplog.xslt")] TpLogFile(TpLogFileRequest, TpLogFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/tplogdisplay.xslt")] TpLogFileDisplay(TpLogFileRequest, TpLogFileResponse);

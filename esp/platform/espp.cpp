@@ -390,7 +390,7 @@ int init_main(int argc, char* argv[])
 
             config->loadAll();
             config->bindServer(*server.get(), *server.get()); 
-            
+            config->checkESPCache(*server.get());
         }
         catch(IException* e)
         {

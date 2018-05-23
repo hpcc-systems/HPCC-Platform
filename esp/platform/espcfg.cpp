@@ -1002,22 +1002,32 @@ IEspPlugin* CEspConfig::getPlugin(const char* name)
     return NULL;
 }
 
-bool CEspConfig::checkESPCache()
+void CEspConfig::checkESPCache(IEspServer& server)
 {
-    bool espCacheAvailable = false ;
-    list<binding_cfg*>::iterator iter = m_bindings.begin();
-    while (iter!=m_bindings.end())
+    const char* cacheInitString = m_cfg->queryProp("@espCacheInitString");
+    IPropertyTree* espCacheCfg = m_cfg->queryBranch("ESPCache");
+    if (!espCacheCfg && isEmptyString(cacheInitString))
+        return;
+
+    if (!espCacheCfg)
     {
-        binding_cfg& xcfg = **iter;
-        if (xcfg.bind->getCacheMethodCount() > 0)
-        {
-            Owned<IEspCache> espCache = createESPCache(m_cfg->queryProp("@espCacheInitString"));
-            espCacheAvailable = (espCache != nullptr);
-            break;
-        }
-        iter++;
+        if (!server.addCacheClient("default", cacheInitString))
+            throw MakeStringException(-1, "Failed in checking ESP cache service using %s", cacheInitString);
+        return;
     }
-    return espCacheAvailable;
+    Owned<IPropertyTreeIterator> iter = espCacheCfg->getElements("Group");
+    ForEach(*iter)
+    {
+        IPropertyTree& espCacheGroup = iter->query();
+        const char* id = espCacheGroup.queryProp("@id");
+        const char* initString = espCacheGroup.queryProp("@initString");
+        if (isEmptyString(id))
+            throw MakeStringException(-1, "ESP cache ID not defined");
+        if (isEmptyString(initString))
+            throw MakeStringException(-1, "ESP cache initStrings not defined");
+        if (!server.addCacheClient(id, initString))
+            throw MakeStringException(-1, "Failed in checking ESP cache service using %s", initString);
+    }
 }
 
 bool CEspConfig::reSubscribeESPToDali()

@@ -5653,7 +5653,8 @@ void EspServInfo::write_esp_binding()
 
     outf("\nvoid C%sSoapBinding::init_strings()\n", name_);
     outs("{\n");
-    
+
+    bool cacheDefined = false;
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
     {
         StrBuffer val;
@@ -5670,13 +5671,28 @@ void EspServInfo::write_esp_binding()
         int cacheGlobal = mthi->getMetaInt("cache_global", 0);
         int cacheSeconds = mthi->getMetaInt("cache_seconds", -1);
         if (cacheSeconds > -1) {
+            cacheDefined = true;
             if (cacheGlobal > 0)
                 outf("\tsetCacheTimeout(\"%s\", %d, 1);\n", mthi->getName(), cacheSeconds);
             else
                 outf("\tsetCacheTimeout(\"%s\", %d, 0);\n", mthi->getName(), cacheSeconds);
             outs("\tm_cacheMethodCount++;\n");
+
+            StrBuffer methodCacheGroupID;
+            mthi->getMetaStringValue(methodCacheGroupID,"cache_group");
+            if (methodCacheGroupID.length() > 0)
+                outf("\tsetCacheGroupID(\"%s\", \"%s\");\n", mthi->getName(), methodCacheGroupID.str());
         }
     }
+    StrBuffer serviceCacheGroupID;
+    if (cacheDefined)
+    {
+        getMetaStringValue(serviceCacheGroupID,"cache_group");
+        if (serviceCacheGroupID.length() == 0)
+            serviceCacheGroupID.set(name_);
+        outf("\tsetCacheGroupID(nullptr, \"%s\");\n", serviceCacheGroupID.str());
+    }
+
     outs("}\n");
     
     outf("\nint C%sSoapBinding::processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response)\n", name_);
@@ -5736,6 +5752,14 @@ void EspServInfo::write_esp_binding()
 
         writeAccessMap(servicefeatureurl.str(),name_, 2);
 
+        StrBuffer clearCacheGroupIDs;
+        if (mthi->hasMetaTag("clear_cache_group"))
+        {
+            StrBuffer cCGIDs;
+            mthi->getMetaStringValue(cCGIDs,"clear_cache_group");
+            if (cacheDefined || (cCGIDs.length() != 0))
+                clearCacheGroupIDs.set((cCGIDs.length() != 0) ? cCGIDs.str() : serviceCacheGroupID.str());
+        }
         //begin try block
         if (bHandleExceptions)
         {
@@ -5756,6 +5780,8 @@ void EspServInfo::write_esp_binding()
                 outf("\t\t\tif( accessmap.ordinality() > 0 )\n\t\t\t\tonFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
 
             outf("\t\t\tiserv->on%s(context, *esp_request, *esp_response);\n", mthi->getName());
+            if (clearCacheGroupIDs.length() > 0)
+                outf("\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
 
             outs("\t\t}\n");
             
@@ -5774,6 +5800,8 @@ void EspServInfo::write_esp_binding()
             if (servicefeatureurl.length() != 0)
                 outf("\t\tif( accessmap.ordinality() > 0 )\n\t\t\tonFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
             outf("\t\tiserv->on%s(*rpc_call->queryContext(), *esp_request, *esp_response);\n", mthi->getName());
+            if (clearCacheGroupIDs.length() > 0)
+                outf("\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
             outs("\t\tresponse->set_status(SOAP_OK);\n");
         }
 
@@ -6147,6 +6175,15 @@ void EspServInfo::write_esp_binding()
             bClientXslt=(respXsl!=NULL);
         }
 
+        StrBuffer clearCacheGroupIDs;
+        if (mthi->hasMetaTag("clear_cache_group"))
+        {
+            StrBuffer cCGIDs;
+            mthi->getMetaStringValue(cCGIDs,"clear_cache_group");
+            if (cacheDefined || (cCGIDs.length() != 0))
+                clearCacheGroupIDs.set((cCGIDs.length() != 0) ? cCGIDs.str() : serviceCacheGroupID.str());
+        }
+
         bool bHandleExceptions =  0 != mthi->getMetaInt("exceptions_inline", 0) || mthi->getMetaInt("http_exceptions_inline", 0);
         if (!bHandleExceptions)
             bHandleExceptions = 0 != getMetaInt("exceptions_inline", 0) || getMetaInt("http_exceptions_inline", 0);
@@ -6188,6 +6225,8 @@ void EspServInfo::write_esp_binding()
                 if (mthi->getMetaInt("do_not_log",0))
                     outf("\t\t\t\tcontext.queryRequestParameters()->setProp(\"do_not_log\",1);\n");
                 outf("\t\t\t\tiserv->on%s(context, *esp_request.get(), *resp);\n", mthi->getName());
+                if (clearCacheGroupIDs.length() > 0)
+                    outf("\t\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
                 outs("\t\t\t}\n");
                 
                 write_catch_blocks(mthi, ct_httpresp, 3);
@@ -6197,6 +6236,8 @@ void EspServInfo::write_esp_binding()
                 if (servicefeatureurl.length() != 0)
                     outf("\t\t\tif(accessmap.ordinality()>0)\n\t\t\t\tonFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
                 outf("\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *resp);\n", mthi->getName());
+                if (clearCacheGroupIDs.length() > 0)
+                    outf("\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
             }
 
             outs("\t\t}\n");
@@ -6219,6 +6260,8 @@ void EspServInfo::write_esp_binding()
                 outs("\t\t\ttry\n");
                 outs("\t\t\t{\n");
                 outf("\t\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *esp_response.get());\n", mthi->getName());
+                if (clearCacheGroupIDs.length() > 0)
+                    outf("\t\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
                 outs("\t\t\t}\n");
                 
                 write_catch_blocks(mthi, ct_httpresp,3);
@@ -6226,6 +6269,8 @@ void EspServInfo::write_esp_binding()
             else
             {
                 outf("\t\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *esp_response.get());\n", mthi->getName());
+                if (clearCacheGroupIDs.length() > 0)
+                    outf("\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
             }
 
             outs("\t\t\tif (canRedirect(*request) && esp_response->getRedirectUrl() && *esp_response->getRedirectUrl())\n");

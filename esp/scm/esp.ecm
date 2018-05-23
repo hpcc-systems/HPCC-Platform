@@ -234,6 +234,9 @@ interface IEspContainer : extends IInterface
     virtual bool attachESPToDali() = 0;
     virtual bool isAttachedToDali() = 0;
     virtual bool isSubscribedToDali() = 0;
+    virtual bool hasCacheClient() = 0;
+    virtual const void* queryCacheClient(const char* id) = 0;
+    virtual void clearCacheByGroupID(const char* ids, StringArray& errorMsgs) = 0;
 };
 
 interface IEspRpcBinding;
@@ -371,6 +374,7 @@ SCMinterface IEspServer(IInterface)
    IEspRpcBinding* queryBinding(const char* name);
    const char* getProcName();
    virtual IPropertyTree* queryProcConfig();
+   bool addCacheClient(const char* id, const char* initString);
 };
 
 SCMinterface IEspServiceCfg(IInterface)
