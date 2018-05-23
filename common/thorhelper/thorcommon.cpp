@@ -2009,6 +2009,12 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
         }
         else if (props.hasProp("ECL"))
         {
+            const char *kind = props.queryProp("@kind");
+            if (kind && streq(kind, "key"))
+            {
+                DBGLOG("Cannot deserialize file metadata: index too old");
+                return nullptr;
+            }
             StringBuffer layoutECL;
             props.getProp("ECL", layoutECL);
             MultiErrorReceiver errs;

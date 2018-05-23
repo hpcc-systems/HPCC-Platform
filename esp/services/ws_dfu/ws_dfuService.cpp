@@ -1631,19 +1631,44 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
             userdesc.setown(createUserDescriptor());
             userdesc->set(userId, context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
-
-        OwnedHqlExpr record = getEclRecordDefinition(userdesc, fileName);
-        if (req.getIncludeJsonTypeInfo())
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userdesc);
+        if(!df)
+            throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",fileName);
+        if (df->queryAttributes().hasProp("_rtlType"))
         {
-            StringBuffer jsonFormat;
-            exportJsonType(jsonFormat,record);
-            resp.setJsonInfo(jsonFormat);
+            MemoryBuffer layoutBin;
+            df->queryAttributes().getPropBin("_rtlType", layoutBin);
+            if (req.getIncludeJsonTypeInfo())
+            {
+                Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
+                const RtlTypeInfo *typeInfo = deserializer->deserialize(layoutBin);
+                StringBuffer jsonFormat;
+                dumpTypeInfo(jsonFormat, typeInfo);
+                resp.setJsonInfo(jsonFormat);
+                layoutBin.reset(0);
+            }
+            if (req.getIncludeBinTypeInfo())
+                resp.setBinInfo(layoutBin);
         }
-        if (req.getIncludeBinTypeInfo())
+        else if (df->queryAttributes().hasProp("ECL"))
         {
-            MemoryBuffer binFormat;
-            exportBinaryType(binFormat,record);
-            resp.setBinInfo(binFormat);
+            const char * kind = df->queryAttributes().queryProp("@kind");
+            if (kind && streq(kind, "key"))
+                throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Index file %s does not contain type information",fileName);
+
+            OwnedHqlExpr record = getEclRecordDefinition(userdesc, fileName);
+            if (req.getIncludeJsonTypeInfo())
+            {
+                StringBuffer jsonFormat;
+                exportJsonType(jsonFormat,record);
+                resp.setJsonInfo(jsonFormat);
+            }
+            if (req.getIncludeBinTypeInfo())
+            {
+                MemoryBuffer binFormat;
+                exportBinaryType(binFormat,record);
+                resp.setBinInfo(binFormat);
+            }
         }
     }
     catch(IException* e)
@@ -2342,20 +2367,42 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             }
         }
     }
-    if (df->queryAttributes().hasProp("ECL") && (includeJsonTypeInfo||includeBinTypeInfo) )
+    if (includeJsonTypeInfo||includeBinTypeInfo)
     {
-        OwnedHqlExpr record = getEclRecordDefinition(df->queryAttributes().queryProp("ECL"));
-        if (includeJsonTypeInfo)
+        if (df->queryAttributes().hasProp("_rtlType"))
         {
-            StringBuffer jsonFormat;
-            exportJsonType(jsonFormat,record);
-            FileDetails.setJsonInfo(jsonFormat);
+            MemoryBuffer layoutBin;
+            df->queryAttributes().getPropBin("_rtlType", layoutBin);
+            if (includeJsonTypeInfo)
+            {
+                Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
+                const RtlTypeInfo *typeInfo = deserializer->deserialize(layoutBin);
+                StringBuffer jsonFormat;
+                dumpTypeInfo(jsonFormat, typeInfo);
+                FileDetails.setJsonInfo(jsonFormat);
+                layoutBin.reset(0);
+            }
+            if (includeBinTypeInfo)
+                FileDetails.setBinInfo(layoutBin);
         }
-        if (includeBinTypeInfo)
+        else if (df->queryAttributes().hasProp("ECL"))
         {
-            MemoryBuffer binFormat;
-            exportBinaryType(binFormat,record);
-            FileDetails.setBinInfo(binFormat);
+            const char * kind = df->queryAttributes().queryProp("@kind");
+            if (kind && streq(kind, "key"))
+                throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Index file %s does not contain type information", name);
+            OwnedHqlExpr record = getEclRecordDefinition(df->queryAttributes().queryProp("ECL"));
+            if (includeJsonTypeInfo)
+            {
+                StringBuffer jsonFormat;
+                exportJsonType(jsonFormat, record);
+                FileDetails.setJsonInfo(jsonFormat);
+            }
+            if (includeBinTypeInfo)
+            {
+                MemoryBuffer binFormat;
+                exportBinaryType(binFormat, record);
+                FileDetails.setBinInfo(binFormat);
+            }
         }
     }
     PROGLOG("doGetFileDetails: %s done", name);
