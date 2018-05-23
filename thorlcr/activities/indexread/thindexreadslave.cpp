@@ -160,6 +160,8 @@ public:
                 bool canSerializeTypeInfo = actualFormat->queryTypeInfo()->canSerialize() && projectedFormat->queryTypeInfo()->canSerialize();
                 bool usesBlobs = 0 != (helper->getFlags() & TIRusesblob);
 
+                unsigned crc=0;
+                part.getCrc(crc);
                 if (canSerializeTypeInfo && !usesBlobs && !localMerge)
                 {
                     for (unsigned copy=0; copy<part.numCopies(); copy++)
@@ -198,7 +200,7 @@ public:
                             else
                                 actualFilter.appendFilters(fieldFilters);
 
-                            Owned<IIndexLookup> indexLookup = createRemoteFilteredKey(ep, lPath, actualFormat, projectedFormat, actualFilter, remoteLimit);
+                            Owned<IIndexLookup> indexLookup = createRemoteFilteredKey(ep, lPath, crc, actualFormat, projectedFormat, actualFilter, remoteLimit);
                             if (indexLookup)
                             {
                                 try
@@ -223,8 +225,6 @@ public:
 
                 Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, part);
 
-                unsigned crc=0;
-                part.getCrc(crc);
                 RemoteFilename rfn;
                 part.getFilename(0, rfn);
                 StringBuffer path;

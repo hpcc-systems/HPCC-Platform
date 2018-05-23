@@ -2054,10 +2054,11 @@ class CRemoteFilteredKeyIO : public CRemoteFilteredFileIOBase
 public:
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
     // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
-    CRemoteFilteredKeyIO(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+    CRemoteFilteredKeyIO(SocketEndpoint &ep, const char *filename, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
         : CRemoteFilteredFileIOBase(ep, filename, actual, projected, fieldFilters, chooseN)
     {
         request.appendf(",\n \"kind\" : \"indexread\"");
+        request.appendf(",\n \"crc\" : \"%u\"", crc);
     }
 };
 
@@ -2066,10 +2067,11 @@ class CRemoteFilteredKeyCountIO : public CRemoteFilteredFileIOBase
 public:
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
     // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
-    CRemoteFilteredKeyCountIO(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, const RowFilter &fieldFilters, unsigned __int64 rowLimit)
+    CRemoteFilteredKeyCountIO(SocketEndpoint &ep, const char *filename, unsigned crc, IOutputMetaData *actual, const RowFilter &fieldFilters, unsigned __int64 rowLimit)
         : CRemoteFilteredFileIOBase(ep, filename, actual, actual, fieldFilters, rowLimit)
     {
         request.appendf(",\n \"kind\" : \"indexcount\"");
+        request.appendf(",\n \"crc\" : \"%u\"", crc);
     }
 };
 
@@ -2083,16 +2085,17 @@ class CRemoteKey : public CSimpleInterfaceOf<IIndexLookup>
     bool pending = false;
     SocketEndpoint ep;
     StringAttr filename;
+    unsigned crc;
     Linked<IOutputMetaData> actual, projected;
     RowFilter fieldFilters;
 
 public:
-    CRemoteKey(SocketEndpoint &_ep, const char *_filename, IOutputMetaData *_actual, IOutputMetaData *_projected, const RowFilter &_fieldFilters, unsigned __int64 rowLimit)
-        : ep(_ep), filename(_filename), actual(_actual), projected(_projected)
+    CRemoteKey(SocketEndpoint &_ep, const char *_filename, unsigned _crc, IOutputMetaData *_actual, IOutputMetaData *_projected, const RowFilter &_fieldFilters, unsigned __int64 rowLimit)
+        : ep(_ep), filename(_filename), crc(_crc), actual(_actual), projected(_projected)
     {
         for (unsigned f=0; f<_fieldFilters.numFilterFields(); f++)
             fieldFilters.addFilter(OLINK(_fieldFilters.queryFilter(f)));
-        iRemoteFileIO.setown(new CRemoteFilteredKeyIO(ep, filename, actual, projected, fieldFilters, rowLimit));
+        iRemoteFileIO.setown(new CRemoteFilteredKeyIO(ep, filename, crc, actual, projected, fieldFilters, rowLimit));
         if (!iRemoteFileIO)
             throw MakeStringException(0, "Unable to open remote key part: '%s'", filename.get());
         strm.setown(createFileSerialStream(iRemoteFileIO));
@@ -2111,7 +2114,7 @@ public:
     }
     virtual unsigned __int64 checkCount(unsigned __int64 limit) override
     {
-        Owned<IFileIO> iFileIO = new CRemoteFilteredKeyCountIO(ep, filename, actual, fieldFilters, limit);
+        Owned<IFileIO> iFileIO = new CRemoteFilteredKeyCountIO(ep, filename, crc, actual, fieldFilters, limit);
         unsigned __int64 result;
         iFileIO->read(0, sizeof(result), &result);
         return result;
@@ -2132,11 +2135,11 @@ public:
 };
 
 
-extern IIndexLookup *createRemoteFilteredKey(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+extern IIndexLookup *createRemoteFilteredKey(SocketEndpoint &ep, const char * filename, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
 {
     try
     {
-        return new CRemoteKey(ep, filename, actual, projected, fieldFilters, chooseN);
+        return new CRemoteKey(ep, filename, crc, actual, projected, fieldFilters, chooseN);
     }
     catch (IException *e)
     {
