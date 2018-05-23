@@ -477,7 +477,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" default="200">
+      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" default="20">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Port increment between slaves on same node</tooltip>

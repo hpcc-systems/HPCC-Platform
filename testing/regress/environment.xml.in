@@ -713,7 +713,7 @@
                heapUseHugePages="false"
                heapUseTransparentHugePages="true"
                localThor="true"
-               localThorPortInc="200"
+               localThorPortInc="20"
                masterport="20000"
                monitorDaliFileServer="true"
                name="mythor"

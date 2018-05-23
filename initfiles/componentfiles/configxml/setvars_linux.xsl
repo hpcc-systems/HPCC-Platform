@@ -58,7 +58,7 @@ export THORSLAVEPORT=<xsl:call-template name="setOrDefault">
                      </xsl:call-template>
 export localthorportinc=<xsl:call-template name="setOrDefault">
                             <xsl:with-param name="attribute" select="@localThorPortInc"/>
-                            <xsl:with-param name="default" select="'200'"/>
+                            <xsl:with-param name="default" select="'20'"/>
                         </xsl:call-template>
 export slavespernode=<xsl:call-template name="setOrDefault">
                         <xsl:with-param name="attribute" select="@slavesPerNode"/>
