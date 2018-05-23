@@ -94,6 +94,7 @@ static const char * EclDefinition =
 "  unicode UnicodeLocaleRemoveSuffix(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleRemoveSuffix';\n"
 "  unicode UnicodeLocaleRepeat(const unicode src, unsigned4 n) : c, pure,entrypoint='ulUnicodeLocaleRepeat'; \n"
 "  unsigned4 UnicodeLocaleFindCount(const unicode src, const unicode hit, const string form) :c,pure,entrypoint='ulUnicodeLocaleFindCount';\n"
+"  unsigned4 UnicodeLocaleCountWords(const unicode src, const unicode delim, boolean allowBlankItems) : c,pure,entrypoint='ulUnicodeLocaleCountWords', hole;\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -949,6 +950,62 @@ unsigned findCount(UnicodeString const & source, UnicodeString const & seek)
     }
     return matches;
 }
+
+unsigned countDelimitedWords(UnicodeString const & source, unsigned delimLen, UChar const * delim, bool allowBlankItems)
+{
+    UnicodeString const delimiter(delim, delimLen);
+    if (source.isEmpty() || delimiter.isEmpty())
+        return 0;
+
+    int32_t sourceLength = source.countChar32();
+    int32_t delimiterLength = delimiter.countChar32();
+    if (sourceLength < delimiterLength)
+        return 1;
+
+    bool startedWord = false;
+    int32_t idx = 0;
+    int32_t wordCount = 0;
+    int32_t max = source.length() - delimiter.length();
+    StringCharacterIterator it(source);
+    UChar32 startChar = delimiter.char32At(0);
+    while (idx <= max)
+    {
+        if (it.current32() == startChar)
+        {
+            int32_t endPos = source.moveIndex32(idx, delimiterLength);
+            if (source.compareCodePointOrder(idx, endPos - idx, delimiter) == 0)
+            {
+                if (startedWord || allowBlankItems)
+                {
+                    wordCount++;
+                    startedWord = false;
+                }
+                idx = it.move32(delimiterLength, CharacterIterator::kCurrent);
+            }
+            else
+            {
+                idx = it.move32(1, CharacterIterator::kCurrent);
+                if (!startedWord)
+                    startedWord = true;
+            }
+        }
+        else
+        {
+            idx = it.move32(1, CharacterIterator::kCurrent);
+            if (!startedWord)
+                startedWord = true;
+        }
+    }
+
+    /*source.length() used instead of sourceLength because the iterator's value is representative of code units
+     *despite incrementing by code points
+     */
+    if (startedWord || idx != source.length() || allowBlankItems)
+        wordCount++;
+
+    return wordCount;
+}
+
 
 void excludeNthWord(RuleBasedBreakIterator& bi, UnicodeString & source, unsigned n)
 {
@@ -1841,4 +1898,10 @@ UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleFindCount(unsigned srcLen
     }
 
     return findCount(source, sought);
+}
+
+UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleCountWords(unsigned srcLen, UChar const * src, unsigned delimLen, UChar const * delim, bool allowBlankItems)
+{
+    UnicodeString const processed(src, srcLen);
+    return countDelimitedWords(processed, delimLen, delim, allowBlankItems);
 }
