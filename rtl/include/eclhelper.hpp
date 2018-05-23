@@ -44,8 +44,8 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      204
-#define MIN_ACTIVITY_INTERFACE_VERSION  204             //minimum value that is compatible with current interface
+#define ACTIVITY_INTERFACE_VERSION      699
+#define MIN_ACTIVITY_INTERFACE_VERSION  699             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
 
