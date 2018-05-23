@@ -353,6 +353,9 @@ static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type, boo
     case type_token:
         //Possible, but the default testing code doesn't work
         return nullptr;
+    case type_real:
+    case type_decimal:
+        return createNullExpr(type);
     case type_int:
         if (implicitConstantType)
         {
