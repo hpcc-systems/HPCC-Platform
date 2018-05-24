@@ -385,6 +385,14 @@ protected:
     size32_t choosenLimit;
 };
 
+class ECLRTL_API RtlStreamedDatasetBuilder : public RtlLinkedDatasetBuilder
+{
+public:
+    RtlStreamedDatasetBuilder(IEngineRowAllocator * _rowAllocator, int _choosenLimit=-1);
+
+    virtual IRowStream * createDataset();
+};
+
 class ECLRTL_API RtlLinkedDictionaryBuilder
 {
 public:

@@ -320,6 +320,16 @@ protected:
     LinkedHqlExpr choosenLimit;
 };
 
+class StreamedDatasetBuilder : public LinkedDatasetBuilderBase
+{
+public:
+    StreamedDatasetBuilder(HqlCppTranslator & _translator, IHqlExpression * _record);
+
+    virtual void buildDeclare(BuildCtx & ctx);
+    virtual void buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target);
+    virtual void buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound);
+};
+
 class LinkedDictionaryBuilder : public LinkedDatasetBuilderBase
 {
 public:
