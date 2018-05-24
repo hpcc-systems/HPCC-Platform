@@ -53,6 +53,7 @@
 
 #include "hqlerror.hpp"
 #include "hqlexpr.hpp"
+#include "hqlutil.hpp"
 #include "eclrtl.hpp"
 #include "package.h"
 #include "daaudit.hpp"
@@ -1653,20 +1654,24 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
         else if (df->queryAttributes().hasProp("ECL"))
         {
             const char * kind = df->queryAttributes().queryProp("@kind");
-            if (kind && streq(kind, "key"))
-                throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Index file %s does not contain type information",fileName);
-
+            bool isIndex = (kind && streq(kind, "key"));
             OwnedHqlExpr record = getEclRecordDefinition(userdesc, fileName);
+            if (df->queryAttributes().hasProp("_record_layout"))
+            {
+                MemoryBuffer mb;
+                df->queryAttributes().getPropBin("_record_layout", mb);
+                record.setown(patchEclRecordDefinitionFromRecordLayout(record, mb));
+            }
             if (req.getIncludeJsonTypeInfo())
             {
                 StringBuffer jsonFormat;
-                exportJsonType(jsonFormat,record);
+                exportJsonType(jsonFormat, record, isIndex);
                 resp.setJsonInfo(jsonFormat);
             }
             if (req.getIncludeBinTypeInfo())
             {
                 MemoryBuffer binFormat;
-                exportBinaryType(binFormat,record);
+                exportBinaryType(binFormat, record, isIndex);
                 resp.setBinInfo(binFormat);
             }
         }
@@ -1686,13 +1691,13 @@ bool CWsDfuEx::onEclRecordTypeInfo(IEspContext &context, IEspEclRecordTypeInfoRe
         if (req.getIncludeJsonTypeInfo())
         {
             StringBuffer jsonFormat;
-            exportJsonType(jsonFormat,record);
+            exportJsonType(jsonFormat, record, false);  // MORE - could allow isIndex to be passed in?
             resp.setJsonInfo(jsonFormat);
         }
         if (req.getIncludeBinTypeInfo())
         {
             MemoryBuffer binFormat;
-            exportBinaryType(binFormat,record);
+            exportBinaryType(binFormat, record, false);
             resp.setBinInfo(binFormat);
         }
     }
@@ -2388,19 +2393,24 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
         else if (df->queryAttributes().hasProp("ECL"))
         {
             const char * kind = df->queryAttributes().queryProp("@kind");
-            if (kind && streq(kind, "key"))
-                throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Index file %s does not contain type information", name);
+            bool isIndex = (kind && streq(kind, "key"));
             OwnedHqlExpr record = getEclRecordDefinition(df->queryAttributes().queryProp("ECL"));
+            if (df->queryAttributes().hasProp("_record_layout"))
+            {
+                MemoryBuffer mb;
+                df->queryAttributes().getPropBin("_record_layout", mb);
+                record.setown(patchEclRecordDefinitionFromRecordLayout(record, mb));
+            }
             if (includeJsonTypeInfo)
             {
                 StringBuffer jsonFormat;
-                exportJsonType(jsonFormat, record);
+                exportJsonType(jsonFormat, record, isIndex);
                 FileDetails.setJsonInfo(jsonFormat);
             }
             if (includeBinTypeInfo)
             {
                 MemoryBuffer binFormat;
-                exportBinaryType(binFormat, record);
+                exportBinaryType(binFormat, record, isIndex);
                 FileDetails.setBinInfo(binFormat);
             }
         }
