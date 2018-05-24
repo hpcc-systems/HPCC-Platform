@@ -21,6 +21,9 @@ import logging
 import logging.config
 import datetime
 import requests.packages.urllib3
+import inspect
+import traceback
+import sys
 from requests import Session
 from requests.auth import HTTPBasicAuth
 from requests.auth import HTTPDigestAuth
@@ -510,10 +513,26 @@ class Statistics:
         else:
             self.failureCount += 1
 
+# To make this Python3.4 compatible
+def safeMkdir(path):
+    try:
+        path.mkdir(parents=True)
+    except FileExistsError as e:
+        # It is ok if alrady exists
+        pass
+    except (FileNotFoundError, PermissionError) as e:
+        logging.error("'%s' \nExit." % (str(e)))
+        exit(-1)
+    except:
+        print("Unexpected error:" + str(sys.exc_info()[0]) + " (line: " + str(inspect.stack()[0][2]) + ")" )
+        traceback.print_stack()
+        exit(-1)
+
 resultdir = Path(args.outdir)
-resultdir.mkdir(parents=True, exist_ok=True)
+safeMkdir(resultdir)
+
 tcasekeydir = Path(keydir)
-tcasekeydir.mkdir(parents=True, exist_ok=True)
+safeMkdir(tcasekeydir)
 
 logging.info('Gathering workunits')
 try:
