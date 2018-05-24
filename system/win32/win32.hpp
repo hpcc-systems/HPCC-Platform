@@ -88,7 +88,7 @@ public:
             LPVOID msg=0;
             if(::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &msg, 0, NULL) && msg)
             {
-                int len=_tcslen(buf);
+                size_t len=_tcslen(buf);
                 if(len<arraysize(buf)-1)
                     _sntprintf(buf+len,arraysize(buf)-1-len,TEXT(" - (%d) %s"),code,(const char *)msg);
                 ::LocalFree(msg);

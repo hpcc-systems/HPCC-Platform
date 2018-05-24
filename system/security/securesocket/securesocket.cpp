@@ -1710,7 +1710,7 @@ public:
             // secure_connect may also DBGLOG() errors ...
             ssock->secure_connect();
         }
-        catch (IException *e)
+        catch (IException *)
         {
             ss->status = false;
             throw;
