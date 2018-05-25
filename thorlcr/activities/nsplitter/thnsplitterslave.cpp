@@ -95,6 +95,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     bool inputPrepared = false;
     bool inputConnected = false;
     unsigned numOutputs = 0;
+    ThorDataLinkMetaInfo cachedMetaInfo;
 
     // NB: CWriter only used by 'balanced' splitter, which blocks write when too far ahead
     class CWriter : public CSimpleInterface, IThreaded
@@ -189,9 +190,9 @@ public:
             output->reset();
         }
     }
-    bool prepareInput()
+    void prepareInput()
     {
-        // NB: called from writeahead by outputs
+        // NB: called by 1st output to start()
         CriticalBlock block(prepareInputLock);
         if (!inputPrepared)
         {
@@ -200,16 +201,22 @@ public:
             {
                 assertex(((unsigned)-1) != connectedOutputCount);
                 activeOutputCount = connectedOutputCount;
+
                 PARENT::start();
+                initMetaInfo(cachedMetaInfo);
+                //GH->JCS I think the following line is correct and may remove some downstream spilling streams
+                //cachedMetaInfo.canBufferInput = spill;
+                calcMetaInfoSize(cachedMetaInfo, queryInput(0));
+
                 ForEachItemIn(o, outputs)
                 {
                     CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
                     if (output->isStopped())
                         --activeOutputCount;
                 }
-                assertex(activeOutputCount); // must be >=1, as this output (outIdx) has invoked prepareInput
+                assertex(activeOutputCount); // must be >=1, as an output start() invoked prepareInput
                 if (1 == activeOutputCount)
-                    return false;
+                    return; // single output in use which will be read directly
                 if (smartBuf)
                     smartBuf->reset();
                 else
@@ -237,14 +244,12 @@ public:
                 if (!spill)
                     writer.start(); // writer keeps writing ahead as much as possible, the readahead impl. will block when has too much
             }
-            catch (IException *e)
+            catch (IException *)
             {
                 eofHit = true;
-                writeAheadException.setown(e);
-                return false;
+                throw;
             }
         }
-        return true;
     }
     inline const void *nextRow(unsigned outIdx, rowcount_t current)
     {
@@ -287,10 +292,6 @@ public:
                 break;
         }
         ActivityTimer t(totalCycles, queryTimeActivities());
-
-        // NB: Avoid calling prepareInput() from writer thread, as a) already setup and b) if last output is stopping, it stops writer thread and would deadlock if in prepareInput() crit
-        if ((UINT_MAX != outIdx) && !prepareInput())
-            return RCMAX; // signals to requester that you are the only output
 
         pagedOut = false;
         OwnedConstThorRow row;
@@ -388,17 +389,7 @@ public:
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
-        initMetaInfo(info);
-        info.unknownRowsOutput = true;  // remove once calcMetaInfoSize() is called
-
-        //GH->JCS I think the following line is correct and may remove some downstream spilling streams
-        //info.canBufferInput = spill;
-
-        //GH->JCS.  This should call calcMetaInfoSize, but that hits a race condition.
-        //The splitter does not start its input until the first row is requested, but some activities (e.g.,
-        //inline dataset) rely on information in getMetaInfo that is set up in start.
-        //If calcMetaInfoSize() is called, then the result should really be cached in the class
-        //calcMetaInfoSize(info, queryInput(0));
+        info = cachedMetaInfo;
     }
 
 friend class CInputWrapper;
@@ -463,6 +454,9 @@ void CSplitterOutput::start()
 {
     ActivityTimer s(totalCycles, activity.queryTimeActivities());
     started = true;
+    activity.prepareInput();
+    if (1 == activity.activeOutputCount)
+        max = RCMAX; // signals that no writeahead required
     dataLinkStart();
 }
 
@@ -477,11 +471,8 @@ void CSplitterOutput::stop()
 const void *CSplitterOutput::nextRow()
 {
     ActivityTimer t(totalCycles, activity.queryTimeActivities());
-    if (rec == max)
-    {
+    if (rec == max) // NB: max will be RCMAX if activeOutputCount == 1
         max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem, outIdx);
-        // NB: if this is sole input that actually started, writeahead will have returned RCMAX and calls to activity.nextRow will go directly to splitter input
-    }
     const void *row = activity.nextRow(outIdx, rec); // pass ptr to max if need more
     ++rec;
     if (row)
