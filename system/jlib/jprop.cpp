@@ -305,8 +305,8 @@ public:
                 if (*val)
                 {
                     char * str = mapping->detach();
-                    unsigned len1 = strlen(str);
-                    unsigned len2 = strlen(val);
+                    size_t len1 = strlen(str);
+                    size_t len2 = strlen(val);
                     char * newstr = (char *)realloc(str, len1 + len2+1);
                     assertex(newstr);
                     memcpy(newstr+len1, val, len2);

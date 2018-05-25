@@ -12039,7 +12039,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
                 args.append(*createActualFromFormal(queryParam));
             else
                 args.append(*LINK(bodyCode->queryChild(0)));
-            args.append(*createConstant(createUtf8Value(fieldlist.length()-1, fieldlist+1, makeUtf8Type(UNKNOWN_LENGTH, NULL))));
+            args.append(*createConstant(createUtf8Value(fieldlist.length()-1, fieldlist.str()+1, makeUtf8Type(UNKNOWN_LENGTH, NULL))));
             args.append(*LINK(substSearch));
             scriptArgs.append(*bindFunctionCall(substituteEmbeddedScriptId, args,makeUtf8Type(UNKNOWN_LENGTH, NULL)));
         }
