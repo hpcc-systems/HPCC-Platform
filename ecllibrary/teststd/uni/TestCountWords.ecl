@@ -9,7 +9,7 @@ EXPORT TestCountWords := MODULE
   EXPORT TestConst := MODULE
     //Check action on strings with no entries: empty source string, search string, or return string.
     EXPORT Test01 := ASSERT(Uni.CountWords(U'', U'') = 0);
-    EXPORT Test01b := ASSERT(Uni.CountWords(U'abcde', U'') = 0);
+    EXPORT Test01b := ASSERT(Uni.CountWords(U'abcde', U'') = 1);
     EXPORT Test01c := ASSERT(Uni.CountWords(U'', U'abc', TRUE) = 0);
     EXPORT Test02 := ASSERT(Uni.CountWords(U'x', U'x') = 0);
     EXPORT Test03 := ASSERT(Uni.CountWords(U'x', U' ') = 1);
