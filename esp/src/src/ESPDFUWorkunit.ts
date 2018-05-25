@@ -2,7 +2,7 @@
 import * as lang from "dojo/_base/lang";
 import "dojo/i18n";
 // @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";    
+import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
 

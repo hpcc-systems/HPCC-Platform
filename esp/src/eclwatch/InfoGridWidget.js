@@ -1,18 +1,3 @@
-/*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-############################################################################## */
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
@@ -25,7 +10,7 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
     "dojo/topic",
-    "dojo/has", 
+    "dojo/has",
     "dojo/sniff",
 
     "dijit/registry",
@@ -49,10 +34,10 @@ define([
     "dijit/ToolbarSeparator"
 ],
     function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic, has, sniff,
-            registry, 
-            AndOrReadStore, entities,
-            _Widget, ESPUtil, ESPWorkunit,
-            template) {
+        registry,
+        AndOrReadStore, entities,
+        _Widget, ESPUtil, ESPWorkunit,
+        template) {
         return declare("InfoGridWidget", [_Widget], {
             templateString: template,
             baseClass: "InfoGridWidget",
@@ -153,7 +138,7 @@ define([
                                 }
                                 node.innerText = value;
                             }
-                        }, 
+                        },
                         Source: { label: this.i18n.Source, field: "", width: 144, sortable: false },
                         Code: { label: this.i18n.Code, field: "", width: 45, sortable: false },
                         Message: {
@@ -226,7 +211,7 @@ define([
                 this.inherited(arguments);
             },
 
-            onErrorClick: function(line, col) {
+            onErrorClick: function (line, col) {
             },
 
             _onClear: function (evt) {
@@ -272,7 +257,7 @@ define([
             csvFormatFooter: function (data) {
                 return "";
             },
-            toCSV: function(data, delim) {
+            toCSV: function (data, delim) {
                 var retVal = this.csvFormatHeader(data, delim) + "\n";
                 var context = this;
                 arrayUtil.forEach(data, function (item, idx) {
@@ -319,7 +304,7 @@ define([
             _onErrWarnDialogClose: function (evt) {
                 this.widget.ErrWarnDialog.hide();
             },
-                
+
             //  Plugin wrapper  ---
             _onStyleRow: function (row) {
                 var item = this.infoGrid.getItem(row.index);
@@ -388,7 +373,7 @@ define([
                     lang.mixin(item, {
                         id: idx
                     });
-                    switch(item.Severity) {
+                    switch (item.Severity) {
                         case "Error":
                             this._counts.error++;
                             this._counts.errorWarning++;
@@ -476,7 +461,7 @@ define([
                 }
             },
 
-            refreshTopics: function() {
+            refreshTopics: function () {
                 this.refreshFilter();
                 if (this.errWarnCount) {
                     this.errWarnCount.textContent = this._counts.errorWarning > 0 ? this._counts.errorWarning : "";
