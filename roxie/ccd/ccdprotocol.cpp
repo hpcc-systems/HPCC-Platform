@@ -2096,7 +2096,7 @@ readAnother:
                     unsigned replyLen = 0;
                     client->write(&replyLen, sizeof(replyLen));
                 }
-                if (--remainingHttpConnectionRequests > 0)
+                if (isHTTP && --remainingHttpConnectionRequests > 0)
                 {
                     readWait = global->maxHttpKeepAliveWait;
                     goto readAnother;
