@@ -14312,27 +14312,60 @@ void exportMap(IPropertyTree *dataNode, IHqlExpression *destTable, IHqlExpressio
     maps->addPropTree("MapTables", map);
 }
 
-void exportJsonType(StringBuffer &ret, IHqlExpression *table)
+bool hasTrailingFilePos(IHqlExpression *record)
 {
-    Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
-    const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
-    dumpTypeInfo(ret, typeInfo);
+    unsigned numFields = record->numChildren();
+    if (numFields>1)
+    {
+        IHqlExpression * lastField = record->queryChild(numFields-1);
+        ITypeInfo * fileposType = lastField->queryType();
+        if (isSimpleIntegralType(fileposType))
+            return true;
+    }
+    return false;
 }
 
-bool exportBinaryType(MemoryBuffer &ret, IHqlExpression *table)
+void exportJsonType(StringBuffer &ret, IHqlExpression *table, bool forceIndex)
 {
-    try
+    if (forceIndex)
+    {
+        // When constructing from old index metadata, we don't know if FILEPOSITION(false) was specified on the index
+        // But we can have a reasonable guess - if no payload is specified, then there can't be a trailing fileposition field ...
+        OwnedHqlExpr indexRec = createMetadataIndexRecord(table, table->hasAttribute(_payload_Atom) && hasTrailingFilePos(table));
+        exportJsonType(ret, indexRec, false);
+    }
+    else
     {
         Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
         const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
-        return dumpTypeInfo(ret, typeInfo);
+        dumpTypeInfo(ret, typeInfo);
     }
-    catch (IException * e)
+}
+
+bool exportBinaryType(MemoryBuffer &ret, IHqlExpression *table, bool forceIndex)
+{
+    if (forceIndex)
     {
-        DBGLOG(e);
-        e->Release();
+        // When constructing from old index metadata, we don't know if FILEPOSITION(false) was specified on the index
+        // But we can have a reasonable guess - if no payload is specified, then there can't be a trailing fileposition field ...
+        OwnedHqlExpr indexRec = createMetadataIndexRecord(table, table->hasAttribute(_payload_Atom) && hasTrailingFilePos(table));
+        return exportBinaryType(ret, indexRec, false);
     }
-    return false;
+    else
+    {
+        try
+        {
+            Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
+            const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
+            return dumpTypeInfo(ret, typeInfo);
+        }
+        catch (IException * e)
+        {
+            DBGLOG(e);
+            e->Release();
+        }
+        return false;
+    }
 }
 
 const RtlTypeInfo *queryRtlType(IRtlFieldTypeDeserializer &deserializer, IHqlExpression *table)

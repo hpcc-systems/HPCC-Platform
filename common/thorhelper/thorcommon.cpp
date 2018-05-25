@@ -31,6 +31,7 @@
 #include "rtldynfield.hpp"
 #include "eclhelper_dyn.hpp"
 #include "hqlexpr.hpp"
+#include "hqlutil.hpp"
 #include <algorithm>
 #ifdef _USE_NUMA
 #include <numa.h>
@@ -2010,19 +2011,21 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
         else if (props.hasProp("ECL"))
         {
             const char *kind = props.queryProp("@kind");
-            if (kind && streq(kind, "key"))
-            {
-                DBGLOG("Cannot deserialize file metadata: index too old");
-                return nullptr;
-            }
+            bool isIndex = (kind && streq(kind, "key"));
             StringBuffer layoutECL;
             props.getProp("ECL", layoutECL);
             MultiErrorReceiver errs;
             Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
             if (errs.errCount() == 0)
             {
+                if (props.hasProp("_record_layout"))  // Some old indexes need the payload count patched in from here
+                {
+                    MemoryBuffer mb;
+                    props.getPropBin("_record_layout", mb);
+                    expr.setown(patchEclRecordDefinitionFromRecordLayout(expr, mb));
+                }
                 MemoryBuffer layoutBin;
-                if (exportBinaryType(layoutBin, expr))
+                if (exportBinaryType(layoutBin, expr, isIndex))
                     return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
             }
         }
