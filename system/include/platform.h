@@ -362,7 +362,7 @@ typedef int socklen_t;
 //#define true  TRUE
 #define HFILE   int
 //#define bool  unsigned char
-#define BOOL    bool
+//#define BOOL    bool
 #define UINT    unsigned int
 #define DWORD   unsigned long
 #define VOID    void

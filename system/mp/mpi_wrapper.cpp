@@ -5,11 +5,18 @@
  */
 
 #include <mpi/mpi.h>
-
 #include "mpi_wrapper.hpp"
 
-rank_t hpcc_mpi::rank(IGroup &group){
-    return 0;
+rank_t hpcc_mpi::rank(){
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    return rank;
+}
+
+rank_t hpcc_mpi::size(){
+    int size;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    return size;
 }
 
 void hpcc_mpi::initialize(){

@@ -17,11 +17,16 @@
 #include "mpi.h"
 #include "mpbase.hpp"
 
+
 namespace hpcc_mpi{
-    rank_t rank(IGroup &group);
+    rank_t rank();
+    rank_t size();
     void initialize();
     void finalize();
 }
+
+
+
 
 #endif /* MPI_WRAPPER_HPP */
 
