@@ -17,6 +17,7 @@ int main(int argc, char* argv[]){
 
         startMPServer(0);
         IGroup* group = createIGroup(0, (INode **) NULL);
+        ICommunicator* comm = createCommunicator(group);
         PrintLog("Hello from %d. Total of %d nodes.",group->rank(), group->ordinality());    
         stopMPServer();
     } catch (IException *e){

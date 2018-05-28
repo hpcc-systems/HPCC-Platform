@@ -26,145 +26,8 @@
 static INode *MyNode=NULL;
 static INode *NullNode=NULL;
 
-class MPIGroup: implements IGroup, public CInterface{
-protected: friend class CNodeIterator;
-    rank_t count;
-    mutable rank_t myrank;
-public:
-    IMPLEMENT_IINTERFACE;
-
-    MPIGroup(){
-        count = hpcc_mpi::size();
-        myrank = hpcc_mpi::rank();
-    }
-
-    ~MPIGroup(){
-    }
-
-    rank_t ordinality()  const{ 
-        return count; 
-    }
-    
-    rank_t rank(const SocketEndpoint &ep) const {
-        UNIMPLEMENTED;
-    }
-    
-    rank_t rank(INode *node) const  { 
-        UNIMPLEMENTED;
-    }
-    
-    rank_t rank() const { 
-        return myrank;
-    }
-
-    GroupRelation compare(const IGroup *grp) const {
-        UNIMPLEMENTED;
-    }
-
-    bool equals(const IGroup *grp) const{
-        UNIMPLEMENTED;
-    }
-
-    void translate(const IGroup *othergroup, rank_t nranks, const rank_t *otherranks, rank_t *resranks ) const {
-        UNIMPLEMENTED;
-    }
-
-    IGroup *subset(rank_t start,rank_t num) const{
-        UNIMPLEMENTED;
-    }
-
-    virtual IGroup *subset(const rank_t *order,rank_t num) const{
-        UNIMPLEMENTED;
-    }
-
-    virtual IGroup *combine(const IGroup *grp) const{
-        UNIMPLEMENTED;
-    }
-
-    bool isMember(INode *node) const{
-        UNIMPLEMENTED;
-    }
-
-    bool isMember() const{
-        UNIMPLEMENTED;
-    }
-
-    unsigned distance(const IpAddress &ip) const{
-        UNIMPLEMENTED;
-    }
-
-    unsigned distance(const IGroup *grp) const{
-        UNIMPLEMENTED;
-    }
-
-    IGroup *diff(const IGroup *g) const{
-        UNIMPLEMENTED;
-    }
-
-    bool overlaps(const IGroup *grp) const{
-        UNIMPLEMENTED;        
-    }
-
-
-    IGroup *intersect(const IGroup *g) const{
-        UNIMPLEMENTED;
-    }
-
-    IGroup *swap(rank_t r1,rank_t r2) const{
-        UNIMPLEMENTED;
-    }
-
-    virtual IGroup *add(INode *node) const {
-        UNIMPLEMENTED;
-    }
-
-    virtual IGroup *add(INode *node,unsigned pos) const {
-        UNIMPLEMENTED;
-    }
-
-    virtual IGroup *remove(unsigned pos) const{
-        UNIMPLEMENTED;
-    }
-
-    virtual IGroup *rotate(int num) const{
-        UNIMPLEMENTED;
-    }
-
-
-    INode &queryNode(rank_t r) const {
-        UNIMPLEMENTED;
-    }
-    INode *getNode(rank_t r) const {
-        UNIMPLEMENTED;
-    }
-
-    StringBuffer &getText(StringBuffer &text) const {
-        UNIMPLEMENTED;
-    }
-
-    static IGroup *fromText(const char *s,unsigned defport) {
-        UNIMPLEMENTED;
-    }
-
-    void serialize(MemoryBuffer &tgt) const{
-        UNIMPLEMENTED;
-    }
-    
-    static IGroup *deserialize(MemoryBuffer &src) {
-        UNIMPLEMENTED;
-    }
-
-    void getSocketEndpoints(SocketEndpointArray &sea) const{
-        UNIMPLEMENTED;
-    }
-    INodeIterator *getIterator(rank_t start=0,rank_t num=RANK_NULL) const {
-        UNIMPLEMENTED; 
-    }
-    
-};
-
 IGroup *createIGroup(rank_t num,INode **nodes){
-    return new MPIGroup();
+    return new NodeGroup();
 }
 
 IGroup *createIGroup(rank_t num,const SocketEndpoint *ep){
@@ -349,12 +212,9 @@ INode *createINode(const char *name,unsigned short port)
     return createINode(ep);
 }
 
-IGroup *deserializeIGroup(MemoryBuffer &src)
-{
-    return MPIGroup::deserialize(src);
+IGroup *deserializeIGroup(MemoryBuffer &src){
+    return NodeGroup::deserialize(src);
 }
-
-
 
 void initMyNode(unsigned short port)
 {

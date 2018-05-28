@@ -84,9 +84,9 @@
 
 #define _TRACING
 
-class MPICommunicator: public ICommunicator, public CInterface
+class NodeCommunicator: public ICommunicator, public CInterface
 {
-    IGroup *group;
+    NodeGroup *group;
     bool outer;
     rank_t myrank;
 
@@ -189,11 +189,12 @@ public:
         UNIMPLEMENTED;
     }
 
-    MPICommunicator(IGroup *_group){
-        this->group = _group;
+    NodeCommunicator(IGroup *_group){
+        //TODO throw meaningful exception if _group is not NodeGroup type
+        this->group = (NodeGroup*) _group;
     }
     
-    ~MPICommunicator(){
+    ~NodeCommunicator(){
     }
 
 };
@@ -232,7 +233,7 @@ mptag_t createReplyTag(){
 }
 
 ICommunicator *createCommunicator(IGroup *group, bool outer){
-    return new MPICommunicator(group);
+    return new NodeCommunicator(group);
 }
 
 IInterCommunicator &queryWorldCommunicator(){
