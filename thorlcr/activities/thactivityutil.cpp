@@ -304,7 +304,7 @@ void calcMetaInfoSize(ThorDataLinkMetaInfo &info, IThorDataLink *link)
                     info.totalRowsMax = -1;
             }
         }
-        if (((offset_t)-1 != prev.byteTotal) && info.totalRowsMin == info.totalRowsMax)
+        if (((offset_t)-1 != prev.byteTotal) && !info.unknownRowsOutput && !info.canReduceNumRows && !info.canIncreaseNumRows)
             info.byteTotal = prev.byteTotal;
     }
     else if (info.totalRowsMin<0)

@@ -1438,9 +1438,9 @@ bool HqlGram::checkAlreadyAssigned(const attribute & errpos, IHqlExpression * se
     }
     else
     {
-        reportWarning(CategorySyntax, ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" has already been specified", s.str());
-        // MORE: Report this as an error in 7.0
-        //reportWarning(CategorySyntax, SeverityError, ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" has already been specified", s.str());
+        StringBuffer selectText;
+        getFldName(select,selectText);
+        reportError(ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" is already specified by the assignment to \"%s\"", selectText.str(), s.str());
     }
 
     return true;
@@ -7427,21 +7427,9 @@ void HqlGram::checkSoapRecord(attribute & errpos)
 
 IHqlExpression * HqlGram::checkIndexRecord(IHqlExpression * record, const attribute & errpos, OwnedHqlExpr & indexAttrs)
 {
-    unsigned numFields = record->numChildren();
-    if (numFields && getBoolAttributeInList(indexAttrs, filepositionAtom, true))
+    if (record->numChildren() && getBoolAttributeInList(indexAttrs, filepositionAtom, true) && !hasTrailingFilePos(record))
     {
-        // if not, implies some error (already reported)
-        if (numFields == 1)
-        {
-            indexAttrs.setown(createComma(indexAttrs.getClear(), createExprAttribute(filepositionAtom, createConstant(false))));
-        }
-        else
-        {
-            IHqlExpression * lastField = record->queryChild(numFields-1);
-            ITypeInfo * fileposType = lastField->queryType();
-            if (!isSimpleIntegralType(fileposType))
-                indexAttrs.setown(createComma(indexAttrs.getClear(), createExprAttribute(filepositionAtom, createConstant(false))));
-        }
+        indexAttrs.setown(createComma(indexAttrs.getClear(), createExprAttribute(filepositionAtom, createConstant(false))));
     }
     return LINK(record);
 }

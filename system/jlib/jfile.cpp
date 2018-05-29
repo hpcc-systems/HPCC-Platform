@@ -5249,7 +5249,7 @@ StringBuffer &makeAbsolutePath(const char *relpath, const char *basedir, StringB
 const char *splitRelativePath(const char *full,const char *basedir,StringBuffer &reldir)
 {
     if (basedir&&*basedir) {
-        size32_t bl = strlen(basedir);
+        size_t bl = strlen(basedir);
         if (isPathSepChar(basedir[bl-1]))
             bl--;
         if ((memicmp(full,basedir,bl)==0)&&isPathSepChar(full[bl]))
