@@ -1700,7 +1700,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.foldStored,"foldStored", false),
         DebugOption(options.spotTopN,"spotTopN", true),
         DebugOption(options.topnLimit, "topnLimit", 10000),
-        DebugOption(options.groupAllDistribute,"groupAllDistribute", false),
+        DebugOption(options.groupAllDistribute,"groupAllDistribute", true),
         DebugOption(options.spotLocalMerge,"spotLocalMerge", true),
         DebugOption(options.spotPotentialKeyedJoins,"spotPotentialKeyedJoins", false),
         DebugOption(options.combineTrivialStored,"combineTrivialStored", true),
