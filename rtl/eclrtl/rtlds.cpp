@@ -275,9 +275,8 @@ byte * RtlDynamicRowBuilder::ensureCapacity(size32_t required, const char * fiel
     if (required > maxLength)
     {
         if (!self)
-            create();
-
-        if (required > maxLength)
+            self = (byte *)rowAllocator->createRow(required, maxLength);
+        else if (required > maxLength)
         {
             void * next = rowAllocator->resizeRow(required, self, maxLength);
             if (!next)
