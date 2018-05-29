@@ -34,6 +34,7 @@ set (    SRCS
     )
 
 include_directories (
+         ${HPCC_SOURCE_DIR}/esp/bindings/http/platform
          ${HPCC_SOURCE_DIR}/esp/esplib
          ${HPCC_SOURCE_DIR}/esp/platform
          ${HPCC_SOURCE_DIR}/system/jlib
@@ -70,5 +71,5 @@ target_link_libraries ( ws_elk
          dalibase
          environment
          dllserver
-         securesocket
+         SMCLib
     )
