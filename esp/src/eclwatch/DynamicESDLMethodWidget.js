@@ -1,18 +1,3 @@
-/*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-############################################################################## */
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
@@ -37,164 +22,164 @@ define([
     "dgrid/tree"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, domConstruct, domClass, topic,
-                registry, Button, ToolbarSeparator,
-                GridDetailsWidget, ESPQuery, ESPUtil, WsESDLConfig,
-                selector, editor, tree
-            ) {
-    return declare("DynamicESDLMethodWidget", [GridDetailsWidget], {
-        i18n: nlsHPCC,
+    registry, Button, ToolbarSeparator,
+    GridDetailsWidget, ESPQuery, ESPUtil, WsESDLConfig,
+    selector, editor, tree
+) {
+        return declare("DynamicESDLMethodWidget", [GridDetailsWidget], {
+            i18n: nlsHPCC,
 
-        gridTitle: nlsHPCC.title_Methods,
-        idProperty: "__hpcc_id",
+            gridTitle: nlsHPCC.title_Methods,
+            idProperty: "__hpcc_id",
 
-        init: function (params) {
-            if (this.inherited(arguments))
-                return;
-            this.refresh(params);
-        },
+            init: function (params) {
+                if (this.inherited(arguments))
+                    return;
+                this.refresh(params);
+            },
 
-        refresh: function (params) {
-            this._params = params;
-            this.refreshGrid();
-            this._refreshActionState();
-        },
+            refresh: function (params) {
+                this._params = params;
+                this.refreshGrid();
+                this._refreshActionState();
+            },
 
-        startup: function (args) {
-            this.inherited(arguments);
-        },
+            startup: function (args) {
+                this.inherited(arguments);
+            },
 
-        createGrid: function (domID) {
-            var context = this;
-            this.openButton = registry.byId(this.id + "Open");
-            dojo.destroy(this.id + "Open");
+            createGrid: function (domID) {
+                var context = this;
+                this.openButton = registry.byId(this.id + "Open");
+                dojo.destroy(this.id + "Open");
 
-            this.store.mayHaveChildren = function (item) {
-                if (!item.__hpcc_parentName) {
-                    return true;
-                }
-                return false;
-            };
-
-            this.store.getChildren = function (parent, options) {
-               return this.query({__hpcc_parentName: parent.__hpcc_id}, options);
-            };
-
-            this.store.appendChild = function (child) {
-                this.__hpcc_parentName.push(child);
-            };
-
-            this.saveButton = new Button({
-                onClick: function (evt) {
-                    context.saveMethod();
-                },
-                label: context.i18n.Save
-            }).placeAt(this.openButton, "after");
-
-            var retVal = new declare([ESPUtil.Grid(false, true)])({
-                store: this.store,
-                sort: [{ attribute: "Name", descending: false }],
-                columns: {
-                    Name: tree({ label: context.i18n.Methods}),
-                    Value: editor({
-                        label: this.i18n.MethodConfiguration,
-                        autoSave: true,
-                        canEdit: function (object, value) {
-                            if (object.Attributes || !object.__hpcc_parentName) {
-                                return false;
-                            }
-                            return true;
-                        },
-                        editor: 'textarea',
-                        editorArgs: {
-                            rows: 10
-                        }
-                    })
-                }
-            }, domID);
-            return retVal;
-        },
-
-        saveMethod: function () {
-            var context = this;
-            var userXML = "";
-            var results = this.store.query();
-
-            arrayUtil.forEach(results, function(row, idx){
-                if (row.__hpcc_parentName !== null && row.Value !== "") {
-                    userXML += row.Value;
-                }
-            });
-
-            var xmlBuilder = "<Methods>" + userXML +  "</Methods>";
-            WsESDLConfig.PublishESDLBinding({
-                request: {
-                    EspProcName: this._params.Configuration.__hpcc_parentName,
-                    EspBindingName: this._params.Configuration.Name,
-                    EspServiceName: this._params.Configuration.Service,
-                    EsdlDefinitionID: this._params.Configuration.DefinitionID,
-                    Overwrite: true,
-                    Config: xmlBuilder,
-                    ver_: "1.3"
-                }
-            }).then(function (response) {
-                if (lang.exists("PublishESDLBindingResponse.status", response)) {
-                    if (response.PublishESDLBindingResponse.status.Code === 0) {
-                        dojo.publish("hpcc/brToaster", {
-                            Severity: "Message",
-                            Source: "WsESDLConfig.PublishESDLBinding",
-                            Exceptions: [{ Source: context.i18n.SuccessfullySaved, Message: response.PublishESDLBindingResponse.status.Description }]
-                        });
+                this.store.mayHaveChildren = function (item) {
+                    if (!item.__hpcc_parentName) {
+                        return true;
                     }
-                    context.refreshGrid();
-                }
-            });
-        },
+                    return false;
+                };
 
-        refreshGrid: function () {
-            var context = this;
-            var results = [];
-            var newRows = [];
+                this.store.getChildren = function (parent, options) {
+                    return this.query({ __hpcc_parentName: parent.__hpcc_id }, options);
+                };
 
-            WsESDLConfig.GetESDLBinding({
-                request: {
-                    EspProcName: this._params.Configuration.__hpcc_parentName,
-                    EspBindingName: this._params.Configuration.Name,
-                    ReportMethodsAvailable: true,
-                    ver_: "1.3"
-                }
-            }).then(function (response) {
-                if (lang.exists("GetESDLBindingResponse.ESDLBinding.Configuration.Methods.Method", response)) {
-                    results = response.GetESDLBindingResponse.ESDLBinding.Configuration.Methods.Method;
-                }
+                this.store.appendChild = function (child) {
+                    this.__hpcc_parentName.push(child);
+                };
+
+                this.saveButton = new Button({
+                    onClick: function (evt) {
+                        context.saveMethod();
+                    },
+                    label: context.i18n.Save
+                }).placeAt(this.openButton, "after");
+
+                var retVal = new declare([ESPUtil.Grid(false, true)])({
+                    store: this.store,
+                    sort: [{ attribute: "Name", descending: false }],
+                    columns: {
+                        Name: tree({ label: context.i18n.Methods }),
+                        Value: editor({
+                            label: this.i18n.MethodConfiguration,
+                            autoSave: true,
+                            canEdit: function (object, value) {
+                                if (object.Attributes || !object.__hpcc_parentName) {
+                                    return false;
+                                }
+                                return true;
+                            },
+                            editor: 'textarea',
+                            editorArgs: {
+                                rows: 10
+                            }
+                        })
+                    }
+                }, domID);
+                return retVal;
+            },
+
+            saveMethod: function () {
+                var context = this;
+                var userXML = "";
+                var results = this.store.query();
 
                 arrayUtil.forEach(results, function (row, idx) {
-                    lang.mixin(row, {
-                        __hpcc_parentName: null,
-                        __hpcc_id: row.Name
-                    });
-
-                    if (row.Attributes) {
-                        newRows.push({
-                            __hpcc_parentName: row.Name,
-                            __hpcc_id: row.Name + idx,
-                            Value: row.XML
-                        });
-                    } else {
-                        newRows.push({
-                            __hpcc_parentName: row.Name,
-                            __hpcc_id: row.Name + idx,
-                            Value: "<Method name=\"" + row.Name + "\"/>"
-                        });
+                    if (row.__hpcc_parentName !== null && row.Value !== "") {
+                        userXML += row.Value;
                     }
                 });
 
-                arrayUtil.forEach(newRows, function (newRow) {
-                    results.push(newRow);
+                var xmlBuilder = "<Methods>" + userXML + "</Methods>";
+                WsESDLConfig.PublishESDLBinding({
+                    request: {
+                        EspProcName: this._params.Configuration.__hpcc_parentName,
+                        EspBindingName: this._params.Configuration.Name,
+                        EspServiceName: this._params.Configuration.Service,
+                        EsdlDefinitionID: this._params.Configuration.DefinitionID,
+                        Overwrite: true,
+                        Config: xmlBuilder,
+                        ver_: "1.3"
+                    }
+                }).then(function (response) {
+                    if (lang.exists("PublishESDLBindingResponse.status", response)) {
+                        if (response.PublishESDLBindingResponse.status.Code === 0) {
+                            dojo.publish("hpcc/brToaster", {
+                                Severity: "Message",
+                                Source: "WsESDLConfig.PublishESDLBinding",
+                                Exceptions: [{ Source: context.i18n.SuccessfullySaved, Message: response.PublishESDLBindingResponse.status.Description }]
+                            });
+                        }
+                        context.refreshGrid();
+                    }
                 });
+            },
 
-                context.store.setData(results);
-                context.grid.set("query", {__hpcc_parentName: null });
-            });
-        }
+            refreshGrid: function () {
+                var context = this;
+                var results = [];
+                var newRows = [];
+
+                WsESDLConfig.GetESDLBinding({
+                    request: {
+                        EspProcName: this._params.Configuration.__hpcc_parentName,
+                        EspBindingName: this._params.Configuration.Name,
+                        ReportMethodsAvailable: true,
+                        ver_: "1.3"
+                    }
+                }).then(function (response) {
+                    if (lang.exists("GetESDLBindingResponse.ESDLBinding.Configuration.Methods.Method", response)) {
+                        results = response.GetESDLBindingResponse.ESDLBinding.Configuration.Methods.Method;
+                    }
+
+                    arrayUtil.forEach(results, function (row, idx) {
+                        lang.mixin(row, {
+                            __hpcc_parentName: null,
+                            __hpcc_id: row.Name
+                        });
+
+                        if (row.Attributes) {
+                            newRows.push({
+                                __hpcc_parentName: row.Name,
+                                __hpcc_id: row.Name + idx,
+                                Value: row.XML
+                            });
+                        } else {
+                            newRows.push({
+                                __hpcc_parentName: row.Name,
+                                __hpcc_id: row.Name + idx,
+                                Value: "<Method name=\"" + row.Name + "\"/>"
+                            });
+                        }
+                    });
+
+                    arrayUtil.forEach(newRows, function (newRow) {
+                        results.push(newRow);
+                    });
+
+                    context.store.setData(results);
+                    context.grid.set("query", { __hpcc_parentName: null });
+                });
+            }
+        });
     });
-});

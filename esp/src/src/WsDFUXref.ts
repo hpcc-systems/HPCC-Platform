@@ -1,6 +1,6 @@
 import * as arrayUtil from "dojo/_base/array";
 import * as lang from "dojo/_base/lang";
- 
+
 import * as ESPRequest from "./ESPRequest";
 
 declare const dojo;

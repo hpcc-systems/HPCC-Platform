@@ -469,103 +469,103 @@ export function _doCall(action, params?) {
     });
 }
 
-export function Users (params) {
+export function Users(params) {
     return _doCall("UserQuery", params);
 }
 
-export function UserAction (params) {
+export function UserAction(params) {
     return _doCall("UserAction", params);
 }
 
-export function AddUser (params) {
+export function AddUser(params) {
     return _doCall("AddUser", params);
 }
 
-export function UserEdit (params) {
+export function UserEdit(params) {
     return _doCall("UserEdit", params);
 }
 
-export function UserInfoEditInput (params) {
+export function UserInfoEditInput(params) {
     return _doCall("UserInfoEditInput", params);
 }
 
-export function UserInfoEdit (params) {
+export function UserInfoEdit(params) {
     return _doCall("UserInfoEdit", params);
 }
 
-export function UserResetPass (params) {
+export function UserResetPass(params) {
     return _doCall("UserResetPass", params);
 }
 
-export function UserGroupEdit (params) {
+export function UserGroupEdit(params) {
     return _doCall("UserGroupEdit", params);
 }
 
-export function UserGroupEditInput (params) {
+export function UserGroupEditInput(params) {
     return _doCall("UserGroupEditInput", params);
 }
 
-export function GroupAdd (params) {
+export function GroupAdd(params) {
     return _doCall("GroupAdd", params);
 }
 
-export function GroupAction (params) {
+export function GroupAction(params) {
     return _doCall("GroupAction", params);
 }
 
-export function GroupEdit (params) {
+export function GroupEdit(params) {
     return _doCall("GroupEdit", params);
 }
 
-export function GroupMemberEdit (params) {
+export function GroupMemberEdit(params) {
     return _doCall("GroupMemberEdit", params);
 }
 
-export function Groups (params) {
+export function Groups(params) {
     return _doCall("GroupQuery", params);
 }
 
-export function Members (params) {
+export function Members(params) {
     return _doCall("GroupEdit", params);
 }
 
-export function GroupMemberEditInput (params) {
+export function GroupMemberEditInput(params) {
     return _doCall("GroupMemberEditInput", params);
 }
 
-export function Permissions (params?) {
+export function Permissions(params?) {
     return _doCall("Permissions", params);
 }
 
-export function AccountPermissions (params) {
+export function AccountPermissions(params) {
     return _doCall("AccountPermissions", params);
 }
 
-export function ResourcePermissions (params) {
+export function ResourcePermissions(params) {
     return _doCall("ResourcePermissions", params);
 }
 
-export function Resources (params) {
+export function Resources(params) {
     return _doCall("Resources", params);
 }
 
-export function ResourceAdd (params) {
+export function ResourceAdd(params) {
     return _doCall("ResourceAdd", params);
 }
 
-export function ResourceDelete (params) {
+export function ResourceDelete(params) {
     return _doCall("ResourceDelete", params);
 }
 
-export function PermissionAction (params) {
+export function PermissionAction(params) {
     return _doCall("PermissionAction", params);
 }
 
-export function FilePermission (params) {
+export function FilePermission(params) {
     return _doCall("FilePermission", params);
 }
 
-export function ClearPermissionsCache () {
+export function ClearPermissionsCache() {
     return _doCall("ClearPermissionsCache", {
         request: {
             action: "Clear Permissions Cache"
@@ -573,7 +573,7 @@ export function ClearPermissionsCache () {
     });
 }
 
-export function EnableScopeScans () {
+export function EnableScopeScans() {
     return _doCall("EnableScopeScans", {
         request: {
             action: "Enable Scope Scans"
@@ -581,7 +581,7 @@ export function EnableScopeScans () {
     });
 }
 
-export function DisableScopeScans () {
+export function DisableScopeScans() {
     return _doCall("DisableScopeScans", {
         request: {
             action: "Disable Scope Scans"
@@ -589,7 +589,7 @@ export function DisableScopeScans () {
     });
 }
 
-export function DefaultPermissions () {
+export function DefaultPermissions() {
     return _doCall("ResourcePermissions", {
         request: {
             basedn: "ou=ecl,dc=hpccdev,dc=local",
@@ -600,7 +600,7 @@ export function DefaultPermissions () {
     });
 }
 
-export function PhysicalFiles () {
+export function PhysicalFiles() {
     return _doCall("ResourcePermissions", {
         request: {
             basedn: "ou=files,ou=ecl,dc=hpccdev,dc=local",
@@ -612,7 +612,7 @@ export function PhysicalFiles () {
     });
 }
 
-export function CheckFilePermissions () {
+export function CheckFilePermissions() {
     return _doCall("FilePermission", {
         request: {
             action: "Check File Permission"
@@ -620,7 +620,7 @@ export function CheckFilePermissions () {
     });
 }
 
-export function CreateUsersStore (groupname, observable) {
+export function CreateUsersStore(groupname, observable) {
     var store = new UsersStore();
     store.groupname = groupname;
     if (observable) {
@@ -629,7 +629,7 @@ export function CreateUsersStore (groupname, observable) {
     return store;
 }
 
-export function CreateGroupsStore (username, observable) {
+export function CreateGroupsStore(username, observable) {
     var store = new GroupsStore();
     store.username = username;
     if (observable) {
@@ -638,14 +638,14 @@ export function CreateGroupsStore (username, observable) {
     return store;
 }
 
-export function CreatePermissionsStore (groupname, username) {
+export function CreatePermissionsStore(groupname, username) {
     var store = new PermissionsStore();
     store.groupname = groupname;
     store.username = username;
     return Observable(store);
 }
 
-export function CreateAccountPermissionsStore (IsGroup, IncludeGroup, AccountName) {
+export function CreateAccountPermissionsStore(IsGroup, IncludeGroup, AccountName) {
     var store = new AccountResourcesStore();
     store.IsGroup = IsGroup;
     store.IncludeGroup = IncludeGroup;
@@ -653,7 +653,7 @@ export function CreateAccountPermissionsStore (IsGroup, IncludeGroup, AccountNam
     return Observable(store);
 }
 
-export function CreateInheritedPermissionsStore (IsGroup, IncludeGroup, AccountName, TabName) {
+export function CreateInheritedPermissionsStore(IsGroup, IncludeGroup, AccountName, TabName) {
     var store = new InheritedPermissionStore();
     store.IsGroup = IsGroup;
     store.IncludeGroup = IncludeGroup;
@@ -662,7 +662,7 @@ export function CreateInheritedPermissionsStore (IsGroup, IncludeGroup, AccountN
     return Observable(store);
 }
 
-export function CreateIndividualPermissionsStore (basedn, rtype, rtitle, name) {
+export function CreateIndividualPermissionsStore(basedn, rtype, rtitle, name) {
     var store = new IndividualPermissionsStore();
     store.basedn = basedn;
     store.rtype = rtype;
@@ -671,7 +671,7 @@ export function CreateIndividualPermissionsStore (basedn, rtype, rtitle, name) {
     return Observable(store);
 }
 
-export function CreateResourcesStore (groupname, username, basedn) {
+export function CreateResourcesStore(groupname, username, basedn) {
     var store = new ResourcesStore();
     store.groupname = groupname;
     store.username = username;

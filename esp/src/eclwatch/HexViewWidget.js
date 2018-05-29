@@ -1,18 +1,3 @@
-/*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-############################################################################## */
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
@@ -35,9 +20,9 @@ define([
     "dijit/form/CheckBox"
 ],
     function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, iframe,
-            registry,
-            _Widget, ESPWorkunit, ECLSourceWidget,
-            template) {
+        registry,
+        _Widget, ESPWorkunit, ECLSourceWidget,
+        template) {
         return declare("HexViewWidget", [_Widget], {
             templateString: template,
             baseClass: "HexViewWidget",
@@ -47,7 +32,7 @@ define([
             widthField: null,
             hexView: null,
             wu: null,
-            unknownChar:  String.fromCharCode(8226),
+            unknownChar: String.fromCharCode(8226),
             lineLength: 16,
             showEbcdic: false,
             bufferLength: 16 * 1024,
@@ -122,7 +107,7 @@ define([
                 var context = this;
                 this.watchHandle = this.wu.watch(function (name, oldValue, newValue) {
                     switch (name) {
-                        case "hasCompleted": 
+                        case "hasCompleted":
                             if (newValue === true) {
                                 this.wu.getInfo({
                                     onGetWUExceptions: function (exceptions) {
@@ -152,14 +137,14 @@ define([
                                         var store = result.getStore();
                                         var result = store.query({
                                         }, {
-                                            start: 0,
-                                            count: context.bufferLength
-                                        }).then(function (response) {
-                                            context.watchHandle.unwatch();
-                                            context.cachedResponse = response;
-                                            context.displayHex();
-                                            context.wu.doDelete();
-                                        });
+                                                start: 0,
+                                                count: context.bufferLength
+                                            }).then(function (response) {
+                                                context.watchHandle.unwatch();
+                                                context.cachedResponse = response;
+                                                context.displayHex();
+                                                context.wu.doDelete();
+                                            });
                                     });
                                 });
                             }
@@ -207,7 +192,7 @@ define([
                         if (hexRow)
                             hexRow += " ";
                     }
-                    if (hexRow) 
+                    if (hexRow)
                         hexRow += " ";
                     hexRow += item["char"];
 
@@ -223,22 +208,22 @@ define([
             },
 
             getQuery: function () {
-                return  "data_layout := record\n" + 
-                        "    data1 char;\n" +
-                        "end;\n" +
-                        "data_dataset := dataset('" + this.logicalFile + "', data_layout, thor);\n" +
-                        "analysis_layout := record\n" +
-                        "    data1 char;\n" +
-                        "    string1 str1;\n" +
-                        "    ebcdic string1 estr1;\n" +
-                        "end;\n" +
-                        "analysis_layout calcAnalysis(data_layout l) := transform\n" +
-                        "    self.char := l.char;\n" +
-                        "    self.str1 := transfer(l.char, string1);\n" +
-                        "    self.estr1 := transfer(l.char, string1);\n" +
-                        "end;\n" +
-                        "analysis_dataset := project(data_dataset, calcAnalysis(left));\n" +
-                        "choosen(analysis_dataset, " + this.bufferLength + ");\n";
+                return "data_layout := record\n" +
+                    "    data1 char;\n" +
+                    "end;\n" +
+                    "data_dataset := dataset('" + this.logicalFile + "', data_layout, thor);\n" +
+                    "analysis_layout := record\n" +
+                    "    data1 char;\n" +
+                    "    string1 str1;\n" +
+                    "    ebcdic string1 estr1;\n" +
+                    "end;\n" +
+                    "analysis_layout calcAnalysis(data_layout l) := transform\n" +
+                    "    self.char := l.char;\n" +
+                    "    self.str1 := transfer(l.char, string1);\n" +
+                    "    self.estr1 := transfer(l.char, string1);\n" +
+                    "end;\n" +
+                    "analysis_dataset := project(data_dataset, calcAnalysis(left));\n" +
+                    "choosen(analysis_dataset, " + this.bufferLength + ");\n";
             }
         });
     });

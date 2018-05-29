@@ -1,18 +1,3 @@
-/*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-############################################################################## */
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
@@ -42,8 +27,8 @@ define([
 
     "dojo/text!../templates/GraphWidget.html",
 
-    "dijit/Toolbar", 
-    "dijit/ToolbarSeparator", 
+    "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
 
     "dijit/TooltipDialog",
     "dijit/form/Form",
@@ -57,371 +42,371 @@ define([
 
     "hpcc/TableContainer"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
-            registry, BorderContainer, ContentPane,
-            parser,
-            _Widget, ESPUtil, Utility,
-            template) {
+    registry, BorderContainer, ContentPane,
+    parser,
+    _Widget, ESPUtil, Utility,
+    template) {
 
-    var GraphStore = declare("GraphStore", [Memory], {
-        idProperty: "id",
+        var GraphStore = declare("GraphStore", [Memory], {
+            idProperty: "id",
 
-        setData: function (data) {
-            this.inherited(arguments);
-            this.cacheColumns = {};
-            this.calcColumns();
-        },
+            setData: function (data) {
+                this.inherited(arguments);
+                this.cacheColumns = {};
+                this.calcColumns();
+            },
 
-        query: function (query, options) {
-            var retVal = this.inherited(arguments);
-            var sortSet = options && options.sort;
-            if (sortSet) {
-                retVal.sort(typeof sortSet === "function" ? sortSet : function (a, b) {
-                    for (var sort, i = 0; sort = sortSet[i]; i++) {
-                        var aValue = a[sort.attribute];
-                        var bValue = b[sort.attribute];
-                        // valueOf enables proper comparison of dates
-                        aValue = aValue != null ? aValue.valueOf() : aValue;
-                        bValue = bValue != null ? bValue.valueOf() : bValue;
-                        if (aValue !== bValue) {
-                            return !!sort.descending == (bValue == null || aValue > bValue) ? -1 : 1;   // jshint ignore:line
+            query: function (query, options) {
+                var retVal = this.inherited(arguments);
+                var sortSet = options && options.sort;
+                if (sortSet) {
+                    retVal.sort(typeof sortSet === "function" ? sortSet : function (a, b) {
+                        for (var sort, i = 0; sort = sortSet[i]; i++) {
+                            var aValue = a[sort.attribute];
+                            var bValue = b[sort.attribute];
+                            // valueOf enables proper comparison of dates
+                            aValue = aValue != null ? aValue.valueOf() : aValue;
+                            bValue = bValue != null ? bValue.valueOf() : bValue;
+                            if (aValue !== bValue) {
+                                return !!sort.descending == (bValue == null || aValue > bValue) ? -1 : 1;   // jshint ignore:line
+                            }
+                        }
+                        return 0;
+                    });
+                }
+                return retVal;
+            },
+
+            //  Helpers  ---
+            isNumber: function (n) {
+                return !isNaN(parseFloat(n)) && isFinite(n);
+            },
+            calcColumns: function () {
+                arrayUtil.forEach(this.data, function (item, idx) {
+                    for (var key in item) {
+                        if (key !== "id" && key.substring(0, 1) !== "_") {
+                            if (!this.cacheColumns[key]) {
+                                this.cacheColumns[key] = item[key].length;
+                            } else if (item[key].length > this.cacheColumns[key]) {
+                                this.cacheColumns[key] = item[key].length;
+                            }
+                        }
+                        if (this.isNumber(item[key])) {
+                            item[key] = parseFloat(item[key]);
                         }
                     }
-                    return 0;
+                }, this);
+            },
+            getColumnWidth: function (key) {
+                var width = this.cacheColumns[key] * 9;
+                if (width < 27) {
+                    width = 27;
+                } else if (width > 300) {
+                    width = 300;
+                }
+                return width;
+            },
+            appendColumns: function (target, highPriority, lowPriority, skip, formatTime) {
+                if (!highPriority) {
+                    highPriority = [];
+                }
+                if (!lowPriority) {
+                    lowPriority = [];
+                }
+                var skip = skip || [];
+                arrayUtil.forEach(target, function (item, idx) {
+                    skip.push(item.field);
                 });
+                arrayUtil.forEach(highPriority, function (key, idx) {
+                    if (skip.indexOf(key) === -1 && this.cacheColumns[key]) {
+                        target.push({
+                            field: key, label: key, width: this.getColumnWidth(key)
+                        });
+                    }
+                }, this);
+                for (var key in this.cacheColumns) {
+                    if (skip.indexOf(key) === -1 && highPriority.indexOf(key) === -1 && lowPriority.indexOf(key) === -1 && key.substring(0, 1) !== "_") {
+                        target.push({
+                            field: key, label: key, width: this.getColumnWidth(key)
+                        });
+                    }
+                }
+                arrayUtil.forEach(lowPriority, function (key, idx) {
+                    if (skip.indexOf(key) === -1 && this.cacheColumns[key]) {
+                        target.push({
+                            field: key, label: key, width: this.getColumnWidth(key)
+                        });
+                    }
+                }, this);
+                if (formatTime) {
+                    arrayUtil.forEach(target, function (column, idx) {
+                        if (column.label.indexOf("Time") === 0 || column.label.indexOf("Size") === 0 || column.label.indexOf("Skew") === 0) {
+                            column.formatter = function (_id, row) {
+                                return row["_" + column.field] || "";
+                            }
+                        }
+                    });
+                }
             }
-            return retVal;
-        },
+        });
 
-        //  Helpers  ---
-        isNumber: function (n) {
-            return !isNaN(parseFloat(n)) && isFinite(n);
-        },
-        calcColumns: function () {
-            arrayUtil.forEach(this.data, function (item, idx) {
-                for (var key in item) {
-                    if (key !== "id" && key.substring(0, 1) !== "_") {
-                        if (!this.cacheColumns[key]) {
-                            this.cacheColumns[key] = item[key].length;
-                        } else if (item[key].length > this.cacheColumns[key]) {
-                            this.cacheColumns[key] = item[key].length;
+        var GraphTreeStore = declare("GraphTreeStore", [GraphStore], {
+            idProperty: "id",
+
+            //  Store API  ---
+            constructor: function (options) {
+            },
+            query: function (query, options) {
+                return this.inherited(arguments);
+            },
+            setTree: function (data) {
+                this.setData([]);
+                this.inherited(arguments);
+                this.cacheColumns = {};
+                this.walkData(data);
+            },
+            walkData: function (data) {
+                arrayUtil.forEach(data, function (item, idx) {
+                    if (item._children) {
+                        item._children.sort(function (l, r) {
+                            return l.id - r.id;
+                        });
+                        this.walkData(item._children);
+                        lang.mixin(item, {
+                            __hpcc_notActivity: true
+                        });
+                    }
+                    this.add(item);
+
+                    for (var key in item) {
+                        if (key !== "id" && key.substring(0, 1) !== "_") {
+                            if (!this.cacheColumns[key]) {
+                                this.cacheColumns[key] = item[key].length;
+                            } else if (item[key].length > this.cacheColumns[key]) {
+                                this.cacheColumns[key] = item[key].length;
+                            }
+                        }
+                        if (this.isNumber(item[key])) {
+                            item[key] = parseFloat(item[key]);
                         }
                     }
-                    if (this.isNumber(item[key])) {
-                        item[key] = parseFloat(item[key]);
-                    }
-                }
-            }, this);
-        },
-        getColumnWidth: function(key) {
-            var width = this.cacheColumns[key] * 9;
-            if (width < 27) {
-                width = 27;
-            } else if (width > 300) {
-                width = 300;
-            }
-            return width;
-        },
-        appendColumns: function (target, highPriority, lowPriority, skip, formatTime) {
-            if (!highPriority) {
-                highPriority = [];
-            }
-            if (!lowPriority) {
-                lowPriority = [];
-            }
-            var skip = skip || [];
-            arrayUtil.forEach(target, function (item, idx) {
-                skip.push(item.field);
-            });
-            arrayUtil.forEach(highPriority, function (key, idx) {
-                if (skip.indexOf(key) === -1 && this.cacheColumns[key]) {
-                    target.push({
-                        field: key, label: key, width: this.getColumnWidth(key)
-                    });
-                }
-            }, this);
-            for (var key in this.cacheColumns) {
-                if (skip.indexOf(key) === -1 && highPriority.indexOf(key) === -1 && lowPriority.indexOf(key) === -1 && key.substring(0, 1) !== "_") {
-                    target.push({
-                        field: key, label: key, width: this.getColumnWidth(key)
-                    });
-                }
-            }
-            arrayUtil.forEach(lowPriority, function (key, idx) {
-                if (skip.indexOf(key) === -1 && this.cacheColumns[key]) {
-                    target.push({
-                        field: key, label: key, width: this.getColumnWidth(key)
-                    });
-                }
-            }, this);
-            if (formatTime) {
-                arrayUtil.forEach(target, function (column, idx) {
-                    if (column.label.indexOf("Time") === 0 || column.label.indexOf("Size") === 0 || column.label.indexOf("Skew") === 0) {
-                        column.formatter = function (_id, row) {
-                            return row["_" + column.field] || "";
-                        }
-                    }
-                });
-            }
-        }
-    });
+                }, this);
+            },
 
-    var GraphTreeStore = declare("GraphTreeStore", [GraphStore], {
-        idProperty: "id",
-
-        //  Store API  ---
-        constructor: function (options) {
-        },
-        query: function (query, options) {
-            return this.inherited(arguments);
-        },
-        setTree: function (data) {
-            this.setData([]);
-            this.inherited(arguments);
-            this.cacheColumns = {};
-            this.walkData(data);
-        },
-        walkData: function (data) {
-            arrayUtil.forEach(data, function (item, idx) {
-                if (item._children) {
-                    item._children.sort(function (l, r) {
-                        return l.id - r.id;
-                    });
-                    this.walkData(item._children);
-                    lang.mixin(item, {
+            //  Tree API  ---
+            mayHaveChildren: function (object) {
+                return object._children;
+            },
+            getChildren: function (parent, options) {
+                var filter = {};
+                if (options.originalQuery.__hpcc_notActivity) {
+                    filter = {
                         __hpcc_notActivity: true
-                    });
+                    };
                 }
-                this.add(item);
-
-                for (var key in item) {
-                    if (key !== "id" && key.substring(0, 1) !== "_") {
-                        if (!this.cacheColumns[key]) {
-                            this.cacheColumns[key] = item[key].length;
-                        } else if (item[key].length > this.cacheColumns[key]) {
-                            this.cacheColumns[key] = item[key].length;
-                        }
-                    }
-                    if (this.isNumber(item[key])) {
-                        item[key] = parseFloat(item[key]);
-                    }
-                }
-            }, this);
-        },
-
-        //  Tree API  ---
-        mayHaveChildren: function (object) {
-            return object._children;
-        },
-        getChildren: function (parent, options) {
-            var filter = {};
-            if (options.originalQuery.__hpcc_notActivity) {
-                filter = {
-                    __hpcc_notActivity: true
-                };
+                return QueryResults(this.queryEngine(filter, options)(parent._children));
             }
-            return QueryResults(this.queryEngine(filter, options)(parent._children));
-        }
-    });
+        });
 
-    var GraphView = declare("GraphView", null, {
-        sourceGraphWidget: null,
-        rootGlobalIDs: null,
-        id: null,
-        depth: null,
-        distance: null,
-        xgmml: null,
-        svg: null,
+        var GraphView = declare("GraphView", null, {
+            sourceGraphWidget: null,
+            rootGlobalIDs: null,
+            id: null,
+            depth: null,
+            distance: null,
+            xgmml: null,
+            svg: null,
 
-        constructor: function (sourceGraphWidget, rootGlobalIDs, depth, distance, subgraphs, hideSpills, selectedGlobalIDs) {
-            depth = depth || 2;
-            distance = distance || 2;
-            subgraphs = subgraphs || false;
-            hideSpills = hideSpills || false;
-            this.sourceGraphWidget = sourceGraphWidget;
+            constructor: function (sourceGraphWidget, rootGlobalIDs, depth, distance, subgraphs, hideSpills, selectedGlobalIDs) {
+                depth = depth || 2;
+                distance = distance || 2;
+                subgraphs = subgraphs || false;
+                hideSpills = hideSpills || false;
+                this.sourceGraphWidget = sourceGraphWidget;
 
-            rootGlobalIDs.sort();
-            this.rootGlobalIDs = rootGlobalIDs;
-            this.selectedGlobalIDs = selectedGlobalIDs ? selectedGlobalIDs : rootGlobalIDs;
+                rootGlobalIDs.sort();
+                this.rootGlobalIDs = rootGlobalIDs;
+                this.selectedGlobalIDs = selectedGlobalIDs ? selectedGlobalIDs : rootGlobalIDs;
 
-            var id = "";
-            arrayUtil.forEach(this.rootGlobalIDs, function (item, idx) {
-                if (idx > 0) {
-                    id += ":";
-                }
-                id += item;
-            }, this);
-            id += ":" + depth;
-            id += ":" + distance;
-            id += ":" + subgraphs;
-            id += ":" + hideSpills;
-            this.id = id;
+                var id = "";
+                arrayUtil.forEach(this.rootGlobalIDs, function (item, idx) {
+                    if (idx > 0) {
+                        id += ":";
+                    }
+                    id += item;
+                }, this);
+                id += ":" + depth;
+                id += ":" + distance;
+                id += ":" + subgraphs;
+                id += ":" + hideSpills;
+                this.id = id;
 
-            this.depth = depth;
-            this.distance = distance;
-            this.hideSpills = hideSpills;
-        },
+                this.depth = depth;
+                this.distance = distance;
+                this.hideSpills = hideSpills;
+            },
 
-        changeRootItems: function (globalIDs, depth, distance, subgraphs, hideSpills) {
-            return this.sourceGraphWidget.getGraphView(globalIDs, depth, distance, subgraphs, hideSpills);
-        },
+            changeRootItems: function (globalIDs, depth, distance, subgraphs, hideSpills) {
+                return this.sourceGraphWidget.getGraphView(globalIDs, depth, distance, subgraphs, hideSpills);
+            },
 
-        changeScope: function (depth, distance, subgraphs, hideSpills) {
-            return this.sourceGraphWidget.getGraphView(this.rootGlobalIDs, depth, distance, subgraphs, hideSpills, this.selectedGlobalIDs);
-        },
+            changeScope: function (depth, distance, subgraphs, hideSpills) {
+                return this.sourceGraphWidget.getGraphView(this.rootGlobalIDs, depth, distance, subgraphs, hideSpills, this.selectedGlobalIDs);
+            },
 
-        refreshXGMML: function (targetGraphWidget) {
-            targetGraphWidget.setMessage(targetGraphWidget.i18n.FetchingData).then(lang.hitch(this, function (response) {
-                var rootItems = this.sourceGraphWidget.getItems(this.rootGlobalIDs);
-                var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance, targetGraphWidget.option("vhidespills"));
-                if (targetGraphWidget.loadXGMML(xgmml, true)) {
-                    this.svg = "";
-                }
-                targetGraphWidget.setMessage("");
-            }));
-        },
-
-        refreshLayout: function (targetGraphWidget) {
-            var context = this;
-            targetGraphWidget.onLayoutFinished = function () {
-                context.svg = this._plugin.getSVG();
-                this.onLayoutFinished = null;
-            };
-            targetGraphWidget.startLayout("dot");
-        },
-
-        navigateTo: function (targetGraphWidget, noModifyHistory) {
-            var deferred = new Deferred();
-            if (!noModifyHistory) {
-                targetGraphWidget.graphViewHistory.push(this);
-            }
-            if (targetGraphWidget.onLayoutFinished == null) {
+            refreshXGMML: function (targetGraphWidget) {
                 targetGraphWidget.setMessage(targetGraphWidget.i18n.FetchingData).then(lang.hitch(this, function (response) {
                     var rootItems = this.sourceGraphWidget.getItems(this.rootGlobalIDs);
-                    var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance, this.hideSpills);
-                    targetGraphWidget.setMessage(targetGraphWidget.i18n.LoadingData).then(lang.hitch(this, function (response) {
-                        var context = this;
-                        if (targetGraphWidget.loadXGMML(xgmml)) {
-                            if (xgmml) {
-                                targetGraphWidget.onLayoutFinished = function () {
-                                    this.setSelectedAsGlobalID(context.selectedGlobalIDs);
-                                    context.svg = this._plugin.getSVG();
-                                    this.onLayoutFinished = null;
-                                    if (!noModifyHistory && this.graphViewHistory.getLatest() !== context) {
-                                        this.graphViewHistory.getLatest().navigateTo(this);
+                    var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance, targetGraphWidget.option("vhidespills"));
+                    if (targetGraphWidget.loadXGMML(xgmml, true)) {
+                        this.svg = "";
+                    }
+                    targetGraphWidget.setMessage("");
+                }));
+            },
+
+            refreshLayout: function (targetGraphWidget) {
+                var context = this;
+                targetGraphWidget.onLayoutFinished = function () {
+                    context.svg = this._plugin.getSVG();
+                    this.onLayoutFinished = null;
+                };
+                targetGraphWidget.startLayout("dot");
+            },
+
+            navigateTo: function (targetGraphWidget, noModifyHistory) {
+                var deferred = new Deferred();
+                if (!noModifyHistory) {
+                    targetGraphWidget.graphViewHistory.push(this);
+                }
+                if (targetGraphWidget.onLayoutFinished == null) {
+                    targetGraphWidget.setMessage(targetGraphWidget.i18n.FetchingData).then(lang.hitch(this, function (response) {
+                        var rootItems = this.sourceGraphWidget.getItems(this.rootGlobalIDs);
+                        var xgmml = this.sourceGraphWidget.getLocalisedXGMML(rootItems, this.depth, this.distance, this.hideSpills);
+                        targetGraphWidget.setMessage(targetGraphWidget.i18n.LoadingData).then(lang.hitch(this, function (response) {
+                            var context = this;
+                            if (targetGraphWidget.loadXGMML(xgmml)) {
+                                if (xgmml) {
+                                    targetGraphWidget.onLayoutFinished = function () {
+                                        this.setSelectedAsGlobalID(context.selectedGlobalIDs);
+                                        context.svg = this._plugin.getSVG();
+                                        this.onLayoutFinished = null;
+                                        if (!noModifyHistory && this.graphViewHistory.getLatest() !== context) {
+                                            this.graphViewHistory.getLatest().navigateTo(this);
+                                        }
+                                        deferred.resolve("Layout Complete.");
+                                        this.refreshRootState(context.rootGlobalIDs);
+                                    };
+                                    if (this.svg) {
+                                        targetGraphWidget.startCachedLayout(this.svg);
+                                    } else {
+                                        targetGraphWidget.startLayout("dot");
                                     }
-                                    deferred.resolve("Layout Complete.");
-                                    this.refreshRootState(context.rootGlobalIDs);
-                                };
-                                if (this.svg) {
-                                    targetGraphWidget.startCachedLayout(this.svg);
                                 } else {
-                                    targetGraphWidget.startLayout("dot");
+                                    targetGraphWidget.setMessage(targetGraphWidget.i18n.NothingSelected);
+                                    deferred.resolve("No Selection.");
                                 }
                             } else {
-                                targetGraphWidget.setMessage(targetGraphWidget.i18n.NothingSelected);
-                                deferred.resolve("No Selection.");
+                                targetGraphWidget.setSelectedAsGlobalID(context.selectedGlobalIDs);
+                                targetGraphWidget.setMessage("");
+                                deferred.resolve("XGMML Did Not Change.");
+                                targetGraphWidget.refreshRootState(context.rootGlobalIDs);
                             }
-                        } else {
-                            targetGraphWidget.setSelectedAsGlobalID(context.selectedGlobalIDs);
-                            targetGraphWidget.setMessage("");
-                            deferred.resolve("XGMML Did Not Change.");
-                            targetGraphWidget.refreshRootState(context.rootGlobalIDs);
-                        }
+                        }));
                     }));
-                }));
-            } else {
-                deferred.resolve("Graph Already in Layout.");
+                } else {
+                    deferred.resolve("Graph Already in Layout.");
+                }
+                return deferred.promise;
             }
-            return deferred.promise;
-        }
-    });
+        });
 
-    var GraphViewHistory = declare("GraphViewHistory", null, {
-        sourceGraphWidget: null,
-        history: null,
-        index: null,
+        var GraphViewHistory = declare("GraphViewHistory", null, {
+            sourceGraphWidget: null,
+            history: null,
+            index: null,
 
-        constructor: function (sourceGraphWidget) {
-            this.sourceGraphWidget = sourceGraphWidget;
-            this.historicPos = 0;
-            this.history = [];
-            this.index = {};
-        },
+            constructor: function (sourceGraphWidget) {
+                this.sourceGraphWidget = sourceGraphWidget;
+                this.historicPos = 0;
+                this.history = [];
+                this.index = {};
+            },
 
-        clear: function () {
-            this.history = [];
-            this.index = {};
-            this.sourceGraphWidget.refreshActionState();
-        },
+            clear: function () {
+                this.history = [];
+                this.index = {};
+                this.sourceGraphWidget.refreshActionState();
+            },
 
-        //  Index  ----
-        has: function(id) {
-            return this.index[id] != null;
-        },
+            //  Index  ----
+            has: function (id) {
+                return this.index[id] != null;
+            },
 
-        set: function(id, graphView) {
-            return this.index[id] = graphView;
-        },
+            set: function (id, graphView) {
+                return this.index[id] = graphView;
+            },
 
-        get: function(id) {
-            return this.index[id];
-        },
+            get: function (id) {
+                return this.index[id];
+            },
 
-        //  History  ----
-        push: function (graphView) {
-            this.set(graphView.id, graphView);
-            if (this.hasNext()) {
-                this.history.splice(this.historicPos + 1, this.history.length);
+            //  History  ----
+            push: function (graphView) {
+                this.set(graphView.id, graphView);
+                if (this.hasNext()) {
+                    this.history.splice(this.historicPos + 1, this.history.length);
+                }
+                if (this.history[this.history.length - 1] !== graphView) {
+                    this.history.push(graphView);
+                }
+                this.historicPos = this.history.length - 1;
+                this.sourceGraphWidget.refreshActionState();
+            },
+
+            getCurrent: function () {
+                return this.history[this.historicPos];
+            },
+
+            getLatest: function () {
+                return this.history[this.history.length - 1];
+            },
+
+            hasPrevious: function () {
+                return this.historicPos > 0;
+            },
+
+            hasNext: function () {
+                return this.historicPos < this.history.length - 1;
+            },
+
+            isRootSubgraph: function () {
+                arrayUtil.forEach(this.history[this.historicPos].rootGlobalIDs, function (item, idx) {
+
+                }, this);
+            },
+
+            navigatePrevious: function () {
+                if (this.hasPrevious()) {
+                    this.historicPos -= 1;
+                    this.history[this.historicPos].navigateTo(this.sourceGraphWidget, true).then(lang.hitch(this, function (response) {
+                        this.sourceGraphWidget.refreshActionState();
+                    }));
+                }
+            },
+
+            navigateNext: function () {
+                if (this.hasNext()) {
+                    this.historicPos += 1;
+                    this.history[this.historicPos].navigateTo(this.sourceGraphWidget, true).then(lang.hitch(this, function (response) {
+                        this.sourceGraphWidget.refreshActionState();
+                    }));
+                }
             }
-            if (this.history[this.history.length - 1] !== graphView) {
-                this.history.push(graphView);
-            }
-            this.historicPos = this.history.length - 1;
-            this.sourceGraphWidget.refreshActionState();
-        },
+        });
 
-        getCurrent: function () {
-            return this.history[this.historicPos];
-        },
-
-        getLatest: function () {
-            return this.history[this.history.length - 1];
-        },
-
-        hasPrevious: function () {
-            return this.historicPos > 0;
-        },
-
-        hasNext: function () {
-            return this.historicPos < this.history.length - 1;
-        },
-
-        isRootSubgraph: function () {
-            arrayUtil.forEach(this.history[this.historicPos].rootGlobalIDs, function (item, idx) {
-
-            }, this);
-        },
-
-        navigatePrevious: function () {
-            if (this.hasPrevious()) {
-                this.historicPos -= 1;
-                this.history[this.historicPos].navigateTo(this.sourceGraphWidget, true).then(lang.hitch(this, function(response) {
-                    this.sourceGraphWidget.refreshActionState();
-                }));
-            }
-        },
-
-        navigateNext: function () {
-            if (this.hasNext()) {
-                this.historicPos += 1;
-                this.history[this.historicPos].navigateTo(this.sourceGraphWidget, true).then(lang.hitch(this, function (response) {
-                    this.sourceGraphWidget.refreshActionState();
-                }));
-            }
-        }
-    });
-
-    return declare("GraphWidget", [_Widget], {
+        return declare("GraphWidget", [_Widget], {
             templateString: template,
             baseClass: "GraphWidget",
             i18n: nlsHPCC,
@@ -446,7 +431,7 @@ define([
             //  Known control properties  ---
             DOT_META_ATTR: "DOT_META_ATTR",
 
-            constructor: function() {
+            constructor: function () {
                 if (has("ie")) {
                     this.isIE = true;
                 } else if (has("trident")) {
@@ -699,7 +684,7 @@ define([
                 return retVal;
             },
 
-            getGlobalType: function(globalID) {
+            getGlobalType: function (globalID) {
                 if (this.hasPlugin()) {
                     return this._plugin.getGlobalType(this._plugin.getItem(globalID));
                 }
@@ -872,7 +857,7 @@ define([
                             arrayUtil.forEach(domNode.childNodes, function (childNode) {
                                 context.walkTrace(childNode, results);
                             });
-                        }
+                    }
                 }
             },
 
@@ -907,18 +892,18 @@ define([
                         this.pluginID = this.id + "Plugin";
                         if (this.isIE || this.isIE11) {
                             this.graphContentPane.domNode.innerHTML = '<object type="application/x-hpccsystemsgraphviewcontrol" '
-                                                    + 'id="' + this.pluginID + '" '
-                                                    + 'name="' + this.pluginID + '" '
-                                                    + 'width="100%" '
-                                                    + 'height="100%">'
-                                                    + '</object>';
+                                + 'id="' + this.pluginID + '" '
+                                + 'name="' + this.pluginID + '" '
+                                + 'width="100%" '
+                                + 'height="100%">'
+                                + '</object>';
                         } else {
                             this.graphContentPane.domNode.innerHTML = '<embed type="application/x-hpccsystemsgraphviewcontrol" '
-                                                    + 'id="' + this.pluginID + '" '
-                                                    + 'name="' + this.pluginID + '" '
-                                                    + 'width="100%" '
-                                                    + 'height="100%">'
-                                                    + '</embed>';
+                                + 'id="' + this.pluginID + '" '
+                                + 'name="' + this.pluginID + '" '
+                                + 'width="100%" '
+                                + 'height="100%">'
+                                + '</embed>';
                         }
                         var context = this;
                         this.checkPluginLoaded().then(lang.hitch(this, function (response) {
@@ -930,8 +915,8 @@ define([
                     } else {
                         domConstruct.create("div", {
                             innerHTML: "<h4>" + this.i18n.GraphView + "</h4>" +
-                                        "<p>" + this.i18n.Toenablegraphviews + ":</p>" +
-                                        this.getResourceLinks()
+                                "<p>" + this.i18n.Toenablegraphviews + ":</p>" +
+                                this.getResourceLinks()
                         }, this.graphContentPane.domNode);
                     }
                 }
@@ -969,8 +954,8 @@ define([
 
             getResourceLinks: function () {
                 return "<a href=\"http://hpccsystems.com/download/free-community-edition/graph-control\" target=\"_blank\">" + this.i18n.BinaryInstalls + "</a><br/>" +
-                "<a href=\"https://github.com/hpcc-systems/GraphControl\" target=\"_blank\">" + this.i18n.SourceCode + "</a><br/><br/>" +
-                "<a href=\"http://hpccsystems.com\" target=\"_blank\">" + this.i18n.HPCCSystems + "</a>"
+                    "<a href=\"https://github.com/hpcc-systems/GraphControl\" target=\"_blank\">" + this.i18n.SourceCode + "</a><br/><br/>" +
+                    "<a href=\"http://hpccsystems.com\" target=\"_blank\">" + this.i18n.HPCCSystems + "</a>"
             },
 
             setMessage: function (message) {
@@ -1031,7 +1016,7 @@ define([
                 }
             },
 
-            _onLayoutFinished: function() {
+            _onLayoutFinished: function () {
                 this.setMessage('');
                 this.centerOnItem(0, true);
                 this.dot = this._plugin.getDOT();
@@ -1063,7 +1048,7 @@ define([
                 return [];
             },
 
-            setScale: function(percent) {
+            setScale: function (percent) {
                 if (this.hasPlugin()) {
                     return this._plugin.setScale(percent);
                 }

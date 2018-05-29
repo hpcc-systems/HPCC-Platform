@@ -1,18 +1,3 @@
-/*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-############################################################################## */
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
@@ -36,17 +21,17 @@ define([
     "src/ESPWorkunit",
     "hpcc/DelayLoadWidget"
 
-],  function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, domConstruct, on,
-            registry, Button, ToolbarSeparator,
-            selector,
-            GridDetailsWidget, ESPUtil, ESPRequest, ESPWorkunit, DelayLoadWidget) {
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, domConstruct, on,
+    registry, Button, ToolbarSeparator,
+    selector,
+    GridDetailsWidget, ESPUtil, ESPRequest, ESPWorkunit, DelayLoadWidget) {
         return declare("LogsWidget", [GridDetailsWidget], {
             baseClass: "LogsWidget",
             i18n: nlsHPCC,
 
             gridTitle: nlsHPCC.Helpers,
             idProperty: "id",
-	    
+
             lastSelection: null,
 
             downloadFrameID: 0,
@@ -167,7 +152,7 @@ define([
                                         return "<a href='#' class='dgrid-row-url'>" + Type + " (" + row.Orig.Description + ")" + "</a>"
                                     }
                                 }
-                            return Type;
+                                return Type;
                             }
                         },
                         Description: {
@@ -257,7 +242,7 @@ define([
                     }
                 });
             },
-            
+
             canShowContent: function (type) {
                 switch (type) {
                     case "dll":

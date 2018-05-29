@@ -3,7 +3,7 @@ import * as arrayUtil from "dojo/_base/array";
 import * as lang from "dojo/_base/lang";
 import "dojo/i18n";
 // @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";    
+import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as Deferred from "dojo/_base/Deferred";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
