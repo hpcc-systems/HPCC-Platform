@@ -14059,6 +14059,23 @@ void SemanticErrorChecker::checkJoin(IHqlExpression * join)
             }
         }
     }
+    IHqlExpression * keyed = join->queryAttribute(keyedAtom);
+    if (keyed)
+    {
+        //Ignore ,KEYED, only check ,KEYED(index)
+        IHqlExpression * index = keyed->queryChild(0);
+        if (index)
+        {
+            if (!getBoolAttribute(index, filepositionAtom, true))
+                reportError(ERR_BAD_JOINFLAG, "Cannot peform a full KEYED join with an index that has no fileposition");
+            else
+            {
+                IHqlExpression * lastField = queryLastField(index->queryRecord());
+                if (lastField && lastField->hasAttribute(_implicitFpos_Atom))
+                    reportError(ERR_BAD_JOINFLAG, "Cannot peform a full KEYED join with an index that has no fileposition");
+            }
+        }
+    }
 }
 
 void SemanticErrorChecker::checkChoosen(IHqlExpression * expr)
