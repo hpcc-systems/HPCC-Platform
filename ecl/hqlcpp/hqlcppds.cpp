@@ -3022,6 +3022,7 @@ public:
 
 //Used for dynamically sizing rows.
     virtual void * createRow(size32_t & allocatedSize) override { throwUnexpected(); }
+    virtual void * createRow(size32_t initialSize, size32_t & allocatedSize) override { throwUnexpected(); }
     virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) override { throwUnexpected(); }
     virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) override { throwUnexpected(); }
 

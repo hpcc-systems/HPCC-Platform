@@ -44,8 +44,8 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      699
-#define MIN_ACTIVITY_INTERFACE_VERSION  699             //minimum value that is compatible with current interface
+#define ACTIVITY_INTERFACE_VERSION      650
+#define MIN_ACTIVITY_INTERFACE_VERSION  650             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
 
@@ -259,6 +259,7 @@ interface IEngineRowAllocator : extends IInterface
 
 //Used for dynamically sizing rows.
     virtual void * createRow(size32_t & allocatedSize) = 0;
+    virtual void * createRow(size32_t initialSize, size32_t & allocatedSize) = 0;
     virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) = 0;            //NB: size is updated with the new size
     virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) = 0;
 
