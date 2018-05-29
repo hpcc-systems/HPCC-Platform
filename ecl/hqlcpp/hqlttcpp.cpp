@@ -11096,6 +11096,7 @@ static bool isSimpleSideeffect(IHqlExpression * expr)
     case no_attr:
     case no_attr_expr:
     case no_attr_link:
+    case no_assert:
         return true;
     case no_comma:
     case no_compound:
