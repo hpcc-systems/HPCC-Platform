@@ -1472,6 +1472,9 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     if (optExpandPath)
     {
         expandArchive(optExpandPath, instance.srcArchive, true);
+        const char * queryText = instance.srcArchive->queryProp("Query");
+        if (queryText)
+            printf("%s", queryText);
         return;
     }
 
