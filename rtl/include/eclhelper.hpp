@@ -57,6 +57,10 @@ typedef unsigned char byte;
 #endif
 #endif
 
+#ifdef _WIN32
+typedef size_t memsize_t;
+#endif
+
 typedef unsigned __int64 __uint64;
 typedef __uint64 offset_t;
 
@@ -1965,10 +1969,6 @@ struct IHThorKeyPatchArg : public IHThorArg
     virtual unsigned getExpiryDays() = 0;
 };
 
-
-#ifdef WIN32
-typedef unsigned char byte;
-#endif
 
 struct IHThorWorkunitReadArg : public IHThorArg
 {
