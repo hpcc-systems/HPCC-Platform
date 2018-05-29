@@ -146,8 +146,8 @@ var TreeStore = declare(null, {
                     context.cache[context.getIdentity(storeItem)] = storeItem;
                 });
             }
-            function boolToNumber(b:boolean): number{
-                return b ? 1: 0;
+            function boolToNumber(b: boolean): number {
+                return b ? 1 : 0;
             }
             retVal.sort(function (l, r) {
                 if (l.__hpcc_isDir === r.__hpcc_isDir) {
@@ -227,7 +227,7 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             this.CompressedFileSize = CompressedFileSize.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
     },
-    _StatSetter: function(Stat) {
+    _StatSetter: function (Stat) {
         this.set("MinSkew", Stat.MinSkew);
         this.set("MaxSkew", Stat.MaxSkew);
     },

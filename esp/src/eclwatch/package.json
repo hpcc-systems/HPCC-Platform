@@ -21,7 +21,11 @@
         }
     ],
     "bugs": "https://track.hpccsystems.com/issues/?jql=component%20%3D%20EclWatch%20",
-    "keywords": ["JavaScript", "HPCC", "Big Data"],
+    "keywords": [
+        "JavaScript",
+        "HPCC",
+        "Big Data"
+    ],
     "homepage": "https://github.com/hpcc-systems/HPCC-Platform",
     "dojoBuild": "package.js"
 }

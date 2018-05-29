@@ -377,7 +377,7 @@ export function MonitorVisibility(widget, callback) {
 }
 
 var slice = Array.prototype.slice;
-export function override (method) {
+export function override(method) {
     var proxy;
 
     /** @this target object */

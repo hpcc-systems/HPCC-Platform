@@ -1,18 +1,3 @@
-/*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-############################################################################## */
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
@@ -38,10 +23,10 @@ define([
     "dijit/form/Button"
 
 ], function (declare, lang, i18n, nlsHPCC, dom, xhr, topic,
-            BorderContainer, ContentPane, registry,
-            CodeMirror,
-            _Widget, ESPWorkunit,
-            template) {
+    BorderContainer, ContentPane, registry,
+    CodeMirror,
+    _Widget, ESPWorkunit,
+    template) {
         return declare("ECLSourceWidget", [_Widget], {
             templateString: template,
             baseClass: "ECLSourceWidget",
@@ -145,12 +130,12 @@ define([
                     this.markers.push(this.editor.doc.markText({
                         line: line - 1,
                         ch: 0
-                    },{
-                        line: line, 
-                        ch: 0
-                    },{
-                        className: errWarnings[i].Severity + "Line"
-                    }));
+                    }, {
+                            line: line,
+                            ch: 0
+                        }, {
+                            className: errWarnings[i].Severity + "Line"
+                        }));
                 }
             },
 
@@ -167,14 +152,14 @@ define([
 
             highlightLine: function (line) {
                 this.highlightLines.push(this.editor.doc.markText({
-                    line: line - 1, 
+                    line: line - 1,
                     ch: 0
-                },{
-                    line: line, 
-                    ch: 0
-                },{
-                    className: "highlightline"
-                }));
+                }, {
+                        line: line,
+                        ch: 0
+                    }, {
+                        className: "highlightline"
+                    }));
             },
 
             setText: function (text) {
