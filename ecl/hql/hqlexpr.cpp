@@ -13060,7 +13060,7 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
         attrs.append(*createAttribute(activityAtom));
     
     IHqlExpression* passParamAttr = getFunctionBodyAttribute(body, passParameterMetaAtom);
-    if (passParamAttr != NULL && getBoolAttributeValue(passParamAttr))
+    if (getBoolAttributeValue(passParamAttr))
         attrs.append(*createAttribute(passParameterMetaAtom));
 
     IHqlExpression *child = body->queryChild(0);
@@ -16733,8 +16733,11 @@ bool isKeyedCountAggregate(IHqlExpression * aggregate)
 }
 
 
-bool getBoolAttributeValue(IHqlExpression * attr)
+bool getBoolAttributeValue(IHqlExpression * attr, bool dft)
 {
+    if (attr == NULL)
+        return dft;
+
     IHqlExpression * value = attr->queryChild(0);
     //No argument implies true
     if (!value)
@@ -16757,9 +16760,8 @@ bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft)
     if (!expr)
         return dft;
     IHqlExpression * attr = expr->queryAttribute(name);
-    if (!attr)
-        return dft;
-    return getBoolAttributeValue(attr);
+
+    return getBoolAttributeValue(attr,dft);
 }
 
 IHqlExpression * queryBoolAttribute(IHqlExpression * expr, IAtom * name)
@@ -16780,9 +16782,7 @@ IHqlExpression * queryBoolExpr(bool value)
 bool getBoolAttributeInList(IHqlExpression * expr, IAtom * search, bool dft)
 {
     IHqlExpression * match = queryAttributeInList(search, expr);
-    if (!match)
-        return dft;
-    return getBoolAttributeValue(match);
+    return getBoolAttributeValue(match,dft);
 }
 
 IHqlExpression * queryOriginalRecord(IHqlExpression * expr)
