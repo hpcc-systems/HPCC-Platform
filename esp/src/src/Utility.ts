@@ -1,4 +1,5 @@
 ﻿import * as arrayUtil from "dojo/_base/array";
+import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
 
 declare const dojoConfig;
@@ -708,4 +709,25 @@ export function debounce(func, threshold, execAsap) {
             func.apply(obj, args);
         timeout = setTimeout(delayed, threshold || 100);
     }
+}
+
+export function DynamicDialogForm(object) {
+    var table = domConstruct.create("table", {});
+
+    for (var key in object) {
+        var tr = domConstruct.create("tr", {}, table);
+        if (object.hasOwnProperty(key)) {
+            var td = domConstruct.create("td", {
+                style: "width: 30%;"
+            }, tr);
+            domConstruct.create("label", {
+                innerHTML: object[key]['label']
+            }, td);
+            var td1 = domConstruct.create("td", {
+                style: "width: 100%;"
+            }, tr);
+            this.key = object[key]['widget'].placeAt(td1);
+        }
+    }
+    return table;
 }

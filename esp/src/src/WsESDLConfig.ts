@@ -24,6 +24,19 @@ export function GetESDLDefinition(params) {
     return ESPRequest.send("WsESDLConfig", "GetESDLDefinition", params);
 }
 
+export function DeleteESDLDefinition(params) {
+    return ESPRequest.send("WsESDLConfig", "DeleteESDLDefinition", params);
+}
+
 export function PublishESDLBinding(params) {
     return ESPRequest.send("WsESDLConfig", "PublishESDLBinding", params);
 }
+
+//post 1.3 services
+
+export function ListESDLBindings(params) {
+    return ESPRequest.send("WsESDLConfig", "ListESDLBindings", params);
+}
+
+
+

@@ -4,42 +4,14 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/dom",
-    "dojo/dom-construct",
-    "dojo/dom-form",
-    "dojo/dom-attr",
-    "dojo/request/iframe",
-    "dojo/dom-class",
-    "dojo/query",
-    "dojo/store/Memory",
-    "dojo/store/Observable",
-    "dojo/_base/array",
-    "dojo/topic",
 
     "dijit/registry",
-    "dijit/form/ToggleButton",
-    "dijit/form/Button",
-    "dijit/ToolbarSeparator",
-    "dijit/Dialog",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-    'dgrid/extensions/CompoundColumns',
-    'dgrid/editor',
+    "src/Clippy",
 
     "hpcc/_TabContainerWidget",
-    "src/ESPWorkunit",
-    "src/ESPRequest",
-    "src/ESPUtil",
-    "hpcc/TargetSelectWidget",
-    "hpcc/ECLSourceWidget",
-    "src/WsTopology",
-    "hpcc/GridDetailsWidget",
+    "src/Utility",
     "src/WsESDLConfig",
-    "hpcc/DynamicESDLMethodWidget",
 
     "dojo/text!../templates/DynamicESDLDetailsWidget.html",
 
@@ -50,7 +22,10 @@ define([
     "dijit/form/Textarea",
     "dijit/form/Button",
     "dijit/form/DropDownButton",
+    "dijit/form/NumberTextBox",
     "dijit/form/ValidationTextBox",
+    "dijit/form/Select",
+    "dijit/form/ToggleButton",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
@@ -60,148 +35,29 @@ define([
     "dijit/form/SimpleTextarea",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, dom, domConstruct, domForm, domAttr, iframe, domClass, query, Memory, Observable, arrayUtil, topic,
-    registry, ToggleButton, Button, ToolbarSeparator, Dialog,
-    OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, CompoundColumns, editor,
-    _TabContainerWidget, ESPWorkunit, ESPRequest, ESPUtil, TargetSelectWidget, ECLSourceWidget, WsTopology, GridDetailsWidget, WsESDLConfig, DynamicESDLMethodWidget,
+], function (declare, lang, i18n, nlsHPCC, dom,
+    registry,
+    Clippy,
+    _TabContainerWidget, Utility, WsESDLConfig,
     template) {
         return declare("DynamicESDLDetailsWidget", [_TabContainerWidget], {
             templateString: template,
             baseClass: "DynamicESDLDetailsWidget",
             i18n: nlsHPCC,
-
-            summaryWidget: null,
-            bindingWidget: null,
-            bindingWidgetLoaded: false,
             definitionWidget: null,
             definitionWidgetLoaded: false,
             configurationWidget: null,
-            configurationWidgetLoaded: false,
-            configurationGrid: null,
+            configurationLoaded: false,
+            bound: false,
+            binding: null,
+            configuration: null,
+            definition: null,
+            definitionID: null,
 
             postCreate: function (args) {
                 this.inherited(arguments);
-                var context = this;
-                this.details = registry.byId(this.id + "_Details");
-                this.definitionWidget = registry.byId(this.id + "Definition");
-                this.configurationWidget = registry.byId(this.id + "Configuration");
-                this.definitionID = registry.byId(this.id + "DefinitionID");
-                this.bindingRefresh = registry.byId(this.id + "BindingRefresh");
-                this.refreshButton = registry.byId(this.id + "Refresh");
-
-                this.dialog = new Dialog({
-                    title: context.i18n.PleasePickADefinition,
-                    style: "width: 300px;"
-                });
-                this.addBindingButton = new Button({
-                    id: this.id + "AddBinding",
-                    disabled: true,
-                    onClick: function (val) {
-                        if (context.definitionDropDown) {
-                            context.definitionDropDown.destroyRecursive();
-                        }
-                        context.definitionDropDown = new TargetSelectWidget({});
-                        context.dialog.addChild(context.definitionDropDown);
-                        context.definitionDropDown.init({
-                            LoadDESDLDefinitions: true
-                        });
-                        context.dialog.show();
-                    },
-                    label: context.i18n.AddBinding
-                }).placeAt(this.refreshButton.domNode, "after");
-                var tmpSplitter = new ToolbarSeparator().placeAt(this.addBindingButton.domNode, "before");
-                this.deleteBindingButton = new Button({
-                    id: this.id + "DeleteBinding",
-                    disabled: true,
-                    onClick: function (val) {
-                        if (confirm(context.i18n.YouAreAboutToDeleteBinding)) {
-                            WsESDLConfig.DeleteESDLBinding({
-                                request: {
-                                    Id: context.params.__hpcc_parentName + "." + context.params.Name,
-                                    ver_: "1.3"
-                                }
-                            }).then(function (response) {
-                                if (lang.exists("DeleteESDLRegistryEntryResponse.status.Code", response)) {
-                                    if (response.DeleteESDLRegistryEntryResponse.status.Code === 0) {
-                                        dojo.publish("hpcc/brToaster", {
-                                            Severity: "Message",
-                                            Source: "WsESDLConfig.DeleteESDLBinding",
-                                            Exceptions: [{ Source: context.i18n.DeletedBinding, Message: context.i18n.BindingDeleted }]
-                                        });
-                                        context.addBindingButton.set("disabled", false);
-                                        context.deleteBindingButton.set("disabled", true);
-                                        context.widget._Binding.set("disabled", true);
-                                        context.params.Owner._onRefresh({});
-                                        context.params.Owner.grid.deselect(context.params.__hpcc_id);
-                                        context.params.Owner.grid.select(context.params.__hpcc_parentName);
-                                    }
-                                }
-                            });
-                        }
-                    },
-                    label: context.i18n.DeleteBinding
-                }).placeAt(this.addBindingButton.domNode, "after");
-                this.addDefinitionButton = new Button({
-                    disabled: false,
-                    style: "float:right;",
-                    label: this.i18n.Apply,
-                    onClick: function (val) {
-                        WsESDLConfig.GetESDLDefinition({
-                            request: {
-                                Id: context.definitionDropDown.get("value"),
-                                ReportMethodsAvailable: true,
-                                ver_: "1.3"
-                            }
-                        }).then(function (response) {
-                            if (response.GetESDLDefinitionResponse.status.Code === 0) {
-                                WsESDLConfig.PublishESDLBinding({
-                                    request: {
-                                        EspProcName: context.params.__hpcc_parentName,
-                                        EspBindingName: context.params.Name,
-                                        EsdlDefinitionID: response.GetESDLDefinitionResponse.Id,
-                                        Overwrite: true,
-                                        EsdlServiceName: response.GetESDLDefinitionResponse.ESDLServices.Name,
-                                        Config: "<Methods><Method name='" + response.GetESDLDefinitionResponse.Methods.Method[0].Name + "'/></Methods>",
-                                        ver_: "1.3"
-                                    }
-                                }).then(function (publishresponse) {
-                                    if (lang.exists("PublishESDLBindingResponse.status.Code", publishresponse)) {
-                                        if (publishresponse.PublishESDLBindingResponse.status.Code === 0) {
-                                            context.deleteBindingButton.set("disabled", false);
-                                            context.addBindingButton.set("disabled", true);
-                                            context.widget._Binding.set("disabled", false);
-                                            context.widget._Binding.__hpcc_initalized = true;
-                                            var xml = context.formatXml(response.GetESDLDefinitionResponse.XMLDefinition);
-                                            context.widget.Definition.init({
-                                                sourceMode: "xml"
-                                            });
-                                            context.widget.Definition.setText(xml);
-
-                                            if (!context.widget.Configuration.initalized) {
-                                                context.widget.Configuration.init({
-                                                    Configuration: context.params,
-                                                    Methods: response.GetESDLDefinitionResponse
-                                                });
-                                            } else if (context.widget.Configuration.refresh) {
-                                                context.widget.Configuration.refresh({
-                                                    Configuration: context.params,
-                                                    Methods: response.GetESDLDefinitionResponse
-                                                });
-                                            }
-                                            context.params.Owner._onRefresh({});
-                                            context.params.Owner.grid.deselect(context.params.__hpcc_id);
-                                            context.params.Owner.grid.select(context.params.__hpcc_parentName);
-                                        }
-                                    }
-                                });
-                            }
-                        });
-
-                        context.widget._Binding.set("disabled", false);
-                        context.dialog.hide();
-                    }
-                });
-                this.dialog.addChild(this.addDefinitionButton)
+                Clippy.attach(this.id + "ClippyButton");
+                this.definitionWidget = registry.byId(this.id + "_Definition");
             },
 
             startup: function (args) {
@@ -213,101 +69,109 @@ define([
             },
 
             getTitle: function () {
-                return this.i18n.title_TopologyDetails;
-            },
-
-            //  Hitched actions  ---
-            _onRefresh: function (event) {
+                return this.i18n.title_DESDL;
             },
 
             //  Implementation  ---
             init: function (params) {
-                if (this.params.__hpcc_id === params.__hpcc_id)
-                    return;
                 var context = this;
-                this.selectChild(this.widget._Summary.id);
-                this.initalized = false;
-                this.widget._Summary.__hpcc_initalized = false;
-                this.widget._Binding.__hpcc_initalized = false;
-
-                if (params.__hpcc_parentName) {
-                    if (params.__binding_info.Definition.Id !== null) {
-                        context.widget._Binding.set("disabled", false);
-                        context.addBindingButton.set("disabled", true);
-                        context.deleteBindingButton.set("disabled", false);
-                    } else {
-                        context.widget._Binding.set("disabled", true);
-                        context.addBindingButton.set("disabled", false);
-                        context.deleteBindingButton.set("disabled", true);
-                    }
-                } else {
-                    domConstruct.destroy(this.id + "serviceInformation");
-                    domConstruct.create("p", {});
-                    context.details.setContent(context.i18n.PleaseSelectADynamicESDLService);
-                    context.widget._Binding.set("disabled", true);
-                    context.deleteBindingButton.set("disabled", true);
-                    context.addBindingButton.set("disabled", true);
+                if (this.inherited(arguments))
+                    return;
+                if (params.Name) {
+                    dom.byId(context.id + "Id").textContent = params.Name;
+                    WsESDLConfig.GetESDLBinding({
+                        request: {
+                            EsdlBindingId: params.Name,
+                            IncludeInterfaceDefinition: true,
+                            ReportMethodsAvailable: true
+                        }
+                    }).then(function (response) {
+                        if (response.GetESDLBindingResponse.ConfigXML) {
+                            context.bound = true
+                            context.definition = response.GetESDLBindingResponse.ESDLBinding.Definition.Interface;
+                            context.configuration = response.GetESDLBindingResponse.ESDLBinding.Configuration.Methods.Method;
+                            context.definitionID = response.GetESDLBindingResponse.ESDLBinding.Definition.Id;
+                            context.refreshActionState();
+                        }
+                        for (var key in response.GetESDLBindingResponse) {
+                            context.updateInput(key, null, response.GetESDLBindingResponse[key]);
+                        }
+                    });
                 }
-
-                this.inherited(arguments);
-                this.initTab();
             },
 
             initTab: function () {
                 var context = this;
                 var currSel = this.getSelectedChild();
-                if (currSel.id === this.widget._Summary.id && !this.widget._Summary.__hpcc_initalized) {
-                    this.widget._Summary.__hpcc_initalized = true;
-                    var table = domConstruct.create("table", { id: this.id + "serviceInformation" });
-                    if (this.params.__hpcc_parentName) {
-                        for (var key in this.params) {
-                            if (this.params.hasOwnProperty(key) && !(this.params[key] instanceof Object)) {
-                                if (key.indexOf("__") !== 0) {
-                                    switch (key) {
-                                        case "Path":
-                                        case "ProcessNumber":
-                                        case "Widget":
-                                            break;
-                                        default:
-                                            var tr = domConstruct.create("tr", {}, table);
-                                            domConstruct.create("td", {
-                                                innerHTML: "<b>" + key + ":&nbsp;&nbsp;</b>"
-                                            }, tr);
-                                            domConstruct.create("td", {
-                                                innerHTML: this.params[key]
-                                            }, tr);
-                                    }
-                                }
+                if (currSel.id === this.widget._Configuration.id && !this.widget._Configuration.__hpcc_initalized) {
+                    this.widget._Configuration.init({
+                        Binding: this.params,
+                        Definition: this.definitionID
+                    });
+                } else if (currSel.id === this.definitionWidget.id && !this.definitionWidgetLoaded) {
+                    this.definitionWidgetLoaded = true;
+                    var xml = context.formatXml(this.definition);
+                    this.definitionWidget.init({
+                        sourceMode: "xml",
+                        Usergenerated: xml
+                    });
+                }
+            },
+
+            _onDeleteBinding: function () {
+                var context = this;
+                WsESDLConfig.DeleteESDLBinding({
+                    request: {
+                        Id: context.params.Name
+                    }
+                }).then(function (response) {
+                    if (confirm(context.i18n.YouAreAboutToDeleteBinding)) {
+                        if (lang.exists("DeleteESDLRegistryEntryResponse.status.Code", response)) {
+                            if (response.DeleteESDLRegistryEntryResponse.status.Code === 0) {
+                                dojo.publish("hpcc/brToaster", {
+                                    Severity: "Message",
+                                    Source: "WsESDLConfig.DeleteESDLBinding",
+                                    Exceptions: [{
+                                        Source: context.i18n.DeletedBinding,
+                                        Message: response.DeleteESDLRegistryEntryResponse.status.Description
+                                    }]
+                                });
+                                context.bound = false;
+                                context.refreshActionState();
                             }
                         }
-                        this.details.setContent(table);
                     }
-                } else if (currSel.id === this.widget._Binding.id && !this.widget._Binding.__hpcc_initalized) {
-                    this.widget._Binding.__hpcc_initalized = true;
-
-                    var xml = context.formatXml(context.params.__binding_info.Definition.Interface)
-                    context.widget.Definition.init({
-                        sourceMode: "xml"
-                    });
-                    context.widget.Definition.setText(xml);
-
-                    if (!context.widget.Configuration.initalized) {
-                        context.widget.Configuration.init({
-                            Configuration: context.params
-                        });
-                    } else if (context.widget.Configuration.refresh) {
-                        context.widget.Configuration.refresh({
-                            Configuration: context.params
-                        });
-                    }
-                }
+                });
             },
 
             updateInput: function (name, oldValue, newValue) {
                 var registryNode = registry.byId(this.id + name);
                 if (registryNode) {
                     registryNode.set("value", newValue);
+                } else {
+                    var domElem = dom.byId(this.id + name);
+                    if (domElem) {
+                        switch (domElem.tagName) {
+                            case "SPAN":
+                            case "DIV":
+                                dom.byId(this.id + name).textContent = newValue;
+                                break;
+                            case "INPUT":
+                            case "TEXTAREA":
+                                domAttr.set(this.id + name, "value", newValue);
+                                break;
+                            default:
+                                alert(domElem.tagName);
+                        }
+                    }
                 }
+            },
+
+            refreshActionState: function () {
+                var hasBinding = this.bound;
+                registry.byId(this.id + "DeleteBinding").set("disabled", !this.bound);
+                registry.byId(this.id + "_Configuration").set("disabled", !this.bound);
+                registry.byId(this.id + "_Definition").set("disabled", !this.bound);
             }
         });
     });
