@@ -34,6 +34,10 @@
             document.write("<script type=\"text/javascript\" src=\"/esp/files/dist/node_modules.js\" charset=\"utf-8\"><" + "/script>");
             document.write("<script type=\"text/javascript\" src=\"/esp/files/dist/stub.eclwatch.js\" charset=\"utf-8\"><" + "/script>");
         }
+        checkCookie ();
+        function checkCookie(){
+            document.cookie.indexOf ("ESPAuthenticated") > -1 ? window.location() :window.location = location.origin + "/esp/files/Login.html";
+        }
     </script>
 </head>
 

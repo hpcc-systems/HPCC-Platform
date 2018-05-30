@@ -3,10 +3,12 @@ const debugHPCC_JS = false; //  Should never be TRUE in a PR  ---
 
 let rewrite = [
     { from: "/esp/files/Login.html", to: "http://" + debugServerIP + ":8010/esp/files/Login.html" },
+    { from: "/esp/files/GetUserName.html", to: "http://" + debugServerIP + ":8010/esp/files/GetUserName.html" },
     { from: "/esp/login", to: "http://" + debugServerIP + ":8010/esp/login" },
     { from: "/esp/files/esp/lock", to: "http://" + debugServerIP + ":8010/esp/lock" },
     { from: "/esp/unlock.json", to: "http://" + debugServerIP + ":8010/esp/unlock.json" },
     { from: "/esp/files/esp/logout", to: "http://" + debugServerIP + ":8010/esp/logout" },
+    { from: "/ws_elk/*", to: "http://" + debugServerIP + ":8010/ws_elk/$1" },
     { from: "/esp/files/esp/reset_session_timeout", to: "http://" + debugServerIP + ":8010/esp/reset_session_timeout" },
     { from: "/esp/files/dist/*", to: "/build/dist/$1" },
     { from: "/esp/files/*", to: "/$1" },
