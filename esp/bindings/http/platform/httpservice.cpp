@@ -953,6 +953,7 @@ EspAuthState CEspHttpServer::checkUserAuth()
     //   Any HTTP POST request;
     //   Any request which has a BasicAuthentication header;
     //   Any CORS calls.
+    authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
     bool authSession = (domainAuthType == AuthPerSessionOnly) || ((domainAuthType == AuthTypeMixed) &&
         authorizationHeader.isEmpty() && !authReq.authBinding->isCORSRequest(originHeader.str()) &&
         !strieq(authReq.httpMethod.str(), POST_METHOD));
@@ -1151,6 +1152,7 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
     if (!isEmptyString(userName) && !isEmptyString(password))
         return authNewSession(authReq, userName, password, urlCookie.isEmpty() ? "/" : urlCookie.str(), unlock);
 
+    authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
     if (unlock)
     {
         sendLockResponse(false, true, "Empty user name or password");
@@ -1173,6 +1175,7 @@ EspAuthState CEspHttpServer::checkUserAuthPerRequest(EspAuthRequest& authReq)
     {//We do pass the authentication per the request
         // authenticate optional groups. Do we still need?
         authOptionalGroups(authReq);
+        authReq.ctx->setAuthStatus(AUTH_STATUS_OK); //May be changed to AUTH_STATUS_NOACCESS if failed in feature level authorization.
 
         StringBuffer userName, peer;
         ESPLOG(LogNormal, "Authenticated for %s@%s", authReq.ctx->getUserID(userName).str(), m_request->getPeer(peer).str());
@@ -1208,6 +1211,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     authReq.authBinding->populateRequest(m_request.get());
     if (!authReq.authBinding->doAuth(authReq.ctx) && (authReq.ctx->getAuthError() != EspAuthErrorNotAuthorized))
     {
+        authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         ESPLOG(LogMin, "Authentication failed for %s@%s", _userName, peer.str());
         return handleAuthFailed(true, authReq, unlock, "User authentication failed.");
     }
@@ -1229,9 +1233,12 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     clearCookie(SESSION_START_URL_COOKIE);
     if (authReq.ctx->getAuthError() == EspAuthErrorNotAuthorized)
     {
+        authReq.ctx->setAuthStatus(AUTH_STATUS_NOACCESS);
         sendAuthorizationMsg(authReq);
         return authSucceeded;
     }
+
+    authReq.ctx->setAuthStatus(AUTH_STATUS_OK); //May be changed to AUTH_STATUS_NOACCESS if failed in feature level authorization.
     if (unlock)
     {
         sendLockResponse(false, false, "Unlocked");
@@ -1436,6 +1443,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
 
     if (!sessionTree)
     {
+        authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         ESPLOG(LogMin, "Authentication failed: session:<%u> not found", sessionID);
 
         clearCookie(authReq.authBinding->querySessionIDCookieName());
@@ -1453,6 +1461,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     const char* sessionStartIP = sessionTree->queryProp(PropSessionNetworkAddress);
     if (!streq(m_request->getPeer(peer).str(), sessionStartIP))
     {
+        authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         ESPLOG(LogMin, "Authentication failed: session:<%u> received from <%s>, not from <%s>", sessionID, peer.str(), sessionStartIP);
         sendMessage("Invalid session.", "text/html; charset=UTF-8");
         return authFailed;
@@ -1467,6 +1476,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     authReq.authBinding->populateRequest(m_request.get());
     authReq.ctx->setSessionToken(sessionID);
     authReq.ctx->queryUser()->setAuthenticateStatus(AS_AUTHENTICATED);
+    authReq.ctx->setAuthStatus(AUTH_STATUS_OK); //May be changed to AUTH_STATUS_NOACCESS if failed in feature level authorization.
 
     ESPLOG(LogMax, "Authenticated for %s<%u> %s@%s", PropSessionID, sessionID, userName.str(), sessionTree->queryProp(PropSessionNetworkAddress));
     if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "login"))

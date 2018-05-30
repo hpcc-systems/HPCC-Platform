@@ -2806,6 +2806,7 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
 
     if(ctx->toBeAuthenticated()) //future support WsSecurity tags?
     {
+        ctx->setAuthStatus(AUTH_STATUS_FAIL);
         response->sendBasicChallenge(getChallengeRealm(), false);
         return 0;
     }

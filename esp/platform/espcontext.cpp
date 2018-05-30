@@ -79,6 +79,7 @@ private:
     bool        m_hasException;
     int         m_exceptionCode;
     StringAttr  respMsg;
+    StringAttr  authStatus = AUTH_STATUS_NA;
     StringAttr  authenticationMethod;
     AuthType    domainAuthType;
     AuthError   authError = EspAuthErrorNone;
@@ -493,7 +494,10 @@ public:
     {
         updateTraceSummaryHeader();
         if (m_txSummary && (getTxSummaryLevel() >= LogMin))
+        {
+            m_txSummary->set("auth", authStatus.get());
             m_txSummary->append("total", m_processingTime, "ms");
+        }
     }
     virtual void addTraceSummaryCumulativeTime(LogLevel logLevel, const char* name, unsigned __int64 time)
     {
@@ -511,6 +515,11 @@ public:
 
         m_txSummary->clear();
         m_txSummary.clear();
+    }
+
+    virtual void setAuthStatus(const char* status)
+    {
+        authStatus.set(status);
     }
 
     virtual void setAuthenticationMethod(const char* method)

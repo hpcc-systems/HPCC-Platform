@@ -600,6 +600,9 @@ int CHttpMessage::readContentTillSocketClosed()
 
 int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
 {
+    //Set the auth to AUTH_STATUS_NA as default. Later on, it may be changed to
+    //other value (AUTH_STATUS_OK, AUTH_STATUS_FAIL, etc) when applicable.
+    m_context->addTraceSummaryValue(LogMin, "auth", AUTH_STATUS_NA);
     if (processHeaders(me)==-1)
         return -1;
 
