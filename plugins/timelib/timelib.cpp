@@ -49,8 +49,8 @@ static const char * EclDefinition =
 "  UNSIGNED4 endDate; \n"
 "END;"
 "EXPORT TimeLib := SERVICE : fold\n"
-"  INTEGER8 SecondsFromParts(integer2 year, unsigned1 month, unsigned1 day, unsigned1 hour, unsigned1 minute, unsigned1 second, boolean is_local_time) : c,pure,entrypoint='tlSecondsFromParts'; \n"
-"  TRANSFORM(TMPartsRec) SecondsToParts(INTEGER8 seconds) : c,pure,entrypoint='tlSecondsToParts'; \n"
+"  INTEGER8 SecondsFromParts(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day, UNSIGNED1 hour, UNSIGNED1 minute, UNSIGNED1 second, BOOLEAN is_local_time) : c,pure,entrypoint='tlSecondsFromParts'; \n"
+"  TRANSFORM(TMPartsRec) SecondsToParts(INTEGER8 seconds, BOOLEAN is_local_time) : c,pure,entrypoint='tlSecondsToParts'; \n"
 "  UNSIGNED2 GetDayOfYear(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfYear'; \n"
 "  UNSIGNED1 GetDayOfWeek(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfWeek'; \n"
 "  STRING DateToString(UNSIGNED4 date, CONST VARSTRING format) : c,pure,entrypoint='tlDateToString'; \n"
@@ -215,7 +215,7 @@ static __int64 tlLocalTimeZoneDiffIn100nsIntervals()
     GetLocalTime(&systemLocal);
 
     SystemTimeToFileTime(&systemUTC, &fileUTC);
-    SystemTimeToFileTime(&systemLocal, &fileLocal);
+    SystemTimeToFileTime(&systemLocal, &fileLocal); // DST is accounted for
 
     return tlFileTimeToInt64(fileLocal) - tlFileTimeToInt64(fileUTC);
 }
@@ -377,7 +377,7 @@ time_t tlMKTime(struct tm* timeInfoPtr, bool inLocalTimeZone)
 
     if (!inLocalTimeZone)
     {
-        // Adjust for time zone offset
+        // Adjust for time zone and DST offset
         the_time += (tlLocalTimeZoneDiffIn100nsIntervals() / _onesec_in100ns);
     }
     #else
@@ -396,9 +396,16 @@ time_t tlMKTime(struct tm* timeInfoPtr, bool inLocalTimeZone)
 
 //------------------------------------------------------------------------------
 
-void tlMakeTimeStructFromUTCSeconds(time_t seconds, struct tm* timeInfo)
+void tlMakeTimeStructFromSeconds(time_t seconds, struct tm* timeInfo, bool inLocalTimeZone)
 {
-    tlGMTime_r(&seconds, timeInfo);
+    if (inLocalTimeZone)
+    {
+        tlLocalTime_r(&seconds, timeInfo);
+    }
+    else
+    {
+        tlGMTime_r(&seconds, timeInfo);
+    }
 }
 
 void tlInsertDateIntoTimeStruct(struct tm* timeInfo, unsigned int date)
@@ -461,6 +468,7 @@ TIMELIB_API __int64 TIMELIB_CALL tlSecondsFromParts(int year, unsigned int month
     timeInfo.tm_mday = day;
     timeInfo.tm_mon = month - 1;
     timeInfo.tm_year = year - 1900;
+    timeInfo.tm_isdst = -1;
 
     the_time = tlMKTime(&timeInfo, is_local_time);
 
@@ -469,7 +477,7 @@ TIMELIB_API __int64 TIMELIB_CALL tlSecondsFromParts(int year, unsigned int month
 
 //------------------------------------------------------------------------------
 
-TIMELIB_API size32_t TIMELIB_CALL tlSecondsToParts(ARowBuilder& __self, __int64 seconds)
+TIMELIB_API size32_t TIMELIB_CALL tlSecondsToParts(ARowBuilder& __self, __int64 seconds, bool is_local_time)
 {
     struct tm       timeInfo;
 
@@ -484,7 +492,7 @@ TIMELIB_API size32_t TIMELIB_CALL tlSecondsToParts(ARowBuilder& __self, __int64 
         __int32 wday;
     };
 
-    tlMakeTimeStructFromUTCSeconds(seconds, &timeInfo);
+    tlMakeTimeStructFromSeconds(seconds, &timeInfo, is_local_time);
 
     TMParts* result = reinterpret_cast<TMParts*>(__self.getSelf());
 
@@ -524,6 +532,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlGetDayOfYear(short year, unsigned short 
     timeInfo.tm_mday = day;
     timeInfo.tm_mon = month - 1;
     timeInfo.tm_year = year - 1900;
+    timeInfo.tm_isdst = -1;
 
     tlMKTime(&timeInfo);
 
@@ -545,6 +554,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlGetDayOfWeek(short year, unsigned short 
     timeInfo.tm_mday = day;
     timeInfo.tm_mon = month - 1;
     timeInfo.tm_year = year - 1900;
+    timeInfo.tm_isdst = -1;
 
     tlMKTime(&timeInfo);
 
@@ -569,6 +579,7 @@ TIMELIB_API void TIMELIB_CALL tlDateToString(size32_t &__lenResult, char* &__res
 
         memset(&timeInfo, 0, sizeof(timeInfo));
         tlInsertDateIntoTimeStruct(&timeInfo, date);
+        timeInfo.tm_isdst = -1;
         tlMKTime(&timeInfo);
 
 #if defined(__clang__) || defined(__GNUC__)
@@ -597,6 +608,7 @@ TIMELIB_API void TIMELIB_CALL tlTimeToString(size32_t &__lenResult, char* &__res
 
     memset(&timeInfo, 0, sizeof(timeInfo));
     tlInsertTimeIntoTimeStruct(&timeInfo, time);
+    timeInfo.tm_isdst = -1;
     tlMKTime(&timeInfo);
 
 #if defined(__clang__) || defined(__GNUC__)
@@ -660,6 +672,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustDate(unsigned int date, short year
     timeInfo.tm_year += year_delta;
     timeInfo.tm_mon += month_delta;
     timeInfo.tm_mday += day_delta;
+    timeInfo.tm_isdst = -1;
 
     tlMKTime(&timeInfo);
 
@@ -678,6 +691,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustDateBySeconds(unsigned int date, i
     memset(&timeInfo, 0, sizeof(timeInfo));
 
     tlInsertDateIntoTimeStruct(&timeInfo, date);
+    timeInfo.tm_isdst = -1;
     timeInfo.tm_sec = seconds_delta;
 
     tlMKTime(&timeInfo);
@@ -700,6 +714,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustTime(unsigned int time, short hour
 #endif
 
     tlInsertTimeIntoTimeStruct(&timeInfo, time);
+    timeInfo.tm_isdst = -1;
 
     timeInfo.tm_hour += hour_delta;
     timeInfo.tm_min += minute_delta;
@@ -725,6 +740,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustTimeBySeconds(unsigned int time, i
 #endif
 
     tlInsertTimeIntoTimeStruct(&timeInfo, time);
+    timeInfo.tm_isdst = -1;
     timeInfo.tm_sec += seconds_delta;
 
     tlMKTime(&timeInfo);
@@ -786,6 +802,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustCalendar(unsigned int date, short 
 
     timeInfo.tm_year += year_delta;
     timeInfo.tm_mon += month_delta;
+    timeInfo.tm_isdst = -1;
 
     seconds = tlMKTime(&timeInfo);
 
@@ -941,6 +958,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlGetLastDayOfMonth(unsigned int date)
 
     memset(&timeInfo, 0, sizeof(timeInfo));
     tlInsertDateIntoTimeStruct(&timeInfo, date);
+    timeInfo.tm_isdst = -1;
 
     // Call mktime once to fix up any bogus data
     tlMKTime(&timeInfo);
@@ -971,6 +989,7 @@ TIMELIB_API size32_t TIMELIB_CALL tlDatesForWeek(ARowBuilder& __self, unsigned i
 
     memset(&timeInfo, 0, sizeof(timeInfo));
     tlInsertDateIntoTimeStruct(&timeInfo, date);
+    timeInfo.tm_isdst = -1;
 
     // Call mktime once to fix up any bogus data
     tlMKTime(&timeInfo);

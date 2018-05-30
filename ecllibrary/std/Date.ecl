@@ -173,13 +173,16 @@ EXPORT Seconds_t SecondsFromParts(INTEGER2 year,
  * Gregorian calendar after the year 1600.
  *
  * @param seconds               The number of seconds since epoch.
+ * @param is_local_time         TRUE if seconds is expressed in local time
+ *                              rather than UTC, FALSE if seconds is expressed
+ *                              in UTC.  Optional, defaults to FALSE.
  * @return                      Module with exported attributes for year, month,
  *                              day, hour, minute, second, day_of_week, date
  *                              and time.
  */
 
-EXPORT SecondsToParts(Seconds_t seconds) := FUNCTION
-    parts := ROW(TimeLib.SecondsToParts(seconds));
+EXPORT SecondsToParts(Seconds_t seconds, BOOLEAN is_local_time = FALSE) := FUNCTION
+    parts := ROW(TimeLib.SecondsToParts(seconds, is_local_time));
 
     result := MODULE
         EXPORT INTEGER2 year := parts.year + 1900;
@@ -1065,7 +1068,8 @@ EXPORT BOOLEAN IsLocalDaylightSavingsInEffect() :=
  * Returns the offset (in seconds) of the time represented from UTC, with
  * positive values indicating locations east of the Prime Meridian.  Given a
  * UTC time in seconds since epoch, you can find the local time by adding the
- * result of this function to the seconds.
+ * result of this function to the seconds.  Note that daylight savings time is
+ * factored into the offset.
  *
  * @return              The number of seconds offset from UTC.
  */
@@ -1262,12 +1266,16 @@ END;
 /**
  * A transform to create a Date_rec from a Seconds_t value.
  *
- * @param seconds       The number seconds since epoch.
- * @return              A transform that creates a Date_rec containing the date.
+ * @param seconds               The number seconds since epoch.
+ * @param is_local_time         TRUE if seconds is expressed in local time
+ *                              rather than UTC, FALSE if seconds is expressed
+ *                              in UTC.  Optional, defaults to FALSE.
+ * @return                      A transform that creates a Date_rec containing
+ *                              the date.
  */
 
-EXPORT Date_rec CreateDateFromSeconds(Seconds_t seconds) := TRANSFORM
-    timeParts := SecondsToParts(seconds);
+EXPORT Date_rec CreateDateFromSeconds(Seconds_t seconds, BOOLEAN is_local_time = FALSE) := TRANSFORM
+    timeParts := SecondsToParts(seconds, is_local_time);
 
     SELF.year := timeParts.year;
     SELF.month := timeParts.month;
@@ -1294,12 +1302,16 @@ END;
 /**
  * A transform to create a Time_rec from a Seconds_t value.
  *
- * @param seconds       The number seconds since epoch.
- * @return              A transform that creates a Time_rec containing the time of day.
+ * @param seconds               The number seconds since epoch.
+ * @param is_local_time         TRUE if seconds is expressed in local time
+ *                              rather than UTC, FALSE if seconds is expressed
+ *                              in UTC.  Optional, defaults to FALSE.
+ * @return                      A transform that creates a Time_rec containing
+ *                              the time of day.
  */
 
-EXPORT Time_rec CreateTimeFromSeconds(Seconds_t seconds) := TRANSFORM
-    timeParts := SecondsToParts(seconds);
+EXPORT Time_rec CreateTimeFromSeconds(Seconds_t seconds, BOOLEAN is_local_time = FALSE) := TRANSFORM
+    timeParts := SecondsToParts(seconds, is_local_time);
 
     SELF.hour := timeParts.hour;
     SELF.minute := timeParts.minute;
@@ -1338,13 +1350,16 @@ END;
 /**
  * A transform to create a DateTime_rec from a Seconds_t value.
  *
- * @param seconds       The number seconds since epoch.
- * @return              A transform that creates a DateTime_rec containing
- *                      date and time components.
+ * @param seconds               The number seconds since epoch.
+ * @param is_local_time         TRUE if seconds is expressed in local time
+ *                              rather than UTC, FALSE if seconds is expressed
+ *                              in UTC.  Optional, defaults to FALSE.
+ * @return                      A transform that creates a DateTime_rec
+ *                              containing date and time components.
  */
 
-EXPORT DateTime_rec CreateDateTimeFromSeconds(Seconds_t seconds) := TRANSFORM
-    timeParts := SecondsToParts(seconds);
+EXPORT DateTime_rec CreateDateTimeFromSeconds(Seconds_t seconds, BOOLEAN is_local_time = FALSE) := TRANSFORM
+    timeParts := SecondsToParts(seconds, is_local_time);
 
     SELF.year := timeParts.year;
     SELF.month := timeParts.month;
