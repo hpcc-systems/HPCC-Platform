@@ -16,6 +16,8 @@
 
 #include "mpi.h"
 #include "mpbase.hpp"
+#include "mptag.hpp"
+#include "mpbuff.hpp"
 
 class NodeGroup;
 
@@ -25,9 +27,10 @@ namespace hpcc_mpi{
 
     rank_t rank(NodeGroup &);
     rank_t size(NodeGroup &);
-    
-    int sendData(int dstRank, int tag, void *buffer, int bufferSize, NodeGroup &group, bool async = true);
-    int receiveData(int sourceRank, int tag, void **buffer, int bufferSize, NodeGroup &group, bool async = true);
+
+    //TODO return status data from following functions
+    int sendData(rank_t dstRank, mptag_t tag, CMessageBuffer &buffer, NodeGroup &group, bool async = true);
+    int readData(rank_t sourceRank, mptag_t tag, CMessageBuffer &buffer, NodeGroup &group, bool async = true);    
 
 }
 

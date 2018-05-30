@@ -38,9 +38,30 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-HPCC_ADD_EXECUTABLE ( mptest ${SRCS} )
-target_link_libraries ( mptest 
-         jlib
-         mp
-    )
+HPCC_ADD_EXECUTABLE (mptest ${SRCS} )
+target_link_libraries (mptest jlib mp)
+
+HPCC_ADD_EXECUTABLE (mptest_rank ${SRCS} ) 
+SET_TARGET_PROPERTIES(mptest_rank PROPERTIES COMPILE_FLAGS "-DRANK_TEST")
+target_link_libraries (mptest_rank jlib mp)
+
+HPCC_ADD_EXECUTABLE (mptest_single ${SRCS} ) 
+SET_TARGET_PROPERTIES(mptest_single PROPERTIES COMPILE_FLAGS "-DSINGLE_SEND_TEST")
+target_link_libraries (mptest_single jlib mp)
+
+HPCC_ADD_EXECUTABLE (mptest_rshift ${SRCS} ) 
+SET_TARGET_PROPERTIES(mptest_rshift PROPERTIES COMPILE_FLAGS "-DRIGHT_SHIFT_TEST")
+target_link_libraries (mptest_rshift jlib mp)
+
+HPCC_ADD_EXECUTABLE (mptest_custom ${SRCS} ) 
+SET_TARGET_PROPERTIES(mptest_custom PROPERTIES COMPILE_FLAGS "-DCUSTOM_SEND_TEST")
+target_link_libraries (mptest_custom jlib mp)
+
+HPCC_ADD_EXECUTABLE (mptest_to_all ${SRCS} ) 
+SET_TARGET_PROPERTIES(mptest_to_all PROPERTIES COMPILE_FLAGS "-DSEND_ONE_TO_ALL_TEST")
+target_link_libraries (mptest_to_all jlib mp)
+
+HPCC_ADD_EXECUTABLE (mptest_from_all ${SRCS} ) 
+SET_TARGET_PROPERTIES(mptest_from_all PROPERTIES COMPILE_FLAGS "-DRECEIVE_ONE_FROM_ALL_TEST")
+target_link_libraries (mptest_from_all jlib mp)
 

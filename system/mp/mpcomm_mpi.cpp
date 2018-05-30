@@ -104,7 +104,8 @@ public:
          *      2.2 Send message to all ranks from start_rank to end_rank until timeout
          * return (invalid dstrank) or (timeout expired)
          */
-        UNIMPLEMENTED;
+        hpcc_mpi::sendData(dstrank, tag, mbuf, *group, false);
+        return true;
     }
 
     void barrier(void){
@@ -141,12 +142,12 @@ public:
          * 1. Wait for the message to be received, canceled or timeout
          * 2. Update the sender if sender is valid
          */
-        UNIMPLEMENTED;
+        hpcc_mpi::readData(srcrank, tag, mbuf, *group, false);
+        return true;
     }
     
     void flush(mptag_t tag){
         // Handled by MPI
-        UNIMPLEMENTED;
     }
 
     IGroup &queryGroup() { 
@@ -154,7 +155,7 @@ public:
     }
     
     IGroup *getGroup()  { 
-        UNIMPLEMENTED;
+        return group;
     }
 
     bool sendRecv(CMessageBuffer &mbuff, rank_t sendrank, mptag_t sendtag, unsigned timeout=MP_WAIT_FOREVER){
