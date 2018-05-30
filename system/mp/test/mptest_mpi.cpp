@@ -13,9 +13,9 @@ using namespace std;
 void printHelp(int argc, char** argv){
     printf("\nMPTEST: Usage: mpirun -np <# of procs> %s", argv[0]);
 #ifdef RANK_TEST
-    printf("\nPrint rank of each node."); 
+    printf("\nPrint rank of each node (# of procs > 1)."); 
 #elif SINGLE_SEND_TEST
-    printf("\nSend message from node 0 to node 1 (# of procs = 2)."); 
+    printf("\nSend message from node 0 to node 1 (# of procs >= 2)."); 
 #elif RIGHT_SHIFT_TEST
     printf("\nSend data to the node represented by next rank."); 
 #elif CUSTOM_SEND_TEST
@@ -32,16 +32,18 @@ void printHelp(int argc, char** argv){
 void TEST_rank(ICommunicator* comm){
     IGroup *group = comm->getGroup();
     assertex(group->rank() >= 0);
+    assertex(group->ordinality() > 1); //at least 2 processors
     assertex(group->rank() < group->ordinality());
     PrintLog("Hello from %d. Total of %d nodes.",group->rank(), group->ordinality());
 }
 
 void TEST_single_send(ICommunicator* comm){
     IGroup* group = comm->getGroup();
-    int expected_msg = 13430;
+    int expected_msg = 42;
     int received_msg;
     CMessageBuffer testMsg;
-
+    assertex(group->ordinality() > 1);
+    
     if (group->rank() == 0){
         rank_t target = 1;
         testMsg.append(expected_msg);
