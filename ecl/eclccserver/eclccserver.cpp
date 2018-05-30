@@ -360,7 +360,6 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         }
         try
         {
-            cycle_t startCycles = get_cycles_now();
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
             Owned<AbortWaiter> abortWaiter = new AbortWaiter(pipe, workunit);
             eclccCmd.insert(0, eclccProgName);
@@ -411,10 +410,6 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 Owned<IWUQuery> query = workunit->updateQuery();
                 associateLocalFile(query, FileTypeDll, realdllfilename, "Workunit DLL", crc);
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
-
-                cycle_t elapsedCycles = get_cycles_now() - startCycles;
-                updateWorkunitStat(workunit, SSTcompilestage, "compile", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
-
                 workunit->commit();
                 return true;
             }
