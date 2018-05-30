@@ -397,6 +397,19 @@ byte * RtlLinkedDatasetBuilder::createRow()
 }
 
 
+//------------------------------------------------------------------------------------
+
+RtlStreamedDatasetBuilder::RtlStreamedDatasetBuilder(IEngineRowAllocator * _rowAllocator, int _choosenLimit)
+    : RtlLinkedDatasetBuilder(_rowAllocator, _choosenLimit)
+{
+}
+
+IRowStream * RtlStreamedDatasetBuilder::createDataset()
+{
+    return createRowStream(getcount(), queryrows());
+}
+
+
 //cloned from thorcommon.cpp
 class RtlChildRowLinkerWalker : implements IIndirectMemberVisitor
 {

@@ -2807,7 +2807,11 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
 
     IHqlExpression * record = ::queryRecord(to);
     Owned<IHqlCppDatasetBuilder> builder;
-    if (targetOutOfLine)
+    if (hasStreamedModifier(to))
+    {
+        builder.setown(createStreamedDatasetBuilder(record));
+    }
+    else if (targetOutOfLine)
     {
         if (isDictionaryType(target.queryType()))
         {
