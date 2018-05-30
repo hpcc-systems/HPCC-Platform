@@ -4013,70 +4013,88 @@ bool CWsWorkunitsEx::onWUDetails(IEspContext &context, IEspWUDetailsRequest &req
     return true;
 }
 
+static void getWUDetailsMetaProperties(IArrayOf<IEspWUDetailsMetaProperty> & properties)
+{
+    for (unsigned sk=StKindAll+1; sk<StMax;++sk)
+    {
+        const char * s = queryStatisticName((StatisticKind)sk);
+        if (s && *s)
+        {
+            Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
+            property->setName(s);
+            property->setValueType(CWUDetailsAttrValueType_Single);
+            properties.append(*property.getClear());
+        }
+    }
+    for (WuAttr attr=WaKind; attr<WaMax; ++attr)
+    {
+        Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
+        const char * s = queryWuAttributeName(attr);
+        assertex(s && *s);
+        property->setName(s);
+        if (isListAttribute(attr))
+            property->setValueType(CWUDetailsAttrValueType_List);
+        else if (isMultiAttribute(attr))
+            property->setValueType(CWUDetailsAttrValueType_Multi);
+        else
+            property->setValueType(CWUDetailsAttrValueType_Single);
+        properties.append(*property.getClear());
+    }
+}
+
+static void getWUDetailsMetaScopeTypes(StringArray & scopeTypes)
+{
+    for (unsigned sst=SSTall+1; sst<SSTmax; ++sst)
+    {
+        const char * s = queryScopeTypeName((StatisticScopeType)sst);
+        if (s && *s)
+            scopeTypes.append(s);
+    }
+}
+
+static void getWUDetailsMetaMeasures(StringArray & measures)
+{
+    for (unsigned measure=SMeasureAll+1; measure<SMeasureMax; ++measure)
+    {
+        const char *s = queryMeasureName((StatisticMeasure)measure);
+        if (s && *s)
+            measures.append(s);
+    }
+}
+static void getWUDetailsMetaActivities(IArrayOf<IConstWUDetailsActivityInfo> & activities)
+{
+    for (unsigned kind=((unsigned)ThorActivityKind::TAKnone)+1; kind< TAKlast; ++kind)
+    {
+        Owned<IEspWUDetailsActivityInfo> activity = createWUDetailsActivityInfo("","");
+        const char * name = getActivityText(static_cast<ThorActivityKind>(kind));
+        assertex(name && *name);
+        activity->setKind(kind);
+        activity->setName(name);
+        activity->setIsSink(isActivitySink(static_cast<ThorActivityKind>(kind)));
+        activity->setIsSource(isActivitySource(static_cast<ThorActivityKind>(kind)));
+        activities.append(*activity.getClear());
+    }
+}
+
 bool CWsWorkunitsEx::onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequest &req, IEspWUDetailsMetaResponse &resp)
 {
     try
     {
         IArrayOf<IEspWUDetailsMetaProperty> properties;
-        for (unsigned sk=StKindAll+1; sk<StMax;++sk)
-        {
-            const char * s = queryStatisticName((StatisticKind)sk);
-            if (s && *s)
-            {
-                Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
-                property->setName(s);
-                property->setValueType(CWUDetailsAttrValueType_Single);
-                properties.append(*property.getClear());
-            }
-        }
-
-        for (WuAttr attr=WaKind; attr<WaMax; ++attr)
-        {
-            Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
-            const char * s = queryWuAttributeName(attr);
-            assertex(s && *s);
-            property->setName(s);
-            if (isListAttribute(attr))
-                property->setValueType(CWUDetailsAttrValueType_List);
-            else if (isMultiAttribute(attr))
-                property->setValueType(CWUDetailsAttrValueType_Multi);
-            else
-                property->setValueType(CWUDetailsAttrValueType_Single);
-            properties.append(*property.getClear());
-        }
+        getWUDetailsMetaProperties(properties);
         resp.setProperties(properties);
 
         StringArray scopeTypes;
-        for (unsigned sst=SSTall+1; sst<SSTmax; ++sst)
-        {
-            const char * s = queryScopeTypeName((StatisticScopeType)sst);
-            if (s && *s)
-                scopeTypes.append(s);
-        }
+        getWUDetailsMetaScopeTypes(scopeTypes);
         resp.setScopeTypes(scopeTypes);
 
         StringArray measures;
-        for (unsigned measure=SMeasureAll+1; measure<SMeasureMax; ++measure)
-        {
-            const char *s = queryMeasureName((StatisticMeasure)measure);
-            if (s && *s)
-                measures.append(s);
-        }
+        getWUDetailsMetaMeasures(measures);
         resp.setMeasures(measures);
-        IArrayOf<IConstWUDetailsActivityInfo> activities;
-        for (unsigned kind=((unsigned)ThorActivityKind::TAKnone)+1; kind< TAKlast; ++kind)
-        {
-            Owned<IEspWUDetailsActivityInfo> activity = createWUDetailsActivityInfo("","");
-            const char * name = getActivityText(static_cast<ThorActivityKind>(kind));
-            assertex(name && *name);
-            activity->setKind(kind);
-            activity->setName(name);
-            activity->setIsSink(isActivitySink(static_cast<ThorActivityKind>(kind)));
-            activity->setIsSource(isActivitySource(static_cast<ThorActivityKind>(kind)));
-            activities.append(*activity.getClear());
-        }
-        resp.setActivities(activities);
 
+        IArrayOf<IConstWUDetailsActivityInfo> activities;
+        getWUDetailsMetaActivities(activities);
+        resp.setActivities(activities);
     }
     catch(IException* e)
     {
@@ -4084,6 +4102,47 @@ bool CWsWorkunitsEx::onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequ
     }
     return true;
 }
+
+#ifdef _USE_CPPUNIT
+
+#include "unittests.hpp"
+
+class WUDetailsMetaTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( WUDetailsMetaTest );
+        CPPUNIT_TEST(testWUDetailsMeta);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testWUDetailsMeta()
+    {
+        // These calls also check that all the calls required to build WUDetailsMeta
+        // are successful.
+        IArrayOf<IEspWUDetailsMetaProperty> properties;
+        getWUDetailsMetaProperties(properties);
+        unsigned expectedOrdinalityProps = StMax - (StKindAll + 1) + (WaMax-WaKind);
+        ASSERT(properties.ordinality()==expectedOrdinalityProps);
+
+        StringArray scopeTypes;
+        getWUDetailsMetaScopeTypes(scopeTypes);
+        unsigned expectedOrdinalityScopeTypes = SSTmax - (SSTall+1);
+        ASSERT(scopeTypes.ordinality()==expectedOrdinalityScopeTypes);
+
+        StringArray measures;
+        getWUDetailsMetaMeasures(measures);
+        unsigned expectedOrdinalityMeasures = SMeasureMax - (SMeasureAll+1);
+        ASSERT(measures.ordinality()==expectedOrdinalityMeasures);
+
+        IArrayOf<IConstWUDetailsActivityInfo> activities;
+        getWUDetailsMetaActivities(activities);
+        unsigned expectedOrdinalityActivities = TAKlast - (TAKnone+1);
+        ASSERT(activities.ordinality()==expectedOrdinalityActivities);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( WUDetailsMetaTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( WUDetailsMetaTest, "WUDetailsMetaTest" );
+
+#endif // _USE_CPPUNIT
 
 bool CWsWorkunitsEx::onWUGraphInfo(IEspContext &context,IEspWUGraphInfoRequest &req, IEspWUGraphInfoResponse &resp)
 {
