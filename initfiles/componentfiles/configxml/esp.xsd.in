@@ -627,6 +627,31 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+	        <xs:element name="ESPCacheGroup"  maxOccurs="unbounded">
+	          <xs:annotation>
+	            <xs:appinfo>
+	              <title>ESPCacheGroup</title>
+	            </xs:appinfo>
+	          </xs:annotation>
+	          <xs:complexType>
+	            <xs:attribute name="id" type="xs:string" use="required">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>Unique string to identify an ESP level cache group</tooltip>
+	                  <colIndex>1</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+                    <xs:attribute name="initString" type="xs:string" use="required">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>A string sent to cache server for initiating the server.</tooltip>
+	                  <colIndex>2</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+                  </xs:complexType>
+                </xs:element>
                 <xs:element name="Instance" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:appinfo>
