@@ -1,5 +1,5 @@
 ###
-## Version Information
+##  Version Information
 ###
 set ( HPCC_PROJECT "community" )
 set ( HPCC_MAJOR 6 )
