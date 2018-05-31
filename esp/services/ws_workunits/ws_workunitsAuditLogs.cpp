@@ -1512,6 +1512,10 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
          }
          if(!strnicmp(path.str(), "/WsWorkunits/JobList", 20))
          {
+            SecAccessFlags accessOwn;
+            SecAccessFlags accessOthers;
+            getUserWuAccessFlags(*ctx, accessOwn, accessOthers, true);
+
             if (ctx->getClientVersion()<=0)
                 ctx->setClientVersion(1.51);
 
@@ -1551,6 +1555,10 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
         }
         else if(!strnicmp(path.str(), "/WsWorkunits/JobQueue", 21))
         {
+            SecAccessFlags accessOwn;
+            SecAccessFlags accessOthers;
+            getUserWuAccessFlags(*ctx, accessOwn, accessOthers, true);
+
             const char *cluster = params->queryProp("Cluster");
             const char *startDate = params->queryProp("StartDate");
             const char *endDate = params->queryProp("EndDate");
