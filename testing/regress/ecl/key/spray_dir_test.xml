@@ -1,0 +1,17 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><result>Despray Pass</result></Row>
+</Dataset>
+<Dataset name='Empty_Dir_No_FailIFNoSourceFile'>
+ <Row><result>Pass</result></Row>
+</Dataset>
+<Dataset name='Empty_Dir_FailIFNoSourceFile'>
+ <Row><result>Pass</result></Row>
+</Dataset>
+<Dataset name='Not_Empty_Dir_No_FailIFNoSourceFile'>
+ <Row><result>Pass</result></Row>
+</Dataset>
+<Dataset name='Not_Empty_Dir_FailIFNoSourceFile'>
+ <Row><result>Pass</result></Row>
+</Dataset>
