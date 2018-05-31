@@ -1011,7 +1011,11 @@ static void appendUnicode(MemoryBuffer & result, const UnicodeString & source, i
 {
     result.append((unsigned)length);
     UChar * target = (UChar *)result.reserve(length * sizeof(UChar));
+#if U_ICU_VERSION_MAJOR_NUM>=58
+    source.extractBetween(from, from+length, (char16_t *) target, 0);
+#else
     source.extractBetween(from, from+length, target, 0);
+#endif
 }
 
 void splitWords(MemoryBuffer & result, const UnicodeString & source, unsigned delimLen, UChar const * delim, bool allowBlankItems)
