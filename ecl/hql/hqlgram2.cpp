@@ -12413,7 +12413,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     ctx.incrementAttribsProcessed();
     if (canCache && (ctx.syntaxChecking() || ctx.hasCacheLocation()))
     {
-        OwnedHqlExpr simplified = createSimplifiedDefinition(parsed);
+        OwnedHqlExpr simplified = isMacro ? nullptr : createSimplifiedDefinition(parsed);
         if (ctx.hasCacheLocation())
             attrCtx.createCache(simplified, isMacro);
         if (simplified)
