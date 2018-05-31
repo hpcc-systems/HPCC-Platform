@@ -85,8 +85,7 @@
 
 #define _TRACING
 
-class NodeCommunicator: public ICommunicator, public CInterface
-{
+class NodeCommunicator: public ICommunicator, public CInterface{
     NodeGroup *group;
     bool outer;
     rank_t myrank;
@@ -132,14 +131,6 @@ public:
         hpcc_mpi::barrier(*group);
     }
 
-    bool verifyConnection(rank_t rank,  unsigned timeout){
-        UNIMPLEMENTED;
-    }
-
-    bool verifyAll(bool duplex, unsigned timeout){
-        UNIMPLEMENTED;
-    }
-
     unsigned probe(rank_t srcrank, mptag_t tag, rank_t *sender, unsigned timeout=0){
         /*
          * if there is a message waiting from a srcrank (within timeout)
@@ -159,14 +150,6 @@ public:
         // Handled by MPI
     }
 
-    IGroup &queryGroup() { 
-        UNIMPLEMENTED;
-    }
-    
-    IGroup *getGroup()  { 
-        return group;
-    }
-
     bool sendRecv(CMessageBuffer &mbuff, rank_t sendrank, mptag_t sendtag, unsigned timeout=MP_WAIT_FOREVER){
         /*
          * 1. Determine valid sendrank (assign if its RANK_RANDOM)
@@ -175,7 +158,10 @@ public:
          * 4. Perform receive within timeout
          * 5. Return true if all operations are success
          */
-        UNIMPLEMENTED;
+        // TODO fix timeout for recv?
+        bool sendSuccess = send(mbuff, sendrank, sendtag, timeout);
+        bool recvSuccess = recv(mbuff, sendrank, sendtag, NULL, timeout);
+        return (sendSuccess && recvSuccess);
     }
 
     bool reply(CMessageBuffer &mbuf, unsigned timeout=MP_WAIT_FOREVER){
@@ -186,17 +172,39 @@ public:
          *      WHAT SHOULD WE DO???
          */
         UNIMPLEMENTED;
+        mptag_t replytag = mbuf.getReplyTag();
+        rank_t dstrank = group->rank(mbuf.getSender());
+        
     }
 
     void cancel(rank_t srcrank, mptag_t tag){
         /*
          * Add a cancel message from a srcrank to receive queue
          */        
+        hpcc_mpi::CommRequest req = group->getCommRequest(srcrank, tag);
+        if (req >= 0){
+            hpcc_mpi::cancelComm(req);
+        }
+    }
+
+    bool verifyConnection(rank_t rank,  unsigned timeout){
         UNIMPLEMENTED;
     }
 
+    bool verifyAll(bool duplex, unsigned timeout){
+        UNIMPLEMENTED;
+    }
+    
     void disconnect(INode *node){
         UNIMPLEMENTED;
+    }
+
+    IGroup &queryGroup() { 
+        UNIMPLEMENTED;
+    }
+    
+    IGroup *getGroup()  { 
+        return group;
     }
 
     NodeCommunicator(IGroup *_group){
@@ -265,7 +273,6 @@ void removeMPConnectionMonitor(IConnectionMonitor *monitor){
 IMPServer *getMPServer(){
     UNIMPLEMENTED;
 }
-
 
 void registerSelfDestructChildProcess(HANDLE handle){
     UNIMPLEMENTED;
