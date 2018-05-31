@@ -78,39 +78,36 @@ int recv(int rank, int tag, CMessageBuffer &mbuf, MPI_Comm comm){
 
 //----------------------------------------------------------------------------//
 
-void hpcc_mpi::releaseComm(int req){
+void hpcc_mpi::releaseComm(CommRequest commReq){
     requestListLock.lock();
-    freeRequests.push_back(req);
+    freeRequests.push_back(commReq);
     requestListLock.unlock();
 }
 
-void hpcc_mpi::test(CommRequest p){
-}
-
-hpcc_mpi::CommStatus hpcc_mpi::getCommStatus(int i){
-    if (i < 0){
+hpcc_mpi::CommStatus hpcc_mpi::getCommStatus(CommRequest commReq){
+    if (commReq < 0){
         return hpcc_mpi::CommStatus::SUCCESS;
     }
-    if (requests[i].status){
-        return requests[i].status;
+    if (requests[commReq].status){
+        return requests[commReq].status;
     }
-    if (requests[i].requiresProbing){
-        requests[i].status = startReceiveProcess(i);
+    if (requests[commReq].requiresProbing){
+        requests[commReq].status = startReceiveProcess(commReq);
     }else{
         MPI_Status stat;
         int flag;
-        MPI_Test(&(requests[i].request), &flag, &stat);
+        MPI_Test(&(requests[commReq].request), &flag, &stat);
         if (flag){
-            if (requests[i].mbuf != NULL){ //if it was a receive call
-                (requests[i].mbuf)->reset();
-                (requests[i].mbuf)->append(requests[i].size,requests[i].data);
+            if (requests[commReq].mbuf != NULL){ //if it was a receive call
+                (requests[commReq].mbuf)->reset();
+                (requests[commReq].mbuf)->append(requests[commReq].size,requests[commReq].data);
             }
-            free(requests[i].data);
+            free(requests[commReq].data);
             //TODO test for canceled and update status for cancelled
-            requests[i].status = hpcc_mpi::CommStatus::SUCCESS;
+            requests[commReq].status = hpcc_mpi::CommStatus::SUCCESS;
         }
     }
-    return requests[i].status;
+    return requests[commReq].status;
 }
 
 rank_t hpcc_mpi::rank(NodeGroup &group){

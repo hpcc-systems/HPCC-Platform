@@ -94,7 +94,7 @@ class NodeCommunicator: public ICommunicator, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    bool send (CMessageBuffer &mbuf, rank_t dstrank, mptag_t tag, unsigned timeout){ 
+    bool send(CMessageBuffer &mbuf, rank_t dstrank, mptag_t tag, unsigned timeout){ 
         /***         
          * if dstrank == self 
          *      1.1 duplicate the message and initialize sender as self
@@ -105,11 +105,11 @@ public:
          *      2.2 Send message to all ranks from start_rank to end_rank until timeout
          * return (invalid dstrank) or (timeout expired)
          */
-        int s = hpcc_mpi::sendData(dstrank, tag, mbuf, *group, true);
-        while (hpcc_mpi::getCommStatus(s) == hpcc_mpi::CommStatus::INCOMPLETE){
+        hpcc_mpi::CommRequest req = hpcc_mpi::sendData(dstrank, tag, mbuf, *group, true);
+        while (hpcc_mpi::getCommStatus(req) == hpcc_mpi::CommStatus::INCOMPLETE){
             usleep(100);
         }
-        hpcc_mpi::releaseComm(s);
+        hpcc_mpi::releaseComm(req);
         
         return true;
     }
@@ -119,11 +119,11 @@ public:
          * 1. Wait for the message to be received, canceled or timeout
          * 2. Update the sender if sender is valid
          */
-        int s = hpcc_mpi::readData(srcrank, tag, mbuf, *group, true);
-        while (hpcc_mpi::getCommStatus(s) == hpcc_mpi::CommStatus::INCOMPLETE){
+        hpcc_mpi::CommRequest req = hpcc_mpi::readData(srcrank, tag, mbuf, *group, true);
+        while (hpcc_mpi::getCommStatus(req) == hpcc_mpi::CommStatus::INCOMPLETE){
             usleep(100);
         }
-        hpcc_mpi::releaseComm(s);
+        hpcc_mpi::releaseComm(req);
         
         return true;
     }
