@@ -21,6 +21,7 @@
 #  ICU_FOUND - system has the ICU library
 #  ICU_INCLUDE_DIR - the ICU include directory
 #  ICU_LIBRARIES - The libraries needed to use ICU
+#  ICU_VERSION - Version of unicode library
 
 IF (NOT ICU_FOUND)
   IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
@@ -51,11 +52,22 @@ IF (NOT ICU_FOUND)
     FIND_LIBRARY (ICU_LIBRARIES NAMES icuuc)
   endif()
 
+  if(EXISTS ${ICU_INCLUDE_DIR}/unicode/uchar.h)
+    file(STRINGS ${ICU_INCLUDE_DIR}/unicode/uchar.h __ICU_VERSION REGEX
+        "^#define U_UNICODE_VERSION*")
+    string(REPLACE "#define U_UNICODE_VERSION" "" __ICU_VERSION
+        ${__ICU_VERSION})
+    string(REPLACE "\"" "" __ICU_VERSION ${__ICU_VERSION})
+    string(STRIP "${__ICU_VERSION}" __ICU_VERSION)
+    set(ICU_VERSION "${__ICU_VERSION}" CACHE STRING "unicode library version")
+  endif()
+
   include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args(ICU DEFAULT_MSG
     ICU_LIBRARIES 
     ICU_INCLUDE_DIR
   )
+  message(STATUS "  version: ${ICU_VERSION}")
   IF (ICU_FOUND)
     IF (UNIX)
       STRING(REPLACE "icuuc" "icui18n" ICU_EXTRA1 "${ICU_LIBRARIES}")
@@ -68,6 +80,5 @@ IF (NOT ICU_FOUND)
     set (ICU_LIBRARIES ${ICU_EXTRA1} ${ICU_LIBRARIES} ${ICU_EXTRA2} )
   ENDIF()
 
-
-  MARK_AS_ADVANCED(ICU_INCLUDE_DIR ICU_LIBRARIES)
+  MARK_AS_ADVANCED(ICU_INCLUDE_DIR ICU_LIBRARIES ICU_VERSION)
 ENDIF()
