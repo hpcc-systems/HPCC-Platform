@@ -221,7 +221,10 @@
           <para>If it is running, stop the HPCC system, using this command in
           a terminal window:</para>
 
-          <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+                     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
+	                          xpointer="element(/1)"
+	                          xmlns:xi="http://www.w3.org/2001/XInclude" />
+
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -389,7 +392,10 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           role="bold">every</emphasis> node. The following command starts the
           HPCC system on an individual node:</para>
 
-          <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+                     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+	                          xpointer="element(/1)"
+	                          xmlns:xi="http://www.w3.org/2001/XInclude" />
+
 
           <para></para>
 
@@ -408,8 +414,10 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                   <entry><para>You may want to create a script to push this
                   command out to every node. A sample script is provided with
                   HPCC. Use the following command to start HPCC on all
-                  nodes:</para> <para> <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting>
-                  </para></entry>
+                  nodes:</para>            <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+                        xpointer="element(/1)"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+</entry>
                 </row>
               </tbody>
             </tgroup>

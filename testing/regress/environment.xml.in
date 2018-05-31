@@ -396,6 +396,11 @@
                          path="ESDLConfigAccess"
                          resource="ESDLConfigAccess"
                          service="ws_esdlconfig"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to ELK integration service"
+                         path="WsELKAccess"
+                         resource="WsELKAccess"
+                         service="ws_elk"/>
     <Authenticate access="Read"
                   description="Root access to SMC service"
                   path="/"
@@ -626,6 +631,10 @@
                          path="ESDLConfigAccess"
                          resource="ESDLConfigAccess"
                          service="ws_esdlconfig"/>
+    <AuthenticateFeature description="Access to ELK integration service"
+                         path="WsELKAccess"
+                         resource="WsELKAccess"
+                         service="ws_elk"/>
     <ProcessFilters>
      <Platform name="Windows">
       <ProcessFilter name="any">
@@ -917,6 +926,10 @@
                           path="ESDLConfigAccess"
                           resource="ESDLConfigAccess"
                           service="ws_esdlconfig"/>
+     <AuthenticateFeature description="Access to ELK integration service"
+                          path="WsELKAccess"
+                          resource="WsELKAccess"
+                          service="ws_elk"/>
      <ProcessFilters>
       <Platform name="Windows">
        <ProcessFilter name="any">

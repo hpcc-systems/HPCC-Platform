@@ -140,10 +140,17 @@
         <listitem>
           <para>Start your HPCC System.</para>
 
-          <para><programlisting> sudo /etc/init.d/hpcc-init start</programlisting><emphasis
-          role="bold">NOTE</emphasis>: We provide sample scripts (see <link
-          linkend="Example-Scripts">Appendix:Example Scripts</link>) to make
-          starting larger multi-node systems easier.</para>
+          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+                      xpointer="element(/1)"
+                      xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+          <para><emphasis role="bold">NOTE</emphasis>: We provide sample
+          scripts (see <link linkend="Example-Scripts">Appendix:Example
+          Scripts</link>) to make starting larger multi-node systems
+          easier.</para>
+
+          <para>CentOS 6 and other System V users see <link
+          linkend="hpcc-init">Appendix: hpcc-init</link>.</para>
         </listitem>
 
         <listitem>
@@ -372,9 +379,11 @@
           <listitem>
             <para>Start the system using the default configuration.</para>
 
-            <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting><graphic
-            fileref="images/GS-InitStart.jpg" /><informaltable colsep="1"
-                frame="all" rowsep="1">
+            <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+                        xpointer="element(/1)"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
 
                 <tgroup cols="2">
@@ -401,13 +410,9 @@
                 </tgroup>
               </informaltable></para>
 
-            <para><emphasis role="bold">Note:</emphasis> Many of our supported
-            distributions of Linux are switching from system V to systemd. If
-            your distribution is still using a system V init system, you may
-            continue to use some system V commands such as, `<emphasis>service
-            hpcc-init</emphasis>'. However on distributions utilizing systemd
-            that output may not display in the same manner. We suggest calling
-            hpcc-init directly instead of using a 'service' call.</para>
+            <para><emphasis role="bold">Note:</emphasis> If you are using Cent
+            OS 6 or another System V based system, please see the <link
+            linkend="hpcc-init">Appendix: System V</link>.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -480,7 +485,7 @@
                   </figure></para>
 
                 <para>Follow the link to the HPCC System's portal download
-                page. </para>
+                page.</para>
 
                 <para>Alternatively, you could use your browser to go directly
                 to <ulink
@@ -805,7 +810,9 @@
             <para>If it is running, stop the HPCC system, using this
             command:</para>
 
-            <para><programlisting>sudo /etc/init.d/hpcc-init stop</programlisting></para>
+            <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
+                        xpointer="element(/1)"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -821,7 +828,7 @@
                       fileref="images/OSSgr3.png" /></entry>
 
                       <entry>You can use this command to confirm HPCC
-                      processes are stopped:<para><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
+                      processes are stopped:<para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -1132,7 +1139,9 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
             role="bold">every</emphasis> node. The following command starts
             the HPCC system on an individual node:</para>
 
-            <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+            <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+                        xpointer="element(/1)"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
 
             <informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -1150,7 +1159,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                     <entry><para>You may want to use a script to push this
                     command out to every node. A sample script is provided
                     with HPCC. Use the following command to start HPCC on all
-                    nodes:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para></entry>
+                    nodes:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh systemctl start hpccsystems-platform.target</programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1171,22 +1180,36 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
       <sect2 id="Start-Stop-Reset">
         <title><emphasis>Start, Stop, Restart the System</emphasis></title>
 
-        <para>Once you have your system environment established , the
-        <emphasis role="bold">init </emphasis>system can be used to start,
-        stop, or restart components.</para>
+        <para>Once you have your system environment established, the <emphasis
+        role="bold">init </emphasis>system can be used to start, stop, or
+        restart components.</para>
 
         <para>The following commands can be used:</para>
 
         <sect3 id="StartStop_ToStartSystem">
           <title>To start the system:</title>
 
-          <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+          <para>To start your HPCC system issue the following command;</para>
+
+          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+                      xpointer="element(/1)"
+                      xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+          <para>For a CentOS 6 or other System V based systems see <link
+          linkend="hpcc-init">Appendix: hpcc-init</link>.</para>
         </sect3>
 
         <sect3 id="StartStop_StopTheSystem">
           <title>To stop the system:</title>
 
-          <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+          <para>To stop your HPCC system issue the following command;</para>
+
+          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
+                      xpointer="element(/1)"
+                      xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+          <para>For a CentOS 6 or other System V based systems see <link
+          linkend="hpcc-init">Appendix: hpcc-init</link>.</para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -1214,45 +1237,16 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         <sect3 id="StartStop_SingleComponents">
           <title>Start or Stop Single Components</title>
 
-          <para>To start or stop a single component, you can use the -c flag
-          in the init system as follows.</para>
+          <para>To start a single component,</para>
 
-          <programlisting>sudo /etc/init.d/hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting>
+          <programlisting>systemctl start &lt;component-type&gt;@&lt;component-name&gt;.service</programlisting>
 
-          <para><informaltable colsep="1" frame="all" rowsep="1">
-              <?dbfo keep-together="always"?>
+          <para>To stop a single component,</para>
 
-              <tgroup cols="2">
-                <colspec colwidth="49.50pt" />
+          <programlisting>systemctl stop &lt;component-type&gt;@&lt;component-name&gt;.service</programlisting>
 
-                <colspec />
-
-                <tbody>
-                  <row>
-                    <entry><inlinegraphic
-                    fileref="images/OSSgr3.png" /></entry>
-
-                    <entry>To stop dafilesrv (a helper application), you must
-                    use this command: sudo /sbin/service dafilesrv stop. See
-                    Helper Applications for details.</entry>
-                  </row>
-                </tbody>
-              </tgroup>
-            </informaltable></para>
-
-          <para><variablelist>
-              <varlistentry>
-                <term>NOTE:</term>
-
-                <listitem>
-                  <para>Some system V init system 'service hpcc-init' calls
-                  may still work and you can continue to use those. However,
-                  most Linux distributions are deprecating the service calls.
-                  We suggest calling hpcc-init directly instead of using a
-                  'service' call.</para>
-                </listitem>
-              </varlistentry>
-            </variablelist></para>
+          <para>For a CentOS 6 or other System V based systems see <link
+          linkend="hpcc-init">Appendix: hpcc-init</link>.</para>
         </sect3>
       </sect2>
 
@@ -1268,8 +1262,9 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
             <para>If the system is running, stop the HPCC system, using this
             command on <emphasis role="bold">every</emphasis> node:</para>
 
-            <programlisting>sudo /etc/init.d/hpcc-init stop
-</programlisting>
+            <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
+                        xpointer="element(/1)"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
           </listitem>
 
           <listitem>
@@ -1764,9 +1759,8 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         <title>hpcc-run.sh</title>
 
         <para><emphasis role="bold">hpcc-run.sh
-        </emphasis><emphasis><emphasis>[-c component] [-a
-        {hpcc-init|dafilesrv}] [-n &lt;value&gt;] [-s] [-S]
-        {start|stop|restart|status|setup}</emphasis></emphasis></para>
+        </emphasis><emphasis><emphasis>[-c component] [-n concurrent] [-s]
+        [-S] {start|stop|restart|status}</emphasis></emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -1776,17 +1770,10 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
               <tbody>
                 <row>
-                  <entry>-a</entry>
+                  <entry>-c, --comp</entry>
 
-                  <entry>HPCC service name. Either hpcc-init (default) of
-                  dafilesrv.</entry>
-                </row>
-
-                <row>
-                  <entry>-c</entry>
-
-                  <entry>HPCC component. For example, mydali, myroxie, mythor,
-                  etc.</entry>
+                  <entry>HPCC component. For example, dali@mydali.service,
+                  roxie@myroxie.service, etc.</entry>
                 </row>
 
                 <row>
@@ -1797,14 +1784,14 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                 </row>
 
                 <row>
-                  <entry>-S</entry>
+                  <entry>-S, --sequentially</entry>
 
                   <entry>When specified, the command runs sequentially, one
                   host at a time.</entry>
                 </row>
 
                 <row>
-                  <entry>-s</entry>
+                  <entry>-s, --save</entry>
 
                   <entry>When specified, saves the result to a file named
                   &lt;ip address&gt;.</entry>
@@ -1827,24 +1814,22 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
         <para>This example starts all components on the nodes</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh systemctl start hpccsystems-platform.target
 </programlisting></para>
 
         <para>This example starts all components on all the nodes, using 8
         concurrent executions</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start -n 8
-</programlisting>This example starts all components of the esp type on the
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh systemctl start hpccsystems-platform.target -n 8
+</programlisting>This example starts all components of the dali type on the
         nodes</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c esp -a hpcc-init start 
-</programlisting>This example starts all components with a component name
-        myesp on the nodes</para>
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c dali@mydali.service start 
+</programlisting></para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c myesp -a hpcc-init start 
-</programlisting>This example starts the dafilesrv helper application</para>
+        <para>This example starts the dafilesrv helper application</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a dafilesrv start
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c dafilesrv@dafilesrv.service start 
 </programlisting></para>
       </sect2>
     </sect1>
@@ -1883,9 +1868,9 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         <listitem>
           <para>dafilesrv</para>
 
-          <para><programlisting>sudo /sbin/service dafilesrv stop
+          <para><programlisting>sudo systemctl dafilesrv@dafilesrv.service stop 
 
-sudo /sbin/service dafilesrv start</programlisting><property><!--*** not for publication
+sudo systemctl dafilesrv@dafilesrv.service start</programlisting><property><!--*** not for publication
 cd /var/lib/HPCCSystems/mythor
 ...
 init_stop_thor
@@ -1899,7 +1884,11 @@ init_start_thor--></property></para>
     <sect1 id="hpcc-init">
       <title>hpcc-init</title>
 
-      <para><emphasis role="bold"> service hpcc-init
+      <para>CentOS 6 and other System V based operating systems do not support
+      the systemd calls utilized by the HPCC System. We will continue to
+      support the old System V style init.d calls.</para>
+
+      <para><emphasis role="bold">hpcc-init
       </emphasis><emphasis><emphasis>[</emphasis>option<emphasis>]</emphasis>
       command</emphasis></para>
 
@@ -2015,33 +2004,18 @@ sudo /etc/init.d/hpcc-init -c esp start
       <sect2 id="HPCC_systemd_svc">
         <title>HPCC systemd services</title>
 
-        <para>There are two HPCC systemd services: hpcc-init and dafilesrv.
-        While some hpcc-init systemd services are still developmental, users
-        can use <emphasis>/etc/init.d/hpcc-init</emphasis> and
-        <emphasis>/etc/init.d/dafilesrv</emphasis> directly. Invoking these
-        services in this way provides status in the same manner as invoking
-        them with a service command does for other HPCC processes.</para>
+        <para>HPCC Systems is extending support and development to more
+        systemd services. We intend to continue support for Cent OS 6 and
+        other System V based systems through the hpcc-init. The hpcc-init
+        system service will support "start", "stop" and "restart" options.
+        </para>
 
-        <para>The hpcc-init system service will only support "start", "stop"
-        and "restart" options. The other options, such as "status", "-c" are
-        not supported.</para>
-
-        <para>There are two sets of HPCC systemd service scripts:
-        <emphasis>hpcc-init.service/dafilesrv.service</emphasis> and
-        <emphasis>hpcc-init@.service/dafilesrv@.service</emphasis> installed
-        under /lib/systemd/system.</para>
-
-        <para>The first set does not have any output to STDOUT/STDERROR,
-        instead it logs to /var/log/syslog. To view the output:</para>
+        <para>The reporting and logging for HPCC systemd will differ from the
+        previous hpcc-init type. The systemd logs do not have any output to
+        STDOUT/STDERROR, instead it logs to /var/log/syslog. To view the
+        output:</para>
 
         <programlisting>journalctl -u &lt;service&gt; -f  </programlisting>
-
-        <para>The second set has the same output to STDOUT/STDERROR as
-        directly invoking /etc/init.d/&lt;hpcc-init|dafilesrv&gt;</para>
-
-        <para>Use either:</para>
-
-        <programlisting>sudo service &lt;service&gt; &lt;start|stop|restart&gt;</programlisting>
 
         <para>or</para>
 
@@ -2050,13 +2024,9 @@ sudo /etc/init.d/hpcc-init -c esp start
         <para>The systemd displays the service status in it's own
         format.</para>
 
-        <programlisting>sudo service &lt;service&gt; status </programlisting>
-
-        <para>or</para>
-
         <programlisting>sudo systemctl status &lt;full_service_name&gt; </programlisting>
 
-        <para>These are different than the output from</para>
+        <para>This is different than the output from</para>
 
         <programlisting>/etc/init.d/hpcc-init status</programlisting>
 
@@ -2069,70 +2039,6 @@ sudo /etc/init.d/hpcc-init -c esp start
 
         <para>HPCC uninstall will automatically remove HPCC services from
         active list and /etc/systemd/system/ directory.</para>
-
-        <sect3 id="hpcc-init_sysd_svc_usage">
-          <title id="hpcc_systemd_usage">hpcc-init systemd service
-          usage</title>
-
-          <para>To start or stop HPCC with hpcc-init without STDOUT/STDERR
-          output: <orderedlist>
-              <listitem>
-                <para>Start</para>
-
-                <programlisting>sudo service hpcc-init start </programlisting>
-
-                <para>or</para>
-
-                <programlisting>sudo systemctl start hpcc-init.service</programlisting>
-              </listitem>
-
-              <listitem>
-                <para>Check</para>
-
-                <programlisting>sudo journalctl -u hpcc-init -f</programlisting>
-              </listitem>
-
-              <listitem>
-                <para>Stop</para>
-
-                <programlisting>sudo service hpcc-init stop </programlisting>
-
-                <para>or</para>
-
-                <programlisting>sudo systemctl stop hpcc-init.service</programlisting>
-              </listitem>
-            </orderedlist></para>
-
-          <para>To start/stop HPCC with hpcc-init with STDOUT/STDERR output.
-          Get current tty by running "tty". For example, tty -&gt; /dev/pts/1.
-          "pts/1" will be used in following commands. <orderedlist>
-              <listitem>
-                <para>Start</para>
-
-                <programlisting>sudo service hpcc-init@pts/1 start</programlisting>
-
-                <para>or</para>
-
-                <programlisting>sudo systemctl start hpcc-init@pts/1.service</programlisting>
-              </listitem>
-
-              <listitem>
-                <para>Check</para>
-
-                <programlisting>sudo journalctl -u hpcc-init -f</programlisting>
-              </listitem>
-
-              <listitem>
-                <para>Stop</para>
-
-                <programlisting>sudo service hpcc-init@pts/1 stop</programlisting>
-
-                <para>or</para>
-
-                <programlisting>sudo systemctl stop hpcc-init@pts/1.service</programlisting>
-              </listitem>
-            </orderedlist></para>
-        </sect3>
       </sect2>
     </sect1>
 
@@ -2325,12 +2231,12 @@ sudo /etc/init.d/hpcc-init -c esp start
 
             <para>For example :</para>
 
-            <programlisting> sudo service hpcc-init start </programlisting>
+            <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+                        xpointer="element(/1)"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-            <para>or</para>
 
-            <programlisting>sudo service hpcc-init restart </programlisting>
-
+ 
             <para>For more information see the <link
             linkend="Starting-and-stopping">Starting-and-stopping</link> the
             HPCC System in the <emphasis>Installing and Running The HPCC

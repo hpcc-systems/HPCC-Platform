@@ -319,14 +319,14 @@ int CEspHttpServer::processRequest()
                                 {
                                     thebinding=lbind;
                                     StringBuffer bindSvcName;
-                                    if (!streq(serviceName, lbind->getServiceName(bindSvcName)))
+                                    if (!strieq(serviceName, lbind->getServiceName(bindSvcName)))
                                         isSubService = true;
                                 }
                                 if (methodName.length() != 0 && lbind->isMethodInService(*ctx, serviceName.str(), methodName.str()))
                                 {
                                     exactBinding = lbind;
                                     StringBuffer bindSvcName;
-                                    if (!streq(serviceName, lbind->getServiceName(bindSvcName)))
+                                    if (!strieq(serviceName, lbind->getServiceName(bindSvcName)))
                                         exactIsSubService = true;
                                 }
                             }                           

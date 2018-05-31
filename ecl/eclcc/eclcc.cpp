@@ -1419,7 +1419,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     unsigned __int64 totalTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
     instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
-    //MORE: This is done too late..
     updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
 }
 
@@ -1472,6 +1471,9 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     if (optExpandPath)
     {
         expandArchive(optExpandPath, instance.srcArchive, true);
+        const char * queryText = instance.srcArchive->queryProp("Query");
+        if (queryText)
+            printf("%s", queryText);
         return;
     }
 

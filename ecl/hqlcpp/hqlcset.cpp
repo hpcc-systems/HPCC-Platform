@@ -2024,6 +2024,44 @@ void LinkedDictionaryBuilder::buildDeclare(BuildCtx & ctx)
 }
 
 
+StreamedDatasetBuilder::StreamedDatasetBuilder(HqlCppTranslator & _translator, IHqlExpression * _record) : LinkedDatasetBuilderBase(_translator, _record)
+{
+}
+
+void StreamedDatasetBuilder::buildDeclare(BuildCtx & ctx)
+{
+    StringBuffer decl, allocatorName;
+
+    OwnedHqlExpr curActivityId = translator.getCurrentActivityId(ctx);
+    translator.ensureRowAllocator(allocatorName, ctx, record, curActivityId);
+
+    decl.append("RtlStreamedDatasetBuilder ").append(instanceName).append("(");
+    decl.append(allocatorName);
+    decl.append(");");
+
+    ctx.addQuoted(decl);
+}
+
+void StreamedDatasetBuilder::buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target)
+{
+    //more: should I do this by really calling a function?
+    StringBuffer s;
+    assertex(hasWrapperModifier(target.queryType()));
+    assertex(hasStreamedModifier(target.queryType()));
+    translator.generateExprCpp(s.clear(), target.expr);
+    s.append(".setown(").append(instanceName).append(".createDataset());");
+    ctx.addQuoted(s);
+}
+
+
+void StreamedDatasetBuilder::buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound)
+{
+    StringBuffer s;
+    s.append(instanceName).append(".createdDataset()");
+    bound.expr.setown(createQuoted(s.str(), setStreamedAttr(dataset->queryType(), true)));
+}
+
+
 //---------------------------------------------------------------------------
 
 SetBuilder::SetBuilder(HqlCppTranslator & _translator, ITypeInfo * fieldType, IHqlExpression * _allVar) : translator(_translator)
@@ -2115,6 +2153,11 @@ IHqlCppDatasetBuilder * HqlCppTranslator::createLinkedDatasetBuilder(IHqlExpress
 IHqlCppDatasetBuilder * HqlCppTranslator::createLinkedDictionaryBuilder(IHqlExpression * record)
 {
     return new LinkedDictionaryBuilder(*this, record);
+}
+
+IHqlCppDatasetBuilder * HqlCppTranslator::createStreamedDatasetBuilder(IHqlExpression * record)
+{
+    return new StreamedDatasetBuilder(*this, record);
 }
 
 IHqlCppDatasetBuilder * HqlCppTranslator::createSingleRowTempDatasetBuilder(IHqlExpression * record, BoundRow * row)

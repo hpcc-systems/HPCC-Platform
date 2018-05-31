@@ -11096,6 +11096,7 @@ static bool isSimpleSideeffect(IHqlExpression * expr)
     case no_attr:
     case no_attr_expr:
     case no_attr_link:
+    case no_assert:
         return true;
     case no_comma:
     case no_compound:
@@ -14055,6 +14056,23 @@ void SemanticErrorChecker::checkJoin(IHqlExpression * join)
                     getExprECL(cur, s);
                     reportError(ERR_BAD_JOINGROUP_FIELD, "GROUP expression '%s' is not included in the JOIN output", s.str());
                 }
+            }
+        }
+    }
+    IHqlExpression * keyed = join->queryAttribute(keyedAtom);
+    if (keyed)
+    {
+        //Ignore ,KEYED, only check ,KEYED(index)
+        IHqlExpression * index = keyed->queryChild(0);
+        if (index)
+        {
+            if (!getBoolAttribute(index, filepositionAtom, true))
+                reportError(ERR_BAD_JOINFLAG, "Cannot peform a full KEYED join with an index that has no fileposition");
+            else
+            {
+                IHqlExpression * lastField = queryLastField(index->queryRecord());
+                if (lastField && lastField->hasAttribute(_implicitFpos_Atom))
+                    reportError(ERR_BAD_JOINFLAG, "Cannot peform a full KEYED join with an index that has no fileposition");
             }
         }
     }

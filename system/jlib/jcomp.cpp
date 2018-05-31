@@ -943,7 +943,7 @@ public:
         }
         handle = 0;
 
-        if (!success || aborted)
+        if (!success || aborted || runcode != 0)
             compiler->numFailed++;
         params->finishedCompiling.signal();
         if (error)

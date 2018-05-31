@@ -619,8 +619,10 @@
               <row>
                 <entry>--metacache=x</entry>
 
-                <entry>Specify directory to store distributed meta
-                information</entry>
+                <entry>Specify directory to store distributed meta information
+                from the eclcc indexer. To disable the indexer, set to an
+                empty value using "--metacache=". If omitted, the default
+                location is .eclcc/metacache.</entry>
               </row>
 
               <row>

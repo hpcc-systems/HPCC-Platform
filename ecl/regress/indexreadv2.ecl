@@ -41,7 +41,7 @@ childRecord         myChild{blob};
 parentDataset := DATASET('test',parentRecord,FLAT);
 
 
-i := index(parentDataset, { id, address1, address2, address3 }, { parentDataset }, 'superkey');
+i := index(parentDataset, { id, address1, address2, address3 }, { parentDataset; unsigned dummyFpos := 0 }, 'superkey');
 
 
 string searchSurname := 'Hawthorn' : stored('searchName');
