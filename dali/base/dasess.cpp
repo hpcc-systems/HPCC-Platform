@@ -603,7 +603,7 @@ public:
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
-                udesc->deserializeExtra(mb);//deserialize user signature if present
+                udesc->deserializeSignature(mb);//deserialize user signature if present
                 int err = 0;
                 SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,&err);
                 mb.clear().append((int)perms);
@@ -912,7 +912,7 @@ public:
 #endif
         udesc->serialize(mb);
         mb.append(auditflags);
-        udesc->serializeExtra(mb);//serialize user signature if Dali version >= 3.14
+        udesc->serializeSignature(mb);//serialize user signature if Dali version >= 3.14
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return SecAccess_None;
         SecAccessFlags perms = SecAccess_Unavailable;
@@ -2014,6 +2014,9 @@ class CUserDescriptor: implements IUserDescriptor, public CInterface
     unsigned sessionToken = 0;//ESP session token
     StringBuffer signature;//user's digital Signature
     IDigitalSignatureManager * pDSM = nullptr;
+
+    CDateTime utcTimeStamp;//time when request was sent
+    StringBuffer userTimeStampSignature;//signature of "user;timeStamp"
 public:
     IMPLEMENT_IINTERFACE;
     CUserDescriptor()
@@ -2036,6 +2039,14 @@ public:
     {
         return signature.str();
     }
+    const CDateTime & queryUTCTimeStamp()
+    {
+        return utcTimeStamp;
+    }
+    const char *queryUserTimeStampSignature()
+    {
+        return userTimeStampSignature.str();
+    }
     virtual void set(const char *name,const char *password)
     {
         username.set(name);
@@ -2055,36 +2066,56 @@ public:
         passwordenc.clear();
         sessionToken = 0;
         signature.clear();
+        utcTimeStamp.clear();
+        userTimeStampSignature.clear();
     }
     void serialize(MemoryBuffer &mb)
     {
         mb.append(username).append(passwordenc);
     }
-    void serializeExtra(MemoryBuffer &mb)
+    void serializeSignature(MemoryBuffer &mb)
     {
         if (queryDaliServerVersion().compare("3.14") >= 0)
         {
-            if (signature.isEmpty())
+            if (pDSM == nullptr)
+                pDSM = createDigitalSignatureManagerInstanceFromEnv();
+
+            //Serialize timestamp and signature of "username;timestamp"
+            //Dali will use this to ensure request came from
+            //valid authenticated user within a reasonable timeframe
+            if (pDSM && pDSM->isDigiSignerConfigured())
             {
-                if (pDSM == nullptr)
-                    pDSM = createDigitalSignatureManagerInstanceFromEnv();
-                if (pDSM && pDSM->isDigiSignerConfigured())
-                    pDSM->digiSign(username, signature);//Set user's digital signature
+                CDateTime now;
+                now.setNow();
+                StringBuffer timeStr;
+                now.getString(timeStr, false);//get UTC timestamp
+                VStringBuffer toSign("%s;%s", username.str(), timeStr.str());
+
+                StringBuffer userTimeStampSignature;
+                pDSM->digiSign(toSign, userTimeStampSignature);//Sign "username;timeStamp"
+
+                //Serialize the timestamped signature, and the timestamp object
+                mb.append(userTimeStampSignature.str());
+                now.serialize(mb);
             }
-            mb.append(signature);
         }
     }
     void deserialize(MemoryBuffer &mb)
     {
         mb.read(username).read(passwordenc);
     }
-    void deserializeExtra(MemoryBuffer &mb)
+    void deserializeSignature(MemoryBuffer &mb)
     {
-        signature.clear();
+        utcTimeStamp.clear();
+        userTimeStampSignature.clear();
         if (queryDaliServerVersion().compare("3.14") >= 0)
         {
             if (mb.remaining() > 0)
-                mb.read(signature);
+            {
+                mb.read(userTimeStampSignature);
+                if (mb.remaining() > 0)
+                    utcTimeStamp.deserialize(mb);
+            }
         }
     }
 };
