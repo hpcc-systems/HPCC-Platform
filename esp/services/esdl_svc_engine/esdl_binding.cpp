@@ -1554,6 +1554,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
     IEspContext *ctx = request->queryContext();
     if(ctx->toBeAuthenticated()) //no HTTP basic auth info?
     {
+        ctx->setAuthStatus(AUTH_STATUS_FAIL);
         response->sendBasicChallenge("ESP", false);
         return 0;
     }
