@@ -21,12 +21,14 @@
 
 class NodeGroup;
 
-enum CommStatus{
-    INCOMPLETE = 0,
-    SUCCESS,
-    CANCELED
-};
+
 namespace hpcc_mpi{
+    typedef int CommRequest;
+    enum CommStatus{
+        INCOMPLETE = 0,
+        SUCCESS,
+        CANCELED
+    };
     void initialize();
     void finalize();
 
@@ -37,7 +39,9 @@ namespace hpcc_mpi{
     int sendData(rank_t dstRank, mptag_t tag, CMessageBuffer &mbuf, NodeGroup &group, bool async = true);
     int readData(rank_t sourceRank, mptag_t tag, CMessageBuffer &mbuf, NodeGroup &group, bool async = true);    
     
-    int isCommComplete(int i);
+    CommStatus getCommStatus(int commId);
+    void releaseComm(int commId);
+    void test(CommRequest p);
     void barrier(NodeGroup &group);
 
 }

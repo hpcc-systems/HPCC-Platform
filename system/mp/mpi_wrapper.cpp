@@ -20,7 +20,7 @@ struct CommData{
     CMessageBuffer *mbuf;
     int rank;
     int tag;
-    int complete;
+    hpcc_mpi::CommStatus status;
     MPI_Comm comm;
     MPI_Request request;
 };
@@ -41,14 +41,8 @@ int get_free_req(){
     requestListLock.unlock();
     requests[req].requiresProbing = 0;
     requests[req].mbuf = NULL;
-    requests[req].complete = 0;
+    requests[req].status = hpcc_mpi::CommStatus::INCOMPLETE;
     return req;
-}
-
-void release_request(int req){
-    requestListLock.lock();
-    freeRequests.push_back(req);
-    requestListLock.unlock();
 }
 
 int send(void* data, int size, int rank, int tag, MPI_Comm comm){
@@ -57,7 +51,7 @@ int send(void* data, int size, int rank, int tag, MPI_Comm comm){
     return nextFree;
 }
 
-int startReceiveProcess(int i){
+hpcc_mpi::CommStatus startReceiveProcess(int i){
     MPI_Status stat;
     int flag = 0;
     MPI_Iprobe(requests[i].rank, requests[i].tag, requests[i].comm, &flag, &stat);
@@ -66,9 +60,9 @@ int startReceiveProcess(int i){
         MPI_Get_count(&stat, MPI_BYTE, &(requests[i].size));
         requests[i].data = malloc(requests[i].size);
         MPI_Irecv(requests[i].data, requests[i].size, MPI_BYTE, requests[i].rank, requests[i].tag, requests[i].comm, &(requests[i].request));
-        requests[i].complete = hpcc_mpi::isCommComplete(i);
+        requests[i].status = hpcc_mpi::getCommStatus(i);
     }
-    return requests[i].complete;
+    return requests[i].status;
 }
 
 int recv(int rank, int tag, CMessageBuffer &mbuf, MPI_Comm comm){
@@ -83,24 +77,40 @@ int recv(int rank, int tag, CMessageBuffer &mbuf, MPI_Comm comm){
 }
 
 //----------------------------------------------------------------------------//
-int hpcc_mpi::isCommComplete(int i){
-    if ((i < 0) || (requests[i].complete)){
-        return 1;
+
+void hpcc_mpi::releaseComm(int req){
+    requestListLock.lock();
+    freeRequests.push_back(req);
+    requestListLock.unlock();
+}
+
+void hpcc_mpi::test(CommRequest p){
+}
+
+hpcc_mpi::CommStatus hpcc_mpi::getCommStatus(int i){
+    if (i < 0){
+        return hpcc_mpi::CommStatus::SUCCESS;
+    }
+    if (requests[i].status){
+        return requests[i].status;
     }
     if (requests[i].requiresProbing){
-        requests[i].complete = startReceiveProcess(i);
+        requests[i].status = startReceiveProcess(i);
     }else{
         MPI_Status stat;
-        MPI_Test(&(requests[i].request), &(requests[i].complete), &stat);
-        if (requests[i].complete){
+        int flag;
+        MPI_Test(&(requests[i].request), &flag, &stat);
+        if (flag){
             if (requests[i].mbuf != NULL){ //if it was a receive call
                 (requests[i].mbuf)->reset();
                 (requests[i].mbuf)->append(requests[i].size,requests[i].data);
             }
             free(requests[i].data);
+            //TODO test for canceled and update status for cancelled
+            requests[i].status = hpcc_mpi::CommStatus::SUCCESS;
         }
     }
-    return requests[i].complete;
+    return requests[i].status;
 }
 
 rank_t hpcc_mpi::rank(NodeGroup &group){

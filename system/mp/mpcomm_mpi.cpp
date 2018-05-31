@@ -106,9 +106,10 @@ public:
          * return (invalid dstrank) or (timeout expired)
          */
         int s = hpcc_mpi::sendData(dstrank, tag, mbuf, *group, true);
-        while (!hpcc_mpi::isCommComplete(s)){
+        while (hpcc_mpi::getCommStatus(s) == hpcc_mpi::CommStatus::INCOMPLETE){
             usleep(100);
         }
+        hpcc_mpi::releaseComm(s);
         
         return true;
     }
@@ -119,9 +120,10 @@ public:
          * 2. Update the sender if sender is valid
          */
         int s = hpcc_mpi::readData(srcrank, tag, mbuf, *group, true);
-        while (!hpcc_mpi::isCommComplete(s)){
+        while (hpcc_mpi::getCommStatus(s) == hpcc_mpi::CommStatus::INCOMPLETE){
             usleep(100);
         }
+        hpcc_mpi::releaseComm(s);
         
         return true;
     }
