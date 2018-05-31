@@ -2878,8 +2878,13 @@ void FileSprayer::spray()
     aindex_t sourceSize = sources.ordinality();
     bool failIfNoSourceFile = options->getPropBool("@failIfNoSourceFile");
 
-    if ((sourceSize == 0) && failIfNoSourceFile)
-        throwError(DFTERR_NoFilesMatchWildcard);
+    if (sourceSize == 0)
+    {
+       if (failIfNoSourceFile)
+           throwError(DFTERR_NoFilesMatchWildcard);
+       else
+           progressTree->setPropBool("@noFileMatch", true);
+    }
 
     LOG(MCdebugInfo, job, "compressedInput:%d, compressOutput:%d", compressedInput, compressOutput);
 
@@ -3253,7 +3258,7 @@ void FileSprayer::updateTargetProperties()
                 distributedSource->queryPart(0).getFilename(remoteFile, 0);
                 splitAndCollectFileInfo(newRecord, remoteFile);
             }
-            else
+            else if (sources.ordinality())
             {
                 FilePartInfo & firstSource = sources.item((aindex_t)0);
                 RemoteFilename &remoteFile = firstSource.filename;
