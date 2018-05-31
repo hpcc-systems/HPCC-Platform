@@ -88,7 +88,8 @@ int main(int argc, char* argv[]){
     
 #elif RECEIVE_ONE_FROM_ALL_TEST
     
-#endif        
+#endif    
+        comm->barrier();
         stopMPServer();
     } catch (IException *e){
         pexception("Exception", e);

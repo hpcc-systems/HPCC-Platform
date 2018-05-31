@@ -29,8 +29,11 @@ namespace hpcc_mpi{
     rank_t size(NodeGroup &);
 
     //TODO return status data from following functions
-    int sendData(rank_t dstRank, mptag_t tag, CMessageBuffer &buffer, NodeGroup &group, bool async = true);
-    int readData(rank_t sourceRank, mptag_t tag, CMessageBuffer &buffer, NodeGroup &group, bool async = true);    
+    int sendData(rank_t dstRank, mptag_t tag, void* data, int size, NodeGroup &group, bool async = true);
+    int readData(rank_t sourceRank, mptag_t tag, void* &data, int &size, NodeGroup &group, bool async = true);    
+    
+    int isCommComplete(int i);
+    void barrier(NodeGroup &group);
 
 }
 

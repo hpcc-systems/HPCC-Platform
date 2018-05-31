@@ -36,6 +36,7 @@
 //#include "jqueue.tpp"
 //#include "jsuperhash.hpp"
 //#include "jmisc.hpp"
+#include <unistd.h>
 
 #include "mpcomm.hpp"
 #include "mpbuff.hpp"
@@ -104,18 +105,39 @@ public:
          *      2.2 Send message to all ranks from start_rank to end_rank until timeout
          * return (invalid dstrank) or (timeout expired)
          */
-        hpcc_mpi::sendData(dstrank, tag, mbuf, *group, false);
+        void* data = malloc(mbuf.length());
+        mbuf.reset();
+        mbuf.read(mbuf.length(), data);
+        int s = hpcc_mpi::sendData(dstrank, tag, data, mbuf.length(), *group, true);
+        while (!hpcc_mpi::isCommComplete(s)){
+            usleep(100);
+        }
+        
+        free(data);
+        
         return true;
     }
 
-    void barrier(void){
-#ifdef _TRACE
-        PrintLog("MP: barrier enter");
-#endif
+    bool recv(CMessageBuffer &mbuf, rank_t srcrank, mptag_t tag, rank_t *sender, unsigned timeout=MP_WAIT_FOREVER){
         /*
-         * call MPI_Barrier() for all processors in the communicator         
+         * 1. Wait for the message to be received, canceled or timeout
+         * 2. Update the sender if sender is valid
          */
-        UNIMPLEMENTED;
+        void* data; 
+        int size;
+        int s = hpcc_mpi::readData(srcrank, tag, data, size, *group, true);
+        while (!hpcc_mpi::isCommComplete(s)){
+            usleep(100);
+        }
+        mbuf.reset();
+        mbuf.append(size, data);
+        free(data);
+        
+        return true;
+    }
+    
+    void barrier(void){
+        hpcc_mpi::barrier(*group);
     }
 
     bool verifyConnection(rank_t rank,  unsigned timeout){
@@ -135,15 +157,6 @@ public:
          *      return false
          */        
         UNIMPLEMENTED;
-    }
-
-    bool recv(CMessageBuffer &mbuf, rank_t srcrank, mptag_t tag, rank_t *sender, unsigned timeout=MP_WAIT_FOREVER){
-        /*
-         * 1. Wait for the message to be received, canceled or timeout
-         * 2. Update the sender if sender is valid
-         */
-        hpcc_mpi::readData(srcrank, tag, mbuf, *group, false);
-        return true;
     }
     
     void flush(mptag_t tag){
