@@ -31,6 +31,7 @@
 #include "dadfs.hpp"
 #include "dalienv.hpp"
 #include "dasess.hpp"
+#include "dasds.hpp"
 #include "dautils.hpp"
 #include "thmfilemanager.hpp"
 #include "thexception.hpp"
@@ -145,7 +146,57 @@ class CFileManager : public CSimpleInterface, implements IThorFileManager
         return max;
     }
 
-    void remove(IDistributedFile &file, IUserDescriptor &userDesc)
+    template<typename T>
+    T blockReportFunc(CJobBase &job, std::function<T(unsigned timeout)> func, unsigned timeout, const char *msg)
+    {
+        // every minute timeout, and set workunit state to blocked for NN minutes
+        WUState preBlockedState = WUStateUnknown; // set to current state if times out and blocks
+        CTimeMon tm(timeout);
+        if (timeout >= 60000)
+            timeout = 60000;
+        while (true)
+        {
+            try
+            {
+                T ret = func(timeout);
+                if (WUStateUnknown != preBlockedState)
+                {
+                    Owned<IWorkUnit> workunit = &job.queryWorkUnit().lock();
+                    WUState currentState = workunit->getState();
+                    if (WUStateBlocked != currentState) // could happen if user aborted whilst blocked. Bail out.
+                        throw MakeStringException(0, "WorkUnit state has changed to '%s' whilst blocked trying to '%s'", getWorkunitStateStr(currentState), msg);
+                    workunit->setState(preBlockedState); // i.e. restore original state
+                }
+                return ret;
+            }
+            catch (ISDSException *e)
+            {
+                if ((SDSExcpt_LockTimeout != e->errorCode()) || tm.timedout())
+                    throw;
+                e->Release();
+            }
+
+            // NB: will reach here only if timeout occurred.
+            Owned<IWorkUnit> workunit = &job.queryWorkUnit().lock();
+            WUState currentState = workunit->getState();
+            if (WUStateUnknown == preBlockedState) // i.e. 1st time
+            {
+                if (WUStateUnknown == currentState) // should never happen, but guard against it JIC
+                    throw MakeStringException(0, "WorkUnit in unknown state");
+                preBlockedState = currentState;
+                workunit->setState(WUStateBlocked);
+            }
+            else // NB: implies >= 2nd time around
+            {
+                if (WUStateBlocked != currentState) // could happen if user aborted whilst blocked. Bail out.
+                    throw MakeStringException(0, "WorkUnit state has changed to '%s' whilst blocked trying to '%s'", getWorkunitStateStr(currentState), msg);
+            }
+            VStringBuffer blockedMsg("Blocked for %u minutes trying to %s", tm.elapsed()/60000, msg);
+            workunit->setStateEx(blockedMsg);
+        }
+    }
+
+    void remove(CJobBase &job, IDistributedFile &file, unsigned timeout=INFINITE)
     {
         StringBuffer lfn;
         file.getLogicalName(lfn);
@@ -162,7 +213,11 @@ class CFileManager : public CSimpleInterface, implements IThorFileManager
                 throw MakeThorException(0, "Failed to remove external file: %s", lfn.str());
         }
         else
-            file.detach();
+        {
+            VStringBuffer blockedMsg("delete file '%s'", file.queryLogicalName());
+            auto func = [&file](unsigned timeout){ file.detach(timeout); return true; };
+            blockReportFunc<bool>(job, func, timeout, blockedMsg);
+        }
     }
 
 public:
@@ -254,6 +309,18 @@ public:
         LOG(daliAuditLogCat,"%s",outs.str());
     }
 
+    IDistributedFile *timedLookup(CJobBase &job, CDfsLogicalFileName &lfn, bool write, unsigned timeout=INFINITE)
+    {
+        VStringBuffer blockedMsg("lock file '%s' for %s access", lfn.get(), write ? "WRITE" : "READ");
+        auto func = [&job, &lfn, &write](unsigned timeout) { return queryDistributedFileDirectory().lookup(lfn, job.queryUserDescriptor(), write, false, false, nullptr, timeout); };
+        return blockReportFunc<IDistributedFile *>(job, func, timeout, blockedMsg);
+    }
+    IDistributedFile *timedLookup(CJobBase &job, const char *logicalName, bool write, unsigned timeout=INFINITE)
+    {
+        CDfsLogicalFileName lfn;
+        lfn.set(logicalName);
+        return timedLookup(job, lfn, write, timeout);
+    }
     IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary=false, bool optional=false, bool reportOptional=false, bool updateAccessed=true)
     {
         StringBuffer scopedName;
@@ -274,7 +341,7 @@ public:
         if (fileMapping)
             return &fileMapping->get();
 
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(scopedName.str(), job.queryUserDescriptor());
+        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), false);
         if (file && 0 == file->numParts())
         {
             if (file->querySuperFile())
@@ -323,7 +390,7 @@ public:
                 throw MakeStringException(99, "Cannot publish %s, invalid logical name", logicalName);
             if (dlfn.isForeign())
                 throw MakeStringException(99, "Cannot publish to a foreign Dali: %s", logicalName);
-            efile.setown(queryDistributedFileDirectory().lookup(dlfn, job.queryUserDescriptor(), true));
+            efile.setown(timedLookup(job, dlfn, true));
             if (efile)
             {
                 if (!extend && !overwriteok)
@@ -353,7 +420,7 @@ public:
                 if (found)
                 {
                     workunit->releaseFile(logicalName);
-                    Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(dlfn, job.queryUserDescriptor());
+                    Owned<IDistributedFile> f = timedLookup(job, dlfn, false);
                     if (f)
                     {
                         unsigned p, parts = f->numParts();
@@ -378,9 +445,9 @@ public:
                     efile->getClusterName(c, clusterName);
                     clusters.append(clusterName);
                 }
-                remove(*efile, *job.queryUserDescriptor());
+                remove(job, *efile);
                 efile.clear();
-                efile.setown(queryDistributedFileDirectory().lookup(dlfn, job.queryUserDescriptor(), true));
+                efile.setown(timedLookup(job, dlfn, true));
                 if (!efile.get())
                 {
                     ForEachItemIn(c, clusters)
