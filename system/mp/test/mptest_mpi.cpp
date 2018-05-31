@@ -165,7 +165,6 @@ int main(int argc, char* argv[]){
         }else
             printHelp(argc, argv);      
 #endif    
-        comm->barrier();
         stopMPServer();
     } catch (IException *e){
         pexception("Exception", e);

@@ -38,9 +38,6 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-HPCC_ADD_EXECUTABLE (mptest ${SRCS} )
-target_link_libraries (mptest jlib mp)
-
 HPCC_ADD_EXECUTABLE (mptest_rank ${SRCS} ) 
 SET_TARGET_PROPERTIES(mptest_rank PROPERTIES COMPILE_FLAGS "-DRANK_TEST")
 target_link_libraries (mptest_rank jlib mp)
