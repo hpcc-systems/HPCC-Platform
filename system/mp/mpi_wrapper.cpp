@@ -78,6 +78,27 @@ int recv(int rank, int tag, CMessageBuffer &mbuf, MPI_Comm comm){
 
 //----------------------------------------------------------------------------//
 
+bool hpcc_mpi::hasIncomingMessage(rank_t &sourceRank, mptag_t &mptag, NodeGroup &group){
+    MPI_Status stat;
+    int flag;
+    int rank;
+    if (sourceRank == RANK_ALL)
+        rank = MPI_ANY_SOURCE;
+    else
+        rank = sourceRank;
+    int tag;
+    if (mptag == TAG_ALL)
+        tag = MPI_ANY_TAG;
+    else
+        tag = mptag;
+    MPI_Iprobe(rank, tag, group(), &flag, &stat);
+    if (flag){
+        sourceRank = stat.MPI_SOURCE;
+        mptag = mptag_t(stat.MPI_TAG);
+    }
+    return flag > 0;
+}
+
 void hpcc_mpi::releaseComm(CommRequest commReq){
     requestListLock.lock();
     freeRequests.push_back(commReq);

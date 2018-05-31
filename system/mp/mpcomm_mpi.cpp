@@ -147,8 +147,12 @@ public:
          *      return true
          * else
          *      return false
-         */        
-        UNIMPLEMENTED;
+         */    
+        if (hpcc_mpi::hasIncomingMessage(srcrank, tag, *group)){
+            if (sender)
+                *sender = srcrank;
+        }
+        return false;
     }
     
     void flush(mptag_t tag){

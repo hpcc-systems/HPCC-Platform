@@ -39,6 +39,8 @@ namespace hpcc_mpi{
     CommRequest sendData(rank_t dstRank, mptag_t tag, CMessageBuffer &mbuf, NodeGroup &group, bool async = true);
     CommRequest readData(rank_t sourceRank, mptag_t tag, CMessageBuffer &mbuf, NodeGroup &group, bool async = true);    
     
+    bool hasIncomingMessage(rank_t &sourceRank, mptag_t &tag, NodeGroup &group);
+    
     CommStatus getCommStatus(CommRequest commReq);
     void releaseComm(CommRequest commReq);
 
