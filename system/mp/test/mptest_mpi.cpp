@@ -58,6 +58,71 @@ void TEST_single_send(ICommunicator* comm){
     }
 }
 
+void TEST_right_shift(ICommunicator* comm){
+    IGroup* group = comm->getGroup();
+    rank_t p = group->ordinality();
+    rank_t rank = group->rank();
+    rank_t source_rank = (rank - 1 + p) % p;
+    rank_t destination_rank = (rank + 1) % p;
+    
+    CMessageBuffer sendMsg;
+    sendMsg.append(rank);
+    comm->send(sendMsg, destination_rank, MPTAG_TEST, MP_WAIT_FOREVER);
+    
+    CMessageBuffer recvMsg;
+    int received_msg;
+    comm->recv(recvMsg, source_rank, MPTAG_TEST, NULL, MP_WAIT_FOREVER);
+    recvMsg.read(received_msg);
+    assertex(source_rank == received_msg);
+    PrintLog("Message received from node %d to node %d.", source_rank, rank);
+}
+
+void TEST_one_to_all(ICommunicator* comm, rank_t nodeRank){
+    IGroup* group = comm->getGroup();
+    rank_t p = group->ordinality();
+    rank_t rank = group->rank();
+    double expectedValue = 1234.0;
+    double receivedValue;
+    if (rank == nodeRank){
+        CMessageBuffer sendMsg;
+        sendMsg.append(expectedValue);        
+        for(int i=0; i<p; i++){
+            comm->send(sendMsg, i, MPTAG_TEST, MP_WAIT_FOREVER);
+        }
+    }
+    
+    CMessageBuffer recvMsg;
+    comm->recv(recvMsg, nodeRank, MPTAG_TEST, NULL, MP_WAIT_FOREVER);
+    recvMsg.read(receivedValue);
+    assertex(expectedValue == receivedValue);
+    PrintLog("Message received from node %d to node %d.", nodeRank, rank);
+}
+
+void TEST_one_from_all(ICommunicator* comm, rank_t nodeRank){
+    IGroup* group = comm->getGroup();
+    rank_t p = group->ordinality();
+    rank_t rank = group->rank();
+    
+    double baseValue = 1234.0;
+    CMessageBuffer sendMsg;
+    double expectedValue = baseValue * rank;
+    sendMsg.append(expectedValue); 
+    comm->send(sendMsg, nodeRank, MPTAG_TEST, MP_WAIT_FOREVER);    
+    
+    if (rank == nodeRank){
+        for(int i=0; i<p; i++){
+            CMessageBuffer recvMsg;
+            comm->recv(recvMsg, i, MPTAG_TEST, NULL, MP_WAIT_FOREVER);
+            double receivedValue;
+            recvMsg.read(receivedValue);
+            expectedValue = baseValue * i;
+            assertex(expectedValue == receivedValue);
+            PrintLog("Message received from node %d to node %d.", i, rank);
+        }
+    }
+    
+}
+
 int main(int argc, char* argv[]){
     if ((argc == 2) && (strcmp(argv[1], "-help") == 0)){
         printHelp(argc, argv);
@@ -81,13 +146,24 @@ int main(int argc, char* argv[]){
         else
             printHelp(argc, argv);    
 #elif RIGHT_SHIFT_TEST
-  
+        if (argc < 2)
+            TEST_right_shift(comm);
+        else
+            printHelp(argc, argv);            
 #elif CUSTOM_SEND_TEST
     
 #elif SEND_ONE_TO_ALL_TEST
-    
+        if (argc < 3){
+            int rank = (argc == 2)? atoi(argv[1]) : 0;
+            TEST_one_to_all(comm, rank);
+        }else
+            printHelp(argc, argv);     
 #elif RECEIVE_ONE_FROM_ALL_TEST
-    
+        if (argc < 3){
+            int rank = (argc == 2)? atoi(argv[1]) : 0;
+            TEST_one_from_all(comm, rank);
+        }else
+            printHelp(argc, argv);      
 #endif    
         comm->barrier();
         stopMPServer();
