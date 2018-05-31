@@ -105,15 +105,10 @@ public:
          *      2.2 Send message to all ranks from start_rank to end_rank until timeout
          * return (invalid dstrank) or (timeout expired)
          */
-        void* data = malloc(mbuf.length());
-        mbuf.reset();
-        mbuf.read(mbuf.length(), data);
-        int s = hpcc_mpi::sendData(dstrank, tag, data, mbuf.length(), *group, true);
+        int s = hpcc_mpi::sendData(dstrank, tag, mbuf, *group, true);
         while (!hpcc_mpi::isCommComplete(s)){
             usleep(100);
         }
-        
-        free(data);
         
         return true;
     }
@@ -123,15 +118,10 @@ public:
          * 1. Wait for the message to be received, canceled or timeout
          * 2. Update the sender if sender is valid
          */
-        void* data; 
-        int size;
-        int s = hpcc_mpi::readData(srcrank, tag, data, size, *group, true);
+        int s = hpcc_mpi::readData(srcrank, tag, mbuf, *group, true);
         while (!hpcc_mpi::isCommComplete(s)){
             usleep(100);
         }
-        mbuf.reset();
-        mbuf.append(size, data);
-        free(data);
         
         return true;
     }

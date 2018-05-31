@@ -15,10 +15,12 @@
 //-------------------send/receive asynchronous communication----------------------//
 struct CommData{
     int requiresProbing;
-    void** data;
-    int* size;
+    void* data;
+    int size;
+    CMessageBuffer *mbuf;
     int rank;
     int tag;
+    int complete;
     MPI_Comm comm;
     MPI_Request request;
 };
@@ -38,6 +40,8 @@ int get_free_req(){
     freeRequests.pop_back();
     requestListLock.unlock();
     requests[req].requiresProbing = 0;
+    requests[req].mbuf = NULL;
+    requests[req].complete = 0;
     return req;
 }
 
@@ -54,46 +58,50 @@ int send(void* data, int size, int rank, int tag, MPI_Comm comm){
 }
 
 int startReceiveProcess(int i){
-    int flag;
     MPI_Status stat;
+    int flag = 0;
     MPI_Iprobe(requests[i].rank, requests[i].tag, requests[i].comm, &flag, &stat);
     if (flag){
         requests[i].requiresProbing = 0;
-        MPI_Get_count(&stat, MPI_BYTE, requests[i].size);
-        *(requests[i].data) = malloc(requests[i].size[0]);
-        MPI_Irecv(*(requests[i].data), requests[i].size[0], MPI_BYTE, requests[i].rank, requests[i].tag, requests[i].comm, &(requests[i].request));
-        flag = hpcc_mpi::isCommComplete(i);
+        MPI_Get_count(&stat, MPI_BYTE, &(requests[i].size));
+        requests[i].data = malloc(requests[i].size);
+        MPI_Irecv(requests[i].data, requests[i].size, MPI_BYTE, requests[i].rank, requests[i].tag, requests[i].comm, &(requests[i].request));
+        requests[i].complete = hpcc_mpi::isCommComplete(i);
     }
-    return flag;
+    return requests[i].complete;
 }
 
-int recv(void* &data, int &size, int rank, int tag, MPI_Comm comm){
+int recv(int rank, int tag, CMessageBuffer &mbuf, MPI_Comm comm){
     int nextFree = get_free_req();
     requests[nextFree].requiresProbing = 1;
-    requests[nextFree].data = &data;
-    requests[nextFree].size = &size;
     requests[nextFree].rank = rank;
     requests[nextFree].tag = tag;
     requests[nextFree].comm = comm;
+    requests[nextFree].mbuf = &mbuf;
     startReceiveProcess(nextFree);
     return nextFree;
 }
 
 //----------------------------------------------------------------------------//
 int hpcc_mpi::isCommComplete(int i){
-    if (i < 0){
+    if ((i < 0) || (requests[i].complete)){
         return 1;
     }
-    int flag = 0;
     if (requests[i].requiresProbing){
-        flag = startReceiveProcess(i);
+        requests[i].complete = startReceiveProcess(i);
     }else{
         MPI_Status stat;
-        MPI_Test(&(requests[i].request), &flag, &stat);
+        MPI_Test(&(requests[i].request), &(requests[i].complete), &stat);
+        if (requests[i].complete){
+            if (requests[i].mbuf != NULL){ //if it was a receive call
+                (requests[i].mbuf)->reset();
+                (requests[i].mbuf)->append(requests[i].size,requests[i].data);
+            }
+            free(requests[i].data);
+        }
     }
-    return flag;
+    return requests[i].complete;
 }
-
 
 rank_t hpcc_mpi::rank(NodeGroup &group){
     int rank;
@@ -115,11 +123,11 @@ void hpcc_mpi::finalize(){
     MPI_Finalize();
 }
 
-int hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, void* data, int size, NodeGroup &group, bool async){
-//    int size = buffer.length();
-//    char* data = (char *) malloc(size);
-//    buffer.reset();
-//    buffer.read(size, data);
+int hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageBuffer &mbuf, NodeGroup &group, bool async){
+    int size = mbuf.length();
+    char* data = (char *) malloc(size);
+    mbuf.reset();
+    mbuf.read(size, data);
     
     int target = dstRank;
     int tag = mptag;
@@ -131,11 +139,12 @@ int hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, void* data, int size, Node
     }else{
         MPI_Send(&size, 1, MPI_INT, target, sizeTag, group());
         MPI_Send(data, size, MPI_BYTE, target, tag, group());
+        free(data);
     }
     return req;
 }
 
-int hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, void* &data, int &size, NodeGroup &group, bool async){
+int hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, CMessageBuffer &mbuf, NodeGroup &group, bool async){
 //    int size;
     int source = sourceRank;
     int tag = mptag;
@@ -143,11 +152,15 @@ int hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, void* &data, int &size,
     MPI_Status stat;
     int req = -1;
     if (async){
-        req = recv(data, size, source, tag, group());
+        req = recv(source, tag, mbuf, group());
     }else {
+        int size;
         MPI_Recv(&size, 1, MPI_INT, source, sizeTag, group(), &stat);
-        data = malloc(size);
+        void* data = malloc(size);
         MPI_Recv(data, size, MPI_BYTE, source, tag, group(), &stat);
+        mbuf.reset();
+        mbuf.append(size, data);
+        free(data);
     }
     return req;
 }
