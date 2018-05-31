@@ -1969,7 +1969,7 @@ extern HQL_API void ensureSymbolsDefined(IHqlExpression * scope, HqlLookupContex
 extern HQL_API void ensureSymbolsDefined(IHqlScope * scope, HqlLookupContext & ctx);
 extern HQL_API IHqlExpression * queryBoolExpr(bool value);
 extern HQL_API IHqlExpression * queryBoolAttribute(IHqlExpression * expr, IAtom * name);    // true expr, false expr or NULL
-extern HQL_API bool getBoolAttributeValue(IHqlExpression * attr);
+extern HQL_API bool getBoolAttributeValue(IHqlExpression * attr, bool dft=false);
 extern HQL_API bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft=false);
 extern HQL_API bool getBoolAttributeInList(IHqlExpression * expr, IAtom * name, bool dft);
 
