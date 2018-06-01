@@ -660,6 +660,7 @@ public:
         reset();
         id.set(_id);
     }
+    virtual bool collectingDetailedStatistics() const { return false; }
 };
 
 class SlaveContextLogger : public StringContextLogger

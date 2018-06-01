@@ -1192,6 +1192,11 @@ public:
         out.append((unsigned)kind);
         out.append(value);
     }
+    void mergeInto(IStatisticGatherer & target) const
+    {
+        StatsMergeAction mergeAction = queryMergeMode(kind);
+        target.updateStatistic(kind, value, mergeAction);
+    }
     StringBuffer & toXML(StringBuffer &out) const
     {
         return out.append("  <Stat name=\"").append(queryStatisticName(kind)).append("\" value=\"").append(value).append("\"/>\n");
@@ -1740,6 +1745,16 @@ public:
     }
 
     inline const StatsScopeId & queryScopeId() const { return id; }
+
+    virtual void mergeInto(IStatisticGatherer & target) const
+    {
+        StatsOptScope block(target, id);
+        ForEachItemIn(iStat, stats)
+            stats.item(iStat).mergeInto(target);
+
+        for (auto const & cur : children)
+            cur.mergeInto(target);
+    }
 
 private:
     StatsScopeId id;

@@ -213,6 +213,10 @@ public:
     {
         ctx->gatherStats(merged);
     }
+    virtual bool collectingDetailedStatistics() const
+    {
+        return ctx->collectingDetailedStatistics();
+    }
     virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
     {
         ctx->CTXLOGva(format, args);
@@ -273,8 +277,6 @@ public:
     {
         return ctx->queryCallerIdHttpHeader();
     }
-
-
     virtual const QueryOptions &queryOptions() const
     {
         return ctx->queryOptions();
@@ -302,14 +304,6 @@ public:
     virtual IActivityGraph *getLibraryGraph(const LibraryCallFactoryExtra &extra, IRoxieServerActivity *parentActivity)
     {
         return ctx->getLibraryGraph(extra, parentActivity);
-    }
-    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const
-    {
-        ctx->noteProcessed(subgraphId, activityId, _idx, _processed, _strands);
-    }
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId) const
-    {
-        ctx->mergeActivityStats(fromStats, subgraphId, activityId);
     }
     virtual IProbeManager *queryProbeManager() const
     {
@@ -928,8 +922,10 @@ protected:
 
     mutable CRuntimeStatisticCollection stats;
     MapStringToMyClass<ThorSectionTimer> functionTimers;
-    unsigned processed;
     ActivityTimeAccumulator totalCycles;
+    IProbeManager *probeManager = NULL;
+    unsigned processed;
+    unsigned numStarts = 0;
     unsigned activityId;
     activityState state;
     bool createPending;
@@ -937,7 +933,6 @@ protected:
     bool timeActivities;
     bool aborted;
     bool connected = false;
-    IProbeManager *probeManager = NULL;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IRoxieServerActivity>)
@@ -1029,26 +1024,41 @@ public:
         return ret;
     }
 
-    virtual void updateFactoryStatistics() const override
+    virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const override
     {
+        if (!factory)
+            return;
+
+        //Collate the stats for this activity from various different sources.
         CRuntimeStatisticCollection mergedStats(stats.queryMapping());
         gatherStats(mergedStats);
 
-        if (factory && !debugging)
+        //Because subgraphs are flattened in roxie the subgraph needs to be selected for each activity
+        if (statsBuilder)
+            statsBuilder->beginSubGraphScope(factory->querySubgraphId());
+
+        //Still needed even if statsBuilder is null to update values in the factory
+        updateEdgeStats(statsBuilder);
+
+        if (statsBuilder)
         {
-            if (processed)
-                factory->noteProcessed(0, processed);
-            factory->mergeStats(mergedStats);
-        }
-        if (ctx && factory)
-        {
-            if (processed)
-                ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, 0);
-            ctx->mergeActivityStats(mergedStats, factory->querySubgraphId(), activityId);
+            StatsActivityScope ac(*statsBuilder, activityId);
+            mergedStats.recordStatistics(*statsBuilder);
+
+            //close the subgraph scope from the previous if()
+            statsBuilder->endScope();
         }
 
+        //Update the statistics accumulated over all the queries
+        if (!debugging)
+            factory->mergeStats(mergedStats);
+
+        //Updates the query summary statistics
+        if (ctx)
+            ctx->queryCodeContext()->queryContextLogger().mergeStats(mergedStats);
+
         ForEachItemIn(i, childGraphs)
-            childGraphs.item(i).updateFactoryStatistics();
+            childGraphs.item(i).gatherStatistics(statsBuilder);
     }
 
     virtual const IRoxieContextLogger &queryLogCtx()const
@@ -1059,9 +1069,18 @@ public:
     {
         return factory ? factory->queryStatsMapping() : actStatistics;
     }
+    virtual bool collectingDetailedStatistics() const
+    {
+        return ctx && ctx->collectingDetailedStatistics();
+    }
     virtual void mergeStats(MemoryBuffer &buf)
     {
         stats.deserializeMerge(buf);
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection & childStats)
+    {
+        CriticalBlock b(statscrit);
+        stats.merge(childStats);
     }
     virtual ISectionTimer *registerTimer(unsigned _activityId, const char * name)
     {
@@ -1286,6 +1305,7 @@ public:
             CTXLOG("STATE: Expected state to be reset, but was %s, in activity %d", queryStateText(state), activityId);
         }
         state=STATEstarted;
+        numStarts++;
 #ifdef TRACE_STARTSTOP
         if (traceStartStop)
         {
@@ -1584,6 +1604,12 @@ public:
     {
         return factory;
     }
+
+    virtual void updateEdgeStats(IStatisticGatherer * statsBuilder) const
+    {
+        addEdgeStats(statsBuilder, 0, numStarts, processed, 1);
+    }
+
     inline ThorActivityKind getKind() const
     {
         return factory->getKind();
@@ -1592,6 +1618,27 @@ public:
     inline bool isSink() const
     {
         return (factory != NULL) && factory->isSink();
+    }
+
+    void addEdgeStats(IStatisticGatherer * statsBuilder, unsigned oid, unsigned starts, unsigned _processed, unsigned _strands) const
+    {
+        if (statsBuilder)
+        {
+            StatsEdgeScope scope(*statsBuilder, activityId, oid);
+            if (_strands)
+                statsBuilder->addStatistic(StNumStrands, _strands);
+            if (starts != 0)
+            {
+                statsBuilder->addStatistic(StNumRowsProcessed, _processed);
+                statsBuilder->addStatistic(StNumStarts, starts);
+                // Assume number of starts = number of stops since stats only ever gathered when a query is complete
+                statsBuilder->addStatistic(StNumStops, starts);
+                statsBuilder->addStatistic(StNumSlaves, 1);  // Arguable
+            }
+        }
+
+        if (factory && !debugging)
+            factory->noteProcessed(oid, processed);
     }
 
 protected:
@@ -1780,18 +1827,6 @@ public:
         active = 0;
     }
 
-    ~CRoxieServerStrandedActivity()
-    {
-        if (strands.ordinality() > 1)
-        {
-            if (factory && !debugging)
-                factory->noteProcessed(0, processed);
-            if (ctx && factory)
-                ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, strands.ordinality());
-            processed = 0;  // To avoid reprocessing in base destructor
-        }
-    }
-
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         CRoxieServerActivity::gatherStats(merged);
@@ -1953,6 +1988,11 @@ public:
     }
 
     inline unsigned numStrands() const { return strands.ordinality(); }
+
+    virtual void updateEdgeStats(IStatisticGatherer * statsBuilder) const
+    {
+        addEdgeStats(statsBuilder, 0, numStarts, processed, strands.ordinality());
+    }
 
 protected:
 
@@ -4824,6 +4864,8 @@ public:
                                     break;
                                 case LOG_CHILDCOUNT:
                                 case LOG_CHILDSTATS:
+                                    //These need rethinking - all child stats should be serialized in a single block, and should be merged into
+                                    //the information for an activity, ready for reporting later
                                     unsigned graphId, childId;
                                     buf.skip(1);
                                     buf.read(graphId);
@@ -4838,7 +4880,7 @@ public:
                                         buf.read(childStrands);
                                         if (traceLevel > 5)
                                             activity.queryLogCtx().CTXLOG("Processing ChildCount %d idx %d strands %d for child %d subgraph %d", childProcessed, idx, childStrands, childId, graphId);
-                                        activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed, childStrands);
+                                        //activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed, childStrands);
                                     }
                                     else
                                     {
@@ -4849,7 +4891,8 @@ public:
                                             StringBuffer s;
                                             activity.queryLogCtx().CTXLOG("Processing ChildStats for child %d subgraph %d: %s", childId, graphId, childStats.toStr(s).str());
                                         }
-                                        activity.queryContext()->mergeActivityStats(childStats, graphId, childId);
+                                        //activity.queryContext()->mergeActivityStats(childStats, graphId, childId);
+                                        activity.mergeStats(childStats);
                                     }
                                 }
                                 ReleaseRoxieRow(rowlen);
@@ -8799,7 +8842,8 @@ public:
         CRoxieServerThroughSpillActivity *parent;
         unsigned idx;
         unsigned oid;
-        unsigned processed;
+        unsigned processed = 0;
+        unsigned numStarts = 0;
         cycle_t totalCycles;  // We track this per output so that the pullers get a meaningful value to use when calculating their localtime
 
     public:
@@ -8821,12 +8865,6 @@ public:
         {
             if (traceStartStop)
                 DBGLOG("%p ~OutputAdaptor %d", this, oid);
-            if (processed && parent && parent->factory)
-            {
-                parent->factory->noteProcessed(oid, processed);
-                if (parent->ctx)
-                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed, 0);
-            }
         }
 
         void init()
@@ -8894,6 +8932,7 @@ public:
             if (traceStartStop)
                 parent->CTXLOG("%p start Input adaptor %d stopped = %d", this, oid, stopped);
             parent->start(oid, parentExtractSize, parentExtract, paused);
+            numStarts++;
         }
 
         virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
@@ -9226,6 +9265,11 @@ public:
         return numOutputs==1;
     }
 
+    virtual void updateEdgeStats(IStatisticGatherer * statsBuilder) const
+    {
+        for (unsigned i = 0; i < numOutputs; i++)
+            addEdgeStats(statsBuilder, i, adaptors[i].numStarts, adaptors[i].processed, 0);
+    }
 
 };
 
@@ -15940,6 +15984,7 @@ class CRoxieServerParallelGraphLoopActivity : public CRoxieServerGraphLoopActivi
     IArrayOf<IRoxieServerChildGraph> iterationGraphs;
     Owned<CExtractMapperInput> inputExtractMapper;
     IProbeManager *probeManager;
+    Owned<IStatisticGatherer> childStats;
     unsigned createLoopCounter;
 
     IArrayOf<IRoxieProbe> probes;
@@ -15952,12 +15997,29 @@ public:
         resultInput = NULL;
         resultStream = NULL;
         createLoopCounter = 0;
+
+        if (ctx && ctx->collectingDetailedStatistics())
+        {
+            StatsScopeId rootScope(SSTnone, 0U);
+            childStats.setown(createStatisticsGatherer(SCTroxie, "", rootScope));
+        }
     }
 
     virtual void onCreate(IHThorArg *_colocalParent)
     {
         CRoxieServerGraphLoopActivity::onCreate(_colocalParent);
         childGraph.set(ctx->queryChildGraph(loopGraphId));
+    }
+
+    virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const override
+    {
+        CRoxieServerGraphLoopActivity::gatherStatistics(statsBuilder);
+        if (statsBuilder && childStats)
+        {
+            //Merge any stats collected from executed graphs into the full statistics
+            Owned<IStatisticCollection> childCollection = childStats->getResult();
+            childCollection->mergeInto(*statsBuilder);
+        }
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -16013,7 +16075,7 @@ public:
         resultJunction.clear();
 
         ForEachItemIn(i, iterationGraphs)
-            iterationGraphs.item(i).updateFactoryStatistics();
+            iterationGraphs.item(i).gatherStatistics(childStats);
 
         outputs.kill();
         iterationGraphs.kill(); // must be done after all activities killed
@@ -16137,6 +16199,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         IOutputMetaData * meta = nullptr;
         unsigned oid;
         unsigned processed;
+        unsigned numStarts = 0;
 
     public:
         OutputAdaptor()
@@ -16150,12 +16213,6 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         {
             if (traceStartStop)
                 DBGLOG("%p ~OutputAdaptor %d", this, oid);
-            if (processed && parent && parent->factory)
-            {
-                parent->factory->noteProcessed(oid, processed);
-                if (parent->ctx)
-                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed, 0);
-            }
         }
 
         void setParent(CRoxieServerLibraryCallActivity * _parent, IOutputMetaData * _meta, unsigned _oid)
@@ -16175,6 +16232,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         {
             parent->start(oid, parentExtractSize, parentExtract, paused);
             CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
+            numStarts++;
         }
 
         virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
@@ -16422,12 +16480,19 @@ public:
         return &outputAdaptors[idx];
     }
 
-    virtual void updateFactoryStatistics() const override
+    virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const override
     {
         if (libraryGraph)
-            libraryGraph->updateFactoryStatistics();
-        CRoxieServerActivity::updateFactoryStatistics();
+            libraryGraph->gatherStatistics(statsBuilder);
+        CRoxieServerActivity::gatherStatistics(statsBuilder);
     }
+
+    virtual void updateEdgeStats(IStatisticGatherer * statsBuilder) const
+    {
+        for (unsigned i = 0; i < numOutputs; i++)
+            addEdgeStats(statsBuilder, i, outputAdaptors[i].numStarts, outputAdaptors[i].processed, 0);
+    }
+
 };
 
 
@@ -27154,14 +27219,15 @@ protected:
     CriticalSection evaluateCrit;
 
     IProbeManager *probeManager;
+    IRoxieServerActivity *parentActivity;
     unsigned id;
     unsigned loopCounter;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CActivityGraph(IRoxieSlaveContext *_ctx, const char *_graphName, unsigned _id, const ActivityArray &x, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx)
-        : probeManager(_probeManager), graphDefinition(x), graphName(_graphName), graphSlaveContext(_ctx, _logctx)
+    CActivityGraph(IRoxieSlaveContext *_ctx, const char *_graphName, unsigned _id, IRoxieServerActivity *_parentActivity, const ActivityArray &x, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx)
+        : parentActivity(_parentActivity), probeManager(_probeManager), graphDefinition(x), graphName(_graphName), graphSlaveContext(_ctx, _logctx)
     {
         id = x.getLibraryGraphId();
         if (!id)
@@ -27397,10 +27463,24 @@ public:
         return results.getClear();
     }
 
-    virtual void updateFactoryStatistics() const override
+    virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const override
     {
+        if (id && statsBuilder)
+        {
+            statsBuilder->beginSubGraphScope(parentActivity->querySubgraphId());
+            statsBuilder->beginActivityScope(parentActivity->queryId());
+            statsBuilder->beginChildGraphScope(id);
+        }
+
         ForEachItemIn(i, activities)
-            activities.item(i).updateFactoryStatistics();
+            activities.item(i).gatherStatistics(statsBuilder);
+
+        if (id && statsBuilder)
+        {
+            statsBuilder->endScope();
+            statsBuilder->endScope();
+            statsBuilder->endScope();
+        }
     }
 
     //interface IRoxieServerChildGraph
@@ -27551,8 +27631,8 @@ class CProxyActivityGraph : implements IActivityGraph, implements IThorChildGrap
 public:
     IMPLEMENT_IINTERFACE;
 
-    CProxyActivityGraph(IRoxieSlaveContext *_ctx, const char *_graphName, unsigned _id, ActivityArray &_graphDefinition, const IRoxieContextLogger &_logctx, unsigned _numParallel)
-        : ctx(_ctx), graphName(_graphName), id(_id), graphDefinition(_graphDefinition), logctx(_logctx), numParallel(_numParallel)
+    CProxyActivityGraph(IRoxieSlaveContext *_ctx, const char *_graphName, unsigned _id, IRoxieServerActivity *_parentActivity, ActivityArray &_graphDefinition, const IRoxieContextLogger &_logctx, unsigned _numParallel)
+        : ctx(_ctx), graphName(_graphName), id(_id), graphDefinition(_graphDefinition), logctx(_logctx), numParallel(_numParallel), parentActivity(_parentActivity)
     {
     }
     virtual void abort() override { throwUnexpected(); }
@@ -27570,11 +27650,11 @@ public:
     virtual IRoxieServerChildGraph * queryLoopGraph() override { throwUnexpected(); }
     virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) override { throwUnexpected(); }
     virtual const char *queryName() const override { throwUnexpected(); }
-    virtual void updateFactoryStatistics() const override
+    virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const override
     {
         CriticalBlock b(graphCrit);
         ForEachItemIn(i, stack)
-            stack.item(i).updateFactoryStatistics();
+            stack.item(i).gatherStatistics(statsBuilder);
     }
     virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract) override
     {
@@ -27586,7 +27666,7 @@ public:
         }
         if (!realGraph)
         {
-            realGraph.setown(new CActivityGraph(ctx, graphName, id, graphDefinition, NULL, logctx));
+            realGraph.setown(new CActivityGraph(ctx, graphName, id, parentActivity, graphDefinition, NULL, logctx));
             realGraph->createGraph(ctx);
             realGraph->onCreate(colocalArg);
         }
@@ -27600,6 +27680,7 @@ public:
 
 protected:
     IRoxieSlaveContext *ctx;
+    IRoxieServerActivity *parentActivity;
     StringAttr graphName;
     unsigned id;
     ActivityArray &graphDefinition;
@@ -27618,9 +27699,9 @@ class CIterationActivityGraph : public CActivityGraph
     unsigned graphOutputActivityIndex;
 
 public:
-    CIterationActivityGraph(const char *_graphName, unsigned _id, ActivityArray &x, IProbeManager *_probeManager, 
+    CIterationActivityGraph(const char *_graphName, unsigned _id, IRoxieServerActivity *_parentActivity, ActivityArray &x, IProbeManager *_probeManager,
                             unsigned _loopCounter, IRoxieSlaveContext *_ctx, IHThorArg * _colocalParent, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &_logctx)
-        : CActivityGraph(_ctx, _graphName, _id, x, _probeManager, _logctx)
+        : CActivityGraph(_ctx, _graphName, _id, _parentActivity, x, _probeManager, _logctx)
     {
         graphOutputActivityIndex = 0;
         loopCounter = _loopCounter;
@@ -27774,12 +27855,13 @@ class CDelayedActivityGraph : implements IActivityGraph, public CInterface
     unsigned id;
     IRoxieSlaveContext * ctx;
     IHThorArg * colocalParent;
+    IRoxieServerActivity *parentActivity;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDelayedActivityGraph(const char *_graphName, unsigned _id, ActivityArray &x, IProbeManager *_probeManager)
-        : probeManager(_probeManager), graphDefinition(x)
+    CDelayedActivityGraph(const char *_graphName, unsigned _id, IRoxieServerActivity *_parentActivity, ActivityArray &x, IProbeManager *_probeManager)
+        : probeManager(_probeManager), parentActivity(_parentActivity), graphDefinition(x)
     {
         graphName.set(_graphName);
         id = _id;
@@ -27797,7 +27879,7 @@ public:
     virtual IThorChildGraph * queryChildGraph() override { throwUnexpected(); }
     virtual IEclGraphResults * queryLocalGraph() override { throwUnexpected(); }
     virtual IRoxieServerChildGraph * queryLoopGraph() override { throwUnexpected(); }
-    virtual void updateFactoryStatistics() const override { }
+    virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const override { }
     virtual void onCreate(IHThorArg *_colocalParent) override
     { 
         colocalParent = _colocalParent;
@@ -27805,7 +27887,7 @@ public:
 
     virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) override
     {
-        Owned<CIterationActivityGraph> ret = new CIterationActivityGraph(graphName, id, graphDefinition, probeManager, loopCounter, ctx, colocalParent, parentExtractSize, parentExtract, logctx);
+        Owned<CIterationActivityGraph> ret = new CIterationActivityGraph(graphName, id, parentActivity, graphDefinition, probeManager, loopCounter, ctx, colocalParent, parentExtractSize, parentExtract, logctx);
         ret->createIterationGraph(ctx);
         return ret.getClear();
     }
@@ -27818,7 +27900,7 @@ IActivityGraph *createActivityGraph(IRoxieSlaveContext *ctx, const char *_graphN
     if (childFactories.isDelayed())
     {
         assertex(numParallel==1);
-        return new CDelayedActivityGraph(_graphName, id, childFactories, _probeManager);
+        return new CDelayedActivityGraph(_graphName, id, parentActivity, childFactories, _probeManager);
     }
     else
     {
@@ -27827,14 +27909,14 @@ IActivityGraph *createActivityGraph(IRoxieSlaveContext *ctx, const char *_graphN
             Owned<IProbeManager> childProbe;
             if (_probeManager)
                 childProbe.setown(_probeManager->startChildGraph(id, parentActivity));
-            Owned<CActivityGraph> ret = new CActivityGraph(ctx, _graphName, id, childFactories, childProbe, _logctx);
+            Owned<CActivityGraph> ret = new CActivityGraph(ctx, _graphName, id, parentActivity, childFactories, childProbe, _logctx);
             ret->createGraph(ctx);
             if (_probeManager)
                 _probeManager->endChildGraph(childProbe, parentActivity);
             return ret.getClear();
         }
         else
-            return new CProxyActivityGraph(ctx, _graphName, id, childFactories, _logctx, numParallel);
+            return new CProxyActivityGraph(ctx, _graphName, id, parentActivity, childFactories, _logctx, numParallel);
     }
 }
 
