@@ -50,6 +50,11 @@ static const char* const AUTH_STATUS_NA = "NA";
 static const char* const AUTH_STATUS_FAIL = "Fail";
 static const char* const AUTH_STATUS_OK = "Ok";
 static const char* const AUTH_STATUS_NOACCESS = "NoAccess"; //failed for feature level authorization
+static const char* const AUTH_TYPE_NONE = "None";
+static const char* const AUTH_TYPE_USERNAMEONLY = "UserNameOnly";
+static const char* const AUTH_TYPE_PERREQUESTONLY = "PerRequestOnly";
+static const char* const AUTH_TYPE_PERSESSIONONLY = "PerSessionOnly";
+static const char* const AUTH_TYPE_MIXED = "Mixed";
 
 //xpath in dali
 static const char* const PathSessionRoot="Sessions";
