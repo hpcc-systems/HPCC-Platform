@@ -127,6 +127,8 @@ class NodeGroup: implements IGroup, public CInterface{
 private:
     MPI_Comm mpi_comm;
     std::vector<std::map<mptag_t, hpcc_mpi::CommRequest> > commRequests;
+    std::map<int, std::map<mptag_t, hpcc_mpi::CommRequest> > commRequestsNonRank;
+    
     NodeGroup(const MPI_Comm &_mpi_comm): mpi_comm(_mpi_comm){
         count = hpcc_mpi::size(*this);
         self_rank = hpcc_mpi::rank(*this);
@@ -157,26 +159,46 @@ public:
     
     void addCommRequest(rank_t rank, mptag_t tag, hpcc_mpi::CommRequest req){
         int r = rank;
-        commRequests[r][tag] = req;
+        if (r < 0){
+            if (commRequestsNonRank.find(r)==commRequestsNonRank.end()){
+                commRequestsNonRank[r]=std::map<mptag_t, hpcc_mpi::CommRequest>();
+            }
+            commRequestsNonRank[r][tag] = req;
+        }else{
+            commRequests[r][tag] = req;
+        }
     }
     
     hpcc_mpi::CommRequest getCommRequest(rank_t rank, mptag_t tag){
         int r = rank;
-        if (commRequests[r].find(tag)!=commRequests[r].end())
+        if (r < 0){
+            if (commRequestsNonRank.find(r)!=commRequestsNonRank.end()){
+                return commRequests[r][tag];
+            }
+        }else if (commRequests[r].find(tag)!=commRequests[r].end()){
             return commRequests[r][tag];
-        else 
-            return -1;
+        }
+        return -1;
     }
     
     void removeCommRequest(rank_t rank, mptag_t tag){
         int r = rank;
         if (getCommRequest(rank, tag)>=0){
-            commRequests[r].erase(tag);
+            if (r < 0){
+                commRequestsNonRank[r].erase(tag);
+            }else{ 
+                commRequests[r].erase(tag);
+            }
         }
+        
+    }
+    
+    rank_t rank(const SocketEndpoint &ep) const {
+        return (rank_t)(ep.port);
     }
     
     ~NodeGroup(){}
-    rank_t rank(const SocketEndpoint &ep) const {UNIMPLEMENTED;}
+    
     rank_t rank(INode *node) const  {UNIMPLEMENTED;}
     GroupRelation compare(const IGroup *grp) const {UNIMPLEMENTED;}
     bool equals(const IGroup *grp) const{UNIMPLEMENTED;}

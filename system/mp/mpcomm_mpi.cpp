@@ -174,7 +174,14 @@ public:
         UNIMPLEMENTED;
         mptag_t replytag = mbuf.getReplyTag();
         rank_t dstrank = group->rank(mbuf.getSender());
-        
+        if (dstrank!=RANK_NULL) {
+            if (send (mbuf, dstrank, replytag,timeout)) {
+                mbuf.setReplyTag(TAG_NULL);
+                return true;
+            }
+            return false;
+        }
+        //CHECK: dstrank will always be valid if mbuf.getSender() is valid
     }
 
     void cancel(rank_t srcrank, mptag_t tag){

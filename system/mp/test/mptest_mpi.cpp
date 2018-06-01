@@ -10,22 +10,29 @@ using namespace std;
 
 #define MULTITEST
 
+rank_t myrank;
+
 void printHelp(int argc, char** argv){
-    printf("\nMPTEST: Usage: mpirun -np <# of procs> %s", argv[0]);
-#ifdef RANK_TEST
-    printf("\nPrint rank of each node (# of procs > 1)."); 
-#elif SINGLE_SEND_TEST
-    printf("\nSend message from node 0 to node 1 (# of procs >= 2)."); 
-#elif RIGHT_SHIFT_TEST
-    printf("\nSend data to the node represented by next rank."); 
-#elif CUSTOM_SEND_TEST
-    printf("<routing_file> \nSend/Receive data based on custom routing."); 
-#elif SEND_ONE_TO_ALL_TEST
-    printf("[node_rank] \nNode node_rank (default=0) send to all nodes."); 
-#elif RECEIVE_ONE_FROM_ALL_TEST
-    printf("[node_rank] \nNode node_rank (default=0) receive from all nodes."); 
-#endif
-    printf("\n");
+    if (myrank == 0){
+        printf("USAGE \n\t$ mpirun -np <# of procs> %s", argv[0]);
+        std::string desc="\n\nDESCRIPTION\n\t";
+    #ifdef RANK_TEST
+        printf("%sPrint rank of each node (# of procs > 1).", desc.c_str()); 
+    #elif SINGLE_SEND_TEST
+        printf("%sSend message from node 0 to node 1 (# of procs >= 2).", desc.c_str()); 
+    #elif RIGHT_SHIFT_TEST
+        printf("%sSend data to the node represented by next rank.", desc.c_str()); 
+    #elif RECEIVE_FROM_ANY_TEST    
+        printf(" [node_rank]%sLast node/processpor receive data from any node_rank (default=0).", desc.c_str()); 
+    #elif CUSTOM_SEND_TEST
+        printf(" <routing_file>%sSend/Receive data based on custom routing.", desc.c_str()); 
+    #elif SEND_ONE_TO_ALL_TEST
+        printf(" [node_rank]%sNode node_rank (default=0) send to all nodes.", desc.c_str()); 
+    #elif RECEIVE_ONE_FROM_ALL_TEST
+        printf(" [node_rank]%sNode node_rank (default=0) receive from all nodes.", desc.c_str()); 
+    #endif
+        printf("\n\n");
+    }
 }
 
 //--- Rank Test --//
@@ -77,6 +84,28 @@ void TEST_right_shift(ICommunicator* comm){
     PrintLog("Message received from node %d to node %d.", source_rank, rank);
 }
 
+void TEST_receive_from_any(ICommunicator* comm, rank_t nodeRank){
+    IGroup* group = comm->getGroup();
+    rank_t p = group->ordinality();
+    rank_t rank = group->rank();
+    rank_t destinationRank = (p-1);
+    double expectedValue = 1234.0;
+    if (rank == nodeRank){
+        CMessageBuffer sendMsg;
+        sendMsg.append(expectedValue); 
+        comm->send(sendMsg, destinationRank, MPTAG_TEST, MP_WAIT_FOREVER);    
+        PrintLog("Message sent by node %d to node %d.", rank, destinationRank);
+    }
+    if (rank == destinationRank){
+        CMessageBuffer recvMsg;
+        comm->recv(recvMsg, RANK_ALL, MPTAG_TEST, NULL, MP_WAIT_FOREVER);
+        double receivedValue;
+        recvMsg.read(receivedValue);
+        assertex(expectedValue == receivedValue);
+        PrintLog("Message successfully received from node %d to node %d.", comm->getGroup()->rank(recvMsg.getSender()), rank);
+    }
+}
+
 void TEST_one_to_all(ICommunicator* comm, rank_t nodeRank){
     IGroup* group = comm->getGroup();
     rank_t p = group->ordinality();
@@ -120,21 +149,21 @@ void TEST_one_from_all(ICommunicator* comm, rank_t nodeRank){
             PrintLog("Message received from node %d to node %d.", i, rank);
         }
     }
-    
 }
 
 int main(int argc, char* argv[]){
-    if ((argc == 2) && (strcmp(argv[1], "-help") == 0)){
-        printHelp(argc, argv);
-        return 0;
-    }
     InitModuleObjects();
     try {
         EnableSEHtoExceptionMapping();
-
         startMPServer(0);
         IGroup* group = createIGroup(0, (INode **) NULL);
         ICommunicator* comm = createCommunicator(group);
+        myrank = group->rank();
+        if ((argc == 2) && (strcmp(argv[1], "--help") == 0)){
+            printHelp(argc, argv);
+            stopMPServer();
+            return 0;
+        }        
 #ifdef RANK_TEST
         if (argc < 2)
             TEST_rank(comm);
@@ -151,7 +180,12 @@ int main(int argc, char* argv[]){
         else
             printHelp(argc, argv);            
 #elif CUSTOM_SEND_TEST
-    
+#elif RECEIVE_FROM_ANY_TEST
+        if (argc < 3){
+            int rank = (argc == 2)? atoi(argv[1]) : 0;
+            TEST_receive_from_any(comm, rank);
+        }else
+            printHelp(argc, argv);  
 #elif SEND_ONE_TO_ALL_TEST
         if (argc < 3){
             int rank = (argc == 2)? atoi(argv[1]) : 0;
@@ -168,6 +202,8 @@ int main(int argc, char* argv[]){
         stopMPServer();
     } catch (IException *e){
         pexception("Exception", e);
+        printHelp(argc, argv);
+        stopMPServer();
     }
     return 0;
 }

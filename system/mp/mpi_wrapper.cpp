@@ -88,6 +88,20 @@ int recv(int rank, int tag, CMessageBuffer &mbuf, MPI_Comm comm){
     return nextFree;
 }
 
+int getRank(rank_t sourceRank){
+    if (sourceRank == RANK_ALL)
+        return MPI_ANY_SOURCE;
+    else
+        return sourceRank;
+}
+
+int getTag(mptag_t mptag){
+    if (mptag == TAG_ALL)
+        return MPI_ANY_TAG;
+    else
+        return mptag;
+}
+
 //----------------------------------------------------------------------------//
 
 /** See mpi_wrapper.hpp header file for function descriptions of the following **/
@@ -95,16 +109,8 @@ int recv(int rank, int tag, CMessageBuffer &mbuf, MPI_Comm comm){
 bool hpcc_mpi::hasIncomingMessage(rank_t &sourceRank, mptag_t &mptag, NodeGroup &group){
     MPI_Status stat;
     int flag;
-    int rank;
-    if (sourceRank == RANK_ALL)
-        rank = MPI_ANY_SOURCE;
-    else
-        rank = sourceRank;
-    int tag;
-    if (mptag == TAG_ALL)
-        tag = MPI_ANY_TAG;
-    else
-        tag = mptag;
+    int rank = getRank(sourceRank);
+    int tag = getTag(mptag);
     MPI_Iprobe(rank, tag, group(), &flag, &stat);
     if (flag){ // update the sender and tag based on status object
         sourceRank = stat.MPI_SOURCE;
@@ -157,7 +163,10 @@ hpcc_mpi::CommStatus hpcc_mpi::getCommStatus(CommRequest commReq){
             if (requests[commReq].mbuf != NULL){//if it was a receive call
                 (requests[commReq].mbuf)->reset();
                 (requests[commReq].mbuf)->append(requests[commReq].size,requests[commReq].data);
-                //TODO setup sender, tag, replytag in the CMessageBuffer
+                //TODO revisit on how to create the replytag in the CMessageBuffer
+                SocketEndpoint ep;
+                ep.port = stat.MPI_SOURCE;
+                (requests[commReq].mbuf)->init(ep, (mptag_t)(stat.MPI_TAG), TAG_REPLY_BASE);
             }
             free(requests[commReq].data);       
             //TODO test for canceled and update status for cancelled
@@ -192,9 +201,8 @@ int hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageBuffer &mbuf, Node
     char* data = (char *) malloc(size);
     mbuf.reset();
     mbuf.read(size, data);
-    
-    int target = dstRank;
-    int tag = mptag;
+    int target = getRank(dstRank);
+    int tag = getTag(mptag);
     
     int req = -1;
     if (async){
@@ -211,9 +219,8 @@ int hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageBuffer &mbuf, Node
 }
 
 int hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, CMessageBuffer &mbuf, NodeGroup &group, bool async){
-//    int size;
-    int source = sourceRank;
-    int tag = mptag;
+    int source = getRank(sourceRank);
+    int tag = getTag(mptag);
     MPI_Status stat;
     int req = -1;
     if (async){

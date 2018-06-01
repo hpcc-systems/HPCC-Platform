@@ -62,3 +62,8 @@ HPCC_ADD_EXECUTABLE (mptest_from_all ${SRCS} )
 SET_TARGET_PROPERTIES(mptest_from_all PROPERTIES COMPILE_FLAGS "-DRECEIVE_ONE_FROM_ALL_TEST")
 target_link_libraries (mptest_from_all jlib mp)
 
+HPCC_ADD_EXECUTABLE (mptest_recv_any ${SRCS} ) 
+SET_TARGET_PROPERTIES(mptest_recv_any PROPERTIES COMPILE_FLAGS "-DRECEIVE_FROM_ANY_TEST")
+target_link_libraries (mptest_recv_any jlib mp)
+
+
