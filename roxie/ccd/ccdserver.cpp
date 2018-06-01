@@ -22468,6 +22468,7 @@ public:
                 }
             }
         }
+        processed++;
         size32_t rowSize = meta.getFixedSize();
         void * result = rowAllocator->createRow();
         if (rowSize == 1)
@@ -22544,6 +22545,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (done) return NULL;
         const void * ret = gatherMerged();
+        processed++;
         done = true;
         return ret;
     }
@@ -24132,6 +24134,7 @@ public:
                 throw ;
         }
 
+        processed++;
         void * result = rowAllocator->createRow();
         if (meta.getFixedSize() == 1)
             *(byte *)result = (byte)totalCount;
@@ -24301,6 +24304,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (done) return NULL;
         const void * ret = gatherMerged();
+        processed++;
         done = true;
         return ret;
     }
