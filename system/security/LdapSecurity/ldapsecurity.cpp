@@ -318,6 +318,11 @@ const char * CLdapSecResource::getParameter(const char * name)
 
 }
 
+IPropertyIterator * CLdapSecResource::getParameterIterator() const
+{
+    return (m_parameters.get() ? m_parameters->getIterator() : nullptr);
+}
+
 void CLdapSecResource::setDescription(const char* description)
 {
     m_description.clear().append(description);
