@@ -330,6 +330,8 @@ bool CLoggingManager::getTransactionID(StringAttrMapping* transFields, StringBuf
 
             IEspLogAgent* loggingAgent = loggingThread->getLogAgent();
             loggingAgent->getTransactionID(transFields, transactionID);
+            if (!transactionID.isEmpty())
+                ESPLOG(LogMax, "Got TransactionID '%s'", transactionID.str());
             return true;
         }
     }
