@@ -277,6 +277,7 @@ protected:
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item);
     virtual void doExecuteCriticalItem(IRuntimeWorkflowItem & item);
     virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item);
+    virtual void noteTiming(unsigned wfid, timestamp_type startTime, stat_type elapsedNs);
 
 private:
     void prelockPersists();

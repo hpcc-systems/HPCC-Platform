@@ -960,7 +960,10 @@ void WorkflowMachine::performItem(unsigned wfid, unsigned scheduledWfid)
     wfidStack.append(scheduledWfid);
     currentWfid = wfid;
     currentScheduledWfid = scheduledWfid;
+    timestamp_type startTime = getTimeStampNowValue();
+    CCycleTimer timer;
     process->perform(ctx, wfid);
+    noteTiming(wfid, startTime, timer.elapsedNs());
     scheduledWfid = wfidStack.popGet();
     currentWfid = wfidStack.popGet();
     if(currentWfid)

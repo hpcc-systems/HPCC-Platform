@@ -287,6 +287,18 @@ protected:
         return more;
     }
 
+    virtual void noteTiming(unsigned wfid, timestamp_type startTime, stat_type elapsedNs)
+    {
+        if (!workunit)
+            return;
+
+        WorkunitUpdate wu(&workunit->lock());
+        StringBuffer scope;
+        scope.append(WorkflowScopePrefix).append(wfid);
+        updateWorkunitStat(wu, SSTworkflow, scope, StWhenStarted, nullptr, startTime, 0);
+        updateWorkunitStat(wu, SSTworkflow, scope, StTimeElapsed, nullptr, elapsedNs, 0);
+    }
+
 
     virtual void reportContingencyFailure(char const * type, IException * e)
     {

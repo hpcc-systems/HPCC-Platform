@@ -2323,6 +2323,15 @@ bool EclAgentWorkflowMachine::getPersistTime(time_t & when, IRuntimeWorkflowItem
     return true;
 }
 
+void EclAgentWorkflowMachine::noteTiming(unsigned wfid, timestamp_type startTime, stat_type elapsedNs)
+{
+    Owned<IWorkUnit> wu = agent.updateWorkUnit();
+    StringBuffer scope;
+    scope.append(WorkflowScopePrefix).append(wfid);
+    updateWorkunitStat(wu, SSTworkflow, scope, StWhenStarted, nullptr, startTime, 0);
+    updateWorkunitStat(wu, SSTworkflow, scope, StTimeElapsed, nullptr, elapsedNs, 0);
+}
+
 void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
 {
     if (agent.isStandAloneExe)
