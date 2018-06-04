@@ -158,13 +158,13 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
         ActPrintLog( "COUNTPROJECT: Is Global");
         first = true;
         prevRecCount = 0;
         ThorDataLinkMetaInfo info;
         input->getMetaInfo(info);
         localRecCount = (info.totalRowsMin == info.totalRowsMax) ? (rowcount_t)info.totalRowsMax : RCUNSET;
-        PARENT::start();
     }
     virtual void stop()
     {
