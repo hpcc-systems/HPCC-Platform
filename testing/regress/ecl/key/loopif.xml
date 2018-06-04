@@ -1,3 +1,4 @@
+<Warning><Code>2168</Code><Filename>loopif.ecl</Filename><Line>27</Line><Source>eclcc</Source><Message>Field 'i' in TABLE does not appear to be properly defined by grouping conditions</Message></Warning>
 <Dataset name='Result 1'>
  <Row><i>61</i><j>1</j><c>4</c></Row>
  <Row><i>62</i><j>2</j><c>4</c></Row>
