@@ -13,6 +13,13 @@
     </indexterm>(</emphasis> <emphasis>text</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
+  <para><emphasis role="bold">STD.Uni.ExcludeLastWord<indexterm>
+      <primary>STD.Uni.ExcludeLastWord</primary>
+    </indexterm><indexterm>
+      <primary>Uni.ExcludeLastWord</primary>
+    </indexterm>(</emphasis> <emphasis>text, localename</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec colwidth="80.50pt" />
@@ -23,22 +30,33 @@
         <row>
           <entry><emphasis>text</emphasis></entry>
 
-          <entry>A string containing words separated by whitespace. </entry>
+          <entry>A string containing words separated by whitespace.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>localename</emphasis></entry>
+
+          <entry>Optional. The locale to use for the break semantics. Defaults
+          to ''</entry>
         </row>
 
         <row>
           <entry>Return:</entry>
 
-          <entry>ExcludeLastWord returns a STRING value.</entry>
+          <entry>ExcludeLastWord returns a STRING or UNICODE value, as
+          appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
   <para>The <emphasis role="bold">ExcludeLastWord</emphasis> function returns
-  the <emphasis>text</emphasis> string with the last word removed. Words are
-  separated by one or more whitespace characters. Whitespace after
-  the last word is also removed.</para>
+  the <emphasis>text</emphasis> string with the last word removed.</para>
+
+  <para>Words are separated by one or more whitespace characters. For the
+  Unicode version, words are marked by the Unicode break semantics.</para>
+
+  <para>Whitespace after the last word is also removed.</para>
 
   <para>Example:</para>
 

@@ -10,7 +10,14 @@
       <primary>Str.StartsWith</primary>
     </indexterm><indexterm>
       <primary>StartsWith</primary>
-    </indexterm>(</emphasis> <emphasis>source, prefix</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src, prefix</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.StartsWith<indexterm>
+      <primary>STD.Uni.StartsWith</primary>
+    </indexterm><indexterm>
+      <primary>Uni.StartsWith</primary>
+    </indexterm>(</emphasis> <emphasis>src, prefix, form</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,7 +28,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>The string to search.</entry>
         </row>
@@ -30,6 +37,13 @@
           <entry><emphasis>prefix</emphasis></entry>
 
           <entry>The string to find.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>form</emphasis></entry>
+
+          <entry>The type of Unicode normalization to be employed. (NFC, NFD,
+          NFKC, or NFKD)</entry>
         </row>
 
         <row>
@@ -42,8 +56,16 @@
   </informaltable>
 
   <para>The <emphasis role="bold">StartsWith</emphasis> function returns TRUE
-  if the <emphasis>source</emphasis> starts with the text in the
+  if the <emphasis>src</emphasis> starts with the text in the
   <emphasis>prefix</emphasis> parameter.</para>
+
+  <para>Trailing and Leading spaces are stripped from the prefix before
+  matching.</para>
+
+  <para>For the Unicode version, unless specified, normalization will not
+  occur. Unless initiated as hex and then converted to Unicode using TRANSFER,
+  ECL will perform its own normalization on your declared Unicode
+  string.</para>
 
   <para>Example:</para>
 
