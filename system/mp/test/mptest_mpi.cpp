@@ -101,6 +101,7 @@ void TEST_receive_from_any(ICommunicator* comm, rank_t nodeRank){
         comm->recv(recvMsg, RANK_ALL, MPTAG_TEST, NULL, MP_WAIT_FOREVER);
         double receivedValue;
         recvMsg.read(receivedValue);
+        assertex(nodeRank == comm->getGroup()->rank(recvMsg.getSender()));
         assertex(expectedValue == receivedValue);
         PrintLog("Message successfully received from node %d to node %d.", comm->getGroup()->rank(recvMsg.getSender()), rank);
     }

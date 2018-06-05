@@ -13,6 +13,8 @@
 
 #ifndef MPI_WRAPPER_HPP
 #define MPI_WRAPPER_HPP
+#undef BOOL
+
 #include <map>
 #include <vector>
 #include "mpi.h"
