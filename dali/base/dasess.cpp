@@ -79,7 +79,7 @@ interface ISessionManagerServer: implements IConnectionMonitor
     virtual void addSession(SessionId id) = 0;
     virtual SessionId lookupProcessSession(INode *node) = 0;
     virtual INode *getProcessSessionNode(SessionId id) =0;
-    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags, int *err)=0;
+    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags, const char * reqSignature, CDateTime * reqUTCTimestamp, int *err)=0;
     virtual bool clearPermissionsCache(IUserDescriptor *udesc) = 0;
     virtual void stopSession(SessionId sessid,bool failed) = 0;
     virtual void setClientAuth(IDaliClientAuthConnection *authconn) = 0;
@@ -453,6 +453,47 @@ public:
     }
 };
 
+
+//Helper class to Serialize/deserialize digital signature of "key;user;timestamp" and request timestamp
+class CSignatureSerializationHelper
+{
+public:
+    static void serializeSignature(const char * key, IUserDescriptor *udesc, MemoryBuffer &mb)
+    {
+		IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromEnv();
+		if (pDSM && pDSM->isDigiSignerConfigured())
+		{
+            //Serialize timestamp and signature of "scope;username;timestamp"
+            //Dali will use this to ensure request came from
+            //valid authenticated user within a reasonable timeframe
+            StringBuffer username;
+            udesc->getUserName(username);
+            CDateTime now;
+            now.setNow();
+            StringBuffer timeStr;
+            now.getString(timeStr, false);//get UTC timestamp
+            VStringBuffer toSign("%s;%s;%s", key, username.str(), timeStr.str());
+
+            StringBuffer b64sig;
+            pDSM->digiSign(toSign, b64sig);//Sign "scope;username;timeStamp"
+
+            //Serialize the signature, and the timestamp object
+            mb.append(b64sig.str());
+            now.serialize(mb);
+        }
+    }
+
+    static void deserializeSignature(MemoryBuffer &mb, StringBuffer & signature, CDateTime & utcTimeStamp)
+    {
+        if (mb.remaining() > 0)
+        {
+            mb.read(signature);
+            utcTimeStamp.deserialize(mb);
+        }
+    }
+};
+
+
 class CSessionRequestServer: public Thread
 {
     bool stopped;
@@ -603,9 +644,14 @@ public:
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
-                udesc->deserializeSignature(mb);//deserialize user signature if present
+
+                StringBuffer reqSignature;
+                CDateTime reqUTCTimestamp;
+                if (queryDaliServerVersion().compare("3.15") >= 0)
+                    CSignatureSerializationHelper::deserializeSignature(mb, reqSignature, reqUTCTimestamp);
+
                 int err = 0;
-                SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,&err);
+                SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,reqSignature.str(),&reqUTCTimestamp,&err);
                 mb.clear().append((int)perms);
                 if (err)
                     mb.append(err);
@@ -884,7 +930,7 @@ public:
     }
 
 
-    SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags,int *err)
+    SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags,const char * reqSignature, CDateTime * reqUTCTimestamp, int *err)
     {
         if (err)
             *err = 0;
@@ -912,7 +958,8 @@ public:
 #endif
         udesc->serialize(mb);
         mb.append(auditflags);
-        udesc->serializeSignature(mb);//serialize user signature if Dali version >= 3.14
+        if (queryDaliServerVersion().compare("3.15") >= 0)
+            CSignatureSerializationHelper::serializeSignature(obj, udesc, mb);//serialize signature, timestamp
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return SecAccess_None;
         SecAccessFlags perms = SecAccess_Unavailable;
@@ -1130,6 +1177,8 @@ class CLdapWorkItem : public Thread
 {
     StringAttr key;
     StringAttr obj;
+    StringAttr reqSignature;
+    CDateTime  reqUTCTimestamp;
     Linked<IUserDescriptor> udesc;
     Linked<IDaliLdapConnection> ldapconn;
     unsigned flags;
@@ -1144,10 +1193,13 @@ public:
     {
         running = false;
     }
-    void start(const char *_key,const char *_obj,IUserDescriptor *_udesc,unsigned _flags)
+    void start(const char *_key,const char *_obj,IUserDescriptor *_udesc,unsigned _flags,const char * _reqSignature, CDateTime * _reqUTCTimestamp)
     {
         key.set(_key);
         obj.set(_obj); 
+        reqSignature.set(_reqSignature);
+        reqUTCTimestamp.set(*_reqUTCTimestamp);
+
 #ifdef NULL_DALIUSER_STACKTRACE
         StringBuffer sb;
         if (_udesc)
@@ -1175,7 +1227,7 @@ public:
             if (!running)
                 break;
             try {
-                ret = ldapconn->getPermissions(key,obj,udesc,flags);
+                ret = ldapconn->getPermissions(key,obj,udesc,flags,reqSignature.str(),&reqUTCTimestamp);
             }
             catch(IException *e) {
                 LOG(MCoperatorError, unknownJob, e, "CLdapWorkItem"); 
@@ -1405,7 +1457,8 @@ public:
         return NULL;
     }
 
-    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags, int *err)
+    //ISessionManagerServer
+    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags,const char * reqSignature, CDateTime * reqUTCTimestamp, int *err)
     {
         if (err)
             *err = 0;
@@ -1425,7 +1478,7 @@ public:
         }
 #endif
         if ((ldapconn->getLDAPflags()&(DLF_SAFE|DLF_ENABLED))!=(DLF_SAFE|DLF_ENABLED))
-            return ldapconn->getPermissions(key,obj,udesc,flags);
+            return ldapconn->getPermissions(key,obj,udesc,flags,reqSignature,reqUTCTimestamp);
         atomic_inc(&ldapwaiting);
         unsigned retries = 0;
         while (!stopping) {
@@ -1434,7 +1487,7 @@ public:
                 if (!ldapworker)
                     ldapworker.setown(CLdapWorkItem::get(ldapconn,workthreadsem));
                 if (ldapworker) {
-                    ldapworker->start(key,obj,udesc,flags);
+                    ldapworker->start(key,obj,udesc,flags,reqSignature,reqUTCTimestamp);
                     for (unsigned i=0;i<10;i++) {
                         if (i)
                             WARNLOG("LDAP stalled(%d) - retrying",i);
@@ -1459,7 +1512,7 @@ public:
                             ldapworker.clear();
                             ldapworker.setown(CLdapWorkItem::get(ldapconn,workthreadsem));
                             if (ldapworker)
-                                ldapworker->start(key,obj,udesc,flags);
+                                ldapworker->start(key,obj,udesc,flags,reqSignature,reqUTCTimestamp);
                         }
                     }
                     if (ldapworker)
@@ -2011,12 +2064,7 @@ class CUserDescriptor: implements IUserDescriptor, public CInterface
 {
     StringAttr username;
     StringAttr passwordenc;
-    unsigned sessionToken = 0;//ESP session token
     StringBuffer signature;//user's digital Signature
-    IDigitalSignatureManager * pDSM = nullptr;
-
-    CDateTime utcTimeStamp;//time when request was sent
-    StringBuffer userTimeStampSignature;//signature of "user;timeStamp"
 public:
     IMPLEMENT_IINTERFACE;
     CUserDescriptor()
@@ -2031,21 +2079,9 @@ public:
         decrypt(buf,passwordenc);
         return buf;
     }
-    unsigned querySessionToken()
-    {
-        return sessionToken;
-    }
     const char *querySignature()
     {
         return signature.str();
-    }
-    const CDateTime & queryUTCTimeStamp()
-    {
-        return utcTimeStamp;
-    }
-    const char *queryUserTimeStampSignature()
-    {
-        return userTimeStampSignature.str();
     }
     virtual void set(const char *name,const char *password)
     {
@@ -2057,66 +2093,21 @@ public:
     void set(const char *_name, const char *_password, unsigned _sessionToken, const char *_signature)
     {
         set(_name, _password);
-        sessionToken = _sessionToken;
         signature.clear().append(_signature);
     }
     virtual void clear()
     {
         username.clear();
         passwordenc.clear();
-        sessionToken = 0;
         signature.clear();
-        utcTimeStamp.clear();
-        userTimeStampSignature.clear();
     }
     void serialize(MemoryBuffer &mb)
     {
         mb.append(username).append(passwordenc);
     }
-    void serializeSignature(MemoryBuffer &mb)
-    {
-        if (queryDaliServerVersion().compare("3.14") >= 0)
-        {
-            if (pDSM == nullptr)
-                pDSM = createDigitalSignatureManagerInstanceFromEnv();
-
-            //Serialize timestamp and signature of "username;timestamp"
-            //Dali will use this to ensure request came from
-            //valid authenticated user within a reasonable timeframe
-            if (pDSM && pDSM->isDigiSignerConfigured())
-            {
-                CDateTime now;
-                now.setNow();
-                StringBuffer timeStr;
-                now.getString(timeStr, false);//get UTC timestamp
-                VStringBuffer toSign("%s;%s", username.str(), timeStr.str());
-
-                StringBuffer userTimeStampSignature;
-                pDSM->digiSign(toSign, userTimeStampSignature);//Sign "username;timeStamp"
-
-                //Serialize the timestamped signature, and the timestamp object
-                mb.append(userTimeStampSignature.str());
-                now.serialize(mb);
-            }
-        }
-    }
     void deserialize(MemoryBuffer &mb)
     {
         mb.read(username).read(passwordenc);
-    }
-    void deserializeSignature(MemoryBuffer &mb)
-    {
-        utcTimeStamp.clear();
-        userTimeStampSignature.clear();
-        if (queryDaliServerVersion().compare("3.14") >= 0)
-        {
-            if (mb.remaining() > 0)
-            {
-                mb.read(userTimeStampSignature);
-                if (mb.remaining() > 0)
-                    utcTimeStamp.deserialize(mb);
-            }
-        }
     }
 };
 

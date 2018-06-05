@@ -77,14 +77,9 @@ interface IUserDescriptor: extends serializable
     virtual StringBuffer &getUserName(StringBuffer &buf)=0;
     virtual StringBuffer &getPassword(StringBuffer &buf)=0;
     virtual const char *querySignature()=0;//user's digital signature
-    virtual unsigned querySessionToken()=0;//ESP session token
-    virtual const CDateTime & queryUTCTimeStamp()=0;//Time stamp when a Dali request was requested
-    virtual const char *queryUserTimeStampSignature()=0;//digital signature of "username;TimeStampString"
     virtual void set(const char *name,const char *password)=0;
     virtual void set(const char *name,const char *password, unsigned sessionToken, const char *_signature)=0;
     virtual void clear()=0;
-    virtual void serializeSignature(MemoryBuffer &tgt)=0;
-    virtual void deserializeSignature(MemoryBuffer &src)=0;
 };
 
 extern da_decl IUserDescriptor *createUserDescriptor();
@@ -119,7 +114,7 @@ interface ISessionManager: extends IInterface
     virtual StringBuffer &getClientProcessEndpoint(SessionId id,StringBuffer &buf)=0; // for diagnostics
     virtual unsigned queryClientCount() = 0; // for SNMP
 
-    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags, int *err=NULL)=0;
+    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags, const char * reqSignature=nullptr, CDateTime * reqUTCTimestamp=nullptr, int *err=NULL)=0;
     virtual bool checkScopeScansLDAP()=0;
     virtual unsigned getLDAPflags()=0;
     virtual void setLDAPflags(unsigned flags)=0;
