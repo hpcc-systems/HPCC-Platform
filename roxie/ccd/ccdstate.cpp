@@ -2606,7 +2606,7 @@ private:
         case 'S':
             if (stricmp(queryName, "control:setAffinity")==0)
             {
-                __uint64 affinity = control->getPropBool("@val", true);
+                __uint64 affinity = control->getPropInt64("@val", 0); // by default just refresh cached settings
                 topology->setPropInt64("@affinity", affinity);
                 updateAffinity(affinity);
             }
