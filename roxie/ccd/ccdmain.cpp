@@ -145,7 +145,7 @@ bool defaultCheckingHeap = false;
 bool defaultDisableLocalOptimizations = false;
 unsigned defaultStrandBlockSize = 512;
 unsigned defaultForceNumStrands = 0;
-unsigned defaultHeapFlags = roxiemem::RHFscanning;
+unsigned defaultHeapFlags = roxiemem::RHFnone;
 
 unsigned slaveQueryReleaseDelaySeconds = 60;
 unsigned coresPerQuery = 0;
