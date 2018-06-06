@@ -733,7 +733,7 @@ protected:
         // When workflow is root element, it is just a container.  Ignore the workflow element here
         // as WorkUnitStatisticsScopeIterator will produce workflow scope - don't want duplicates.
         // (Note: workflow element never contains stats).
-        if (collection->queryScopeType() == SSTworkflow)
+        if (collections.tos().queryScopeType() == SSTworkflow)
         {
             if (!next())
                 return false;
