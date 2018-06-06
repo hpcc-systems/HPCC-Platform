@@ -728,7 +728,19 @@ public:
         if (!conn)
            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
-        return createPTreeFromIPT(conn->queryRoot());
+        Owned<IPropertyTree> bindings = createPTreeFromIPT(conn->queryRoot());
+        Owned<IPropertyTreeIterator> iter = bindings->getElements("*");
+        ForEach (*iter)
+        {
+            IPropertyTree &binding = iter->query();
+            if (binding.getPropInt("@port", 0) == 0)
+            {
+                Owned<IPropertyTree> espbindingcfg = getEspBindingConfig(binding.queryProp("@espprocess"), nullptr, binding.queryProp("@espbinding"));
+                if(espbindingcfg)
+                    binding.setPropInt("@port", espbindingcfg->getPropInt("@port", 0));
+            }
+        }
+        return bindings.getLink();
     }
 
 private:
