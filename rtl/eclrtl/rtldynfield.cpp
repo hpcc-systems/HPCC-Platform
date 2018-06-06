@@ -1318,13 +1318,21 @@ private:
         }
         if (estimate && offset-origOffset != estimate)
         {
-            // Note - ifblocks make this assertion invalid. We do not account for potentially omitted fields
-            // when estimating target record size.
-            if (!destRecInfo.getNumIfBlocks())
-                assert(offset-origOffset > estimate);  // Estimate is always supposed to be conservative
-#ifdef TRACE_TRANSLATION
-            DBGLOG("Wrote %u bytes to record (estimate was %u)\n", offset-origOffset, estimate);
-#endif
+            if (offset == origOffset)
+            {
+                //Zero size records are treated as single byte to avoid confusion with sizes returned from transforms etc.
+                offset++;
+            }
+            else
+            {
+                // Note - ifblocks make this assertion invalid. We do not account for potentially omitted fields
+                // when estimating target record size.
+                if (!destRecInfo.getNumIfBlocks())
+                    assert(offset-origOffset > estimate);  // Estimate is always supposed to be conservative
+    #ifdef TRACE_TRANSLATION
+                DBGLOG("Wrote %u bytes to record (estimate was %u)\n", offset-origOffset, estimate);
+    #endif
+            }
         }
         return offset;
     }
