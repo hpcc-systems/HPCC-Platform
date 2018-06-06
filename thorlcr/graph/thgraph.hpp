@@ -641,6 +641,7 @@ public:
     bool isLocalOnly() const; // this graph and all upstream dependencies
     bool isLocalChild() const { return localChild; }
     bool isLoopSubGraph() const { return loopBodySubgraph; }
+    bool containsActivities() const { return containers.count() != 0; }
     void setCompleteEx(bool tf=true) { complete = tf; }
     void setGlobal(bool tf) { global = tf; }
     void setLogging(bool tf);
