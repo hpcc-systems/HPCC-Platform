@@ -803,7 +803,7 @@
         nodes. Before you start this section, you must have already downloaded
         the correct packages for your distro from the HPCC
         Systems<superscript>®</superscript> website: <ulink
-        url="https://hpccsystems.com/download/free-community-edition">https://hpccsystems.com/download/free-community-edition</ulink>.</para>
+        url="https://hpccsystems.com/download">https://hpccsystems.com/download</ulink>.</para>
 
         <orderedlist>
           <listitem>
@@ -886,11 +886,11 @@
             Alternatively, you could enter the hostname(s).</para>
 
             <para>The IP addresses do not need to be contiguous. In the image
-            below, we specified the IP addresses nn.nnn.nnn.1-100 and
-            nn.nnn.nnn.111. These are separated with a semi-colon.</para>
+            below, we specified the IP addresses nn.nnn.nnn.1-125 and
+            nn.nnn.nnn.128. These are separated with a semi-colon.</para>
 
             <para>You can specify a range of IPs using a hyphen (for example,
-            NNN.NNN.NNN.1-100). IP Addresses can be specified individually
+            192.168.55.1-125). IP Addresses can be specified individually
             using semi-colon delimiters.</para>
 
             <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg" /></para>
