@@ -193,8 +193,8 @@
               <term>Note:</term>
 
               <listitem>
-                <para>If you have more than one ESP Server, you would only use
-                one of them for authentication.</para>
+                <para>If you have more than one ESP Server, each one should
+                have its own authentication set up.</para>
               </listitem>
             </varlistentry>
           </variablelist>
