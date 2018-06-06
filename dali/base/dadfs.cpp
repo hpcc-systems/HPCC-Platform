@@ -9762,6 +9762,8 @@ static IGroup *getClusterNodeGroup(const char *clusterName, const char *type, bo
     Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(nodeGroupName);
     CInitGroups init(timems);
     Owned<IGroup> expandedClusterGroup = init.getGroupFromCluster(type, cluster, true);
+    if (!expandedClusterGroup)
+        throwStringExceptionV(0, "Failed to get group for '%s' cluster '%s'", type, clusterName);
     if (!expandedClusterGroup->equals(nodeGroup))
         throwStringExceptionV(0, "DFS cluster topology for '%s', does not match existing DFS group layout for group '%s'", clusterName, nodeGroupName.str());
     Owned<IGroup> clusterGroup = init.getGroupFromCluster(type, cluster, false);
