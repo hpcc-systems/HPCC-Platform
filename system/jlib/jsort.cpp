@@ -41,10 +41,7 @@
 
 static bool sortParallel(unsigned &numcpus)
 {
-    static unsigned numCPUs = 0;
-    if (numCPUs==0) {
-        numCPUs = getAffinityCpus();
-    }
+    unsigned numCPUs = getAffinityCpus();
     if ((numcpus==0)||(numcpus>numCPUs))
         numcpus = numCPUs;
 #ifdef TESTPARSORT
