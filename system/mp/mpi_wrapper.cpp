@@ -54,7 +54,8 @@ int get_free_req(){
 // Performs asynchronous MPI send and return the index of CommData
 int send(void* data, int size, int rank, int tag, MPI_Comm comm){
     int nextFree = get_free_req();
-    MPI_Isend(data, size, MPI_BYTE, rank, tag, comm, &(requests[nextFree].request));
+    int err = MPI_Isend(data, size, MPI_BYTE, rank, tag, comm, &(requests[nextFree].request));
+    requests[nextFree].status = (err != MPI_SUCCESS)? hpcc_mpi::CommStatus::ERROR : hpcc_mpi::CommStatus::INCOMPLETE;
     return nextFree;
 }
 
@@ -150,8 +151,8 @@ hpcc_mpi::CommStatus hpcc_mpi::getCommStatus(CommRequest commReq){
     if (commReq < 0){                           // for synchronous calls
         return hpcc_mpi::CommStatus::SUCCESS;
     }
-    if (requests[commReq].status){              // for requests already completed
-        return requests[commReq].status;
+    if (requests[commReq].status){              // for requests completed/canceled/error
+        return requests[commReq].status; 
     }
     if (requests[commReq].requiresProbing){     // recv communication still waiting for a message to arrive
         requests[commReq].status = startReceiveProcess(commReq);

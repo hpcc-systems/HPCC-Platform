@@ -116,9 +116,7 @@ void TEST_one_to_all(ICommunicator* comm, rank_t nodeRank){
     if (rank == nodeRank){
         CMessageBuffer sendMsg;
         sendMsg.append(expectedValue);        
-        for(int i=0; i<p; i++){
-            comm->send(sendMsg, i, MPTAG_TEST, MP_WAIT_FOREVER);
-        }
+        comm->send(sendMsg, RANK_ALL, MPTAG_TEST, MP_WAIT_FOREVER);
     }
     
     CMessageBuffer recvMsg;

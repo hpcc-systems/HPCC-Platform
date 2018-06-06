@@ -33,7 +33,8 @@ namespace hpcc_mpi{
     enum CommStatus{
         INCOMPLETE = 0,
         SUCCESS,
-        CANCELED
+        CANCELED,
+        ERROR 
     };
     
     /**

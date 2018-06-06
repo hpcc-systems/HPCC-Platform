@@ -94,37 +94,53 @@ public:
     IMPLEMENT_IINTERFACE;
 
     bool send(CMessageBuffer &mbuf, rank_t dstrank, mptag_t tag, unsigned timeout){ 
-        /***         
-         * if dstrank == self 
-         *      1.1 duplicate the message and initialize sender as self
-         *      1.2 Queue the message in receiver queue
-         * else
-         *      2.1 dstrank={RANK_ALL, RANK_ALL_OTHER, RANK_RANDOM, NODE_RANK}
-         *              => start_rank=?, end_rank=?, 
-         *      2.2 Send message to all ranks from start_rank to end_rank until timeout
-         * return (invalid dstrank) or (timeout expired)
-         */
-        hpcc_mpi::CommRequest req = hpcc_mpi::sendData(dstrank, tag, mbuf, *group, true);
-        while (hpcc_mpi::getCommStatus(req) == hpcc_mpi::CommStatus::INCOMPLETE){
-            usleep(100);
+        assertex(dstrank!=RANK_NULL);
+        CTimeMon tm(timeout);
+        rank_t myrank = group->rank();
+        rank_t startrank = dstrank;
+        rank_t endrank;
+        if (dstrank==RANK_ALL || dstrank==RANK_ALL_OTHER) {
+            startrank = 0;
+            endrank = group->ordinality()-1;
+        } else if (dstrank==RANK_RANDOM) {
+            if (group->ordinality()>1) {
+                do {
+                    startrank = getRandom()%group->ordinality();
+                } while (startrank==myrank);
+            } else {
+                assertex(myrank!=0);
+                startrank = 0;
+            }
+            endrank = startrank;
+        } else {
+            endrank = startrank;
         }
-        hpcc_mpi::releaseComm(req);
-        
+        for (;startrank<=endrank;startrank++) {
+            if ((startrank!=RANK_ALL_OTHER) || (startrank!=myrank)) {
+                unsigned remaining;
+                if (tm.timedout(&remaining))
+                    return false;
+                hpcc_mpi::CommRequest req = hpcc_mpi::sendData(startrank, tag, mbuf, *group, true);
+                if (hpcc_mpi::getCommStatus(req) == hpcc_mpi::CommStatus::ERROR)
+                    return false;
+                hpcc_mpi::releaseComm(req);
+            }
+        }
+       
         return true;
     }
 
     bool recv(CMessageBuffer &mbuf, rank_t srcrank, mptag_t tag, rank_t *sender, unsigned timeout=MP_WAIT_FOREVER){
-        /*
-         * 1. Wait for the message to be received, canceled or timeout
-         * 2. Update the sender if sender is valid
-         */
+        CTimeMon tm(timeout);
         hpcc_mpi::CommRequest req = hpcc_mpi::readData(srcrank, tag, mbuf, *group, true);
-        while (hpcc_mpi::getCommStatus(req) == hpcc_mpi::CommStatus::INCOMPLETE){
+        unsigned remaining;
+        hpcc_mpi::CommStatus stat;
+        do {
             usleep(100);
-        }
+            stat = hpcc_mpi::getCommStatus(req);
+        } while (stat == hpcc_mpi::CommStatus::INCOMPLETE && !tm.timedout(&remaining));
         hpcc_mpi::releaseComm(req);
-        
-        return true;
+        return (stat == hpcc_mpi::CommStatus::SUCCESS);
     }
     
     void barrier(void){
@@ -132,13 +148,6 @@ public:
     }
 
     unsigned probe(rank_t srcrank, mptag_t tag, rank_t *sender, unsigned timeout=0){
-        /*
-         * if there is a message waiting from a srcrank (within timeout)
-         *      set the sender to the rank
-         *      return true
-         * else
-         *      return false
-         */    
         if (hpcc_mpi::hasIncomingMessage(srcrank, tag, *group)){
             if (sender)
                 *sender = srcrank;
@@ -151,27 +160,13 @@ public:
     }
 
     bool sendRecv(CMessageBuffer &mbuff, rank_t sendrank, mptag_t sendtag, unsigned timeout=MP_WAIT_FOREVER){
-        /*
-         * 1. Determine valid sendrank (assign if its RANK_RANDOM)
-         * 2. Perform send within timeout
-         * 3. clear mbuff to be used as receive buffer
-         * 4. Perform receive within timeout
-         * 5. Return true if all operations are success
-         */
-        // TODO fix timeout for recv?
+        //TODO share timeout between send/recv?
         bool sendSuccess = send(mbuff, sendrank, sendtag, timeout);
         bool recvSuccess = recv(mbuff, sendrank, sendtag, NULL, timeout);
         return (sendSuccess && recvSuccess);
     }
 
     bool reply(CMessageBuffer &mbuf, unsigned timeout=MP_WAIT_FOREVER){
-        /*
-         * If mbuf has a sender
-         *      send mbuf to to the sender with the replytag
-         * else
-         *      WHAT SHOULD WE DO???
-         */
-        UNIMPLEMENTED;
         mptag_t replytag = mbuf.getReplyTag();
         rank_t dstrank = group->rank(mbuf.getSender());
         if (dstrank!=RANK_NULL) {
@@ -181,13 +176,12 @@ public:
             }
             return false;
         }
-        //CHECK: dstrank will always be valid if mbuf.getSender() is valid
+        //CHECK: dstrank will always be valid if mbuf.getSender() is valid. jsocket version does something when dstrank is RANK_NULL
+        return false;
     }
 
     void cancel(rank_t srcrank, mptag_t tag){
-        /*
-         * Add a cancel message from a srcrank to receive queue
-         */        
+        assertex(srcrank!=RANK_NULL);       
         hpcc_mpi::CommRequest req = group->getCommRequest(srcrank, tag);
         if (req >= 0){
             hpcc_mpi::cancelComm(req);
@@ -251,10 +245,25 @@ void stopMPServer(){
 bool hasMPServerStarted(){
     UNIMPLEMENTED;
 }
-
+CriticalSection replyTagSect;
 
 mptag_t createReplyTag(){
     UNIMPLEMENTED;
+    // mptag_t ret;
+    // {
+    //     CriticalBlock block(replyTagSect);
+    //     if (RTsalt==0xff) {
+    //         RTsalt = (byte)(getRandom()%16);
+    //         rettag = (int)TAG_REPLY_BASE-RTsalt;
+    //     }
+    //     if (rettag>(int)TAG_REPLY_BASE) {           // wrapped
+    //         rettag = (int)TAG_REPLY_BASE-RTsalt;
+    //     }
+    //     ret = (mptag_t)rettag;
+    //     rettag -= 16;
+    // }
+    // flush(ret);
+    // return ret;
 }
 
 ICommunicator *createCommunicator(IGroup *group, bool outer){
