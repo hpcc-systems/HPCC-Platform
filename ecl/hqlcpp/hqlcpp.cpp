@@ -6164,7 +6164,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         case type_groupedtable:
             {
                 IHqlExpression* passParamAttr = getFunctionBodyAttribute(external, passParameterMetaAtom);
-                if (passParamAttr != NULL && getBoolAttributeValue(passParamAttr))
+                if (getBoolAttributeValue(passParamAttr))
                     args.append(*buildMetaParameter(curParam));
                 ExpressionFormat format = queryNaturalFormat(argType);
                 buildDataset(ctx, castParam, bound, format);
@@ -6173,7 +6173,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         case type_row:
             {
                 IHqlExpression* passParamAttr = getFunctionBodyAttribute(external, passParameterMetaAtom);
-                if (passParamAttr != NULL && getBoolAttributeValue(passParamAttr))
+                if (getBoolAttributeValue(passParamAttr))
                     args.append(*buildMetaParameter(curParam));
                 Owned<IReferenceSelector> selector = buildNewRow(ctx, castParam);
 

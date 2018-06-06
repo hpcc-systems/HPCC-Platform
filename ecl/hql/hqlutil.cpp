@@ -8077,12 +8077,8 @@ public:
 
         if (formals->numChildren())
         {
-            bool hasMeta = false;
             IHqlExpression* passParamAttr = getFunctionBodyAttribute(body, passParameterMetaAtom);
-            if (passParamAttr != NULL)
-            {
-                hasMeta = getBoolAttributeValue(passParamAttr);
-            }
+            bool hasMeta = getBoolAttributeValue(passParamAttr);
 
             ForEachChild(i, formals)
             {

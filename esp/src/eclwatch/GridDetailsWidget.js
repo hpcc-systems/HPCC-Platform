@@ -118,15 +118,19 @@ define([
                 this.setGridNoDataMessage(this.i18n.loadingMessage);
 
                 this.grid.on(".dgrid-row:dblclick", function (evt) {
-                    if (context._onRowDblClick) {
-                        var row = context.grid.row(evt).data;
-                        context._onRowDblClick(row);
+                    if (!evt.defaultPrevented) {
+                        if (context._onRowDblClick) {
+                            var row = context.grid.row(evt).data;
+                            context._onRowDblClick(row);
+                        }
                     }
                 });
                 this.grid.on(".dgrid-row:dblclick", function (evt) {
-                    if (context._onRowDblClick) {
-                        var row = context.grid.row(evt).data;
-                        context._onRowDblClick(row);
+                    if (!evt.defaultPrevented) {
+                        if (context._onRowDblClick) {
+                            var row = context.grid.row(evt).data;
+                            context._onRowDblClick(row);
+                        }
                     }
                 });
                 this.grid.onSelectionChanged(function (event) {

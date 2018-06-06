@@ -85,6 +85,8 @@ define([
                     this.loadECLSamples();
                 } else if (params.LoadDESDLDefinitions === true) {
                     this.loadESDLDefinitions(params);
+                } else if (params.LoadESDLESPProcesses === true) {
+                    this.loadESDLESPProcesses();
                 } else if (params.Logs === true) {
                     this.loadLogs(params);
                 } else if (params.DFUSprayQueues === true) {
@@ -149,14 +151,10 @@ define([
                 var context = this;
                 WsPackageMaps.GetPackageMapSelectOptions({
                     request: {
-                        IncludeTargets: true
+                        includeTargets: true
                     }
                 }).then(function (response) {
                     if (lang.exists("GetPackageMapSelectOptionsResponse.Targets.TargetData", response)) {
-                        context.options.push({
-                            label: "ANY",
-                            value: ""
-                        });
                         var targetData = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
                         for (var i = 0; i < targetData.length; ++i) {
                             context.options.push({
@@ -173,20 +171,12 @@ define([
                 var context = this;
                 WsPackageMaps.GetPackageMapSelectOptions({
                     request: {
-                        IncludeProcesses: true,
-                        IncludeProcessFilters: true
+                        IncludeProcesses: true
                     }
                 }).then(function (response) {
                     if (lang.exists("GetPackageMapSelectOptionsResponse.ProcessFilters.Item", response)) {
-                        context.options.push({
-                            label: "ANY",
-                            value: ""
-                        });
                         var targetData = response.GetPackageMapSelectOptionsResponse.ProcessFilters.Item;
                         for (var i = 0; i < targetData.length; ++i) {
-                            if (targetData[i] === "*") {
-                                targetData[i] = "*"
-                            }
                             context.options.push({
                                 label: targetData[i],
                                 value: targetData[i]
@@ -578,6 +568,23 @@ define([
                             }
                             context._postLoad();
                         }
+                    }
+                });
+            },
+
+            loadESDLESPProcesses: function () {
+                var context = this;
+                WsESDLConfig.ListDESDLEspBindings({
+                    request: {}
+                }).then(function (response) {
+                    if (lang.exists("ListDESDLEspBindingsResp.ESPServers.ESPServer", response)) {
+                        arrayUtil.forEach(response.ListDESDLEspBindingsResp.ESPServers.ESPServer, function (item, idx) {
+                            context.options.push({
+                                label: item.Name,
+                                value: item.Name
+                            });
+                        });
+                        context._postLoad();
                     }
                 });
             }

@@ -851,7 +851,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     case type_groupedtable:
     case type_row:
         IHqlExpression* passParamAttr = getFunctionBodyAttribute(attrs, passParameterMetaAtom);
-        if (passParamAttr != NULL && getBoolAttributeValue(passParamAttr))
+        if (getBoolAttributeValue(passParamAttr))
         {
             out.append("IOutputMetaData & ");
             if (paramName)

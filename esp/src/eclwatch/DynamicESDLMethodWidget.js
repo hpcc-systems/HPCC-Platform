@@ -39,7 +39,7 @@ define([
             },
 
             refresh: function (params) {
-                this._params = params;
+                this._params = params.Binding;
                 this.refreshGrid();
                 this._refreshActionState();
             },
@@ -79,7 +79,10 @@ define([
                     store: this.store,
                     sort: [{ attribute: "Name", descending: false }],
                     columns: {
-                        Name: tree({ label: context.i18n.Methods }),
+                        Name: tree({
+                            label: context.i18n.Methods,
+                            width: 500
+                        }),
                         Value: editor({
                             label: this.i18n.MethodConfiguration,
                             autoSave: true,
@@ -113,13 +116,12 @@ define([
                 var xmlBuilder = "<Methods>" + userXML + "</Methods>";
                 WsESDLConfig.PublishESDLBinding({
                     request: {
-                        EspProcName: this._params.Configuration.__hpcc_parentName,
-                        EspBindingName: this._params.Configuration.Name,
-                        EspServiceName: this._params.Configuration.Service,
-                        EsdlDefinitionID: this._params.Configuration.DefinitionID,
+                        EspProcName: this.params.Binding.ESPProc,
+                        EspBindingName: this.params.Binding.Name,
+                        EspPort: this.params.Binding.__hpcc_id,
+                        EsdlDefinitionID: this.params.Definition,
                         Overwrite: true,
-                        Config: xmlBuilder,
-                        ver_: "1.3"
+                        Config: xmlBuilder
                     }
                 }).then(function (response) {
                     if (lang.exists("PublishESDLBindingResponse.status", response)) {
@@ -128,6 +130,15 @@ define([
                                 Severity: "Message",
                                 Source: "WsESDLConfig.PublishESDLBinding",
                                 Exceptions: [{ Source: context.i18n.SuccessfullySaved, Message: response.PublishESDLBindingResponse.status.Description }]
+                            });
+                        } else {
+                            dojo.publish("hpcc/brToaster", {
+                                Severity: "Error",
+                                Source: "WsESDLConfig.PublishESDLBinding",
+                                Exceptions: [{
+                                    Source: context.i18n.Error,
+                                    Message: response.PublishESDLBindingResponse.status.Description
+                                }]
                             });
                         }
                         context.refreshGrid();
@@ -142,10 +153,9 @@ define([
 
                 WsESDLConfig.GetESDLBinding({
                     request: {
-                        EspProcName: this._params.Configuration.__hpcc_parentName,
-                        EspBindingName: this._params.Configuration.Name,
-                        ReportMethodsAvailable: true,
-                        ver_: "1.3"
+                        EsdlBindingId: this._params.Name,
+                        IncludeInterfaceDefinition: true,
+                        ReportMethodsAvailable: true
                     }
                 }).then(function (response) {
                     if (lang.exists("GetESDLBindingResponse.ESDLBinding.Configuration.Methods.Method", response)) {

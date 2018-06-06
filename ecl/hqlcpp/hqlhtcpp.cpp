@@ -10593,7 +10593,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
         endNestedClass(classStmt);
         blooms++;
     }
-    instance->classctx.addQuoted(s.clear().appendf("const IBloomBuilderInfo * const bloomInfo [%d] = {", blooms+1).append(bloomNames+1).append(", nullptr };"));
+    instance->classctx.addQuoted(s.clear().appendf("const IBloomBuilderInfo * const bloomInfo [%d] = {", blooms+1).append(bloomNames.str()+1).append(", nullptr };"));
     instance->classctx.addQuoted(s.clear().append("virtual const IBloomBuilderInfo * const *queryBloomInfo() const override { return bloomInfo; }"));
 
     IHqlExpression * partitionAttr = expr->queryAttribute(hashAtom);
