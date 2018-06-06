@@ -1761,6 +1761,7 @@ public:
         if (rowAllocator)
             rowAllocator->gatherStats(mergedStats);
     }
+    const ActivityTimeAccumulator&  queryTimings() const { return totalCycles; }
 };
 
 class CRoxieServerStrandedActivity : public CRoxieServerActivity
@@ -1812,8 +1813,12 @@ public:
     virtual void reset()
     {
         assertex(active==0);
+        totalCycles.reset();
         ForEachItemIn(idx, strands)
+        {
             strands.item(idx).reset();
+            totalCycles.merge(strands.item(idx).queryTimings());
+        }
         resetJunction(splitter);
         CRoxieServerActivity::reset();
         resetJunction(sourceJunction);
