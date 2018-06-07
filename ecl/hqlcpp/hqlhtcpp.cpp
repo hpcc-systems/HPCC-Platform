@@ -19494,6 +19494,10 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_externalcall:
         if (isDistributedFunctionCall(expr))
             return true;
+
+        if (callIsActivity(expr))
+            return true;
+
         //MORE: check for streamed inputs.
         break;
 
@@ -19523,6 +19527,9 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
             switch (child0->getOperator())
             {
             case no_externalcall:
+                if (callIsActivity(expr))
+                    return true;
+                return false;
             case no_constant:
             case no_all:
                 return false;
