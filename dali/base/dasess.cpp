@@ -454,11 +454,11 @@ public:
 };
 
 
-//Helper class to Serialize/deserialize digital signature of "key;user;timestamp" and request timestamp
-class CSignatureSerializationHelper
+//Helper class to Serialize/deserialize digital signature of "scope;username;timestamp" and request timestamp
+class CDaliMessageSignatureHelper
 {
 public:
-    static void serializeSignature(const char * key, IUserDescriptor *udesc, MemoryBuffer &mb)
+    static void serializeSignature(const char * scope, IUserDescriptor *udesc, MemoryBuffer &mb)
     {
 		IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromEnv();
 		if (pDSM && pDSM->isDigiSignerConfigured())
@@ -472,7 +472,7 @@ public:
             now.setNow();
             StringBuffer timeStr;
             now.getString(timeStr, false);//get UTC timestamp
-            VStringBuffer toSign("%s;%s;%s", key, username.str(), timeStr.str());
+            VStringBuffer toSign("%s;%s;%s", scope, username.str(), timeStr.str());
 
             StringBuffer b64sig;
             pDSM->digiSign(toSign, b64sig);//Sign "scope;username;timeStamp"
@@ -648,7 +648,7 @@ public:
                 StringBuffer reqSignature;
                 CDateTime reqUTCTimestamp;
                 if (queryDaliServerVersion().compare("3.15") >= 0)
-                    CSignatureSerializationHelper::deserializeSignature(mb, reqSignature, reqUTCTimestamp);
+                    CDaliMessageSignatureHelper::deserializeSignature(mb, reqSignature, reqUTCTimestamp);
 
                 int err = 0;
                 SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,reqSignature.str(),&reqUTCTimestamp,&err);
@@ -959,7 +959,7 @@ public:
         udesc->serialize(mb);
         mb.append(auditflags);
         if (queryDaliServerVersion().compare("3.15") >= 0)
-            CSignatureSerializationHelper::serializeSignature(obj, udesc, mb);//serialize signature, timestamp
+            CDaliMessageSignatureHelper::serializeSignature(obj, udesc, mb);//serialize scope, signature, timestamp
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return SecAccess_None;
         SecAccessFlags perms = SecAccess_Unavailable;
