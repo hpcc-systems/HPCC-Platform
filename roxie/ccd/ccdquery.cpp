@@ -233,9 +233,12 @@ public:
 
     virtual void checkOnceDone(const IQueryFactory *factory, const IRoxieContextLogger &logctx) const
     {
+        if (calculatingOnce)   // NOTE - this must be outside the critsec or you deadlock. It is still effectively protected by the critsec
+            return;
         CriticalBlock b(onceCrit);
         if (!onceContext)
         {
+            calculatingOnce = true;
             onceContext.setown(createPTree(ipt_lowmem));
             onceResultStore.setown(createDeserializedResultStore());
             Owned <IRoxieServerContext> ctx = createOnceServerContext(factory, logctx);
@@ -255,6 +258,7 @@ public:
                 ctx->done(true);
                 onceException.setown(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception in ONCE code"));
             }
+            calculatingOnce = false;
         }
         if (onceException)
             throw onceException.getLink();
@@ -266,6 +270,7 @@ protected:
     mutable Owned<IPropertyTree> onceContext;
     mutable Owned<IDeserializedResultStore> onceResultStore;
     mutable Owned<IException> onceException;
+    mutable bool calculatingOnce = false;
 
 };
 
