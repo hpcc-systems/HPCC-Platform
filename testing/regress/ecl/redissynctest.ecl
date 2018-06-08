@@ -177,7 +177,7 @@ END;
 pubDS := DATASET(N2, TRANSFORM({ integer a }, SELF.a := pub('PubSubTest' + (STRING)COUNTER)));
 
 INTEGER pub2(STRING channel) := FUNCTION
-        sl := SEQUENTIAL(
+        sl := ORDERED(
             Std.System.Debug.Sleep(10),
             myRedis.Publish(channel, '3', database)//This pub is the one read by the sub.
             );

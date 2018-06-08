@@ -797,6 +797,7 @@ struct HqlCppOptions
     bool                implicitKeyedDiskFilter;
     bool                addDefaultBloom;
     bool                newDiskReadMapping;
+    bool                transformNestedSequential;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1919,6 +1920,7 @@ protected:
     void optimizePersists(HqlExprArray & exprs);
     IHqlExpression * convertSetResultToExtract(IHqlExpression * expr);
     void allocateSequenceNumbers(HqlExprArray & exprs);
+    void transformNestedSequential(HqlExprArray & exprs);
     void convertLogicalToActivities(WorkflowItem & curWorkflow);
     void flattenDatasets(WorkflowArray & array);
 
