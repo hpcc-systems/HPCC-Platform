@@ -99,7 +99,7 @@ public:
         return m_description.str();
     }
 
-    virtual void setValue(const char* Value)
+    virtual void setValue(const char* Value) override
     {
         m_value.clear().append(Value);
     }

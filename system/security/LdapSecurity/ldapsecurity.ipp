@@ -273,7 +273,7 @@ public:
     virtual void setDescription(const char* description);
     virtual const char* getDescription();
 
-    virtual void setValue(const char* value);
+    virtual void setValue(const char* value) override;
     virtual const char* getValue();
 
     virtual ISecResource * clone();

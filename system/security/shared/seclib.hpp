@@ -216,6 +216,7 @@ interface ISecAuthenticEvents : extends IInterface
 interface ISecProperty : extends IInterface
 {
     virtual const char * getName() = 0;
+    virtual void setValue(const char * value) = 0;
     virtual const char * getValue() = 0;
 };
 
