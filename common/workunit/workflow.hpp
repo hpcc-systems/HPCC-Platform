@@ -93,6 +93,7 @@ protected:
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item) = 0;
     virtual void doExecuteCriticalItem(IRuntimeWorkflowItem & item) = 0;
     virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item) = 0;
+    virtual void noteTiming(unsigned wfid, timestamp_type startTime, stat_type elapsedNs) = 0;
 
     // Check conditions, item type and call operations below based on type
     bool executeItem(unsigned wfid, unsigned scheduledWfid);
