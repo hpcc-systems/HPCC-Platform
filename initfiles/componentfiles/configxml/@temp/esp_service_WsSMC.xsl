@@ -600,10 +600,10 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                     <xsl:copy-of select="@integrateKibana|@kibanaAddress|@kibanaPort|@kibanaEntryPointURI"/>
                 </Kibana>
                 <ElasticSearch>
-                    <xsl:copy-of select="@reportElasticHealth|@elasticSearchAdresses|@elasticSearchPort"/>
+                    <xsl:copy-of select="@reportElasticHealth|@elasticSearchAddresses|@elasticSearchPort"/>
                 </ElasticSearch>
                 <LogStash>
-                    <xsl:copy-of select="@reportLogStashHealth|@logStashAdresses|@logStashPort"/>
+                    <xsl:copy-of select="@reportLogStashHealth|@logStashAddresses|@logStashPort"/>
                 </LogStash>
             </ELKIntegration>
         </EspService>

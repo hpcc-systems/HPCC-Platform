@@ -9,7 +9,7 @@ ESPResponse GetConfigDetailsResponse
     string KibanaPort;
     string KibanaEntryPointURI;
     boolean ReportElasticSearchHealth;
-    string ElasticSearchAdresses;
+    string ElasticSearchAddresses;
     string ElasticSearchPort;
     boolean ReportLogStashHealth;
     string LogStashAddress;

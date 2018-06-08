@@ -169,7 +169,7 @@
             <xs:annotation>
                 <xs:appinfo>
                     <required>true</required>
-                    <tooltip>Declare if Kibana dashboard to be integrated in ECLWatch</tooltip>
+                    <tooltip>Declare if Kibana dashboard is to be integrated in ECLWatch</tooltip>
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
@@ -202,10 +202,10 @@
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="logStashAdresses" type="xs:string" use="optional" default="">
+        <xs:attribute name="logStashAddresses" type="xs:string" use="optional" default="">
             <xs:annotation>
                 <xs:appinfo>
-                    <tooltip>Declares the target LogStash nodes' adresses (semicolon seperated)</tooltip>
+                    <tooltip>Declares the target LogStash nodes' addresses (semicolon seperated)</tooltip>
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
@@ -224,10 +224,10 @@
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="elasticSearchAdresses" type="xs:string" use="optional" default="">
+        <xs:attribute name="elasticSearchAddresses" type="xs:string" use="optional" default="">
             <xs:annotation>
                 <xs:appinfo>
-                    <tooltip>Declares the target ElasticSearch nodes' adresses (semicolon seperated)</tooltip>
+                    <tooltip>Declares the target ElasticSearch nodes' addresses (semicolon seperated)</tooltip>
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
