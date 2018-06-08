@@ -956,9 +956,9 @@ public:
     }
 };
 
+ReadWriteLock CQueryStatsAggregator::queryStatsLock;
 CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::queryStatsAggregators;
 CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
-ReadWriteLock CQueryStatsAggregator::queryStatsLock;
 
 IQueryStatsAggregator *queryGlobalQueryStatsAggregator()
 {
