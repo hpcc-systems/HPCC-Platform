@@ -189,9 +189,10 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual ThorActivityKind getKind() const = 0;
     virtual const IRoxieContextLogger &queryLogCtx() const = 0;
     virtual void mergeStats(MemoryBuffer &stats) = 0;
+    virtual void mergeStats(const CRuntimeStatisticCollection & childStats) = 0;
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
     virtual IEngineRowAllocator * createRowAllocator(IOutputMetaData * metadata) = 0;
-    virtual void updateFactoryStatistics() const = 0;
+    virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const = 0;
 };
 
 interface IRoxieServerActivityFactory : extends IActivityFactory
@@ -266,7 +267,7 @@ interface IRoxieServerChildGraph : public IInterface
     virtual CGraphIterationInfo * selectGraphLoopOutput() = 0;
     virtual void gatherIterationUsage(IRoxieServerLoopResultProcessor & processor) = 0;
     virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor) = 0;
-    virtual void updateFactoryStatistics() const = 0;
+    virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const = 0;
 };
 
 interface IQueryFactory;
