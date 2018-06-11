@@ -42,6 +42,7 @@
 #include "hqlalias.hpp"
 #include "hqlir.hpp"
 #include "hqliproj.hpp"
+#include "hqlgram.hpp"
 
 #define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea
@@ -13977,6 +13978,9 @@ public:
             if (callIsActivity(expr))
                 checkEmbedActivity(expr);
             break;
+        case no_usertable:
+            checkGrouping(expr);
+            break;
         }
         QuickHqlTransformer::doAnalyse(expr);
     }
@@ -13986,6 +13990,8 @@ protected:
     void checkJoin(IHqlExpression * expr);
     void checkChoosen(IHqlExpression * expr);
     void checkEmbedActivity(IHqlExpression * expr);
+    void checkGrouping(IHqlExpression * expr);
+    void checkGrouping(HqlExprArray & parms, IHqlExpression * record, IHqlExpression * groups);
     void reportError(int errNo, const char * format, ...) __attribute__((format(printf, 3, 4)));
     void reportWarning(WarnErrorCategory category, int warnNo, const char * format, ...) __attribute__((format(printf, 4, 5)));
 protected:
@@ -14098,6 +14104,109 @@ void SemanticErrorChecker::checkEmbedActivity(IHqlExpression * call)
         IHqlExpression * value = localAttr->queryChild(0);
         if (value && !value->isConstant())
             reportError(ECODETEXT(HQLERR_AttributeXMustBeConstant), "LOCAL");
+    }
+}
+
+void SemanticErrorChecker::checkGrouping(IHqlExpression * expr)
+{
+    if (expr->hasAttribute(groupedAtom))
+        return;
+
+    IHqlExpression * groups = queryDatasetGroupBy(expr);
+    if (!groups)
+        return;
+
+    IHqlExpression * ds = expr->queryChild(0);
+    IHqlExpression * record = expr->queryChild(1);
+    assertex(record->getOperator()==no_record);
+
+    if (ds->getOperator() == no_group && isGrouped(ds))
+        reportWarning(CategoryIgnored, WRN_GROUPINGIGNORED, "Grouping of table input will have no effect, was this intended?");
+
+    HqlExprArray parms1;
+    HqlExprArray parms;
+    groups->unwindList(parms1, no_sortlist);
+
+    //The expressions need normalizing because the selectors need to be normalized before checking for matches.
+    //The problem is that before the tree is tagged replaceSelector() doesn't work.  So have to use
+    //an approximation instead.
+    ForEachItemIn(idx, parms1)
+    {
+        IHqlExpression * cur = &parms1.item(idx);
+        if (cur->getOperator() == no_field)
+            reportError(ERR_GROUP_BADSELECT, "cannot use field of result record as a grouping parameter");
+        else
+        {
+            IHqlExpression * mapped = normalizeSelects(cur);
+            parms.append(*mapped);
+        }
+    }
+
+    checkGrouping(parms, record, groups);
+}
+
+void SemanticErrorChecker::checkGrouping(HqlExprArray & parms, IHqlExpression * record, IHqlExpression * groups)
+{
+    unsigned reckids = record->numChildren();
+    for (unsigned i = 0; i < reckids; i++)
+    {
+        IHqlExpression *field = record->queryChild(i);
+
+        switch(field->getOperator())
+        {
+        case no_record:
+            checkGrouping(parms, field, groups);
+            break;
+        case no_ifblock:
+            reportError(ERR_GROUP_BADSELECT, "IFBLOCKs are not supported inside grouped aggregates");
+            return;
+        case no_field:
+            {
+                IHqlExpression * rawValue = field->queryChild(0);
+                if (rawValue)
+                {
+                    OwnedHqlExpr value = normalizeSelects(rawValue);
+                    bool ok = checkGroupExpression(parms, value);
+
+                    if (!ok)
+                    {
+                        IIdAtom * id = NULL;
+
+                        switch(field->getOperator())
+                        {
+                        case no_select:
+                            id = field->queryChild(1)->queryId();
+                            break;
+                        case no_field:
+                            id = field->queryId();
+                            break;
+                        default:
+                            id = field->queryId();
+                            break;
+                        }
+
+                        StringBuffer msg("Field ");
+                        if (id)
+                            msg.append("'").append(str(id)).append("' ");
+                        msg.append("in TABLE does not appear to be properly defined by grouping conditions");
+                        reportWarning(CategoryUnexpected, ERR_GROUP_BADSELECT, "%s", msg.str());
+                    }
+                }
+                else if (field->isDatarow())
+                {
+                    checkGrouping(parms, field->queryRecord(), groups);
+                }
+                else
+                    throwUnexpected();
+            }
+            break;
+        case no_attr:
+        case no_attr_expr:
+        case no_attr_link:
+            break;
+        default:
+            assertex(false);
+        }
     }
 }
 

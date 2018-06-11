@@ -653,8 +653,6 @@ public:
     void addConditionalAssign(const attribute & errpos, IHqlExpression * self, IHqlExpression * leftSelect, IHqlExpression * rightSelect, IHqlExpression * field);
     void addConditionalRowAssign(const attribute & errpos, IHqlExpression * self, IHqlExpression * leftSelect, IHqlExpression * rightSelect, IHqlExpression * record);
     void checkAllAssigned(IHqlExpression * originalRecord, IHqlExpression * unadornedRecord, const attribute &errpos);
-    void checkGrouping(const attribute & errpos, HqlExprArray & parms, IHqlExpression* record, IHqlExpression* groups);
-    void checkGrouping(const attribute & errpos, IHqlExpression * dataset, IHqlExpression* record, IHqlExpression* groups);
     void checkFieldMap(IHqlExpression* map, attribute& errpos);
     IHqlExpression * createDistributeCond(IHqlExpression * left, IHqlExpression * right, const attribute & err, const attribute & seqAttr);
     IHqlExpression * addSideEffects(IHqlExpression * expr);
@@ -1315,5 +1313,6 @@ IHqlExpression *reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *sco
 extern HQL_API void resetLexerUniqueNames();        // to make regression suite consistent
 extern HQL_API int testHqlInternals();
 extern HQL_API int testReservedWords();
-
+extern HQL_API IHqlExpression * normalizeSelects(IHqlExpression * expr);
+extern HQL_API bool checkGroupExpression(HqlExprArray &groups, IHqlExpression *field);
 #endif
