@@ -765,8 +765,13 @@ EXPORT STRING ToString(Date_t date, VARSTRING format) := DateToString(date, form
  * @return              The converted string, or blank if it failed to match the format.
  */
 
-EXPORT STRING ConvertDateFormat(STRING date_text, VARSTRING from_format='%m/%d/%Y', VARSTRING to_format='%Y%m%d') :=
-    DateToString(FromStringToDate(date_text, from_format), to_format);
+EXPORT STRING ConvertDateFormat(STRING date_text, VARSTRING from_format='%m/%d/%Y', VARSTRING to_format='%Y%m%d') := FUNCTION
+    parsedDate := FromStringToDate(date_text, from_format);
+
+    reformatResult := IF(parsedDate = (Date_t)0, '', DateToString(parsedDate, to_format));
+
+    RETURN reformatResult;
+END;
 
 
 /**
