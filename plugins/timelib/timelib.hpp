@@ -44,7 +44,7 @@ TIMELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
 TIMELIB_API void setPluginContext(IPluginContext * _ctx);
 #endif
 
-void tlMakeTimeStructFromUTCSeconds(time_t seconds, struct tm* timeInfo);
+void tlMakeTimeStructFromSeconds(time_t seconds, struct tm* timeInfo, bool inLocalTimeZone);
 void tlInsertDateIntoTimeStruct(struct tm* timeInfo, unsigned int date);
 unsigned int tlExtractDateFromTimeStruct(const struct tm* timeInfo);
 void tlInsertTimeIntoTimeStruct(struct tm* timeInfo, unsigned int time);
@@ -55,7 +55,7 @@ void tlGMTime_r(const time_t* clock, struct tm* timeInfoPtr);
 time_t tlMKTime(struct tm* timeInfoPtr, bool inLocalTimeZone = true);
 
 TIMELIB_API __int64 TIMELIB_CALL tlSecondsFromParts(int year, unsigned int month, unsigned int day, unsigned int hour, unsigned int minute, unsigned int second, bool is_local_time = false);
-TIMELIB_API size32_t TIMELIB_CALL tlSecondsToParts(ARowBuilder & __self, __int64 seconds);
+TIMELIB_API size32_t TIMELIB_CALL tlSecondsToParts(ARowBuilder & __self, __int64 seconds, bool is_local_time);
 TIMELIB_API unsigned int TIMELIB_CALL tlGetDayOfYear(short year, unsigned short month, unsigned short day);
 TIMELIB_API unsigned int TIMELIB_CALL tlGetDayOfWeek(short year, unsigned short month, unsigned short day);
 TIMELIB_API void TIMELIB_CALL tlDateToString(size32_t &__lenResult, char* &__result, unsigned int date, const char* format);

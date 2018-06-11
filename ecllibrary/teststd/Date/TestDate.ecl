@@ -7,9 +7,12 @@ IMPORT Std.Date;
 
 EXPORT TestDate := MODULE
 
-  SHARED vCreateDateTimeFromSeconds := ROW(Date.CreateDateTimeFromSeconds(917872496)); // Feb 1, 1999 @ 12:34:56
-  SHARED vCreateDateFromSeconds := ROW(Date.CreateDateFromSeconds(917872496)); // Feb 1, 1999
-  SHARED vCreateTimeFromSeconds := ROW(Date.CreateTimeFromSeconds(917872496)); // 12:34:56
+  // Note:  Cannot perform static local time zone checks because success depends
+  // on the time zone of the cluster
+
+  SHARED vCreateDateTimeFromSeconds := ROW(Date.CreateDateTimeFromSeconds(917872496)); // Feb 1, 1999 @ 12:34:56 (UTC)
+  SHARED vCreateDateFromSeconds := ROW(Date.CreateDateFromSeconds(917872496)); // Feb 1, 1999 (UTC)
+  SHARED vCreateTimeFromSeconds := ROW(Date.CreateTimeFromSeconds(917872496)); // 12:34:56 (UTC)
   SHARED vCreateTime := ROW(Date.CreateTime(12,34,56)); // 12:34:56
   SHARED vCreateDateTime := ROW(Date.CreateDateTime(1999,2,1,12,34,56)); // Feb 1, 1999 @ 12:34:56
   SHARED vDate := Date.CurrentDate(); // UTC
@@ -117,6 +120,14 @@ EXPORT TestDate := MODULE
   EXPORT TestDynamicFunctions := [
     ASSERT(Date.SecondsFromParts(1999,2,1,12,34,56,FALSE) = 917872496);     // UTC
     ASSERT(Date.SecondsFromParts(1965,2,17,0,0,0,FALSE) = -153705600);      // UTC
+
+    // UTC vs. local round-trip testing
+    ASSERT(ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,FALSE),FALSE)).year = ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,TRUE),TRUE)).year);
+    ASSERT(ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,FALSE),FALSE)).month = ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,TRUE),TRUE)).month);
+    ASSERT(ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,FALSE),FALSE)).day = ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,TRUE),TRUE)).day);
+    ASSERT(ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,FALSE),FALSE)).hour = ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,TRUE),TRUE)).hour);
+    ASSERT(ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,FALSE),FALSE)).minute = ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,TRUE),TRUE)).minute);
+    ASSERT(ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,FALSE),FALSE)).second = ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,TRUE),TRUE)).second);
 
     ASSERT(Date.SecondsToParts(917872496).year = 1999);
     ASSERT(Date.SecondsToParts(917872496).month = 2);
