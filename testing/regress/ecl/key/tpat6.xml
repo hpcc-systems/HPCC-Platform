@@ -1,5 +1,5 @@
 <Dataset name='Result 1'>
- <Row><getxmlparsetree>&lt;s&gt;
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -39,8 +39,8 @@ saw    &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -80,8 +80,8 @@ saw       &lt;/n&gt;
   &lt;/np&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -121,8 +121,8 @@ saw      &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -162,8 +162,8 @@ saw    &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -203,8 +203,8 @@ saw     &lt;/n&gt;
   &lt;/np&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -256,8 +256,8 @@ telescope    &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -309,8 +309,8 @@ telescope         &lt;/n&gt;
   &lt;/np&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -362,8 +362,8 @@ telescope        &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -415,8 +415,8 @@ telescope       &lt;/n&gt;
   &lt;/np&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -468,8 +468,8 @@ telescope       &lt;/n&gt;
   &lt;/np&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -521,8 +521,8 @@ telescope      &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -574,8 +574,8 @@ telescope      &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -627,8 +627,8 @@ telescope      &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -680,8 +680,8 @@ telescope    &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -733,8 +733,8 @@ telescope    &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -786,8 +786,8 @@ telescope    &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -839,8 +839,8 @@ telescope    &lt;/n&gt;
   &lt;/pp&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -892,8 +892,8 @@ telescope     &lt;/n&gt;
   &lt;/np&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
- <Row><getxmlparsetree>&lt;s&gt;
+&lt;/matches&gt;</getxmlparsetree></Row>
+ <Row><getxmlparsetree>&lt;matches&gt;&lt;s&gt;
  &lt;np&gt;
   &lt;n&gt;
 I  &lt;/n&gt;
@@ -945,5 +945,5 @@ telescope     &lt;/n&gt;
   &lt;/np&gt;
  &lt;/vp&gt;
 &lt;/s&gt;
-</getxmlparsetree></Row>
+&lt;/matches&gt;</getxmlparsetree></Row>
 </Dataset>
