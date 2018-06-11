@@ -19526,10 +19526,11 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
                 child0 = child0->queryChild(0);
             switch (child0->getOperator())
             {
+            case no_call:
             case no_externalcall:
-                if (callIsActivity(expr))
+                if (callIsActivity(child0))
                     return true;
-                return false;
+                break;
             case no_constant:
             case no_all:
                 return false;
