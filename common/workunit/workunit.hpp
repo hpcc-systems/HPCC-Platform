@@ -1217,6 +1217,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IConstWUResultIterator & getResults() const = 0;
     virtual IStringVal & getScope(IStringVal & str) const = 0;
     virtual IStringVal & getSecurityToken(IStringVal & str) const = 0;
+    virtual bool validateSecuritySignature() const = 0;
     virtual IStringVal & getStateEx(IStringVal & str) const = 0;
     virtual __int64 getAgentSession() const = 0;
     virtual unsigned getAgentPID() const = 0;
@@ -1302,6 +1303,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setRescheduleFlag(bool value) = 0;
     virtual void setResultLimit(unsigned value) = 0;
     virtual void setSecurityToken(const char * value) = 0;
+    virtual bool setSecuritySignature() = 0;
     virtual void setState(WUState state) = 0;
     virtual void setStateEx(const char * text) = 0;  // Indicates why blocked
     virtual void setAgentSession(__int64 sessionId) = 0;

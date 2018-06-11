@@ -806,8 +806,19 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                     wuid.set(wu->queryWuid());
                     queryExtendedWU(wu)->copyWorkUnit(src, false, false);
 
-                    SCMStringBuffer token;
-                    wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+                    //Digitally sign the workunit
+                    if (!wu->setSecuritySignature())
+                    {
+                        if (isEmptyString(context.queryPassword()))
+                            throw makeStringException(0, "Unable to sign workunit, please configure HPCCPrivateKeyFile");
+                    }
+
+                    if (!isEmptyString(context.queryPassword()))
+                    {
+                        SCMStringBuffer token;
+                        wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+                    }
+
                 }
 
                 wuids.append(wuid.str());
@@ -936,8 +947,18 @@ bool CWsWorkunitsEx::onWUSchedule(IEspContext &context, IEspWUScheduleRequest &r
         if (req.getMaxRunTime())
             wu->setDebugValueInt("maxRunTime", req.getMaxRunTime(), true);
 
-        SCMStringBuffer token;
-        wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+        //Digitally sign the workunit
+        if (!wu->setSecuritySignature())
+        {
+            if (isEmptyString(context.queryPassword()))
+                throw makeStringException(0, "Unable to sign workunit, please configure HPCCPrivateKeyFile");
+        }
+
+        if (!isEmptyString(context.queryPassword()))
+        {
+            SCMStringBuffer token;
+            wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+        }
 
         AuditSystemAccess(context.queryUserId(), true, "Scheduled %s", wuid.str());
     }
@@ -4526,6 +4547,8 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
             wu.setQueryText(srcxml->queryProp("Query/Text"));
     }
 
+    if (!isEmpty(wu->queryUser()))
+        wu->setSecuritySignature();//regenerate signature since WUID may have been changed/mangled
     wu->setState(WUStateCompiled);
     wu->commit();
     wu.clear();

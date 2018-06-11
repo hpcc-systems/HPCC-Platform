@@ -1906,9 +1906,20 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
         }
     }
 
-    SCMStringBuffer token;
-    createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token);
-    workunit->setSecurityToken(token.str());
+    //Digitally sign the workunit
+    if (!workunit->setSecuritySignature())
+    {
+        if (isEmptyString(context.queryPassword()))
+            throw makeStringException(0, "Unable to sign workunit, please configure HPCCPrivateKeyFile");
+    }
+
+    if (!isEmptyString(context.queryPassword()))
+    {
+        SCMStringBuffer token;
+        createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token);
+        workunit->setSecurityToken(token.str());
+    }
+
     workunit->setState(WUStateSubmitted);
     workunit->commit();
 

@@ -3271,8 +3271,19 @@ void WsWuHelpers::copyWsWorkunit(IEspContext &context, IWorkUnit &wu, const char
 
     queryExtendedWU(&wu)->copyWorkUnit(src, false, false);
 
-    SCMStringBuffer token;
-    wu.setSecurityToken(createToken(wu.queryWuid(), context.queryUserId(), context.queryPassword(), token).str());
+    //Digitally sign the workunit
+    if (!wu.setSecuritySignature())
+    {
+        if (isEmptyString(context.queryPassword()))
+            throw makeStringException(0, "Unable to sign workunit, please configure HPCCPrivateKeyFile");
+    }
+
+    if (!isEmptyString(context.queryPassword()))
+    {
+        SCMStringBuffer token;
+        wu.setSecurityToken(createToken(wu.queryWuid(), context.queryUserId(), context.queryPassword(), token).str());
+    }
+
     wu.commit();
 }
 

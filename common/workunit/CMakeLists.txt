@@ -54,7 +54,8 @@ include_directories (
          ./../../rtl/include 
          ./../../common/dllserver 
          ./../../system/jlib
-         ./../../system/security/shared 
+         ./../../system/security/shared
+         ./../../system/security/digisign
          ./../../common/thorhelper 
          ./../../rtl/eclrtl 
          ./../../rtl/nbcd
@@ -77,5 +78,6 @@ if(NOT PLUGIN)
         nbcd 
         eclrtl 
         deftype
+        digisign
         environment)
 endif()

@@ -942,6 +942,26 @@ public:
         }
         if (!udesc)
             return SecAccess_Unknown;
+
+        //Verify user signature if present
+        if (udesc->querySignature())
+        {
+            IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromEnv();
+            if (pDSM && pDSM->isDigiVerifierConfigured())
+		    {
+		        StringBuffer username;
+		        udesc->getUserName(username);
+		        StringBuffer b64Signature(udesc->querySignature());
+			    if (!pDSM->digiVerify(username.str(), b64Signature))
+			    {
+			        ERRLOG("Digital Signature Verification failed for %s %s %s", username.str(), key, obj);
+			        return SecAccess_None;
+			    }
+		    }
+		    else
+		        WARNLOG("Digital signature present, but digisign verification not enabled");
+        }
+
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
         mb.append(key).append(obj);
