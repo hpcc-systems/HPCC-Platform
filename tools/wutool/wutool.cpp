@@ -228,7 +228,11 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
     else if (stricmp(action, "info")==0)
     {
         ScopeDumper dumper;
-        WuScopeFilter filter(args.item(0));
+        WuScopeFilter filter;
+        filter.addFilter(args.item(0));
+        if (filter.properties == PTnone)
+            filter.addOutputProperties(PTall);
+        filter.finishedFilter();
 
         printf("<Workunit wuid=\"%s\">\n", w.queryWuid());
         Owned<IConstWUScopeIterator> iter = &w.getScopeIterator(filter);
