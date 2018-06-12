@@ -118,9 +118,8 @@
 		        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
 	        }
 
-            var element = document.getElementById('hidden_msg');
-
             if (document.cookie.indexOf("ESPAuthenticationMSG") > -1){
+                var element = document.getElementById('hidden_msg');
 		        element.style.display = "inline-block";
 		        deleteCookie('ESPAuthenticationMSG','',0);
             }
