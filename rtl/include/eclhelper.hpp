@@ -2344,7 +2344,7 @@ struct IHThorIndexReadBaseArg : extends IHThorCompoundBaseArg
     virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;   // Projected layout
     virtual unsigned getFlags() = 0;
     virtual unsigned getProjectedFormatCrc() = 0;                   // Corresponding to projectedDiskRecordSize
-    virtual unsigned getDiskFormatCrc() { return getProjectedFormatCrc(); }  // Should correspond to queryDiskRecordSize() meta really - codegen needs to fix that
+    virtual unsigned getDiskFormatCrc() = 0;                        // Corresponding to diskRecordSize
     virtual void setCallback(IThorIndexCallback * callback) = 0;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
 

@@ -1831,6 +1831,8 @@ public:
 
     void buildEncryptHelper(BuildCtx & ctx, IHqlExpression * encryptAttr, const char * funcname = NULL);
     void buildFormatCrcFunction(BuildCtx & ctx, const char * name, bool removeFilepos, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta);
+    void buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * record, unsigned payloadSize);
+    void buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * record);
     void buildLimitHelpers(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * filename, unique_id_t id);
     void buildLimitHelpers(BuildCtx & ctx, IHqlExpression * rowLimit, IHqlExpression * failAction, bool isSkip, IHqlExpression * filename, unique_id_t id);
 

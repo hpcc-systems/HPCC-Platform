@@ -219,6 +219,10 @@ public:
     {
         return projected;
     }
+    virtual unsigned getDiskFormatCrc() override final
+    {
+        return 0;  // engines should treat 0 as 'ignore'
+    }
     virtual unsigned getProjectedFormatCrc() override final
     {
         return 0;  // engines should treat 0 as 'ignore'

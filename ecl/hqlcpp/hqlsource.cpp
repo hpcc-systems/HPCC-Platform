@@ -2892,12 +2892,12 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     {
         //Spill files can still have virtual attributes in their physical records => remove them.
         OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(expectedRecord);
-        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, noVirtualRecord, NULL, 0);
+        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", noVirtualRecord);
 
         if (newDiskReadMapping)
-            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", false, projectedRecord, NULL, 0);
+            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", projectedRecord);
         else
-            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", false, noVirtualRecord, NULL, 0);
+            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", noVirtualRecord);
     }
 
     translator.buildMetaMember(instance->classctx, expectedRecord, isGrouped(tableExpr), "queryDiskRecordSize");
@@ -3881,6 +3881,7 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
 
     buildKeyedLimitHelper(expr);
 
+    translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", true, tableExpr, tableExpr, 1);
     translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", true, tableExpr, tableExpr, 1);
     IHqlExpression * originalKey = queryAttributeChild(tableExpr, _original_Atom, 0);
     translator.buildSerializedLayoutMember(instance->classctx, originalKey->queryRecord(), "getIndexLayout", numKeyedFields(originalKey));
@@ -4801,7 +4802,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
     case no_json:
         break;
     default:
-        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, physicalRecord, NULL, 0);
+        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", physicalRecord);
         break;
     }
 
