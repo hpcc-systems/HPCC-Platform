@@ -568,33 +568,30 @@ TIMELIB_API void TIMELIB_CALL tlDateToString(size32_t &__lenResult, char* &__res
     __result = NULL;  // Return blank string on error
     __lenResult = 0;
 
-    // date is expected to be in form year*10000 + month * 100 + day, and must be later than 1900
-    // or we can't store it in a struct tm
+    // date is expected to be in form year*10000 + month * 100 + day
 
-    if (date >= 1900 * 10000)
-    {
-        struct tm       timeInfo;
-        const size_t    kBufferSize = 256;
-        char            buffer[kBufferSize];
+    struct tm       timeInfo;
+    const size_t    kBufferSize = 256;
+    char            buffer[kBufferSize];
 
-        memset(&timeInfo, 0, sizeof(timeInfo));
-        tlInsertDateIntoTimeStruct(&timeInfo, date);
-        timeInfo.tm_isdst = -1;
-        tlMKTime(&timeInfo);
+    memset(&timeInfo, 0, sizeof(timeInfo));
+    tlInsertDateIntoTimeStruct(&timeInfo, date);
+    timeInfo.tm_isdst = -1;
+    tlMKTime(&timeInfo);
 
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #endif
-        __lenResult = strftime(buffer, kBufferSize, format, &timeInfo);
+    __lenResult = strftime(buffer, kBufferSize, format, &timeInfo);
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
-        if (__lenResult > 0)
-        {
-            __result = reinterpret_cast<char*>(CTXMALLOC(parentCtx, __lenResult));
-            memcpy(__result, buffer, __lenResult);
-        }
+
+    if (__lenResult > 0)
+    {
+        __result = reinterpret_cast<char*>(CTXMALLOC(parentCtx, __lenResult));
+        memcpy(__result, buffer, __lenResult);
     }
 }
 
