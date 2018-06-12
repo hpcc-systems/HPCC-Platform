@@ -853,6 +853,7 @@ class ECLRTL_API CThorIndexAggregateArg : public CThorArgOf<IHThorIndexAggregate
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) override;
     virtual void setCallback(IThorIndexCallback * _tc) override;
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) override;
+    virtual void processRows(ARowBuilder & rowBuilder, size32_t srcLen, const void * src) override;
 
 public:
     IThorIndexCallback * fpp;
@@ -885,6 +886,7 @@ class ECLRTL_API CThorIndexGroupAggregateArg : public CThorArgOf<IHThorIndexGrou
     virtual size32_t initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) override;
     virtual size32_t processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) override;
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) override;
+    virtual void processRows(size32_t srcLen, const void * src, IHThorGroupAggregateCallback * callback) override;
 
 public:
     IThorIndexCallback * fpp;
