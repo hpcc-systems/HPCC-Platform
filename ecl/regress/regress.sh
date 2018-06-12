@@ -172,7 +172,7 @@ if [[ $compare_dir ]]; then
     echo "* Comparing to $compare_dir"
     echo
     if [[ $diff != '' ]]; then
-        $diff $compare_dir $target_dir 2> /dev/null
+        $diff $compare_dir $target_dir 2> /dev/null &
     else
         diff -I $compare_dir -I $target_dir \
              -I '\d* ms' \

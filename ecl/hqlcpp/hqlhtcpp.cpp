@@ -10188,8 +10188,6 @@ void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * record
 void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name, bool removeFilepos, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta)
 {
     IHqlExpression * payload = expr ? expr->queryAttribute(_payload_Atom) : NULL;
-    // MORE - do we need to keep this consistent - if so will have to trim out the originals and the filepos
-//    OwnedHqlExpr exprToCrc = getSerializedForm(dataset->queryRecord(), diskAtom);
     OwnedHqlExpr exprToCrc = LINK(dataset->queryRecord());
 
     unsigned payloadSize = getBoolAttribute(expr, filepositionAtom, true) ? 1 : 0;

@@ -797,6 +797,7 @@ struct HqlCppOptions
     bool                implicitKeyedDiskFilter;
     bool                addDefaultBloom;
     bool                newDiskReadMapping;
+    bool                newIndexReadMapping;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
