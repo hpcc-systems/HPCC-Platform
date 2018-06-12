@@ -21,6 +21,7 @@
 #include "InsertableItem.hpp"
 #include "jexcept.hpp"
 #include "ws_config2Error.hpp"
+#include "Exceptions.hpp"
 
 static const std::string CFG2_MASTER_CONFIG_FILE = "environment.xsd";
 static const std::string CFG2_CONFIG_DIR = COMPONENTFILES_DIR  PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
@@ -46,12 +47,20 @@ bool Cws_config2Ex::onOpenSession(IEspContext &context, IEspOpenSessionRequest &
     std::string inputMasterFile = req.getMasterSchemaFile();
     std::string inputSchemaPath = req.getSchemaPath();
     std::string inputSourcePath = req.getSourcePath();
-    std::string inputActivePath = req.getSourcePath();
+    std::string inputActivePath = req.getActivePath();
     pNewSession->masterConfigFile = (inputMasterFile != "") ? inputMasterFile : CFG2_MASTER_CONFIG_FILE;
     pNewSession->username = req.getUsername();
     pNewSession->schemaPath = !inputSchemaPath.empty() ? inputSchemaPath : CFG2_CONFIG_DIR;
     pNewSession->sourcePath = !inputSourcePath.empty() ? inputSourcePath : CFG2_SOURCE_DIR;
     pNewSession->activePath = !inputActivePath.empty() ? inputActivePath : ACTIVE_ENVIRONMENT_FILE;
+
+    //
+    // Make sure paths end with a separator
+    if (std::string(1, pNewSession->schemaPath.back()) != PATHSEPSTR)
+        pNewSession->schemaPath += PATHSEPSTR;
+
+    if (std::string(1, pNewSession->sourcePath.back()) != PATHSEPSTR)
+        pNewSession->sourcePath += PATHSEPSTR;
 
     //
     // Only XML supported at this time
@@ -125,7 +134,7 @@ bool Cws_config2Ex::onGetEnvironmentFileList(IEspContext &context, IEspCommonSes
     StringBuffer activeConfig_md5sum;
     md5_filesum(pSession->activePath.c_str(), activeConfig_md5sum);
     IArrayOf<IEspEnvironmentFileType> environmentFiles;
-    Owned<IFile> pDir = createIFile(CFG2_SOURCE_DIR.c_str());
+    Owned<IFile> pDir = createIFile(pSession->sourcePath.c_str());
     if (pDir->exists())
     {
         Owned<IDirectoryIterator> it = pDir->directoryFiles(NULL, false, true);
@@ -269,15 +278,10 @@ bool Cws_config2Ex::onSaveEnvironmentFile(IEspContext &context, IEspSaveEnvironm
 bool Cws_config2Ex::onLockSession(IEspContext &context, IEspCommonSessionRequest &req, IEspLockSessionResponse &resp)
 {
     std::string sessionId = req.getSessionId();
-    ConfigMgrSession *pSession = getConfigSession(sessionId);
+    ConfigMgrSession *pSession = getConfigSession(sessionId, true);
     if (pSession->locked)
     {
         throw MakeStringException(CFGMGR_ERROR_ENVIRONMENT_LOCKED, "Current enironment already locked");
-    }
-
-    if (pSession->curEnvironmentFile.empty())
-    {
-        throw MakeStringException(CFGMGR_ERROR_NO_ENVIRONMENT, "No environment loaded");
     }
 
     if (pSession->externallyModified)
@@ -325,9 +329,8 @@ bool Cws_config2Ex::onGetNode(IEspContext &context, IEspNodeRequest &req, IEspGe
 {
     std::string sessionId = req.getSessionId();
     std::string id = req.getNodeId();
-    ConfigMgrSession *pSession = getConfigSession(sessionId);
+    ConfigMgrSession *pSession = getConfigSession(sessionId, true);
     Status status;
-
 
     EnvironmentMgr *pEnvMgr = pSession->m_pEnvMgr;
     std::shared_ptr<EnvironmentNode> pNode = pEnvMgr->getEnvironmentNode(id);
@@ -400,7 +403,8 @@ bool Cws_config2Ex::onValidateEnvironment(IEspContext &context, IEspValidateEnvi
 {
     Status status;
     std::string sessionId = req.getSessionId();
-    ConfigMgrSession *pSession = getConfigSession(sessionId);
+    ConfigMgrSession *pSession = getConfigSession(sessionId, true);
+
     pSession->m_pEnvMgr->validate(status, req.getIncludeHiddenNodes());
     addStatusToResponse(status, pSession, resp);
     return true;
@@ -447,7 +451,7 @@ bool Cws_config2Ex::onGetParents(IEspContext &context, IEspNodeRequest &req, IEs
     std::string nodeId = req.getNodeId();
     std::string sessionId = req.getSessionId();
 
-    ConfigMgrSession *pSession = getConfigSession(sessionId);
+    ConfigMgrSession *pSession = getConfigSession(sessionId, true);
 
     StringArray ids;
     std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->getEnvironmentNode(nodeId);
@@ -475,7 +479,10 @@ bool Cws_config2Ex::onGetNodeTree(IEspContext &context, IEspGetTreeRequest &req,
     std::string nodeId = req.getNodeId();
     std::string sessionId = req.getSessionId();
 
-    ConfigMgrSession *pSession = getConfigSession(sessionId);
+    ConfigMgrSession *pSession = getConfigSession(sessionId, true);
+
+    if (nodeId == "")
+        nodeId = pSession->m_pEnvMgr->getRootNodeId();
 
     std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->getEnvironmentNode(nodeId);
     if (pNode)
@@ -493,13 +500,13 @@ bool Cws_config2Ex::onFetchNodes(IEspContext &context, IEspFetchNodesRequest &re
     std::string path = req.getPath();
     std::string startingNodeId = req.getStartingNodeId();
     std::shared_ptr<EnvironmentNode> pStartingNode;
-    ConfigMgrSession *pSession = getConfigSession(sessionId);
+    ConfigMgrSession *pSession = getConfigSession(sessionId, true);
 
     if (startingNodeId != "")
     {
         if (path[0] == '/')
         {
-            throw MakeStringException(CDGMGR_ERROR_PATH_INVALID, "Path may not begin at root if starting node specified");
+            throw MakeStringException(CFGMGR_ERROR_PATH_INVALID, "Path may not begin at root if starting node specified");
         }
 
         pStartingNode = pSession->m_pEnvMgr->getEnvironmentNode(startingNodeId);
@@ -510,20 +517,27 @@ bool Cws_config2Ex::onFetchNodes(IEspContext &context, IEspFetchNodesRequest &re
     }
     else if (path[0] != '/')
     {
-        throw MakeStringException(CDGMGR_ERROR_PATH_INVALID, "Path must begin at root (/) if no starting node is specified");
+        throw MakeStringException(CFGMGR_ERROR_PATH_INVALID, "Path must begin at root (/) if no starting node is specified");
     }
 
-    std::vector<std::shared_ptr<EnvironmentNode>> nodes;
-    pSession->m_pEnvMgr->fetchNodes(path, nodes, pStartingNode);
-    StringArray ids;
-    for ( auto &&pNode : nodes)
+    try
     {
-        if (!pNode->getSchemaItem()->isHidden())
+        std::vector<std::shared_ptr<EnvironmentNode>> nodes;
+        pSession->m_pEnvMgr->fetchNodes(path, nodes, pStartingNode);
+        StringArray ids;
+        for ( auto &&pNode : nodes)
         {
-            ids.append(pNode->getId().c_str());
+            if (!pNode->getSchemaItem()->isHidden())
+            {
+                ids.append(pNode->getId().c_str());
+            }
         }
+        resp.setNodeIds(ids);
     }
-    resp.setNodeIds(ids);
+    catch (ParseException &pe)
+    {
+        throw MakeStringException(CFGMGR_ERROR_PATH_INVALID, "%s", pe.what());
+    }
 
     return true;
 }
@@ -558,7 +572,7 @@ void Cws_config2Ex::addStatusToResponse(const Status &status, ConfigMgrSession *
 }
 
 
-ConfigMgrSession *Cws_config2Ex::getConfigSession(const std::string &sessionId)
+ConfigMgrSession *Cws_config2Ex::getConfigSession(const std::string &sessionId, bool environmentRequired)
 {
     ConfigMgrSession *pSession = nullptr;
 
@@ -574,13 +588,16 @@ ConfigMgrSession *Cws_config2Ex::getConfigSession(const std::string &sessionId)
     if (pSession == nullptr)
         throw MakeStringException(CFGMGR_ERROR_INVALID_SESSION_ID, "Session ID not valid");
 
+    if (environmentRequired && pSession->curEnvironmentFile.empty())
+        throw MakeStringException(CFGMGR_ERROR_NO_ENVIRONMENT, "No environment loaded");
+
     return pSession;
 }
 
 
 ConfigMgrSession *Cws_config2Ex::getConfigSessionForUpdate(const std::string &sessionId, const std::string &lockKey)
 {
-    ConfigMgrSession *pSession = getConfigSession(sessionId);
+    ConfigMgrSession *pSession = getConfigSession(sessionId, true);
     if (!pSession->doesKeyFit(lockKey))
     {
         throw MakeStringException(CFGMGR_ERROR_LOCK_KEY_INVALID, "Session lock key is missing or invalid");
@@ -742,6 +759,7 @@ void Cws_config2Ex::getNodeInfo(const std::shared_ptr<EnvironmentNode> &pNode, I
     getNodeInfo(pNodeSchemaItem, nodeInfo);      // fill it in based on schema
     getNodeDisplayName(pNode, nodeDisplayName);  // possibly override the displayname
     nodeInfo.setName(nodeDisplayName.c_str());
+    nodeInfo.setNodeName(pNode->getName().c_str());
 }
 
 
@@ -788,7 +806,8 @@ void Cws_config2Ex::getAttributes(const std::vector<std::shared_ptr<EnvironmentV
         pAttribute->setReadOnly(pSchemaValue->isReadOnly());
         pAttribute->setHidden(pSchemaValue->isHidden());
         pAttribute->setDeprecated(pSchemaValue->isDeprecated());
-        pAttribute->setGroup(pSchemaValue->getGroup().c_str());
+        std::string groupName = pSchemaValue->getGroup();
+        pAttribute->setGroup(groupName.empty() ? "Attributes" : groupName.c_str());
 
         std::vector<AllowedValue> allowedValues;
         pSchemaValue->getAllowedValues(allowedValues, pAttr->getEnvironmentNode());
@@ -817,6 +836,30 @@ void Cws_config2Ex::getAttributes(const std::vector<std::shared_ptr<EnvironmentV
                         dependencies.append(*pDep.getLink());
                     }
                     pChoice->setDependencies(dependencies);
+                }
+
+                //
+                // Add optional/required attributes.
+                if (!(*valueIt).m_optionalAttributes.empty())
+                {
+                    StringArray attributeNames;
+                    for (auto &attr: (*valueIt).m_optionalAttributes)
+                    {
+                        StringBuffer atrrname(attr.c_str());
+                        attributeNames.append(atrrname);
+                    }
+                    pChoice->setOptionalAttributes(attributeNames);
+                }
+
+                if (!(*valueIt).m_requiredAttributes.empty())
+                {
+                    StringArray attributeNames;
+                    for (auto &attr: (*valueIt).m_requiredAttributes)
+                    {
+                        StringBuffer atrrname(attr.c_str());
+                        attributeNames.append(atrrname);
+                    }
+                    pChoice->setRequiredAttributes(attributeNames);
                 }
 
                 choices.append(*pChoice.getLink());

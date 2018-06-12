@@ -33,7 +33,8 @@ EnvironmentMgr *getEnvironmentMgrInstance(const EnvironmentType envType)
 }
 
 
-EnvironmentMgr::EnvironmentMgr()
+EnvironmentMgr::EnvironmentMgr() :
+    m_message("Unknown error")
 {
     m_pSchema = std::make_shared<SchemaItem>("root");  // make the root
 }
@@ -47,13 +48,20 @@ bool EnvironmentMgr::loadSchema(const std::string &configPath, const std::string
         rc = m_pSchemaParser->parse(configPath, masterConfigFile, cfgParms);
         if (rc)
         {
-            // unique attribure value sets are global across a schema. Allocate one here and pass it in
-            // for use in building the necessary references and dependencies across the schema, then pass
-            // it to the post processing for finalization. Once referencs and dependencies are built, the
-            // attribute value sets are no longer needed.
-            std::map<std::string, std::vector<std::shared_ptr<SchemaValue>>> uniqueAttributeValueSets;
-            m_pSchema->processDefinedUniqueAttributeValueSets(uniqueAttributeValueSets);  // This must be done first
-            m_pSchema->postProcessConfig(uniqueAttributeValueSets);
+            try {
+                // unique attribure value sets are global across a schema. Allocate one here and pass it in
+                // for use in building the necessary references and dependencies across the schema, then pass
+                // it to the post processing for finalization. Once references and dependencies are built, the
+                // attribute value sets are no longer needed.
+                std::map<std::string, std::vector<std::shared_ptr<SchemaValue>>> uniqueAttributeValueSets;
+                m_pSchema->processDefinedUniqueAttributeValueSets(uniqueAttributeValueSets);  // This must be done first
+                m_pSchema->postProcessConfig(uniqueAttributeValueSets);
+            }
+            catch (ParseException &pe)
+            {
+                m_message = pe.what();
+                rc = false;
+            }
         }
     }
     return rc;
@@ -62,9 +70,12 @@ bool EnvironmentMgr::loadSchema(const std::string &configPath, const std::string
 
 std::string EnvironmentMgr::getLastSchemaMessage() const
 {
+    std::string msg;
     if (m_pSchemaParser)
-        return m_pSchemaParser->getLastMessage();
-    return "";
+        msg = m_pSchemaParser->getLastMessage();
+    if (msg.empty())
+        msg = m_message;
+    return msg;
 }
 
 

@@ -140,7 +140,7 @@ void SchemaItem::addSchemaType(const std::shared_ptr<SchemaItem> &pItem, const s
     }
     else
     {
-        throw(ParseException("Duplicate config type found: " + m_properties["name"]));
+        throw(ParseException("Element: " + getProperty("name") + ", duplicate config type found: " + typeName));
     }
 }
 
@@ -227,7 +227,7 @@ void SchemaItem::addAttribute(const std::shared_ptr<SchemaValue> &pCfgValue)
     auto retVal = m_attributes.insert({ pCfgValue->getName(), pCfgValue });
     if (!retVal.second)
     {
-        throw(ParseException("Duplicate attribute (" + pCfgValue->getName() + ") found for element " + m_properties["name"]));
+        throw(ParseException("Element: " + getProperty("name") + ", duplicate attribute (" + pCfgValue->getName() + ") found"));
     }
 }
 
@@ -293,7 +293,7 @@ void SchemaItem::processUniqueAttributeValueSetReferences(const std::map<std::st
             for (auto cfgIt = keyIt->second.begin(); cfgIt != keyIt->second.end(); ++cfgIt)
             {
                 std::shared_ptr<SchemaValue> pKeyRefAttribute = *cfgIt;     // this is the reference attribute from which attributeName must be a member
-                std::string cfgValuePath = ((setRefIt->second.m_elementPath != ".") ? setRefIt->second.m_elementPath : "") + "@" + setRefIt->second.m_attributeName;
+                std::string cfgValuePath = setRefIt->second.m_elementPath + "[@" + setRefIt->second.m_attributeName + "]";
                 std::vector<std::shared_ptr<SchemaValue>> cfgValues;
                 fetchSchemaValues(cfgValuePath, cfgValues);
                 if (!cfgValues.empty())
@@ -305,23 +305,34 @@ void SchemaItem::processUniqueAttributeValueSetReferences(const std::map<std::st
                 }
                 else
                 {
-                    throw(ParseException("Attribute " + (setRefIt->second.m_attributeName + " not found when adding keyRef for key " + (setRefIt->second.m_setName))));
+                    throw(ParseException("Element: " + getProperty("name") + ", Attribute '" + (setRefIt->second.m_attributeName + "' not found when adding keyRef for key " + (setRefIt->second.m_setName))));
                 }
             }
         }
         else
         {
-            throw(ParseException("Keyref to key '" + (setRefIt->second.m_setName + "' was not found")));
+            throw(ParseException("Element: " + getProperty("name") + ", Keyref to key '" + (setRefIt->second.m_setName + "' was not found")));
         }
     }
 }
 
 
-void SchemaItem::getChildren(std::vector<std::shared_ptr<SchemaItem>> &children) const
+void SchemaItem::getChildren(std::vector<std::shared_ptr<SchemaItem>> &children, const std::string &name) const
 {
-    for (auto it = m_children.begin(); it != m_children.end(); ++it)
+    if (name.empty())
     {
-        children.push_back(it->second);
+        for (auto it = m_children.begin(); it != m_children.end(); ++it)
+        {
+            children.push_back(it->second);
+        }
+    }
+    else
+    {
+        auto rangeIt = m_children.equal_range(name);
+        for (auto it=rangeIt.first; it!=rangeIt.second; ++it)
+        {
+            children.push_back(it->second);
+        }
     }
 }
 
@@ -364,62 +375,89 @@ void SchemaItem::resetEnvironment()
 }
 
 
-
-void SchemaItem::fetchSchemaValues(const std::string &path, std::vector<std::shared_ptr<SchemaValue>> &schemaValues)
+void SchemaItem::fetchSchemaValues(const std::string &path, std::vector<std::shared_ptr<SchemaValue>> &schemaValues) const
 {
-    bool rootPath = path[0] == '/';   //todo: convert this to use the findSchemaRoot below
+    ConfigPath configPath(path);
+    doFetchSchemaValues(configPath, schemaValues);
+}
 
-    //
-    // If path is from the root, and we aren't the root, pass the request to our parent
-    if (rootPath && !m_pParent.expired())
+
+
+void SchemaItem::doFetchSchemaValues(ConfigPath &configPath, std::vector<std::shared_ptr<SchemaValue>> &schemaValues) const
+{
+
+    std::shared_ptr<ConfigPathItem> pPathItem = configPath.getNextPathItem();
+
+    if (pPathItem)
     {
-        std::shared_ptr<SchemaItem> pParent = m_pParent.lock();
-        if (pParent)
+        if (pPathItem->isRoot())
         {
-            return pParent->fetchSchemaValues(path, schemaValues);
+            getSchemaRoot()->doFetchSchemaValues(configPath, schemaValues);
         }
-    }
-
-    //
-    // Break the path down and process it
-    size_t start = rootPath ? 1 : 0;    // skip leading slash if we are at the root
-    size_t end = path.find_first_of("/@", start);
-    if (end != std::string::npos)
-    {
-        std::string elem = path.substr(start, end - start);
-
-        if (rootPath)
+        else if (pPathItem->isParentPathtItem())
         {
-            if (m_properties["name"] == elem)
+            if (!m_pParent.expired())
             {
-                return fetchSchemaValues(path.substr(end + 1), schemaValues);
+                m_pParent.lock()->doFetchSchemaValues(configPath, schemaValues);
+            }
+        }
+        else if (pPathItem->isCurrentPathItem())
+        {
+            doFetchSchemaValues(configPath, schemaValues);
+        }
+        else
+        {
+            //
+            // Get the items to check for this path element. If there is no element name, then use
+            // this item, otherwise get children matching the element name
+            std::vector<std::shared_ptr<SchemaItem>> items;
+            if (pPathItem->getElementName().empty())
+            {
+                items.push_back(std::const_pointer_cast<SchemaItem>(shared_from_this()));
             }
             else
             {
-                throw(ParseException("Unable to find root element '" + elem + "' when searching path '" + path + "'"));
+                getChildren(items, pPathItem->getElementName());
             }
-        }
 
-        if (path[0] == '@')
-        {
-            std::string attrName = path.substr(1);
-            auto rangeIt = m_attributes.equal_range(attrName);
-            for (auto it = rangeIt.first; it != rangeIt.second; ++it)
+            if (!pPathItem->getAttributeName().empty())  // note that attribute values are not supported for schema xpaths
             {
-                schemaValues.push_back(it->second);
+                auto it = items.begin();
+                while (it != items.end())
+                {
+                    std::shared_ptr<SchemaValue> pAttribute = (*it)->getAttribute(pPathItem->getAttributeName());
+                    if (!pAttribute)
+                    {
+                        it = items.erase(it);
+                    }
+                    else
+                    {
+                        ++it;
+                    }
+                }
             }
-        }
 
-        else
-        {
-            auto rangeIt = m_children.equal_range(elem);
-            for (auto it = rangeIt.first; it != rangeIt.second; ++it)
+            //
+            // If path elements remain, fetch schema values from each match at this level, otherwise push the results to
+            // the result schema value vector
+            if (configPath.isPathRemaining())
             {
-                it->second->fetchSchemaValues(path.substr(end + ((path[end] == '/') ? 1 : 0)), schemaValues);
+                //
+                // For all the matching nodes at this element, call each to continue the search
+                for (auto itemIt = items.begin(); itemIt != items.end(); ++itemIt)
+                {
+                    (*itemIt)->doFetchSchemaValues(configPath, schemaValues);
+                }
+            }
+            else
+            {
+                for (auto itemIt = items.begin(); itemIt != items.end(); ++itemIt)
+                {
+                    schemaValues.push_back((*itemIt)->getAttribute(pPathItem->getAttributeName()));
+                }
             }
         }
     }
-
     return;
 }
 
@@ -444,7 +482,7 @@ void SchemaItem::processDefinedUniqueAttributeValueSets(std::map<std::string, st
         bool keyDefExists = it != uniqueAttributeValueSets.end();
         if (!keyDefExists || setIt->second.m_duplicateOk)
         {
-            std::string cfgValuePath = ((setIt->second.m_elementPath != ".") ? setIt->second.m_elementPath : "") + "@" + setIt->second.m_attributeName;
+            std::string cfgValuePath = setIt->second.m_elementPath + "[@" + setIt->second.m_attributeName + "]";
             std::vector<std::shared_ptr<SchemaValue>> cfgValues;
             fetchSchemaValues(cfgValuePath, cfgValues);
             if (!cfgValues.empty())
@@ -478,12 +516,12 @@ void SchemaItem::processDefinedUniqueAttributeValueSets(std::map<std::string, st
             }
             else
             {
-                throw(ParseException("Attribute " + setIt->second.m_attributeName + " not found for key " + setIt->second.m_setName));
+                throw(ParseException("Element: " + getProperty("name", "unknown") + ", attribute " + setIt->second.m_attributeName + " not found for key " + setIt->second.m_setName));
             }
         }
         else
         {
-            throw(ParseException("Duplicate key (" + setIt->second.m_setName + ") found for element " + m_properties["name"]));
+            throw(ParseException("Element: " + getProperty("name", "unknown") + ", duplicate key (" + setIt->second.m_setName + ") found for element " + m_properties["name"]));
         }
     }
 
@@ -508,7 +546,7 @@ void SchemaItem::postProcessConfig(const std::map<std::string, std::vector<std::
             auto rc = itemTypes.insert(it->second->getItemType());
             if (!rc.second)
             {
-                throw(ParseException("Duplicate itemType(" + it->second->getItemType() + ") found for element " + m_properties["name"]));
+                throw(ParseException("Element: " + getProperty("name") + ", duplicate itemType(" + it->second->getItemType() + ") found"));
             }
         }
     }
@@ -534,12 +572,12 @@ void SchemaItem::postProcessConfig(const std::map<std::string, std::vector<std::
                 }
                 else
                 {
-                    throw(ParseException("Multiple sources found for mirror from path for attribute " + it->second->getName() + " (path=" + it->second->getMirrorFromPath()));
+                    throw(ParseException("Element: " + getProperty("name") + ", multiple sources found for mirror from path for attribute " + it->second->getName() + " (path=" + it->second->getMirrorFromPath()));
                 }
             }
             else
             {
-                throw(ParseException("Mirrored from source not found for attribute " + it->second->getName() + " path=" + it->second->getMirrorFromPath()));
+                throw(ParseException("Element: " + getProperty("name") + ", mirrored from source not found for attribute '" + it->second->getName() + "' path=" + it->second->getMirrorFromPath()));
             }
         }
     }

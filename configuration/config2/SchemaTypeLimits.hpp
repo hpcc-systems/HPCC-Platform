@@ -49,6 +49,7 @@ struct DECL_EXPORT AllowedValue
     std::string m_userMessageType;
     std::string m_userMessage;
     std::vector<DependentValue> m_dependencies;
+    std::vector<std::string> m_optionalAttributes, m_requiredAttributes;
 };
 
 

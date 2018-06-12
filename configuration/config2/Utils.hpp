@@ -20,7 +20,10 @@ limitations under the License.
 #define _CONFIG2_CONFIGUTILS_HPP_
 
 #include <vector>
+#include <string>
 
-std::vector<std::string> splitString(const std::string  &input, const std::string delim);
+std::vector<std::string> splitString(const std::string  &input, const std::string  &delim);
+bool extractEnclosedString(const std::string source, std::string &result, char startDelim, char endDelim, bool optional = true);
+bool getEnclosedString(const std::string source, std::string &result, std::size_t startPos, char endDelim, bool throwIfError = false);
 
 #endif

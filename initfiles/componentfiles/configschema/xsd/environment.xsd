@@ -29,9 +29,9 @@
     <xs:element name="Environment" hpcc:category="root" hpcc:class="category">
         <xs:complexType>
             <xs:sequence>
-                <!--xs:element name="EnvSettings" hpcc:class="category" hpcc:displayName="System Settings" hpcc:hidden="true"></xs:element-->
+                <xs:element name="EnvSettings" hpcc:class="category" hpcc:displayName="System Settings" hpcc:hidden="true"></xs:element>
                 <xs:element type="hardware" hpcc:class="category" hpcc:displayName="Hardware" hpcc:required="true"></xs:element>
-                <!--xs:element name="Programs" hpcc:class="category" hpcc:displayName="Programs" hpcc:hidden="true"></xs:element-->
+                <xs:element name="Programs" hpcc:class="category" hpcc:displayName="Programs" hpcc:hidden="true"></xs:element>
                 <xs:element name="Software" hpcc:class="category" hpcc:displayName="Software">
                     <xs:complexType>
                         <xs:sequence>

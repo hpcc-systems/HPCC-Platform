@@ -27,6 +27,7 @@
 #include "InsertableItem.hpp"
 #include "NameValue.hpp"
 #include "platform.h"
+#include "ConfigPath.hpp"
 
 
 class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<EnvironmentNode>
@@ -70,6 +71,11 @@ class DECL_EXPORT EnvironmentNode : public std::enable_shared_from_this<Environm
         void addEnvironmentInsertData(const std::string &envData) { m_insertData = envData; }
         const std::string &getEnvironmentInsertData() const { return m_insertData; }
         void clearEnvironmentInsertData() { m_insertData.clear();  }
+
+
+    protected:
+
+        void doFetchNodes(ConfigPath &configPath, std::vector<std::shared_ptr<EnvironmentNode>> &nodes) const;
 
 
     protected:

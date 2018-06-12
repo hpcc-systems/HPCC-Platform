@@ -36,6 +36,7 @@ SET(  SRCS
       EnvironmentEventHandlers.cpp
       Utils.cpp
       InsertableItem.cpp
+      ConfigPath.cpp
 )
 
 INCLUDE_DIRECTORIES(
