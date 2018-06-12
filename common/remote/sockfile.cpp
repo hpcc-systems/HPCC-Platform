@@ -3972,6 +3972,8 @@ protected:
     void initCommon(IPropertyTree &config)
     {
         fileName.set(config.queryProp("fileName"));
+        if (isEmptyString(fileName))
+            throw MakeStringException(0, "CRemoteDiskBaseActivity: fileName missing");
 
         record = &inMeta->queryRecordAccessor(true);
         translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
@@ -4060,6 +4062,7 @@ class CRemoteDiskReadActivity : public CRemoteDiskBaseActivity
         }
 
         OwnedIFile iFile = createIFile(fileName);
+        assertex(iFile);
         iFileIO.setown(createCompressedFileReader(iFile));
         if (iFileIO)
         {
