@@ -559,6 +559,28 @@ protected:
     Owned<ITypeInfo>    basetype;
 };
 
+class CKeyedBlobTypeInfo : public CBasedTypeInfo
+{
+public:
+
+    virtual void serialize(MemoryBuffer &tgt) { CTypeInfo::serialize(tgt); }
+public:
+    CKeyedBlobTypeInfo(ITypeInfo * _basetype) : CBasedTypeInfo(_basetype, sizeof(offset_t)) {}
+    virtual type_t getTypeCode() const { return type_blob; };
+
+    // Only used for generation of type information so no need to fully implement these
+    virtual bool isSwappedEndian()              { return false; }
+    virtual bool isInteger()                    { return true; };
+    virtual bool isScalar()                     { return true; }
+    virtual bool isSigned()                     { return false; }
+    virtual unsigned getStringLen()             { return basetype->getStringLen(); }
+    virtual unsigned getDigits()                { return 0; }
+    virtual const char *queryTypeName()         { return "blob"; }
+    virtual ITypeInfo * queryPromotedType()     { return basetype->queryPromotedType(); }
+    virtual StringBuffer &getECLType(StringBuffer & out) { return out.append("blob"); }
+    virtual unsigned getCrc()                   { return basetype->getCrc(); }
+};
+
 class CFilePosTypeInfo : public CBasedTypeInfo
 {
 public:

@@ -1641,7 +1641,7 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
             df->queryAttributes().getPropBin("_rtlType", layoutBin);
             if (req.getIncludeJsonTypeInfo())
             {
-                Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
+                Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
                 const RtlTypeInfo *typeInfo = deserializer->deserialize(layoutBin);
                 StringBuffer jsonFormat;
                 dumpTypeInfo(jsonFormat, typeInfo);
@@ -2380,7 +2380,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             df->queryAttributes().getPropBin("_rtlType", layoutBin);
             if (includeJsonTypeInfo)
             {
-                Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
+                Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
                 const RtlTypeInfo *typeInfo = deserializer->deserialize(layoutBin);
                 StringBuffer jsonFormat;
                 dumpTypeInfo(jsonFormat, typeInfo);

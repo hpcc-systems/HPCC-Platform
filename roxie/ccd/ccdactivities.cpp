@@ -1455,6 +1455,7 @@ public:
     {
         return reader->queryLogicalFilename(row);
     }
+    virtual const byte * lookupBlob(unsigned __int64 id) { throwUnexpected(); }
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
     {

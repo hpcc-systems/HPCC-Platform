@@ -2001,14 +2001,23 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
 {
     try
     {
+        Owned<IException> error;
         bool isGrouped = props.getPropBool("@grouped", false);
         if (props.hasProp("_rtlType"))
         {
             MemoryBuffer layoutBin;
             props.getPropBin("_rtlType", layoutBin);
-            return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+            try
+            {
+                return createTypeInfoOutputMetaData(layoutBin, isGrouped);
+            }
+            catch (IException *E)
+            {
+                EXCLOG(E);
+                error.setown(E); // Save to throw later if we can't recover via ECL
+            }
         }
-        else if (props.hasProp("ECL"))
+        if (props.hasProp("ECL"))
         {
             const char *kind = props.queryProp("@kind");
             bool isIndex = (kind && streq(kind, "key"));
@@ -2026,8 +2035,12 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
                 }
                 MemoryBuffer layoutBin;
                 if (exportBinaryType(layoutBin, expr, isIndex))
-                    return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+                    return createTypeInfoOutputMetaData(layoutBin, isGrouped);
             }
+        }
+        if (error)
+        {
+            throw(error.getClear());
         }
     }
     catch (IException *E)

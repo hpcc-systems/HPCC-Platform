@@ -62,6 +62,7 @@ public:
     virtual offset_t getFilePosition(const void * row);
     virtual offset_t getLocalFilePosition(const void * row);
     virtual const char * queryLogicalFilename(const void * row);
+    virtual const byte * lookupBlob(unsigned __int64 id) { UNIMPLEMENTED; }
 
 // CPartHandler
     virtual void setPart(IPartDescriptor *_partDesc);

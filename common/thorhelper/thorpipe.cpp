@@ -255,6 +255,8 @@ public:
     virtual unsigned __int64 getFilePosition(const void * row) { return 0; }
     virtual unsigned __int64 getLocalFilePosition(const void * row) { return 0; }
     virtual const char * queryLogicalFilename(const void * row) { return ""; }
+    virtual const byte * lookupBlob(unsigned __int64 id) override { throwUnexpected(); }
+
 
 private:
     IXmlToRowTransformer * xmlTransformer;

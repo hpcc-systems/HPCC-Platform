@@ -3940,7 +3940,7 @@ static IOutputMetaData *getTypeInfoOutputMetaData(IPropertyTree &actNode, const 
 {
     IPropertyTree *json = actNode.queryPropTree(typePropName);
     if (json)
-        return createTypeInfoOutputMetaData(*json, grouped, nullptr);
+        return createTypeInfoOutputMetaData(*json, grouped);
     else
     {
         StringBuffer binTypePropName(typePropName);
@@ -3949,7 +3949,7 @@ static IOutputMetaData *getTypeInfoOutputMetaData(IPropertyTree &actNode, const 
             return nullptr;
         MemoryBuffer mb;
         JBASE64_Decode(jsonBin, mb);
-        return createTypeInfoOutputMetaData(mb, grouped, nullptr);
+        return createTypeInfoOutputMetaData(mb, grouped);
     }
 }
 
@@ -4018,6 +4018,10 @@ public:
         throwUnexpected();
     }
     virtual unsigned __int64 getLocalFilePosition(const void * row) override
+    {
+        throwUnexpected();
+    }
+    virtual byte * lookupBlob(unsigned __int64 id) override
     {
         throwUnexpected();
     }
@@ -4213,6 +4217,10 @@ public:
     virtual unsigned __int64 getLocalFilePosition(const void * row) override
     {
         return makeLocalFposOffset(partNum, prefetchBuffer.tell());
+    }
+    virtual byte * lookupBlob(unsigned __int64 id) override
+    {
+        throwUnexpected();
     }
 };
 

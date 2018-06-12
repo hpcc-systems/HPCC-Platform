@@ -39,7 +39,7 @@ public:
     const RtlFieldInfo * * fieldsArray = nullptr;
     const IFieldFilter * filter = nullptr;
 
-    const RtlTypeInfo *createRtlTypeInfo(IThorIndexCallback *_callback) const;
+    const RtlTypeInfo *createRtlTypeInfo() const;
 };
 
 interface ITypeInfo;
@@ -153,7 +153,7 @@ extern ECLRTL_API void throwTranslationError(const RtlRecord &_destRecInfo, cons
 
 extern ECLRTL_API const IKeyTranslator *createKeyTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
 
-extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer(IThorIndexCallback *callback);
+extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer();
 
 extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInfo *t);
 
@@ -194,6 +194,7 @@ public:
     virtual const char * queryLogicalFilename(const void * row) override;
     virtual unsigned __int64 getFilePosition(const void * row) override;
     virtual unsigned __int64 getLocalFilePosition(const void * row) override;
+    virtual const byte * lookupBlob(unsigned __int64 id) override;
 };
 
 class ECLRTL_API UnexpectedVirtualFieldCallback : public CInterfaceOf<IVirtualFieldCallback>
@@ -202,6 +203,8 @@ public:
     virtual const char * queryLogicalFilename(const void * row) override;
     virtual unsigned __int64 getFilePosition(const void * row) override;
     virtual unsigned __int64 getLocalFilePosition(const void * row) override;
+    virtual const byte * lookupBlob(unsigned __int64 id) override;
+
 };
 
 typedef UnexpectedVirtualFieldCallback IndexVirtualFieldCallback;
@@ -226,6 +229,7 @@ public:
     virtual const char * queryLogicalFilename(const void * row) override;
     virtual unsigned __int64 getFilePosition(const void * row) override;
     virtual unsigned __int64 getLocalFilePosition(const void * row) override;
+    virtual const byte * lookupBlob(unsigned __int64 id) override;
 private:
     const char * filename;
     unsigned __int64 filepos;

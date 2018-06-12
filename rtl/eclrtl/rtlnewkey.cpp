@@ -1784,7 +1784,7 @@ IFieldFilter * createSubStringFieldFilter(unsigned fieldId, size32_t subLength, 
     FieldTypeInfoStruct info;
     info.fieldType = (type.fieldType & ~RFTMunknownsize);
     info.length = subLength;
-    Owned<SharedRtlTypeInfo> subType(new SharedRtlTypeInfo(info.createRtlTypeInfo(nullptr)));
+    Owned<SharedRtlTypeInfo> subType(new SharedRtlTypeInfo(info.createRtlTypeInfo()));
 
     //Create a new set of values truncated to the appropriate length.
     Owned<IValueSet> newValues = values->cast(*subType->type);
@@ -1932,7 +1932,7 @@ IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type
             FieldTypeInfoStruct info;
             info.fieldType = (type.fieldType & ~RFTMunknownsize);
             info.length = subLength;
-            Owned<SharedRtlTypeInfo> subType(new SharedRtlTypeInfo(info.createRtlTypeInfo(nullptr)));
+            Owned<SharedRtlTypeInfo> subType(new SharedRtlTypeInfo(info.createRtlTypeInfo()));
 
             //The serialized set is already truncated to the appropriate length.
             Owned<IValueSet> values = createValueSet(*subType->type);
@@ -1995,7 +1995,7 @@ IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type
             FieldTypeInfoStruct info;
             info.fieldType = (type.fieldType & ~RFTMunknownsize);
             info.length = subLength;
-            Owned<SharedRtlTypeInfo> subType(new SharedRtlTypeInfo(info.createRtlTypeInfo(nullptr)));
+            Owned<SharedRtlTypeInfo> subType(new SharedRtlTypeInfo(info.createRtlTypeInfo()));
 
             //The serialized set is already truncated to the appropriate length.
             Owned<IValueSet> values = createValueSet(*subType->type, in);
@@ -2035,13 +2035,14 @@ void RowFilter::addFilter(const IFieldFilter & filter)
         numFieldsRequired = fieldNum+1;
 }
 
-void RowFilter::addFilter(const RtlRecord & record, const char * filterText)
+const IFieldFilter & RowFilter::addFilter(const RtlRecord & record, const char * filterText)
 {
     IFieldFilter & filter = *deserializeFieldFilter(record, filterText);
     filters.append(filter);
     unsigned fieldNum = filter.queryFieldIndex();
     if (fieldNum >= numFieldsRequired)
         numFieldsRequired = fieldNum+1;
+    return filter;
 }
 
 bool RowFilter::matches(const RtlRow & row) const

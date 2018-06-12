@@ -2544,10 +2544,10 @@ public:
                         diskTypeInfo.append(NULL);
                         break;
                     case 1:
-                        diskTypeInfo.append(createTypeInfoOutputMetaData(serverData, false, nullptr));
+                        diskTypeInfo.append(createTypeInfoOutputMetaData(serverData, false));
                         break;
                     case 2:
-                        diskTypeInfo.append(createTypeInfoOutputMetaData(serverData, true, nullptr));
+                        diskTypeInfo.append(createTypeInfoOutputMetaData(serverData, true));
                         break;
                     case 3:
                         assertex(fileNo > 0);

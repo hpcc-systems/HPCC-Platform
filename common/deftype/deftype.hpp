@@ -177,12 +177,12 @@ extern DEFTYPE_API ITypeInfo *makeDataType(int size);
 extern DEFTYPE_API ITypeInfo *makeBitfieldType(int sizeInBits, ITypeInfo * basetype = NULL);
 extern DEFTYPE_API ITypeInfo *makeBoolType();
 extern DEFTYPE_API ITypeInfo *makeBlobType();
+extern DEFTYPE_API ITypeInfo *makeKeyedBlobType(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo *makeRecordType();     // not used by any IHqlExpressions
 extern DEFTYPE_API ITypeInfo *makeVoidType();
 extern DEFTYPE_API ITypeInfo *makeNullType();
 extern DEFTYPE_API ITypeInfo *makeEventType();
 extern DEFTYPE_API ITypeInfo *makeAnyType();
-extern DEFTYPE_API ITypeInfo *makeType(type_t type, int size);
 extern DEFTYPE_API IEnumeratedTypeBuilder *makeEnumeratedTypeBuilder(ITypeInfo *base, aindex_t numvalues);
 extern DEFTYPE_API ITypeInfo *makeDecimalType(unsigned digits, unsigned prec, bool isSigned);
 extern DEFTYPE_API ITypeInfo *makeDictionaryType(ITypeInfo *basetype);

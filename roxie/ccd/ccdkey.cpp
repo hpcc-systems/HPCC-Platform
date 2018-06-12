@@ -523,6 +523,8 @@ public:
     {
         deserializeSource.finishedRow();
     }
+    virtual const byte * lookupBlob(unsigned __int64 id) { throwUnexpected(); }
+
 };
 
 class InMemoryDirectReader : public CDirectReaderBase
@@ -1239,6 +1241,7 @@ public:
     { 
         UNIMPLEMENTED;
     }
+    virtual const byte * lookupBlob(unsigned __int64 id) { UNIMPLEMENTED; }
 
     virtual void serializeCursorPos(MemoryBuffer &mb) const 
     {
