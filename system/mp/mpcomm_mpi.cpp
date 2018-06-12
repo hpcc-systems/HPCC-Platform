@@ -161,9 +161,16 @@ public:
 
     bool sendRecv(CMessageBuffer &mbuff, rank_t sendrank, mptag_t sendtag, unsigned timeout=MP_WAIT_FOREVER){
         //TODO share timeout between send/recv?
-        bool sendSuccess = send(mbuff, sendrank, sendtag, timeout);
-        bool recvSuccess = recv(mbuff, sendrank, sendtag, NULL, timeout);
-        return (sendSuccess && recvSuccess);
+        mptag_t replytag = createReplyTag();
+        CTimeMon tm(timeout);
+        mbuff.setReplyTag(replytag);
+        unsigned remaining;
+        if (tm.timedout(&remaining))
+            return false;
+        if (!send(mbuff,sendrank,sendtag,remaining)||tm.timedout(&remaining))
+            return false;
+        mbuff.clear();
+        return recv(mbuff,sendrank,replytag,NULL,remaining);
     }
 
     bool reply(CMessageBuffer &mbuf, unsigned timeout=MP_WAIT_FOREVER){
@@ -176,7 +183,6 @@ public:
             }
             return false;
         }
-        //CHECK: dstrank will always be valid if mbuf.getSender() is valid. jsocket version does something when dstrank is RANK_NULL
         return false;
     }
 
@@ -246,24 +252,26 @@ bool hasMPServerStarted(){
     UNIMPLEMENTED;
 }
 CriticalSection replyTagSect;
-
+byte RTsalt = 0xff;
+int rettag;
 mptag_t createReplyTag(){
     UNIMPLEMENTED;
-    // mptag_t ret;
-    // {
-    //     CriticalBlock block(replyTagSect);
-    //     if (RTsalt==0xff) {
-    //         RTsalt = (byte)(getRandom()%16);
-    //         rettag = (int)TAG_REPLY_BASE-RTsalt;
-    //     }
-    //     if (rettag>(int)TAG_REPLY_BASE) {           // wrapped
-    //         rettag = (int)TAG_REPLY_BASE-RTsalt;
-    //     }
-    //     ret = (mptag_t)rettag;
-    //     rettag -= 16;
-    // }
-    // flush(ret);
-    // return ret;
+    mptag_t ret;
+    {
+        CriticalBlock block(replyTagSect);
+        if (RTsalt==0xff) {
+            RTsalt = (byte)(getRandom()%16);
+            rettag = (int)TAG_REPLY_BASE-RTsalt;
+        }
+        if (rettag>(int)TAG_REPLY_BASE) {           // wrapped
+            rettag = (int)TAG_REPLY_BASE-RTsalt;
+        }
+        ret = (mptag_t)rettag;
+        rettag -= 16;
+    }
+    //TODO flush
+    //flush(ret);
+    return ret;
 }
 
 ICommunicator *createCommunicator(IGroup *group, bool outer){
