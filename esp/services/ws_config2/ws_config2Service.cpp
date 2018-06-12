@@ -23,7 +23,7 @@
 #include "ws_config2Error.hpp"
 
 static const std::string CFG2_MASTER_CONFIG_FILE = "environment.xsd";
-static const std::string CFG2_CONFIG_DIR = COMPONENTFILES_DIR  PATHSEPSTR "config2xml" PATHSEPSTR;
+static const std::string CFG2_CONFIG_DIR = COMPONENTFILES_DIR  PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
 static const std::string CFG2_SOURCE_DIR = CONFIG_SOURCE_DIR;
 static const std::string ACTIVE_ENVIRONMENT_FILE = CONFIG_DIR PATHSEPSTR ENV_XML_FILE;
 
