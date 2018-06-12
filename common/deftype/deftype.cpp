@@ -1201,6 +1201,13 @@ void CBasedTypeInfo::serializeSkipChild(MemoryBuffer &tgt)
 
 //===========================================================================
 
+IValue * CKeyedIntTypeInfo::castFrom(bool /*isSignedValue*/, __int64 value)
+{
+    return createIntValue(value, LINK(this));
+}
+
+//===========================================================================
+
 bool CTransformTypeInfo::assignableFrom(ITypeInfo *t2)
 {
     if (getTypeCode()==t2->getTypeCode())
@@ -1835,10 +1842,10 @@ extern DEFTYPE_API ITypeInfo *makeFilePosType(ITypeInfo *basetype)
     return commonUpType(new CFilePosTypeInfo(basetype));
 }
 
-extern DEFTYPE_API ITypeInfo *makeKeyedType(ITypeInfo *basetype)
+extern DEFTYPE_API ITypeInfo *makeKeyedIntType(ITypeInfo *basetype)
 {
     assertex(basetype);
-    return commonUpType(new CKeyedTypeInfo(basetype));
+    return commonUpType(new CKeyedIntTypeInfo(basetype));
 }
 
 extern DEFTYPE_API ITypeInfo *makeDecimalType(unsigned digits, unsigned prec, bool isSigned)
@@ -2616,6 +2623,8 @@ static bool preservesValue(ITypeInfo * after, ITypeInfo * before, bool preserveI
     {
     case type_boolean: 
         return true;
+    case type_keyedint:
+        return preservesValue(after, before->queryChildType(), preserveInformation);
     case type_packedint:
         before = before->queryPromotedType();
         //fall through
@@ -2624,6 +2633,8 @@ static bool preservesValue(ITypeInfo * after, ITypeInfo * before, bool preserveI
     case type_enumerated:
         switch (afterType)
         {
+        case type_keyedint:
+            return preservesValue(after->queryChildType(), before, preserveInformation);
         case type_packedint:
             after = after->queryPromotedType();
             //fall through.
@@ -2737,6 +2748,10 @@ bool preservesOrder(ITypeInfo * after, ITypeInfo * before)
 {
     type_t beforeType = before->getTypeCode();
     type_t afterType = after->getTypeCode();
+    if (beforeType == type_keyedint)
+        return preservesOrder(after, before->queryChildType());
+    if (afterType == type_keyedint)
+        return preservesOrder(after->queryChildType(), before);
 
     switch (beforeType)
     {

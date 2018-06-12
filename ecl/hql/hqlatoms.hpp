@@ -323,6 +323,7 @@ extern HQL_API IAtom * onceAtom;
 extern HQL_API IAtom * onFailAtom;
 extern HQL_API IAtom * onWarningAtom;
 extern HQL_API IAtom * optAtom;
+extern HQL_API IAtom * __option__Atom;
 extern HQL_API IAtom * orderedAtom;
 extern HQL_API IAtom * _ordered_Atom;
 extern HQL_API IAtom * _origin_Atom;

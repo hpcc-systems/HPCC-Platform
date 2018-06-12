@@ -1871,7 +1871,6 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_sortlist:
         case type_any:
             break;
-        case type_keyedint:
         case type_int:
         case type_swapint:
         case type_real:
@@ -1915,6 +1914,7 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_function:
         case type_pointer:
         case type_array:
+        case type_keyedint:
             {
                 CompoundTypeBuilderInfo info;
                 info.baseType = processType(type->queryChildType());

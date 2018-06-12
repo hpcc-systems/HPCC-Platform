@@ -343,6 +343,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   ONLY
   ONWARNING
   OPT
+  __OPTION__
   OR
   ORDERED
   OUTER
@@ -10308,14 +10309,12 @@ dsOption
                         {   $$.setExpr(createExprAttribute(maxCountAtom, $3.getExpr()), $1); }
     | AVE '(' constExpression ')'
                         {   $$.setExpr(createExprAttribute(aveAtom, $3.getExpr()), $1); }
-    | VIRTUAL '(' UNKNOWN_ID ')'
+    | __OPTION__ '(' hintList ')'
                         {
-                            IIdAtom * id = $3.getId();
-                            if (id->queryLower() != legacyAtom)
-                                parser->reportError(ERR_EXPECTED, $3, "Expected LEGACY");
-                            else
-                                parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "VIRTUAL(LEGACY) will be unsupported at a later date");
-                            $$.setExpr(createExprAttribute(virtualAtom, createAttribute(id->queryLower())), $1);
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(__option__Atom, args));
+                            $$.setPosition($1);
                         }
     | commonAttribute
     ;

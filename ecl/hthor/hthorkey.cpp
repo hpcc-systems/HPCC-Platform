@@ -665,56 +665,55 @@ void CHThorIndexReadActivityBase::getLayoutTranslators()
         {
             IDistributedFile & f = superIterator->query();
             layoutTrans.setown(getLayoutTranslator(&f));
-            if(layoutTrans)
-            {
-                StringBuffer buff;
-                buff.append("Using record layout translation to correct layout mismatch on reading index ").append(f.queryLogicalName());
-                WARNLOG("%s", buff.str());
-                agent.addWuException(buff.str(), WRN_UseLayoutTranslation, SeverityWarning, "hthor");
-            }
             layoutTransArray.append(layoutTrans.getClear());
         } while(superIterator->next());
     }
     else
     {
         layoutTrans.setown(getLayoutTranslator(df));
-        if(layoutTrans)
-        {
-            StringBuffer buff;
-            buff.append("Using record layout translation to correct layout mismatch on reading index ").append(df->queryLogicalName());
-            WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), WRN_UseLayoutTranslation, SeverityWarning, "hthor");
-        }
     }
 }
 
 const IDynamicTransform * CHThorIndexReadActivityBase::getLayoutTranslator(IDistributedFile * f)
 {
-    if(getLayoutTranslationMode() == RecordTranslationMode::AlwaysECL)
-        return NULL;
+    IOutputMetaData * expectedFormat = helper.queryDiskRecordSize();
+    Linked<IOutputMetaData> actualFormat = expectedFormat;
 
-    if(getLayoutTranslationMode() == RecordTranslationMode::None)
+    switch (getLayoutTranslationMode())
     {
+    case RecordTranslationMode::AlwaysECL:
+        break;
+    case RecordTranslationMode::None:
         verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, true);
-        return NULL;
+        break;
+    default:
+        if(!verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false))
+        {
+            IPropertyTree &props = f->queryAttributes();
+            actualFormat.setown(getDaliLayoutInfo(props));
+            if (!actualFormat)
+                throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - key layout information not found", f->queryLogicalName());
+
+            //MORE: We could introduce a more efficient way of checking this that does not create a translator
+            Owned<const IDynamicTransform> actualTranslator = createRecordTranslator(expectedFormat->queryRecordAccessor(true), actualFormat->queryRecordAccessor(true));
+            if (actualTranslator->keyedTranslated())
+                throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - keyed fields do not match", f->queryLogicalName());
+
+            actualLayouts.append(actualFormat.getLink());  // ensure adequate lifespan
+        }
+        break;
     }
 
-    if(verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false))
-        return NULL;
+    IOutputMetaData * projectedFormat = helper.queryProjectedDiskRecordSize();
+    if (projectedFormat == actualFormat)
+        return nullptr;
 
-    IPropertyTree &props = f->queryAttributes();
-    Owned<IOutputMetaData> actualFormat = getDaliLayoutInfo(props);
-    if (actualFormat)
-    {
-        actualLayouts.append(actualFormat.getLink());  // ensure adequate lifespan
-        Owned<const IDynamicTransform> payloadTranslator =  createRecordTranslator(helper.queryProjectedDiskRecordSize()->queryRecordAccessor(true), actualFormat->queryRecordAccessor(true));
-        if (!payloadTranslator->canTranslate())
-            throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s", f->queryLogicalName());
-        if (payloadTranslator->keyedTranslated())
-            throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - keyed fields do not match", f->queryLogicalName());
+    Owned<const IDynamicTransform> payloadTranslator =  createRecordTranslator(projectedFormat->queryRecordAccessor(true), actualFormat->queryRecordAccessor(true));
+    if (!payloadTranslator->canTranslate())
+        throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s", f->queryLogicalName());
+    if (payloadTranslator->needsTranslate())
         return payloadTranslator.getClear();
-    }
-    throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - key layout information not found", f->queryLogicalName());
+    return nullptr;
 }
 
 void CHThorIndexReadActivityBase::verifyIndex(IKeyIndex * idx)

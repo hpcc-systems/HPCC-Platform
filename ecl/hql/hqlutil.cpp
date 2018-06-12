@@ -361,9 +361,7 @@ IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExp
     else if (allowTranslate)
     {
         LinkedHqlExpr newValue = physicalSelect;
-
-        OwnedHqlExpr target = createSelectExpr(getActiveTableSelector(), LINK(cur));            // select not used, just created to get correct types.
-        ITypeInfo * type = target->queryType();
+        ITypeInfo * type = cur->queryType();
         type_t tc = type->getTypeCode();
         if (tc == type_int || tc == type_swapint)
         {
@@ -397,11 +395,28 @@ static IHqlExpression * mapIfBlockRecord(HqlMapTransformer & mapper, IHqlExpress
 }
 
 
+static IHqlExpression * mapIfBlockCondition(HqlMapTransformer & mapper, IHqlExpression * expr)
+{
+    if (expr->getOperator() == no_select)
+    {
+        OwnedHqlExpr mapped = mapper.transformRoot(expr);
+        //Need to apply biases to fields that are keyed and ensure they are correctly cast
+        if (mapped->queryType() != expr->queryType())
+            return convertIndexPhysical2LogicalValue(expr, mapped, true);
+        return mapped.getClear();
+    }
+
+    HqlExprArray args;
+    ForEachChild(i, expr)
+        args.append(*mapIfBlockCondition(mapper, expr->queryChild(i)));
+    return expr->clone(args);
+}
+
 static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * cur)
 {
     HqlExprArray args;
     unwindChildren(args, cur);
-    args.replace(*mapper.transformRoot(&args.item(0)), 0);
+    args.replace(*mapIfBlockCondition(mapper, &args.item(0)), 0);
     args.replace(*mapIfBlockRecord(mapper, &args.item(1)), 1);
     return cur->clone(args);
 }
@@ -443,8 +458,8 @@ IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpre
                 Owned<ITypeInfo> hozedType = getHozedKeyType(cur);
                 if (hozedType == cur->queryType())
                     newField = LINK(cur);
-                else if (createKeyedTypes)
-                    newField = createField(cur->queryId(), makeKeyedType(cur->getType()), nullptr, extractFieldAttrs(cur));
+                else if (createKeyedTypes && hozedType->isInteger())
+                    newField = createField(cur->queryId(), makeKeyedIntType(cur->getType()), nullptr, extractFieldAttrs(cur));
                 else
                     newField = createField(cur->queryId(), hozedType.getClear(), nullptr, extractFieldAttrs(cur));
             }

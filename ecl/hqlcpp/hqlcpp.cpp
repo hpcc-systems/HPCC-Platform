@@ -1814,6 +1814,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.newDiskReadMapping, "newDiskReadMapping", true),
         DebugOption(options.transformNestedSequential, "transformNestedSequential", true),
         DebugOption(options.forceAllProjectedDiskSerialized, "internalForceAllProjectedDiskSerialized", false),  // Delete in 8.0 once new code has been proved in anger
+        DebugOption(options.newIndexReadMapping, "newIndexReadMapping", false), // Not yet enabled due to problems with merging mapped fields and roxie/thor integration
     };
 
     //get options values from workunit
@@ -6850,6 +6851,7 @@ void HqlCppTranslator::doBuildExprCast(BuildCtx & ctx, ITypeInfo * to, CHqlBound
                         break;
                     }
                 case type_swapint:
+                case type_keyedint:
                     {
                         unsigned toSize = to->getSize();
                         unsigned fromSize = from->getSize();
@@ -11147,7 +11149,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
     case type_packedint:
         {
             unsigned fromSize = from->getSize();
-            if ((fromType == type_swapint) && !((fromSize == 1) && (toSize == 1)))
+            if ((fromType == type_swapint || fromType == type_keyedint) && !((fromSize == 1) && (toSize == 1)))
             {
                 if (fromSize != toSize)
                 {
