@@ -15,7 +15,8 @@
 //-------------------send/receive asynchronous communication----------------------//
 
 // Data structure to keep the data relating to send/receive communications
-struct CommData{
+class CommData{
+public:    
     int requiresProbing;            // Required for asynchronous receive
     void* data;                     // Data structure which keeps the sent/recv data
     int size;                       // size of 'data'
@@ -26,24 +27,26 @@ struct CommData{
     hpcc_mpi::CommStatus status;    // Status of the communication
     MPI_Comm comm;                  // MPI communicator
     MPI_Request request;            // request object to keep track of ongoing MPI call
+    CriticalSection *dataLock;
 };
 
 std::vector<CommData> requests;     // CommData Pool
 std::deque<int> freeRequests;       // List of index unused in ComData Pool
-std::mutex requestListLock;         // A mutex lock for the index list above
+CriticalSection requestListLock;         // A mutex lock for the index list above
 
 // Returns index of a ComData object in CommData Pool
 int get_free_req(){
     int req;
-    requestListLock.lock();
+    CriticalBlock block(requestListLock);
     if(freeRequests.empty()) {      //if no free objects, create a new one
         requests.push_back(CommData());
+        requests[requests.size()-1].dataLock = new CriticalSection();
         freeRequests.push_back(requests.size()-1);
     }
     // pop the index at the front of the queue
     req = freeRequests.front();
     freeRequests.pop_back();
-    requestListLock.unlock();
+    // requestListLock.unlock();
     // all reset CommData
     requests[req].requiresProbing = 0;
     requests[req].mbuf = NULL;
@@ -80,6 +83,7 @@ hpcc_mpi::CommStatus startReceiveProcess(int i){
 // Performs asynchronous MPI recv and return the index of CommData
 int recv(int rank, int tag, CMessageBuffer &mbuf, MPI_Comm comm){
     int nextFree = get_free_req();
+    CriticalBlock block(*(requests[nextFree].dataLock));
     requests[nextFree].requiresProbing = 1;
     requests[nextFree].rank = rank;
     requests[nextFree].tag = tag;
@@ -121,12 +125,12 @@ bool hpcc_mpi::hasIncomingMessage(rank_t &sourceRank, mptag_t &mptag, NodeGroup 
 }
 
 void hpcc_mpi::releaseComm(CommRequest commReq){
-    requestListLock.lock();
+    CriticalBlock block(requestListLock);
     (requests[commReq].group)->removeCommRequest
             (requests[commReq].rank, (mptag_t)requests[commReq].tag);
-    //TODO Free CommData object if there's too many in the Pool    
+    //TODO Free CommData object if there's too many in the Pool (don't forget to delete mutex)   
     freeRequests.push_back(commReq);
-    requestListLock.unlock();
+    // requestListLock.unlock();
 }
 
 bool hpcc_mpi::cancelComm(hpcc_mpi::CommRequest commReq){
@@ -148,33 +152,36 @@ bool hpcc_mpi::cancelComm(hpcc_mpi::CommRequest commReq){
 }
 
 hpcc_mpi::CommStatus hpcc_mpi::getCommStatus(CommRequest commReq){
+    hpcc_mpi::CommStatus ret;
     if (commReq < 0){                           // for synchronous calls
-        return hpcc_mpi::CommStatus::SUCCESS;
-    }
-    if (requests[commReq].status){              // for requests completed/canceled/error
-        return requests[commReq].status; 
-    }
-    if (requests[commReq].requiresProbing){     // recv communication still waiting for a message to arrive
-        requests[commReq].status = startReceiveProcess(commReq);
-    }else{
-        MPI_Status stat;
-        int flag;
-        MPI_Test(&(requests[commReq].request), &flag, &stat);
-        if (flag){                              // if request completed
-            if (requests[commReq].mbuf != NULL){//if it was a receive call
-                (requests[commReq].mbuf)->reset();
-                (requests[commReq].mbuf)->append(requests[commReq].size,requests[commReq].data);
-                //TODO revisit on how to create the replytag in the CMessageBuffer
-                SocketEndpoint ep;
-                ep.port = stat.MPI_SOURCE;
-                (requests[commReq].mbuf)->init(ep, (mptag_t)(stat.MPI_TAG), TAG_REPLY_BASE);
+        ret = hpcc_mpi::CommStatus::SUCCESS;
+    } else {
+        CriticalBlock block(*(requests[commReq].dataLock));
+        if (requests[commReq].status == hpcc_mpi::CommStatus::INCOMPLETE){                 // if requests are not completed/canceled/error
+            if (requests[commReq].requiresProbing){     // recv communication still waiting for a message to arrive
+                requests[commReq].status = startReceiveProcess(commReq);
+            } else {
+                MPI_Status stat;
+                int flag;
+                MPI_Test(&(requests[commReq].request), &flag, &stat);
+                if (flag){                              // if request completed
+                    if (requests[commReq].mbuf != NULL){//if it was a receive call
+                        (requests[commReq].mbuf)->reset();
+                        (requests[commReq].mbuf)->append(requests[commReq].size,requests[commReq].data);
+                        //TODO revisit on how to create the replytag in the CMessageBuffer
+                        SocketEndpoint ep;
+                        ep.port = stat.MPI_SOURCE;
+                        (requests[commReq].mbuf)->init(ep, (mptag_t)(stat.MPI_TAG), TAG_REPLY_BASE);
+                    }
+                    free(requests[commReq].data);       
+                    //TODO test for canceled and update status for cancelled
+                    requests[commReq].status = hpcc_mpi::CommStatus::SUCCESS;
+                }
             }
-            free(requests[commReq].data);       
-            //TODO test for canceled and update status for cancelled
-            requests[commReq].status = hpcc_mpi::CommStatus::SUCCESS;
         }
+        ret = requests[commReq].status;
     }
-    return requests[commReq].status;
+    return ret;
 }
 
 rank_t hpcc_mpi::rank(NodeGroup &group){
@@ -190,7 +197,12 @@ rank_t hpcc_mpi::size(NodeGroup &group){
 }
 
 void hpcc_mpi::initialize(){
-    MPI_Init(NULL,NULL);
+    int required = MPI_THREAD_FUNNELED;
+    int provided;
+    MPI_Init_thread(NULL,NULL, required, &provided);
+    // printf("expected=%d, provided=%d, %d, %d, %d, %d\n",required, provided, MPI_THREAD_SINGLE, MPI_THREAD_FUNNELED, MPI_THREAD_SERIALIZED, MPI_THREAD_MULTIPLE);
+    assertex(provided == required);
+    // MPI_Init(NULL,NULL);
 }
 
 void hpcc_mpi::finalize(){
