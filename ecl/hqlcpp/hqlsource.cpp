@@ -2395,14 +2395,10 @@ void SourceBuilder::buildGlobalGroupAggregateHelpers(IHqlExpression * expr)
     }
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
+    //Only meaningful for a dataset, and even then I'm not sure it is ever used.
+    if (!isKey(tableExpr))
     {
         OwnedHqlExpr newTableExpr = LINK(tableExpr);
-        if (isKey(tableExpr))
-        {
-            IHqlExpression * record = tableExpr->queryRecord();
-            OwnedHqlExpr newRecord = removeChild(record, record->numChildren()-1);
-            newTableExpr.setown(replaceChild(tableExpr, 1, newRecord));
-        }
 
         MemberFunction func(translator, instance->startctx, "virtual void processRows(size32_t srcLen, const void * _left, IHThorGroupAggregateCallback * callback) override");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
@@ -4133,24 +4129,8 @@ void IndexAggregateBuilder::buildMembers(IHqlExpression * expr)
         rowctx.addQuotedLiteral("doProcessRow(crSelf, (const byte *)src);");
     }
 
-    {
-        IHqlExpression * record = tableExpr->queryRecord();
-        OwnedHqlExpr newRecord = removeChild(record, record->numChildren()-1);
-        OwnedHqlExpr newTableExpr = replaceChild(tableExpr, 1, newRecord);
-
-        MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left) override");
-        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-        OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(newTableExpr->getType()));
-        OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
-        OwnedHqlExpr fullDs = createTranslated(ds, len);
-
-        Owned<IHqlCppDatasetCursor> iter = translator.createDatasetSelector(func.ctx, fullDs);
-        BoundRow * curRow = iter->buildIterateLoop(func.ctx, false);
-        s.clear().append("doProcessRow(crSelf, ");
-        translator.generateExprCpp(s, curRow->queryBound());
-        s.append(");");
-        func.ctx.addQuoted(s);
-    }
+    //virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left)
+    //is meaningless for an index - uses the default error implementation in the base class
 }
 
 

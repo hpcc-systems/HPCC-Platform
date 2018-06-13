@@ -637,6 +637,7 @@ unsigned CThorIndexAggregateArg::getFlags() { return 0; }
 bool CThorIndexAggregateArg::getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
 void CThorIndexAggregateArg::setCallback(IThorIndexCallback * _tc) { fpp = _tc; }
 size32_t CThorIndexAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
+void CThorIndexAggregateArg::processRows(ARowBuilder & rowBuilder, size32_t srcLen, const void * src) { rtlFailUnexpected(); }
 
 //CThorIndexCountArg
 
@@ -663,6 +664,8 @@ unsigned CThorIndexGroupAggregateArg::getGroupingMaxField() { return 0; }
 size32_t CThorIndexGroupAggregateArg::initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 size32_t CThorIndexGroupAggregateArg::processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) { rtlFailUnexpected(); return 0; }
 size32_t CThorIndexGroupAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
+void CThorIndexGroupAggregateArg::processRows(size32_t srcLen, const void * src, IHThorGroupAggregateCallback * callback) { rtlFailUnexpected(); }
+
 
 //CThorDiskReadArg
 
