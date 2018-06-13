@@ -839,7 +839,8 @@ extern HQL_API IHqlExpression * queryLocation(IHqlExpression * expr)
             return best;
         if (kind == annotate_location)
             return expr;
-        best = expr;
+        if (kind == annotate_symbol)
+            best = expr;
         expr = expr->queryBody(true);
     }
 }
