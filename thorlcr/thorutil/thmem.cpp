@@ -229,7 +229,6 @@ public:
 class CSpillableStreamBase : public CSpillable
 {
 protected:
-    bool ownsRows;
     EmptyRowSemantics emptyRowSemantics;
     unsigned spillCompInfo;
     CThorSpillableRowArray rows;
@@ -247,7 +246,7 @@ protected:
         GetTempName(tempName, tempPrefix.str(), true);
         spillFile.setown(createIFile(tempName.str()));
 
-        VStringBuffer spillPrefixStr("SpillableStream(%d)", SPILL_PRIORITY_SPILLABLE_STREAM); // const for now
+        VStringBuffer spillPrefixStr("SpillableStream(%u)", spillPriority);
         rows.save(*spillFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
         return true;
@@ -257,7 +256,6 @@ public:
         : CSpillable(_activity, _rowIf, _spillPriority), rows(_activity), emptyRowSemantics(_emptyRowSemantics)
     {
         assertex(inRows.isFlushed());
-        ownsRows = false;
         spillCompInfo = 0x0;
         rows.setup(rowIf, emptyRowSemantics);
         rows.swap(inRows);
