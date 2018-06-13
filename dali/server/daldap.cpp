@@ -50,6 +50,7 @@ class CDaliLdapConnection: implements IDaliLdapConnection, public CInterface
     StringAttr              filesdefaultuser;
     StringAttr              filesdefaultpassword;
     unsigned                ldapflags;
+    unsigned                requestSignatureExpiryMinutes;//Age at which a dali permissions request signature becomes invalid
     IDigitalSignatureManager * pDSM = nullptr;
 
     void createDefaultScopes()
@@ -81,6 +82,7 @@ public:
     {
         ldapflags = 0;
         if (ldapprops) {
+            requestSignatureExpiryMinutes = ldapprops->getPropInt("@reqSignatureExpiry", 10);
             if (ldapprops->getPropBool("@checkScopeScans",true))
                 ldapflags |= DLF_SCOPESCANS;
             if (ldapprops->getPropBool("@safeLookup",true))
@@ -119,7 +121,7 @@ public:
     }
 
 
-    SecAccessFlags getPermissions(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags)
+    SecAccessFlags getPermissions(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags,const char * reqSignature, CDateTime * reqUTCTimestamp)
     {
         if (!ldapsecurity||((getLDAPflags()&DLF_ENABLED)==0)) 
             return SecAccess_Full;
@@ -144,24 +146,50 @@ public:
         Owned<ISecUser> user = ldapsecurity->createUser(username);
         user->credentials().setPassword(password);
 
-        //Check user's digital signature, if present
         bool authenticated = false;
-        if (!isEmptyString(udesc->querySignature()))
+
+        //Check that the digital signature provided by the caller (signature of
+        //caller's "scope;username;timeStamp") matches what we expect it to be
+        if (!isEmptyString(reqSignature))
         {
             if (nullptr == pDSM)
                 pDSM = createDigitalSignatureManagerInstanceFromEnv();
             if (pDSM && pDSM->isDigiVerifierConfigured())
             {
-                StringBuffer b64Signature(udesc->querySignature());
-                if (!pDSM->digiVerify(username, b64Signature))//digital signature valid?
+                StringBuffer requestTimestamp;
+                reqUTCTimestamp->getString(requestTimestamp, false);//extract timestamp string from Dali request
+
+                CDateTime now;
+                now.setNow();
+                if (now.compare(*reqUTCTimestamp) < 0)//timestamp from the future?
                 {
-                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s invalid user digital signature",key?key:"NULL",obj?obj:"NULL",username.str());
+                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Request digital signature timestamp %s from the future",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str());
                     return SecAccess_None;//deny
                 }
-                else
-                    authenticated = true;
+
+                CDateTime expiry;
+                expiry.set(now);
+                expiry.adjustTime(requestSignatureExpiryMinutes);//compute expiration timestamp
+
+                if (expiry.compare(*reqUTCTimestamp) < 0)//timestamp too far in the past?
+                {
+                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Expired request digital signature timestamp %s",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str());
+                    return SecAccess_None;//deny
+                }
+
+                VStringBuffer expectedStr("%s;%s;%s", obj, username.str(), requestTimestamp.str());
+                StringBuffer b64Signature(reqSignature);// signature of scope;user;timestamp
+
+                if (!pDSM->digiVerify(expectedStr, b64Signature))//does the digital signature match what we expect?
+                {
+                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails digital signature verification",key?key:"NULL",obj?obj:"NULL",username.str());
+                    return SecAccess_None;//deny
+                }
+
+                authenticated = true;//Digital signature verified
             }
-            user->credentials().setSignature(udesc->querySignature());
+            else
+                ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s digital signature support not available",key?key:"NULL",obj?obj:"NULL",username.str());
         }
 
         if (!authenticated && !ldapsecurity->authenticateUser(*user, NULL))
