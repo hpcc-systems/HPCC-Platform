@@ -491,7 +491,7 @@ public:
     void transferFrom(CThorExpandingRowArray &src);
     void transferFrom(CThorSpillableRowArray &src);
 
-    IRowStream *createRowStream(unsigned spillPriority, unsigned spillCompInfo);
+    IRowStream *createRowStream(unsigned spillPriority, unsigned spillCompInfo, const char *tracingPrefix=nullptr);
 
     offset_t serializedSize()
     {
@@ -526,7 +526,6 @@ private:
 
 
 enum RowCollectorSpillFlags { rc_mixed, rc_allMem, rc_allDisk, rc_allDiskOrAllMem };
-enum RowCollectorOptionFlags { rcflag_noAllInMemSort=0x01 };
 interface IThorRowCollectorCommon : extends IInterface, extends IThorArrayLock
 {
     virtual rowcount_t numRows() const = 0;
@@ -541,6 +540,7 @@ interface IThorRowCollectorCommon : extends IInterface, extends IThorArrayLock
     virtual void setOptions(unsigned options) = 0;
     virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
     virtual bool hasSpilt() const = 0; // equivalent to numOverlows() >= 1
+    virtual void setTracingPrefix(const char *tracing) = 0;
 };
 
 interface IThorRowLoader : extends IThorRowCollectorCommon

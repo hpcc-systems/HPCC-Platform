@@ -2161,6 +2161,7 @@ protected:
             // i.e. will fire OOM if runs out of memory loading local right
             channelCollector.setown(createThorRowCollector(*this, queryRowInterfaces(rightITDL), cmp, stable ? stableSort_lateAlloc : stableSort_none, rc_allMem, SPILL_PRIORITY_DISABLE));
         }
+        channelCollector->setTracingPrefix("Join right");
         Owned<IRowWriter> writer = channelCollector->getWriter();
         while (!abortSoon)
         {
@@ -2194,6 +2195,7 @@ protected:
             CChannelDistributor(CLookupJoinActivityBase &_owner, ICompare *cmp) : owner(_owner)
             {
                 channelCollector.setown(createThorRowCollector(owner, queryRowInterfaces(owner.rightITDL), cmp, stableSort_none, rc_mixed, SPILL_PRIORITY_DISABLE));
+                channelCollector->setTracingPrefix("Join right");
                 channelCollectorWriter.setown(channelCollector->getWriter());
                 channelDistributors = ((CLookupJoinActivityBase *)owner.channels[0])->channelDistributors;
                 channelDistributors[owner.queryJobChannelNumber()] = this;
@@ -2362,6 +2364,7 @@ protected:
             throw MakeActivityException(this, 0, "Degraded to standard join, LHS order cannot be preserved");
 
         Owned<IThorRowLoader> rowLoader = createThorRowLoader(*this, queryRowInterfaces(leftITDL), helper->isLeftAlreadyLocallySorted() ? NULL : compareLeft);
+        rowLoader->setTracingPrefix("Join left");
         left.setown(rowLoader->load(left, abortSoon, false));
         leftITDL = queryInput(0); // reset
         ActPrintLog("LHS loaded/sorted");
