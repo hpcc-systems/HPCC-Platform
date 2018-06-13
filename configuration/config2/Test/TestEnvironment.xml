@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Environment>
+    <Element1>
+        <SubElement attr_string="A string"/>
+    </Element1>
+</Environment>
