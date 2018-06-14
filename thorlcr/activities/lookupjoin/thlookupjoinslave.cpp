@@ -2435,12 +2435,11 @@ protected:
          * A regular join helper is created to perform a local join against the two hash distributed sorted sides.
          */
 
-        Owned<IThorRowLoader> rowLoader;
+        Owned<IThorRowCollector> rightCollector;
         try
         {
             CMarker marker(*this);
             Owned<IRowStream> rightStream;
-            Owned<IThorRowCollector> rightCollector;
             if (isGlobal())
             {
                 /* All slaves on all channels now know whether any one spilt or not, i.e. whether to perform local hash join or not
@@ -2557,7 +2556,7 @@ protected:
                 throw e;
             IOutputMetaData *inputOutputMeta = rightITDL->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta();
             // rows may either be in separate slave row arrays or in single rhs array, or split.
-            rowcount_t total = rowLoader ? rowLoader->numRows() : (getGlobalRHSTotal() + rhs.ordinality());
+            rowcount_t total = rightCollector ? rightCollector->numRows() : (getGlobalRHSTotal() + rhs.ordinality());
             throw checkAndCreateOOMContextException(this, e, "gathering RHS rows for lookup join", total, inputOutputMeta, NULL);
         }
     }
