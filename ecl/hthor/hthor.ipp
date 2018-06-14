@@ -162,6 +162,7 @@ static bool verifyFormatCrc(unsigned helperCrc, IDistributedFile * df, char cons
             if(fail)
                 throw MakeStringException(0, "%s", msg.str());
             WARNLOG("%s", msg.str());
+            //agent.addWuException(msg.str(), WRN_UseLayoutTranslation, SeverityWarning, "hthor");
             return false;
         }
     }
