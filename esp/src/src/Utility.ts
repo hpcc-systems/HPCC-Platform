@@ -91,6 +91,12 @@ export function espTime2SecondsTests() {
     }, this);
 }
 
+export function convertedSize (intsize: number): string {
+    const unitConversion = ["Bytes","KB","MB","GB","TB","PB","EB","ZB","YB"];
+    const x = Math.floor(Math.log(intsize)/ Math.log(1024));
+    return (intsize/ Math.pow(1024,x)).toFixed(2) + " " + unitConversion[x];
+}
+
 export function unitTest(size, unit) {
     var nsIndex = size.indexOf(unit);
     if (nsIndex !== -1) {

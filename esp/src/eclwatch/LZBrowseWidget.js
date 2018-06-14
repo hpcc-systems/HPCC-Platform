@@ -676,7 +676,7 @@ define([
                                 if (!fsize || fsize === -1) {
                                     return ""
                                 }
-                                return fsize.toLocaleString();
+                                return Utility.convertedSize(fsize);
                             }
                         },
                         modifiedtime: { label: this.i18n.Date, width: 180, sortable: false }
