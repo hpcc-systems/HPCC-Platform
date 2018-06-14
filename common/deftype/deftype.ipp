@@ -584,6 +584,7 @@ public:
     virtual type_t getTypeCode() const { return type_keyedint; };
 
     // Only used for generation of type information so no need to fully implement these
+    virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual bool isSwappedEndian()              { return true; }
     virtual bool isInteger()                    { return true; };
     virtual bool isScalar()                     { return true; }
