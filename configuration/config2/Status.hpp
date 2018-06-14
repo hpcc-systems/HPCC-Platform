@@ -30,6 +30,7 @@ struct DECL_EXPORT statusMsg {
     enum msgLevel
     {
         info = 0,     // informational messages mainly
+        change,       // indicated node and attribute was changed by the operation generating this status
         warning,
         error,
         fatal

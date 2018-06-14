@@ -57,6 +57,7 @@ std::string Status::getStatusTypeString(enum statusMsg::msgLevel status) const
     switch (status)
     {
         case statusMsg::info:    result = "Info";     break;
+        case statusMsg::change:  result = "Change";   break;
         case statusMsg::warning: result = "Warning";  break;
         case statusMsg::error:   result = "Error";    break;
         case statusMsg::fatal:   result = "Fatal";    break;
