@@ -36,6 +36,16 @@ removeSymlink ()
     fi
 }
 
+/etc/init.d/hpcc-init stop
+/etc/init.d/dafilesrv stop
+
+if which systemctl 1>/dev/null 2>&1; then
+	if [ -e /etc/systemd/system/hpccsystems-platform.target ]; then
+		systemctl stop hpccsystems-platform.target
+        removeSymlink "/etc/systemd/system/hpccsystems-platform.target"
+    fi
+fi
+
 echo ""
 
 ## uninstalling files
@@ -62,10 +72,6 @@ if [ -d ${INSTALL_DIR}/etc/init.d/uninstall ]; then
 fi
 
 if which systemctl 1>/dev/null 2>&1; then
-	if [ -e /etc/systemd/system/hpccsystems-platform.target ]; then
-		systemctl stop hpccsystems-platform.target
-		removeSymlink "/etc/systemd/system/hpccsystems-platform.target"
-	fi
-	systemctl daemon-reload
+    systemctl daemon-reload
 	systemctl reset-failed
 fi
