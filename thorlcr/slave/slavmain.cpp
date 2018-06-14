@@ -1623,6 +1623,7 @@ public:
         else
             virtStr.append("slave:");
         PROGLOG("Slave log %u contains %s %s", slaveProc+1, virtStr.str(), slaveStr.str());
+        traceMemUsage();
 
         if (channelsPerSlave>1)
         {

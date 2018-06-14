@@ -1160,6 +1160,19 @@ static void addDependencies(IPropertyTree *xgmml, bool failIfMissing, CGraphTabl
     }
 }
 
+void traceMemUsage()
+{
+    StringBuffer memStatsStr;
+    roxiemem::memstats(memStatsStr);
+    PROGLOG("Roxiemem stats: %s", memStatsStr.str());
+    memsize_t heapUsage = getMapInfo("heap");
+    if (heapUsage) // if 0, assumed to be unavailable
+    {
+        memsize_t rmtotal = roxiemem::getTotalMemoryLimit();
+        PROGLOG("Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
+    }
+}
+
 /////
 
 CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob()), progressUpdated(false)
@@ -2700,15 +2713,7 @@ CJobBase::~CJobBase()
     ::Release(userDesc);
     ::Release(pluginMap);
 
-    StringBuffer memStatsStr;
-    roxiemem::memstats(memStatsStr);
-    PROGLOG("Roxiemem stats: %s", memStatsStr.str());
-    memsize_t heapUsage = getMapInfo("heap");
-    if (heapUsage) // if 0, assumed to be unavailable
-    {
-        memsize_t rmtotal = roxiemem::getTotalMemoryLimit();
-        PROGLOG("Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
-    }
+    traceMemUsage();
 }
 
 CJobChannel &CJobBase::queryJobChannel(unsigned c) const
