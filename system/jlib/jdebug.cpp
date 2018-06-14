@@ -1648,6 +1648,8 @@ class CExtendedStats  // Disk network and cpu stats
 
     unsigned ndisks;
 
+    StringBuffer ifname;
+
     int isdisk(unsigned int major, unsigned int minor)
     {
         if (IDE_DISK_MAJOR(major)) 
@@ -1795,8 +1797,10 @@ class CExtendedStats  // Disk network and cpu stats
         while (fgets(ln, sizeof(ln), netfp)) {
             const char *s = ln;
             skipSp(s);
-            if (strncmp(s, "eth0:", 5)==0) {  // may want eth1 at some point!
-                s+=5;
+            size_t ilen = ifname.length();
+            if ( (strncmp(s, ifname.str(), ilen)==0) && (s[ilen]==':') ) {
+                s+=(ilen+1);
+                skipSp(s);
                 if (hasbyt) {
                     newnet.rxbytes = readDecNum(s);
                     skipSp(s);
@@ -1959,6 +1963,9 @@ public:
         }
         else
             kbufmax = 0;
+
+        if (!getInterfaceName(ifname))
+            ifname.set("eth0");
     }
 
     ~CExtendedStats()
@@ -2014,16 +2021,21 @@ public:
             }
         }
         if (gotnet) {
-            out.append("NIC: ");
+            out.appendf("NIC: [%s] ", ifname.str());
             __uint64 rxbytes = newnet.rxbytes-oldnet.rxbytes;
             __uint64 rxpackets = newnet.rxpackets-oldnet.rxpackets;
             __uint64 txbytes = newnet.txbytes-oldnet.txbytes;
             __uint64 txpackets = newnet.txpackets-oldnet.txpackets;
-            out.appendf("rxp/s=%0.1f rxk/s=%0.1f txp/s=%0.1f txk/s=%0.1f",
+            __uint64 rxerrors = newnet.rxerrors-oldnet.rxerrors;
+            __uint64 rxdrops = newnet.rxdrops-oldnet.rxdrops;
+            __uint64 txerrors = newnet.txerrors-oldnet.txerrors;
+            __uint64 txdrops = newnet.txdrops-oldnet.txdrops;
+            out.appendf("rxp/s=%0.1f rxk/s=%0.1f txp/s=%0.1f txk/s=%0.1f rxerrs=%" I64F "d rxdrps=%" I64F "d txerrs=%" I64F "d txdrps=%" I64F "d",
                        perSec(rxpackets,deltams),
                        perSec(rxbytes/1024.0,deltams),
                        perSec(txpackets,deltams),
-                       perSec(txbytes/1024.0,deltams));
+                       perSec(txbytes/1024.0,deltams),
+                       rxerrors, rxdrops, txerrors, txdrops);
             out.append(' ');
         }
         if (totalcpu)
@@ -2035,7 +2047,7 @@ public:
 #define KERN_ALERT   "<1>"   // action must be taken immediately
 #define KERN_CRIT    "<2>"   // critical conditions
 #define KERN_ERR     "<3>"   // error conditions
-#define KERN_WARNING "<4>"  // warning conditions
+#define KERN_WARNING "<4>"   // warning conditions
 #define KERN_NOTICE  "<5>"   // normal but significant condition
 #define KERN_INFO    "<6>"   // informational
 #define KERN_DEBUG   "<7>"   // debug-level messages
