@@ -3661,8 +3661,7 @@ IHqlExpression * ThorHqlTransformer::normalizeMergeAggregate(IHqlExpression * ex
     OwnedHqlExpr mappedGrouping = mapper.collapseFields(groupBy, dataset, transformedFirstAggregate, &groupCanBeMapped);
     assertex(groupCanBeMapped);
 
-    OwnedHqlExpr sortOrder = getExistingSortOrder(transformedFirstAggregate, true, true);
-    OwnedHqlExpr mergeAttr = createExprAttribute(mergeAtom, replaceSelector(sortOrder, queryActiveTableSelector(), transformedFirstAggregate));
+    OwnedHqlExpr mergeAttr = createExprAttribute(mergeAtom, LINK(mappedGrouping));
     OwnedHqlExpr hashed = createValue(no_hash32, LINK(unsignedType), LINK(mappedGrouping), createAttribute(internalAtom));
     OwnedHqlExpr redistributed = createDatasetF(no_distribute, LINK(transformedFirstAggregate), LINK(hashed), mergeAttr.getClear(), NULL);
     redistributed.setown(cloneInheritedAnnotations(expr, redistributed));

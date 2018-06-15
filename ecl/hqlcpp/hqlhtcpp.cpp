@@ -14587,7 +14587,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribute(BuildCtx & ctx, IHq
             buildHashClass(instance->nestedctx, "Hash", cond, DatasetReference(dataset));
         doBuildBoolFunction(instance->classctx, "isPulled", expr->hasAttribute(pulledAtom));
         buildSkewThresholdMembers(instance->classctx, expr);
-        if (mergeOrder)
+        //Do not generate a merge compare if it has been folded to a constant
+        if (mergeOrder && !mergeOrder->isConstant())
             buildCompareMember(instance->nestedctx, "MergeCompare", mergeOrder, DatasetReference(dataset));
 
         buildInstanceSuffix(instance);

@@ -62,3 +62,8 @@ OUTPUT(r3, NAMED('Merge2'));
 r3x := TABLE(dsTemp2, TableRec2, f1, MERGE);
 OUTPUT(r3x, NAMED('Merge2x'));
 
+
+dsTemp3 := NOFOLD(DATASET(1000, transform({string3 x}, SELF.x := INTFORMAT(COUNTER-1, 3, 1)), DISTRIBUTED));
+
+r4 := TABLE(dsTemp3, { cnt := count(group), x[3]+x[1] }, x[3]+x[1], MERGE);
+output(r4(cnt != 10));
