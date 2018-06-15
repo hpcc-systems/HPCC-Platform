@@ -50,7 +50,7 @@ static const char * EclDefinition =
 "END;"
 "EXPORT TimeLib := SERVICE : fold\n"
 "  INTEGER8 SecondsFromParts(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day, UNSIGNED1 hour, UNSIGNED1 minute, UNSIGNED1 second, BOOLEAN is_local_time) : c,pure,entrypoint='tlSecondsFromParts'; \n"
-"  TRANSFORM(TMPartsRec) SecondsToParts(INTEGER8 seconds, BOOLEAN is_local_time) : c,pure,entrypoint='tlSecondsToParts'; \n"
+"  TRANSFORM(TMPartsRec) SecondsToParts(INTEGER8 seconds, BOOLEAN is_local_time = FALSE) : c,pure,entrypoint='tlSecondsToParts'; \n"
 "  UNSIGNED2 GetDayOfYear(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfYear'; \n"
 "  UNSIGNED1 GetDayOfWeek(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfWeek'; \n"
 "  STRING DateToString(UNSIGNED4 date, CONST VARSTRING format) : c,pure,entrypoint='tlDateToString'; \n"
