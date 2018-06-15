@@ -1282,6 +1282,13 @@ void CBasedTypeInfo::serializeSkipChild(MemoryBuffer &tgt)
 
 //===========================================================================
 
+IValue * CKeyedTypeInfo::castFrom(bool /*isSignedValue*/, __int64 value)
+{
+    return createIntValue(value, LINK(this));
+}
+
+//===========================================================================
+
 bool CTransformTypeInfo::assignableFrom(ITypeInfo *t2)
 {
     if (getTypeCode()==t2->getTypeCode())
@@ -2687,6 +2694,10 @@ static bool preservesValue(ITypeInfo * after, ITypeInfo * before, bool preserveI
 {
     type_t beforeType = before->getTypeCode();
     type_t afterType = after->getTypeCode();
+    if (beforeType == type_keyedint)
+        return preservesValue(after, before->queryChildType(), preserveInformation);
+    if (afterType == type_keyedint)
+        return preservesValue(after->queryChildType(), before, preserveInformation);
 
     switch (beforeType)
     {
