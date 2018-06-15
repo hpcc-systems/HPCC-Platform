@@ -17,11 +17,7 @@
 
 #pragma warning(disable : 4786)
 
-#ifdef _WIN32
-#define WS_ECL_CLIENT_API _declspec (dllexport)
-#else
-#define WS_ECL_CLIENT_API
-#endif
+#define WS_ECL_CLIENT_API DECL_EXPORT
 
 //Jlib
 #include "jliball.hpp"
