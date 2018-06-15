@@ -163,6 +163,7 @@ enum authStatus : int
 };
 
 class CDateTime;
+interface IPropertyIterator;
 interface ISecUser : extends IInterface
 {
     virtual const char * getName() = 0;
@@ -197,6 +198,7 @@ interface ISecUser : extends IInterface
     virtual const char * getProperty(const char * name) = 0;
     virtual void setPropertyInt(const char * name, int value) = 0;
     virtual int getPropertyInt(const char * name) = 0;
+    virtual IPropertyIterator * getPropertyIterator() const = 0;
     virtual ISecUser * clone() = 0;
 };
 
@@ -232,6 +234,7 @@ interface ISecResource : extends ISecProperty
     virtual SecAccessFlags getRequiredAccessFlags() = 0;
     virtual int addParameter(const char * name, const char * value) = 0;
     virtual const char * getParameter(const char * name) = 0;
+    virtual IPropertyIterator * getParameterIterator() const = 0;
     virtual void setDescription(const char * description) = 0;
     virtual const char * getDescription() = 0;
     virtual ISecResource * clone() = 0;

@@ -200,7 +200,12 @@ public:
         return 0;
     }
 
-    
+    IPropertyIterator * getPropertyIterator() const override
+    {
+        return (m_parameters.get() ? m_parameters->getIterator() : nullptr);
+    }
+
+
 
 //interface ISecCredentials
     bool setPassword(const char * pw)
