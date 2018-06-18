@@ -515,10 +515,10 @@ public:
     {
         if (output == 0)
         {
-            putStatsValue(&edge, "count", "sum", processed);
+            putStatsValue(&edge, "NumRowsProcessed", "sum", processed);
             auto _started = started.load();
             if (_started)
-                putStatsValue(&edge, "started", "sum", _started);
+                putStatsValue(&edge, "NumStarts", "sum", _started);
         }
         else
             ERRLOG("unexpected call to getEdgeProcessInfo for output %d in activity %d", output, queryId());
@@ -541,10 +541,10 @@ public:
     virtual void getActivityMetrics(StringBuffer &reply) const
     {
         CActivityFactory::getActivityMetrics(reply);
-        putStatsValue(reply, "_roxieStarted", "sum", started);
+        putStatsValue(reply, "NumStarts", "sum", started);
         CriticalBlock b(statsCrit);
-        putStatsValue(reply, "totalTime", "sum", (unsigned) (mystats.getSerialStatisticValue(StTimeTotalExecute)/1000));
-        putStatsValue(reply, "localTime", "sum", (unsigned) (mystats.getSerialStatisticValue(StTimeLocalExecute)/1000));
+        putStatsValue(reply, "TimeTotalExecute", "sum", (unsigned) (mystats.getSerialStatisticValue(StTimeTotalExecute)/1000));
+        putStatsValue(reply, "TimeLocalExecute", "sum", (unsigned) (mystats.getSerialStatisticValue(StTimeLocalExecute)/1000));
     }
     virtual unsigned __int64 queryLocalTimeNs() const
     {
@@ -757,8 +757,8 @@ protected:
     virtual void getEdgeProgressInfo(unsigned idx, IPropertyTree &edge) const
     {
         assertex(numOutputs ? idx < numOutputs : idx==0);
-        putStatsValue(&edge, "count", "sum", processedArray[idx]);
-        putStatsValue(&edge, "started", "sum", startedArray[idx]);
+        putStatsValue(&edge, "NumRowsProcessed", "sum", processedArray[idx]);
+        putStatsValue(&edge, "NumStarts", "sum", startedArray[idx]);
     }
 
     virtual void resetNodeProgressInfo()
