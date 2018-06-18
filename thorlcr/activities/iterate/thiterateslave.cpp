@@ -32,6 +32,7 @@ protected:
     bool global;
     bool eof, nextPut;
     rowcount_t count;
+
 public:
     IterateSlaveActivityBase(CGraphElementBase *_container, bool _global) : CSlaveActivity(_container)
     {
@@ -44,15 +45,6 @@ public:
     {
         if (global)
             mpTag = container.queryJobChannel().deserializeMPTag(data);
-    }
-    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
-    {
-        PARENT::setInputStream(index, _input, consumerOrdered);
-        if (global) // only want lookahead if global (hence serial)
-        {
-            if (!isFastThrough(input))
-                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()));
-        }
     }
     const void *getFirst() // for global, not called on 1st slave
     {
@@ -87,6 +79,11 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        if (global) // only want lookahead if global (hence serial)
+        {
+            if (ensureStartFTLookAhead(0))
+                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()), false);
+        }
         count = 0;
         eof = nextPut = false;
         inrowif.set(::queryRowInterfaces(queryInput(0)));
@@ -160,7 +157,7 @@ public:
         return NULL;
     }
 
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canBufferInput = true;
@@ -240,7 +237,7 @@ public:
         return NULL;
     }
 
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canBufferInput = true;
@@ -308,7 +305,7 @@ public:
     }
 
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }
@@ -353,7 +350,7 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return grouped; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }
@@ -416,7 +413,7 @@ public:
         return next;
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSource = true;

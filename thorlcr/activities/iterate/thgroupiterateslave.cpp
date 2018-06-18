@@ -87,7 +87,7 @@ public:
         }
         return NULL;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         if (helper->canFilter())
@@ -171,7 +171,7 @@ public:
         }
         return NULL;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         if (helper->canFilter())

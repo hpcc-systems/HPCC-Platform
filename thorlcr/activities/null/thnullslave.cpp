@@ -66,7 +66,7 @@ public:
     {
         return queryHelper()->queryOutputMeta()->isGrouped();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canReduceNumRows = true; // to 0 in fact
@@ -100,7 +100,7 @@ public:
     {
         return queryInput(0)->isGrouped();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         queryInput(0)->getMetaInfo(info);
     }

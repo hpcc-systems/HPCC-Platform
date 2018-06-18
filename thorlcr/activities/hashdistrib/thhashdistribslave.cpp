@@ -2076,7 +2076,7 @@ public:
         return row.getClear();
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canStall = true; // currently
@@ -3139,7 +3139,7 @@ public:
     }
 
     virtual bool isGrouped() const override { return grouped; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override = 0;
 friend class CBucketHandler;
 friend class CHashTableRowTable;
 friend class CBucket;
@@ -3621,7 +3621,7 @@ public:
         : HashDedupSlaveActivityBase(container, true)
     {
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;
@@ -3689,7 +3689,7 @@ public:
         if (distributor)
             distributor->abort();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canStall = true;
@@ -3877,7 +3877,7 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return false; }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canStall = true;
@@ -4359,7 +4359,7 @@ public:
         return nullptr;
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canStall = true;
@@ -4420,7 +4420,7 @@ public:
         return row.getClear();
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         if (input)

@@ -45,7 +45,7 @@ public:
 
     virtual ~CPartHandler() { }
     virtual void setPart(IPartDescriptor *partDesc) = 0;
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc) { }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc) const { }
     virtual void stop() = 0;
 };
 
@@ -70,7 +70,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
 
 void initMetaInfo(ThorDataLinkMetaInfo &info);
 void calcMetaInfoSize(ThorDataLinkMetaInfo &info, IThorDataLink *link);
-void calcMetaInfoSize(ThorDataLinkMetaInfo &info, CThorInputArray &inputs);
+void calcMetaInfoSize(ThorDataLinkMetaInfo &info, const CThorInputArray &inputs);
 void calcMetaInfoSize(ThorDataLinkMetaInfo &info, const ThorDataLinkMetaInfo *infos, unsigned num);
 
 interface ILookAheadStopNotify
@@ -80,10 +80,6 @@ interface ILookAheadStopNotify
 interface IDiskUsage;
 IStartableEngineRowStream *createRowStreamLookAhead(CSlaveActivity *activity, IEngineRowStream *inputStream, IThorRowInterfaces *rowIf, size32_t bufsize, bool spillenabled, bool preserveGrouping=true, rowcount_t maxcount=RCUNBOUND, ILookAheadStopNotify *notify=NULL, IDiskUsage *_diskUsage=NULL); //maxcount is maximum rows to read set to RCUNBOUND for all
 
-
-
-bool isSmartBufferSpillNeeded(CActivityBase *act);
-bool isFastThrough(IThorDataLink *input);
 
 StringBuffer &locateFilePartPath(CActivityBase *activity, const char *logicalFilename, IPartDescriptor &partDesc, StringBuffer &filePath);
 void doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFileProgress *iProgress=NULL);

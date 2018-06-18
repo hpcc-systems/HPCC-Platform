@@ -178,26 +178,23 @@ public:
         if (!global)
             setRequireInitData(false);
     }
-    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
-    {
-        PARENT::setInputStream(index, _input, consumerOrdered);
-        if (global)
-        {
-            if (!isFastThrough(input))
-                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), rollup?ROLLUP_SMART_BUFFER_SIZE:DEDUP_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage())); // only allow spill if input can stall
-        }
-    }
     virtual void start()
     {
         PARENT::start();
+        if (global)
+        {
+            if (ensureStartFTLookAhead(0))
+                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), rollup?ROLLUP_SMART_BUFFER_SIZE:DEDUP_SMART_BUFFER_SIZE, ::canStall(input), false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()), false);
+        }
         needFirstRow = true;
         rowif.set(queryRowInterfaces(input));
         eogNext = eos = false;
         numKept = 0;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
-        if (global) {
+        if (global)
+        {
             info.canBufferInput = true;
             info.isSequential = true;
         }
@@ -311,7 +308,7 @@ public:
         assertex( (keepLeft || numToKeep == 1) && (!keepBest || numToKeep==1));
     }
     virtual bool isGrouped() const override { return groupOp; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         CDedupRollupBaseActivity::getMetaInfo(info);
@@ -534,7 +531,7 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return groupOp; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         CDedupRollupBaseActivity::getMetaInfo(info);
@@ -603,7 +600,7 @@ public:
         }
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         calcMetaInfoSize(info, queryInput(0));

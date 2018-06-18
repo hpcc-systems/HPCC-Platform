@@ -2416,7 +2416,7 @@ public:
 
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
 
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canStall = true;

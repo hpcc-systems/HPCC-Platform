@@ -312,7 +312,7 @@ void calcMetaInfoSize(ThorDataLinkMetaInfo &info, IThorDataLink *link)
 
 }
 
-void calcMetaInfoSize(ThorDataLinkMetaInfo &info, CThorInputArray &inputs)
+void calcMetaInfoSize(ThorDataLinkMetaInfo &info, const CThorInputArray &inputs)
 {
     //IThorDataLink **link,unsigned ninputs;
 
@@ -380,6 +380,11 @@ void calcMetaInfoSize(ThorDataLinkMetaInfo &info, const ThorDataLinkMetaInfo *in
     {
         if (1 == num)
             info = infos[0];
+        else
+        {
+            info.fastThrough = true;
+            info.totalRowsMin = info.totalRowsMax = 0;
+        }
         return;
     }
     if (!info.unknownRowsOutput)
@@ -428,56 +433,6 @@ void calcMetaInfoSize(ThorDataLinkMetaInfo &info, const ThorDataLinkMetaInfo *in
     }
     else if (info.totalRowsMin<0)
         info.totalRowsMin = 0; // a good bet
-}
-
-bool isFastThrough(IThorDataLink *input)
-{
-    CSlaveActivity *act = (CSlaveActivity *)input->queryFromActivity();
-    if (act)
-    {
-        ThorDataLinkMetaInfo info;
-        act->getMetaInfo(info);
-        if (!info.fastThrough)
-            return false;
-        unsigned i=0;
-        while (true)
-        {
-            input = act->queryInput(i++);
-            if (!input)
-                break;
-            if (!isFastThrough(input))
-                return false;
-        }
-    }
-    return true;
-}
-
-static bool canStall(CActivityBase *act)
-{
-    if (!act)
-        return false;
-    unsigned i=0;
-    IThorDataLink *inp;
-    while ((inp=((CSlaveActivity *)act)->queryInput(i++))!=NULL) {
-        ThorDataLinkMetaInfo info;
-        inp->getMetaInfo(info);
-        if (info.canStall)
-            return true;
-        if (!info.isSource&&!info.buffersInput&&!info.canBufferInput)
-            if (canStall((CSlaveActivity *)inp->queryFromActivity()))
-                return true;
-    }
-    return false;
-}
-
-bool isSmartBufferSpillNeeded(CActivityBase *act)
-{
-    // two part - forward and reverse checking
-    // first reverse looking for stalling activities
-    if (!canStall((CSlaveActivity *)act))
-        return false;
-    // now check
-    return true;
 }
 
 bool checkSavedFileCRC(IFile * ifile, bool & timesDiffer, unsigned & storedCrc)

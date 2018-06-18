@@ -1073,14 +1073,14 @@ public:
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     void cancelReceiveMsg(ICommunicator &comm, const rank_t rank, const mptag_t mpTag);
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
-    bool firstNode() { return 1 == container.queryJobChannel().queryMyRank(); }
-    bool lastNode() { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
+    bool firstNode() const { return 1 == container.queryJobChannel().queryMyRank(); }
+    bool lastNode() const { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
     unsigned queryMaxCores() const { return container.queryMaxCores(); }
     IThorRowInterfaces *getRowInterfaces();
     IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone, byte seq=0) const;
 
     bool appendRowXml(StringBuffer & target, IOutputMetaData & meta, const void * row) const;
-    void logRow(const char * prefix, IOutputMetaData & meta, const void * row);
+    void logRow(const char * prefix, IOutputMetaData & meta, const void * row) const;
 
     virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx) { }
     virtual void clearConnections() { }
@@ -1096,9 +1096,9 @@ public:
     virtual MemoryBuffer &getInitializationData(unsigned slave, MemoryBuffer &mb) const = 0;
     virtual IThorGraphResults *queryResults() { return ownedResults; }
 
-    void ActPrintLog(const char *format, ...) __attribute__((format(printf, 2, 3)));
-    void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
-    void ActPrintLog(IException *e);
+    void ActPrintLog(const char *format, ...) const __attribute__((format(printf, 2, 3)));
+    void ActPrintLog(IException *e, const char *format, ...) const __attribute__((format(printf, 3, 4)));
+    void ActPrintLog(IException *e) const;
 
     IThorRowInterfaces * createRowInterfaces(IOutputMetaData * meta, byte seq=0);
     IThorRowInterfaces * createRowInterfaces(IOutputMetaData * meta, roxiemem::RoxieHeapFlags heapFlags, byte seq=0);

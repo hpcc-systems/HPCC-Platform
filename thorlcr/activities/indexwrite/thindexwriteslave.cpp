@@ -150,13 +150,6 @@ public:
             maxDiskRecordSize = diskSize->getFixedSize() - fileposSize;
         reportOverflow = false;
     }
-    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
-    {
-        PARENT::setInputStream(index, _input, consumerOrdered);
-        // JCSMORE - not sure why you ever want a look ahead on a sink like this?
-        if (!isFastThrough(input))
-            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), INDEXWRITE_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()));
-    }
     void open(IPartDescriptor &partDesc, bool isTopLevel, bool isVariable, bool isTlk)
     {
         StringBuffer partFname;
@@ -181,8 +174,6 @@ public:
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
         builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, helper, !isTlk, isTlk));
     }
-
-
     void buildUserMetadata(Owned<IPropertyTree> & metadata)
     {
         size32_t nameLen;
@@ -202,7 +193,6 @@ public:
             metadata->setProp(name.str(), value.str());
         }
     }
-
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata)
     {
         if(!metadata) metadata.setown(createPTree("metadata"));
@@ -210,7 +200,6 @@ public:
 
         setRtlFormat(*metadata, helper->queryDiskRecordSize());
     }
-
     void close(IPartDescriptor &partDesc, unsigned &crc)
     {
         StringBuffer partFname;
@@ -247,7 +236,6 @@ public:
         if (e)
             throw LINK(e);
     }
-
     void removeFiles(IPartDescriptor &partDesc)
     {
         StringBuffer partFname;
@@ -257,7 +245,6 @@ public:
         catch (IException *e) { ActPrintLog(e, "Failed to remove file: %s", partFname.str()); e->Release(); }
         catch (CATCHALL) { ActPrintLog("Failed to remove: %s", partFname.str()); }
     }
-
     virtual unsigned __int64 createBlob(size32_t size, const void * ptr)
     {
         return builder->createBlob(size, (const char *) ptr);
@@ -270,6 +257,9 @@ public:
         IRowStream *stream = inputStream;
         outRowAllocator.setown(getRowAllocator(helper->queryDiskRecordSize()));
         start();
+
+        if (ensureStartFTLookAhead(0))
+            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), INDEXWRITE_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()), false);
 
         if (refactor)
         {
