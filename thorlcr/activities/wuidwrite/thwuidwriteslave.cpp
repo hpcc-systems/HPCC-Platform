@@ -86,17 +86,14 @@ public:
     CWorkUnitWriteGlobalSlaveBaseActivity(CGraphElementBase *container) : CWorkUnitWriteSlaveBase(container)
     {
     }
-    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
-    {
-        PARENT::setInputStream(index, _input, consumerOrdered);
-        // JCSMORE - not sure why you ever want a look ahead on a sink like this?
-        if (!isFastThrough(input))
-            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), WORKUNITWRITE_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), grouped, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()));
-    }
     virtual void process() override
     {
         start();
+
         processed = THORDATALINK_STARTED;
+
+        if (ensureStartFTLookAhead(0))
+            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), WORKUNITWRITE_SMART_BUFFER_SIZE, ::canStall(input), grouped, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()), false);
 
         ActPrintLog("WORKUNITWRITE: processing first block");
 

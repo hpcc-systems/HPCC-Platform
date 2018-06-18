@@ -154,7 +154,7 @@ protected:
 public:
     CDiskRecordPartHandler(CDiskReadSlaveActivityRecord &activity);
     ~CDiskRecordPartHandler();
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc);
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc) const override;
     virtual void open();
     virtual void close(CRC32 &fileCRC);
     offset_t getLocalOffset()
@@ -203,7 +203,7 @@ CDiskRecordPartHandler::~CDiskRecordPartHandler()
 
 
 
-void CDiskRecordPartHandler::getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc)
+void CDiskRecordPartHandler::getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc) const
 {
     if (!partDesc->queryProperties().hasProp("@size"))
     {
@@ -462,7 +462,7 @@ public:
             return NULL;
         }
 
-        virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc)
+        virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc) const override
         {
             CDiskRecordPartHandler::getMetaInfo(info, partDesc);
             if (activity.helper->transformMayFilter() || (TDRkeyed & activity.helper->getFlags()))
@@ -557,14 +557,14 @@ public:
     }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         if (!gotMeta)
         {
             gotMeta = true;
             initMetaInfo(cachedMetaInfo);
             cachedMetaInfo.isSource = true;
-            getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), partDescs.getArray(), partHandler);
+            getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), ((IArrayOf<IPartDescriptor> &) partDescs).getArray(), partHandler);
         }
         info = cachedMetaInfo;
         if (info.totalRowsMin==info.totalRowsMax)
@@ -721,14 +721,14 @@ public:
     }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         if (!gotMeta)
         {
             gotMeta = true;
             initMetaInfo(cachedMetaInfo);
             cachedMetaInfo.isSource = true;
-            getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), partDescs.getArray(), partHandler);
+            getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), ((IArrayOf<IPartDescriptor> &) partDescs).getArray(), partHandler);
             cachedMetaInfo.unknownRowsOutput = true; // JCSMORE
         }
         info = cachedMetaInfo;
@@ -858,7 +858,7 @@ public:
     }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSource = true;
@@ -971,7 +971,7 @@ public:
     }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSource = true;
@@ -1109,7 +1109,7 @@ public:
         localAggTable.setown(createRowAggregator(*this, *helper, *helper));
         localAggTable->init(queryRowAllocator());
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSource = true;

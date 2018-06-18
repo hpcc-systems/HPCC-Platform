@@ -102,7 +102,7 @@ public:
         dataLinkIncrement();
         return row.getClear();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.fastThrough = false;

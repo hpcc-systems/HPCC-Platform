@@ -193,7 +193,7 @@ public:
         sz = helper->clearAggregate(resultcr);  
         return resultcr.finalizeRowClear(sz);
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.singleRowOutput = true;
@@ -275,7 +275,7 @@ public:
         dataLinkIncrement();
         return row.getClear();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         queryInput(0)->getMetaInfo(info);
     }

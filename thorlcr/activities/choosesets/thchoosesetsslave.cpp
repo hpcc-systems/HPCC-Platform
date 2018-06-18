@@ -94,7 +94,7 @@ public:
         }
         return NULL;        
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.fastThrough = true;
@@ -108,8 +108,8 @@ class ChooseSetsActivity : public BaseChooseSetsActivity
 {
     typedef BaseChooseSetsActivity PARENT;
 
-    bool first;
-    bool done;
+    bool first = false;
+    bool done = false;
 
     void getTallies() // NB: not called on first node.
     {
@@ -149,17 +149,15 @@ public:
         SocketEndpoint server;
         server.serialize(slaveData);
     }
-    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
-    {
-        PARENT::setInputStream(index, _input, consumerOrdered);
-        if (!isFastThrough(input))
-            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), CHOOSESETS_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()));
-    }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         ActPrintLog("CHOOSESETS: Is Global");
         PARENT::start();
+
+        if (ensureStartFTLookAhead(0))
+            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), CHOOSESETS_SMART_BUFFER_SIZE, ::canStall(input), false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()), false);
+
         first = true;
         done = false;
     }
@@ -206,7 +204,7 @@ public:
             sendTallies();
         return NULL;
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSequential = true;
@@ -281,7 +279,7 @@ public:
     {
         PARENT::setInputStream(index, _input, consumerOrdered);
         inputCounter->setInputStream(inputStream);
-        setLookAhead(0, createRowStreamLookAhead(this, inputCounter.get(), queryRowInterfaces(input), CHOOSESETSPLUS_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage())); // read all input
+        setLookAhead(0, createRowStreamLookAhead(this, inputCounter.get(), queryRowInterfaces(input), CHOOSESETSPLUS_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()), true); // read all input
     }
     virtual void start() override
     {
@@ -311,7 +309,7 @@ public:
             cancelReceiveMsg(RANK_ALL, mpTag);
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.buffersInput = true;

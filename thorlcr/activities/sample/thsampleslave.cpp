@@ -70,7 +70,7 @@ public:
         }
         return NULL;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canReduceNumRows = true;

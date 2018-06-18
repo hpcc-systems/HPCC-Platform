@@ -3075,7 +3075,7 @@ bool CActivityBase::appendRowXml(StringBuffer & target, IOutputMetaData & meta, 
     }
 }
 
-void CActivityBase::logRow(const char * prefix, IOutputMetaData & meta, const void * row)
+void CActivityBase::logRow(const char * prefix, IOutputMetaData & meta, const void * row) const
 {
     bool blindLogging = false; // MORE: should check a workunit/global option
     if (meta.hasXML() && !blindLogging)
@@ -3086,7 +3086,7 @@ void CActivityBase::logRow(const char * prefix, IOutputMetaData & meta, const vo
     }
 }
 
-void CActivityBase::ActPrintLog(const char *format, ...)
+void CActivityBase::ActPrintLog(const char *format, ...) const
 {
     va_list args;
     va_start(args, format);
@@ -3094,7 +3094,7 @@ void CActivityBase::ActPrintLog(const char *format, ...)
     va_end(args);
 }
 
-void CActivityBase::ActPrintLog(IException *e, const char *format, ...)
+void CActivityBase::ActPrintLog(IException *e, const char *format, ...) const
 {
     va_list args;
     va_start(args, format);
@@ -3102,7 +3102,7 @@ void CActivityBase::ActPrintLog(IException *e, const char *format, ...)
     va_end(args);
 }
 
-void CActivityBase::ActPrintLog(IException *e)
+void CActivityBase::ActPrintLog(IException *e) const
 {
     ActPrintLog(e, "%s", "");
 }

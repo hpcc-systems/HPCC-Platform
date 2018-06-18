@@ -103,7 +103,7 @@ public:
         if (wscHelper)
             wscHelper->abort();
     }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;
@@ -187,7 +187,7 @@ public:
         CSlaveActivity::abort();
         wscHelper->abort();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;

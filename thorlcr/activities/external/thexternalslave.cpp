@@ -75,7 +75,7 @@ public:
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {
         CSlaveActivity::setInputStream(index, _input, consumerOrdered);
-        helper->setInput(index, _input.stream);
+        helper->setInput(index, _input.queryStream());
     }
     virtual void start() override
     {
@@ -107,7 +107,7 @@ public:
     {
         return grouped;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }
@@ -138,7 +138,7 @@ public:
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {
         CSlaveActivity::setInputStream(index, _input, consumerOrdered);
-        helper->setInput(index, _input.stream);
+        helper->setInput(index, _input.queryStream());
     }
     virtual void start() override
     {

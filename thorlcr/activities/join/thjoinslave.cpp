@@ -44,7 +44,6 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
 
     unsigned secondaryInputIndex = 0;
     unsigned primaryInputIndex = 0;
-    IEngineRowStream *rightInputStream = nullptr;
     IEngineRowStream *primaryInputStream = nullptr;
     IEngineRowStream *secondaryInputStream = nullptr;
     Owned<IThorDataLink> leftInput, rightInput;
@@ -207,29 +206,12 @@ public:
         {
             secondaryInputIndex = index;
             secondaryInputStream = queryInputStream(secondaryInputIndex);
-            if (isFastThrough(_input.itdl))
-            {
-                if (queryInput(index)->isGrouped())
-                {
-                    secondaryInputStream = createUngroupStream(secondaryInputStream);
-                    Owned<IEngineRowStream> old = replaceInputStream(secondaryInputIndex, secondaryInputStream);
-                }
-            }
-            else
-            {
-                IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, secondaryInputStream, queryRowInterfaces(_input.itdl), JOIN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(_input.itdl->queryFromActivity()),
-                                                            false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());
-                setLookAhead(secondaryInputIndex, lookAhead),
-                secondaryInputStream = lookAhead;
-            }
         }
         else
         {
             primaryInputIndex = index;
             primaryInputStream = queryInputStream(primaryInputIndex);
         }
-        if (1 == index)
-            rightInputStream = queryInputStream(1);
     }
     virtual void onInputFinished(rowcount_t count) override
     {
@@ -260,12 +242,20 @@ public:
         try
         {
             startInput(secondaryInputIndex);
+
+            if (ensureStartFTLookAhead(secondaryInputIndex))
+            {
+                IThorDataLink *secondaryInput = queryInput(secondaryInputIndex);
+                // NB: lookahead told not to preserveGroups
+                setLookAhead(secondaryInputIndex, createRowStreamLookAhead(this, secondaryInputStream, queryRowInterfaces(secondaryInput), JOIN_SMART_BUFFER_SIZE, ::canStall(secondaryInput),
+                             false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()), false);
+            }
+            secondaryInputStream = queryInputStream(secondaryInputIndex); // either lookahead or underlying stream, depending on whether active or not
         }
         catch (IException *e)
         {
             secondaryStartException.setown(e);
         }
-
     }
     virtual void start() override
     {
@@ -398,6 +388,7 @@ public:
             dataLinkStop();
             leftInput.clear();
             rightInput.clear();
+            secondaryInputStream = queryInputStream(secondaryInputIndex);
         }
     }
     virtual void reset() override
@@ -429,7 +420,7 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;
@@ -457,6 +448,7 @@ public:
             stopLeftInput();
             mergeStats(spillStats, iLoaderL);
         }
+        IEngineRowStream *rightInputStream = queryInputStream(1);
         if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0))
         {
             ActPrintLog("ignoring RHS as LHS empty");
@@ -696,7 +688,7 @@ public:
         return next.getClear();
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;

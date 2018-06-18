@@ -123,7 +123,7 @@ public:
         inputStream->resetEOF();
     }
     virtual bool isGrouped() const override { return input->isGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         calcMetaInfoSize(info, queryInput(0));

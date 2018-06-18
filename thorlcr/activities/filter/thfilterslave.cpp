@@ -39,7 +39,7 @@ public:
     virtual const void *nextRow() override =0;
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canReduceNumRows = true;
