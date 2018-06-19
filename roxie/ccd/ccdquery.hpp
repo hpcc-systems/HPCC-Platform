@@ -105,6 +105,7 @@ public:
     bool allSortsMaySpill;
     bool traceEnabled;
     bool failOnLeaks;
+    bool collectFactoryStatistics;
 
 private:
     static const char *findProp(const IPropertyTree *ctx, const char *name1, const char *name2);

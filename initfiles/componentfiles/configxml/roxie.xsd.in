@@ -530,6 +530,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="collectFactoryStatistics" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Accumulate summary statistics for all queries</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="copyResources" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>

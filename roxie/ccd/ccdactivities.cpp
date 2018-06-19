@@ -386,7 +386,8 @@ protected:
     {
         CRuntimeStatisticCollection merged(allStatistics);
         logctx.gatherStats(merged);
-        basefactory->mergeStats(merged);
+        if (defaultCollectFactoryStatistics)
+            basefactory->mergeStats(merged);
     }
 
 public:
