@@ -345,22 +345,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'somefile',
-                            'Formatted': 'somefile',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -370,8 +354,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET([{'C','G'},...], myrec);\n",
-                            'Formatted': "DATASET([{'C','G'},...], myrec);\n",
+                            'RawValue': 'DATASET([{&apos;C&apos;,&apos;G&apos;},...], myrec);\n',
+                            'Formatted': 'DATASET([{&apos;C&apos;,&apos;G&apos;},...], myrec);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -388,6 +372,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["somefile"]',
+                            'Formatted': '["somefile"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -410,22 +410,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'dedup1',
-                            'Formatted': 'dedup1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '4',
                             'Formatted': '4',
@@ -435,8 +419,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DEDUP(LEFT.value2  IN  ['G', 'C', 'X'] AND RIGHT.value2  IN  ['X', 'B', 'C'], all);\n",
-                            'Formatted': "DEDUP(LEFT.value2  IN  ['G', 'C', 'X'] AND RIGHT.value2  IN  ['X', 'B', 'C'], all);\n",
+                            'RawValue': 'DEDUP(LEFT.value2  IN  [&apos;G&apos;, &apos;C&apos;, &apos;X&apos;] AND RIGHT.value2  IN  [&apos;X&apos;, &apos;B&apos;, &apos;C&apos;], all);\n',
+                            'Formatted': 'DEDUP(LEFT.value2  IN  [&apos;G&apos;, &apos;C&apos;, &apos;X&apos;] AND RIGHT.value2  IN  [&apos;X&apos;, &apos;B&apos;, &apos;C&apos;], all);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -456,6 +440,22 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["dedup1"]',
+                            'Formatted': '["dedup1"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -470,14 +470,6 @@ testCase(ScopeFilter={
                             'Name': 'Label',
                             'RawValue': 'Output\nResult #1',
                             'Formatted': 'Output\nResult #1',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -502,6 +494,14 @@ testCase(ScopeFilter={
                             'Name': 'RecordSize',
                             'RawValue': '2',
                             'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -711,22 +711,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'somefile',
-                            'Formatted': 'somefile',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -736,8 +720,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET([{'C','G'},...], myrec);\n",
-                            'Formatted': "DATASET([{'C','G'},...], myrec);\n",
+                            'RawValue': 'DATASET([{&apos;C&apos;,&apos;G&apos;},...], myrec);\n',
+                            'Formatted': 'DATASET([{&apos;C&apos;,&apos;G&apos;},...], myrec);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -754,6 +738,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["somefile"]',
+                            'Formatted': '["somefile"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -776,22 +776,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'dedup2',
-                            'Formatted': 'dedup2',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '4',
                             'Formatted': '4',
@@ -801,8 +785,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DEDUP(LEFT.value2  IN  ['G', 'C'] AND RIGHT.value2  IN  ['X', 'B'], all);\n",
-                            'Formatted': "DEDUP(LEFT.value2  IN  ['G', 'C'] AND RIGHT.value2  IN  ['X', 'B'], all);\n",
+                            'RawValue': 'DEDUP(LEFT.value2  IN  [&apos;G&apos;, &apos;C&apos;] AND RIGHT.value2  IN  [&apos;X&apos;, &apos;B&apos;], all);\n',
+                            'Formatted': 'DEDUP(LEFT.value2  IN  [&apos;G&apos;, &apos;C&apos;] AND RIGHT.value2  IN  [&apos;X&apos;, &apos;B&apos;], all);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -822,6 +806,22 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["dedup2"]',
+                            'Formatted': '["dedup2"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -836,14 +836,6 @@ testCase(ScopeFilter={
                             'Name': 'Label',
                             'RawValue': 'Output\nResult #2',
                             'Formatted': 'Output\nResult #2',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -868,6 +860,14 @@ testCase(ScopeFilter={
                             'Name': 'RecordSize',
                             'RawValue': '2',
                             'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1077,22 +1077,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'somefile',
-                            'Formatted': 'somefile',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -1102,8 +1086,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET([{'C','G'},...], myrec);\n",
-                            'Formatted': "DATASET([{'C','G'},...], myrec);\n",
+                            'RawValue': 'DATASET([{&apos;C&apos;,&apos;G&apos;},...], myrec);\n',
+                            'Formatted': 'DATASET([{&apos;C&apos;,&apos;G&apos;},...], myrec);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1120,6 +1104,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["somefile"]',
+                            'Formatted': '["somefile"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1142,22 +1142,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'dedup3',
-                            'Formatted': 'dedup3',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '4',
                             'Formatted': '4',
@@ -1167,8 +1151,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DEDUP(LEFT.value2  IN  ['X', 'B'] AND RIGHT.value2  IN  ['G', 'C'], all);\n",
-                            'Formatted': "DEDUP(LEFT.value2  IN  ['X', 'B'] AND RIGHT.value2  IN  ['G', 'C'], all);\n",
+                            'RawValue': 'DEDUP(LEFT.value2  IN  [&apos;X&apos;, &apos;B&apos;] AND RIGHT.value2  IN  [&apos;G&apos;, &apos;C&apos;], all);\n',
+                            'Formatted': 'DEDUP(LEFT.value2  IN  [&apos;X&apos;, &apos;B&apos;] AND RIGHT.value2  IN  [&apos;G&apos;, &apos;C&apos;], all);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1188,6 +1172,22 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["dedup3"]',
+                            'Formatted': '["dedup3"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -1202,14 +1202,6 @@ testCase(ScopeFilter={
                             'Name': 'Label',
                             'RawValue': 'Output\nResult #3',
                             'Formatted': 'Output\nResult #3',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1234,6 +1226,14 @@ testCase(ScopeFilter={
                             'Name': 'RecordSize',
                             'RawValue': '2',
                             'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None

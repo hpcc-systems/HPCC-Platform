@@ -552,22 +552,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'tmp',
-                            'Formatted': 'tmp',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -577,8 +561,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET([{1,'a'},...], { unsigned1 key, string v });\n",
-                            'Formatted': "DATASET([{1,'a'},...], { unsigned1 key, string v });\n",
+                            'RawValue': 'DATASET([{1,&apos;a&apos;},...], { unsigned1 key, string v });\n',
+                            'Formatted': 'DATASET([{1,&apos;a&apos;},...], { unsigned1 key, string v });\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -595,6 +579,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["tmp"]',
+                            'Formatted': '["tmp"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -665,22 +665,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'norm',
-                            'Formatted': 'norm',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '21',
                             'Formatted': '21',
@@ -708,6 +692,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '0..?[disk]',
                             'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["norm"]',
+                            'Formatted': '["norm"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -778,22 +778,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'norm2',
-                            'Formatted': 'norm2',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '21',
                             'Formatted': '21',
@@ -821,6 +805,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '0..?[disk]',
                             'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["norm2"]',
+                            'Formatted': '["norm2"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -876,24 +876,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Disk Write\n'~regress::single::test.d00'",
-                            'Formatted': "Disk Write\n'~regress::single::test.d00'",
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'o1',
-                            'Formatted': 'o1',
+                            'RawValue': 'Disk Write\n&apos;~regress::single::test.d00&apos;',
+                            'Formatted': 'Disk Write\n&apos;~regress::single::test.d00&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -908,8 +892,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "OUTPUT(..., , '~regress::single::test.d00', overwrite);\n",
-                            'Formatted': "OUTPUT(..., , '~regress::single::test.d00', overwrite);\n",
+                            'RawValue': 'OUTPUT(..., , &apos;~regress::single::test.d00&apos;, overwrite);\n',
+                            'Formatted': 'OUTPUT(..., , &apos;~regress::single::test.d00&apos;, overwrite);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -926,6 +910,22 @@ testCase(ScopeFilter={
                             'Name': 'Filename',
                             'RawValue': '~regress::single::test.d00',
                             'Formatted': '~regress::single::test.d00',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["o1"]',
+                            'Formatted': '["o1"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1174,8 +1174,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Projected\nDisk Read\n'...::test.d00'",
-                            'Formatted': "Projected\nDisk Read\n'...::test.d00'",
+                            'RawValue': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
+                            'Formatted': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1190,8 +1190,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
-                            'Formatted': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
+                            'RawValue': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
+                            'Formatted': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1213,7 +1213,15 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test.d00',
+                            'Formatted': '~regress::single::test.d00',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': None,
@@ -1221,17 +1229,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'd',
-                            'Formatted': 'd',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test.d00',
-                            'Formatted': '~regress::single::test.d00',
+                            'Name': 'EclNameList',
+                            'RawValue': '["d"]',
+                            'Formatted': '["d"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1399,14 +1399,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '37',
                             'Formatted': '37',
@@ -1416,8 +1408,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "BUILDINDEX(..., , '~regress::single::test.idx', overwrite, sorted);\n",
-                            'Formatted': "BUILDINDEX(..., , '~regress::single::test.idx', overwrite, sorted);\n",
+                            'RawValue': 'BUILDINDEX(..., , &apos;~regress::single::test.idx&apos;, overwrite, sorted);\n',
+                            'Formatted': 'BUILDINDEX(..., , &apos;~regress::single::test.idx&apos;, overwrite, sorted);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1442,6 +1434,14 @@ testCase(ScopeFilter={
                             'Name': 'Filename',
                             'RawValue': '~regress::single::test.idx',
                             'Formatted': '~regress::single::test.idx',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1811,22 +1811,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'tmp',
-                            'Formatted': 'tmp',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -1854,6 +1838,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["tmp"]',
+                            'Formatted': '["tmp"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1916,14 +1916,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '12',
                             'Formatted': '12',
@@ -1951,6 +1943,14 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '1',
                             'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2103,8 +2103,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Store\nInternal('gl2')",
-                            'Formatted': "Store\nInternal('gl2')",
+                            'RawValue': 'Store\nInternal(&apos;gl2&apos;)',
+                            'Formatted': 'Store\nInternal(&apos;gl2&apos;)',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2127,8 +2127,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "extractresult(value, named('gl2'));\n",
-                            'Formatted': "extractresult(value, named('gl2'));\n",
+                            'RawValue': 'extractresult(value, named(&apos;gl2&apos;));\n',
+                            'Formatted': 'extractresult(value, named(&apos;gl2&apos;));\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2271,8 +2271,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Index Count\n'...::test.idx'",
-                            'Formatted': "Index Count\n'...::test.idx'",
+                            'RawValue': 'Index Count\n&apos;...::test.idx&apos;',
+                            'Formatted': 'Index Count\n&apos;...::test.idx&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2287,8 +2287,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, '~regress::single::test.idx');\nFILTER(key > 3);\n",
-                            'Formatted': "INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, '~regress::single::test.idx');\nFILTER(key > 3);\n",
+                            'RawValue': 'INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, &apos;~regress::single::test.idx&apos;);\nFILTER(key &gt; 3);\n',
+                            'Formatted': 'INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, &apos;~regress::single::test.idx&apos;);\nFILTER(key &gt; 3);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2310,17 +2310,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test.idx',
+                            'Formatted': '~regress::single::test.idx',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test.idx',
-                            'Formatted': '~regress::single::test.idx',
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2650,8 +2650,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Projected\nDisk Read\n'...::test.d00'",
-                            'Formatted': "Projected\nDisk Read\n'...::test.d00'",
+                            'RawValue': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
+                            'Formatted': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2666,8 +2666,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
-                            'Formatted': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
+                            'RawValue': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
+                            'Formatted': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2689,7 +2689,15 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test.d00',
+                            'Formatted': '~regress::single::test.d00',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': None,
@@ -2697,17 +2705,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'd',
-                            'Formatted': 'd',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test.d00',
-                            'Formatted': '~regress::single::test.d00',
+                            'Name': 'EclNameList',
+                            'RawValue': '["d"]',
+                            'Formatted': '["d"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2875,14 +2875,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '37',
                             'Formatted': '37',
@@ -2892,8 +2884,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "BUILDINDEX(..., , '~regress::single::test2.idx', overwrite, few, sorted);\n",
-                            'Formatted': "BUILDINDEX(..., , '~regress::single::test2.idx', overwrite, few, sorted);\n",
+                            'RawValue': 'BUILDINDEX(..., , &apos;~regress::single::test2.idx&apos;, overwrite, few, sorted);\n',
+                            'Formatted': 'BUILDINDEX(..., , &apos;~regress::single::test2.idx&apos;, overwrite, few, sorted);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2918,6 +2910,14 @@ testCase(ScopeFilter={
                             'Name': 'Filename',
                             'RawValue': '~regress::single::test2.idx',
                             'Formatted': '~regress::single::test2.idx',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -3287,22 +3287,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'tmp',
-                            'Formatted': 'tmp',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -3330,6 +3314,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["tmp"]',
+                            'Formatted': '["tmp"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -3392,14 +3392,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '12',
                             'Formatted': '12',
@@ -3427,6 +3419,14 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '1',
                             'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -3579,8 +3579,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Store\nInternal('gl4')",
-                            'Formatted': "Store\nInternal('gl4')",
+                            'RawValue': 'Store\nInternal(&apos;gl4&apos;)',
+                            'Formatted': 'Store\nInternal(&apos;gl4&apos;)',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -3603,8 +3603,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "extractresult(value, named('gl4'));\n",
-                            'Formatted': "extractresult(value, named('gl4'));\n",
+                            'RawValue': 'extractresult(value, named(&apos;gl4&apos;));\n',
+                            'Formatted': 'extractresult(value, named(&apos;gl4&apos;));\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -3747,8 +3747,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Index Count\n'...::test2.idx'",
-                            'Formatted': "Index Count\n'...::test2.idx'",
+                            'RawValue': 'Index Count\n&apos;...::test2.idx&apos;',
+                            'Formatted': 'Index Count\n&apos;...::test2.idx&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -3763,8 +3763,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, '~regress::single::test2.idx');\nFILTER(key < 3);\n",
-                            'Formatted': "INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, '~regress::single::test2.idx');\nFILTER(key < 3);\n",
+                            'RawValue': 'INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, &apos;~regress::single::test2.idx&apos;);\nFILTER(key &lt; 3);\n',
+                            'Formatted': 'INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, &apos;~regress::single::test2.idx&apos;);\nFILTER(key &lt; 3);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -3786,17 +3786,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test2.idx',
+                            'Formatted': '~regress::single::test2.idx',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test2.idx',
-                            'Formatted': '~regress::single::test2.idx',
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -4126,8 +4126,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Projected\nDisk Read\n'...::test.d00'",
-                            'Formatted': "Projected\nDisk Read\n'...::test.d00'",
+                            'RawValue': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
+                            'Formatted': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -4142,8 +4142,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
-                            'Formatted': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
+                            'RawValue': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
+                            'Formatted': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -4165,7 +4165,15 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test.d00',
+                            'Formatted': '~regress::single::test.d00',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': None,
@@ -4173,17 +4181,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'd',
-                            'Formatted': 'd',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test.d00',
-                            'Formatted': '~regress::single::test.d00',
+                            'Name': 'EclNameList',
+                            'RawValue': '["d"]',
+                            'Formatted': '["d"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -4351,14 +4351,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '37',
                             'Formatted': '37',
@@ -4368,8 +4360,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "BUILDINDEX(..., , '~regress::single::test3.idx', overwrite, sorted);\n",
-                            'Formatted': "BUILDINDEX(..., , '~regress::single::test3.idx', overwrite, sorted);\n",
+                            'RawValue': 'BUILDINDEX(..., , &apos;~regress::single::test3.idx&apos;, overwrite, sorted);\n',
+                            'Formatted': 'BUILDINDEX(..., , &apos;~regress::single::test3.idx&apos;, overwrite, sorted);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -4394,6 +4386,14 @@ testCase(ScopeFilter={
                             'Name': 'Filename',
                             'RawValue': '~regress::single::test3.idx',
                             'Formatted': '~regress::single::test3.idx',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -4763,22 +4763,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'tmp',
-                            'Formatted': 'tmp',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -4806,6 +4790,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["tmp"]',
+                            'Formatted': '["tmp"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -4868,14 +4868,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '12',
                             'Formatted': '12',
@@ -4903,6 +4895,14 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '1',
                             'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -5055,8 +5055,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Store\nInternal('gl6')",
-                            'Formatted': "Store\nInternal('gl6')",
+                            'RawValue': 'Store\nInternal(&apos;gl6&apos;)',
+                            'Formatted': 'Store\nInternal(&apos;gl6&apos;)',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -5079,8 +5079,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "extractresult(value, named('gl6'));\n",
-                            'Formatted': "extractresult(value, named('gl6'));\n",
+                            'RawValue': 'extractresult(value, named(&apos;gl6&apos;));\n',
+                            'Formatted': 'extractresult(value, named(&apos;gl6&apos;));\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -5223,8 +5223,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Index Count\n'...::test3.idx'",
-                            'Formatted': "Index Count\n'...::test3.idx'",
+                            'RawValue': 'Index Count\n&apos;...::test3.idx&apos;',
+                            'Formatted': 'Index Count\n&apos;...::test3.idx&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -5239,8 +5239,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, '~regress::single::test3.idx');\nFILTER(key = 5);\n",
-                            'Formatted': "INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, '~regress::single::test3.idx');\nFILTER(key = 5);\n",
+                            'RawValue': 'INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, &apos;~regress::single::test3.idx&apos;);\nFILTER(key = 5);\n',
+                            'Formatted': 'INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, &apos;~regress::single::test3.idx&apos;);\nFILTER(key = 5);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -5262,17 +5262,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test3.idx',
+                            'Formatted': '~regress::single::test3.idx',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test3.idx',
-                            'Formatted': '~regress::single::test3.idx',
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -5602,8 +5602,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Projected\nDisk Read\n'...::test.d00'",
-                            'Formatted': "Projected\nDisk Read\n'...::test.d00'",
+                            'RawValue': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
+                            'Formatted': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -5618,8 +5618,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
-                            'Formatted': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
+                            'RawValue': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
+                            'Formatted': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -5641,7 +5641,15 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test.d00',
+                            'Formatted': '~regress::single::test.d00',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': None,
@@ -5649,17 +5657,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'd',
-                            'Formatted': 'd',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test.d00',
-                            'Formatted': '~regress::single::test.d00',
+                            'Name': 'EclNameList',
+                            'RawValue': '["d"]',
+                            'Formatted': '["d"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -5827,14 +5827,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '37',
                             'Formatted': '37',
@@ -5844,8 +5836,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "BUILDINDEX(..., , '~regress::single::test4.idx', overwrite, few, sorted);\n",
-                            'Formatted': "BUILDINDEX(..., , '~regress::single::test4.idx', overwrite, few, sorted);\n",
+                            'RawValue': 'BUILDINDEX(..., , &apos;~regress::single::test4.idx&apos;, overwrite, few, sorted);\n',
+                            'Formatted': 'BUILDINDEX(..., , &apos;~regress::single::test4.idx&apos;, overwrite, few, sorted);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -5870,6 +5862,14 @@ testCase(ScopeFilter={
                             'Name': 'Filename',
                             'RawValue': '~regress::single::test4.idx',
                             'Formatted': '~regress::single::test4.idx',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -6239,22 +6239,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'tmp',
-                            'Formatted': 'tmp',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -6282,6 +6266,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["tmp"]',
+                            'Formatted': '["tmp"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -6344,14 +6344,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '12',
                             'Formatted': '12',
@@ -6379,6 +6371,14 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '1',
                             'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -6531,8 +6531,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Store\nInternal('gl8')",
-                            'Formatted': "Store\nInternal('gl8')",
+                            'RawValue': 'Store\nInternal(&apos;gl8&apos;)',
+                            'Formatted': 'Store\nInternal(&apos;gl8&apos;)',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -6555,8 +6555,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "extractresult(value, named('gl8'));\n",
-                            'Formatted': "extractresult(value, named('gl8'));\n",
+                            'RawValue': 'extractresult(value, named(&apos;gl8&apos;));\n',
+                            'Formatted': 'extractresult(value, named(&apos;gl8&apos;));\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -6699,8 +6699,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Index Count\n'...::test4.idx'",
-                            'Formatted': "Index Count\n'...::test4.idx'",
+                            'RawValue': 'Index Count\n&apos;...::test4.idx&apos;',
+                            'Formatted': 'Index Count\n&apos;...::test4.idx&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -6715,8 +6715,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, '~regress::single::test4.idx');\nFILTER(key != 2);\n",
-                            'Formatted': "INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, '~regress::single::test4.idx');\nFILTER(key != 2);\n",
+                            'RawValue': 'INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, &apos;~regress::single::test4.idx&apos;);\nFILTER(key != 2);\n',
+                            'Formatted': 'INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, &apos;~regress::single::test4.idx&apos;);\nFILTER(key != 2);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -6738,17 +6738,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test4.idx',
+                            'Formatted': '~regress::single::test4.idx',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test4.idx',
-                            'Formatted': '~regress::single::test4.idx',
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -7078,8 +7078,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Projected\nDisk Read\n'...::test.d00'",
-                            'Formatted': "Projected\nDisk Read\n'...::test.d00'",
+                            'RawValue': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
+                            'Formatted': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -7094,8 +7094,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
-                            'Formatted': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
+                            'RawValue': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
+                            'Formatted': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -7117,7 +7117,15 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test.d00',
+                            'Formatted': '~regress::single::test.d00',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': None,
@@ -7125,17 +7133,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'd',
-                            'Formatted': 'd',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test.d00',
-                            'Formatted': '~regress::single::test.d00',
+                            'Name': 'EclNameList',
+                            'RawValue': '["d"]',
+                            'Formatted': '["d"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -7295,14 +7295,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '37',
                             'Formatted': '37',
@@ -7312,8 +7304,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "BUILDINDEX(..., , '~regress::single::test5.idx', compressed(first), overwrite, sorted);\n",
-                            'Formatted': "BUILDINDEX(..., , '~regress::single::test5.idx', compressed(first), overwrite, sorted);\n",
+                            'RawValue': 'BUILDINDEX(..., , &apos;~regress::single::test5.idx&apos;, compressed(first), overwrite, sorted);\n',
+                            'Formatted': 'BUILDINDEX(..., , &apos;~regress::single::test5.idx&apos;, compressed(first), overwrite, sorted);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -7338,6 +7330,14 @@ testCase(ScopeFilter={
                             'Name': 'Filename',
                             'RawValue': '~regress::single::test5.idx',
                             'Formatted': '~regress::single::test5.idx',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -7707,22 +7707,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'tmp',
-                            'Formatted': 'tmp',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -7750,6 +7734,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["tmp"]',
+                            'Formatted': '["tmp"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -7812,14 +7812,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '12',
                             'Formatted': '12',
@@ -7847,6 +7839,14 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '1',
                             'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -7999,8 +7999,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Store\nInternal('glA')",
-                            'Formatted': "Store\nInternal('glA')",
+                            'RawValue': 'Store\nInternal(&apos;glA&apos;)',
+                            'Formatted': 'Store\nInternal(&apos;glA&apos;)',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -8023,8 +8023,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "extractresult(value, named('glA'));\n",
-                            'Formatted': "extractresult(value, named('glA'));\n",
+                            'RawValue': 'extractresult(value, named(&apos;glA&apos;));\n',
+                            'Formatted': 'extractresult(value, named(&apos;glA&apos;));\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -8167,8 +8167,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Index Count\n'...::test5.idx'",
-                            'Formatted': "Index Count\n'...::test5.idx'",
+                            'RawValue': 'Index Count\n&apos;...::test5.idx&apos;',
+                            'Formatted': 'Index Count\n&apos;...::test5.idx&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -8183,8 +8183,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "INDEX({ unsigned1 key, big_endian unsigned integer8 filepos }, { string v, big_endian unsigned integer8 node }, '~regress::single::test5.idx');\nFILTER(key != 2);\n",
-                            'Formatted': "INDEX({ unsigned1 key, big_endian unsigned integer8 filepos }, { string v, big_endian unsigned integer8 node }, '~regress::single::test5.idx');\nFILTER(key != 2);\n",
+                            'RawValue': 'INDEX({ unsigned1 key, big_endian unsigned integer8 filepos }, { string v, big_endian unsigned integer8 node }, &apos;~regress::single::test5.idx&apos;);\nFILTER(key != 2);\n',
+                            'Formatted': 'INDEX({ unsigned1 key, big_endian unsigned integer8 filepos }, { string v, big_endian unsigned integer8 node }, &apos;~regress::single::test5.idx&apos;);\nFILTER(key != 2);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -8206,17 +8206,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test5.idx',
+                            'Formatted': '~regress::single::test5.idx',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test5.idx',
-                            'Formatted': '~regress::single::test5.idx',
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -8546,8 +8546,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Projected\nDisk Read\n'...::test.d00'",
-                            'Formatted': "Projected\nDisk Read\n'...::test.d00'",
+                            'RawValue': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
+                            'Formatted': 'Projected\nDisk Read\n&apos;...::test.d00&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -8562,8 +8562,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
-                            'Formatted': "DATASET('~regress::single::test.d00', rec, FLAT);\n",
+                            'RawValue': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
+                            'Formatted': 'DATASET(&apos;~regress::single::test.d00&apos;, rec, FLAT);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -8585,7 +8585,15 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test.d00',
+                            'Formatted': '~regress::single::test.d00',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
                             'RawValue': '{masked}',
                             'Formatted': '{masked}',
                             'Measure': None,
@@ -8593,17 +8601,9 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'EclName',
-                            'RawValue': 'd',
-                            'Formatted': 'd',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test.d00',
-                            'Formatted': '~regress::single::test.d00',
+                            'Name': 'EclNameList',
+                            'RawValue': '["d"]',
+                            'Formatted': '["d"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -8771,14 +8771,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '37',
                             'Formatted': '37',
@@ -8788,8 +8780,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "BUILDINDEX(..., , '~regress::single::test6.idx', compressed(row), overwrite, sorted);\n",
-                            'Formatted': "BUILDINDEX(..., , '~regress::single::test6.idx', compressed(row), overwrite, sorted);\n",
+                            'RawValue': 'BUILDINDEX(..., , &apos;~regress::single::test6.idx&apos;, compressed(row), overwrite, sorted);\n',
+                            'Formatted': 'BUILDINDEX(..., , &apos;~regress::single::test6.idx&apos;, compressed(row), overwrite, sorted);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -8814,6 +8806,14 @@ testCase(ScopeFilter={
                             'Name': 'Filename',
                             'RawValue': '~regress::single::test6.idx',
                             'Formatted': '~regress::single::test6.idx',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -9183,22 +9183,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'tmp',
-                            'Formatted': 'tmp',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -9226,6 +9210,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '5',
                             'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["tmp"]',
+                            'Formatted': '["tmp"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -9288,14 +9288,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '12',
                             'Formatted': '12',
@@ -9323,6 +9315,14 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '1',
                             'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -9475,8 +9475,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Store\nInternal('glC')",
-                            'Formatted': "Store\nInternal('glC')",
+                            'RawValue': 'Store\nInternal(&apos;glC&apos;)',
+                            'Formatted': 'Store\nInternal(&apos;glC&apos;)',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -9499,8 +9499,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "extractresult(value, named('glC'));\n",
-                            'Formatted': "extractresult(value, named('glC'));\n",
+                            'RawValue': 'extractresult(value, named(&apos;glC&apos;));\n',
+                            'Formatted': 'extractresult(value, named(&apos;glC&apos;));\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -9643,8 +9643,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Index Count\n'...::test6.idx'",
-                            'Formatted': "Index Count\n'...::test6.idx'",
+                            'RawValue': 'Index Count\n&apos;...::test6.idx&apos;',
+                            'Formatted': 'Index Count\n&apos;...::test6.idx&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -9659,8 +9659,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, '~regress::single::test6.idx');\nFILTER(key != 2);\n",
-                            'Formatted': "INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, '~regress::single::test6.idx');\nFILTER(key != 2);\n",
+                            'RawValue': 'INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, &apos;~regress::single::test6.idx&apos;);\nFILTER(key != 2);\n',
+                            'Formatted': 'INDEX({ unsigned1 key }, { big_endian unsigned integer8 filepos }, &apos;~regress::single::test6.idx&apos;);\nFILTER(key != 2);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -9682,17 +9682,17 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'Name': 'Filename',
+                            'RawValue': '~regress::single::test6.idx',
+                            'Formatted': '~regress::single::test6.idx',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Filename',
-                            'RawValue': '~regress::single::test6.idx',
-                            'Formatted': '~regress::single::test6.idx',
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
