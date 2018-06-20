@@ -86,11 +86,49 @@ Allocations in the huge heap can be expanded and shrunk using the resizeRow() fu
 
 Specialised Heaps:
 ==================
-For fixed size allocations it is possible to get a more efficient interface for allocating rows.  There are options
-to create unique fixed size heaps (to reduce thread contention) and packed heaps - where all rows share the same
-allocator id.
 
+Packed
+------
+By default a fixed size heaps rounds the requested allocation size up to the next bucket size.  A packed heap
+changes this behaviour and it is rounded up to the next 4 byte boundary instead.  This reduces the amount of
+memory wasted for each row, but potentially increases the number of distinct heaps.
+
+Unique
+------
+By default all fixed size heaps of the same size are shared.  This reduces the memory consumption, but if the
+heap is used by multiple threads it can cause significant contention.  If a unique heap is specified then it
+will not be shared with any other requests.  Unique heaps store information about the type of each row in the heaplet
+header, rather than per row - which reduces the allocation overhead for each row.
 (Note to self: Is there ever any advantage having a heap that is unique but not packed??)
+
+Blocked
+-------
+Blocked is an option on createFixedRowHeap() to allocate multiple rows from the heaplet, and then return the
+additional rows on subsequent calls.  It is likely to reduce the average number of atomic operations required for each
+row being allocated,  but the heap that is returned can only be used from a single thread because it is not thread safe.
+
+Scanning
+--------
+By default the heaplets use a lock free singly linked list to keep track of rows that have been freed.  This requires
+an atomic operation for each allocation and for each free.  The scanning allocator uses an alternative approach.  When
+a row is freed the row header is marked, and a row is allocated by scanning through the heaplet for rows that have
+been marked as free.  Scanning uses atomic store and get, rather than more expensive synchronized atomic operations,
+so is generally faster than the linked list - provided a free row is found fairly quickly.
+
+The scanning heaps have better best-case performance, but worse worse-case performance (if large numbers of rows
+need to be scanned before a free row is found).  The best-case tends to be true if only one thread/activity is
+accessing a particular heap, and the worse-case if multiple activities are accessing a heap, particularly if the rows
+are being buffered.  It is the default for thor which tends to have few active allocators, but not for roxie, which
+tends to have large numbers of allocators.
+
+Delay Release
+-------------
+This is another varation on the scanning allocator, which further reduces the number of atomic operations.  Usually
+when a row is allocated the link count on the heaplet is increased, and when it is freed the link count is
+decremented.  This option delays decrementing the link count when the row is released, by marking the row with
+a different free flag.  If it is subsequently reallocated there is no need to increment the link count.  The
+downside is that it is more expensive to check whether a heaplet is completely empty (since you can no longer rely on
+the heaplet linkcount alone).
 
 ****************
 Dynamic Spilling
@@ -175,7 +213,7 @@ but there is also a shared block of memory which can be used by whichever proces
 The ILargeMemCallback provides a mechanism to dynamically allocate more memory to a process as it requires it.
 This could potentially be done in stages rather than all or nothing.
 
-(Currently unused as far as I know...)
+(Currently unused as far as I know... the main problem is that borrowing memory needs to be coordinated.)
 
 **********
 Huge pages
@@ -201,3 +239,15 @@ There is also a memory manager option to not return the memory to the operating 
 required.  This has the advantage of not clearing the memory whenever it is required again, but the same disadvantage
 as preallocated huge pages that the unused memory cannot be used for disk cache.  We recommend this option is
 selected when preallocated huge pages are in use - until the kernel allows them to be reused.
+
+**************************
+Global memory and channels
+**************************
+
+Changes in 6.x allow Thor to run multiple channels within the same process.  This allows data that is constant
+for all channels to be shared between all slave channels - a prime example is the rhs of a lookup join.  For
+the queries to run efficiently the memory manager needs to ensure that each slave channel has the same amount
+of memory - especially when memory is being used that is shared between them.
+
+createGlobalRowManager() allows a single global row manager to be created which also provides slave row managers
+for the different channels via the querySlaveRowManager(unsigned slave) method.
