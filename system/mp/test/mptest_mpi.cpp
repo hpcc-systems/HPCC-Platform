@@ -5,12 +5,22 @@
 #include <jmisc.hpp>
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
+#include <jlib.hpp>
 
 using namespace std;
 
 #define MULTITEST
 
 rank_t myrank;
+
+//class ThreadTest: public implements IThreaded{
+//protected:
+//	ICommunicator* comm;
+//public:
+//	void setComm(ICommunicator* _comm){
+//		comm = _comm;
+//	}
+//};
 
 void printHelp(int argc, char** argv){
     if (myrank == 0){
@@ -93,12 +103,12 @@ void TEST_receive_from_any(ICommunicator* comm, rank_t nodeRank){
     if (rank == nodeRank){
         CMessageBuffer sendMsg;
         sendMsg.append(expectedValue); 
-        comm->send(sendMsg, destinationRank, MPTAG_TEST, MP_WAIT_FOREVER);    
+        comm->send(sendMsg, destinationRank, MPTAG_TEST);
         PrintLog("Message sent by node %d to node %d.", rank, destinationRank);
     }
     if (rank == destinationRank){
         CMessageBuffer recvMsg;
-        comm->recv(recvMsg, RANK_ALL, MPTAG_TEST, NULL, MP_WAIT_FOREVER);
+        comm->recv(recvMsg, RANK_ALL, MPTAG_TEST);
         double receivedValue;
         recvMsg.read(receivedValue);
         assertex(nodeRank == comm->getGroup()->rank(recvMsg.getSender()));
@@ -148,6 +158,46 @@ void TEST_one_from_all(ICommunicator* comm, rank_t nodeRank){
             PrintLog("Message received from node %d to node %d.", i, rank);
         }
     }
+}
+
+void TEST_MT_right_shift(ICommunicator* comm){
+//    class: public ThreadTest{
+//    public:
+//    	void main(){
+//    		IGroup *group = comm->getGroup();
+//    		rank_t p = group->ordinality();
+//			rank_t rank = group->rank();
+//			rank_t destination_rank = (rank + 1) % p;
+//
+//			CMessageBuffer sendMsg;
+//			sendMsg.append(rank);
+//			comm->send(sendMsg, destination_rank, MPTAG_TEST, MP_WAIT_FOREVER);
+//    	}
+//    } s;
+//    class: public ThreadTest{
+//    public:
+//    	void main(){
+//    		IGroup *group = comm->getGroup();
+//    		rank_t p = group->ordinality();
+//			rank_t rank = group->rank();
+//			rank_t source_rank = (rank - 1 + p) % p;
+//
+//			CMessageBuffer recvMsg;
+//			int received_msg;
+//			comm->recv(recvMsg, source_rank, MPTAG_TEST, NULL, MP_WAIT_FOREVER);
+//			recvMsg.read(received_msg);
+//			assertex(source_rank == received_msg);
+//			PrintLog("Message received from node %d to node %d.", source_rank, rank);
+//    	}
+//    } r;
+//    s.setComm(comm);
+//    r.setComm(comm);
+//
+//    CThreaded sendThread = new CThreaded("Send Thread", s);
+//    CThreaded recvThread = new CThreaded("Receive Thread", r);
+//    sendThread.start();
+//    recvThread.start();
+//    recvThread.join();
 }
 
 int main(int argc, char* argv[]){

@@ -176,7 +176,7 @@ public:
         int r = rank;
         if (r < 0){
             if (commRequestsNonRank.find(r)!=commRequestsNonRank.end()){
-                return commRequests[r][tag];
+                return commRequestsNonRank[r][tag];
             }
         }else if (commRequests[r].find(tag)!=commRequests[r].end()){
             return commRequests[r][tag];

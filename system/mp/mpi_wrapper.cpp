@@ -126,8 +126,7 @@ bool hpcc_mpi::hasIncomingMessage(rank_t &sourceRank, mptag_t &mptag, NodeGroup 
 
 void hpcc_mpi::releaseComm(CommRequest commReq){
     CriticalBlock block(requestListLock);
-    (requests[commReq].group)->removeCommRequest
-            (requests[commReq].rank, (mptag_t)requests[commReq].tag);
+    (requests[commReq].group)->removeCommRequest(requests[commReq].rank, (mptag_t)requests[commReq].tag);
     //TODO Free CommData object if there's too many in the Pool (don't forget to delete mutex)   
     freeRequests.push_back(commReq);
     // requestListLock.unlock();
@@ -197,11 +196,11 @@ rank_t hpcc_mpi::size(NodeGroup &group){
 }
 
 void hpcc_mpi::initialize(){
-    int required = MPI_THREAD_FUNNELED;
+    int required = MPI_THREAD_MULTIPLE;
     int provided;
     MPI_Init_thread(NULL,NULL, required, &provided);
     // printf("expected=%d, provided=%d, %d, %d, %d, %d\n",required, provided, MPI_THREAD_SINGLE, MPI_THREAD_FUNNELED, MPI_THREAD_SERIALIZED, MPI_THREAD_MULTIPLE);
-    assertex(provided == required);
+     assertex(provided == required);
     // MPI_Init(NULL,NULL);
 }
 
