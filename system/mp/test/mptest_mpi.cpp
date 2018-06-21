@@ -31,9 +31,9 @@ void printHelp(int argc, char** argv){
         printf("\t\t %d - Print rank of each node (# of procs > 1).\n",RANK_TEST);
         printf("\t\t %d - Send message from node 0 to node 1 (# of procs >= 2).\n",SINGLE_SEND_TEST);
         printf("\t\t %d - Send data to the node represented by next rank.\n",RIGHT_SHIFT_TEST);
-        printf("\t\t %d - Last node/processpor receive data from any node_rank (default=0).\n",CUSTOM_SEND_TEST);
+        printf("\t\t %d - <routing_file> Send/Receive data based on custom routing.\n",CUSTOM_SEND_TEST);
+        printf("\t\t %d - Last node/processpor receive data from any node_rank (default=0).\n",RECEIVE_FROM_ANY_TEST);
         printf("\t\t\t\t    parameters: [node_rank]\n");
-        printf("\t\t %d - <routing_file> Send/Receive data based on custom routing.\n",RECEIVE_FROM_ANY_TEST);
         printf("\t\t %d - Node node_rank (default=0) send to all nodes.\n",SEND_ONE_TO_ALL_TEST);
         printf("\t\t\t\t    parameters: [node_rank]\n");
         printf("\t\t %d - Node node_rank (default=0) receive from all nodes.\n",RECEIVE_ONE_FROM_ALL_TEST);
