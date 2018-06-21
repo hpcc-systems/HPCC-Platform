@@ -210,9 +210,11 @@ public:
 
     void extract(unsigned node, const CRuntimeStatisticCollection & stats);
     void set(unsigned node, unsigned __int64 count);
+    void getTotalStat(IStatisticGatherer & stats);
     void getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual);
 
 protected:
+    void processTotal();
     void calculateSkew();
     void tallyValue(unsigned __int64 value, unsigned node);
 };

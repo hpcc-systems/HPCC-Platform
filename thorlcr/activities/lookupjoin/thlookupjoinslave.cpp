@@ -26,6 +26,7 @@
 #include "thorxmlwrite.hpp"
 #include "../hashdistrib/thhashdistribslave.ipp"
 #include "thsortu.hpp"
+#include "thlookupjoincommon.hpp"
 
 #ifdef _DEBUG
 #define _TRACEBROADCAST
@@ -1734,9 +1735,11 @@ protected:
     unsigned spillCompInfo;
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
     ICompare *compareLeft;
-    atomic_t failedOverToLocal, failedOverToStandard;
+    std::atomic<bool> failedOverToLocal{false}, failedOverToStandard{false};
     CriticalSection broadcastSpillingLock;
     Owned<IJoinHelper> joinHelper;
+    std::atomic<unsigned> aggregateFailoversToLocal{0}; // total number of times this activity has failed over to local smart join (0/1 unless in loop)
+    std::atomic<unsigned> aggregateFailoversToStandard{0}; // total number of times this activity has failed over to standard hash join (0/1 unless in loop)
 
     // NB: Only used by channel 0
     Owned<CFileOwner> overflowWriteFile;
@@ -1745,10 +1748,20 @@ protected:
     OwnedMalloc<IChannelDistributor *> channelDistributors;
 
     inline bool isSmart() const { return smart; }
-    inline void setFailoverToLocal(bool tf) { atomic_set(&failedOverToLocal, (int)tf); }
-    inline void setFailoverToStandard(bool tf) { atomic_set(&failedOverToStandard, (int)tf); }
-    inline bool hasFailedOverToLocal() const { return 0 != atomic_read(&failedOverToLocal); }
-    inline bool hasFailedOverToStandard() const { return 0 != atomic_read(&failedOverToStandard); }
+    inline void setFailoverToLocal()
+    {
+        bool expectedState = false;
+        if (failedOverToLocal.compare_exchange_strong(expectedState, true))
+            ++aggregateFailoversToLocal;
+    }
+    inline void setFailoverToStandard()
+    {
+        bool expectedState = false;
+        if (failedOverToStandard.compare_exchange_strong(expectedState, true))
+            ++aggregateFailoversToStandard;
+    }
+    inline bool hasFailedOverToLocal() const { return failedOverToLocal; }
+    inline bool hasFailedOverToStandard() const { return failedOverToStandard; }
     inline bool isRhsCollated() const { return rhsCollated; }
     rowidx_t clearNonLocalRows(CThorRowArrayWithFlushMarker &rows, unsigned slave)
     {
@@ -1794,7 +1807,7 @@ protected:
         CriticalBlock b(broadcastSpillingLock);
         if (!hasFailedOverToLocal())
         {
-            setFailoverToLocal(true);
+            setFailoverToLocal();
             ActPrintLog("Clearing non-local rows - cause: %s", msg);
 
             broadcaster->stop(myNodeNum, bcastflag_spilt); // signals to broadcast to start stopping immediately and to signal spilt to others
@@ -1999,7 +2012,7 @@ protected:
      * handleGlobalRHS() attempts to broadcast and gather RHS rows and setup HT on channel 0
      * Checks at various stages if spilt and bails out.
      * Side effect of setting 'rhsCollated' based on ch0 value on all channels
-     * and setting setFailoverToLocal(true) if fails over.
+     * and setting setFailoverToLocal() if fails over.
      */
     bool handleGlobalRHS(CMarker &marker, bool globallySorted, bool stopping)
     {
@@ -2136,7 +2149,7 @@ protected:
             if (isSmart())
                 rightRowManager->removeRowBuffer(lkJoinCh0);
             if (lkJoinCh0->hasFailedOverToLocal())
-                setFailoverToLocal(true);
+                setFailoverToLocal();
             rhsCollated = lkJoinCh0->isRhsCollated();
         }
         ActPrintLog("Channel memory manager report");
@@ -2265,8 +2278,10 @@ protected:
         // roxiemem::IBufferedRowCallback impl.
             virtual bool freeBufferedRows(bool critical)
             {
-                CriticalBlock b(crit);
+                CriticalBlock b(crit); // JCSMORE no idea why this crit is here, looks like should be deleted.
+
                 owner.ActPrintLog("CChannelDistributor free memory callback called");
+                owner.setFailoverToStandard(); // mark early so statistics / eclwatch can see that activity has failed over to hash join asap.
                 unsigned startSpillChannel = nextSpillChannel;
                 for (;;)
                 {
@@ -2474,7 +2489,7 @@ protected:
                     {
                         ActPrintLog("Global SMART JOIN spilt to disk during Distributed Local Lookup handling. Failing over to Standard Join");
                         rightStream.setown(rightCollector->getStream());
-                        setFailoverToStandard(true);
+                        setFailoverToStandard();
                     }
 
                     // start LHS distributor, needed by local lookup or full join
@@ -2496,7 +2511,7 @@ protected:
                 {
                     rightStream.setown(rightCollector->getStream());
                     ActPrintLog("Local SMART JOIN spilt to disk. Failing over to regular local join");
-                    setFailoverToStandard(true);
+                    setFailoverToStandard();
                 }
                 else
                     ActPrintLog("RHS local rows fitted in memory in this channel, count: %" RIPF "d", rhs.ordinality());
@@ -2511,7 +2526,7 @@ protected:
                         marker.reset();
                     if (!prepareLocalHT(marker, *rightCollector)) // can cause others to spill, but must not be allowed to spill channel rows I'm working on.
                     {
-                        setFailoverToStandard(true);
+                        setFailoverToStandard();
                         ActPrintLog("Out of memory trying to prepare [LOCAL] hashtable for a SMART join (%" RIPF "d rows), will now failover to a std hash join", rhs.ordinality());
                     }
                     rightStream.setown(rightCollector->getStream(false, &rhs));
@@ -2520,7 +2535,7 @@ protected:
             if (rightStream)
             {
                 ActPrintLog("Performing STANDARD JOIN");
-                setFailoverToStandard(true);
+                setFailoverToStandard();
                 setupStandardJoin(rightStream); // NB: rightStream is sorted
             }
             else
@@ -2583,8 +2598,6 @@ public:
     {
         rhsCollated = rhsCompacted = false;
         broadcast2MpTag = broadcast3MpTag = lhsDistributeTag = rhsDistributeTag = TAG_NULL;
-        setFailoverToLocal(false);
-        setFailoverToStandard(false);
         leftHash = helper->queryHashLeft();
         rightHash = helper->queryHashRight();
         compareRight = helper->queryCompareRight();
@@ -2600,18 +2613,7 @@ public:
             atMost = (unsigned)-1;
         if (abortLimit < atMost)
             atMost = abortLimit;
-
-        switch (container.getKind())
-        {
-            case TAKsmartjoin:
-            case TAKsmartdenormalize:
-            case TAKsmartdenormalizegroup:
-                smart = true;
-                break;
-            default:
-                smart = false;
-                break;
-        }
+        smart = isSmartJoin(*this);
         overflowWriteCount = 0;
         spillCompInfo = 0x0;
         if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
@@ -2703,11 +2705,11 @@ public:
             {
                 if (isGlobal())
                 {
-                    setFailoverToLocal(false);
+                    failedOverToLocal = false;
                     rhsCollated = rhsCompacted = false;
                 }
             }
-            setFailoverToStandard(false);
+            failedOverToStandard = false;
         }
     }
     CATCH_NEXTROW()
@@ -2899,6 +2901,16 @@ public:
         ForEachItemIn(r, rhsInRowsTemp)
             overflowWriteStream->putRow(rhsInRowsTemp.getClear(r));
         return true;
+    }
+    virtual void serializeStats(MemoryBuffer &mb) override
+    {
+        CSlaveActivity::serializeStats(mb);
+        if (isSmart())
+        {
+            if (isGlobal())
+                mb.append(aggregateFailoversToLocal); // NB: is going to be same for all slaves.
+            mb.append(aggregateFailoversToStandard);
+        }
     }
 };
 
