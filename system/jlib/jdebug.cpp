@@ -1582,6 +1582,7 @@ public:
 
 #define OTHER_DISK_MAJOR(M) ((M) == COMPAQ_SMART2_MAJOR) // by investigation!
 
+// nvme disk major is often 259 (blkext) but others are also
 
 class CExtendedStats  // Disk network and cpu stats
 {
@@ -1650,8 +1651,18 @@ class CExtendedStats  // Disk network and cpu stats
 
     StringBuffer ifname;
 
-    int isdisk(unsigned int major, unsigned int minor)
+#ifdef __linux__
+    UnsignedArray diskMajorMinor;
+#endif
+
+    bool isDisk(unsigned int major, unsigned int minor)
     {
+#ifdef __linux__
+        unsigned mm = (major<<16)+minor;
+        bool found = diskMajorMinor.contains(mm);
+        if (found)
+            return true;
+#endif
         if (IDE_DISK_MAJOR(major)) 
             return ((minor&0x3F)==0);
         if (SCSI_DISK_MAJOR(major)) 
@@ -1715,15 +1726,19 @@ class CExtendedStats  // Disk network and cpu stats
         FILE* diskfp = fopen("/proc/diskstats", "r");
         if (!diskfp)
             return false;
-        if (!newblkio) {
+        if (!newblkio)
+        {
             nparts = 0;
-            while (fgets(ln, sizeof(ln), diskfp)) {
+            while (fgets(ln, sizeof(ln), diskfp))
+            {
                 unsigned reads = 0;
-                if (sscanf(ln, "%4d %4d %31s %u", &pi.major, &pi.minor, pi.name, &reads) == 4) {
+                if (sscanf(ln, "%4d %4d %31s %u", &pi.major, &pi.minor, pi.name, &reads) == 4)
+                {
                     unsigned p = 0;
                     while ((p<nparts) && (partition[p].major != pi.major || partition[p].minor != pi.minor))
                         p++;
-                    if ((p==nparts) && reads && isdisk(pi.major,pi.minor)) {
+                    if ((p==nparts) && reads && isDisk(pi.major,pi.minor))
+                    {
                         nparts++;
                         partition = (part_info *)realloc(partition,nparts*sizeof(part_info));
                         partition[p] = pi;
@@ -1737,7 +1752,8 @@ class CExtendedStats  // Disk network and cpu stats
         }
         rewind(diskfp);
         // could skip lines we know aren't significant here
-        while (fgets(ln, sizeof(ln), diskfp)) {
+        while (fgets(ln, sizeof(ln), diskfp))
+        {
             blkio_info blkio;
             unsigned items = sscanf(ln, "%4d %4d %*s %u %u %llu %u %u %u %llu %u %*u %u %u",
                        &pi.major, &pi.minor,
@@ -1746,7 +1762,8 @@ class CExtendedStats  // Disk network and cpu stats
                        &blkio.wr_ios, &blkio.wr_merges,
                        &blkio.wr_sectors, &blkio.wr_ticks,
                        &blkio.ticks, &blkio.aveq);
-            if (items == 6) {
+            if (items == 6)
+            {
                 // hopefully not this branch!
                 blkio.rd_sectors = blkio.rd_merges;
                 blkio.wr_sectors = blkio.rd_ticks;
@@ -1760,9 +1777,12 @@ class CExtendedStats  // Disk network and cpu stats
                 blkio.aveq = 0;
                 items = 12;
             }
-            if (items == 12) {
-                for (unsigned p = 0; p < nparts; p++) {
-                    if (partition[p].major == pi.major && partition[p].minor == pi.minor) {
+            if (items == 12)
+            {
+                for (unsigned p = 0; p < nparts; p++)
+                {
+                    if (partition[p].major == pi.major && partition[p].minor == pi.minor)
+                    {
                         newblkio[p] = blkio;
                         break;
                     }
@@ -1966,6 +1986,38 @@ public:
 
         if (!getInterfaceName(ifname))
             ifname.set("eth0");
+
+#ifdef __linux__
+        // MCK - wish libblkid could do this ...
+        // Another way might also be to look for:
+        //   /sys/block/sd*
+        //   /sys/block/nvme*
+        // and match those with entries in /proc/diskstats
+        StringBuffer cmd("lsblk -o TYPE,MAJ:MIN --pairs");
+        Owned<IPipeProcess> pipe = createPipeProcess();
+        if (pipe->run("list disks", cmd, nullptr, false, true))
+        {
+            StringBuffer output;
+            Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+            readSimpleStream(output, *pipeReader);
+            unsigned exitcode = pipe->wait();
+            if ( (exitcode == 0) && (output.length() > 0) )
+            {
+                StringArray lines;
+                lines.appendList(output, "\n");
+                ForEachItemIn(idx, lines)
+                {
+                    // line: TYPE="disk" MAJ:MIN="259:0"
+                    unsigned majnum, minnum;
+                    if (2 == sscanf(lines.item(idx), "TYPE=\"disk\" MAJ:MIN=\"%u:%u\"", &majnum, &minnum))
+                    {
+                        unsigned mm = (majnum<<16)+minnum;
+                        diskMajorMinor.appendUniq(mm);
+                    }
+                }
+            }
+        }
+#endif // __linux__
     }
 
     ~CExtendedStats()
@@ -1989,18 +2041,21 @@ public:
 #endif
         bool gotdisk = getDiskInfo()&&nparts;
         bool gotnet = getNetInfo();
-        if (first) {
+        if (first)
+        {
             first = false;
             return false;
         }
         double deltams = ((double)totalcpu*1000) / ncpu / HZ;
         if (deltams<10)
             return false;
-        if (gotdisk) {
+        if (gotdisk)
+        {
             if (out.length()&&(out.charAt(out.length()-1)!=' '))
                 out.append(' ');
             out.append("DSK: ");
-            for (unsigned p = 0; p < nparts; p++) {
+            for (unsigned p = 0; p < nparts; p++)
+            {
 
                 unsigned rd_ios = newblkio[p].rd_ios - oldblkio[p].rd_ios;
                 __uint64 rd_sectors = newblkio[p].rd_sectors - oldblkio[p].rd_sectors;
@@ -2020,7 +2075,10 @@ public:
                 out.append(' ');
             }
         }
-        if (gotnet) {
+        if (gotnet)
+        {
+            if (out.length()&&(out.charAt(out.length()-1)!=' '))
+                out.append(' ');
             out.appendf("NIC: [%s] ", ifname.str());
             __uint64 rxbytes = newnet.rxbytes-oldnet.rxbytes;
             __uint64 rxpackets = newnet.rxpackets-oldnet.rxpackets;
@@ -2039,7 +2097,11 @@ public:
             out.append(' ');
         }
         if (totalcpu)
-          out.appendf("CPU: usr=%d sys=%d iow=%d idle=%d", (unsigned)(cpu.user*100/totalcpu), (unsigned)(cpu.system*100/totalcpu), (unsigned)(cpu.iowait*100/totalcpu), (unsigned)(cpu.idle*100/totalcpu));
+        {
+            if (out.length()&&(out.charAt(out.length()-1)!=' '))
+                out.append(' ');
+            out.appendf("CPU: usr=%d sys=%d iow=%d idle=%d", (unsigned)(cpu.user*100/totalcpu), (unsigned)(cpu.system*100/totalcpu), (unsigned)(cpu.iowait*100/totalcpu), (unsigned)(cpu.idle*100/totalcpu));
+        }
         return true;
     }
 
