@@ -1528,6 +1528,16 @@ public:
         contendedTimes.append(tester.run(title, numCores * 2, numIterations));\
     }
 
+    //Use to common out a test
+    #define XDO_TEST(LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS)   \
+    { \
+        uncontendedTimes.append(0);\
+        minorTimes.append(0);\
+        typicalTimes.append(0);\
+        contendedTimes.append(0);\
+    }
+
+
     class Null
     {};
 
@@ -1555,6 +1565,16 @@ public:
         DO_TEST(Null, Null, unsigned __int64, 2, 1);
         DO_TEST(Null, Null, unsigned __int64, 5, 1);
 
+        //Read locks will fail to prevent values being lost, but the timings are useful in comparison with CriticalSection
+        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 1, 1);
+        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 2, 1);
+        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 5, 1);
+        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 1, 2);
+        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 1, 1);
+        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 2, 1);
+        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 5, 1);
+        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 1, 2);
+
         printf("Summary\n");
         summariseTimings("Uncontended", uncontendedTimes);
         summariseTimings("Minor", minorTimes);
@@ -1564,10 +1584,10 @@ public:
 
     void summariseTimings(const char * option, UInt64Array & times)
     {
-        printf("%11s 1x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u)   "
-                    "5x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u)\n", option,
-                    times.item(0), times.item(4), times.item(8), times.item(12), times.item(14),
-                    times.item(2), times.item(6), times.item(10), times.item(13), times.item(15));
+        printf("%11s 1x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)   "
+                    "5x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)\n", option,
+                    times.item(0), times.item(4), times.item(8), times.item(12), times.item(14), times.item(19), times.item(23),
+                    times.item(2), times.item(6), times.item(10), times.item(13), times.item(15), times.item(21), times.item(25));
     }
 
 private:

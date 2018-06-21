@@ -26,6 +26,21 @@
 #include <sys/time.h>
 #include <semaphore.h>
 
+
+void getEndTime(timespec & abs, unsigned timeout)
+{
+    timeval cur;
+    gettimeofday(&cur, NULL);
+
+    abs.tv_sec = cur.tv_sec + timeout/1000;
+    abs.tv_nsec = (cur.tv_usec + timeout%1000*1000)*1000;
+    if (abs.tv_nsec>=1000000000) {
+        abs.tv_nsec-=1000000000;
+        abs.tv_sec++;
+    }
+}
+
+
 #ifndef USE_OLD_SEMAPHORE_CODE
 
 Semaphore::Semaphore(unsigned initialCount)
@@ -65,16 +80,8 @@ bool Semaphore::wait(unsigned timeout)
     if (sem_trywait(&sem) == 0)
         return true;
 
-    timeval cur;
-    gettimeofday(&cur, NULL);
-
     timespec abs;
-    abs.tv_sec = cur.tv_sec + timeout/1000;
-    abs.tv_nsec = (cur.tv_usec + timeout%1000*1000)*1000;
-    if (abs.tv_nsec>=1000000000) {
-        abs.tv_nsec-=1000000000;
-        abs.tv_sec++;
-    }
+    getEndTime(abs, timeout);
     int ret = sem_timedwait(&sem, &abs);
     if (ret < 0)
         return false;
