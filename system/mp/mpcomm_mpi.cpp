@@ -139,7 +139,9 @@ public:
             usleep(100);
             stat = hpcc_mpi::getCommStatus(req);
         } while (stat == hpcc_mpi::CommStatus::INCOMPLETE && !tm.timedout(&remaining));
-        hpcc_mpi::releaseComm(req);
+        printf("recv whilte existed %d\n",stat);
+//        hpcc_mpi::releaseComm(req);
+//        printf("req released %d\n",stat);
         return (stat == hpcc_mpi::CommStatus::SUCCESS);
     }
     

@@ -5,42 +5,42 @@
 #include <jmisc.hpp>
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
-#include <jlib.hpp>
+#include <jthread.hpp>
+#include <vector>
+#include <jexcept.hpp>
 
 using namespace std;
 
-#define MULTITEST
+#define RANK_TEST 0
+#define SINGLE_SEND_TEST 1
+#define RIGHT_SHIFT_TEST 2
+#define CUSTOM_SEND_TEST 3
+#define RECEIVE_FROM_ANY_TEST 4
+#define SEND_ONE_TO_ALL_TEST 5
+#define RECEIVE_ONE_FROM_ALL_TEST 6
+#define MT_SIMPLE_SEND_RECV 7
+#define MT_SEND_RECV 8
 
 rank_t myrank;
 
-//class ThreadTest: public implements IThreaded{
-//protected:
-//	ICommunicator* comm;
-//public:
-//	void setComm(ICommunicator* _comm){
-//		comm = _comm;
-//	}
-//};
-
 void printHelp(int argc, char** argv){
     if (myrank == 0){
-        printf("USAGE \n\t$ mpirun -np <# of procs> %s", argv[0]);
-        std::string desc="\n\nDESCRIPTION\n\t";
-    #ifdef RANK_TEST
-        printf("%sPrint rank of each node (# of procs > 1).", desc.c_str()); 
-    #elif SINGLE_SEND_TEST
-        printf("%sSend message from node 0 to node 1 (# of procs >= 2).", desc.c_str()); 
-    #elif RIGHT_SHIFT_TEST
-        printf("%sSend data to the node represented by next rank.", desc.c_str()); 
-    #elif RECEIVE_FROM_ANY_TEST    
-        printf(" [node_rank]%sLast node/processpor receive data from any node_rank (default=0).", desc.c_str()); 
-    #elif CUSTOM_SEND_TEST
-        printf(" <routing_file>%sSend/Receive data based on custom routing.", desc.c_str()); 
-    #elif SEND_ONE_TO_ALL_TEST
-        printf(" [node_rank]%sNode node_rank (default=0) send to all nodes.", desc.c_str()); 
-    #elif RECEIVE_ONE_FROM_ALL_TEST
-        printf(" [node_rank]%sNode node_rank (default=0) receive from all nodes.", desc.c_str()); 
-    #endif
+        printf("USAGE \n\t$ mpirun -np <# of procs> %s -t <test-type> <para_1...para_n>\n", argv[0]);
+        printf("\n");
+        printf("-t <test-type>\t Select the type of test to run. Avaialable tests are the following:\n");
+        printf("\t\t %d - Print rank of each node (# of procs > 1).\n",RANK_TEST);
+        printf("\t\t %d - Send message from node 0 to node 1 (# of procs >= 2).\n",SINGLE_SEND_TEST);
+        printf("\t\t %d - Send data to the node represented by next rank.\n",RIGHT_SHIFT_TEST);
+        printf("\t\t %d - Last node/processpor receive data from any node_rank (default=0).\n",CUSTOM_SEND_TEST);
+        printf("\t\t\t\t    parameters: [node_rank]\n");
+        printf("\t\t %d - <routing_file> Send/Receive data based on custom routing.\n",RECEIVE_FROM_ANY_TEST);
+        printf("\t\t %d - Node node_rank (default=0) send to all nodes.\n",SEND_ONE_TO_ALL_TEST);
+        printf("\t\t\t\t    parameters: [node_rank]\n");
+        printf("\t\t %d - Node node_rank (default=0) receive from all nodes.\n",RECEIVE_ONE_FROM_ALL_TEST);
+        printf("\t\t\t\t    parameters: [node_rank]\n");
+        printf("\t\t %d - Multi-threaded simple send and receive\n",MT_SIMPLE_SEND_RECV);
+        printf("\t\t %d - Multi-threaded competing send and receive\n",MT_SEND_RECV);
+        printf("<para_i>\t Test parameters\n");
         printf("\n\n");
     }
 }
@@ -160,44 +160,199 @@ void TEST_one_from_all(ICommunicator* comm, rank_t nodeRank){
     }
 }
 
-void TEST_MT_right_shift(ICommunicator* comm){
-//    class: public ThreadTest{
-//    public:
-//    	void main(){
-//    		IGroup *group = comm->getGroup();
-//    		rank_t p = group->ordinality();
-//			rank_t rank = group->rank();
-//			rank_t destination_rank = (rank + 1) % p;
-//
-//			CMessageBuffer sendMsg;
-//			sendMsg.append(rank);
-//			comm->send(sendMsg, destination_rank, MPTAG_TEST, MP_WAIT_FOREVER);
-//    	}
-//    } s;
-//    class: public ThreadTest{
-//    public:
-//    	void main(){
-//    		IGroup *group = comm->getGroup();
-//    		rank_t p = group->ordinality();
-//			rank_t rank = group->rank();
-//			rank_t source_rank = (rank - 1 + p) % p;
-//
-//			CMessageBuffer recvMsg;
-//			int received_msg;
-//			comm->recv(recvMsg, source_rank, MPTAG_TEST, NULL, MP_WAIT_FOREVER);
-//			recvMsg.read(received_msg);
-//			assertex(source_rank == received_msg);
-//			PrintLog("Message received from node %d to node %d.", source_rank, rank);
-//    	}
-//    } r;
-//    s.setComm(comm);
-//    r.setComm(comm);
-//
-//    CThreaded sendThread = new CThreaded("Send Thread", s);
-//    CThreaded recvThread = new CThreaded("Receive Thread", r);
-//    sendThread.start();
-//    recvThread.start();
-//    recvThread.join();
+
+CriticalSection sendCriticalSec;
+CriticalSection recvCriticalSec;
+int getNextCount(CriticalSection &sect, int &count){
+	CriticalBlock block(sect);
+	return count--;
+//	if (count)
+//		return count--;
+//	else
+//		return -1;
+}
+
+void TEST_MT_simple_send_recv(ICommunicator* comm){
+	assertex(comm->getGroup()->ordinality()>1);
+	rank_t rank = comm->getGroup()->rank();
+	// nodes ranked 0 and 1 will be conducting this test
+	if (rank<2){
+		class SWorker: public Thread{
+		private:
+			ICommunicator* comm;
+		public:
+			SWorker(ICommunicator* _comm):comm(_comm){}
+			int run(){
+				IGroup *group = comm->getGroup();
+				rank_t p = group->ordinality();
+				rank_t rank = group->rank();
+				rank_t destination_rank = 1 - rank;
+
+				CMessageBuffer sendMsg;
+				int msg = (rank + 1)*10;
+				sendMsg.append(msg);
+				comm->send(sendMsg, destination_rank, MPTAG_TEST);
+				PrintLog("Message sent from %d", rank);
+				return 1;
+			}
+		} s(comm);
+		class RWorker: public Thread{
+		private:
+			ICommunicator* comm;
+		public:
+			RWorker(ICommunicator* _comm):comm(_comm){}
+			int run(){
+				IGroup *group = comm->getGroup();
+				rank_t p = group->ordinality();
+				rank_t rank = group->rank();
+				rank_t source_rank = 1 - rank;
+
+				CMessageBuffer recvMsg;
+				if (comm->recv(recvMsg, source_rank, MPTAG_TEST, NULL, 100)){
+					int received_msg;
+					recvMsg.read(received_msg);
+					//TODO validate received messge
+					PrintLog("Message %d received to %d", received_msg, rank);
+				}
+				return 1;
+			}
+		}r(comm);
+		s.start(); r.start();
+		s.join(); r.join();
+	}
+	comm->barrier();
+}
+
+void TEST_MT_send_recv(ICommunicator* comm, int counter){
+	assertex(comm->getGroup()->ordinality()>1);
+	int SEND_THREADS, RECV_THREADS;
+	SEND_THREADS = RECV_THREADS = 1;
+	rank_t rank = comm->getGroup()->rank();
+	// nodes ranked 0 and 1 will be conducting this test
+	if (rank<2){
+		class SWorker: public Thread{
+		private:
+			ICommunicator* comm;
+			int* counter;
+		public:
+			SWorker(ICommunicator* _comm, int* _counter):comm(_comm), counter(_counter){}
+			int run(){
+				IGroup *group = comm->getGroup();
+				rank_t p = group->ordinality();
+				rank_t rank = group->rank();
+				rank_t destination_rank = 1 - rank;
+
+				CMessageBuffer sendMsg;
+				while(true){
+					sendMsg.clear();
+					int v = getNextCount(sendCriticalSec, *counter);
+					if (v > 0){
+						sendMsg.append(v);
+						printf("%d: b4 send\n", rank);
+						comm->send(sendMsg, destination_rank, MPTAG_TEST);
+					} else {
+						break;
+					}
+				}
+				return 0;
+			}
+		};
+		class RWorker: public Thread{
+		private:
+			ICommunicator* comm;
+			int* counter;
+		public:
+			RWorker(ICommunicator* _comm, int* _counter):comm(_comm), counter(_counter){}
+			int run(){
+				IGroup *group = comm->getGroup();
+				rank_t p = group->ordinality();
+				rank_t rank = group->rank();
+				rank_t source_rank = 1 - rank;
+
+				CMessageBuffer recvMsg;
+				int received_msg;
+				while (*counter){
+					recvMsg.clear();
+					printf("%d: b4 recv\n", rank);
+					if (comm->recv(recvMsg, source_rank, MPTAG_TEST, NULL, 100)){
+						printf("%d: recved\n", rank);
+						recvMsg.read(received_msg);
+						//TODO validate received messge
+						getNextCount(recvCriticalSec, *counter);
+					}
+				}
+				return 0;
+			}
+		};
+		std::vector<Thread*> workers;
+		int s_counter, r_counter;
+		s_counter = r_counter = counter;
+		for(int i=0;i<SEND_THREADS; i++){
+			workers.push_back(new SWorker(comm, &s_counter));
+		}
+		for(int i=0;i<RECV_THREADS; i++){
+			workers.push_back(new RWorker(comm, &r_counter));
+		}
+		for(int i=0;i<workers.size(); i++){
+			workers[i]->start();
+		}
+		for(int i=0;i<workers.size(); i++){
+			workers[i]->join();
+		}
+//		for(int i=0;i<workers.size(); i++){
+//			delete workers[i];
+//		}
+		PrintLog("Rank %d sent %d messages", rank, s_counter);
+		PrintLog("Rank %d received %d messages", rank, r_counter);
+	}
+	comm->barrier();
+}
+
+void run_tests(ICommunicator* comm, int type, int paramCount, char* parameter[]) {
+	switch (type) {
+		case RANK_TEST: {
+			TEST_rank(comm);
+			break;
+		}
+		case SINGLE_SEND_TEST: {
+			TEST_single_send(comm);
+			break;
+		}
+		case RIGHT_SHIFT_TEST: {
+			TEST_right_shift(comm);
+			break;
+		}
+		case CUSTOM_SEND_TEST: {
+			break;
+		}
+		case RECEIVE_FROM_ANY_TEST: {
+			int rank = (paramCount == 1) ? atoi(parameter[0]) : 0;
+			TEST_receive_from_any(comm, rank);
+			break;
+		}
+		case SEND_ONE_TO_ALL_TEST: {
+			int rank = (paramCount == 1) ? atoi(parameter[0]) : 0;
+			TEST_one_to_all(comm, rank);
+			break;
+		}
+		case RECEIVE_ONE_FROM_ALL_TEST: {
+			int rank = (paramCount == 1) ? atoi(parameter[0]) : 0;
+			TEST_one_from_all(comm, rank);
+			break;
+		}
+		case MT_SEND_RECV: {
+			int counter = (paramCount == 1) ? atoi(parameter[0]) : 10;
+			TEST_MT_send_recv(comm, counter);
+			break;
+		}
+		case MT_SIMPLE_SEND_RECV: {
+			TEST_MT_simple_send_recv(comm);
+			break;
+		}
+		default:{
+			//TODO run all tests
+		}
+	}
 }
 
 int main(int argc, char* argv[]){
@@ -208,51 +363,19 @@ int main(int argc, char* argv[]){
         IGroup* group = createIGroup(0, (INode **) NULL);
         ICommunicator* comm = createCommunicator(group);
         myrank = group->rank();
-        if ((argc == 2) && (strcmp(argv[1], "--help") == 0)){
-            printHelp(argc, argv);
-            stopMPServer();
-            return 0;
-        }        
-#ifdef RANK_TEST
-        if (argc < 2)
-            TEST_rank(comm);
-        else
-            printHelp(argc, argv);
-#elif SINGLE_SEND_TEST        
-        if (argc < 2)
-            TEST_single_send(comm);
-        else
-            printHelp(argc, argv);    
-#elif RIGHT_SHIFT_TEST
-        if (argc < 2)
-            TEST_right_shift(comm);
-        else
-            printHelp(argc, argv);            
-#elif CUSTOM_SEND_TEST
-#elif RECEIVE_FROM_ANY_TEST
-        if (argc < 3){
-            int rank = (argc == 2)? atoi(argv[1]) : 0;
-            TEST_receive_from_any(comm, rank);
-        }else
-            printHelp(argc, argv);  
-#elif SEND_ONE_TO_ALL_TEST
-        if (argc < 3){
-            int rank = (argc == 2)? atoi(argv[1]) : 0;
-            TEST_one_to_all(comm, rank);
-        }else
-            printHelp(argc, argv);     
-#elif RECEIVE_ONE_FROM_ALL_TEST
-        if (argc < 3){
-            int rank = (argc == 2)? atoi(argv[1]) : 0;
-            TEST_one_from_all(comm, rank);
-        }else
-            printHelp(argc, argv);      
-#endif    
+        int type;
+        if ((argc > 2) && strcmp(argv[1], "-t")==0){
+        	type = strcmp(argv[2], "all")==0? -1:atoi(argv[2]);
+        } else {
+            throw makeStringException(0, "Invalid commandline parameters.");
+        }
+		run_tests(comm, type, argc-3, &argv[3]);
         stopMPServer();
     } catch (IException *e){
-        pexception("Exception", e);
+    	stopMPServer();
+    	if ((argc != 2) || strcmp(argv[1], "--help"))
+    		pexception("Exception", e);
         printHelp(argc, argv);
-        stopMPServer();
     }
     return 0;
 }

@@ -72,9 +72,16 @@ hpcc_mpi::CommStatus startReceiveProcess(int i){
     MPI_Iprobe(requests[i].rank, requests[i].tag, requests[i].comm, &flag, &stat);
     if (flag){
         requests[i].requiresProbing = 0;
-        MPI_Get_count(&stat, MPI_BYTE, &(requests[i].size));
+        requests[i].size = 0;
+        while((requests[i].size) == 0){
+        	MPI_Get_count(&stat, MPI_BYTE, &(requests[i].size));
+//        	printf("size=%d\n", requests[i].size);
+        }
+//        printf("out of while\n");
+        assertex(requests[i].size>0);
         requests[i].data = malloc(requests[i].size);
         MPI_Irecv(requests[i].data, requests[i].size, MPI_BYTE, requests[i].rank, requests[i].tag, requests[i].comm, &(requests[i].request));
+//        printf("irecv started\n");
         requests[i].status = hpcc_mpi::getCommStatus(i);
     }
     return requests[i].status;
@@ -165,8 +172,10 @@ hpcc_mpi::CommStatus hpcc_mpi::getCommStatus(CommRequest commReq){
                 MPI_Test(&(requests[commReq].request), &flag, &stat);
                 if (flag){                              // if request completed
                     if (requests[commReq].mbuf != NULL){//if it was a receive call
+//                    	printf("b4 mbuff clear");
                         (requests[commReq].mbuf)->reset();
                         (requests[commReq].mbuf)->append(requests[commReq].size,requests[commReq].data);
+//                        printf("after mbuff clear");
                         //TODO revisit on how to create the replytag in the CMessageBuffer
                         SocketEndpoint ep;
                         ep.port = stat.MPI_SOURCE;
