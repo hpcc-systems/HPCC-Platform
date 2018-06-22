@@ -38,29 +38,34 @@
       <para></para>
     </legalnotice>
 
-          <xi:include  href="../../common/Version.xml" xpointer="FooterInfo" 
-                     xmlns:xi="http://www.w3.org/2001/XInclude">
-                      <xi:fallback>
-                        <para><emphasis>FooterInfo Failed to load</emphasis></para>
-                       </xi:fallback>
-         </xi:include>
-    
-                    
-         <xi:include  href="../../common/Version.xml" xpointer="DateVer" 
-                     xmlns:xi="http://www.w3.org/2001/XInclude">
-                      <xi:fallback>
-                        <para><emphasis>DateVer Failed to load</emphasis></para>
-                       </xi:fallback>
-         </xi:include>
-		
+    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>FooterInfo Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
+
+    <xi:include href="../../common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>DateVer Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
+
     <corpname>HPCC Systems</corpname>
 
-       <xi:include  href="../../common/Version.xml" xpointer="Copyright" 
-                    xmlns:xi="http://www.w3.org/2001/XInclude">
-                     <xi:fallback>
-                       <para><emphasis>Copyright Failed to load</emphasis></para>
-                      </xi:fallback>
-        </xi:include>
+    <xi:include href="../../common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>Copyright Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <mediaobject role="logo">
       <imageobject>
@@ -117,7 +122,7 @@
         a port for each node on a single switch to optimize system
         performance. Your switch size should correspond to the size of your
         system. You would want to ensure that the switch you use has enough
-        capacity for each node to be plugged into it's own port.</para>
+        capacity for each node to be plugged into its own port.</para>
       </sect2>
 
       <sect2 id="Switch-additional-recommend">

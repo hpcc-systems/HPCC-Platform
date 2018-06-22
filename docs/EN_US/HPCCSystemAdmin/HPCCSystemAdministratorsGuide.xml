@@ -407,6 +407,9 @@
           details.</para>
         </sect3>
       </sect2>
+	      <xi:include href="HPCCSystemAdmin/SA-Mods/DAFtslave.xml"
+                xpointer="xpointer(//*[@id='SA_SupportUtilities'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <!--Inclusion-from-ClientTool-As-Sect1: REMOVED-->
