@@ -1023,6 +1023,16 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
 {
     if (!isAuthRequiredForBinding(authReq))
     {
+        if (!authReq.httpMethod.isEmpty() && !authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty()
+            && strieq(authReq.httpMethod.str(), GET_METHOD) && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "getauthtype"))
+        {
+            if (authReq.authBinding->getDomainAuthType() == AuthUserNameOnly)
+                sendGetAuthTypeResponse(authReq, AUTH_TYPE_USERNAMEONLY);
+            else
+                sendGetAuthTypeResponse(authReq, AUTH_TYPE_NONE);
+            return authTaskDone;
+        }
+
         if (authReq.authBinding->getDomainAuthType() == AuthUserNameOnly)
             return handleUserNameOnlyMode(authReq);
         return authSucceeded;
@@ -1032,6 +1042,12 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
         ((authReq.stype == sub_serv_root) || (!authReq.serviceName.isEmpty() && strieq(authReq.serviceName.str(), "esp"))))
         return authSucceeded;
 
+    if (!authReq.httpMethod.isEmpty() && !authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty()
+        && strieq(authReq.httpMethod.str(), GET_METHOD) && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "getauthtype"))
+    {
+        sendGetAuthTypeResponse(authReq, nullptr);
+        return authTaskDone;
+    }
 #ifdef _USE_OPENLDAP
     if (!authReq.httpMethod.isEmpty() && !authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp"))
     {
@@ -1298,6 +1314,45 @@ void CEspHttpServer::sendLockResponse(bool lock, bool error, const char* msg)
         if (!isEmptyString(msg))
             resp.appendf("<Message>%s</Message>", msg);
         resp.appendf("</%sResponse>", lock ? "Lock" : "Unlock");
+    }
+    sendMessage(resp.str(), (format == ESPSerializationJSON) ? "application/json" : "text/xml");
+}
+
+void CEspHttpServer::sendGetAuthTypeResponse(EspAuthRequest& authReq, const char* authType)
+{
+    StringBuffer authTypeStr = authType;
+    if (authTypeStr.isEmpty())
+    {
+        switch (authReq.authBinding->getDomainAuthType())
+        {
+            case AuthUserNameOnly:
+                authTypeStr.set(AUTH_TYPE_USERNAMEONLY);
+                break;
+            case AuthPerRequestOnly:
+                authTypeStr.set(AUTH_TYPE_PERREQUESTONLY);
+                break;
+            case AuthPerSessionOnly:
+                authTypeStr.set(AUTH_TYPE_PERSESSIONONLY);
+                break;
+            default:
+                authTypeStr.set(AUTH_TYPE_MIXED);
+                break;
+        }
+    }
+
+    StringBuffer resp;
+    ESPSerializationFormat format = m_request->queryContext()->getResponseFormat();
+    if (format == ESPSerializationJSON)
+    {
+        resp.set("{ ");
+        resp.append("\"GetAuthTypeResponse\": { ");
+        resp.appendf("\"AuthType\": \"%s\"", authTypeStr.str());
+        resp.append(" }");
+        resp.append(" }");
+    }
+    else
+    {
+        resp.setf("<GetAuthTypeResponse><AuthType>%s</AuthType></GetAuthTypeResponse>", authTypeStr.str());
     }
     sendMessage(resp.str(), (format == ESPSerializationJSON) ? "application/json" : "text/xml");
 }
