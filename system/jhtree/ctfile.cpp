@@ -120,6 +120,40 @@ extern bool isCompressedIndex(const char *filename)
     return false;
 }
 
+
+static bool isIndexFile(IFileIO *fileIO, offset_t size)
+{
+    try
+    {
+        KeyHdr hdr;
+        if (fileIO->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
+            return false;
+        SwapBigEndian(hdr);
+        if (!hdr.root || !hdr.nodeSize || !hdr.root || size % hdr.nodeSize || hdr.root % hdr.nodeSize || hdr.root >= size)
+            return false;
+        return true;    // Reasonable heuristic...
+    }
+    catch (IException *E)
+    {
+        E->Release();
+    }
+    return false;
+}
+
+extern jhtree_decl bool isIndexFile(IFileIO *fileIO)
+{
+    try
+    {
+        offset_t size = fileIO->size();
+        return isIndexFile(fileIO, size);
+    }
+    catch (IException *E)
+    {
+        E->Release();
+    }
+    return false;
+}
+
 extern jhtree_decl bool isIndexFile(IFile *file)
 {
     try
@@ -128,13 +162,7 @@ extern jhtree_decl bool isIndexFile(IFile *file)
         if (size <= sizeof(KeyHdr))
             return false;
         Owned<IFileIO> io = file->open(IFOread);
-        KeyHdr hdr;
-        if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
-            return false;
-        SwapBigEndian(hdr);
-        if (!hdr.root || !hdr.nodeSize || !hdr.root || size % hdr.nodeSize || hdr.root % hdr.nodeSize || hdr.root >= size)
-            return false;
-        return true;    // Reasonable heuristic...
+        return isIndexFile(io, size);
     }
     catch (IException *E)
     {

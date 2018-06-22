@@ -3976,7 +3976,8 @@ protected:
             throw MakeStringException(0, "CRemoteDiskBaseActivity: fileName missing");
 
         record = &inMeta->queryRecordAccessor(true);
-        translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
+        if (outMeta)
+            translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
         Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
         ForEach(*filterIter)
             filters.addFilter(*record, filterIter->query().queryProp(nullptr));
@@ -4217,10 +4218,73 @@ public:
     }
 };
 
-
 IRemoteActivity *createRemoteDiskRead(IPropertyTree &actNode)
 {
     return new CRemoteDiskReadActivity(actNode);
+}
+
+
+class CRemoteDiskCountActivity : public CRemoteDiskBaseActivity
+{
+    typedef CRemoteDiskBaseActivity PARENT;
+
+    unsigned __int64 rowLimit = 0;
+
+public:
+    CRemoteDiskCountActivity(IPropertyTree &config) : PARENT(config)
+    {
+        rowLimit = config.getPropInt64("chooseN");
+
+        // create helper
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
+        // NB: no outMeta, which is for a translated representation. Count activity output is raw count.
+        initCommon(config);
+    }
+// IRemoteActivity impl.
+    virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
+    {
+        if (eofSeen)
+            return nullptr;
+        checkOpen();
+
+        // NB: unfiltered count should be available at client side from meta. In future will also be available from per physical part meta here.
+
+        unsigned __int64 count = 0;
+        if (!eofSeen)
+        {
+            while (!prefetchBuffer.eos())
+            {
+                prefetcher->readAhead(prefetchBuffer);
+                if (inputGrouped)
+                    prefetchBuffer.read(sizeof(eog), &eog);
+                const byte *next = prefetchBuffer.queryRow();
+                if (fieldFilterMatch(next))
+                {
+                    if (translator->translate(outBuilder, *this, next))
+                        ++count;
+                }
+                prefetchBuffer.finishedRow();
+                if (count == rowLimit)
+                    break;
+            }
+            close();
+        }
+        void *tgt = outBuilder.ensureCapacity(sizeof(count), "count");
+        const void *ret = outBuilder.getSelf();
+        memcpy(tgt, &count, sizeof(count));
+        outBuilder.finishRow(sizeof(count));
+        close();
+        return ret;
+    }
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return out.appendf("diskcount[%s]", fileName.get());
+    }
+};
+
+IRemoteActivity *createRemoteDiskCount(IPropertyTree &actNode)
+{
+    return new CRemoteDiskCountActivity(actNode);
 }
 
 class CRemoteIndexBaseActivity : public CRemoteDiskBaseActivity
@@ -4358,7 +4422,7 @@ public:
 
         // create helper
         inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
-        outMeta.set(inMeta);
+        // NB: no outMeta, which is for a translated representation. Count activity output is raw count.
         initCommon(config);
     }
 // IRemoteActivity impl.
@@ -4401,10 +4465,18 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
     ThorActivityKind kind = TAKnone;
     if (strieq("diskread", kindStr))
         kind = TAKdiskread;
+    else if (strieq("diskcount", kindStr))
+        kind = TAKdiskcount;
     else if (strieq("indexread", kindStr))
         kind = TAKindexread;
     else if (strieq("indexcount", kindStr))
         kind = TAKindexcount;
+    // else - auto-detect
+
+    const char *fileName = actNode.queryProp("fileName");
+    if (isEmptyString(fileName))
+        throw MakeStringException(0, "createRemoteActivity: fileName missing");
+
     Owned<IRemoteActivity> activity;
     switch (kind)
     {
@@ -4423,8 +4495,40 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
             activity.setown(createRemoteIndexCount(actNode));
             break;
         }
-        default:
-            throwUnexpected(); // for now
+        case TAKdiskcount:
+        {
+            activity.setown(createRemoteDiskCount(actNode));
+            break;
+        }
+        default: // auto-detect file format
+        {
+            const char *action = actNode.queryProp("action");
+            if (isIndexFile(fileName))
+            {
+                if (!isEmptyString(action))
+                {
+                    if (streq("count", action))
+                        activity.setown(createRemoteIndexCount(actNode));
+                    else
+                        MakeStringException(0, "Unknown action '%s' on index '%s'", action, fileName);
+                }
+                else
+                    activity.setown(createRemoteIndexRead(actNode));
+            }
+            else
+            {
+                if (!isEmptyString(action))
+                {
+                    if (streq("count", action))
+                        activity.setown(createRemoteDiskCount(actNode));
+                    else
+                        MakeStringException(0, "Unknown action '%s' on flat file '%s'", action, fileName);
+                }
+                else
+                    activity.setown(createRemoteDiskRead(actNode));
+            }
+            break;
+        }
 
     }
     return activity.getClear();
@@ -6147,7 +6251,7 @@ public:
          *  "node" : {
          *   "kind" : "indexread",
          *   "fileName": "examplefilename",
-         *   "keyLilter" : "f1='1    '",
+         *   "keyFilter" : "f1='1    '",
          *   "rowLimit" : 5,
          *   "input" : {
          *    "f1" : "string5",
@@ -6163,8 +6267,8 @@ public:
          * {
          *  "format" : "xml",
          *  "node" : {
-         *   "kind" : "indexcount",
-         *   "fileName": "examplefilename",
+         *   "action" : "count",            // if present performs count with/without filter and returns count
+         *   "fileName": "examplefilename", // can be either index or flat file
          *   "keyFilter" : "f1='1    '",
          *   "rowLimit" : 5
          *   "input" : {
