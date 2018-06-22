@@ -142,7 +142,6 @@ ESPstruct TypeInfo
 {
     string Name;
     ESPstruct LimitsType Limits;
-    ESParray<string, Modifier> Modifiers;
 };
 
 
@@ -199,6 +198,7 @@ ESPstruct AttributeType
     bool       ReadOnly(false);
     bool       Hidden(false);
     bool       Deprecated(false);
+    ESParray<string, Modifier> Modifiers;
 };
 
 

@@ -824,6 +824,19 @@ void Cws_config2Ex::getAttributes(const std::vector<std::shared_ptr<EnvironmentV
             pAttribute->updateType().updateLimits().setChoiceList(choices);
         }
 
+        const std::vector<std::string> &mods = pSchemaValue->getModifiers();
+        if (!mods.empty())
+        {
+            StringArray modifiers;
+            StringBuffer modifier;
+            for (auto &modIt: mods)
+            {
+                modifier.set(modIt.c_str());
+                modifiers.append(modifier);
+            }
+            pAttribute->setModifiers(modifiers);
+        }
+
         pAttribute->setCurrentValue(pAttr->getValue().c_str());
         pAttribute->setDefaultValue(pSchemaValue->getDefaultValue().c_str());
 
