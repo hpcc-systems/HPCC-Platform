@@ -15,5 +15,17 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-get_filename_component(DOC_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../BuildTools/cmake_config/${DOC_DIR_NAME}.txt)
+
+DOCBOOK_TO_PDF( ${FO_XSL} WsSQL_ESPWebServiceGuide.xml "WsSQL_ESP_Web_Service_Users_Guide_${DOC_LANG}")
+
+IF(MAKE_DOCS)
+  SET(HELP_DEPENDENCIES)
+  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+  FOREACH(T ${Current_Targets})
+    IF("${T}" MATCHES ".*WsSQL_ESP_Web_Service_Users_Guide_${DOC_LANG}.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
+     ENDIF()
+  ENDFOREACH()
+
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/WsSQL_ESPWebServiceGuide.xml" ${PORTAL_HTML_DIR}/WsSQLUG_${DOC_LANG}  "wssql_user_guide_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+ENDIF(MAKE_DOCS)
