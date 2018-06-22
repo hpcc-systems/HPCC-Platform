@@ -67,10 +67,9 @@ class DECL_EXPORT SchemaValue
         const std::string &getMirrorFromPath() const { return m_mirrorFromPath;  }
         bool isMirroredValue() const { return m_mirrorFromPath.length() != 0; }
         void addMirroredSchemaValue(const std::shared_ptr<SchemaValue> &pVal) { m_mirrorToSchemaValues.push_back(pVal); }
-        void mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue);
+        void mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue, Status *pStatus = nullptr);
         void addEnvironmentValue(const std::shared_ptr<EnvironmentValue> &pEnvValue) { m_envValues.push_back(pEnvValue); }
         void getAllEnvironmentValues(std::vector<std::shared_ptr<EnvironmentValue>> &envValues) const;
-        void setMirroredEnvironmentValues(const std::string &oldValue, const std::string &newValue);
         void validate(Status &status, const std::string &id, const EnvironmentValue *pEnvValue = nullptr) const;
         void getAllowedValues(std::vector<AllowedValue> &allowedValues, const std::shared_ptr<const EnvironmentNode> &pEnvNode) const;
         void setAutoGenerateType(const std::string &type) { m_autoGenerateType = type; }

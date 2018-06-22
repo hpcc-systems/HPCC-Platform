@@ -50,7 +50,7 @@ bool EnvironmentValue::setValue(const std::string &value, Status *pStatus, bool 
         }
 
         if (rc)
-            m_pSchemaValue->mirrorValueToEnvironment(oldValue, value);
+            m_pSchemaValue->mirrorValueToEnvironment(oldValue, value, pStatus);
 
     }
     return rc;

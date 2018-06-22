@@ -159,24 +159,22 @@ void SchemaValue::resetEnvironment()
 
 
 // replicates the new value throughout the environment
-void SchemaValue::mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue)
+void SchemaValue::mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue, Status *pStatus)
 {
+    std::string msg = "Value automatically changed from " + oldValue + " to " + newValue;
     for (auto mirrorCfgIt = m_mirrorToSchemaValues.begin(); mirrorCfgIt != m_mirrorToSchemaValues.end(); ++mirrorCfgIt)
     {
-        (*mirrorCfgIt)->setMirroredEnvironmentValues(oldValue, newValue);
-    }
-}
-
-
-// Worker method for replicating a mirrored value to the environment values for this config value
-void SchemaValue::setMirroredEnvironmentValues(const std::string &oldValue, const std::string &newValue)
-{
-    for (auto envIt = m_envValues.begin(); envIt != m_envValues.end(); ++envIt)
-    {
-        std::shared_ptr<EnvironmentValue> pEnvValue = (*envIt).lock();
-        if (pEnvValue && pEnvValue->getValue() == oldValue)
+        for (auto &envValueIt: m_envValues)
         {
-            pEnvValue->setValue(newValue, nullptr, true);
+            std::shared_ptr<EnvironmentValue> pEnvValue = envValueIt.lock();
+            if (pEnvValue && pEnvValue->getValue() == oldValue)
+            {
+                pEnvValue->setValue(newValue, nullptr, true);
+                if (pStatus != nullptr)
+                {
+                    pStatus->addMsg(statusMsg::change, msg, pEnvValue->getEnvironmentNode()->getId(), pEnvValue->getSchemaValue()->getDisplayName());
+                }
+            }
         }
     }
 }
