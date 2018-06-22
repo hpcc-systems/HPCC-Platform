@@ -14,7 +14,7 @@
 
 // namespace pt = boost::property_tree;
 
-const std::string c_path = "..\\..\\initfiles\\componentfiles\\config2xml\\"; ///opt/HPCCSystems/componentfiles/config2xml/";
+const std::string c_path = "..\\..\\initfiles\\componentfiles\\configschema\\xsd"; ///opt/HPCCSystems/componentfiles/configschema/xsd";
 
 // void parseComponentXSD(pt::ptree &xsdTree);
 // void parseIncludes(pt::ptree &xsdTree);
