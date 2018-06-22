@@ -487,6 +487,7 @@ private:
     #ifdef _WIN32
             return ::closesocket(s);
     #else
+            ::shutdown(s, SHUT_WR);
             return ::close(s);
     #endif
         }
