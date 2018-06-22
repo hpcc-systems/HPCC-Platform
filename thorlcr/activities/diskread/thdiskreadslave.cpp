@@ -1021,7 +1021,8 @@ public:
             {
                 partHandler->setPart(&partDescs.item(part));
                 ++part;
-                for (;;) {
+                for (;;)
+                {
                     OwnedConstThorRow nextrow = partHandler->nextRow();
                     if (!nextrow)
                         break;

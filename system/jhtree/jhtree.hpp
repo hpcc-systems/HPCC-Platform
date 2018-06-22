@@ -305,6 +305,7 @@ public:
 };
 
 extern jhtree_decl bool isCompressedIndex(const char *filename);
+extern jhtree_decl bool isIndexFile(IFileIO *fileIO);
 extern jhtree_decl bool isIndexFile(IFile *filename);
 
 extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager);
