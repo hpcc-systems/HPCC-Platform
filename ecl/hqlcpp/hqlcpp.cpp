@@ -6167,7 +6167,8 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                 if (getBoolAttributeValue(passParamAttr))
                     args.append(*buildMetaParameter(curParam));
                 ExpressionFormat format = queryNaturalFormat(argType);
-                buildDataset(ctx, castParam, bound, format);
+                doBuildDataset(ctx, castParam, bound, format);
+                ensureDatasetFormat(ctx, argType, bound, format);
                 break;
             }
         case type_row:
