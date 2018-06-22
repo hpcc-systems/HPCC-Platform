@@ -1177,7 +1177,13 @@ class EsdlGetDefinitionCmd : public EsdlGetCmd
                 return 1;
             }
 
-            fprintf(stdout, "\n%s", resp->getXMLDefinition());
+            StringBuffer definition;
+            definition.set(resp->getXMLDefinition());
+
+            if (definition.length()==0) //as of wsesdlconfig 1.4 getxmldef moves to definition/Interface
+                definition.set(resp->getDefinition().getInterface());
+
+            fprintf(stdout, "\n%s", definition.str());
             fprintf(stdout, "\n%s.\n", resp->getStatus().getDescription());
 
             return 0;

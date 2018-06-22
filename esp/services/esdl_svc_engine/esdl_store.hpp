@@ -30,8 +30,9 @@
 
 interface IEsdlStore : public IInterface
 {
-    virtual void fetchDefinition(const char* definitionId, StringBuffer& esxdl) = 0;
-    virtual void fetchLatestDefinition(const char* definitionName, StringBuffer& esxdl) = 0;
+    virtual IPropertyTree* fetchDefinition(const char* definitionId) = 0;
+    virtual void fetchDefinitionXML(const char* definitionId, StringBuffer& esxdl) = 0;
+    virtual void fetchLatestDefinitionXML(const char* definitionName, StringBuffer& esxdl) = 0;
     virtual IPropertyTree* fetchBinding(const char* espProcess, const char* espStaticBinding) = 0;
     virtual IPropertyTree* fetchBinding(const char* bindingId) = 0;
     virtual bool definitionExists(const char* definitionId) = 0;
