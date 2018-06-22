@@ -119,6 +119,7 @@ protected:
     void doBuildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IHqlExpression * boundSize);
     void doBuildSkipInput(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper, size32_t size);
     void checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * newLength, unsigned fixedExtra);
+    void checkConditionalAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, size32_t fixedSize);
     void defaultSetColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
     void ensureTargetAvailable(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, size32_t thisSize);
     IHqlExpression * createSelfPeekDeserializer(HqlCppTranslator & translator, IHqlExpression * helper);

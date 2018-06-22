@@ -603,6 +603,16 @@ void CMemberInfo::gatherMaxRowSize(SizeStruct & totalSize, IHqlExpression * newS
 }
 
 
+void CMemberInfo::checkConditionalAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, size32_t fixedSize)
+{
+    if (isConditional())
+    {
+        OwnedHqlExpr size = getSizetConstant(fixedSize);
+        checkAssignOk(translator, ctx, selector, size, 0);
+    }
+}
+
+
 void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * newSize, unsigned fixedExtra)
 {
     //If no size beyond the constant value then this can't be increasing the size of the row => no need to check
