@@ -1756,7 +1756,7 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
         {
             Owned<IUserDescriptor> userdesc;
             userdesc.setown(createUserDescriptor());
-            userdesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
+            userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
             int retCode;
             StringBuffer retMsg;
             bool isEnabled = querySessionManager().queryScopeScansEnabled(userdesc, &retCode, retMsg);
@@ -2780,7 +2780,7 @@ bool Cws_accessEx::onClearPermissionsCache(IEspContext &context, IEspClearPermis
     {
         Owned<IUserDescriptor> userdesc;
         userdesc.setown(createUserDescriptor());
-        userdesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
+        userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
         ok = querySessionManager().clearPermissionsCache(userdesc);
     }
 
@@ -2796,7 +2796,7 @@ bool Cws_accessEx::onQueryScopeScansEnabled(IEspContext &context, IEspQueryScope
 
     Owned<IUserDescriptor> userdesc;
     userdesc.setown(createUserDescriptor());
-    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
+    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
     int retCode;
     StringBuffer retMsg;
     bool isEnabled = querySessionManager().queryScopeScansEnabled(userdesc, &retCode, retMsg);
@@ -2841,7 +2841,7 @@ int Cws_accessEx::enableDisableScopeScans(IEspContext &context, bool doEnable, S
 
     Owned<IUserDescriptor> userdesc;
     userdesc.setown(createUserDescriptor());
-    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
+    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
     int retCode;
     bool rc = querySessionManager().enableScopeScans(userdesc, doEnable, &retCode, retMsg);
     if (!rc || retCode != 0)

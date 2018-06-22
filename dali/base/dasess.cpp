@@ -2090,7 +2090,7 @@ public:
         encrypt(buf,password);
         passwordenc.set(buf.str());
     }
-    void set(const char *_name, const char *_password, unsigned _sessionToken, const char *_signature)
+    void set(const char *_name, const char *_password, const char *_signature)
     {
         set(_name, _password);
         signature.clear().append(_signature);
