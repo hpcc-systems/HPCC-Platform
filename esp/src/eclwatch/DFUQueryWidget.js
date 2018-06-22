@@ -632,12 +632,12 @@ define([
                         NodeGroup: { label: this.i18n.Cluster, width: 108 },
                         RecordCount: { label: this.i18n.Records, width: 72 },
                         IntSize: {
-                            label: this.i18n.Size, width: 72,
+                            label: this.i18n.Size, width: 100,
                             formatter: function (intsize, row) {
-                                if (intsize === null) {
-                                    return 0
+                                if(intsize === null ) {
+                                    return "0 Bytes";
                                 } else {
-                                    return intsize.toLocaleString();
+                                    return Utility.convertedSize(intsize);
                                 }
                             }
                         },
