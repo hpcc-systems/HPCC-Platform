@@ -150,6 +150,8 @@ public:
         setValue(from->getValue());
         setAccessFlags(from->getAccessFlags());
 
+        if(m_parameters.get())
+            m_parameters.clear();
         Owned<IPropertyIterator> Itr = from->getParameterIterator();
         if(!Itr.get())
             return;
