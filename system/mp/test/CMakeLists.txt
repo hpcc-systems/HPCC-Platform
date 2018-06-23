@@ -26,7 +26,7 @@
 project( mptest ) 
 
 set (    SRCS 
-         mptest_mpi.cpp 
+         mptest.cpp 
     )
 
 include_directories ( 
@@ -38,6 +38,10 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-HPCC_ADD_EXECUTABLE (mptest ${SRCS} ) 
-target_link_libraries (mptest jlib mp)
+HPCC_ADD_EXECUTABLE ( mptest ${SRCS} )
+target_link_libraries ( mptest 
+         jlib
+         mp 
+    )
+
 
