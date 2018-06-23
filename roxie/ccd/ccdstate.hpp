@@ -25,7 +25,6 @@
 #include "jhtree.hpp"
 #include "jisem.hpp"
 #include "dllserver.hpp"
-#include "layouttrans.hpp"
 #include "thorcommon.hpp"
 #include "ccddali.hpp"
 #include "thorcommon.ipp"
@@ -84,16 +83,32 @@ interface ISlaveDynamicFileCache : extends IInterface
 extern ISlaveDynamicFileCache *querySlaveDynamicFileCache();
 extern void releaseSlaveDynamicFileCache();
 
+interface IDynamicTransform;
+
 interface IFileIOArray : extends IInterface
 {
     virtual bool IsShared() const = 0;
-    virtual IFileIO *getFilePart(unsigned partNo, offset_t &base) = 0;
-    virtual unsigned length() = 0;
-    virtual unsigned numValid() = 0;
-    virtual bool isValid(unsigned partNo) = 0;
-    virtual unsigned __int64 size() = 0;
+    virtual IFileIO *getFilePart(unsigned partNo, offset_t &base) const = 0;
+    virtual unsigned length() const = 0;
+    virtual unsigned numValid() const = 0;
+    virtual bool isValid(unsigned partNo) const = 0;
+    virtual unsigned __int64 size() const = 0;
     virtual StringBuffer &getId(StringBuffer &) const = 0;
-    virtual const char *queryLogicalFilename(unsigned partNo) = 0;
+    virtual const char *queryLogicalFilename(unsigned partNo) const = 0;
+    virtual int queryActualFormatCrc() const = 0;    // Actual format on disk
+    virtual bool allFormatsMatch() const = 0;  // i.e. not a superfile with mixed formats
+    virtual unsigned getSubFile(unsigned partNo) const = 0;
+};
+
+interface ITranslatorSet : extends IInterface
+{
+    virtual const IDynamicTransform *queryTranslator(unsigned subFile) const = 0;
+    virtual const IKeyTranslator *queryKeyTranslator(unsigned subFile) const = 0;
+    virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile) const = 0;
+    virtual IOutputMetaData *queryActualLayout(unsigned subFile) const = 0;
+    virtual int queryTargetFormatCrc() const = 0;
+    virtual const RtlRecord &queryTargetFormat() const = 0;
+    virtual bool isTranslating() const = 0;
 };
 
 interface IRoxieQuerySetManagerSet : extends IInterface

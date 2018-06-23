@@ -16,9 +16,21 @@
 ############################################################################## */
 #include <stdlib.h>
 #include <string.h>
+#include "jlib.hpp"
+#include "eclhelper.hpp"
+#include "eclrtl.hpp"
+#include "eclrtl_imp.hpp"
+#include "rtlfield.hpp"
+#include "rtlds_imp.hpp"
+#include "rtlrecord.hpp"
+#include "rtldynfield.hpp"
 #include "hqlstack.hpp"
+#include "hqlir.hpp"
+#include "hqlutil.hpp"
 
-FuncCallStack::FuncCallStack(int size) {
+FuncCallStack::FuncCallStack(bool _hasMeta, int size)
+{
+    hasMeta = _hasMeta;
     if(size < DEFAULTSTACKSIZE)
         size = DEFAULTSTACKSIZE;
     sp = 0;
@@ -81,17 +93,23 @@ int FuncCallStack::push(unsigned len, const void * data)
 
 
 
-int FuncCallStack::push(ITypeInfo* argType, IValue* paramValue) 
+int FuncCallStack::push(ITypeInfo* argType, IHqlExpression* curParam)
 {
     unsigned len = 0;
     char* str;
     int incsize;
     int inclen;
 
-    Owned<IValue> castParam = paramValue->castTo(argType);
-    if(!castParam) {
-        PrintLog("Failed to cast paramValue to argType in FuncCallStack::push");
-        return -1;
+    IValue * paramValue = curParam->queryValue();
+    Owned<IValue> castParam;
+    if (paramValue) // Not all constants have a paramValue - null, all, constant records etc
+    {
+        castParam.setown(paramValue->castTo(argType));
+        if(!castParam)
+        {
+            PrintLog("Failed to cast paramValue to argType in FuncCallStack::push");
+            return -1;
+        }
     }
 
     switch (argType->getTypeCode()) 
@@ -178,12 +196,64 @@ int FuncCallStack::push(ITypeInfo* argType, IValue* paramValue)
         memset(stackbuf+sp+incsize, 0, inclen - incsize);
         sp += inclen;
         break;
+    case type_row:
+    {
+        if (hasMeta)
+        {
+            try
+            {
+                pushMeta(curParam->queryRecordType());
+            }
+            catch (IException *E)
+            {
+                ::Release(E);
+                return -1;
+            }
+        }
+        if (curParam->getOperator()==no_null)
+        {
+            // MORE - check type matches
+            MemoryBuffer out;
+            createConstantNullRow(out, curParam->queryRecord());
+            str = (char *) out.detach();
+            push(sizeof(char *), &str);
+            if(numToFree < MAXARGS)
+                toFree[numToFree++] = str;
+        }
+        else
+            return -1;
+        break;
+    }
+    case type_record:
+    {
+        try
+        {
+            pushMeta(curParam->queryRecordType());
+        }
+        catch (IException *E)
+        {
+            ::Release(E);
+            return -1;
+        }
+        break;
+    }
     default:
+        EclIR::dump_ir(curParam);
         //code isn't here to pass sets/datasets to external functions....
         return -1;
     }
 
     return sp;
+}
+
+int FuncCallStack::pushMeta(ITypeInfo *type)
+{
+    if (!deserializer)
+        deserializer.setown(createRtlFieldTypeDeserializer(nullptr));
+    const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), type);
+    CDynamicOutputMetaData * meta = new CDynamicOutputMetaData(* static_cast<const RtlRecordTypeInfo *>(typeInfo));
+    metas.append(*meta);
+    return pushPtr(meta);
 }
 
 int FuncCallStack::pushPtr(void * val)

@@ -32,9 +32,11 @@
 #define PMbackupoutput  0x08
 #define PMupdateeclwatch 0x10
 
+enum XRefCmd { xrefNulCmd, xrefScan, xrefUpdate, xrefListFound, xrefAttachFound };
+
 
 extern  DFUXREFLIB_API IPropertyTree * runXRef(unsigned numclusters,const char **clusternames,IXRefProgressCallback *callback,unsigned numthreads);
-extern  DFUXREFLIB_API IPropertyTree * RunProcess(unsigned nclusters,const char **clusters,unsigned numdirs,const char **dirbaselist,unsigned flags,IXRefProgressCallback *_msgcallback,unsigned numthreads);
+extern  DFUXREFLIB_API IPropertyTree * RunProcess(XRefCmd cmd,unsigned nclusters,const char **clusters,unsigned nargs,const char **args,unsigned flags,IXRefProgressCallback *_msgcallback,unsigned numthreads);
 
 extern  DFUXREFLIB_API IPropertyTree * runXRefCluster(const char *cluster,IXRefNode *nodeToUpdate);
 // this will use sasha if enabled

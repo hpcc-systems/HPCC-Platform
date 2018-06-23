@@ -46,6 +46,7 @@ include_directories (
          ./../../platform 
          ./../ws_topology 
          ./../../../system/jlib 
+         ./../../../rtl/include
          ./../../../rtl/eclrtl 
          ./../../../rtl/nbcd
          ./../../../common/environment 

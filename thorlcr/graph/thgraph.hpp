@@ -58,7 +58,7 @@
 
 
 enum ActivityAttributes { ActAttr_Source=1, ActAttr_Sink=2 };
-const static unsigned defaultHeapFlags = roxiemem::RHFnofragment;
+const static unsigned defaultHeapFlags = roxiemem::RHFscanning;
 
 #define INVALID_UNIQ_ID -1;
 typedef activity_id unique_id;
@@ -90,11 +90,19 @@ interface IDiskUsage : extends IInterface
 interface IBackup;
 interface IFileInProgressHandler;
 interface IThorFileCache;
+interface IKJService : extends IInterface
+{
+    virtual void setCurrentJob(CJobBase &job) = 0;
+    virtual void reset() = 0;
+    virtual void start() = 0;
+    virtual void stop() = 0;
+};
 interface IThorResource
 {
     virtual IThorFileCache &queryFileCache() = 0;
     virtual IBackup &queryBackup() = 0;
     virtual IFileInProgressHandler &queryFileInProgressHandler() = 0;
+    virtual IKJService &queryKeyedJoinService() = 0;
 };
 
 interface IBarrier : extends IInterface
@@ -117,7 +125,7 @@ interface IThorResult : extends IInterface
     virtual CActivityBase *queryActivity() = 0;
     virtual bool isDistributed() const = 0;
     virtual void serialize(MemoryBuffer &mb) = 0;
-    virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret) = 0;
     virtual const void * getLinkedRowResult() = 0;
 };
 
@@ -543,8 +551,8 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
         virtual const IContextLogger &queryContextLogger() const { return ctx->queryContextLogger(); }
         virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const { return ctx->getRowAllocator(meta, activityId); }
         virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const { return ctx->getRowAllocatorEx(meta, activityId, heapFlags); }
-        virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, isGrouped, xmlTransformer, csvTransformer); }
-        virtual void getResultDictionary(size32_t & tcount, byte * * & tgt,IEngineRowAllocator * _rowAllocator,  const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher); }
+        virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override { ctx->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, isGrouped, xmlTransformer, csvTransformer); }
+        virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt,IEngineRowAllocator * _rowAllocator,  const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override { ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher); }
 
         virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToXML(lenResult, result, info, row, flags); }
         virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToJSON(lenResult, result, info, row, flags); }
@@ -753,13 +761,13 @@ public:
     virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 // IEclGraphResults
-    virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id);
-    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
+    virtual void getDictionaryResult(unsigned & count, const byte * * & ret, unsigned id) override;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id) override;
     virtual const void * getLinkedRowResult(unsigned id);
 
 // IThorChildGraph
 //  virtual void getResult(size32_t & retSize, void * & ret, unsigned id);
-//  virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
+//  virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id);
     virtual IEclGraphResults *evaluate(unsigned parentExtractSz, const byte * parentExtract);
 
 friend class CGraphElementBase;
@@ -795,11 +803,12 @@ protected:
     StringBuffer wuid, user, scope, token;
     mutable CriticalSection wuDirty;
     mutable bool dirty;
-    mptag_t mpJobTag, slavemptag;
+    mptag_t slavemptag;
     Owned<IGroup> jobGroup, slaveGroup, nodeGroup;
     Owned<IPropertyTree> xgmml;
     Owned<IGraphTempHandler> tmpHandler;
     bool timeActivities;
+    unsigned channelsPerSlave;
     unsigned numChannels;
     unsigned maxActivityCores, globalMemoryMB, sharedMemoryMB;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
@@ -829,7 +838,7 @@ protected:
         }
     } pluginCtx;
     SafePluginMap *pluginMap;
-    void endJob();
+    virtual void endJob();
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -840,6 +849,7 @@ public:
     virtual void addChannel(IMPServer *mpServer) = 0;
     CJobChannel &queryJobChannel(unsigned c) const;
     CActivityBase &queryChannelActivity(unsigned c, graph_id gid, activity_id id) const;
+    unsigned queryChannelsPerSlave() const { return channelsPerSlave; }
     unsigned queryJobChannels() const { return jobChannels.ordinality(); }
     inline unsigned queryJobChannelSlaveNum(unsigned channelNum) const { dbgassertex(channelNum<queryJobChannels()); return jobChannelSlaveNumbers[channelNum]; }
     inline unsigned queryJobSlaveChannelNum(unsigned slaveNum) const { dbgassertex(slaveNum && slaveNum<=querySlaves()); return jobSlaveChannelNum[slaveNum-1]; }
@@ -877,7 +887,6 @@ public:
     void setDiskUsage(offset_t _diskUsage) { diskUsage = _diskUsage; }
     const offset_t queryMaxDiskUsage() const { return maxDiskUsage; }
     mptag_t querySlaveMpTag() const { return slavemptag; }
-    mptag_t queryJobMpTag() const { return mpJobTag; }
     unsigned querySlaves() const { return slaveGroup->ordinality(); }
     unsigned queryNodes() const { return nodeGroup->ordinality()-1; }
     IGroup &queryJobGroup() const { return *jobGroup; }
@@ -894,6 +903,7 @@ public:
     __int64 getOptInt64(const char *opt, __int64 dft=0);
     unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
     IThorAllocator *querySharedAllocator() const { return sharedAllocator; }
+    unsigned getWfid() const { return graphXGMML->getPropInt("@wfid"); }
     virtual IThorAllocator *getThorAllocator(unsigned channel);
 
     virtual void abort(IException *e);
@@ -930,7 +940,6 @@ protected:
     CJobBase &job;
     Owned<IThorAllocator> thorAllocator;
     Owned<IGraphExecutor> graphExecutor;
-    ITimeReporter *timeReporter;
     CriticalSection crit;
     CGraphTable subGraphs;
     CGraphTableCopy allGraphs; // for lookup, includes all child graphs
@@ -963,7 +972,6 @@ public:
     void clean();
     void init();
     void wait();
-    ITimeReporter &queryTimeReporter() { return *timeReporter; }
     virtual CGraphBase *createGraph() = 0;
     void startGraph(CGraphBase &graph, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract);
     INode *queryMyNode();
@@ -1011,6 +1019,13 @@ public:
 };
 
 interface IOutputMetaData;
+
+inline activity_id createCompoundActSeqId(activity_id actId, byte seq)
+{
+    if (seq)
+        actId |= seq << 24;
+    return actId;
+}
 
 class graph_decl CActivityBase : implements CInterfaceOf<IThorRowInterfaces>, implements IExceptionHandler
 {
@@ -1061,7 +1076,7 @@ public:
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
     unsigned queryMaxCores() const { return container.queryMaxCores(); }
     IThorRowInterfaces *getRowInterfaces();
-    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone, byte seq=0) const;
 
     bool appendRowXml(StringBuffer & target, IOutputMetaData & meta, const void * row) const;
     void logRow(const char * prefix, IOutputMetaData & meta, const void * row);
@@ -1084,7 +1099,8 @@ public:
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
     void ActPrintLog(IException *e);
 
-    IThorRowInterfaces * createRowInterfaces(IOutputMetaData * meta);
+    IThorRowInterfaces * createRowInterfaces(IOutputMetaData * meta, byte seq=0);
+    IThorRowInterfaces * createRowInterfaces(IOutputMetaData * meta, roxiemem::RoxieHeapFlags heapFlags, byte seq=0);
 
 // IExceptionHandler
     bool fireException(IException *e);
@@ -1151,9 +1167,10 @@ public:
     IMPLEMENT_IINTERFACE;
 
 // IThorResource
-    virtual IThorFileCache &queryFileCache() { UNIMPLEMENTED; return *((IThorFileCache *)NULL); }
-    virtual IBackup &queryBackup() { UNIMPLEMENTED; return *((IBackup *)NULL); }
-    virtual IFileInProgressHandler &queryFileInProgressHandler() { UNIMPLEMENTED; return *((IFileInProgressHandler *)NULL); }
+    virtual IThorFileCache &queryFileCache() override { UNIMPLEMENTED; }
+    virtual IBackup &queryBackup() override  { UNIMPLEMENTED; }
+    virtual IFileInProgressHandler &queryFileInProgressHandler() override  { UNIMPLEMENTED; }
+    virtual IKJService &queryKeyedJoinService() override { UNIMPLEMENTED; }
 };
 
 class graph_decl CThorGraphResults : implements IThorGraphResults, public CInterface
@@ -1175,8 +1192,7 @@ protected:
         virtual bool isDistributed() const { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void serialize(MemoryBuffer &mb) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getResult(size32_t & retSize, void * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
-        virtual void getLinkedResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
-        virtual void getDictionaryResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual void getLinkedResult(unsigned & count, const byte * * & ret) override { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual const void * getLinkedRowResult() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
     };
     IArrayOf<IThorResult> results;
@@ -1225,12 +1241,12 @@ public:
             results.append(*LINK(result));
     }
     virtual unsigned count() { return results.ordinality(); }
-    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id) override
     {
         Owned<IThorResult> result = getResult(id, true);
         result->getLinkedResult(count, ret);
     }
-    virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+    virtual void getDictionaryResult(unsigned & count, const byte * * & ret, unsigned id) override
     {
         Owned<IThorResult> result = getResult(id, true);
         result->getLinkedResult(count, ret);

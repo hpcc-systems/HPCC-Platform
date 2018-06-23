@@ -27,7 +27,7 @@ define([
     "dijit/form/TextBox",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPUtil",
+    "src/ESPUtil",
 
     "dgrid/selector"
 

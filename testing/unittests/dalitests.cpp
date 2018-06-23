@@ -49,7 +49,8 @@ static unsigned initCounter = 0; // counter for initialiser
 // Declared in dadfs.cpp *only* when CPPUNIT is active
 extern void removeLogical(const char *fname, IUserDescriptor *user);
 
-void init() {
+void daliClientInit()
+{
     // Only initialise on first pass
     if (initCounter != 0)
         return;
@@ -66,102 +67,20 @@ void init() {
     initCounter++;
 }
 
-void destroy() {
-    // Only destroy on last pass
-    if (initCounter != 0)
+void daliClientEnd()
+{
+    if (!initCounter)
         return;
-    // Cleanup
-    releaseAtoms();
-    closedownClientProcess();
-    setNodeCaching(false);
-
-    initCounter--;
+    else if (1 == initCounter) // Only destroy on last pass
+    {
+        // Cleanup
+        releaseAtoms();
+        closedownClientProcess();
+        setNodeCaching(false);
+    }
+    else
+        initCounter--;
 }
-
-class CCSub : public CInterface, implements ISDSConnectionSubscription, implements ISDSSubscription
-{
-    unsigned n;
-    unsigned &count;
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CCSub(unsigned _n,unsigned &_count)
-        : count(_count)
-    {
-        n = _n;
-    }
-    virtual void notify()
-    {
-        CriticalBlock block(subchangesect);
-        subchangetotal += n;
-        subchangenum++;
-        count++;
-    }
-    virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-    {
-        CriticalBlock block(subchangesect);
-        subchangetotal += n;
-        subchangenum++;
-        subchangetotal += (unsigned)flags;
-        subchangetotal += crc32(xpath,strlen(xpath),0);
-        if (valueLen) {
-            subchangetotal += crc32((const char *)valueData,valueLen,0);
-        }
-        count++;
-
-    }
-
-};
-
-class CChange : public Thread
-{
-    Owned<IRemoteConnection> conn;
-    Owned<CCSub> sub;
-    StringAttr path;
-    SubscriptionId id[10];
-    unsigned n;
-    unsigned count;
-
-public:
-    Semaphore stopsem;
-    CChange(unsigned _n)
-    {
-        n = _n;
-        StringBuffer s("/DAREGRESS/CONSUB");
-        s.append(n+1);
-        path.set(s.str());
-        conn.setown(querySDS().connect(path, myProcessSession(), RTM_CREATE|RTM_DELETE_ON_DISCONNECT, 1000000));
-        unsigned i;
-        for (i=0;i<5;i++)
-            id[i] = conn->subscribe(*new CCSub(n*1000+i,count));
-        s.append("/testprop");
-        for (;i<10;i++)
-            id[i] = querySDS().subscribe(s.str(),*new CCSub(n*1000+i,count),false,true);
-        count = 0;
-        start();
-    }
-
-    virtual int run()
-    {
-        unsigned i;
-        for (i = 0;i<10; i++) {
-            conn->queryRoot()->setPropInt("testprop", (i*17+n*21)%100);
-            conn->commit();
-            for (unsigned j=0;j<1000;j++) {
-                {
-                    CriticalBlock block(subchangesect);
-                    if (count>=(i+1)*10)
-                        break;
-                }
-                Sleep(10);
-            }
-        }
-        stopsem.wait();
-        for (i=0;i<10;i++)
-            conn->unsubscribe(id[i]);
-        return 0;
-    }
-};
 
 interface IChecker
 {
@@ -437,308 +356,187 @@ void dispFDesc(IFileDescriptor *fdesc)
 
 #endif
 
+
 // ================================================================================== UNIT TESTS
 
 class CDaliTestsStress : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( CDaliTestsStress );
+    CPPUNIT_TEST_SUITE(CDaliTestsStress);
         CPPUNIT_TEST(testInit);
         CPPUNIT_TEST(testDFS);
 //        CPPUNIT_TEST(testReadAllSDS); // Ignoring this test; See comments below
-        CPPUNIT_TEST(testSDSRW);
-        CPPUNIT_TEST(testSDSSubs);
-        CPPUNIT_TEST(testSDSSubs2);
         CPPUNIT_TEST(testFiles);
-        CPPUNIT_TEST(testGroups);
-        CPPUNIT_TEST(testMultiCluster);
 #ifndef COMPAT
         CPPUNIT_TEST(testDF1);
         CPPUNIT_TEST(testDF2);
         CPPUNIT_TEST(testMisc);
         CPPUNIT_TEST(testDFile);
 #endif
-        CPPUNIT_TEST(testDFSTrans);
-        CPPUNIT_TEST(testDFSPromote);
-        CPPUNIT_TEST(testDFSDel);
-        CPPUNIT_TEST(testDFSRename);
-        CPPUNIT_TEST(testDFSClearAdd);
-        CPPUNIT_TEST(testDFSRename2);
-        CPPUNIT_TEST(testDFSRenameThenDelete);
-        CPPUNIT_TEST(testDFSRemoveSuperSub);
-// This test requires access to an external IP with dafilesrv running
-//        CPPUNIT_TEST(testDFSRename3);
-        CPPUNIT_TEST(testDFSAddFailReAdd);
-        CPPUNIT_TEST(testDFSRetrySuperLock);
-        CPPUNIT_TEST(testDFSHammer);
-        CPPUNIT_TEST(testSDSNodeSubs);
     CPPUNIT_TEST_SUITE_END();
 
-#ifndef COMPAT
-
-
-#endif
-
-    void testGrp(SocketEndpointArray &epa)
-    {
-        Owned<IGroup> grp = createIGroup(epa);
-        StringBuffer s;
-        grp->getText(s);
-        printf("'%s'\n",s.str());
-        Owned<IGroup> grp2 = createIGroup(s.str());
-        if (grp->compare(grp2)!=GRidentical) {
-            grp->getText(s.clear());
-            printf("^FAILED! %s\n",s.str());
-        }
-    }
-
-    unsigned fn(unsigned n, unsigned m, unsigned seed, unsigned depth, IPropertyTree *parent)
-    {
-        __int64 val = parent->getPropInt64("val",0);
-        parent->setPropInt64("val",n+val);
-        val = parent->getPropInt64("@val",0);
-        parent->setPropInt64("@val",m+val);
-        val = parent->getPropInt64(NULL,0);
-        parent->setPropInt64(NULL,seed+val);
-        if (Rconn&&((n+m+seed)%100==0))
-            Rconn->commit();
-        if (!seed)
-            return m+n;
-        if (n==m)
-            return seed;
-        if (depth>10)
-            return seed+n+m;
-        if (seed%7==n%7)
-            return n;
-        if (seed%7==m%7)
-            return m;
-        char name[64];
-        unsigned v = seed;
-        name[0] = 's';
-        name[1] = 'u';
-        name[2] = 'b';
-        unsigned i = 3;
-        while (v) {
-            name[i++] = ('A'+v%26 );
-            v /= 26;
-        }
-        name[i] = 0;
-        IPropertyTree *child = parent->queryPropTree(name);
-        if (!child)
-            child = parent->addPropTree(name, createPTree(name));
-        return fn(fn(n,seed,seed*17+11,depth+1,child),fn(seed,m,seed*11+17,depth+1,child),seed*19+7,depth+1,child);
-    }
-
-    unsigned fn2(unsigned n, unsigned m, unsigned seed, unsigned depth, StringBuffer &parentname)
-    {
-        if (!Rconn)
-            return 0;
-        if ((n+m+seed)%25==0) {
-            Rconn->commit();
-            Rconn->Release();
-            Rconn = querySDS().connect("/DAREGRESS",myProcessSession(), 0, 1000000);
-            ASSERT(Rconn && "Failed to connect to /DAREGRESS");
-        }
-        IPropertyTree *parent = parentname.length()?Rconn->queryRoot()->queryPropTree(parentname.str()):Rconn->queryRoot();
-        ASSERT(parent && "Failed to connect to parent");
-        __int64 val = parent->getPropInt64("val",0);
-        parent->setPropInt64("val",n+val);
-        val = parent->getPropInt64("@val",0);
-        parent->setPropInt64("@val",m+val);
-        val = parent->getPropInt64(NULL,0);
-        parent->setPropInt64(NULL,seed+val);
-        if (!seed)
-            return m+n;
-        if (n==m)
-            return seed;
-        if (depth>10)
-            return seed+n+m;
-        if (seed%7==n%7)
-            return n;
-        if (seed%7==m%7)
-            return m;
-        char name[64];
-        unsigned v = seed;
-        name[0] = 's';
-        name[1] = 'u';
-        name[2] = 'b';
-        unsigned i = 3;
-        while (v) {
-            name[i++] = ('A'+v%26 );
-            v /= 26;
-        }
-        name[i] = 0;
-        unsigned l = parentname.length();
-        if (parentname.length())
-            parentname.append('/');
-        parentname.append(name);
-        IPropertyTree *child = parent->queryPropTree(name);
-        if (!child)
-            child = parent->addPropTree(name, createPTree(name));
-        unsigned ret = fn2(fn2(n,seed,seed*17+11,depth+1,parentname),fn2(seed,m,seed*11+17,depth+1,parentname),seed*19+7,depth+1,parentname);
-        parentname.setLength(l);
-        return ret;
-    }
-
-    IFileDescriptor *createDescriptor(const char* dir, const char* name, unsigned parts, unsigned recSize, unsigned index=0)
-    {
-        Owned<IPropertyTree> pp = createPTree("Part");
-        Owned<IFileDescriptor>fdesc = createFileDescriptor();
-        fdesc->setDefaultDir(dir);
-        StringBuffer s;
-        SocketEndpoint ep;
-        ep.setLocalHost(0);
-        StringBuffer ip;
-        ep.getIpText(ip);
-        for (unsigned k=0;k<parts;k++) {
-            s.clear().append(ip);
-            Owned<INode> node = createINode(s.str());
-            pp->setPropInt64("@size",recSize);
-            s.clear().append(name);
-            if (index)
-                s.append(index);
-            s.append("._").append(k+1).append("_of_").append(parts);
-            fdesc->setPart(k,node,s.str(),pp);
-        }
-        fdesc->queryProperties().setPropInt("@recordSize",recSize);
-        fdesc->setDefaultDir(dir);
-        return fdesc.getClear();
-    }
-
-    void setupDFS(const char *scope, unsigned supersToDel=3, unsigned subsToCreate=4)
-    {
-        StringBuffer bufScope;
-        bufScope.append("regress::").append(scope);
-        StringBuffer bufDir;
-        bufDir.append("regress/").append(scope);
-
-        logctx.CTXLOG("Cleaning up '%s' scope", bufScope.str());
-        for (unsigned i=1; i<=supersToDel; i++) {
-            StringBuffer super = bufScope;
-            super.append("::super").append(i);
-            if (dir.exists(super.str(),user,false,true))
-                ASSERT(dir.removeEntry(super.str(), user) && "Can't remove super-file");
-        }
-
-        logctx.CTXLOG("Creating 'regress::trans' subfiles(1,%d)", subsToCreate);
-        for (unsigned i=1; i<=subsToCreate; i++) {
-            StringBuffer name;
-            name.append("sub").append(i);
-            StringBuffer sub = bufScope;
-            sub.append("::").append(name);
-
-            // Remove first
-            if (dir.exists(sub.str(),user,true,false))
-                ASSERT(dir.removeEntry(sub.str(), user) && "Can't remove sub-file");
-
-            try {
-                // Create the sub file with an arbitrary format
-                Owned<IFileDescriptor> subd = createDescriptor(bufDir.str(), name.str(), 1, 17);
-                Owned<IPartDescriptor> partd = subd->getPart(0);
-                RemoteFilename rfn;
-                partd->getFilename(0, rfn);
-                StringBuffer fname;
-                rfn.getPath(fname);
-                recursiveCreateDirectoryForFile(fname.str());
-                OwnedIFile ifile = createIFile(fname.str());
-                Owned<IFileIO> io;
-                io.setown(ifile->open(IFOcreate));
-                io->write(0, 17, "12345678901234567");
-                io->close();
-                Owned<IDistributedFile> dsub = dir.createNew(subd);
-                dsub->attach(sub.str(),user);
-            } catch (IException *e) {
-                StringBuffer msg;
-                e->errorMessage(msg);
-                logctx.CTXLOG("Caught exception while creating file in DFS: %s", msg.str());
-                e->Release();
-                ASSERT(0 && "Exception Caught in setupDFS - is the directory writeable by this user?");
-            }
-
-            // Make sure it got created
-            ASSERT(dir.exists(sub.str(),user,true,false) && "Can't add physical files");
-        }
-    }
-
-    void testReadBranch(const char *path)
-    {
-        PROGLOG("Connecting to %s",path);
-        Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_READ, 10000);
-        ASSERT(conn && "Could not connect");
-        IPropertyTree *root = conn->queryRoot();
-        Owned<IAttributeIterator> aiter = root->getAttributes();
-        StringBuffer s;
-        ForEach(*aiter)
-            aiter->getValue(s.clear());
-        aiter.clear();
-        root->getProp(NULL,s.clear());
-        Owned<IPropertyTreeIterator> iter = root->getElements("*");
-        StringAttrArray children;
-        UnsignedArray childidx;
-        ForEach(*iter) {
-            children.append(*new StringAttrItem(iter->query().queryName()));
-            childidx.append(root->queryChildIndex(&iter->query()));
-        }
-        iter.clear();
-        conn.clear();
-        ForEachItemIn(i,children) {
-            s.clear().append(path);
-            if (path[strlen(path)-1]!='/')
-                s.append('/');
-            s.append(children.item(i).text).append('[').append(childidx.item(i)+1).append(']');
-            testReadBranch(s.str());
-        }
-    }
 
     const IContextLogger &logctx;
 
 public:
-    CDaliTestsStress() : logctx(queryDummyContextLogger()) {
+    CDaliTestsStress() : logctx(queryDummyContextLogger())
+    {
     }
-
-    ~CDaliTestsStress() {
-        destroy();
+    ~CDaliTestsStress()
+    {
+        daliClientEnd();
     }
-
     void testInit()
     {
-        init();
+        daliClientInit();
     }
-    void testSDSRW()
+#ifndef COMPAT
+    void testDF1()
     {
-        Owned<IPropertyTree> ref = createPTree("DAREGRESS");
-        fn(1,2,3,0,ref);
-        StringBuffer refstr;
-        toXML(ref,refstr,0,XML_SortTags|XML_Format);
-        logctx.CTXLOG("Created reference size %d",refstr.length());
-        Owned<IRemoteConnection> conn = querySDS().connect("/DAREGRESS",myProcessSession(), RTM_CREATE, 1000000);
-        Rconn = conn;
-        IPropertyTree *root = conn->queryRoot();
-        fn(1,2,3,0,root);
-        conn.clear();
-        logctx.CTXLOG("Created test branch 1");
-        conn.setown(querySDS().connect("/DAREGRESS",myProcessSession(), RTM_DELETE_ON_DISCONNECT, 1000000));
-        root = conn->queryRoot();
-        StringBuffer s;
-        toXML(root,s,0,XML_SortTags|XML_Format);
-        ASSERT(strcmp(s.str(),refstr.str())==0 && "Branch 1 does not match");
-        conn.clear();
-        conn.setown(querySDS().connect("/DAREGRESS",myProcessSession(), 0, 1000000));
-        ASSERT(!conn && "RTM_DELETE_ON_DISCONNECT failed");
-        Rconn = querySDS().connect("/DAREGRESS",myProcessSession(), RTM_CREATE, 1000000);
-        StringBuffer pn;
-        fn2(1,2,3,0,pn);
-        ::Release(Rconn);
-        logctx.CTXLOG("Created test branch 2");
-        Rconn = NULL;
-        conn.setown(querySDS().connect("/DAREGRESS",myProcessSession(), RTM_DELETE_ON_DISCONNECT, 1000000));
-        root = conn->queryRoot();
-        toXML(root,s.clear(),0,XML_SortTags|XML_Format);
-        ASSERT(strcmp(s.str(),refstr.str())==0 && "Branch 2 does not match");
-        conn.clear();
-        conn.setown(querySDS().connect("/DAREGRESS",myProcessSession(), 0, 1000000));
-        ASSERT(!conn && "RTM_DELETE_ON_DISCONNECT failed");
+        const char * fname = "testing::propfile2";
+        Owned<IFileDescriptor> fdesc = createFileDescriptor();
+        Owned<IPropertyTree> pt = createPTree("Attr");
+        RemoteFilename rfn;
+        rfn.setRemotePath("//10.150.10.80/c$/thordata/test/part._1_of_3");
+        pt->setPropInt("@size",123);
+        fdesc->setPart(0,rfn,pt);
+        rfn.setRemotePath("//10.150.10.81/c$/thordata/test/part._2_of_3");
+        pt->setPropInt("@size",456);
+        fdesc->setPart(1,rfn,pt);
+        rfn.setRemotePath("//10.150.10.82/c$/thordata/test/part._3_of_3");
+        pt->setPropInt("@size",789);
+        fdesc->setPart(2,rfn,pt);
+        dispFDesc(fdesc);
+        try {
+            removeLogical(fname, user);
+            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
+            {
+                DistributedFilePropertyLock lock(file);
+                lock.queryAttributes().setProp("@testing","1");
+            }
+            file->attach(fname,user);
+        } catch (IException *e) {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            logctx.CTXLOG("Caught exception while setting property: %s", msg.str());
+            e->Release();
+        }
     }
-
+    void testDF2() // 4*3 superfile
+    {
+        Owned<IFileDescriptor> fdesc = createFileDescriptor();
+        Owned<IPropertyTree> pt = createPTree("Attr");
+        RemoteFilename rfn;
+        rfn.setRemotePath("//10.150.10.80/c$/thordata/test/partone._1_of_3");
+        pt->setPropInt("@size",1231);
+        fdesc->setPart(0,rfn,pt);
+        rfn.setRemotePath("//10.150.10.80/c$/thordata/test/parttwo._1_of_3");
+        pt->setPropInt("@size",1232);
+        fdesc->setPart(1,rfn,pt);
+        rfn.setRemotePath("//10.150.10.80/c$/thordata/test/partthree._1_of_3");
+        pt->setPropInt("@size",1233);
+        fdesc->setPart(2,rfn,pt);
+        rfn.setRemotePath("//10.150.10.80/c$/thordata/test2/partfour._1_of_3");
+        pt->setPropInt("@size",1234);
+        fdesc->setPart(3,rfn,pt);
+        rfn.setRemotePath("//10.150.10.81/c$/thordata/test/partone._2_of_3");
+        pt->setPropInt("@size",4565);
+        fdesc->setPart(4,rfn,pt);
+        rfn.setRemotePath("//10.150.10.81/c$/thordata/test/parttwo._2_of_3");
+        pt->setPropInt("@size",4566);
+        fdesc->setPart(5,rfn,pt);
+        rfn.setRemotePath("//10.150.10.81/c$/thordata/test/partthree._2_of_3");
+        pt->setPropInt("@size",4567);
+        fdesc->setPart(6,rfn,pt);
+        rfn.setRemotePath("//10.150.10.81/c$/thordata/test2/partfour._2_of_3");
+        pt->setPropInt("@size",4568);
+        fdesc->setPart(7,rfn,pt);
+        rfn.setRemotePath("//10.150.10.82/c$/thordata/test/partone._3_of_3");
+        pt->setPropInt("@size",7899);
+        fdesc->setPart(8,rfn,pt);
+        rfn.setRemotePath("//10.150.10.82/c$/thordata/test/parttwo._3_of_3");
+        pt->setPropInt("@size",78910);
+        fdesc->setPart(9,rfn,pt);
+        rfn.setRemotePath("//10.150.10.82/c$/thordata/test/partthree._3_of_3");
+        pt->setPropInt("@size",78911);
+        fdesc->setPart(10,rfn,pt);
+        rfn.setRemotePath("//10.150.10.82/c$/thordata/test2/partfour._3_of_3");
+        pt->setPropInt("@size",78912);
+        fdesc->setPart(11,rfn,pt);
+        ClusterPartDiskMapSpec mspec;
+        mspec.interleave = 4;
+        fdesc->endCluster(mspec);
+        dispFDesc(fdesc);
+    }
+    void testMisc()
+    {
+        ClusterPartDiskMapSpec mspec;
+        Owned<IGroup> grp = createIGroup("10.150.10.1-3");
+        RemoteFilename rfn;
+        for (unsigned i=0;i<3;i++)
+            for (unsigned ic=0;ic<mspec.defaultCopies;ic++) {
+                constructPartFilename(grp,i+1,3,(i==1)?"test.txt":NULL,"test._$P$_of_$N$","/c$/thordata/test",ic,mspec,rfn);
+                StringBuffer tmp;
+                printf("%d,%d: %s\n",i,ic,rfn.getRemotePath(tmp).str());
+            }
+    }
+    void testDFile()
+    {
+        ClusterPartDiskMapSpec map;
+        {   // 1: single part file old method
+#define TN "1"
+            removeLogical("test::ftest" TN, user);
+            Owned<IFileDescriptor> fdesc = createFileDescriptor();
+            RemoteFilename rfn;
+            rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest" TN "._1_of_1");
+            fdesc->setPart(0,rfn);
+            fdesc->endCluster(map);
+            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
+            file->attach("test::ftest" TN,user);
+#undef TN
+        }
+        {   // 2: single part file new method
+#define TN "2"
+            removeLogical("test::ftest" TN, user);
+            Owned<IFileDescriptor> fdesc = createFileDescriptor();
+            fdesc->setPartMask("ftest" TN "._$P$_of_$N$");
+            fdesc->setNumParts(1);
+            Owned<IGroup> grp = createIGroup("10.150.10.1");
+            fdesc->addCluster(grp,map);
+            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
+            file->attach("test::ftest" TN,user);
+#undef TN
+        }
+        Owned<IGroup> grp3 = createIGroup("10.150.10.1,10.150.10.2,10.150.10.3");
+        queryNamedGroupStore().add("__testgroup3__",grp3,true);
+        {   // 3: three parts file old method
+#define TN "3"
+            removeLogical("test::ftest" TN, user);
+            Owned<IFileDescriptor> fdesc = createFileDescriptor();
+            RemoteFilename rfn;
+            rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest" TN "._1_of_3");
+            fdesc->setPart(0,rfn);
+            rfn.setRemotePath("//10.150.10.2/c$/thordata/test/ftest" TN "._2_of_3");
+            fdesc->setPart(1,rfn);
+            rfn.setRemotePath("//10.150.10.3/c$/thordata/test/ftest" TN "._3_of_3");
+            fdesc->setPart(2,rfn);
+            fdesc->endCluster(map);
+            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
+            file->attach("test::ftest" TN,user);
+#undef TN
+        }
+        {   // 4: three part file new method
+#define TN "4"
+            removeLogical("test::ftest" TN, user);
+            Owned<IFileDescriptor> fdesc = createFileDescriptor();
+            fdesc->setPartMask("ftest" TN "._$P$_of_$N$");
+            fdesc->setNumParts(3);
+            fdesc->addCluster(grp3,map);
+            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
+            file->attach("test::ftest" TN,user);
+#undef TN
+        }
+    }
+#endif
     /*
      * This test is invasive, obsolete and the main source of
      * errors in the DFS code. It was created on a time where
@@ -911,10 +709,864 @@ public:
         queryNamedGroupStore().remove("daregress_group");
         ASSERT(!queryNamedGroupStore().lookup("daregress_group") && "Named group not removed");
     }
+    void testFiles()
+    {
+        StringBuffer fn;
+        const char *s = filelist;
+        unsigned slowest = 0;
+        StringAttr slowname;
+        unsigned tot = 0;
+        unsigned n = 0;
+        while (*s) {
+            fn.clear();
+            while (*s==',')
+                s++;
+            while (*s&&(*s!=','))
+                fn.append(*(s++));
+            if (fn.length()) {
+                n++;
+                unsigned ss = msTick();
+                checkFiles(fn);
+                unsigned t = (msTick()-ss);
+                if (t>slowest) {
+                    slowest = t;
+                    slowname.set(fn);
+                }
+                tot += t;
+            }
+        }
+        printf("Complete in %ds avg %dms\n",tot/1000,tot/(n?n:1));
+        if (!slowname.isEmpty())
+            printf("Slowest %s = %dms\n",slowname.get(),slowest);
+    }
+    void testReadBranch(const char *path)
+    {
+        PROGLOG("Connecting to %s",path);
+        Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_READ, 10000);
+        ASSERT(conn && "Could not connect");
+        IPropertyTree *root = conn->queryRoot();
+        Owned<IAttributeIterator> aiter = root->getAttributes();
+        StringBuffer s;
+        ForEach(*aiter)
+            aiter->getValue(s.clear());
+        aiter.clear();
+        root->getProp(NULL,s.clear());
+        Owned<IPropertyTreeIterator> iter = root->getElements("*");
+        StringAttrArray children;
+        UnsignedArray childidx;
+        ForEach(*iter) {
+            children.append(*new StringAttrItem(iter->query().queryName()));
+            childidx.append(root->queryChildIndex(&iter->query()));
+        }
+        iter.clear();
+        conn.clear();
+        ForEachItemIn(i,children) {
+            s.clear().append(path);
+            if (path[strlen(path)-1]!='/')
+                s.append('/');
+            s.append(children.item(i).text).append('[').append(childidx.item(i)+1).append(']');
+            testReadBranch(s.str());
+        }
+    }
+    /*
+     * This test is silly and can take a very long time on clusters with
+     * a large file-system. But keeping it here for further reference.
+     * MORE: Maybe, this could be added to daliadmin or a thorough check
+     * on the filesystem, together with super-file checks et al.
+    void testReadAllSDS()
+    {
+        logctx.CTXLOG("Test SDS connecting to every branch");
+        testReadBranch("/");
+        logctx.CTXLOG("Connected to every branch");
+    }
+    */
 
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliTestsStress );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliTestsStress, "CDaliTestsStress" );
+
+// ================================================================================== UNIT TESTS
+
+class CDaliSDSStressTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(CDaliSDSStressTests);
+        CPPUNIT_TEST(testInit);
+        CPPUNIT_TEST(testSDSRW);
+        CPPUNIT_TEST(testSDSSubs);
+        CPPUNIT_TEST(testSDSSubs2);
+        CPPUNIT_TEST(testSDSNodeSubs);
+    CPPUNIT_TEST_SUITE_END();
+
+    const IContextLogger &logctx;
+
+    static const unsigned numCChangeTests = 1;
+    static const unsigned subsPerCChange = 10;
+    static const unsigned numCChangeCommits = 10;
+
+    void sdsNodeCommit(const char *test, unsigned from, unsigned to, bool finalDelete)
+    {
+        class CNodeSubCommitThread : public CInterface, implements IThreaded
+        {
+            StringAttr xpath;
+            bool finalDelete;
+            CThreaded threaded;
+        public:
+            IMPLEMENT_IINTERFACE;
+
+            CNodeSubCommitThread(const char *_xpath, bool _finalDelete) : threaded("CNodeSubCommitThread"), xpath(_xpath), finalDelete(_finalDelete)
+            {
+            }
+            virtual void threadmain() override
+            {
+                unsigned mode = RTM_LOCK_WRITE;
+                if (finalDelete)
+                    mode |= RTM_DELETE_ON_DISCONNECT;
+                Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), mode, 1000000);
+                assertex(conn);
+                for (unsigned i=0; i<5; i++)
+                {
+                    VStringBuffer val("newval%d", i+1);
+                    conn->queryRoot()->setProp(NULL, val.str());
+                    conn->commit();
+                }
+                conn->queryRoot()->setProp("subnode", "newval");
+                conn->commit();
+                conn.clear(); // if finalDelete=true, deletes subscribed node in process, should get notificaiton
+
+            }
+            void start()
+            {
+                threaded.init(this);
+            }
+            void join()
+            {
+                threaded.join();
+            }
+        };
+        CIArrayOf<CNodeSubCommitThread> commitThreads;
+        for (unsigned i=from; i<=to; i++)
+        {
+            VStringBuffer path("/DAREGRESS/NodeSubTest/node%d", i);
+            CNodeSubCommitThread *commitThread = new CNodeSubCommitThread(path, finalDelete);
+            commitThreads.append(* commitThread);
+        }
+        ForEachItemIn(t, commitThreads)
+            commitThreads.item(t).start();
+        ForEachItemIn(t2, commitThreads)
+            commitThreads.item(t2).join();
+    }
+    unsigned fn(unsigned n, unsigned m, unsigned seed, unsigned depth, IPropertyTree *parent)
+    {
+        __int64 val = parent->getPropInt64("val",0);
+        parent->setPropInt64("val",n+val);
+        val = parent->getPropInt64("@val",0);
+        parent->setPropInt64("@val",m+val);
+        val = parent->getPropInt64(NULL,0);
+        parent->setPropInt64(NULL,seed+val);
+        if (Rconn&&((n+m+seed)%100==0))
+            Rconn->commit();
+        if (!seed)
+            return m+n;
+        if (n==m)
+            return seed;
+        if (depth>10)
+            return seed+n+m;
+        if (seed%7==n%7)
+            return n;
+        if (seed%7==m%7)
+            return m;
+        char name[64];
+        unsigned v = seed;
+        name[0] = 's';
+        name[1] = 'u';
+        name[2] = 'b';
+        unsigned i = 3;
+        while (v) {
+            name[i++] = ('A'+v%26 );
+            v /= 26;
+        }
+        name[i] = 0;
+        IPropertyTree *child = parent->queryPropTree(name);
+        if (!child)
+            child = parent->addPropTree(name, createPTree(name));
+        return fn(fn(n,seed,seed*17+11,depth+1,child),fn(seed,m,seed*11+17,depth+1,child),seed*19+7,depth+1,child);
+    }
+
+    unsigned fn2(unsigned n, unsigned m, unsigned seed, unsigned depth, StringBuffer &parentname)
+    {
+        if (!Rconn)
+            return 0;
+        if ((n+m+seed)%25==0) {
+            Rconn->commit();
+            Rconn->Release();
+            Rconn = querySDS().connect("/DAREGRESS",myProcessSession(), 0, 1000000);
+            ASSERT(Rconn && "Failed to connect to /DAREGRESS");
+        }
+        IPropertyTree *parent = parentname.length()?Rconn->queryRoot()->queryPropTree(parentname.str()):Rconn->queryRoot();
+        ASSERT(parent && "Failed to connect to parent");
+        __int64 val = parent->getPropInt64("val",0);
+        parent->setPropInt64("val",n+val);
+        val = parent->getPropInt64("@val",0);
+        parent->setPropInt64("@val",m+val);
+        val = parent->getPropInt64(NULL,0);
+        parent->setPropInt64(NULL,seed+val);
+        if (!seed)
+            return m+n;
+        if (n==m)
+            return seed;
+        if (depth>10)
+            return seed+n+m;
+        if (seed%7==n%7)
+            return n;
+        if (seed%7==m%7)
+            return m;
+        char name[64];
+        unsigned v = seed;
+        name[0] = 's';
+        name[1] = 'u';
+        name[2] = 'b';
+        unsigned i = 3;
+        while (v) {
+            name[i++] = ('A'+v%26 );
+            v /= 26;
+        }
+        name[i] = 0;
+        unsigned l = parentname.length();
+        if (parentname.length())
+            parentname.append('/');
+        parentname.append(name);
+        IPropertyTree *child = parent->queryPropTree(name);
+        if (!child)
+            child = parent->addPropTree(name, createPTree(name));
+        unsigned ret = fn2(fn2(n,seed,seed*17+11,depth+1,parentname),fn2(seed,m,seed*11+17,depth+1,parentname),seed*19+7,depth+1,parentname);
+        parentname.setLength(l);
+        return ret;
+    }
+public:
+    CDaliSDSStressTests() : logctx(queryDummyContextLogger())
+    {
+    }
+    ~CDaliSDSStressTests()
+    {
+        daliClientEnd();
+    }
+    void testInit()
+    {
+        daliClientInit();
+    }
+    void testSDSRW()
+    {
+        Owned<IPropertyTree> ref = createPTree("DAREGRESS");
+        fn(1,2,3,0,ref);
+        StringBuffer refstr;
+        toXML(ref,refstr,0,XML_SortTags|XML_Format);
+        logctx.CTXLOG("Created reference size %d",refstr.length());
+        Owned<IRemoteConnection> conn = querySDS().connect("/DAREGRESS",myProcessSession(), RTM_CREATE, 1000000);
+        Rconn = conn;
+        IPropertyTree *root = conn->queryRoot();
+        fn(1,2,3,0,root);
+        conn.clear();
+        logctx.CTXLOG("Created test branch 1");
+        conn.setown(querySDS().connect("/DAREGRESS",myProcessSession(), RTM_DELETE_ON_DISCONNECT, 1000000));
+        root = conn->queryRoot();
+        StringBuffer s;
+        toXML(root,s,0,XML_SortTags|XML_Format);
+        ASSERT(strcmp(s.str(),refstr.str())==0 && "Branch 1 does not match");
+        conn.clear();
+        conn.setown(querySDS().connect("/DAREGRESS",myProcessSession(), 0, 1000000));
+        ASSERT(!conn && "RTM_DELETE_ON_DISCONNECT failed");
+        Rconn = querySDS().connect("/DAREGRESS",myProcessSession(), RTM_CREATE, 1000000);
+        StringBuffer pn;
+        fn2(1,2,3,0,pn);
+        ::Release(Rconn);
+        logctx.CTXLOG("Created test branch 2");
+        Rconn = NULL;
+        conn.setown(querySDS().connect("/DAREGRESS",myProcessSession(), RTM_DELETE_ON_DISCONNECT, 1000000));
+        root = conn->queryRoot();
+        toXML(root,s.clear(),0,XML_SortTags|XML_Format);
+        ASSERT(strcmp(s.str(),refstr.str())==0 && "Branch 2 does not match");
+        conn.clear();
+        conn.setown(querySDS().connect("/DAREGRESS",myProcessSession(), 0, 1000000));
+        ASSERT(!conn && "RTM_DELETE_ON_DISCONNECT failed");
+    }
+    void testSDSSubs()
+    {
+        class CChange : public Thread
+        {
+            class CCSub : public CInterface, implements ISDSConnectionSubscription, implements ISDSSubscription
+            {
+                unsigned n;
+                unsigned &count;
+            public:
+                IMPLEMENT_IINTERFACE;
+
+                CCSub(unsigned _n,unsigned &_count)
+                    : count(_count)
+                {
+                    n = _n;
+                }
+                virtual void notify()
+                {
+                    CriticalBlock block(subchangesect);
+                    subchangetotal += n;
+                    subchangenum++;
+                    count++;
+                }
+                virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+                {
+                    CriticalBlock block(subchangesect);
+                    subchangetotal += n;
+                    subchangenum++;
+                    subchangetotal += (unsigned)flags;
+                    subchangetotal += crc32(xpath,strlen(xpath),0);
+                    if (valueLen)
+                        subchangetotal += crc32((const char *)valueData,valueLen,0);
+                    count++;
+
+                }
+
+            };
+            Owned<IRemoteConnection> conn;
+            StringAttr path;
+            SubscriptionId id[10];
+            unsigned n;
+            unsigned count;
+
+        public:
+            Semaphore stopsem;
+            CChange(unsigned _n)
+            {
+                n = _n;
+                StringBuffer s("/DAREGRESS/CONSUB");
+                s.append(n+1);
+                path.set(s.str());
+                conn.setown(querySDS().connect(path, myProcessSession(), RTM_CREATE|RTM_DELETE_ON_DISCONNECT, 1000000));
+                unsigned i;
+                for (i=0;i<subsPerCChange/2;i++)
+                {
+                    Owned<CCSub> sub = new CCSub(n*subsPerCChange+i,count);
+                    id[i] = conn->subscribe(*sub);
+                }
+                s.append("/testprop");
+                for (;i<subsPerCChange;i++)
+                {
+                    Owned<CCSub> sub = new CCSub(n*subsPerCChange+i,count);
+                    id[i] = querySDS().subscribe(s.str(),*sub,false,true);
+                }
+                count = 0;
+                start();
+            }
+
+            virtual int run()
+            {
+                unsigned i;
+                for (i = 0;i<numCChangeCommits; i++) {
+                    conn->queryRoot()->setPropInt("testprop", (i*17+n*21)%100);
+                    conn->commit();
+                    for (unsigned j=0;j<1000;j++) {
+                        {
+                            CriticalBlock block(subchangesect);
+                            if (count>=(i+1)*10)
+                                break;
+                        }
+                        Sleep(10);
+                    }
+                }
+                stopsem.wait();
+                for (i=0;i<subsPerCChange/2;i++)
+                    conn->unsubscribe(id[i]);
+                for (;i<subsPerCChange;i++)
+                    querySDS().unsubscribe(id[i]);
+
+                return 0;
+            }
+        };
+        subchangenum = 0;
+        subchangetotal = 0;
+        IArrayOf<CChange> a;
+        for (unsigned i=0; i<numCChangeTests ; i++)
+            a.append(*new CChange(i));
+        unsigned last = 0;
+        for (;;)
+        {
+            Sleep(1000);
+            {
+                CriticalBlock block(subchangesect);
+                if (subchangenum==last)
+                    break;
+                last = subchangenum;
+            }
+        }
+        ForEachItemIn(i1, a)
+            a.item(i1).stopsem.signal();
+        ForEachItemIn(i2, a)
+            a.item(i2).join();
+        logctx.CTXLOG("%d subscription notifications, check sum = %" I64F "d",subchangenum,subchangetotal);
+        ASSERT(subchangenum==( numCChangeTests * subsPerCChange * numCChangeCommits) && "Not all notifications received");
+    }
+    void testSDSSubs2()
+    {
+        class CResult
+        {
+            Semaphore sem;
+            StringBuffer resultString;
+            CriticalSection crit;
+        public:
+            CResult()
+            {
+            }
+            void add(const char *message)
+            {
+                CriticalBlock b(crit);
+                if (resultString.length())
+                    resultString.append("|");
+                resultString.append(message);
+                sem.signal();
+            }
+            Semaphore &querySem() { return sem; }
+            void clear() { resultString.clear(); }
+            bool wait(unsigned numExpected)
+            {
+                for (unsigned t=0; t<numExpected; t++)
+                {
+                    if (!sem.wait(5000))
+                        return false;
+                }
+                return true;
+            }
+            StringBuffer &getResultsClear(StringBuffer &ret)
+            {
+                StringArray array;
+                array.appendList(resultString, "|");
+                resultString.clear();
+                array.sortAscii();
+                ForEachItemIn(r, array)
+                {
+                    if (ret.length())
+                        ret.append("|");
+                    ret.append(array.item(r));
+                }
+                return ret;
+            }
+        } result;
+        class CSubscriberContainer : public CInterface
+        {
+            class CSubscriber : public CSimpleInterfaceOf<ISDSSubscription>
+            {
+                StringAttr xpath;
+                bool sub;
+                CResult &result;
+            public:
+                CSubscriber(CResult &_result, const char *_xpath, bool _sub) : result(_result), xpath(_xpath), sub(_sub)
+                {
+                }
+                virtual void notify(SubscriptionId id, const char *_xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+                {
+                    PROGLOG("CSubscriber notified path=%s for subscriber=%s, sub=%s", _xpath, xpath.get(), sub?"true":"false");
+                    StringBuffer message(xpath);
+                    if (!sub && valueLen)
+                        message.append(",").append(valueLen, (const char *)valueData);
+                    result.add(message);
+                }
+            };
+            Owned<CSubscriber> subscriber;
+            SubscriptionId id;
+        public:
+            CSubscriberContainer(CResult &result, const char *xpath, bool sub)
+            {
+                subscriber.setown(new CSubscriber(result, xpath, sub));
+                id = querySDS().subscribe(xpath, *subscriber, sub, !sub);
+                PROGLOG("Subscribed to %s", xpath);
+            }
+            virtual void beforeDispose() override
+            {
+                querySDS().unsubscribe(id);
+            }
+        };
+        Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), RTM_LOCK_WRITE, INFINITE);
+        IPropertyTree *root = conn->queryRoot();
+        IPropertyTree *daRegress = root->setPropTree("DAREGRESS");
+        Owned<IPropertyTree> tree = createPTreeFromXMLString("<TestSub2><a><b1><c/></b1><b2/><b3><d><e/></d></b3><b4><f/></b4></a></TestSub2>");
+        daRegress->setPropTree("TestSub2", tree.getClear());
+        conn->commit();
+
+        Owned<CSubscriberContainer> sub1 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a", true);
+        Owned<CSubscriberContainer> sub2 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b1", false);
+        Owned<CSubscriberContainer> sub3 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b2", false);
+        Owned<CSubscriberContainer> sub4 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b1/c", false);
+        Owned<CSubscriberContainer> sub5 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b3", true);
+        Owned<CSubscriberContainer> sub6 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b4", false);
+        Owned<CSubscriberContainer> sub7 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b4/sub", false);
+
+        StringArray expectedResults;
+        expectedResults.append("/DAREGRESS/TestSub2/a");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b1,testv");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b2,testv");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b1/c,testv");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b1,testv");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b2,testv");
+        expectedResults.append("/DAREGRESS/TestSub2/a");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b3");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b3");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b4,b4value|/DAREGRESS/TestSub2/a/b4/sub,subvalue");
+
+        StringArray props;
+        props.appendList("S:TestSub2/a,S:TestSub2/a/b1,S:TestSub2/a/b2,S:TestSub2/a/b1/c,S:TestSub2/a/b1/d,S:TestSub2/a/b2/e,S:TestSub2/a/b2/e/f,D:TestSub2/a/b3/d/e,D:TestSub2/a/b3/d,R:TestSub2/a/b4", ",");
+
+        assertex(expectedResults.ordinality() == props.ordinality());
+
+        ForEachItemIn(p, props)
+        {
+            const char *cmd = props.item(p);
+            const char *propPath=cmd+2;
+            switch (*cmd)
+            {
+                case 'S':
+                {
+                    PROGLOG("Changing %s", propPath);
+                    daRegress->setProp(propPath, "testv");
+                    break;
+                }
+                case 'D':
+                {
+                    PROGLOG("Deleting %s", propPath);
+                    daRegress->removeProp(propPath);
+                    break;
+                }
+                case 'R':
+                {
+                    PROGLOG("Replacing tree %s", propPath);
+                    Owned<IPropertyTree> tree = createPTreeFromXMLString("<b4><sub><g/>subvalue</sub>b4value</b4>");
+                    daRegress->setPropTree(propPath, tree.getClear());
+                    break;
+                }
+                default:
+                    throwUnexpected();
+            }
+            conn->commit();
+
+            const char *expectedResult = expectedResults.item(p);
+            StringArray expectedResultArray;
+            expectedResultArray.appendList(expectedResult, "|"); // just to get #
+            if (!result.wait(expectedResultArray.ordinality()))
+            {
+                VStringBuffer errMsg("Timeout waiting for subcription notificaitons, where expected result = '%s',", expectedResult);
+                CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
+            }
+            StringBuffer results;
+            result.getResultsClear(results);
+            PROGLOG("Checking results");
+            if (0 == strcmp(expectedResult, results))
+                PROGLOG("testSDSSubs2 [ %s ]: MATCH", cmd);
+            else
+            {
+                VStringBuffer errMsg("testSDSSubs2 [ %s ]: MISMATCH", cmd);
+                errMsg.newline().append("Expected: ").append(expectedResult);
+                errMsg.newline().append("Got: ").append(results);
+                PROGLOG("%s", errMsg.str());
+                CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
+            }
+        }
+    }
+    void testSDSNodeSubs()
+    {
+        class CResults
+        {
+            StringArray results;
+            CRC32 crc;
+            CriticalSection crit;
+        public:
+            void add(const char *out)
+            {
+                PROGLOG("%s", out);
+                CriticalBlock b(crit); // notify() and therefore add() can be called on multiple threads
+                results.append(out);
+            }
+            unsigned getCRC()
+            {
+                results.sortAscii();
+                ForEachItemIn(r, results)
+                {
+                    const char *result = results.item(r);
+                    crc.tally(strlen(result), result);
+                }
+                PROGLOG("CRC = %x", crc.get());
+                results.kill();
+                return crc.get();
+            }
+        };
+        class CSubscriber : CSimpleInterface, implements ISDSNodeSubscription
+        {
+            StringAttr path;
+            CResults &results;
+            unsigned expectedNotifications;
+            std::atomic<unsigned> notifications = {0};
+            Semaphore joinSem;
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CSubscriber(const char *_path, CResults &_results, unsigned _expectedNotifications)
+                : path(_path), results(_results), expectedNotifications(_expectedNotifications)
+            {
+                if (0 == expectedNotifications)
+                    joinSem.signal();
+            }
+            virtual void notify(SubscriptionId id, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+            {
+                StringAttr value;
+                if (valueLen)
+                    value.set((const char *)valueData, valueLen);
+                VStringBuffer res("Subscriber(%s): flags=%d, value=%s", path.get(), flags, 0==valueLen ? "(none)" : value.get());
+                results.add(res);
+                if (++notifications == expectedNotifications)
+                    joinSem.signal();
+            }
+            void join()
+            {
+                if (joinSem.wait(5000))
+                {
+                    MilliSleep(100); // wait a bit, see if get more than expected
+                    unsigned n = notifications;
+                    if (n == expectedNotifications)
+                    {
+                        VStringBuffer out("Subscriber(%s): %d notifications received", path.get(), n);
+                        results.add(out);
+                        return;
+                    }
+                }
+                VStringBuffer out("Expected %d notifications, received %d", expectedNotifications, notifications.load());
+                results.add(out);
+            }
+        };
+        // setup
+        Owned<IRemoteConnection> conn = querySDS().connect("/DAREGRESS/NodeSubTest", myProcessSession(), RTM_CREATE, 1000000);
+        IPropertyTree *root = conn->queryRoot();
+        unsigned i, ai;
+        for (i=0; i<10; i++)
+        {
+            VStringBuffer name("node%d", i+1);
+            IPropertyTree *sub = root->setPropTree(name, createPTree());
+            for (ai=0; ai<2; ai++)
+            {
+                VStringBuffer name("@attr%d", i+1);
+                VStringBuffer val("val%d", i+1);
+                sub->setProp(name, val);
+            }
+        }
+        conn.clear();
+
+        CResults results;
+
+        {
+            const char *testPath = "/DAREGRESS/NodeSubTest/doesnotexist";
+            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 0);
+            try
+            {
+                querySDS().subscribeExact(testPath, *subscriber, true);
+                throwUnexpected();
+            }
+            catch(IException *e)
+            {
+                if (SDSExcpt_SubscriptionNoMatch != e->errorCode())
+                    throw;
+                results.add("Correctly failed to add subscriber to non-existent node.");
+            }
+            subscriber.clear();
+        }
+
+        {
+            const char *testPath = "/DAREGRESS/NodeSubTest/node1";
+            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 2*5+1+1);
+            SubscriptionId id = querySDS().subscribeExact(testPath, *subscriber, false);
+
+            sdsNodeCommit(testPath, 1, 1, false);
+            sdsNodeCommit(testPath, 1, 1, true); // will delete 'node1'
+
+            subscriber->join();
+            querySDS().unsubscribeExact(id); // will actually be a NOP, as will be already unsubscribed when 'node1' deleted.
+        }
+
+        {
+            const char *testPath = "/DAREGRESS/NodeSubTest/node*";
+            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 9*6);
+            SubscriptionId id = querySDS().subscribeExact(testPath, *subscriber, false);
+
+            sdsNodeCommit(testPath, 2, 10, false);
+
+            subscriber->join();
+            querySDS().unsubscribeExact(id);
+        }
+
+        {
+            UInt64Array subscriberIds;
+            IArrayOf<CSubscriber> subscribers;
+            for (i=2; i<=10; i++) // NB: from 2, as 'node1' deleted in previous tests
+            {
+                for (ai=0; ai<2; ai++)
+                {
+                    VStringBuffer path("/DAREGRESS/NodeSubTest/node%d[@attr%d=\"val%d\"]", i, i, i);
+                    Owned<CSubscriber> subscriber = new CSubscriber(path, results, 11);
+                    SubscriptionId id = querySDS().subscribeExact(path, *subscriber, 0==ai);
+                    subscribers.append(* subscriber.getClear());
+                    subscriberIds.append(id);
+                }
+            }
+            const char *testPath = "/DAREGRESS/NodeSubTest/node*";
+            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 9*5+9*(5+1));
+            SubscriptionId id = querySDS().subscribeExact(testPath, *subscriber, false);
+
+            sdsNodeCommit(testPath, 2, 10, false);
+            sdsNodeCommit(testPath, 2, 10, true);
+
+            subscriber->join();
+            querySDS().unsubscribeExact(id);
+            ForEachItemIn(s, subscriberIds)
+            {
+                subscribers.item(s).join();
+                querySDS().unsubscribeExact(subscriberIds.item(s));
+            }
+        }
+
+        ASSERT(0xa68e2324 == results.getCRC() && "SDS Node notifcation differences");
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliSDSStressTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliSDSStressTests, "CDaliSDSStressTests" );
+
+// ================================================================================== UNIT TESTS
+
+static IFileDescriptor *createDescriptor(const char* dir, const char* name, unsigned parts, unsigned recSize, unsigned index=0)
+{
+    Owned<IPropertyTree> pp = createPTree("Part");
+    Owned<IFileDescriptor>fdesc = createFileDescriptor();
+    fdesc->setDefaultDir(dir);
+    StringBuffer s;
+    SocketEndpoint ep;
+    ep.setLocalHost(0);
+    StringBuffer ip;
+    ep.getIpText(ip);
+    for (unsigned k=0;k<parts;k++) {
+        s.clear().append(ip);
+        Owned<INode> node = createINode(s.str());
+        pp->setPropInt64("@size",recSize);
+        s.clear().append(name);
+        if (index)
+            s.append(index);
+        s.append("._").append(k+1).append("_of_").append(parts);
+        fdesc->setPart(k,node,s.str(),pp);
+    }
+    fdesc->queryProperties().setPropInt("@recordSize",recSize);
+    fdesc->setDefaultDir(dir);
+    return fdesc.getClear();
+}
+
+static void setupDFS(const IContextLogger &logctx, const char *scope, unsigned supersToDel=3, unsigned subsToCreate=4)
+{
+    StringBuffer bufScope;
+    bufScope.append("regress::").append(scope);
+    StringBuffer bufDir;
+    bufDir.append("regress/").append(scope);
+
+    logctx.CTXLOG("Cleaning up '%s' scope", bufScope.str());
+    for (unsigned i=1; i<=supersToDel; i++) {
+        StringBuffer super = bufScope;
+        super.append("::super").append(i);
+        if (dir.exists(super.str(),user,false,true))
+            ASSERT(dir.removeEntry(super.str(), user) && "Can't remove super-file");
+    }
+
+    logctx.CTXLOG("Creating 'regress::trans' subfiles(1,%d)", subsToCreate);
+    for (unsigned i=1; i<=subsToCreate; i++) {
+        StringBuffer name;
+        name.append("sub").append(i);
+        StringBuffer sub = bufScope;
+        sub.append("::").append(name);
+
+        // Remove first
+        if (dir.exists(sub.str(),user,true,false))
+            ASSERT(dir.removeEntry(sub.str(), user) && "Can't remove sub-file");
+
+        try {
+            // Create the sub file with an arbitrary format
+            Owned<IFileDescriptor> subd = createDescriptor(bufDir.str(), name.str(), 1, 17);
+            Owned<IPartDescriptor> partd = subd->getPart(0);
+            RemoteFilename rfn;
+            partd->getFilename(0, rfn);
+            StringBuffer fname;
+            rfn.getPath(fname);
+            recursiveCreateDirectoryForFile(fname.str());
+            OwnedIFile ifile = createIFile(fname.str());
+            Owned<IFileIO> io;
+            io.setown(ifile->open(IFOcreate));
+            io->write(0, 17, "12345678901234567");
+            io->close();
+            Owned<IDistributedFile> dsub = dir.createNew(subd);
+            dsub->attach(sub.str(),user);
+        } catch (IException *e) {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            logctx.CTXLOG("Caught exception while creating file in DFS: %s", msg.str());
+            e->Release();
+            ASSERT(0 && "Exception Caught in setupDFS - is the directory writeable by this user?");
+        }
+
+        // Make sure it got created
+        ASSERT(dir.exists(sub.str(),user,true,false) && "Can't add physical files");
+    }
+}
+
+class CDaliDFSStressTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(CDaliDFSStressTests);
+        CPPUNIT_TEST(testInit);
+        CPPUNIT_TEST(testGroups);
+        CPPUNIT_TEST(testMultiCluster);
+        CPPUNIT_TEST(testDFSTrans);
+        CPPUNIT_TEST(testDFSPromote);
+        CPPUNIT_TEST(testDFSDel);
+        CPPUNIT_TEST(testDFSRename);
+        CPPUNIT_TEST(testDFSClearAdd);
+        CPPUNIT_TEST(testDFSRename2);
+        CPPUNIT_TEST(testDFSRenameThenDelete);
+        CPPUNIT_TEST(testDFSRemoveSuperSub);
+// This test requires access to an external IP with dafilesrv running
+//        CPPUNIT_TEST(testDFSRename3);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testGrp(SocketEndpointArray &epa)
+    {
+        Owned<IGroup> grp = createIGroup(epa);
+        StringBuffer s;
+        grp->getText(s);
+        printf("'%s'\n",s.str());
+        Owned<IGroup> grp2 = createIGroup(s.str());
+        if (grp->compare(grp2)!=GRidentical)
+        {
+            s.clear().append("Group did not match: ");
+            grp->getText(s);
+            CPPUNIT_ASSERT_MESSAGE(s.str(), 0);
+        }
+    }
+
+    const IContextLogger &logctx;
+
+public:
+    CDaliDFSStressTests() : logctx(queryDummyContextLogger())
+    {
+    }
+    ~CDaliDFSStressTests()
+    {
+        daliClientEnd();
+    }
+    void testInit()
+    {
+        daliClientInit();
+    }
     void testDFSTrans()
     {
-        setupDFS("trans");
+        setupDFS(logctx, "trans");
 
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
 
@@ -961,7 +1613,7 @@ public:
 
     void testDFSPromote()
     {
-        setupDFS("trans");
+        setupDFS(logctx, "trans");
 
         unsigned timeout = 1000; // 1s
 
@@ -1079,262 +1731,6 @@ public:
             ASSERT(sub2.get() && "promote failed, sub2 was physically deleted");
         }
     }
-
-    void testSDSSubs()
-    {
-        subchangenum = 0;
-        subchangetotal = 0;
-        IArrayOf<CChange> a;
-        for (unsigned i=0; i<10 ; i++)
-            a.append(*new CChange(i));
-        unsigned last = 0;
-        for (;;) {
-            Sleep(1000);
-            {
-                CriticalBlock block(subchangesect);
-                if (subchangenum==last)
-                    break;
-                last = subchangenum;
-            }
-        }
-        ForEachItemIn(i1, a)
-            a.item(i1).stopsem.signal();
-        ForEachItemIn(i2, a)
-            a.item(i2).join();
-        ASSERT(subchangenum==1000 && "Not all notifications received");
-        logctx.CTXLOG("%d subscription notifications, check sum = %" I64F "d",subchangenum,subchangetotal);
-    }
-
-    class CNodeSubCommitThread : public CInterface, implements IThreaded
-    {
-        StringAttr xpath;
-        bool finalDelete;
-        CThreaded threaded;
-    public:
-        IMPLEMENT_IINTERFACE;
-
-        CNodeSubCommitThread(const char *_xpath, bool _finalDelete) : threaded("CNodeSubCommitThread"), xpath(_xpath), finalDelete(_finalDelete)
-        {
-        }
-        virtual void main()
-        {
-            unsigned mode = RTM_LOCK_WRITE;
-            if (finalDelete)
-                mode |= RTM_DELETE_ON_DISCONNECT;
-            Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), mode, 1000000);
-            assertex(conn);
-            for (unsigned i=0; i<5; i++)
-            {
-                VStringBuffer val("newval%d", i+1);
-                conn->queryRoot()->setProp(NULL, val.str());
-                conn->commit();
-            }
-            conn->queryRoot()->setProp("subnode", "newval");
-            conn->commit();
-            conn.clear(); // if finalDelete=true, deletes subscribed node in process, should get notificaiton
-
-        }
-        void start()
-        {
-            threaded.init(this);
-        }
-        void join()
-        {
-            threaded.join();
-        }
-    };
-
-
-    class CResults
-    {
-        StringArray results;
-        CRC32 crc;
-    public:
-        void add(const char *out)
-        {
-            PROGLOG("%s", out);
-            results.append(out);
-        }
-        unsigned getCRC()
-        {
-            results.sortAscii();
-            ForEachItemIn(r, results)
-            {
-                const char *result = results.item(r);
-                crc.tally(strlen(result), result);
-            }
-            PROGLOG("CRC = %x", crc.get());
-            results.kill();
-            return crc.get();
-        }
-    };
-
-    class CSubscriber : CSimpleInterface, implements ISDSNodeSubscription
-    {
-        StringAttr path;
-        CResults &results;
-        unsigned notifications, expectedNotifications;
-        Semaphore joinSem;
-    public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-        CSubscriber(const char *_path, CResults &_results, unsigned _expectedNotifications)
-            : path(_path), results(_results), expectedNotifications(_expectedNotifications)
-        {
-            notifications = 0;
-            if (0 == expectedNotifications)
-                joinSem.signal();
-        }
-        virtual void notify(SubscriptionId id, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-        {
-            StringAttr value;
-            if (valueLen)
-                value.set((const char *)valueData, valueLen);
-            VStringBuffer res("Subscriber(%s): flags=%d, value=%s", path.get(), flags, 0==valueLen ? "(none)" : value.get());
-            results.add(res);
-            ++notifications;
-            if (notifications == expectedNotifications)
-                joinSem.signal();
-        }
-        void join()
-        {
-            if (joinSem.wait(5000))
-            {
-                MilliSleep(100); // wait a bit, see if get more than expected
-                if (notifications == expectedNotifications)
-                {
-                    VStringBuffer out("Subscriber(%s): %d notifications received", path.get(), notifications);
-                    results.add(out);
-                    return;
-                }
-            }
-            VStringBuffer out("Expected %d notifications, received %d", expectedNotifications, notifications);
-            results.add(out);
-        }
-    };
-
-    void sdsNodeCommit(const char *test, unsigned from, unsigned to, bool finalDelete)
-    {
-        CIArrayOf<CNodeSubCommitThread> commitThreads;
-        for (unsigned i=from; i<=to; i++)
-        {
-            VStringBuffer path("/DAREGRESS/NodeSubTest/node%d", i);
-            CNodeSubCommitThread *commitThread = new CNodeSubCommitThread(path, finalDelete);
-            commitThreads.append(* commitThread);
-        }
-        ForEachItemIn(t, commitThreads)
-            commitThreads.item(t).start();
-        ForEachItemIn(t2, commitThreads)
-            commitThreads.item(t2).join();
-    }
-
-    void testSDSNodeSubs()
-    {
-        // setup
-        Owned<IRemoteConnection> conn = querySDS().connect("/DAREGRESS/NodeSubTest", myProcessSession(), RTM_CREATE, 1000000);
-        IPropertyTree *root = conn->queryRoot();
-        unsigned i, ai;
-        for (i=0; i<10; i++)
-        {
-            VStringBuffer name("node%d", i+1);
-            IPropertyTree *sub = root->setPropTree(name, createPTree());
-            for (ai=0; ai<2; ai++)
-            {
-                VStringBuffer name("@attr%d", i+1);
-                VStringBuffer val("val%d", i+1);
-                sub->setProp(name, val);
-            }
-        }
-        conn.clear();
-
-        CResults results;
-
-        {
-            const char *testPath = "/DAREGRESS/NodeSubTest/doesnotexist";
-            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 0);
-            try
-            {
-                querySDS().subscribeExact(testPath, *subscriber, true);
-                throwUnexpected();
-            }
-            catch(IException *e)
-            {
-                if (SDSExcpt_SubscriptionNoMatch != e->errorCode())
-                    throw;
-                results.add("Correctly failed to add subscriber to non-existent node.");
-            }
-            subscriber.clear();
-        }
-
-        {
-            const char *testPath = "/DAREGRESS/NodeSubTest/node1";
-            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 2*5+1+1);
-            SubscriptionId id = querySDS().subscribeExact(testPath, *subscriber, false);
-
-            sdsNodeCommit(testPath, 1, 1, false);
-            sdsNodeCommit(testPath, 1, 1, true); // will delete 'node1'
-
-            subscriber->join();
-            querySDS().unsubscribeExact(id); // will actually be a NOP, as will be already unsubscribed when 'node1' deleted.
-        }
-
-        {
-            const char *testPath = "/DAREGRESS/NodeSubTest/node*";
-            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 9*6);
-            SubscriptionId id = querySDS().subscribeExact(testPath, *subscriber, false);
-
-            sdsNodeCommit(testPath, 2, 10, false);
-
-            subscriber->join();
-            querySDS().unsubscribeExact(id);
-        }
-
-        {
-            UInt64Array subscriberIds;
-            IArrayOf<CSubscriber> subscribers;
-            for (i=2; i<=10; i++) // NB: from 2, as 'node1' deleted in previous tests
-            {
-                for (ai=0; ai<2; ai++)
-                {
-                    VStringBuffer path("/DAREGRESS/NodeSubTest/node%d[@attr%d=\"val%d\"]", i, i, i);
-                    Owned<CSubscriber> subscriber = new CSubscriber(path, results, 11);
-                    SubscriptionId id = querySDS().subscribeExact(path, *subscriber, 0==ai);
-                    subscribers.append(* subscriber.getClear());
-                    subscriberIds.append(id);
-                }
-            }
-            const char *testPath = "/DAREGRESS/NodeSubTest/node*";
-            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 9*5+9*(5+1));
-            SubscriptionId id = querySDS().subscribeExact(testPath, *subscriber, false);
-
-            sdsNodeCommit(testPath, 2, 10, false);
-            sdsNodeCommit(testPath, 2, 10, true);
-
-            subscriber->join();
-            querySDS().unsubscribeExact(id);
-            ForEachItemIn(s, subscriberIds)
-            {
-                subscribers.item(s).join();
-                querySDS().unsubscribeExact(subscriberIds.item(s));
-            }
-        }
-
-        ASSERT(0xa68e2324 == results.getCRC() && "SDS Node notifcation differences");
-    }
-
-    /*
-     * This test is silly and can take a very long time on clusters with
-     * a large file-system. But keeping it here for further reference.
-     * MORE: Maybe, this could be added to daliadmin or a thorough check
-     * on the filesystem, together with super-file checks et al.
-    void testReadAllSDS()
-    {
-        logctx.CTXLOG("Test SDS connecting to every branch");
-        testReadBranch("/");
-        logctx.CTXLOG("Connected to every branch");
-    }
-    */
-
     void testMultiCluster()
     {
         Owned<IGroup> grp1 = createIGroup("192.168.51.1-5");
@@ -1374,44 +1770,11 @@ public:
         for (i=0;i<file->numClusters();i++)
             PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
     }
-
-    void testFiles()
-    {
-        StringBuffer fn;
-        const char *s = filelist;
-        unsigned slowest = 0;
-        StringAttr slowname;
-        unsigned tot = 0;
-        unsigned n = 0;
-        while (*s) {
-            fn.clear();
-            while (*s==',')
-                s++;
-            while (*s&&(*s!=','))
-                fn.append(*(s++));
-            if (fn.length()) {
-                n++;
-                unsigned ss = msTick();
-                checkFiles(fn);
-                unsigned t = (msTick()-ss);
-                if (t>slowest) {
-                    slowest = t;
-                    slowname.set(fn);
-                }
-                tot += t;
-            }
-        }
-        printf("Complete in %ds avg %dms\n",tot/1000,tot/(n?n:1));
-        if (!slowname.isEmpty())
-            printf("Slowest %s = %dms\n",slowname.get(),slowest);
-    }
-
     void testGroups()
     {
         SocketEndpointArray epa;
         SocketEndpoint ep;
         Owned<IGroup> grp;
-        testGrp(epa);
         ep.set("10.150.10.80");
         epa.append(ep);
         testGrp(epa);
@@ -1465,165 +1828,11 @@ public:
         testGrp(epa);
     }
 
-#ifndef COMPAT
-
-    void testDF1()
-    {
-        const char * fname = "testing::propfile2";
-        Owned<IFileDescriptor> fdesc = createFileDescriptor();
-        Owned<IPropertyTree> pt = createPTree("Attr");
-        RemoteFilename rfn;
-        rfn.setRemotePath("//10.150.10.80/c$/thordata/test/part._1_of_3");
-        pt->setPropInt("@size",123);
-        fdesc->setPart(0,rfn,pt);
-        rfn.setRemotePath("//10.150.10.81/c$/thordata/test/part._2_of_3");
-        pt->setPropInt("@size",456);
-        fdesc->setPart(1,rfn,pt);
-        rfn.setRemotePath("//10.150.10.82/c$/thordata/test/part._3_of_3");
-        pt->setPropInt("@size",789);
-        fdesc->setPart(2,rfn,pt);
-        dispFDesc(fdesc);
-        try {
-            removeLogical(fname, user);
-            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-            {
-                DistributedFilePropertyLock lock(file);
-                lock.queryAttributes().setProp("@testing","1");
-            }
-            file->attach(fname,user);
-        } catch (IException *e) {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            logctx.CTXLOG("Caught exception while setting property: %s", msg.str());
-            e->Release();
-        }
-    }
-
-    void testDF2() // 4*3 superfile
-    {
-        Owned<IFileDescriptor> fdesc = createFileDescriptor();
-        Owned<IPropertyTree> pt = createPTree("Attr");
-        RemoteFilename rfn;
-        rfn.setRemotePath("//10.150.10.80/c$/thordata/test/partone._1_of_3");
-        pt->setPropInt("@size",1231);
-        fdesc->setPart(0,rfn,pt);
-        rfn.setRemotePath("//10.150.10.80/c$/thordata/test/parttwo._1_of_3");
-        pt->setPropInt("@size",1232);
-        fdesc->setPart(1,rfn,pt);
-        rfn.setRemotePath("//10.150.10.80/c$/thordata/test/partthree._1_of_3");
-        pt->setPropInt("@size",1233);
-        fdesc->setPart(2,rfn,pt);
-        rfn.setRemotePath("//10.150.10.80/c$/thordata/test2/partfour._1_of_3");
-        pt->setPropInt("@size",1234);
-        fdesc->setPart(3,rfn,pt);
-        rfn.setRemotePath("//10.150.10.81/c$/thordata/test/partone._2_of_3");
-        pt->setPropInt("@size",4565);
-        fdesc->setPart(4,rfn,pt);
-        rfn.setRemotePath("//10.150.10.81/c$/thordata/test/parttwo._2_of_3");
-        pt->setPropInt("@size",4566);
-        fdesc->setPart(5,rfn,pt);
-        rfn.setRemotePath("//10.150.10.81/c$/thordata/test/partthree._2_of_3");
-        pt->setPropInt("@size",4567);
-        fdesc->setPart(6,rfn,pt);
-        rfn.setRemotePath("//10.150.10.81/c$/thordata/test2/partfour._2_of_3");
-        pt->setPropInt("@size",4568);
-        fdesc->setPart(7,rfn,pt);
-        rfn.setRemotePath("//10.150.10.82/c$/thordata/test/partone._3_of_3");
-        pt->setPropInt("@size",7899);
-        fdesc->setPart(8,rfn,pt);
-        rfn.setRemotePath("//10.150.10.82/c$/thordata/test/parttwo._3_of_3");
-        pt->setPropInt("@size",78910);
-        fdesc->setPart(9,rfn,pt);
-        rfn.setRemotePath("//10.150.10.82/c$/thordata/test/partthree._3_of_3");
-        pt->setPropInt("@size",78911);
-        fdesc->setPart(10,rfn,pt);
-        rfn.setRemotePath("//10.150.10.82/c$/thordata/test2/partfour._3_of_3");
-        pt->setPropInt("@size",78912);
-        fdesc->setPart(11,rfn,pt);
-        ClusterPartDiskMapSpec mspec;
-        mspec.interleave = 4;
-        fdesc->endCluster(mspec);
-        dispFDesc(fdesc);
-    }
-
-    void testMisc()
-    {
-        ClusterPartDiskMapSpec mspec;
-        Owned<IGroup> grp = createIGroup("10.150.10.1-3");
-        RemoteFilename rfn;
-        for (unsigned i=0;i<3;i++)
-            for (unsigned ic=0;ic<mspec.defaultCopies;ic++) {
-                constructPartFilename(grp,i+1,3,(i==1)?"test.txt":NULL,"test._$P$_of_$N$","/c$/thordata/test",ic,mspec,rfn);
-                StringBuffer tmp;
-                printf("%d,%d: %s\n",i,ic,rfn.getRemotePath(tmp).str());
-            }
-    }
-
-    void testDFile()
-    {
-        ClusterPartDiskMapSpec map;
-        {   // 1: single part file old method
-#define TN "1"
-            removeLogical("test::ftest" TN, user);
-            Owned<IFileDescriptor> fdesc = createFileDescriptor();
-            RemoteFilename rfn;
-            rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest" TN "._1_of_1");
-            fdesc->setPart(0,rfn);
-            fdesc->endCluster(map);
-            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-            file->attach("test::ftest" TN,user);
-#undef TN
-        }
-        {   // 2: single part file new method
-#define TN "2"
-            removeLogical("test::ftest" TN, user);
-            Owned<IFileDescriptor> fdesc = createFileDescriptor();
-            fdesc->setPartMask("ftest" TN "._$P$_of_$N$");
-            fdesc->setNumParts(1);
-            Owned<IGroup> grp = createIGroup("10.150.10.1");
-            fdesc->addCluster(grp,map);
-            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-            file->attach("test::ftest" TN,user);
-#undef TN
-        }
-        Owned<IGroup> grp3 = createIGroup("10.150.10.1,10.150.10.2,10.150.10.3");
-        queryNamedGroupStore().add("__testgroup3__",grp3,true);
-        {   // 3: three parts file old method
-#define TN "3"
-            removeLogical("test::ftest" TN, user);
-            Owned<IFileDescriptor> fdesc = createFileDescriptor();
-            RemoteFilename rfn;
-            rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest" TN "._1_of_3");
-            fdesc->setPart(0,rfn);
-            rfn.setRemotePath("//10.150.10.2/c$/thordata/test/ftest" TN "._2_of_3");
-            fdesc->setPart(1,rfn);
-            rfn.setRemotePath("//10.150.10.3/c$/thordata/test/ftest" TN "._3_of_3");
-            fdesc->setPart(2,rfn);
-            fdesc->endCluster(map);
-            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-            file->attach("test::ftest" TN,user);
-#undef TN
-        }
-        {   // 4: three part file new method
-#define TN "4"
-            removeLogical("test::ftest" TN, user);
-            Owned<IFileDescriptor> fdesc = createFileDescriptor();
-            fdesc->setPartMask("ftest" TN "._$P$_of_$N$");
-            fdesc->setNumParts(3);
-            fdesc->addCluster(grp3,map);
-            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-            file->attach("test::ftest" TN,user);
-#undef TN
-        }
-    }
-
-#endif
-
     void testDFSDel()
     {
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
 
-        setupDFS("del");
+        setupDFS(logctx, "del");
 
         // Sub-file deletion
         logctx.CTXLOG("Creating regress::del::super1 and attaching sub");
@@ -1703,7 +1912,7 @@ public:
         if (dir.exists("regress::rename::other2",user,false,false))
             ASSERT(dir.removeEntry("regress::rename::other2", user) && "Can't remove 'regress::rename::other2'");
 
-        setupDFS("rename");
+        setupDFS(logctx, "rename");
 
         try {
             logctx.CTXLOG("Renaming 'regress::rename::sub1 to 'sub2' with auto-commit, should fail");
@@ -1749,7 +1958,7 @@ public:
 
     void testDFSClearAdd()
     {
-        setupDFS("clearadd");
+        setupDFS(logctx, "clearadd");
 
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
 
@@ -1820,162 +2029,9 @@ public:
         ASSERT(NULL == sfile->querySubFileNamed("regress::clearadd::sub4") && "regress::clearadd::sub4, should NOT be a subfile of super1");
         ASSERT(1 == sfile->numSubFiles() && "regress::clearadd::super1 should contain 1 subfile");
     }
-
-    void testDFSAddFailReAdd()
-    {
-        setupDFS("addreadd");
-
-        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
-
-        logctx.CTXLOG("Creating super1 and supet2, adding sub1 and sub2 to super1 and sub3 to super2");
-        Owned<IDistributedSuperFile> sfile = dir.createSuperFile("regress::addreadd::super1", user, false, false, transaction);
-        sfile->addSubFile("regress::addreadd::sub1", false, NULL, false, transaction);
-        sfile->addSubFile("regress::addreadd::sub2", false, NULL, false, transaction);
-        sfile.clear();
-        Owned<IDistributedSuperFile> sfile2 = dir.createSuperFile("regress::addreadd::super2", user, false, false, transaction);
-        sfile2->addSubFile("regress::addreadd::sub3", false, NULL, false, transaction);
-        sfile2.clear();
-
-        class CShortLock : implements IThreaded
-        {
-            StringAttr fileName;
-            unsigned secDelay;
-            CThreaded threaded;
-        public:
-            CShortLock(const char *_fileName, unsigned _secDelay) : fileName(_fileName), secDelay(_secDelay), threaded("CShortLock", this) { }
-            ~CShortLock()
-            {
-                threaded.join();
-            }
-            virtual void main()
-            {
-                Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
-
-                if (!file)
-                {
-                    PROGLOG("File %s not found", fileName.get());
-                    return;
-                }
-                PROGLOG("Locked file: %s, sleeping (before unlock) for %d secs", fileName.get(), secDelay);
-
-                MilliSleep(secDelay * 1000);
-
-                PROGLOG("Unlocking file: %s", fileName.get());
-            }
-            void start() { threaded.start(); }
-        };
-
-        /* Tests transaction failing, due to lock and retrying after having partial success */
-
-        CShortLock sL("regress::addreadd::sub2", 30); // the 2nd subfile of super1
-        sL.start();
-
-        transaction.setown(createDistributedFileTransaction(user)); // disabled, auto-commit
-        logctx.CTXLOG("Starting transaction");
-        transaction->start();
-
-        logctx.CTXLOG("Adding contents of regress::addreadd::super1 to regress::addreadd::super2, within transaction");
-        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super2"));
-        sfile->addSubFile("regress::addreadd::super1", false, NULL, true, transaction); // add contents of super1 to super2
-        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super1"));
-        sfile->removeSubFile(NULL, false, false, transaction); // clears super1
-        sfile.clear();
-
-        try
-        {
-            transaction->commit();
-        }
-        catch (IException *e)
-        {
-            StringBuffer eStr;
-            e->errorMessage(eStr);
-            CPPUNIT_ASSERT_MESSAGE(eStr.str(), 0);
-            e->Release();
-        }
-        transaction.clear();
-        sfile.setown(dir.lookupSuperFile("regress::addreadd::super2", user));
-        ASSERT(3 == sfile->numSubFiles() && "regress::addreadd::super2 should contain 3 subfiles");
-        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub1") && "regress::addreadd::sub1, should be a subfile of super2");
-        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub2") && "regress::addreadd::sub2, should be a subfile of super2");
-        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub3") && "regress::addreadd::sub3, should be a subfile of super2");
-        sfile.setown(dir.lookupSuperFile("regress::addreadd::super1", user));
-        ASSERT(0 == sfile->numSubFiles() && "regress::addreadd::super1 should contain 0 subfiles");
-    }
-
-    void testDFSRetrySuperLock()
-    {
-        setupDFS("retrysuperlock");
-
-        logctx.CTXLOG("Creating regress::retrysuperlock::super1 and regress::retrysuperlock::sub1");
-        Owned<IDistributedSuperFile> sfile = dir.createSuperFile("regress::retrysuperlock::super1", user, false, false);
-        sfile->addSubFile("regress::retrysuperlock::sub1", false, NULL, false);
-        sfile.clear();
-
-        class CShortLock : implements IThreaded
-        {
-            StringAttr fileName;
-            unsigned secDelay;
-            CThreaded threaded;
-        public:
-            CShortLock(const char *_fileName, unsigned _secDelay) : fileName(_fileName), secDelay(_secDelay), threaded("CShortLock", this) { }
-            ~CShortLock()
-            {
-                threaded.join();
-            }
-            virtual void main()
-            {
-                Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
-
-                if (!file)
-                {
-                    PROGLOG("File %s not found", fileName.get());
-                    return;
-                }
-                PROGLOG("Locked file: %s, sleeping (before unlock) for %d secs", fileName.get(), secDelay);
-
-                MilliSleep(secDelay * 1000);
-
-                PROGLOG("Unlocking file: %s", fileName.get());
-            }
-            void start() { threaded.start(); }
-        };
-
-        /* Tests transaction failing, due to lock and retrying after having partial success */
-
-        CShortLock sL("regress::retrysuperlock::super1", 15);
-        sL.start();
-
-        sfile.setown(dir.lookupSuperFile("regress::retrysuperlock::super1", user));
-        if (sfile)
-        {
-            logctx.CTXLOG("Removing subfiles from regress::retrysuperlock::super1");
-            sfile->removeSubFile(NULL, false, false);
-            logctx.CTXLOG("SUCCEEDED");
-        }
-        // put it back, for next test
-        sfile->addSubFile("regress::retrysuperlock::sub1", false, NULL, false);
-        sfile.clear();
-
-        // try again, this time in transaction
-        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
-        logctx.CTXLOG("Starting transaction");
-        transaction->start();
-
-        sfile.setown(transaction->lookupSuperFile("regress::retrysuperlock::super1"));
-        if (sfile)
-        {
-            logctx.CTXLOG("Removing subfiles from regress::retrysuperlock::super1 with transaction");
-            sfile->removeSubFile(NULL, false, false, transaction);
-            logctx.CTXLOG("SUCCEEDED");
-        }
-        sfile.clear();
-        logctx.CTXLOG("Committing transaction");
-        transaction->commit();
-    }
-
     void testDFSRename2()
     {
-        setupDFS("rename2");
+        setupDFS(logctx, "rename2");
 
         /* Create a super and sub1 and sub4 in a auto-commit transaction
          * Inside a transaction, do:
@@ -2047,7 +2103,7 @@ public:
 
     void testDFSRenameThenDelete()
     {
-        setupDFS("renamedelete");
+        setupDFS(logctx, "renamedelete");
         if (dir.exists("regress::renamedelete::renamedsub2",user,false,false))
             ASSERT(dir.removeEntry("regress::renamedelete::renamedsub2", user) && "Can't remove 'regress::renamedelete::renamedsub2'");
 
@@ -2085,7 +2141,7 @@ public:
 // NB: This test requires access (via dafilesrv) to an external IP (10.239.222.21 used below, but could be any)
     void testDFSRename3()
     {
-        setupDFS("rename3");
+        setupDFS(logctx, "rename3");
 
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
 
@@ -2155,7 +2211,7 @@ public:
 
     void testDFSRemoveSuperSub()
     {
-        setupDFS("removesupersub");
+        setupDFS(logctx, "removesupersub");
 
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
 
@@ -2192,181 +2248,159 @@ public:
         ASSERT(!dir.exists("regress::removesupersub::sub1", user, true, false) && "regress::removesupersub::sub1 should NOT exist");
         ASSERT(!dir.exists("regress::removesupersub::sub4", user, true, false) && "regress::removesupersub::sub4 should NOT exist");
     }
-
-    void testDFSHammer()
-    {
-        unsigned numFiles = 100;
-        unsigned numReads = 40000;
-        unsigned hammerThreads = 10;
-        setupDFS("hammer", 0, numFiles);
-
-        StringBuffer msg("Reading ");
-        msg.append(numFiles).append(" files").append(numReads).append(" times, on ").append(hammerThreads).append(" threads");
-        logctx.CTXLOG("%s", msg.str());
-
-        class CHammerFactory : public CSimpleInterface, implements IThreadFactory
-        {
-        public:
-            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-            virtual IPooledThread *createNew()
-            {
-                class CHammerThread : public CSimpleInterface, implements IPooledThread
-                {
-                    StringAttr filename;
-                public:
-                    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-                    virtual void init(void *param)
-                    {
-                        filename.set((const char *)param);
-                    }
-                    virtual void main()
-                    {
-                        try
-                        {
-                            Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(filename,user);
-                        }
-                        catch (IException *e)
-                        {
-                            PrintExceptionLog(e, NULL);
-                        }
-                    }
-                    virtual bool stop() { return true; }
-                    virtual bool canReuse() { return true; }
-                };
-                return new CHammerThread();
-            }
-        } poolFactory;
-
-        CTimeMon tm;
-        Owned<IThreadPool> pool = createThreadPool("TSDSTest", &poolFactory, NULL, hammerThreads, 2000);
-        while (numReads--)
-        {
-            StringBuffer filename("regress::hammer::sub");
-            unsigned fn = 1+(getRandom()%numFiles);
-            filename.append(fn);
-            PROGLOG("Hammer file: %s", filename.str());
-            pool->start((void *)filename.str());
-        }
-        pool->joinAll();
-        PROGLOG("Hammer test took: %d ms", tm.elapsed());
-    }
-
-    void testSDSSubs2()
-    {
-        class CSubscriber : public CSimpleInterfaceOf<ISDSSubscription>
-        {
-            StringAttr xpath;
-            bool sub;
-            StringBuffer &result;
-            SubscriptionId id;
-        public:
-            CSubscriber(StringBuffer &_result, const char *_xpath, bool _sub) : result(_result), xpath(_xpath), sub(_sub)
-            {
-                id = querySDS().subscribe(xpath, *this, sub, !sub);
-                PROGLOG("Subscribed to %s", xpath.get());
-            }
-            ~CSubscriber()
-            {
-                querySDS().unsubscribe(id);
-            }
-            virtual void notify(SubscriptionId id, const char *_xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-            {
-                PROGLOG("CSubscriber notified path=%s for subscriber=%s, sub=%s", _xpath, xpath.get(), sub?"true":"false");
-                if (result.length())
-                    result.append("|");
-                result.append(xpath);
-                if (!sub && valueLen)
-                    result.append(",").append(valueLen, (const char *)valueData);
-            }
-        };
-        Owned<IRemoteConnection> conn = querySDS().connect("/DAREGRESS/TestSub2", myProcessSession(), RTM_CREATE, INFINITE);
-        Owned<IPropertyTree> tree = createPTreeFromXMLString("<a><b1><c/></b1><b2/><b3><d><e/></d></b3></a>");
-        IPropertyTree *root = conn->queryRoot();
-        root->setPropTree("a", tree.getClear());
-        conn->commit();
-
-        StringBuffer result;
-        Owned<ISDSSubscription> sub1 = new CSubscriber(result, "/DAREGRESS/TestSub2/a", true);
-        Owned<ISDSSubscription> sub2 = new CSubscriber(result, "/DAREGRESS/TestSub2/a/b1", false);
-        Owned<ISDSSubscription> sub3 = new CSubscriber(result, "/DAREGRESS/TestSub2/a/b2", false);
-        Owned<ISDSSubscription> sub4 = new CSubscriber(result, "/DAREGRESS/TestSub2/a/b1/c", false);
-        Owned<ISDSSubscription> sub5 = new CSubscriber(result, "/DAREGRESS/TestSub2/a/b3", true);
-
-        MilliSleep(1000);
-
-        StringArray expectedResults;
-        expectedResults.append("/DAREGRESS/TestSub2/a");
-        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b1,testv");
-        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b2,testv");
-        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b1/c,testv");
-        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b1,testv");
-        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b2,testv");
-        expectedResults.append("/DAREGRESS/TestSub2/a");
-        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b3");
-        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b3");
-
-        StringArray props;
-        props.appendList("S:a,S:a/b1,S:a/b2,S:a/b1/c,S:a/b1/d,S:a/b2/e,S:a/b2/e/f,D:a/b3/d/e,D:a/b3/d", ",");
-
-        assertex(expectedResults.ordinality() == props.ordinality());
-
-        ForEachItemIn(p, props)
-        {
-            result.clear(); // filled by subscriber notifications
-            const char *cmd = props.item(p);
-            const char *propPath=cmd+2;
-            switch (*cmd)
-            {
-                case 'S':
-                {
-                    PROGLOG("Changing %s", propPath);
-                    root->setProp(propPath, "testv");
-                    break;
-                }
-                case 'D':
-                {
-                    PROGLOG("Deleting %s", propPath);
-                    root->removeProp(propPath);
-                    break;
-                }
-                default:
-                    throwUnexpected();
-            }
-            conn->commit();
-
-            MilliSleep(100); // time for notifications to come through
-
-            PROGLOG("Checking results");
-            StringArray resultArray;
-            resultArray.appendList(result, "|");
-            result.clear();
-            resultArray.sortAscii();
-            ForEachItemIn(r, resultArray)
-            {
-                if (result.length())
-                    result.append("|");
-                result.append(resultArray.item(r));
-            }
-            const char *expectedResult = expectedResults.item(p);
-            if (0 == strcmp(expectedResult, result))
-                PROGLOG("testSDSSubs2 [ %s ]: MATCH", cmd);
-            else
-            {
-                VStringBuffer errMsg("testSDSSubs2 [ %s ]: MISMATCH", cmd);
-                errMsg.newline().append("Expected: ").append(expectedResult);
-                errMsg.newline().append("Got: ").append(result);
-                PROGLOG("%s", errMsg.str());
-                CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
-            }
-        }
-    }
-
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( CDaliTestsStress );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliTestsStress, "Dali" );
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliDFSStressTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliDFSStressTests, "CDaliDFSStressTests" );
+
+class CDaliDFSRetrySlowTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(CDaliDFSRetrySlowTests);
+        CPPUNIT_TEST(testInit);
+        CPPUNIT_TEST(testDFSAddFailReAdd);
+        CPPUNIT_TEST(testDFSRetrySuperLock);
+    CPPUNIT_TEST_SUITE_END();
+
+    const IContextLogger &logctx;
+
+public:
+    CDaliDFSRetrySlowTests() : logctx(queryDummyContextLogger())
+    {
+    }
+    ~CDaliDFSRetrySlowTests()
+    {
+        daliClientEnd();
+    }
+    void testInit()
+    {
+        daliClientInit();
+    }
+    class CShortLock : implements IThreaded
+    {
+        StringAttr fileName;
+        unsigned secDelay;
+        CThreaded threaded;
+    public:
+        CShortLock(const char *_fileName, unsigned _secDelay) : fileName(_fileName), secDelay(_secDelay), threaded("CShortLock", this) { }
+        ~CShortLock()
+        {
+            threaded.join();
+        }
+        virtual void threadmain() override
+        {
+            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
+
+            if (!file)
+            {
+                PROGLOG("File %s not found", fileName.get());
+                return;
+            }
+            PROGLOG("Locked file: %s, sleeping (before unlock) for %d secs", fileName.get(), secDelay);
+
+            MilliSleep(secDelay * 1000);
+
+            PROGLOG("Unlocking file: %s", fileName.get());
+        }
+        void start() { threaded.start(); }
+    };
+
+    void testDFSAddFailReAdd()
+    {
+        setupDFS(logctx, "addreadd");
+
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
+
+        logctx.CTXLOG("Creating super1 and supet2, adding sub1 and sub2 to super1 and sub3 to super2");
+        Owned<IDistributedSuperFile> sfile = dir.createSuperFile("regress::addreadd::super1", user, false, false, transaction);
+        sfile->addSubFile("regress::addreadd::sub1", false, NULL, false, transaction);
+        sfile->addSubFile("regress::addreadd::sub2", false, NULL, false, transaction);
+        sfile.clear();
+        Owned<IDistributedSuperFile> sfile2 = dir.createSuperFile("regress::addreadd::super2", user, false, false, transaction);
+        sfile2->addSubFile("regress::addreadd::sub3", false, NULL, false, transaction);
+        sfile2.clear();
+
+        /* Tests transaction failing, due to lock and retrying after having partial success */
+
+        CShortLock sL("regress::addreadd::sub2", 30); // the 2nd subfile of super1
+        sL.start();
+
+        transaction.setown(createDistributedFileTransaction(user)); // disabled, auto-commit
+        logctx.CTXLOG("Starting transaction");
+        transaction->start();
+
+        logctx.CTXLOG("Adding contents of regress::addreadd::super1 to regress::addreadd::super2, within transaction");
+        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super2"));
+        sfile->addSubFile("regress::addreadd::super1", false, NULL, true, transaction); // add contents of super1 to super2
+        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super1"));
+        sfile->removeSubFile(NULL, false, false, transaction); // clears super1
+        sfile.clear();
+
+        try
+        {
+            transaction->commit();
+        }
+        catch (IException *e)
+        {
+            StringBuffer eStr;
+            e->errorMessage(eStr);
+            CPPUNIT_ASSERT_MESSAGE(eStr.str(), 0);
+            e->Release();
+        }
+        transaction.clear();
+        sfile.setown(dir.lookupSuperFile("regress::addreadd::super2", user));
+        ASSERT(3 == sfile->numSubFiles() && "regress::addreadd::super2 should contain 3 subfiles");
+        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub1") && "regress::addreadd::sub1, should be a subfile of super2");
+        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub2") && "regress::addreadd::sub2, should be a subfile of super2");
+        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub3") && "regress::addreadd::sub3, should be a subfile of super2");
+        sfile.setown(dir.lookupSuperFile("regress::addreadd::super1", user));
+        ASSERT(0 == sfile->numSubFiles() && "regress::addreadd::super1 should contain 0 subfiles");
+    }
+    void testDFSRetrySuperLock()
+    {
+        setupDFS(logctx, "retrysuperlock");
+
+        logctx.CTXLOG("Creating regress::retrysuperlock::super1 and regress::retrysuperlock::sub1");
+        Owned<IDistributedSuperFile> sfile = dir.createSuperFile("regress::retrysuperlock::super1", user, false, false);
+        sfile->addSubFile("regress::retrysuperlock::sub1", false, NULL, false);
+        sfile.clear();
+
+        /* Tests transaction failing, due to lock and retrying after having partial success */
+
+        CShortLock sL("regress::retrysuperlock::super1", 15);
+        sL.start();
+
+        sfile.setown(dir.lookupSuperFile("regress::retrysuperlock::super1", user));
+        if (sfile)
+        {
+            logctx.CTXLOG("Removing subfiles from regress::retrysuperlock::super1");
+            sfile->removeSubFile(NULL, false, false);
+            logctx.CTXLOG("SUCCEEDED");
+        }
+        // put it back, for next test
+        sfile->addSubFile("regress::retrysuperlock::sub1", false, NULL, false);
+        sfile.clear();
+
+        // try again, this time in transaction
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
+        logctx.CTXLOG("Starting transaction");
+        transaction->start();
+
+        sfile.setown(transaction->lookupSuperFile("regress::retrysuperlock::super1"));
+        if (sfile)
+        {
+            logctx.CTXLOG("Removing subfiles from regress::retrysuperlock::super1 with transaction");
+            sfile->removeSubFile(NULL, false, false, transaction);
+            logctx.CTXLOG("SUCCEEDED");
+        }
+        sfile.clear();
+        logctx.CTXLOG("Committing transaction");
+        transaction->commit();
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliDFSRetrySlowTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliDFSRetrySlowTests, "CDaliDFSRetrySlowTests" );
+
 
 class CDaliUtils : public CppUnit::TestFixture
 {
@@ -2403,6 +2437,20 @@ public:
                                ".:: scope1::file*",
                                NULL                                             // terminator
                              };
+
+        const char *translatedLfns[][2] = {
+                               { ".::fname", ".::fname" },
+                               { "fname", ".::fname" },
+                               { "~.::fname", ".::fname" },
+                               { ".::.::.::fname", ".::fname" },
+                               { ".::.::.::sname::.::.::fname", "sname::fname" },
+                               { "~.::.::scope2::.::.::.::fname", "scope2::fname" },
+                               { "{.::.::multitest1f1, .::.::multitest1f2}", "{.::multitest1f1,.::multitest1f2}" },
+                               { ".::.::.::.sname.::.::.fname.", ".sname.::.fname." },
+                               { "~foreign::192.168.16.1::.::scope1::file1", "foreign::192.168.16.1::scope1::file1" },
+                               { "{~foreign::192.168.16.1::.::.::multi1, ~foreign::192.168.16.2::multi2::.::fname}", "{foreign::192.168.16.1::multi1,foreign::192.168.16.2::multi2::fname}" },
+                               { nullptr, nullptr }                             // terminator
+                             };
         PROGLOG("Checking valid logical filenames");
         unsigned nlfn=0;
         for (;;)
@@ -2420,30 +2468,39 @@ public:
             {
                 VStringBuffer err("Logical filename '%s' failed.", lfn);
                 EXCLOG(e, err.str());
-                CPPUNIT_FAIL(err.str());
                 e->Release();
+                CPPUNIT_FAIL(err.str());
             }
         }
-        PROGLOG("Checking invalid logical filenames");
+        PROGLOG("Checking translations");
         nlfn = 0;
         for (;;)
         {
-            const char *lfn = invalidLfns[nlfn++];
-            if (NULL == lfn)
+            const char **entry = translatedLfns[nlfn++];
+            if (nullptr == entry[0])
                 break;
-            PROGLOG("lfn = %s", lfn);
+            const char *lfn = entry[0];
+            const char *expected = entry[1];
+            PROGLOG("lfn = %s, expect = %s", lfn, expected);
             CDfsLogicalFileName dlfn;
+            StringBuffer err;
             try
             {
                 dlfn.set(lfn);
-                VStringBuffer err("Logical filename '%s' passed and should have failed.", lfn);
-                ERRLOG("%s", err.str());
-                CPPUNIT_FAIL(err.str());
+                const char *result = dlfn.get();
+                if (!streq(result, expected))
+                    err.appendf("Logical filename '%s' should have translated to '%s', but result was '%s'.", lfn, expected, result);
             }
             catch (IException *e)
             {
-                EXCLOG(e, "Expected error:");
+                err.appendf("Logical filename '%s' failed: ", lfn);
+                e->errorMessage(err);
                 e->Release();
+            }
+            if (err.length())
+            {
+                ERRLOG("%s", err.str());
+                CPPUNIT_FAIL(err.str());
             }
         }
     }
@@ -2480,15 +2537,15 @@ public:
          const char *validInternalLfns[][2] = {
                  //     input file name                    expected normalized file name
                  {"~foreign::192.168.16.1::scope1::file1", "foreign::192.168.16.1::scope1::file1"},
-                 {".::scope1::file",                       ".::scope1::file"},
+                 {".::scope1::file",                       "scope1::file"},
                  {"~ scope1 :: scope2 :: file  ",          "scope1::scope2::file"},
-                 {". :: scope1 :: file nine",              ".::scope1::file nine"},
-                 {". :: scope1 :: file ten  ",             ".::scope1::file ten"},
-                 {". :: scope1 :: file",                   ".::scope1::file"},
+                 {". :: scope1 :: file nine",              "scope1::file nine"},
+                 {". :: scope1 :: file ten  ",             "scope1::file ten"},
+                 {". :: scope1 :: file",                   "scope1::file"},
                  {"~scope1::file@cluster1",                "scope1::file"},
                  {"~scope::^C^a^S^e^d",                    "scope::^c^a^s^e^d"},
                  {"~scope::CaSed",                         "scope::cased"},
-                 {"~scope::^CaSed",                         "scope::^cased"},
+                 {"~scope::^CaSed",                        "scope::^cased"},
                  {nullptr,                                 nullptr}   // terminator
                  };
 

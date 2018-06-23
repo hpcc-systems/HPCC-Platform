@@ -129,8 +129,8 @@ public:
     virtual void usage()
     {
         fprintf(stdout,
-            "   --help                 display usage information for the given command\n"
-            "   -v,--verbose           output additional tracing information\n"
+            "   --help                               Display usage information for the given command\n"
+            "   -v,--verbose                         Output additional tracing information\n"
         );
     }
 public:
@@ -173,28 +173,11 @@ public:
             {
                 StringBuffer esxml;
                 EsdlCmdHelper::convertECMtoESXDL(sourceFileName, filename.str(), esxml, true, verbose, false, true, includePath);
-                if (!serviceName || !*serviceName)
-                {
-                    Owned<IPropertyTree> esdldeftree = createPTreeFromXMLString(esxml);
-                    if (esdldeftree->getCount("EsdlService") == 1)
-                    {
-                        Owned<IPropertyTreeIterator> it = esdldeftree->getElements("EsdlService");
-                        ForEach(*it)
-                        {
-                            IPropertyTree* pChildNode = &it->query();
-                            serviceName = pChildNode->queryProp("@name");
-                        }
-                    }
-                    else
-                        throw( MakeStringException(0, "Target service name must be specified if ESDL definition contains multiple service definitions") );
-                }
-
-                VStringBuffer serviceid("%s.%f", serviceName, version);
-                esdlDef->addDefinitionFromXML(esxml, serviceid.str());
+                esdlDef->addDefinitionFromXML(esxml, sourceFileName);
             }
             else
             {
-                loadEsdlDef(sourceFileName);
+                loadEXSDLFromFile(sourceFileName);
             }
         }
     }
@@ -209,7 +192,10 @@ public:
 
             if( deps )
             {
-                xmlOut.appendf( "<esxdl name=\"%s\">", serviceName);
+                if (serviceName)
+                    xmlOut.appendf("<esxdl name=\"%s\">", serviceName);
+                else
+                    xmlOut.appendf("<esxdl>");
                 defHelper->toXML( *deps, xmlOut, version, opts, flags );
                 xmlOut.append("</esxdl>");
             }
@@ -248,7 +234,7 @@ public:
         if(server == NULL)
             throw MakeStringException(-1, "Server url not specified");
 
-        VStringBuffer url("http://%s:%s/WsESDLConfig", server, port);
+        VStringBuffer url("http://%s:%s/WsESDLConfig/?ver_=%s", server, port, VERSION_FOR_ESDLCMD);
 
         IClientWsESDLConfig * esdlConfigClient = createWsESDLConfigClient();
         esdlConfigClient->addServiceUrl(url.str());
@@ -259,7 +245,7 @@ public:
 
 protected:
 
-    void loadEsdlDef(const char * sourceFileName)
+    void loadEXSDLFromFile(const char * sourceFileName)
     {
         serviceDefFile.setown( createIFile(sourceFileName) );
         if( serviceDefFile->exists() )
@@ -309,7 +295,7 @@ public:
     virtual void usage()
     {
         EsdlCmdCommon::usage();
-        puts("   --outdir=<out dir path> Location to generate output\n");
+        puts("   --outdir=<out dir path>              Location to generate output\n");
     }
 
 public:

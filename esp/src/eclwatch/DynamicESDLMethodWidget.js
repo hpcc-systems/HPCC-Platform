@@ -28,9 +28,9 @@ define([
     "dijit/ToolbarSeparator",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPQuery",
-    "hpcc/ESPUtil",
-    "hpcc/WsESDLConfig",
+    "src/ESPQuery",
+    "src/ESPUtil",
+    "src/WsESDLConfig",
 
     "dgrid/selector",
     "dgrid/editor",
@@ -120,7 +120,7 @@ define([
             var results = this.store.query();
 
             arrayUtil.forEach(results, function(row, idx){
-                if (row.__hpcc_parentName !== null && row.Value !="") {
+                if (row.__hpcc_parentName !== null && row.Value !== "") {
                     userXML += row.Value;
                 }
             });
@@ -133,7 +133,8 @@ define([
                     EspServiceName: this._params.Configuration.Service,
                     EsdlDefinitionID: this._params.Configuration.DefinitionID,
                     Overwrite: true,
-                    Config: xmlBuilder
+                    Config: xmlBuilder,
+                    ver_: "1.3"
                 }
             }).then(function (response) {
                 if (lang.exists("PublishESDLBindingResponse.status", response)) {
@@ -158,7 +159,8 @@ define([
                 request: {
                     EspProcName: this._params.Configuration.__hpcc_parentName,
                     EspBindingName: this._params.Configuration.Name,
-                    ReportMethodsAvailable: true
+                    ReportMethodsAvailable: true,
+                    ver_: "1.3"
                 }
             }).then(function (response) {
                 if (lang.exists("GetESDLBindingResponse.ESDLBinding.Configuration.Methods.Method", response)) {

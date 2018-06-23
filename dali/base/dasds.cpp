@@ -33,7 +33,7 @@
 #include "dadfs.hpp"
 
 #define DEBUG_DIR "debug"
-#define DEFAULT_KEEP_LASTN_STORES 1
+#define DEFAULT_KEEP_LASTN_STORES 10 // should match default in dali.xsd
 #define MAXDELAYS 5
 static const char *deltaHeader = "<CRC>0000000000</CRC><SIZE>0000000000000000</SIZE>"; // fill in later
 static unsigned deltaHeaderCrcOff = 5;
@@ -689,6 +689,11 @@ public:
         const MemoryAttr &ma = subscriber->queryData();
         MemoryBuffer mb(ma.length(), ma.get());
         mb.read(xpath);
+        if (xpath.length() && ('/' != xpath.get()[xpath.length()-1]))
+        {
+            StringBuffer _xpath(xpath);
+            xpath.set(_xpath.append('/'));
+        }
         mb.read(sub);
         if (mb.remaining()) // remaining
             mb.read(sendValue);
@@ -1310,7 +1315,7 @@ public:
         return false;
     }
 // IThreaded
-    void main()
+    virtual void threadmain() override
     {
         for (;;)
         {
@@ -1713,11 +1718,11 @@ public:
 
     void noteChange(PDState _local, PDState _state) { local = _local; state = _state; }
 
-    void addChildBranch(CBranchChange &child) { children.append(child); }
+    void addChildBranch(CBranchChange &child) { changedChildren.append(child); }
 
     const void *queryFindParam() const { return (const void *) &tree; }
 
-    CBranchChangeChildren children;
+    CBranchChangeChildren changedChildren;
     Linked<CRemoteTreeBase> tree;
     PDState local, state; // change info
 };
@@ -1934,6 +1939,7 @@ public:
 
     void loadStore(const char *store=NULL, const bool *abort=NULL);
     void saveStore(const char *store=NULL, bool currentEdition=false);
+    void checkEnvironment(IPropertyTree *oldEnv, IPropertyTree *newEnv);
     bool unlock(__int64 treeId, ConnectionId connectionId, bool delayDelete=false);
     void unlockAll(__int64 treeId);
     void changeLockMode(CServerConnection &connection, unsigned newMode, unsigned timeout);
@@ -2355,11 +2361,6 @@ CRemoteTreeBase *CRemoteTreeBase::createChild(int pos, const char *childName)
 static CheckedCriticalSection suppressedOrphanUnlockCrit; // to temporarily suppress unlockall
 static bool suppressedOrphanUnlock=false;
 
-#if defined(new)
-#define __old_new new
-#undef new
-#endif
-
 //Do not override the packing for this class - otherwise the fixed size allocator will allocate
 //misaligned objects, which can cause problems on some architectures (especially for atomic operations)
 class CServerRemoteTree : public CRemoteTreeBase
@@ -2504,7 +2505,7 @@ public:
             serverId = 0;
         }
     }
-    virtual bool removeTree(IPropertyTree *_child)
+    virtual bool removeTree(IPropertyTree *_child) override
     {
         if (!_child)
             return false;
@@ -2517,31 +2518,31 @@ public:
         return true;
     }
 
-    virtual bool isOrphaned() const { return IptFlagTst(flags, ipt_ext5); }
+    virtual bool isOrphaned() const override { return IptFlagTst(flags, ipt_ext5); }
 
-    virtual void setServerId(__int64 _serverId)
+    virtual void setServerId(__int64 _serverId) override
     {
         if (serverId && serverId != _serverId)
             WARNLOG("Unexpected - client server id mismatch in %s, id=%" I64F "x", queryName(), _serverId);
         CRemoteTreeBase::setServerId(_serverId);
     }
 
-    virtual CSubscriberContainerList *getSubscribers(const char *xpath, CPTStack &stack)
+    virtual CSubscriberContainerList *getSubscribers(const char *xpath, CPTStack &stack) override
     {
         return SDSManager->getSubscribers(xpath, stack);
     }
 
-    IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
+    IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override
     {
         return new CServerRemoteTree(name, value, children);
     }
 
-    IPropertyTree *create(MemoryBuffer &mb)
+    IPropertyTree *create(MemoryBuffer &mb) override
     {
         return new CServerRemoteTree(mb);
     }
 
-    virtual void createChildMap() { children = new COrphanHandler(); }
+    virtual void createChildMap() override { children = new COrphanHandler(); }
 
     inline bool testExternalCandidate()
     {
@@ -2611,7 +2612,7 @@ public:
         mb.append(STIInfo);
     }
 
-    virtual void deserializeSelfRT(MemoryBuffer &src)
+    virtual void deserializeSelfRT(MemoryBuffer &src) override
     {
         CRemoteTreeBase::deserializeSelfRT(src);
         assertex(!isnocase());
@@ -2619,13 +2620,13 @@ public:
         src.read(STIInfo);
     }
 
-    virtual void removingElement(IPropertyTree *tree, unsigned pos)
+    virtual void removingElement(IPropertyTree *tree, unsigned pos) override
     {
         COrphanHandler::setOrphans(*(CServerRemoteTree *)tree, true);       
         CRemoteTreeBase::removingElement(tree, pos);
     }
 
-    virtual bool isCompressed(const char *xpath=NULL) const
+    virtual bool isCompressed(const char *xpath=NULL) const override
     {
         if (isAttribute(xpath)) return false;
         if (CRemoteTreeBase::isCompressed(xpath)) return true;
@@ -2634,7 +2635,7 @@ public:
         return child->hasProp(EXT_ATTR);
     }
 
-    bool getProp(const char *xpath, StringBuffer &ret) const
+    bool getProp(const char *xpath, StringBuffer &ret) const override
     {
         if (xpath)
             return CRemoteTreeBase::getProp(xpath, ret);
@@ -2879,11 +2880,6 @@ public:
         return out;
     }
 };
-
-#if defined(_WIN32) && defined(__old_new)
-#define new __old_new
-#endif
-
 
 void populateWithServerIds(IPropertyTree *matchParent, CRemoteTreeBase *parent)
 {
@@ -4860,7 +4856,7 @@ class CLightCoalesceThread : implements ICoalesce, public CInterface
     public:
         CThreaded() : Thread("CLightCoalesceThread") { coalesce = NULL; }
         void init(CLightCoalesceThread *_coalesce) { coalesce = _coalesce; start(); }
-        virtual int run() { coalesce->main(); return 1; }
+        virtual int run() { coalesce->threadmain(); return 1; }
     } threaded;
 public:
     IMPLEMENT_IINTERFACE;
@@ -4905,7 +4901,7 @@ public:
     {
         stop();
     }
-    void main()
+    void threadmain()
     {
         unsigned t = 0;
         lastSaveWriteTransactions = SDSManager->writeTransactions;
@@ -5962,6 +5958,26 @@ static int extNcompareFunc(CInterface * const *_itm1, CInterface * const *_itm2)
     return 1;
 }
 
+void CCovenSDSManager::checkEnvironment(IPropertyTree *oldEnv, IPropertyTree *newEnv)
+{
+    if (!areMatchingPTrees(oldEnv, newEnv))
+    {
+        StringBuffer fileName("environment");
+        addFileTimestamp(fileName);
+        fileName.append(".xml");
+        StringBuffer filePath(dataPath);
+        filePath.append(fileName);
+        PROGLOG("Detected environment change, backing up previous version to: %s", filePath.str());
+        saveXML(filePath, oldEnv, 2, XML_Format|XML_SortTags); // sort for easier diffing
+        if (remoteBackupLocation.length())
+        {
+            filePath.clear().append(remoteBackupLocation);
+            filePath.append(fileName);
+            saveXML(filePath, oldEnv, 2, XML_Format|XML_SortTags); // sort for easier diffing
+        }
+    }
+}
+
 void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
 {
     if (root) root->Release();
@@ -6051,7 +6067,11 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             }
 
             oldEnvironment.setown(root->getPropTree("Environment"));
-            root->removeTree(oldEnvironment);
+            if (oldEnvironment)
+            {
+                root->removeTree(oldEnvironment);
+                checkEnvironment(oldEnvironment, envTree);
+            }
             root->addPropTree("Environment", envTree.getClear());
             externalEnvironment = true;
         }
@@ -8091,11 +8111,8 @@ bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupU
         Owned<IPropertyTree> oldEnvironment = root->getPropTree("Environment");
         if (oldEnvironment.get())
         {
-            StringBuffer bakname;
-            Owned<IFileIO> io = createUniqueFile(NULL, "environment", "bak", bakname);
-            Owned<IFileIOStream> fstream = createBufferedIOStream(io);
-            toXML(oldEnvironment, *fstream);         // formatted (default)
             root->removeTree(oldEnvironment);
+            checkEnvironment(oldEnvironment, newEnv);
         }
         root->addPropTree("Environment", LINK(newEnv));
         root.clear();
@@ -8175,11 +8192,11 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, Memor
         public:
             IMPLEMENT_IINTERFACE;
             CNotifyHandler() { INIT_NAMEDCOUNT; }
-            void init(void *startInfo) 
+            virtual void init(void *startInfo) override
             {
                 n.setown((CSubscriberNotifier *)startInfo);
             }
-            void main()
+            virtual void threadmain() override
             {
                 try
                 {
@@ -8192,11 +8209,11 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, Memor
                 }
                 n.clear();
             }
-            bool canReuse()
+            virtual bool canReuse() const override
             {
                 return true;
             }
-            bool stop()
+            virtual bool stop() override
             {
                 return true;
             }
@@ -8291,7 +8308,7 @@ public:
             {
                 if ('\0' == *head)
                     return subCommitExact; // absolute match
-                else if (!wild && '/' != *head) // e.g. change=/a/bc, subscriber=/a/b
+                else if (!wild && '/' != *(head-1)) // e.g. change=/a/bc, subscriber=/a/b
                     return subCommitNone;
                 return subCommitBelow; // e.g. change=/a/b/c, subscriber=/a/b
             }
@@ -8383,7 +8400,7 @@ public:
             }
             else
             {
-                if (0 == changes.children.ordinality())
+                if (0 == changes.changedChildren.ordinality())
                 {
                     ForEachItemInRev(s, subs)
                     {
@@ -8404,12 +8421,16 @@ public:
                 }
                 else
                 {
-                    ForEachItemIn (c, changes.children)
+                    /* NB: scan the changes in reverse, so that new values proceed recorded delete changes
+                     * This ensures that a tree that has been deleted but replaced with a new tree will
+                     * cause a notification of the new value in favour of the delete.
+                     */
+                    ForEachItemInRev (c, changes.changedChildren)
                     {
-                        CBranchChange &childChange = changes.children.item(c);
+                        CBranchChange &childChange = changes.changedChildren.item(c);
                         PushPop pp(stack, *childChange.tree);
                         size32_t parentLength = xpath.length();
-                        xpath.append('/').append(childChange.tree->queryName());
+                        xpath.append(childChange.tree->queryName()).append('/');
                         CSubscriberArray _pruned;
                         scanAll(state, childChange, stack, _pruned);
                         ForEachItemIn(i, _pruned) subs.append(*LINK(&_pruned.item(i)));
@@ -8476,11 +8497,15 @@ public:
                 }
             }
         }
-        ForEachItemIn(c, changes.children)
+        /* NB: scan the changes in reverse, so that new values proceed recorded delete changes
+         * This ensures that a tree that has been deleted but replaced with a new tree will
+         * cause a notification of the new value in favour of the delete.
+         */
+        ForEachItemInRev(c, changes.changedChildren)
         {
-            CBranchChange &childChanges = changes.children.item(c);
+            CBranchChange &childChanges = changes.changedChildren.item(c);
             size32_t parentLength = xpath.length();
-            xpath.append('/').append(childChanges.tree->queryName());
+            xpath.append(childChanges.tree->queryName()).append('/');
             CSubscriberArray pruned;
             scan(childChanges, stack, pruned);
             ForEachItemIn(i, pruned) subs.append(*LINK(&pruned.item(i)));
@@ -8499,11 +8524,11 @@ void CCovenSDSManager::startNotification(IPropertyTree &changeTree, CPTStack &st
         {
         public:
             IMPLEMENT_IINTERFACE;
-            void init(void *startInfo) 
+            virtual void init(void *startInfo) override
             {
                 n.set((CSubscriberNotifyScanner *)startInfo);
             }
-            void main()
+            virtual void threadmain() override
             {
                 try
                 {
@@ -8516,11 +8541,11 @@ void CCovenSDSManager::startNotification(IPropertyTree &changeTree, CPTStack &st
                 }
                 n.clear();
             }
-            bool canReuse()
+            virtual bool canReuse() const override
             {
                 return true;
             }
-            bool stop()
+            virtual bool stop() override
             {
                 return true;
             }

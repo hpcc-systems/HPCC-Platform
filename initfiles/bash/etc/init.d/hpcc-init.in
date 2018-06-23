@@ -89,6 +89,7 @@ function print_types {
 }
 
 
+cfggenpre=()
 
 source  ${INSTALL_DIR}/etc/init.d/lock.sh
 source  ${INSTALL_DIR}/etc/init.d/pid.sh
@@ -277,15 +278,24 @@ if [ -z $arg ] || [ $# -ne 1 ]; then
     print_usage
 fi
 
-log "Debug log written to $LOG_DIR/hpcc-init.debug"
-[ -e $LOG_DIR/hpcc-init.debug ] && rm -rf ${LOG_DIR}/hpcc-init.debug
-touch ${LOG_DIR}/hpcc-init.debug
-chown ${user}:${group} ${LOG_DIR}/hpcc-init.debug
-PS4='+\011$(date "+%T.%N")\011'
-exec 3>&2 2>$LOG_DIR/hpcc-init.debug
-set -x
+thisos=$(uname -s)
+if [[ "$thisos" = "Linux" && -f "${envfile}" && -n "${component}" && \
+    "${DEBUG}" = "NO_DEBUG" && -z "$HPCC_NO_FLOCK" ]] ; then
+    cfggenpre=(flock ${envfile})
+fi
 
-if [ -z ${component} ]; then
+# verbose output of all shell cmds to .debug file only if -d specified on cmdline
+if [[ "${DEBUG}" != "NO_DEBUG" ]] ; then
+    log "Debug log written to $LOG_DIR/hpcc-init.debug"
+    [ -e $LOG_DIR/hpcc-init.debug ] && rm -rf ${LOG_DIR}/hpcc-init.debug
+    touch ${LOG_DIR}/hpcc-init.debug
+    chown ${user}:${group} ${LOG_DIR}/hpcc-init.debug
+    PS4='+\011$(date "+%T.%N")\011'
+    exec 3>&2 2>$LOG_DIR/hpcc-init.debug
+    set -x
+fi
+
+if [ -z "${component}" ]; then
     for (( i=0; i<=${compListLen}; i++ ));do
         component="$component ${compList[$i]}"
     done

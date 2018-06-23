@@ -21,8 +21,7 @@
    hthorDiskWriteSizeLimit
    hthorSpillThreshold
    outputLimit (for pipe)
-   skipFileFormatCrcCheck
-   layoutTranslationEnabled and hthorLayoutTranslationEnabled (former takes priority)
+   layoutTranslation
    hthorMemoryLimit
  */
 
@@ -38,8 +37,10 @@
 #include "thorcommon.ipp"
 #include "roxielmj.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlcommon.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
+#include "rtlrecord.hpp"
 #include "roxiemem.hpp"
 #include "roxierowbuff.hpp"
 
@@ -169,7 +170,7 @@ static bool verifyFormatCrc(unsigned helperCrc, IDistributedFile * df, char cons
 
 static bool verifyFormatCrcSuper(unsigned helperCrc, IDistributedFile * df, bool isIndex, bool fail)
 {
-    if(!df) return true;
+    if(!df || (helperCrc == 0)) return true;
     IDistributedSuperFile * super = df->querySuperFile();
     if(super)
     {
@@ -186,7 +187,7 @@ static bool verifyFormatCrcSuper(unsigned helperCrc, IDistributedFile * df, bool
 }
 
 #define IMPLEMENT_SINKACTIVITY \
-    virtual unsigned queryOutputs() { return 0; } \
+    virtual unsigned queryOutputs() const { return 0; } \
     virtual const void * nextRow() { throwUnexpected(); } \
     virtual bool isGrouped() { throwUnexpected(); } \
     virtual IOutputMetaData * queryOutputMeta() const   { throwUnexpected(); } 
@@ -221,7 +222,7 @@ public:
     virtual void resetEOF();
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { UNIMPLEMENTED; }
     virtual __int64 getCount();
-    virtual unsigned queryOutputs() { return 1; }
+    virtual unsigned queryOutputs() const { return 1; }
     virtual void updateProgress(IStatisticGatherer &progress) const;
     virtual void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const;
     unsigned __int64 queryProcessed() const { return processed; }
@@ -372,16 +373,25 @@ class CHThorIndexWriteActivity : public CHThorActivityBase
     Owned<IFile> file;
     bool incomplete;
     offset_t sizeLimit;
+    unsigned __int64 duplicateKeyCount = 0;
+    unsigned __int64 cummulativeDuplicateKeyCount = 0;
 
     void close();
     void buildUserMetadata(Owned<IPropertyTree> & metadata);
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata);
+    virtual void updateProgress(IStatisticGatherer &progress) const override
+    {
+        CHThorActivityBase::updateProgress(progress);
+        StatsActivityScope scope(progress, activityId);
+        progress.addStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
+    }
+
 public:
     IMPLEMENT_SINKACTIVITY;
 
     CHThorIndexWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexWriteArg &_arg, ThorActivityKind _kind);
     ~CHThorIndexWriteActivity();
-    virtual void execute();
+    virtual void execute() override;
 };
 
 class IPipeWriteOwner
@@ -498,6 +508,7 @@ public:
 private:
     OwnedConstRoxieRow kept;
     bool         firstDone;
+    ICompare * compareBest;
 };
 
 class CHThorGroupDedupAllActivity : public CHThorSimpleActivityBase
@@ -534,7 +545,14 @@ public:
     }
     ~HashDedupElement()                 { ReleaseRoxieRow(keyRow); }
     inline unsigned queryHash() const   { return hash; }
-    inline const void *queryRow() const { return keyRow; }
+    inline const void * queryRow() const { return keyRow; }
+    inline const void * getRow()
+    {
+        const void * row = keyRow;
+        keyRow = nullptr;
+        hash = 0;
+        return row;
+    }
 private:
     unsigned hash;
     const void *keyRow;
@@ -547,6 +565,7 @@ public:
         : helper(_helper), 
           activityId(_activityId)
     {
+        queryBestCompare = helper.queryCompareBest();
     }
     virtual ~HashDedupTable()
     { 
@@ -578,11 +597,13 @@ public:
     inline void setRowAllocator(IEngineRowAllocator * _keyRowAllocator) { keyRowAllocator.setown(_keyRowAllocator); }
 
     bool insert(const void * row);
+    bool insertBest(const void * row);
 
 private:
     IHThorHashDedupArg & helper;
     unsigned activityId;
     Owned<IEngineRowAllocator> keyRowAllocator;
+    ICompare * queryBestCompare;
 };
 
 class CHThorHashDedupActivity : public CHThorSimpleActivityBase
@@ -597,6 +618,9 @@ public:
 private:
     IHThorHashDedupArg & helper;
     HashDedupTable table;
+    bool keepBest;
+    bool hashTableFilled;
+    SuperHashIteratorOf<HashDedupElement> hashDedupTableIter;
 };
 
 class CHThorNormalizeActivity : public CHThorSimpleActivityBase
@@ -805,9 +829,6 @@ public:
     
     virtual bool needsAllocator() const { return true; }    
     virtual void onLimitExceeded();
-
-private:
-    IHThorLimitTransformExtra * transformExtra;
 };
 
 class CHThorCatchActivity : public CHThorSteppableActivityBase
@@ -1316,8 +1337,8 @@ private:
     const void *nextRightInGroup();
     //bool getMatchingRecords();
     //bool queryAdvanceCursors();
-    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter);
-    const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows);
+    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, unsigned flags);
+    const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows, unsigned flags);
     const void * joinException(const void * curLeft, IException * except);
     void failLimit();
     void createDefaultLeft();   
@@ -1383,7 +1404,7 @@ class CHThorSelfJoinActivity : public CHThorActivityBase
     IRowStream *dualCacheInput;
 private:
     bool fillGroup();
-    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except);
+    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, unsigned flags, IException * except);
     void failLimit(const void * next);
 
 public:
@@ -1462,8 +1483,8 @@ private:
 
 private:
     void loadRight();
-    const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows);
-    const void * joinRecords(const void * left, const void * right, unsigned counter);
+    const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows, unsigned flags);
+    const void * joinRecords(const void * left, const void * right, unsigned counter, unsigned flags);
     const void * joinException(const void * left, IException * except);
     const void * getRightFirst() { if(hasGroupLimit) return fillRightGroup(); else return table->find(left); }
     const void * getRightNext() { if(hasGroupLimit) return readRightGroup(); else return table->findNext(left); }
@@ -1526,8 +1547,8 @@ private:
 
 private:
     void loadRight();
-    const void * joinRecords(const void * left, const void * right, unsigned counter);
-    const void * groupDenormalizeRecords(const void * left, ConstPointerArray & rows);
+    const void * joinRecords(const void * left, const void * right, unsigned counter, unsigned flags);
+    const void * groupDenormalizeRecords(const void * left, ConstPointerArray & rows, unsigned flags);
     void createDefaultRight();  
 public:
     CHThorAllJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorAllJoinArg &_arg, ThorActivityKind _kind);
@@ -2217,9 +2238,10 @@ protected:
     Owned<IDistributedFilePartIterator> dfsParts;
     Owned<ILocalOrDistributedFile> ldFile;
     Owned<IException> saveOpenExc;
-    size32_t recordsize;
     size32_t fixedDiskRecordSize;
-    Owned<IOutputMetaData> diskMeta;
+    Owned<IOutputMetaData> actualDiskMeta;
+    IOutputMetaData *expectedDiskMeta;
+    IOutputMetaData *projectedDiskMeta;
     unsigned partNum;
     bool eofseen;
     bool opened;
@@ -2229,12 +2251,21 @@ protected:
     MemoryAttr encryptionkey;
     bool persistent;
     bool grouped;
+    enum ReadType:byte { rt_unknown, rt_binary, rt_csv, rt_xml } readType = rt_unknown;
+
+    unsigned __int64 stopAfter = 0;
+    unsigned __int64 remoteLimit = 0;
     unsigned __int64 localOffset;
     unsigned __int64 offsetOfPart;
     StringBuffer mangledHelperFileName;
     StringAttr logicalFileName;
     StringArray subfileLogicalFilenames;
     Owned<ISuperFileDescriptor> superfile;
+    Owned<const IDynamicTransform> translator;
+    Owned<const IKeyTranslator> keyedTranslator;
+    IPointerArrayOf<IOutputMetaData> actualLayouts;  // Do we need to keep more than one?
+    IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
+    RowFilter actualFilter;               // This refers to the actual disk layout
 
     void close();
     virtual void open();
@@ -2252,7 +2283,6 @@ protected:
     {
         agent.reportProgress(NULL);
     }
-
 public:
     CHThorDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind);
     ~CHThorDiskReadBaseActivity();
@@ -2276,26 +2306,22 @@ public:
 class CHThorBinaryDiskReadBase : public CHThorDiskReadBaseActivity, implements IIndexReadContext
 {
 protected:
-    IArrayOf<IKeySegmentMonitor> segMonitors;
     IHThorCompoundBaseArg & segHelper;
     Owned<ISourceRowPrefetcher> prefetcher;
     Owned<IOutputRowDeserializer> deserializer;
     CThorContiguousRowBuffer prefetchBuffer;
     CThorStreamDeserializerSource deserializeSource;
-
 public:
     CHThorBinaryDiskReadBase(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind);
 
     virtual void ready();
 
     //interface IIndexReadContext
-    virtual void append(IKeySegmentMonitor *segment);
-    virtual unsigned ordinality() const;
-    virtual IKeySegmentMonitor *item(unsigned idx) const;
-    virtual void setMergeBarrier(unsigned barrierOffset);
+    virtual void append(IKeySegmentMonitor *segment) override { throwUnexpected(); }
+    virtual void append(FFoption option, const IFieldFilter * filter) override;
 
 protected:
-    virtual void verifyRecordFormatCrc() { ::verifyFormatCrcSuper(helper.getFormatCrc(), ldFile?ldFile->queryDistributedFile():NULL, false, true); }
+    virtual void verifyRecordFormatCrc() { ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), ldFile?ldFile->queryDistributedFile():NULL, false, true); }
     virtual void open();
     virtual bool openNext();
     virtual void closepart();
@@ -2303,16 +2329,17 @@ protected:
 
     inline bool segMonitorsMatch(const void * buffer)
     {
-        bool match = true;
-        ForEachItemIn(idx, segMonitors)
+        if (actualFilter.numFilterFields())
         {
-            if (!segMonitors.item(idx).matches(buffer))
-            {
-                match = false;
-                break;
-            }
+            const RtlRecord &actual = actualDiskMeta->queryRecordAccessor(true);
+            unsigned numOffsets = actual.getNumVarFields() + 1;
+            size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+            RtlRow row(actual, nullptr, numOffsets, variableOffsets);
+            row.setRow(buffer, 0);  // Use lazy offset calculation
+            return actualFilter.matches(row);
         }
-        return match;
+        else
+            return true;
     }
 
     virtual void calcFixedDiskRecordSize();
@@ -2329,7 +2356,6 @@ protected:
     unsigned __int64 lastGroupProcessed;
     RtlDynamicRowBuilder outBuilder;
     unsigned __int64 limit;
-    unsigned __int64 stopAfter;
 
 public:
     CHThorDiskReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind);
@@ -2367,7 +2393,6 @@ protected:
     size32_t            maxDiskSize;
     CSVSplitter         csvSplitter;    
     unsigned __int64 limit;
-    unsigned __int64 stopAfter;
     size32_t maxRowSize;
 };
 
@@ -2407,7 +2432,6 @@ protected:
     Owned<IXMLParse> xmlParser;
     Owned<IColumnProvider> lastMatch;
     unsigned __int64 limit;
-    unsigned __int64 stopAfter;
 };
 
 
@@ -2418,7 +2442,6 @@ protected:
     IHThorDiskNormalizeArg &helper;
     RtlDynamicRowBuilder outBuilder;
     unsigned __int64 limit;
-    unsigned __int64 stopAfter;
     size32_t lastSizeRead;
     bool expanding;
 
@@ -2465,7 +2488,6 @@ class CHThorDiskCountActivity : public CHThorBinaryDiskReadBase
 protected:
     IHThorDiskCountArg &helper;
     bool finished;
-    unsigned __int64 stopAfter;
 
     virtual void gatherInfo(IFileDescriptor * fileDesc);
 
@@ -2849,24 +2871,41 @@ protected:
     IHThorInput * input;    // not currently a linkable interface
 };
 
+class SingleNodeActivityContext : public IThorActivityContext
+{
+public:
+    SingleNodeActivityContext(unsigned _numStrands, unsigned _curStrand) : strands(_numStrands), curStrand(_curStrand) { assertex(curStrand < strands); }
+
+    virtual bool isLocal() const override { return false; }
+    virtual unsigned numSlaves() const override { return 1; }
+    virtual unsigned numStrands() const override { return strands; }
+    virtual unsigned querySlave() const override { return 0; }
+    virtual unsigned queryStrand() const override { return curStrand; }
+protected:
+    unsigned strands;
+    unsigned curStrand;
+};
+
+
 class CHThorExternalActivity : public CHThorMultiInputActivity
 {
     IHThorExternalArg &helper;
-    Owned<IThorExternalRowProcessor> processor;
     Owned<IRowStream> rows;
     Linked<IPropertyTree> graphNode;
+    SingleNodeActivityContext activityContext;
+    IArrayOf<CHThorInputAdaptor> inputAdaptors;
 public:
     CHThorExternalActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorExternalArg &_arg, ThorActivityKind _kind, IPropertyTree * _graphNode);
 
-    virtual void ready();
-    virtual void stop();
-    virtual void reset();
+    virtual void ready() override;
+    virtual void stop() override;
 
-    virtual void execute();
+    virtual void execute() override;
 
-    virtual const void *nextRow();
+    virtual const void *nextRow() override;
+    virtual void setInput(unsigned index, IHThorInput *_input) override;
 
-    virtual bool isGrouped()                { return outputMeta.isGrouped(); }
+    virtual bool isGrouped() override { return outputMeta.isGrouped(); }
 };
 
 
@@ -2881,6 +2920,8 @@ extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_age
 #define MAKEFACTORY_EXTRA(NAME, EXTRATYPE) \
 extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThor ## NAME ## Arg &arg, ThorActivityKind kind, EXTRATYPE extra) \
 {   return new CHThor ## NAME ##Activity(_agent, _activityId, _subgraphId, arg, kind, extra); }
+
+extern ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional);
 
 #endif // HTHOR_IPP_INCL
 

@@ -20,8 +20,8 @@
 #include "errorlist.h"
 #include "dautils.hpp"
 #include "eclhelper.hpp"
+#include "rtldynfield.hpp"
 #include "workunit.hpp"
-#include "layouttrans.hpp"
 
 #if (ECLAGENT_ERROR_START != 5400 || ECLAGENT_ERROR_END != 5499)
 #error "ECLAGENT_ERROR_START has changed"
@@ -38,7 +38,7 @@ struct IHThorGraphResult : extends IInterface
 {
     virtual void addRowOwn(const void * row) = 0;
     virtual const void * queryRow(unsigned whichRow) = 0;
-    virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret) = 0;
     virtual const void * getOwnRow(unsigned whichRow) = 0;      // used internally, removes row from result
     virtual const void * getLinkedRowResult() = 0;
 };
@@ -87,7 +87,7 @@ struct IAgentContext : extends IGlobalCodeContext
 
     virtual ICodeContext *queryCodeContext() = 0;
 
-    virtual IConstWorkUnit *queryWorkUnit() = 0;
+    virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual IWorkUnit *updateWorkUnit() const = 0;
     virtual void unlockWorkUnit() = 0;
     
@@ -100,7 +100,6 @@ struct IAgentContext : extends IGlobalCodeContext
 
     virtual char *resolveName(const char *in, char *out, unsigned outlen) = 0;
     virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type) = 0;
-    virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const = 0;
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source) = 0;
 
     virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract) = 0;
@@ -114,6 +113,7 @@ struct IAgentContext : extends IGlobalCodeContext
 
     virtual IGroup *getHThorGroup(StringBuffer &grpnameout) = 0;
 
+    virtual RecordTranslationMode getLayoutTranslationMode() const = 0;
     virtual unsigned __int64 queryStopAfter() = 0;
     
     virtual const char *queryWuid() = 0;

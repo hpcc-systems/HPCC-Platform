@@ -28,6 +28,7 @@
 #include "keybuild.hpp"
 #include "thbufdef.hpp"
 #include "backup.hpp"
+#include "thorfile.hpp"
 
 #define SINGLEPART_KEY_TRANSFER_SIZE 0x10000
 #define FEWWARNCAP 10
@@ -50,6 +51,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     unsigned __int64 totalCount;
 
     size32_t maxDiskRecordSize, lastRowSize, firstRowSize;
+    unsigned __int64 duplicateKeyCount;
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
     bool needFirstRow, enableTlkPart0, receivingTag2;
@@ -85,6 +87,7 @@ public:
         refactor = false;
         enableTlkPart0 = (0 != container.queryJob().getWorkUnitValueInt("enableTlkPart0", globals->getPropBool("@enableTlkPart0", true)));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
+        duplicateKeyCount = 0;
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -133,6 +136,8 @@ public:
         }
 
         IOutputMetaData * diskSize = helper->queryDiskRecordSize();
+        //Need to adjust the size if the last field is used in the special fileposition location.
+        size32_t fileposSize = hasTrailingFileposition(diskSize->queryTypeInfo()) ? sizeof(offset_t) : 0;
         assertex(!(diskSize->getMetaFlags() & MDFneedserializedisk));
         if (diskSize->isVariableSize())
         {
@@ -142,7 +147,7 @@ public:
                 maxDiskRecordSize = KEYBUILD_MAXLENGTH; //Current default behaviour, could be improved in the future
         }
         else
-            maxDiskRecordSize = diskSize->getFixedSize();
+            maxDiskRecordSize = diskSize->getFixedSize() - fileposSize;
         reportOverflow = false;
     }
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
@@ -152,7 +157,7 @@ public:
         if (!isFastThrough(input))
             setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), INDEXWRITE_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()));
     }
-    void open(IPartDescriptor &partDesc, bool isTopLevel, bool isVariable)
+    void open(IPartDescriptor &partDesc, bool isTopLevel, bool isVariable, bool isTlk)
     {
         StringBuffer partFname;
         getPartFilename(partDesc, 0, partFname);
@@ -169,10 +174,12 @@ public:
             flags |= HTREE_FULLSORT_KEY;
         if (isVariable)
             flags |= HTREE_VARSIZE;
+        if (isTlk)
+            flags |= HTREE_TOPLEVEL_KEY;
         buildUserMetadata(metadata);                
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
-        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount));
+        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, helper, !isTlk, isTlk));
     }
 
 
@@ -201,16 +208,10 @@ public:
         if(!metadata) metadata.setown(createPTree("metadata"));
         metadata->setProp("_record_ECL", helper->queryRecordECL());
 
-        void * layoutMetaBuff;
-        size32_t layoutMetaSize;
-        if(helper->getIndexLayout(layoutMetaSize, layoutMetaBuff))
-        {
-            metadata->setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
-            rtlFree(layoutMetaBuff);
-        }
+        setRtlFormat(*metadata, helper->queryDiskRecordSize());
     }
 
-    void close(IPartDescriptor &partDesc, unsigned &crc, bool addMeta=false)
+    void close(IPartDescriptor &partDesc, unsigned &crc)
     {
         StringBuffer partFname;
         getPartFilename(partDesc, 0, partFname);
@@ -218,14 +219,7 @@ public:
         try
         {
             if (builder)
-            {
-                if (addMeta && metadata)
-                {
-                    builder->finish(metadata, &crc);
-                }
-                else
-                    builder->finish(&crc);
-            }
+                builder->finish(metadata, &crc);
         }
         catch (IException *_e)
         {
@@ -320,7 +314,7 @@ public:
             {
                 try
                 {
-                    open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize());
+                    open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize(), false);
                     for (;;)
                     {
                         OwnedConstThorRow row = inputStream->ungroupedNextRow();
@@ -365,10 +359,11 @@ public:
                 }
                 catch (CATCHALL)
                 {
-                    close(*partDesc, partCrc, true);
+                    close(*partDesc, partCrc);
                     throw;
                 }
-                close(*partDesc, partCrc, true);
+                duplicateKeyCount = builder->getDuplicateCount();
+                close(*partDesc, partCrc);
                 stop();
             }
             else
@@ -406,7 +401,7 @@ public:
                     StringBuffer partFname;
                     getPartFilename(*partDesc, 0, partFname);
                     ActPrintLog("INDEXWRITE: process: handling fname : %s", partFname.str());
-                    open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize());
+                    open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize(), false);
                     ActPrintLog("INDEXWRITE: write");
 
                     BooleanOnOff tf(receiving);
@@ -423,10 +418,11 @@ public:
                 }
                 catch (CATCHALL)
                 {
-                    close(*partDesc, partCrc, isLocal && !buildTlk && 1 == node);
+                    close(*partDesc, partCrc);
                     throw;
                 }
-                close(*partDesc, partCrc, isLocal && !buildTlk && 1 == node);
+                duplicateKeyCount = builder->getDuplicateCount();
+                close(*partDesc, partCrc);
                 stop();
 
                 ActPrintLog("INDEXWRITE: Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
@@ -483,7 +479,7 @@ public:
                         ActPrintLog("INDEXWRITE: creating toplevel key file : %s", path.str());
                         try
                         {
-                            open(*tlkDesc, true, helper->queryDiskRecordSize()->isVariableSize());
+                            open(*tlkDesc, true, helper->queryDiskRecordSize()->isVariableSize(), true);
                             if (tlkRows.length())
                             {
                                 CNodeInfo &lastNode = tlkRows.item(tlkRows.length()-1);
@@ -494,12 +490,12 @@ public:
                                 CNodeInfo &info = tlkRows.item(idx);
                                 builder->processKeyData((char *)info.value, info.pos, info.size);
                             }
-                            close(*tlkDesc, tlkCrc, true);
+                            close(*tlkDesc, tlkCrc);
                         }
                         catch (CATCHALL)
                         {
                             abortSoon = true;
-                            close(*tlkDesc, tlkCrc, true);
+                            close(*tlkDesc, tlkCrc);
                             removeFiles(*partDesc);
                             throw;
                         }
@@ -563,6 +559,7 @@ public:
             return;
         rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
         mb.append(_processed);
+        mb.append(duplicateKeyCount);
         if (!singlePartKey || firstNode())
         {
             StringBuffer partFname;

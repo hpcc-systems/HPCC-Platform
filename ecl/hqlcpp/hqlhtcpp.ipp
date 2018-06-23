@@ -90,7 +90,7 @@ class GlobalClassEvalContext;
 class GlobalClassBuilder
 {
 public:
-    GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & ctx, const char * className, const char * baseName, const char * _accessorInterface);
+    GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & ctx, const char * className, const char * baseName, const char * _accessorInterface, bool _hasCodeContext);
 
     void buildClass(unsigned priority=0);
     void completeClass(unsigned priority=0);
@@ -114,6 +114,7 @@ public:
     StringAttr baseName;
     StringAttr accessorInterface;
     StringAttr accessorName;
+    bool hasCodeContext;
 };
 
 
@@ -135,7 +136,7 @@ public:
     ABoundActivity  * getBoundActivity();
     bool isChildActivity()                          { return (containerActivity != NULL); }
     bool         isExternal();
-    inline bool isAction() { return dataset->isAction(); }
+    inline bool isAction() { return activityExpr->isAction(); }
     void noteChildQuery()                           { numChildQueries++; }
     void         setLocal(bool value=true)          { isLocal = value; }
     void         setGrouped(bool value=true)        { isGrouped = value; }
@@ -147,8 +148,12 @@ public:
     void buildMetaMember();
     void getScope(StringBuffer & scope) const; // return the full scope name of this activity
 
+    void addAttribute(WuAttr attr, const char * value);
+    void addAttributeBool(WuAttr attr, bool value, bool alwaysAdd=false);
+    void addAttributeInt(WuAttr attr, __int64 value);
+    void addAttribute(WuAttr attr, IHqlExpression * expr);
+
     void addAttribute(const char * name, const char * value);
-    void addAttribute(const char * name, IHqlExpression * expr);
     void addAttributeInt(const char * name, __int64 value);
     void addAttributeBool(const char * name, bool value, bool alwaysAdd=false);
     void addSignedAttribute(IHqlExpression * signedAttr);
@@ -185,7 +190,7 @@ public:
     unsigned     activityId;
     unsigned     numChildQueries;
     ThorActivityKind kind;
-    HqlExprAttr  dataset;
+    HqlExprAttr  activityExpr;
     LinkedHqlExpr sourceFileSequence;
     StringAttr   activityArgName;
     StringAttr   className;
@@ -207,6 +212,7 @@ public:
     bool         isLocal;
     bool         isGrouped;
     bool         hasChildActivity;
+    bool         generateMetaFromInput = false;
     GraphLocalisation activityLocalisation;
     ActivityInstance * containerActivity;
     Owned<ParentExtract> parentExtract;
@@ -237,8 +243,6 @@ public:
 
 
 unsigned getVirtualFieldSize(IHqlExpression * record);
-IHqlExpression * getHozedKeyValue(IHqlExpression * _value);
-IHqlExpression * getHozedBias(ITypeInfo * type);
 IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExpression * physicalSelect, bool allowTranslate);
 bool requiresHozedTransform(ITypeInfo * type);
 bool isKeyableType(ITypeInfo * type);
@@ -301,6 +305,7 @@ protected:
 };
 
 IHqlExpression * extractFilterConditions(HqlExprAttr & invariant, IHqlExpression * expr, IHqlExpression * dataset, bool spotCSE, bool spotCseInIfDatasetConditions);
+extern void buildCompareFuncHelper(HqlCppTranslator & translator, ActivityInstance & instance, const char * compareFuncName, IHqlExpression * sortList, const DatasetReference & dsRef);
 bool isLibraryScope(IHqlExpression * expr);
 extern IHqlExpression * constantMemberMarkerExpr;
 #endif

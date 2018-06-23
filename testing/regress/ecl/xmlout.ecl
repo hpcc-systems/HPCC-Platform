@@ -16,6 +16,9 @@
 ############################################################################## */
 
 //noroxie
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
 phoneRecord := 
             RECORD
 string5         areaCode{xpath('@areaCode')};
@@ -57,8 +60,8 @@ namesTable := dataset([
         {'Halliday','Abigail','09876',654321,false,'','',false,[{'The cat in the hat','Suess'},{'Wolly the sheep',''}], ['Red','Yellow']}
         ], personRecord);
 
-output(namesTable,,'REGRESS::TEMP::output.xml',overwrite,xml(heading('','')));
+output(namesTable,,prefix + 'TEMP_output.xml',overwrite,xml(heading('','')));
 
-inf := dataset('REGRESS::TEMP::output.xml', { string text }, csv);
+inf := dataset(prefix + 'TEMP_output.xml', { string text }, csv);
 output(inf);
 

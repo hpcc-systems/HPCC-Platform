@@ -36,6 +36,7 @@
 #define ROXIEMM_INVALID_MEMORY_ALIGNMENT  ROXIEMM_ERROR_START+2
 #define ROXIEMM_HEAP_ERROR                ROXIEMM_ERROR_START+3
 #define ROXIEMM_TOO_MUCH_MEMORY           ROXIEMM_ERROR_START+4
+#define ROXIEMM_RELEASE_ALL_SHARED_HEAP   ROXIEMM_ERROR_START+5
 // NB: max ROXIEMM_* error is ROXIEMM_ERROR_END (see errorlist.h)
 
 #ifdef __64BIT__
@@ -113,11 +114,12 @@ protected:
 };
 
 class HeapCompactState;
+class NewHeapCompactState;
 struct roxiemem_decl HeapletBase
 {
     friend class DataBufferBottom;
 protected:
-    std::atomic_uint count;
+    mutable std::atomic_uint count;
 
     HeapletBase() : count(1) // Starts off active
     {
@@ -128,7 +130,7 @@ protected:
     }
 
     virtual void noteReleased(const void *ptr) = 0;
-    virtual void noteReleased(unsigned count, byte * * rowset) = 0;
+    virtual void noteReleased(unsigned count, const byte * * rowset) = 0;
     virtual bool _isShared(const void *ptr) const = 0;
     virtual memsize_t _capacity() const = 0;
     virtual void _setDestructorFlag(const void *ptr) = 0;
@@ -136,6 +138,8 @@ protected:
     virtual unsigned _rawAllocatorId(const void *ptr) const = 0;
     virtual void noteLinked(const void *ptr) = 0;
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) = 0;
+    virtual void _prepareToCompactRow(const void * ptr, NewHeapCompactState & state) = 0;
+    virtual const void * _newCompactRow(const void * ptr, NewHeapCompactState & state) = 0;
     virtual void _internalFreeNoDestructor(const void *ptr) = 0;
 
 public:
@@ -145,12 +149,14 @@ public:
     }
 
     static void release(const void *ptr);
-    static void releaseRowset(unsigned count, byte * * rowset);
+    static void releaseRowset(unsigned count, const byte * * rowset);
     static bool isShared(const void *ptr);
     static void link(const void *ptr);
     static memsize_t capacity(const void *ptr);
     static bool isWorthCompacting(const void *ptr);
     static const void * compactRow(const void * ptr, HeapCompactState & state);
+    static void prepareToCompactRow(const void * ptr, NewHeapCompactState & state);
+    static const void * newCompactRow(const void * ptr, NewHeapCompactState & state);
 
     static void setDestructorFlag(const void *ptr);
     static bool hasDestructor(const void *ptr);
@@ -174,7 +180,8 @@ public:
         return count.load(std::memory_order_relaxed);
     }
 
-    inline bool isEmpty() const
+    virtual unsigned calcNumAllocated(bool updateCount) const;
+    virtual bool isEmpty()
     {
         return queryCount() == 1;
     }
@@ -238,7 +245,7 @@ private:
     void released();
 
     virtual void noteReleased(const void *ptr) override;
-    virtual void noteReleased(unsigned count, byte * * rowset) override;
+    virtual void noteReleased(unsigned count, const byte * * rowset) override;
     virtual bool _isShared(const void *ptr) const;
     virtual memsize_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
@@ -246,6 +253,8 @@ private:
     virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
     virtual void noteLinked(const void *ptr);
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) { return ptr; }
+    virtual void _prepareToCompactRow(const void * ptr, NewHeapCompactState & state) { }
+    virtual const void * _newCompactRow(const void * ptr, NewHeapCompactState & state) { return ptr; }
     virtual void _internalFreeNoDestructor(const void *ptr) { throwUnexpected(); }
 
     inline DataBuffer * queryDataBuffer(const void *ptr) const
@@ -390,6 +399,7 @@ interface IFixedRowHeap : extends IRowHeap
     virtual void *allocate() = 0;
     virtual void *finalizeRow(void *final) = 0;
     virtual void emptyCache() = 0;
+    virtual void releaseAllRows() = 0; // Release any active heaplets and rows within those heaplets.  Use with extreme care.
 };
 
 interface IVariableRowHeap : extends IRowHeap
@@ -408,7 +418,8 @@ enum RoxieHeapFlags
     RHFoldfixed         = 0x0008,  // Don't create a special fixed size heap for this
     RHFvariable         = 0x0010,  // only used for tracing
     RHFblocked          = 0x0040,  // allocate blocks of rows
-    RHFnofragment       = 0x0080,  // the allocated records will not be fragmented
+    RHFscanning         = 0x0080,  // scan the heaplet for free items instead of using a free list
+    RHFdelayrelease     = 0x0100,
 
     //internal flags
     RHForphaned         = 0x80000000,   // heap will no longer be used, can be deleted
@@ -450,7 +461,7 @@ interface IRowManager : extends IInterface
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
     virtual void reportLeaks() = 0;
     virtual void checkHeap() = 0;
-    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags, unsigned maxSpillCost = SpillAllCost) = 0;
+    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags) = 0;
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags) = 0;            // should this be passed the initial size?
     virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;

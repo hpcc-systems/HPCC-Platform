@@ -184,7 +184,7 @@ unsigned CMasterWatchdogBase::readPacket(HeartBeatPacketHeader &hb, MemoryBuffer
     return 0;
 }
 
-void CMasterWatchdogBase::main()
+void CMasterWatchdogBase::threadmain()
 {
     LOG(MCdebugProgress, unknownJob, "Started watchdog");
     unsigned lastbeat=msTick();

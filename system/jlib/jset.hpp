@@ -126,6 +126,19 @@ inline unsigned getMostSignificantBit(unsigned value)
 #endif
 }
 
+#if defined (_WIN32)
+// These are standard in glibc
+inline int ffsll(__uint64 i)
+{
+    return i ? countTrailingUnsetBits(i) + 1 : 0;
+}
+
+inline int ffs(unsigned i)
+{
+    return i ? countTrailingUnsetBits(i) + 1 : 0;
+}
+#endif
+
 interface jlib_decl IBitSet : public IInterface 
 {
     virtual void set(unsigned n,bool val=true)      = 0;
@@ -155,7 +168,8 @@ extern jlib_decl IBitSet *deserializeThreadSafeBitSet(MemoryBuffer &mb);
  * IOW, e.g. bits 0-sizeof(bits_t) must be set from only 1 thread at a time.
  */
 extern jlib_decl IBitSet *createBitSet(size32_t memSize, const void *mem, bool reset=true);
-// This form allows the size of the bit set to be dynamic. No guarantees about threading.
+// These forms allows the size of the bit set to be dynamic. No guarantees about threading.
+extern jlib_decl IBitSet *createBitSet(unsigned initialBits);
 extern jlib_decl IBitSet *createBitSet();
 extern jlib_decl IBitSet *deserializeBitSet(MemoryBuffer &mb);
 // returns number of bytes required to represent numBits in memory

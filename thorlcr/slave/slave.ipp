@@ -52,7 +52,7 @@ public:
     virtual void serializeStats(MemoryBuffer &mb);
 
 // IThreaded
-    void main();
+    virtual void threadmain() override;
 };
 
 
@@ -138,13 +138,11 @@ public:
     }
     void stop()
     {
-        ForEachItemIn(ei, expandedStreams)
-            expandedStreams.item(ei)->stop();
-        ForEachItemIn(idx, expandedInputs)
-            resetJunction(expandedJunctions.item(idx));
+        stopAllInputs();
         expandedInputs.kill();
         expandedStreams.kill();
         expandedJunctions.kill();
+        dataLinkStop();
     }
 };
 

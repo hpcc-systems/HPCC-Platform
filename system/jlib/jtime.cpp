@@ -352,6 +352,12 @@ void CDateTime::setNow()
     set(simple);
 }
 
+void CDateTime::setTimeStamp(timestamp_type ts)
+{
+    set((time_t)(ts / 1000000));
+    nanosec = (ts % 1000000) * 1000;
+}
+
 void CDateTime::adjustTime(int deltaMins)
 {
     time_t simple = getSimple();
@@ -403,6 +409,11 @@ time_t CDateTime::getSimple() const
     struct tm ts;
     getToUtcTm(ts);
     return timegm(&ts);
+}
+
+unsigned __int64 CDateTime::getTimeStamp() const
+{
+    return (unsigned __int64)getSimple() * 1000000 + (nanosec / 1000);
 }
 
 StringBuffer & CDateTime::getString(StringBuffer & str, bool local) const

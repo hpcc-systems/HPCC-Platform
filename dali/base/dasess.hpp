@@ -75,8 +75,13 @@ interface IUserDescriptor: extends serializable
 {
     virtual StringBuffer &getUserName(StringBuffer &buf)=0;
     virtual StringBuffer &getPassword(StringBuffer &buf)=0;
+    virtual const char *querySignature()=0;//user's digital signature
+    virtual unsigned querySessionToken()=0;//ESP session token
     virtual void set(const char *name,const char *password)=0;
+    virtual void set(const char *name,const char *password, unsigned sessionToken, const char *_signature)=0;
     virtual void clear()=0;
+    virtual void serializeExtra(MemoryBuffer &tgt)=0;
+    virtual void deserializeExtra(MemoryBuffer &src)=0;
 };
 
 extern da_decl IUserDescriptor *createUserDescriptor();

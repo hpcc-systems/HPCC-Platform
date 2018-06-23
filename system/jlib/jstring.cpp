@@ -57,7 +57,7 @@ StringBuffer::StringBuffer()
 }
 
 #if 0
-StringBuffer::StringBuffer(int initial)
+StringBuffer::StringBuffer(size_t initial)
 {
     init();
     ensureCapacity(initial);
@@ -82,7 +82,7 @@ StringBuffer::StringBuffer(char value)
     append(value);
 }
 
-StringBuffer::StringBuffer(unsigned len, const char *value)
+StringBuffer::StringBuffer(size_t len, const char *value)
 {
     init();
     append(len, value);
@@ -119,7 +119,7 @@ void StringBuffer::freeBuffer()
         free(buffer);
 }
 
-void StringBuffer::setBuffer(size32_t buffLen, char * newBuff, size32_t strLen)
+void StringBuffer::setBuffer(size_t buffLen, char * newBuff, size_t strLen)
 {
     assertex(newBuff);
     assertex(buffLen>0 && strLen<buffLen);
@@ -130,18 +130,18 @@ void StringBuffer::setBuffer(size32_t buffLen, char * newBuff, size32_t strLen)
     curLen = strLen;
 }
 
-void StringBuffer::_realloc(size32_t newLen)
+void StringBuffer::_realloc(size_t newLen)
 {
     if (newLen >= maxLen)
     {
-        size32_t newMax = maxLen;
+        size_t newMax = maxLen;
         if (newMax == 0)
             newMax = FIRST_CHUNK_SIZE;
         if (newLen > DOUBLE_LIMIT)
         {
             newMax = (newLen + DOUBLE_LIMIT) & ~(DOUBLE_LIMIT-1);
             if (newLen >= newMax)
-                throw MakeStringException(MSGAUD_operator, -1, "StringBuffer::_realloc: Request for %d bytes oldMax = %d", newLen, maxLen);
+                throw MakeStringException(MSGAUD_operator, -1, "StringBuffer::_realloc: Request for %zu bytes oldMax = %zu", newLen, maxLen);
         }
         else
         {
@@ -152,10 +152,10 @@ void StringBuffer::_realloc(size32_t newLen)
         char * originalBuffer = (buffer == internalBuffer) ? NULL : buffer;
         if (!newMax || !(newStr=(char *)realloc(originalBuffer, newMax)))
         {
-            DBGLOG("StringBuffer::_realloc: Failed to realloc = %d, oldMax = %d", newMax, maxLen);
+            DBGLOG("StringBuffer::_realloc: Failed to realloc = %zu, oldMax = %zu", newMax, maxLen);
             PrintStackReport();
             PrintMemoryReport();
-            throw MakeStringException(MSGAUD_operator, -1, "StringBuffer::_realloc: Failed to realloc = %d, oldMax = %d", newMax, maxLen);
+            throw MakeStringException(MSGAUD_operator, -1, "StringBuffer::_realloc: Failed to realloc = %zu, oldMax = %zu", newMax, maxLen);
         }
         if (useInternal())
             memcpy(newStr, internalBuffer, curLen);
@@ -207,7 +207,7 @@ StringBuffer & StringBuffer::append(const char * value)
 {
     if (value)
     {
-        size32_t SourceLen = (size32_t)::strlen(value);
+        size_t SourceLen = strlen(value);
         
         ensureCapacity(SourceLen);
         memcpy(buffer + curLen, value, SourceLen);
@@ -234,7 +234,7 @@ StringBuffer & StringBuffer::append(const unsigned char * value)
     return append((const char *) value);
 }
 
-StringBuffer & StringBuffer::append(const char * value, int offset, int len)
+StringBuffer & StringBuffer::append(const char * value, size_t offset, size_t len)
 {
     ensureCapacity(len);
     memcpy(buffer + curLen, value+offset, len);
@@ -251,8 +251,8 @@ StringBuffer & StringBuffer::append(const IAtom * value)
 
 StringBuffer & StringBuffer::append(double value)
 {
-    int len = length();
-    int newlen = appendf(DOUBLE_FORMAT, value).length();
+    size_t len = length();
+    size_t newlen = appendf(DOUBLE_FORMAT, value).length();
     while (len < newlen)
     {
         switch (charAt(len))
@@ -271,8 +271,8 @@ StringBuffer & StringBuffer::append(double value)
 
 StringBuffer & StringBuffer::append(float value)
 {
-    int len = length();
-    int newlen = appendf(FLOAT_FORMAT, value).length();
+    size_t len = length();
+    size_t newlen = appendf(FLOAT_FORMAT, value).length();
     while (len < newlen)
     {
         switch (charAt(len))
@@ -339,7 +339,7 @@ StringBuffer & StringBuffer::append(unsigned __int64 value)
 
 StringBuffer & StringBuffer::append(const String & value)
 {
-    size32_t SourceLen = value.length();
+    size_t SourceLen = value.length();
     
     ensureCapacity(SourceLen);
     value.getChars(0, SourceLen, buffer, curLen);
@@ -362,7 +362,7 @@ StringBuffer & StringBuffer::append(const IStringVal * value)
 
 StringBuffer & StringBuffer::append(const StringBuffer & value)
 {
-    size32_t SourceLen = value.length();
+    size_t SourceLen = value.length();
     
     ensureCapacity(SourceLen);
     value.getChars(0, SourceLen, buffer + curLen);
@@ -379,13 +379,13 @@ StringBuffer & StringBuffer::appendf(const char *format, ...)
     return *this;
 }
 
-StringBuffer & StringBuffer::appendLower(unsigned len, const char * value)
+StringBuffer & StringBuffer::appendLower(size_t len, const char * value)
 {
     if (len)
     {
         ensureCapacity(len);
         const byte * from = reinterpret_cast<const byte *>(value);
-        for (unsigned i = 0; i < len; i++)
+        for (size_t i = 0; i < len; i++)
             buffer[curLen + i] = tolower(from[i]);
         curLen += len;
     }
@@ -403,13 +403,13 @@ StringBuffer & StringBuffer::setf(const char *format, ...)
     return *this;
 }
 
-StringBuffer & StringBuffer::limited_valist_appendf(unsigned szLimit, const char *format, va_list args)
+StringBuffer & StringBuffer::limited_valist_appendf(size_t szLimit, const char *format, va_list args)
 {
 #define BUF_SIZE 1024
 #define MAX_BUF_SIZE (1024*1024) // limit buffer size to 1MB when doubling
     
     // handle string that is bigger that BUF_SIZE bytes
-    unsigned size = (0 == szLimit||szLimit>BUF_SIZE)?BUF_SIZE:szLimit;
+    size_t size = (0 == szLimit||szLimit>BUF_SIZE)?BUF_SIZE:szLimit;
     int len;
     va_list args2;
     va_copy(args2, args);
@@ -417,18 +417,18 @@ StringBuffer & StringBuffer::limited_valist_appendf(unsigned szLimit, const char
     catch (IException *e)
     {
         StringBuffer eMsg;
-        IException *e2 = MakeStringException(-1, "StringBuffer::valist_appendf(\"%s\"): vsnprintf failed or result exceeds limit (%d): %s", format, size, e->errorMessage(eMsg).str());
+        IException *e2 = MakeStringException(-1, "StringBuffer::valist_appendf(\"%s\"): vsnprintf failed or result exceeds limit (%zu): %s", format, size, e->errorMessage(eMsg).str());
         e->Release();
         throw e2;
     }
     len = _vsnprintf(buffer+curLen,size,format,args);
     if (len >= 0)
     {
-        if ((unsigned)len >= size)
+        if ((size_t)len >= size)
         {
-            if (szLimit && (unsigned)len >= szLimit)
+            if (szLimit && (size_t)len >= szLimit)
             {
-                if ((unsigned)len>szLimit)
+                if ((size_t)len>szLimit)
                 {
                     len = size;
                     if (len>3) memcpy(buffer+len-3, "...", 3);
@@ -455,14 +455,14 @@ StringBuffer & StringBuffer::limited_valist_appendf(unsigned szLimit, const char
             if (0 != szLimit && size>szLimit) size = szLimit; // if so, will be last attempt
             if (size>MAX_BUF_SIZE)
             {
-                WARNLOG("StringBuffer::valist_appendf(\"%s\"): vsnprintf exceeds limit (%d)", format, size);
+                WARNLOG("StringBuffer::valist_appendf(\"%s\"): vsnprintf exceeds limit (%zu)", format, size);
                 size = szLimit = MAX_BUF_SIZE;
             }
             try { ensureCapacity(size); }
             catch (IException *e)
             {
                 StringBuffer eMsg;
-                IException *e2 = MakeStringException(-1, "StringBuffer::valist_appendf(\"%s\"): vsnprintf failed (%d): %s", format, size, e->errorMessage(eMsg).str());
+                IException *e2 = MakeStringException(-1, "StringBuffer::valist_appendf(\"%s\"): vsnprintf failed (%zu): %s", format, size, e->errorMessage(eMsg).str());
                 e->Release();
                 throw e2;
             }
@@ -486,7 +486,7 @@ StringBuffer & StringBuffer::limited_valist_appendf(unsigned szLimit, const char
     return *this;
 }
 
-StringBuffer & StringBuffer::appendN(size32_t count, char fill)
+StringBuffer & StringBuffer::appendN(size_t count, char fill)
 {
     ensureCapacity(count);
     memset(buffer+curLen, fill, count);
@@ -494,7 +494,7 @@ StringBuffer & StringBuffer::appendN(size32_t count, char fill)
     return *this;
 }
 
-void StringBuffer::setLength(unsigned len)
+void StringBuffer::setLength(size_t len)
 {
     if (len > curLen)
     {
@@ -505,13 +505,13 @@ void StringBuffer::setLength(unsigned len)
 
 size32_t StringBuffer::lengthUtf8() const
 {
-    size32_t chars = 0;
-    for (unsigned offset=0; offset < curLen; offset += readUtf8Size(buffer+offset))
+    size_t chars = 0;
+    for (size_t offset=0; offset < curLen; offset += readUtf8Size(buffer+offset))
         chars++;
-    return chars;
+    return (size32_t)chars; // NB: preserving return type as size32_t for backward compatibility (as might be used in serialization)
 }
 
-char * StringBuffer::reserve(size32_t size)
+char * StringBuffer::reserve(size_t size)
 {
     ensureCapacity(size);
     char *ret = buffer+curLen;
@@ -519,16 +519,16 @@ char * StringBuffer::reserve(size32_t size)
     return ret;
 }
 
-char * StringBuffer::reserveTruncate(size32_t size)
+char * StringBuffer::reserveTruncate(size_t size)
 {
-    size32_t newMax = curLen+size+1;
+    size_t newMax = curLen+size+1;
     if (buffer == internalBuffer)
     {
         if (newMax > InternalBufferSize)
         {
             char * newStr = (char *)malloc(newMax);
             if (!newStr)
-                throw MakeStringException(-1, "StringBuffer::_realloc: Failed to realloc newMax = %d, oldMax = %d", newMax, maxLen);
+                throw MakeStringException(-1, "StringBuffer::_realloc: Failed to realloc newMax = %zu, oldMax = %zu", newMax, maxLen);
             memcpy(newStr, buffer, curLen);
             buffer = newStr;
             maxLen = newMax;
@@ -538,7 +538,7 @@ char * StringBuffer::reserveTruncate(size32_t size)
     {
         char * newStr = (char *) realloc(buffer, newMax);
         if (!newStr)
-            throw MakeStringException(-1, "StringBuffer::_realloc: Failed to realloc newMax = %d, oldMax = %d", newMax, maxLen);
+            throw MakeStringException(-1, "StringBuffer::_realloc: Failed to realloc newMax = %zu, oldMax = %zu", newMax, maxLen);
         buffer = newStr;
         maxLen = newMax;
     }
@@ -555,8 +555,8 @@ void StringBuffer::swapWith(StringBuffer &other)
     other.maxLen = tempMax;
 
     //Swap lengths
-    size32_t thisLen = curLen;
-    size32_t otherLen = other.curLen;
+    size_t thisLen = curLen;
+    size_t otherLen = other.curLen;
     curLen = otherLen;
     other.curLen = thisLen;
 
@@ -621,18 +621,16 @@ void StringBuffer::kill()
     init();
 }
 
-void StringBuffer::getChars(int srcBegin, int srcEnd, char * target) const
+void StringBuffer::getChars(size_t srcBegin, size_t srcEnd, char * target) const
 {
-    if (srcBegin < 0)
-        srcBegin = 0;
-    if ((unsigned)srcEnd > curLen)
+    if (srcEnd > curLen)
         srcEnd = curLen;
     const int len = srcEnd - srcBegin;
     if (target && buffer && len > 0)
         memcpy(target, buffer + srcBegin, len);
 }
 
-void StringBuffer::_insert(unsigned offset, size32_t insertLen)
+void StringBuffer::_insert(size_t offset, size_t insertLen)
 {
     ensureCapacity(insertLen);
     memmove(buffer + offset + insertLen, buffer + offset, curLen - offset);
@@ -640,24 +638,24 @@ void StringBuffer::_insert(unsigned offset, size32_t insertLen)
 }
 
 
-StringBuffer & StringBuffer::insert(int offset, char value)
+StringBuffer & StringBuffer::insert(size_t offset, char value)
 {
     _insert(offset, 1);
     buffer[offset] = value;
     return *this;
 }
 
-StringBuffer & StringBuffer::insert(int offset, const char * value)
+StringBuffer & StringBuffer::insert(size_t offset, const char * value)
 {
     if (!value) return *this;
     
-    unsigned len = (size32_t)strlen(value);
+    size_t len = strlen(value);
     _insert(offset, len);
     memcpy(buffer + offset, value, len);
     return *this;
 }
 
-StringBuffer & StringBuffer::insert(int offset, double value)
+StringBuffer & StringBuffer::insert(size_t offset, double value)
 {
     char temp[36];
     sprintf(temp, "%f", value);
@@ -665,19 +663,19 @@ StringBuffer & StringBuffer::insert(int offset, double value)
     return *this;
 }
 
-StringBuffer & StringBuffer::insert(int offset, float value)
+StringBuffer & StringBuffer::insert(size_t offset, float value)
 {
     return insert(offset, (double)value);
 }
 
-StringBuffer & StringBuffer::insert(int offset, int value)
+StringBuffer & StringBuffer::insert(size_t offset, int value)
 {
     char temp[12];
     numtostr(temp, value);
     return insert(offset, temp);
 }
 
-StringBuffer & StringBuffer::insert(int offset, unsigned value)
+StringBuffer & StringBuffer::insert(size_t offset, unsigned value)
 {
     char temp[12];
     
@@ -686,7 +684,7 @@ StringBuffer & StringBuffer::insert(int offset, unsigned value)
 }
 
 #if 0
-StringBuffer & StringBuffer::insert(int offset, long value)
+StringBuffer & StringBuffer::insert(size_t offset, long value)
 {
     char temp[24];
     numtostr(temp, value);
@@ -694,7 +692,7 @@ StringBuffer & StringBuffer::insert(int offset, long value)
 }
 #endif
 
-StringBuffer & StringBuffer::insert(int offset, __int64 value)
+StringBuffer & StringBuffer::insert(size_t offset, __int64 value)
 {
     char temp[24];
     
@@ -702,30 +700,30 @@ StringBuffer & StringBuffer::insert(int offset, __int64 value)
     return insert(offset, temp);
 }
 
-StringBuffer & StringBuffer::insert(int offset, const String & value)
+StringBuffer & StringBuffer::insert(size_t offset, const String & value)
 {
-    size32_t len = value.length();
+    size_t len = value.length();
     
     _insert(offset, len);
     value.getChars(0, len, buffer, offset);
     return *this;
 }
 
-StringBuffer & StringBuffer::insert(int offset, const StringBuffer & value)
+StringBuffer & StringBuffer::insert(size_t offset, const StringBuffer & value)
 {
-    size32_t len = value.length();
+    size_t len = value.length();
     
     _insert(offset, len);
     value.getChars(0, len, buffer+offset);
     return *this;
 }
 
-StringBuffer & StringBuffer::insert(int offset, const IStringVal & value)
+StringBuffer & StringBuffer::insert(size_t offset, const IStringVal & value)
 {
     return insert(offset, value.str());
 }
 
-StringBuffer & StringBuffer::insert(int offset, const IStringVal * value)
+StringBuffer & StringBuffer::insert(size_t offset, const IStringVal * value)
 {
     if (value)
         return insert(offset, value->str());
@@ -738,7 +736,7 @@ StringBuffer & StringBuffer::newline()
     return append("\n"); 
 }
 
-StringBuffer & StringBuffer::pad(unsigned count)
+StringBuffer & StringBuffer::pad(size_t count)
 {
     ensureCapacity(count);
     memset(buffer + curLen, ' ', count);
@@ -746,7 +744,7 @@ StringBuffer & StringBuffer::pad(unsigned count)
     return *this;
 }
 
-StringBuffer & StringBuffer::padTo(unsigned count)
+StringBuffer & StringBuffer::padTo(size_t count)
 {
     if (curLen<count)
         pad(count-curLen);
@@ -784,7 +782,7 @@ StringBuffer & StringBuffer::trimLeft()
     return *this;
 }
 
-StringBuffer & StringBuffer::remove(unsigned start, unsigned len)
+StringBuffer & StringBuffer::remove(size_t start, size_t len)
 {
     if (start > curLen) start = curLen;
     if (start + len > curLen) len = curLen - start;
@@ -796,10 +794,10 @@ StringBuffer & StringBuffer::remove(unsigned start, unsigned len)
 
 StringBuffer &StringBuffer::reverse()
 {
-    unsigned max = curLen/2;
+    size_t max = curLen/2;
     char * end = buffer + curLen;
     
-    unsigned idx;
+    size_t idx;
     for (idx = 0; idx < max; idx++)
     {
         char temp = buffer[idx];
@@ -821,7 +819,7 @@ MemoryBuffer & StringBuffer::deserialize(MemoryBuffer & in)
 
 MemoryBuffer & StringBuffer::serialize(MemoryBuffer & out) const
 {
-    return out.append(curLen).append(curLen, buffer);
+    return out.append((unsigned)curLen).append(curLen, buffer);
 }
 
 StringBuffer &StringBuffer::loadFile(const char *filename, bool binaryMode)
@@ -830,10 +828,10 @@ StringBuffer &StringBuffer::loadFile(const char *filename, bool binaryMode)
     if (in)
     {
         char buffer[1024];
-        int bytes;
+        size_t bytes;
         for (;;)
         {
-            bytes = (size32_t)fread(buffer, 1, sizeof(buffer), in);
+            bytes = (size_t)fread(buffer, 1, sizeof(buffer), in);
             if (!bytes)
                 break;
             append(buffer, 0, bytes);
@@ -873,7 +871,7 @@ StringBuffer &  StringBuffer::loadFile(IFile* f)
     return *this;
 }
 
-void StringBuffer::setCharAt(unsigned offset, char value)
+void StringBuffer::setCharAt(size_t offset, char value)
 {
     if (offset < curLen)
         buffer[offset] = value;
@@ -881,8 +879,8 @@ void StringBuffer::setCharAt(unsigned offset, char value)
 
 StringBuffer & StringBuffer::toLowerCase()
 {
-    size32_t l = curLen;
-    for (size32_t i = 0; i < l; i++)
+    size_t l = curLen;
+    for (size_t i = 0; i < l; i++)
     {
         if (isupper(buffer[i]))
             buffer[i] = tolower(buffer[i]);
@@ -903,8 +901,8 @@ StringBuffer & StringBuffer::toUpperCase()
 
 StringBuffer & StringBuffer::replace(char oldChar, char newChar)
 {
-    size32_t l = curLen;
-    for (size32_t i = 0; i < l; i++)
+    size_t l = curLen;
+    for (size_t i = 0; i < l; i++)
     {
         if (buffer[i] == oldChar)
         {
@@ -920,14 +918,41 @@ StringBuffer & StringBuffer::replace(char oldChar, char newChar)
 }
 
 // Copy source to result, replacing all occurrences of "oldStr" with "newStr"
-StringBuffer &replaceString(StringBuffer & result, size32_t lenSource, const char *source, size32_t lenOldStr, const char* oldStr, size32_t lenNewStr, const char* newStr)
+StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr)
 {
     if (lenSource)
     {
-        size32_t left = lenSource;
+        size_t left = lenSource;
         while (left >= lenOldStr)
         {
             if (memcmp(source, oldStr, lenOldStr)==0)
+            {
+                result.append(lenNewStr, newStr);
+                source += lenOldStr;
+                left -= lenOldStr;
+            }
+            else
+            {
+                result.append(*source);
+                source++;
+                left--;
+            }
+        }
+
+        // there are no more possible replacements, make sure we keep the end of the original buffer
+        result.append(left, source);
+    }
+    return result;
+}
+
+StringBuffer &replaceStringNoCase(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr)
+{
+    if (lenSource)
+    {
+        size_t left = lenSource;
+        while (left >= lenOldStr)
+        {
+            if (memicmp(source, oldStr, lenOldStr)==0)
             {
                 result.append(lenNewStr, newStr);
                 source += lenOldStr;
@@ -953,9 +978,22 @@ StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newSt
     if (curLen)
     {
         StringBuffer temp;
-        size32_t oldlen = oldStr ? strlen(oldStr) : 0;
-        size32_t newlen = newStr ? strlen(newStr) : 0;
+        size_t oldlen = oldStr ? strlen(oldStr) : 0;
+        size_t newlen = newStr ? strlen(newStr) : 0;
         ::replaceString(temp, curLen, buffer, oldlen, oldStr, newlen, newStr);
+        swapWith(temp);
+    }
+    return *this;
+}
+
+StringBuffer & StringBuffer::replaceStringNoCase(const char* oldStr, const char* newStr)
+{
+    if (curLen)
+    {
+        StringBuffer temp;
+        size_t oldlen = oldStr ? strlen(oldStr) : 0;
+        size_t newlen = newStr ? strlen(newStr) : 0;
+        ::replaceStringNoCase(temp, curLen, buffer, oldlen, oldStr, newlen, newStr);
         swapWith(temp);
     }
     return *this;
@@ -963,9 +1001,9 @@ StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newSt
 
 StringBuffer & StringBuffer::stripChar(char oldChar)
 {
-    size32_t delta = 0;
-    size32_t l = curLen;
-    for (size32_t i = 0; i < l; i++)
+    size_t delta = 0;
+    size_t l = curLen;
+    for (size_t i = 0; i < l; i++)
     {
         if (buffer[i] == oldChar)
             delta++;
@@ -1313,6 +1351,12 @@ StringAttr& StringAttr::operator = (StringAttr && from)
     char *temp = text;
     text = from.text;
     from.text = temp;
+    return *this;
+}
+
+StringAttr& StringAttr::operator = (const StringAttr & from)
+{
+    set(from.str());
     return *this;
 }
 
@@ -2163,10 +2207,13 @@ inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch, unsigned &
         case '\0':
             s.append("\\u0000");
             break;
+        case '\x7f':
+            s.append("\\u007f");
+            break;
         default:
             if (next >= ' ' && next < 128)
                 s.append(next);
-            else if (next < ' ' && next > 0)
+            else if (next < ' ')
                 s.append("\\u00").appendhex(next, true);
             else //json is always supposed to be utf8 (or other unicode formats)
             {
@@ -2202,6 +2249,59 @@ StringBuffer &encodeJSON(StringBuffer &s, const char *value)
         return s;
     return encodeJSON(s, strlen(value), value);
 }
+
+bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg)
+{
+    unsigned i;
+    for(i = 0; i < length; i++)
+    {
+        if (str[i] == '\\')
+        {
+            unsigned char next = str[++i];
+            if (next == '\'' || next == '\\' || next == 'n' || next == 'r' || next == 't' || next == 'a' || next == 'b' || next == 'f' || next == 'v' || next == '?' || next == '"')
+            {
+                continue;
+            }
+            else if (isdigit(next) && next < '8')
+            {
+                unsigned count;
+                for(count = 1; count < 3; count++)
+                {
+                    next = str[++i];
+                    if(!isdigit(next) || next >= '8')
+                    {
+                        msg.append("3-digit numeric escape sequence contained non-octal digit: ").append(next);
+                        ep = i;
+                        return false;
+                    }
+                }
+            }
+            else if (next == 'u' || next == 'U')
+            {
+                unsigned count;
+                unsigned max = (next == 'u') ? 4 : 8;
+                for(count = 0; count < max; count++)
+                {
+                    next = str[++i];
+                    if(!isdigit(next) && (!isalpha(next) || tolower(next) > 'f'))
+                    {
+                        msg.append((max == 4) ? '4' : '8').append("-digit unicode escape sequence contained non-hex digit: ").append(next);
+                        ep = i;
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                msg.append("Unrecognized escape sequence: ").append("\\").append(next);
+                ep = i;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 
 void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid)
 {
@@ -2424,16 +2524,16 @@ StringBuffer & ncnameUnescape(char const * in, StringBuffer & out)
 
 
 
-bool startsWith(const char* src, const char* dst)
+bool startsWith(const char* src, const char* prefix)
 {
-    while (*dst && *dst == *src) { src++; dst++; }
-    return *dst==0;
+    while (*prefix && *prefix == *src) { src++; prefix++; }
+    return *prefix==0;
 }
 
-bool startsWithIgnoreCase(const char* src, const char* dst)
+bool startsWithIgnoreCase(const char* src, const char* prefix)
 {
-    while (*dst && tolower(*dst) == tolower(*src)) { src++; dst++; }
-    return *dst==0;
+    while (*prefix && tolower(*prefix) == tolower(*src)) { src++; prefix++; }
+    return *prefix==0;
 }
 
 bool endsWith(const char* src, const char* dst)
@@ -2452,6 +2552,18 @@ bool endsWithIgnoreCase(const char* src, const char* dst)
     if (dstLen<=srcLen)
         return memicmp(dst, src+srcLen-dstLen, dstLen)==0;
     return false;
+}
+
+unsigned matchString(const char * search, const char * const * strings)
+{
+    for (unsigned i=0;;i++)
+    {
+        const char * cur = strings[i];
+        if (!cur)
+            return UINT_MAX;
+        if (streq(search, cur))
+            return i;
+    }
 }
 
 char *j_strtok_r(char *str, const char *delim, char **saveptr)

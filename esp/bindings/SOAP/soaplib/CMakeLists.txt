@@ -14,68 +14,76 @@
 #    limitations under the License.
 ################################################################################
 
+# Component: soaplib
 
-# Component: soaplib 
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for soaplib
 #####################################################
 
+project(soaplib)
 
-project( soaplib ) 
-
-set (    SRCS 
-         ../../../platform/espcontext.cpp 
-         ../../../platform/espprotocol.cpp 
-         ../../../platform/espthread.cpp 
-         ../../../platform/sechandler.cpp 
-         ../../../platform/txsummary.cpp
-         ../../../protocols/http/mapinfo.cpp 
-         ../../bindutil.cpp 
-         ../../http/client/httpclient.cpp 
-         ../../http/platform/htmlpage.cpp 
-         ../../http/platform/httpbinding.cpp 
-         ../../http/platform/httpprot.cpp 
-         ../../http/platform/httpsecurecontext.cpp
-         ../../http/platform/httpservice.cpp 
-         ../../http/platform/httptransport.cpp 
-         ../../http/platform/mime.cpp 
-         ../../http/platform/msgbuilder.cpp 
-         ../client/soapclient.cpp 
-         ../Platform/soapbind.cpp 
-         ../Platform/soapmessage.cpp 
-         ../Platform/soapservice.cpp 
+set(SRCS
+    ../../../platform/espcontext.cpp
+    ../../../platform/espprotocol.cpp
+    ../../../platform/espthread.cpp
+    ../../../platform/espcache.cpp
+    ../../../platform/sechandler.cpp
+    ../../../platform/txsummary.cpp
+    ../../../platform/persistent.cpp
+    ../../../protocols/http/mapinfo.cpp
+    ../../bindutil.cpp
+    ../../http/client/httpclient.cpp
+    ../../http/platform/htmlpage.cpp
+    ../../http/platform/httpbinding.cpp
+    ../../http/platform/httpprot.cpp
+    ../../http/platform/httpsecurecontext.cpp
+    ../../http/platform/httpservice.cpp
+    ../../http/platform/httptransport.cpp
+    ../../http/platform/mime.cpp
+    ../../http/platform/msgbuilder.cpp
+    ../client/soapclient.cpp
+    ../Platform/soapbind.cpp
+    ../Platform/soapmessage.cpp
+    ../Platform/soapservice.cpp
     )
 
-include_directories ( 
-         ./../../../../system/include 
-         ./../../../../system/security/shared
-         ./../../../../system/security/securesocket 
-         ./../../../../system/security/LdapSecurity
-         ./../../../../system/jlib 
-         ./../../../bindings 
-         ./../../../platform 
-         ./../../../services/common
-         ./../../../../system/xmllib 
-         ./.. 
-         ./../../../bindings/SOAP/xpp 
+include_directories(
+    ./../../../../system/include
+    ./../../../../system/security/shared
+    ./../../../../system/security/securesocket
+    ./../../../../system/security/LdapSecurity
+    ./../../../../system/jlib
+    ./../../../bindings
+    ./../../../platform
+    ./../../../services/common
+    ./../../../../system/xmllib
+    ./..
+    ./../../../bindings/SOAP/xpp
+    ./../../../../system/mp 
+    ./../../../../dali/base
     )
 
-ADD_DEFINITIONS( -DESPHTTP_EXPORTS )
+add_definitions(-DESPHTTP_EXPORTS)
 
-if (WIN32)
-    ADD_DEFINITIONS( -D_LIB )
-    HPCC_ADD_LIBRARY( soaplib STATIC ${SRCS} )
-else (WIN32)
-    HPCC_ADD_LIBRARY( soaplib SHARED ${SRCS} )
-    install ( TARGETS soaplib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-    target_link_libraries (soaplib 
-        jlib
-        )
-endif (WIN32)
-add_dependencies (soaplib 
-    jlib
-    espscm
-    )
+if(WIN32)
+    add_definitions(-D_LIB)
+    HPCC_ADD_LIBRARY(soaplib STATIC ${SRCS})
+else(WIN32)
+    HPCC_ADD_LIBRARY(soaplib SHARED ${SRCS})
+    install(TARGETS soaplib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR})
+    target_link_libraries(soaplib dalibase jlib)
+endif(WIN32)
 
+add_dependencies(soaplib jlib espscm)
+
+if(LIBMEMCACHED_FOUND)
+    if(MEMCACHED_USE_EXTERNAL_LIBRARY)
+        target_link_libraries(soaplib libmemcached libmemcachedutil)
+        add_dependencies(soaplib generate-libmemcached)
+        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs\")")
+    else()
+        target_link_libraries(soaplib ${LIBMEMCACHED_LIBRARIES})
+    endif()
+endif()

@@ -67,6 +67,8 @@ private:
     StringAttr   m_sudoHost;
     StringAttr   m_sudoCommand;
     StringAttr   m_sudoOption;
+    unsigned     m_sessionToken;//User's ESP session token
+    StringBuffer m_signature;//User's digital signature
 
 public:
     IMPLEMENT_IINTERFACE
@@ -153,7 +155,10 @@ public:
     bool setPassword(const char * pw);
     const char* getPassword();
     bool setEncodedPassword(SecPasswordEncoding enc, void * pw, unsigned length, void * salt, unsigned saltlen);
-    bool addToken(unsigned type, void * data, unsigned length);
+    void setSessionToken(unsigned token);
+    unsigned getSessionToken();
+    void setSignature(const char * signature);
+    const char * getSignature();
 
 // Posix specific fields
     virtual void setGidnumber(const char* gidnumber)
@@ -372,8 +377,8 @@ public:
     virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources);
     virtual bool addResources(ISecUser& sec_user, ISecResourceList * resources);
     virtual SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename);
-    virtual bool addResourcesEx(SecResourceType rtype, ISecUser &user, ISecResourceList* resources, SecPermissionType ptype = PT_ADMINISTRATORS_ONLY, const char* basedn = NULL);
-    virtual bool addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype = PT_ADMINISTRATORS_ONLY, const char* basedn = NULL);
+    virtual bool addResourcesEx(SecResourceType rtype, ISecUser &user, ISecResourceList* resources, SecPermissionType ptype = PT_DEFAULT, const char* basedn = NULL);
+    virtual bool addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype = PT_DEFAULT, const char* basedn = NULL);
     virtual bool updateResources(ISecUser& sec_user, ISecResourceList * resources){return false;}
     virtual bool addUser(ISecUser & user);
     virtual ISecUser * lookupUser(unsigned uid);
@@ -396,6 +401,8 @@ public:
     virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char * searchstr, IArrayOf<ISecResource>& resources);
     virtual ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char* basedn, const char* resourceName, unsigned extraNameFilter,
         ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
+    virtual ISecItemIterator* getResourcePermissionsSorted(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN, const char* rtype, const char* prefix,
+        ResourcePermissionField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
     virtual void cacheSwitch(SecResourceType rtype, bool on);
 
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions);
@@ -464,6 +471,7 @@ public:
     virtual bool authenticateUser(ISecUser & user, bool * superUser);
     virtual secManagerType querySecMgrType() { return SMT_LDAP; }
     inline virtual const char* querySecMgrTypeName() { return "LdapSecurity"; }
+    virtual bool logoutUser(ISecUser & user);
 
     //Data View related interfaces
     virtual void createView(const char * viewName, const char * viewDescription);

@@ -15,7 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('warnOnImplicitReadLimit', true);
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
+#onwarning (4522, ignore);
+#onwarning (4523, ignore);
 
 phoneRecord :=
             RECORD
@@ -63,13 +67,13 @@ namesTable := dataset([
         {'Rowling','J.K.', 1, 2, '09876',654321,false,'','',false,[{'Animal Farm',''},{'Slaughterhouse-five','Vonnegut'}], ['Blue','Green']}
         ], personRecord);
 
-output(namesTable,,'REGRESS::TEMP::jsonfetch.json',overwrite, json);
-dsJsonFetch := dataset(DYNAMIC('REGRESS::TEMP::jsonfetch.json'), personRecord, json('Row'));
+output(namesTable,,prefix + 'jsonfetch.json',overwrite, json);
+dsJsonFetch := dataset(DYNAMIC(prefix + 'jsonfetch.json'), personRecord, json('Row'));
 
-dsJsonFetchWithPos := dataset(DYNAMIC('REGRESS::TEMP::jsonfetch.json'), {personRecord, UNSIGNED8 RecPtr{virtual(fileposition)}}, json('Row'));
-BUILD(dsJsonFetchWithPos, {surname, RecPtr}, 'REGRESS::TEMP::jsonfetch.json.index', OVERWRITE);
+dsJsonFetchWithPos := dataset(DYNAMIC(prefix + 'jsonfetch.json'), {personRecord, UNSIGNED8 RecPtr{virtual(fileposition)}}, json('Row'));
+BUILD(dsJsonFetchWithPos, {surname, RecPtr}, prefix + 'jsonfetch.json.index', OVERWRITE);
 
-jsonFetchIndex := INDEX(dsJsonFetchWithPos, {surname, RecPtr}, DYNAMIC('REGRESS::TEMP::jsonfetch.json.index'));
+jsonFetchIndex := INDEX(dsJsonFetchWithPos, {surname, RecPtr}, DYNAMIC(prefix + 'jsonfetch.json.index'));
 
 fetcheddata := LIMIT(SORT(FETCH(dsJsonFetchWithPos, jsonFetchIndex(surname = 'Mitchell'), RIGHT.RecPtr), RECORD), 10);
 fetchednopos := project(fetcheddata, personRecord); //don't output positions

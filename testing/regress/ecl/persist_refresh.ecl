@@ -19,6 +19,8 @@
 //version persistRefresh=false
 
 import ^ as root;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 countryRecord := RECORD
     string country;
@@ -38,10 +40,10 @@ ds2 := DATASET([{'Spain', 40397842},
 persistRefresh := #IFDEFINED(root.persistRefresh, true);
 
 #if (persistRefresh)
-    persistFileName := '~REGRESS::PersistRefresh';
+    persistFileName := prefix + 'PersistRefresh';
     ds := ds2;
 #else
-    persistFileName := '~REGRESS::PersistNoRefresh';
+    persistFileName := prefix + 'PersistNoRefresh';
     ds := ds1;
 #end
 

@@ -2,6 +2,7 @@
 ## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.  All rights reserved.
 ############################################################################## */
 
+IMPORT Std;
 IMPORT Std.Date;
 
 EXPORT TestDate := MODULE
@@ -21,6 +22,7 @@ EXPORT TestDate := MODULE
   SHARED vTimestamp := Date.CurrentTimestamp(); // UTC
   SHARED vTimestampLocal := Date.CurrentTimestamp(TRUE); // Local
   SHARED vLocalTimeZoneOffset := Date.LocalTimeZoneOffset();
+  SHARED vTZInputSample := NOFOLD(DATASET([{120000, 'CT'}], {Date.Time_t time, STRING tz}));
 
   EXPORT TestConstant := [
     ASSERT(Date.FromDaysSince1900(0) = 19000101, CONST);
@@ -73,6 +75,41 @@ EXPORT TestDate := MODULE
     ASSERT(Date.DaysBetween(20010615,20020615) = 365, CONST);
     ASSERT(Date.DaysBetween(20010615,20020614) = 364, CONST);
     ASSERT(Date.DaysBetween(20020615,20010615) = -365, CONST);
+
+    ASSERT(Date.YearWeekNumFromDate(20180101) = 1, CONST);      // Start of week = Sunday
+    ASSERT(Date.YearWeekNumFromDate(20180106) = 1, CONST);      // Start of week = Sunday
+    ASSERT(Date.YearWeekNumFromDate(20180107) = 2, CONST);      // Start of week = Sunday
+    ASSERT(Date.YearWeekNumFromDate(20180107, 2) = 1, CONST);   // Start of week = Monday
+    ASSERT(Date.YearWeekNumFromDate(20180108, 2) = 2, CONST);   // Start of week = Monday
+    ASSERT(Date.YearWeekNumFromDate(20180101, 3) = 1, CONST);   // Start of week = Tuesday
+    ASSERT(Date.YearWeekNumFromDate(20180102, 3) = 2, CONST);   // Start of week = Tuesday
+    ASSERT(Date.YearWeekNumFromDate(20180102, 4) = 1, CONST);   // Start of week = Wednesday
+    ASSERT(Date.YearWeekNumFromDate(20180103, 4) = 2, CONST);   // Start of week = Wednesday
+    ASSERT(Date.YearWeekNumFromDate(20180103, 5) = 1, CONST);   // Start of week = Thursday
+    ASSERT(Date.YearWeekNumFromDate(20180104, 5) = 2, CONST);   // Start of week = Thursday
+    ASSERT(Date.YearWeekNumFromDate(20180104, 6) = 1, CONST);   // Start of week = Friday
+    ASSERT(Date.YearWeekNumFromDate(20180105, 6) = 2, CONST);   // Start of week = Friday
+    ASSERT(Date.YearWeekNumFromDate(20180105, 7) = 1, CONST);   // Start of week = Saturday
+    ASSERT(Date.YearWeekNumFromDate(20180106, 7) = 2, CONST);   // Start of week = Saturday
+
+    ASSERT(Date.MonthWeekNumFromDate(20180101) = 1, CONST);     // Start of week = Sunday
+    ASSERT(Date.MonthWeekNumFromDate(20180106) = 1, CONST);     // Start of week = Sunday
+    ASSERT(Date.MonthWeekNumFromDate(20180107) = 2, CONST);     // Start of week = Sunday
+    ASSERT(Date.MonthWeekNumFromDate(20180201) = 1, CONST);     // Start of week = Sunday
+    ASSERT(Date.MonthWeekNumFromDate(20180304, 2) = 1, CONST);  // Start of week = Monday
+    ASSERT(Date.MonthWeekNumFromDate(20180305, 2) = 2, CONST);  // Start of week = Monday
+    ASSERT(Date.MonthWeekNumFromDate(20180305, 3) = 1, CONST);  // Start of week = Tuesday
+    ASSERT(Date.MonthWeekNumFromDate(20180306, 3) = 2, CONST);  // Start of week = Tuesday
+    ASSERT(Date.MonthWeekNumFromDate(20180306, 4) = 1, CONST);  // Start of week = Wednesday
+    ASSERT(Date.MonthWeekNumFromDate(20180307, 4) = 2, CONST);  // Start of week = Wednesday
+    ASSERT(Date.MonthWeekNumFromDate(20180307, 5) = 1, CONST);  // Start of week = Thursday
+    ASSERT(Date.MonthWeekNumFromDate(20180308, 5) = 2, CONST);  // Start of week = Thursday
+    ASSERT(Date.MonthWeekNumFromDate(20180301, 6) = 1, CONST);  // Start of week = Friday
+    ASSERT(Date.MonthWeekNumFromDate(20180302, 6) = 2, CONST);  // Start of week = Friday
+    ASSERT(Date.MonthWeekNumFromDate(20180302, 7) = 1, CONST);  // Start of week = Saturday
+    ASSERT(Date.MonthWeekNumFromDate(20180303, 7) = 2, CONST);  // Start of week = Saturday
+
+    ASSERT(EXISTS(Date.TimeZone.TZ_Data), CONST);
 
     ASSERT(TRUE, CONST)
   ];
@@ -203,6 +240,64 @@ EXPORT TestDate := MODULE
     ASSERT(Date.TimeFromDateTimeRec(vCreateDateTime) = 123456);
 
     ASSERT(Date.SecondsFromDateTimeRec(vCreateDateTime) = 917872496);
+
+    ASSERT(COUNT(Date.TimeZone.UniqueTZAbbreviations()) = 227);
+    ASSERT(COUNT(Date.TimeZone.UniqueTZLocations()) = 15);
+    ASSERT(COUNT(Date.TimeZone.TZDataForLocation('NORTH AMERICA')) = 28);
+    // SecondsBetweenTZ for ambiguous abbreviations using first location found
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('EST', 'CST') = -3600);
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('CST', 'IST') = 41400);
+    // SecondsBetweenTZ for ambiguous abbreviations using explicit locations
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('CST', 'IST', fromLocation := 'NORTH AMERICA') = 41400);
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('CST', 'IST', fromLocation := 'CENTRAL AMERICA') = 41400);
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('CST', 'IST', fromLocation := 'ASIA') = -9000);
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('CST', 'IST', fromLocation := 'CARIBBEAN') = 37800);
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('CST', 'IST', toLocation := 'ASIA') = 41400);
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('CST', 'IST', toLocation := 'EUROPE') = 25200);
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('CST', 'IST', toLocation := 'ISRAEL') = 28800);
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('CST', 'IST', fromLocation := 'NORTH AMERICA', toLocation := 'ASIA') = 41400);
+    ASSERT(Date.TimeZone.SecondsBetweenTZ('CST', 'IST', fromLocation := 'ASIA', toLocation := 'ISRAEL') = -21600);
+    // AdjustTimeTZ for ambiguous abbreviations using first location found
+    ASSERT(Date.TimeZone.AdjustTimeTZ(120000, 'EST', 'CST') = 110000);
+    // AdjustTimeTZ for ambiguous abbreviations using explicit locations
+    ASSERT(Date.TimeZone.AdjustTimeTZ(120000, 'CST', 'IST', fromLocation := 'NORTH AMERICA') = 233000);
+    ASSERT(Date.TimeZone.AdjustTimeTZ(120000, 'CST', 'IST', fromLocation := 'CENTRAL AMERICA') = 233000);
+    ASSERT(Date.TimeZone.AdjustTimeTZ(120000, 'CST', 'IST', fromLocation := 'ASIA') = 93000);
+    ASSERT(Date.TimeZone.AdjustTimeTZ(120000, 'CST', 'IST', fromLocation := 'CARIBBEAN') = 223000);
+    ASSERT(Date.TimeZone.AdjustTimeTZ(120000, 'CST', 'IST', toLocation := 'ASIA') = 233000);
+    ASSERT(Date.TimeZone.AdjustTimeTZ(120000, 'CST', 'IST', toLocation := 'EUROPE') = 190000);
+    ASSERT(Date.TimeZone.AdjustTimeTZ(120000, 'CST', 'IST', toLocation := 'ISRAEL') = 200000);
+    ASSERT(Date.TimeZone.AdjustTimeTZ(120000, 'CST', 'IST', fromLocation := 'NORTH AMERICA', toLocation := 'ASIA') = 233000);
+    ASSERT(Date.TimeZone.AdjustTimeTZ(120000, 'CST', 'IST', fromLocation := 'ASIA', toLocation := 'ISRAEL') = 60000);
+    // ToLocalTime for ambiguous abbreviations using first location found
+    ASSERT(Date.TimeZone.ToLocalTime(120000, 'IST') = 173000);
+    // ToLocalTime for ambiguous abbreviations using explicit locations
+    ASSERT(Date.TimeZone.ToLocalTime(120000, 'IST', toLocation := 'ASIA') = 173000);
+    ASSERT(Date.TimeZone.ToLocalTime(120000, 'IST', toLocation := 'EUROPE') = 130000);
+    ASSERT(Date.TimeZone.ToLocalTime(120000, 'IST', toLocation := 'ISRAEL') = 140000);
+    // ToUTCTime for ambiguous abbreviations using first location found
+    ASSERT(Date.TimeZone.ToUTCTime(120000, 'IST') = 63000);
+    // ToUTCTime for ambiguous abbreviations using explicit locations
+    ASSERT(Date.TimeZone.ToUTCTime(120000, 'IST', fromLocation := 'ASIA') = 63000);
+    ASSERT(Date.TimeZone.ToUTCTime(120000, 'IST', fromLocation := 'EUROPE') = 110000);
+    ASSERT(Date.TimeZone.ToUTCTime(120000, 'IST', fromLocation := 'ISRAEL') = 100000);
+
+    ASSERT(Date.TimeZone.AppendTZOffset(vTZInputSample, tz, seconds_to_utc)[1].seconds_to_utc_is_valid = TRUE);
+    ASSERT(Date.TimeZone.AppendTZOffset(vTZInputSample, tz, seconds_to_utc)[1].seconds_to_utc = 21600);
+    ASSERT(Date.TimeZone.AppendTZOffset(vTZInputSample, tz, seconds_to_utc)[1].seconds_to_utc_tz = 'UTC');
+    ASSERT(Date.TimeZone.AppendTZOffset(vTZInputSample, tz, seconds_to_utc)[1].seconds_to_utc_location = 'WORLDWIDE');
+    ASSERT(Date.TimeZone.AppendTZOffset(vTZInputSample, tz, seconds_to_pt, toTimeZoneAbbrev := 'PT', toLocation := 'NORTH AMERICA')[1].seconds_to_pt_is_valid = TRUE);
+    ASSERT(Date.TimeZone.AppendTZOffset(vTZInputSample, tz, seconds_to_pt, toTimeZoneAbbrev := 'PT', toLocation := 'NORTH AMERICA')[1].seconds_to_pt = -7200);
+    ASSERT(Date.TimeZone.AppendTZOffset(vTZInputSample, tz, seconds_to_pt, toTimeZoneAbbrev := 'PT', toLocation := 'NORTH AMERICA')[1].seconds_to_pt_tz = 'PT');
+    ASSERT(Date.TimeZone.AppendTZOffset(vTZInputSample, tz, seconds_to_pt, toTimeZoneAbbrev := 'PT', toLocation := 'NORTH AMERICA')[1].seconds_to_pt_location = 'NORTH AMERICA');
+    ASSERT(Date.TimeZone.AppendTZAdjustedTime(vTZInputSample, time, tz, utc_time)[1].utc_time_is_valid = TRUE);
+    ASSERT(Date.TimeZone.AppendTZAdjustedTime(vTZInputSample, time, tz, utc_time)[1].utc_time = 180000);
+    ASSERT(Date.TimeZone.AppendTZAdjustedTime(vTZInputSample, time, tz, utc_time)[1].utc_time_tz = 'UTC');
+    ASSERT(Date.TimeZone.AppendTZAdjustedTime(vTZInputSample, time, tz, utc_time)[1].utc_time_location = 'WORLDWIDE');
+    ASSERT(Date.TimeZone.AppendTZAdjustedTime(vTZInputSample, time, tz, pt_time, toTimeZoneAbbrev := 'PT', toLocation := 'NORTH AMERICA')[1].pt_time_is_valid = TRUE);
+    ASSERT(Date.TimeZone.AppendTZAdjustedTime(vTZInputSample, time, tz, pt_time, toTimeZoneAbbrev := 'PT', toLocation := 'NORTH AMERICA')[1].pt_time = 100000);
+    ASSERT(Date.TimeZone.AppendTZAdjustedTime(vTZInputSample, time, tz, pt_time, toTimeZoneAbbrev := 'PT', toLocation := 'NORTH AMERICA')[1].pt_time_tz = 'PT');
+    ASSERT(Date.TimeZone.AppendTZAdjustedTime(vTZInputSample, time, tz, pt_time, toTimeZoneAbbrev := 'PT', toLocation := 'NORTH AMERICA')[1].pt_time_location = 'NORTH AMERICA');
 
     ASSERT(TRUE)
   ];

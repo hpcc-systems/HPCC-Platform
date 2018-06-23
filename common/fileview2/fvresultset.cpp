@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "jliball.hpp"
 #include "rtlbcd.hpp"
+#include "rtlformat.hpp"
 #include "workunit.hpp"
 #include "seclib.hpp"
 #include "eclrtl.hpp"
@@ -710,34 +711,9 @@ IResultSetCursor * CResultSetBase::createCursor()
     return doCreateCursor();
 }
 
-IResultSetCursor * CResultSetBase::createCursor(IDataVal & savedCursor)
-{
-    MemoryBuffer buffer;
-    buffer.append((size32_t)savedCursor.length(), savedCursor.data());
-
-    byte version;
-    unsigned column;
-    bool desc;
-    buffer.read(version);
-    buffer.read(column);
-    if (column == (unsigned)-1)
-        return new CResultSetCursor(getMeta(), this, buffer);
-    buffer.read(desc);
-    return new CResultSetSortedCursor(getMeta(), this, column, desc, buffer);
-}
-
-
 IFilteredResultSet * CResultSetBase::createFiltered()
 {
     return new CFilteredResultSetBuilder(this);
-}
-
-IResultSetCursor * CResultSetBase::createSortedCursor(unsigned column, bool descend)
-{
-    if (getNumRows() > MAX_SORT_ELEMENTS)
-        return NULL;
-
-    return new CResultSetSortedCursor(getMeta(), this, column, descend);
 }
 
 CResultSetCursor * CResultSetBase::doCreateCursor()
@@ -879,26 +855,12 @@ bool CResultSet::isMappedIndexField(unsigned columnIndex)
     return mappedFields.isItem(columnIndex) && mappedFields.item(columnIndex);
 }
 
-
-void CResultSet::serialize(MemoryBuffer & out)
-{
-    out.append((byte)FILEVIEW_VERSION); // current version
-}
-
 //---------------------------------------------------------------------------
 
 CResultSetCursor::CResultSetCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet) : meta(_meta)
 { 
     init(_resultSet); 
     absolute(BEFORE_FIRST_ROW);
-}
-
-CResultSetCursor::CResultSetCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet, MemoryBuffer & buffer) : meta(_meta)
-{ 
-    init(_resultSet); 
-
-    buffer.read(curRow);
-    absolute(curRow);
 }
 
 CResultSetCursor::~CResultSetCursor()
@@ -922,34 +884,6 @@ bool CResultSetCursor::absolute(__int64 row)
     curRow = row;
     curRowData.clear();
     if ((row >= 0) && resultSet->getRow(curRowData, curRow))
-    {
-        if (!meta.isFixedSize())
-            meta.calcFieldOffsets((const byte *)curRowData.toByteArray(), offsets);
-        return true;
-    }
-    return false;
-}
-
-
-void CResultSetCursor::afterLast()
-{
-    absolute(getNumRows()+1);
-    curRowData.clear();
-}
-
-
-void CResultSetCursor::beforeFirst()
-{
-    absolute(BEFORE_FIRST_ROW);
-    curRowData.clear();
-}
-
-
-bool CResultSetCursor::fetch(__int64 offset)
-{
-    curRow = AFTER_LAST_ROW;
-    curRowData.clear();
-    if (resultSet->fetch(curRowData, offset))
     {
         if (!meta.isFixedSize())
             meta.calcFieldOffsets((const byte *)curRowData.toByteArray(), offsets);
@@ -1045,16 +979,6 @@ bool CResultSetCursor::getBoolean(int columnIndex)
 }
 
 
-IDataVal & CResultSetCursor::getBytes(IDataVal &d, int columnIndex)
-{
-    if (isValid())
-        d.setLen(getColumn(columnIndex), offsets[columnIndex+1]-offsets[columnIndex]);
-    else
-        d.setLen(NULL, 0);
-    return d;
-}
-
-
 IResultSetCursor * CResultSetCursor::getChildren(int columnIndex) const
 {
     if (!isValid()) return NULL;
@@ -1079,154 +1003,6 @@ IResultSetCursor * CResultSetCursor::getChildren(int columnIndex) const
     return nestedResult->createCursor();
 }
 
-xdouble CResultSetCursor::getDouble(int columnIndex)
-{
-    if (!isValid()) return 0.0;
-    const byte * cur = getColumn(columnIndex);
-
-    ITypeInfo & type = *meta.columns.item(columnIndex).type;
-    unsigned size = type.getSize();
-    unsigned len = UNKNOWN_LENGTH; // error value
-    switch (type.getTypeCode())
-    {
-    case type_void:
-    case type_set:
-    case type_table:
-    case type_groupedtable:
-        return 0;
-    case type_boolean:
-        return *((byte *)cur) != 0;
-    case type_int:
-        if (type.isSigned())
-            return (xdouble)getIntFromInt(type, cur, isMappedIndexField(columnIndex));
-        return (xdouble)(__int64)getIntFromInt(type, cur, isMappedIndexField(columnIndex));
-    case type_swapint:
-        if (type.isSigned())
-            return (xdouble)getIntFromSwapInt(type, cur, isMappedIndexField(columnIndex));
-        return (xdouble)(__int64)getIntFromSwapInt(type, cur, isMappedIndexField(columnIndex));
-    case type_packedint:
-        if (type.isSigned())
-            return (xdouble)rtlGetPackedSigned(cur);
-        else
-            return (xdouble)rtlGetPackedUnsigned(cur);
-    case type_decimal:
-        {
-            BcdCriticalBlock bcdBlock;
-            if (type.isSigned())
-                DecPushDecimal(cur, type.getSize(), type.getPrecision());
-            else
-                DecPushUDecimal(cur, type.getSize(), type.getPrecision());
-            return DecPopReal();
-        }
-    case type_real:
-        if (size == 4)
-            return *((float *)cur);
-        return *((double *)cur);
-    case type_data:
-    case type_string:
-        len = getLength(type, cur);
-        return rtlStrToReal(len, (const char *)cur);
-    case type_qstring:
-        {
-            len = getLength(type, cur);
-            unsigned newSize;
-            char * newStr;
-            rtlQStrToStrX(newSize, newStr, len, (const char *)cur);
-            double ret = rtlStrToReal(newSize, newStr);
-            rtlFree(newStr);
-            return ret;
-        }
-    case type_unicode:
-        len = getLength(type, cur);
-        return rtlUnicodeToReal(len, (UChar const *)cur);
-    case type_utf8:
-        len = getLength(type, cur);
-        return rtlUtf8ToReal(len, (const char *)cur);
-    case type_varstring:
-        return rtlVStrToReal((const char *)cur);
-    case type_varunicode:
-        return rtlUnicodeToReal(rtlUnicodeStrlen((UChar const *)cur), (UChar const *)cur);
-    }
-    UNIMPLEMENTED;
-    return 0.0;
-}
-
-
-int CResultSetCursor::getFetchSize() const
-{
-    return DEFAULT_FETCH_SIZE;
-}
-
-
-__int64 CResultSetCursor::getInt(int columnIndex)
-{
-    if (!isValid()) return 0;
-    const byte * cur = getColumn(columnIndex);
-
-    ITypeInfo & type = *meta.columns.item(columnIndex).type;
-    unsigned size = type.getSize();
-    unsigned len = UNKNOWN_LENGTH;
-    switch (type.getTypeCode())
-    {
-    case type_void:
-    case type_set:
-    case type_table:
-    case type_groupedtable:
-        return 0;
-    case type_boolean:
-        return *((byte *)cur) != 0;
-    case type_int:
-        return getIntFromInt(type, cur, isMappedIndexField(columnIndex));
-    case type_swapint:
-        return getIntFromSwapInt(type, cur, isMappedIndexField(columnIndex));
-    case type_packedint:
-        if (type.isSigned())
-            return rtlGetPackedSigned(cur);
-        else
-            return rtlGetPackedUnsigned(cur);
-    case type_decimal:
-        {
-            BcdCriticalBlock bcdBlock;
-            if (type.isSigned())
-                DecPushDecimal(cur, type.getSize(), type.getPrecision());
-            else
-                DecPushUDecimal(cur, type.getSize(), type.getPrecision());
-            return DecPopInt64();
-        }
-    case type_real:
-        if (size == 4)
-            return (__int64) *((float *)cur);
-        return (__int64) *((double *)cur);
-    case type_data:
-    case type_string:
-        len = getLength(type, cur);
-        return rtlStrToInt8(len, (const char *)cur);
-    case type_qstring:
-        {
-            unsigned newSize;
-            char * newStr;
-            len = getLength(type, cur);
-            rtlQStrToStrX(newSize, newStr, len, (const char *)cur);
-            __int64 ret = rtlStrToInt8(newSize, newStr);
-            rtlFree(newStr);
-            return ret;
-        }
-    case type_unicode:
-        len = getLength(type, cur);
-        return rtlUnicodeToInt8(len, (UChar const *)cur);
-    case type_utf8:
-        len = getLength(type, cur);
-        return rtlUtf8ToInt(len, (const char *)cur);
-    case type_varstring:
-        return rtlVStrToInt8((const char *)cur);
-    case type_varunicode:
-        return rtlUnicodeToInt8(rtlUnicodeStrlen((UChar const *)cur), (UChar const *)cur);
-    }
-    UNIMPLEMENTED;
-    return 0;
-}
-
-
 bool CResultSetCursor::getIsAll(int columnIndex) const
 {
     if (!isValid()) return false;
@@ -1236,14 +1012,6 @@ bool CResultSetCursor::getIsAll(int columnIndex) const
 
     const byte * cur = getColumn(columnIndex);
     return *(bool *)cur;
-}
-
-
-int CResultSetCursor::getType()
-{
-    if (getNumRows() != UNKNOWN_NUM_ROWS)
-        return TYPE_SCROLL_INSENSITIVE;
-    return TYPE_FORWARD_ONLY;
 }
 
 
@@ -1267,14 +1035,10 @@ __int64 CResultSetCursor::getNumRows() const
 IDataVal & CResultSetCursor::getRaw(IDataVal &d, int columnIndex)
 {
     //MORE: This should work on the raw data!
-    return getBytes(d, columnIndex);
-}
-
-IDataVal & CResultSetCursor::getRawRow(IDataVal &d)
-{
-    MemoryBuffer temp;
-    if (resultSet->getRawRow(temp, curRow))
-        d.setLen(temp.toByteArray(), temp.length());
+    if (isValid())
+        d.setLen(getColumn(columnIndex), offsets[columnIndex + 1] - offsets[columnIndex]);
+    else
+        d.setLen(NULL, 0);
     return d;
 }
 
@@ -1282,116 +1046,6 @@ __int64 CResultSetCursor::translateRow(__int64 row) const
 {
     return row;
 }
-
-IStringVal & CResultSetCursor::getString(IStringVal & ret, int columnIndex)
-{
-    if (!isValid())
-    {
-        ret.set("");
-        return ret;
-    }
-    const byte * cur = getColumn(columnIndex);
-    unsigned resultLen;
-    char * resultStr = NULL;
-
-    ITypeInfo & type = *meta.columns.item(columnIndex).type;
-    unsigned size = type.getSize();
-    unsigned len;
-    switch (type.getTypeCode())
-    {
-    case type_void:
-    case type_set:
-    case type_table:
-    case type_groupedtable:
-        ret.set("");
-        break;
-    case type_boolean:
-        if (*((byte *)cur) != 0)
-            ret.set("1");
-        else
-            ret.set("");
-        break;
-    case type_int:
-        {
-            __int64 value = getIntFromInt(type, cur, isMappedIndexField(columnIndex));
-            if (type.isSigned())
-                rtlInt8ToStrX(resultLen, resultStr, value);
-            else
-                rtlUInt8ToStrX(resultLen, resultStr, (unsigned __int64) value);
-            ret.setLen(resultStr, resultLen);
-            break;
-        }
-    case type_swapint:
-        {
-            __int64 value = getIntFromSwapInt(type, cur, isMappedIndexField(columnIndex));
-            if (type.isSigned())
-                rtlInt8ToStrX(resultLen, resultStr, value);
-            else
-                rtlUInt8ToStrX(resultLen, resultStr, (unsigned __int64) value);
-            ret.setLen(resultStr, resultLen);
-            break;
-        }
-    case type_packedint:
-        {
-            if (type.isSigned())
-                rtlInt8ToStrX(resultLen, resultStr, rtlGetPackedSigned(cur));
-            else
-                rtlUInt8ToStrX(resultLen, resultStr, rtlGetPackedUnsigned(cur));
-            ret.setLen(resultStr, resultLen);
-            break;
-        }
-    case type_decimal:
-        {
-            BcdCriticalBlock bcdBlock;
-            if (type.isSigned())
-                DecPushDecimal(cur, type.getSize(), type.getPrecision());
-            else
-                DecPushUDecimal(cur, type.getSize(), type.getPrecision());
-            DecPopStringX(resultLen, resultStr);
-            ret.setLen(resultStr, resultLen);
-            return ret;
-        }
-    case type_real:
-        if (size == 4)
-            rtlRealToStrX(resultLen, resultStr, *(float *)cur);
-        else
-            rtlRealToStrX(resultLen, resultStr, *(double *)cur);
-        ret.setLen(resultStr, resultLen);
-        break;
-    case type_qstring:
-        len = getLength(type, cur);
-        rtlQStrToStrX(resultLen, resultStr, len, (const char *)cur);
-        ret.setLen(resultStr, resultLen);
-        break;
-    case type_data:
-    case type_string:
-        len = getLength(type, cur);
-        ret.setLen((const char *)cur, len);
-        break;
-    case type_unicode:
-        len = getLength(type, cur);
-        rtlUnicodeToStrX(resultLen, resultStr, len, (UChar const *)cur);
-        ret.setLen(resultStr, resultLen);
-        break;
-    case type_utf8:
-        len = getLength(type, cur);
-        rtlUtf8ToStrX(resultLen, resultStr, len, (const char *)cur);
-        ret.setLen(resultStr, resultLen);
-        break;
-    case type_varstring:
-        ret.set((const char *)cur);
-        break;
-    case type_varunicode:
-        rtlUnicodeToStrX(resultLen, resultStr, rtlUnicodeStrlen((UChar const *)cur), (UChar const *)cur);
-        ret.setLen(resultStr, resultLen);
-        break;
-    default:
-        UNIMPLEMENTED;
-    }
-    free(resultStr);
-    return ret;
-}
-
 
 IStringVal & CResultSetCursor::getDisplayText(IStringVal &ret, int columnIndex)
 {
@@ -1685,14 +1339,6 @@ IStringVal & CResultSetCursor::getXml(IStringVal &ret, int columnIndex)
     return ret;
 }
 
-IStringVal & CResultSetCursor::getXmlItem(IStringVal & ret)
-{
-    Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty);
-    writeXmlText(*writer, 0, meta.meta->queryXmlTag());
-    ret.set(writer->str());
-    return ret;
-}
-
 void CResultSetCursor::writeXmlItem(IXmlWriter &writer)
 {
     writeXmlText(writer, 0, meta.meta->queryXmlTag());
@@ -1775,103 +1421,15 @@ void CResultSetCursor::writeXmlRow(IXmlWriter &writer)
     writer.outputEndNested(rowtag);
 }
 
-bool CResultSetCursor::isAfterLast() const
-{
-    return (curRowData.length() == 0) && (getCurRow() != BEFORE_FIRST_ROW);
-}
-
-
-bool CResultSetCursor::isBeforeFirst() const
-{
-    return getCurRow() == BEFORE_FIRST_ROW;
-}
-
-
-bool CResultSetCursor::isFirst() const
-{
-    return (getCurRow() == 0);
-}
-
-
-bool CResultSetCursor::isLast() const
-{
-    if (curRowData.length() == 0)
-        return false;
-
-    __int64 numRows = getNumRows();
-    if (numRows != UNKNOWN_NUM_ROWS)
-        return getCurRow() == numRows+1;
-
-    MemoryBuffer temp;
-    return !resultSet->getRow(temp, translateRow(getCurRow()+1));
-}
-
-
 bool CResultSetCursor::isValid() const
 {
     return (curRowData.length() != 0);
 }
 
 
-bool CResultSetCursor::isNull(int columnIndex) const
-{
-    //MORE: There needs to be some projected extra field to
-    return false;
-}
-
-bool CResultSetCursor::last()
-{
-    return absolute(getNumRows()-1);
-}
-
-
 bool CResultSetCursor::next()
 {
     return absolute(getCurRow()+1);
-}
-
-
-bool CResultSetCursor::previous()
-{
-    return absolute(getCurRow()-1);
-}
-
-
-bool CResultSetCursor::relative(__int64 rows)
-{
-    if (getCurRow() + rows < 0)
-    {
-        beforeFirst();
-        return false;
-    }
-    else
-        return absolute (getCurRow() + rows);
-}
-
-
-void CResultSetCursor::serialize(IDataVal & d)
-{
-    MemoryBuffer buffer;
-
-    resultSet->serialize(buffer);
-    serializeType(buffer);
-    serialize(buffer);
-
-    d.setLen(buffer.toByteArray(), buffer.length());
-}
-
-void CResultSetCursor::serializeType(MemoryBuffer & buffer)
-{
-    buffer.append((unsigned)-1);
-}
-
-void CResultSetCursor::serialize(MemoryBuffer & buffer)
-{
-    buffer.append(getCurRow());
-}
-
-void CResultSetCursor::setFetchSize(int rows)
-{
 }
 
 
@@ -1883,133 +1441,50 @@ bool CResultSetCursor::supportsRandomSeek() const
 
 //---------------------------------------------------------------------------
 
+IStringVal & IndirectResultSetCursor::getXmlRow(IStringVal & ret)
+{
+    return queryBase()->getXmlRow(ret);
+}
+
 bool IndirectResultSetCursor::absolute(__int64 row) 
 { 
     return queryBase()->absolute(row); 
-}
-void IndirectResultSetCursor::afterLast() 
-{ 
-    queryBase()->afterLast(); 
-}
-void IndirectResultSetCursor::beforeFirst() 
-{ 
-    queryBase()->beforeFirst(); 
-}
-bool IndirectResultSetCursor::fetch(__int64 fileoffset) 
-{
-    return queryBase()->fetch(fileoffset);
 }
 bool IndirectResultSetCursor::first()
 {
     return queryBase()->first();
 }
-bool IndirectResultSetCursor::getBoolean(int columnIndex)
-{
-    return queryBase()->getBoolean(columnIndex);
-}
-IDataVal & IndirectResultSetCursor::getBytes(IDataVal &d, int columnIndex)
-{
-    return queryBase()->getBytes(d, columnIndex);
-}
 IResultSetCursor * IndirectResultSetCursor::getChildren(int columnIndex) const
 {
     return queryBase()->getChildren(columnIndex);
-}
-xdouble IndirectResultSetCursor::getDouble(int columnIndex)
-{
-    return queryBase()->getDouble(columnIndex);
-}
-int IndirectResultSetCursor::getFetchSize() const
-{
-    return queryBase()->getFetchSize();
 }
 bool IndirectResultSetCursor::getIsAll(int columnIndex) const
 {
     return queryBase()->getIsAll(columnIndex);
 }
-__int64 IndirectResultSetCursor::getInt(int columnIndex)
-{
-    return queryBase()->getInt(columnIndex);
-}
 IDataVal & IndirectResultSetCursor::getRaw(IDataVal &d, int columnIndex)
 {
     return queryBase()->getRaw(d, columnIndex);
-}
-IDataVal & IndirectResultSetCursor::getRawRow(IDataVal &d)
-{
-    return queryBase()->getRawRow(d);
 }
 __int64 IndirectResultSetCursor::getNumRows() const
 {
     return queryBase()->getNumRows();
 }
-IStringVal & IndirectResultSetCursor::getString(IStringVal & ret, int columnIndex)
-{
-    return queryBase()->getString(ret, columnIndex);
-}
-bool IndirectResultSetCursor::isAfterLast() const
-{
-    return queryBase()->isAfterLast();
-}
-bool IndirectResultSetCursor::isBeforeFirst() const
-{
-    return queryBase()->isBeforeFirst();
-}
-bool IndirectResultSetCursor::isFirst() const
-{
-    return queryBase()->isFirst();
-}
-bool IndirectResultSetCursor::isLast() const
-{
-    return queryBase()->isLast();
-}
-bool IndirectResultSetCursor::isNull(int columnIndex) const
-{
-    return queryBase()->isNull(columnIndex);
-}
 bool IndirectResultSetCursor::isValid() const
 {
     return queryBase()->isValid();
-}
-bool IndirectResultSetCursor::last()
-{
-    return queryBase()->last();
 }
 bool IndirectResultSetCursor::next()
 {
     return queryBase()->next();
 }
-bool IndirectResultSetCursor::previous()
-{
-    return queryBase()->previous();
-}
 INewResultSet * IndirectResultSetCursor::queryResultSet()
 {
     return queryBase()->queryResultSet();
 }
-bool IndirectResultSetCursor::relative(__int64 rows)
-{
-    return queryBase()->relative(rows);
-}
-void IndirectResultSetCursor::serialize(IDataVal & d)
-{
-    queryBase()->serialize(d);
-}
 IStringVal & IndirectResultSetCursor::getDisplayText(IStringVal &ret, int columnIndex)
 {
     return queryBase()->getDisplayText(ret, columnIndex);
-}
-IStringVal & IndirectResultSetCursor::getXml(IStringVal & ret, int columnIndex)
-{
-    return queryBase()->getXml(ret, columnIndex);
-}
-IStringVal & IndirectResultSetCursor::getXmlRow(IStringVal &ret)
-{
-    return queryBase()->getXmlRow(ret);
-}
-IStringVal & IndirectResultSetCursor::getXmlItem(IStringVal &ret)
-{
-    return queryBase()->getXmlItem(ret);
 }
 void IndirectResultSetCursor::beginWriteXmlRows(IXmlWriter & writer)
 {
@@ -2040,31 +1515,9 @@ bool NotifyingResultSetCursor::absolute(__int64 row)
     notifyChanged();
     return ret;
 }
-void NotifyingResultSetCursor::afterLast()
-{
-    IndirectResultSetCursor::afterLast();
-    notifyChanged();
-}
-void NotifyingResultSetCursor::beforeFirst()
-{
-    IndirectResultSetCursor::beforeFirst();
-    notifyChanged();
-}
-bool NotifyingResultSetCursor::fetch(__int64 fileoffset)
-{
-    bool ret = IndirectResultSetCursor::fetch(fileoffset);
-    notifyChanged();
-    return ret;
-}
 bool NotifyingResultSetCursor::first()
 {
     bool ret = IndirectResultSetCursor::first();
-    notifyChanged();
-    return ret;
-}
-bool NotifyingResultSetCursor::last()
-{
-    bool ret = IndirectResultSetCursor::last();
     notifyChanged();
     return ret;
 }
@@ -2074,19 +1527,6 @@ bool NotifyingResultSetCursor::next()
     notifyChanged();
     return ret;
 }
-bool NotifyingResultSetCursor::previous()
-{
-    bool ret = IndirectResultSetCursor::previous();
-    notifyChanged();
-    return ret;
-}
-bool NotifyingResultSetCursor::relative(__int64 rows)
-{
-    bool ret = IndirectResultSetCursor::relative(rows);
-    notifyChanged();
-    return ret;
-}
-
 void NotifyingResultSetCursor::noteRelatedFileChanged()
 {
     IndirectResultSetCursor::noteRelatedFileChanged();
@@ -2144,231 +1584,6 @@ IExtendedResultSetCursor * DelayedFilteredResultSetCursor::queryBase()
 
     return cursor;
 }
-
-//---------------------------------------------------------------------------
-
-//was using function templates that didn't use their types in their arguments, but
-//VC++ fails to process them correctly.
-template <class KEY> int qsortCompare(const void * _left, const void * _right) { return 0; }
-typedef int (*qsortFunc)(const void *, const void *);
-
-
-struct StringKeyElement
-{
-    unsigned index;
-    StringAttr value;
-};
-
-int qsortCompare_StringKeyElement(const void * _left, const void * _right)
-{
-    const StringKeyElement * left = (const StringKeyElement *)_left;
-    const StringKeyElement * right = (const StringKeyElement *)_right;
-    int i = strcmp(left->value, right->value);
-    if (i != 0)
-        return i;
-    if (left->index < right->index) return -1;
-    assertex(left->index > right->index);
-    return +1;
-}
-qsortFunc qsortCompare(StringKeyElement *) { return qsortCompare_StringKeyElement; }
-
-
-void extractKey(StringKeyElement & element, CResultSetCursor * cursor, unsigned column)
-{
-    StringAttrAdaptor adaptor(element.value);
-    cursor->getString(adaptor, column);
-}
-
-struct IntegerKeyElement
-{
-    unsigned index;
-    __int64 value;
-};
-
-int qsortCompare_IntegerKeyElement(const void * _left, const void * _right)
-{
-    const IntegerKeyElement * left = (const IntegerKeyElement *)_left;
-    const IntegerKeyElement * right = (const IntegerKeyElement *)_right;
-    if (left->value < right->value) return -1;
-    if (left->value > right->value) return +1;
-    if (left->index < right->index) return -1;
-    assertex(left->index > right->index);
-    return +1;
-}
-qsortFunc qsortCompare(IntegerKeyElement *) { return qsortCompare_IntegerKeyElement; }
-
-void extractKey(IntegerKeyElement & element, CResultSetCursor * cursor, unsigned column)
-{
-    element.value = cursor->getInt(column);
-}
-
-struct UnsignedKeyElement
-{
-    unsigned index;
-    unsigned __int64 value;
-};
-
-int qsortCompare_UnsignedKeyElement(const void * _left, const void * _right)
-{
-    const UnsignedKeyElement * left = (const UnsignedKeyElement *)_left;
-    const UnsignedKeyElement * right = (const UnsignedKeyElement *)_right;
-    if (left->value < right->value) return -1;
-    if (left->value > right->value) return +1;
-    if (left->index < right->index) return -1;
-    assertex(left->index > right->index);
-    return +1;
-}
-qsortFunc qsortCompare(UnsignedKeyElement *) { return qsortCompare_UnsignedKeyElement; }
-
-
-void extractKey(UnsignedKeyElement & element, CResultSetCursor * cursor, unsigned column)
-{
-    element.value = (unsigned __int64)cursor->getInt(column);
-}
-
-
-struct RealKeyElement
-{
-    unsigned index;
-    double value;
-};
-
-int qsortCompare_RealKeyElement(const void * _left, const void * _right)
-{
-    const RealKeyElement * left = (const RealKeyElement *)_left;
-    const RealKeyElement * right = (const RealKeyElement *)_right;
-    if (left->value < right->value) return -1;
-    if (left->value > right->value) return +1;
-    if (left->index < right->index) return -1;
-    assertex(left->index > right->index);
-    return +1;
-}
-qsortFunc qsortCompare(RealKeyElement *) { return qsortCompare_RealKeyElement; }
-
-void extractKey(RealKeyElement & element, CResultSetCursor * cursor, unsigned column)
-{
-    element.value = cursor->getDouble(column);
-}
-
-
-template <class KEYELEMENT>
-void buildCursorIndex(unsigned & numElements, unsigned * & elements, CResultSetCursor * cursor, unsigned column, bool descend, KEYELEMENT *)
-{
-    __int64 max64 = cursor->getNumRows();
-    assertex(max64 <= MAX_SORT_ELEMENTS);
-
-    unsigned max = (unsigned)max64;
-    KEYELEMENT * keys = new KEYELEMENT[max];
-    for (unsigned idx=0; idx < max; idx++)
-    {
-        cursor->absolute(idx);
-        keys[idx].index = idx;
-        extractKey(keys[idx], cursor, column);
-    }
-
-    qsort(keys, max, sizeof(KEYELEMENT), qsortCompare((KEYELEMENT *)0));
-    numElements = max;
-    elements = (unsigned *)malloc(max * sizeof(unsigned));
-
-    if (descend)
-    {
-        for (unsigned idx=0; idx < max; idx++)
-            elements[max-idx-1] = keys[idx].index;
-    }
-    else
-    {
-        for (unsigned idx=0; idx < max; idx++)
-            elements[idx] = keys[idx].index;
-    }
-    delete [] keys;
-}
-
-CResultSetSortedCursor::CResultSetSortedCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet, unsigned _column, bool _desc) : CResultSetCursor(_meta, _resultSet)
-{
-    numEntries = 0;
-    elements = NULL;
-    lastRow = 0;
-    column = _column;
-    desc = _desc;
-    buildIndex();
-}
-
-CResultSetSortedCursor::CResultSetSortedCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet, unsigned _column, bool _desc, MemoryBuffer & buffer) : CResultSetCursor(_meta, _resultSet)
-{ 
-    numEntries = 0;
-    elements = NULL;
-    lastRow = 0;
-    column = _column;
-    desc = _desc;
-    buildIndex();
-
-    buffer.read(curRow);
-    buffer.read(lastRow);
-    absolute(lastRow);
-}
-
-
-CResultSetSortedCursor::~CResultSetSortedCursor()
-{
-    free(elements);
-}
-
-
-void CResultSetSortedCursor::buildIndex()
-{
-    Owned<CResultSetCursor> cursor = new CResultSetCursor(meta, resultSet);
-    switch (meta.getColumnDisplayType(column))
-    {
-    case TypeBoolean:
-    case TypeInteger:
-        buildCursorIndex<IntegerKeyElement>(numEntries, elements, cursor, column, desc, (IntegerKeyElement*)0);
-        break;
-    case TypeUnsignedInteger:
-        buildCursorIndex<UnsignedKeyElement>(numEntries, elements, cursor, column, desc, (UnsignedKeyElement*)0);
-        break;
-    case TypeReal:
-        buildCursorIndex<RealKeyElement>(numEntries, elements, cursor, column, desc, (RealKeyElement*)0);
-        break;
-    case TypeString:
-    case TypeData:
-    case TypeUnicode:       //MORE!
-        buildCursorIndex<StringKeyElement>(numEntries, elements, cursor, column, desc, (StringKeyElement*)0);
-        break;
-    default:
-        UNIMPLEMENTED;  // Should have been translated to one of the above by this point...
-    }
-}
-
-bool CResultSetSortedCursor::absolute(__int64 row)
-{
-    lastRow = row;
-    return CResultSetCursor::absolute(translateRow(row));
-}
-
-__int64 CResultSetSortedCursor::getCurRow() const
-{
-    return lastRow;
-}
-
-__int64 CResultSetSortedCursor::translateRow(__int64 row) const
-{
-    if ((row >= 0) && (row < numEntries))
-        return elements[row];
-    return row;
-}
-
-void CResultSetSortedCursor::serializeType(MemoryBuffer & buffer)
-{
-    buffer.append((unsigned)column);
-    buffer.append(desc);
-}
-
-void CResultSetSortedCursor::serialize(MemoryBuffer & buffer)
-{
-    CResultSetCursor::serialize(buffer);
-    buffer.append(lastRow);
-}
-
 
 //---------------------------------------------------------------------------
 
@@ -2557,19 +1772,6 @@ void CColumnFilter::addValue(unsigned sizeText, const char * text)
         next->Release();
 }
 
-void CColumnFilter::deserialize(MemoryBuffer & buffer)
-{
-    unsigned num;
-    buffer.read(num);
-    for (unsigned i= 0; i < num; i++)
-    {
-        MemoryAttrItem * next = new MemoryAttrItem;
-        ::deserialize(buffer, *next);
-        values.append(*next);
-    }
-}
-
-
 bool CColumnFilter::optimizeFilter(IFvDataSource * dataSource)
 {
     if (values.ordinality() == 0)
@@ -2657,14 +1859,6 @@ bool CColumnFilter::isValid(const byte * rowValue, const unsigned * offsets)
     return false;
 }
 
-void CColumnFilter::serialize(MemoryBuffer & buffer)
-{
-    buffer.append((unsigned)values.ordinality());
-    ForEachItemIn(i, values)
-        ::serialize(buffer, values.item(i));
-}
-
-
 //---------------------------------------------------------------------------
 
 CFilteredResultSet::CFilteredResultSet(IExtendedNewResultSet * _other, ColumnFilterArray & _filters) : CIndirectResultSet(_other)
@@ -2673,23 +1867,6 @@ CFilteredResultSet::CFilteredResultSet(IExtendedNewResultSet * _other, ColumnFil
     initExtra();
 }
 
-#if 0
-CFilteredResultSet::CFilteredResultSet(const CResultSetMetaData & _meta, CResultSet * _resultSet, MemoryBuffer & buffer) : CResultSetCursor(_meta, _resultSet, false)
-{ 
-    unsigned numFilters;
-    buffer.read(numFilters);
-    for (unsigned i=0; i< numFilters; i++)
-    {
-        CColumnFilter & next = * new CColumnFilter(meta.queryType(i));
-        next.deserialize(buffer);
-        filters.append(next);
-    }
-    initExtra();
-    buffer.read(curRow);
-    buffer.read(lastRow);
-    absolute(lastRow);
-}
-#endif
 
 CFilteredResultSet::~CFilteredResultSet()
 {
@@ -2775,15 +1952,6 @@ __int64 CFilteredResultSet::translateRow(__int64 row)
 }
 
 
-void CFilteredResultSet::serialize(MemoryBuffer & buffer)
-{
-    CIndirectResultSet::serialize(buffer);
-    buffer.append((unsigned)filters.ordinality());
-    ForEachItemIn(i, filters)
-        filters.item(i).serialize(buffer);
-}
-
-
 void CFilteredResultSet::initExtra()
 {
     readAll = false;
@@ -2827,15 +1995,6 @@ __int64 CFetchFilteredResultSet::getNumRows() const
 {
     return validOffsets.ordinality();
 }
-
-void CFetchFilteredResultSet::serialize(MemoryBuffer & buffer)
-{
-    CIndirectResultSet::serialize(buffer);
-    buffer.append((unsigned)validOffsets.ordinality());
-    ForEachItemIn(i, validOffsets)
-        buffer.append(validOffsets.item(i));
-}
-
 
 //---------------------------------------------------------------------------
 
@@ -3033,63 +2192,6 @@ IResultSetMetaData * CResultSetFactory::createResultSetMeta(const char * wuid, u
     return (wuResult) ? createResultSetMeta(wuResult) : NULL;
 }
 
-
-//---------------------------------------------------------------------------
-
-CRemoteResultSetFactory::CRemoteResultSetFactory(const char * remoteServer, const char * _username, const char * _password) : CResultSetFactoryBase(_username, _password)
-{
-    serverEP.set(remoteServer);
-}
-
-CRemoteResultSetFactory::CRemoteResultSetFactory(const char * remoteServer, ISecManager &secmgr, ISecUser &secuser) : CResultSetFactoryBase(secmgr, secuser)
-{
-    serverEP.set(remoteServer);
-}
-
-INewResultSet * CRemoteResultSetFactory::createNewResultSet(IConstWUResult * wuResult, const char * wuid)
-{
-    SCMStringBuffer name;
-    wuResult->getResultName(name);
-    Owned<IFvDataSource> ds = createRemoteDataSource(serverEP, username, password, wuid, wuResult->getResultSequence(), name.length() ? name.str() : NULL);
-    if (ds)
-        return new CResultSet(ds, false);
-    return NULL;
-}
-
-INewResultSet * CRemoteResultSetFactory::createNewFileResultSet(const char * logicalName, const char * cluster)
-{
-    Owned<IFvDataSource> ds = createRemoteFileDataSource(serverEP, username, password, logicalName);
-    if (ds)
-        return new CResultSet(ds, false);
-    return NULL;
-}
-
-INewResultSet* CRemoteResultSetFactory::createNewResultSet(const char * wuid, unsigned sequence, const char * name)
-{
-    Owned<IFvDataSource> ds = createRemoteDataSource(serverEP, username, password, wuid, sequence, name);
-    if (ds)
-        return new CResultSet(ds, false);
-    return NULL;
-}
-
-INewResultSet* CRemoteResultSetFactory::createNewFileResultSet(const char * logicalName)
-{
-    Owned<IFvDataSource> ds = createRemoteFileDataSource(serverEP, username, password, logicalName);
-    if (ds)
-        return new CResultSet(ds, false);
-    return NULL;
-}
-
-IResultSetMetaData * CRemoteResultSetFactory::createResultSetMeta(IConstWUResult * wuResult)
-{
-    UNIMPLEMENTED;
-}
-
-IResultSetMetaData * CRemoteResultSetFactory::createResultSetMeta(const char * wuid, unsigned sequence, const char * name)
-{
-    UNIMPLEMENTED;
-}
-
 //---------------------------------------------------------------------------
 
 INewResultSet* createNewResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid)
@@ -3138,6 +2240,20 @@ INewResultSet* createNewResultSetSeqName(IResultSetFactory & factory, IStringVal
     }
 }
 
+IConstWUResult * resolveResult(const char * wuid, unsigned sequence, const char * name)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid);
+    return getWorkUnitResult(wu, name, sequence);
+}
+
+IConstWUResult * secResolveResult(ISecManager &secmgr, ISecUser &secuser, const char * wuid, unsigned sequence, const char * name)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, &secmgr, &secuser);
+    return (wu) ? getWorkUnitResult(wu, name, sequence) : NULL;
+}
+
 //---------------------------------------------------------------------------
 
 //MORE: There should be an option to create a proxy-based IFileView so that
@@ -3155,11 +2271,6 @@ IResultSetFactory * getSecResultSetFactory(ISecManager *secmgr, ISecUser *secuse
     if (secmgr)
         return new CResultSetFactory(*secmgr, *secuser);
     return getResultSetFactory(username, password);
-}
-
-IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const char * username, const char * password)
-{
-    return new CRemoteResultSetFactory(remoteServer, username, password);
 }
 
 int findResultSetColumn(const INewResultSet * results, const char * columnName)
@@ -3326,27 +2437,22 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
     }
 
     Owned<IResultSetFactory> factory = getResultSetFactory(username, password);
+    Owned<IConstWUResultIterator> results = &cw->getResults();
+    ForEach(*results)
+    {
+        IConstWUResult &ds = results->query();
+        if (ds.getResultSequence()>=0 && (ds.getResultStatus() != ResultStatusUndefined))
+        {
+            SCMStringBuffer name;
+            ds.getResultName(name);
+            Owned<INewResultSet> nr = factory->createNewResultSet(&ds, cw->queryWuid());
+            const IProperties *xmlns = ds.queryResultXmlns();
+            writeResultXml(writer, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL, xmlns);
+        }
+    }
+
     switch (cw->getState())
     {
-        case WUStateCompleted:
-        case WUStateWait:
-        {
-            Owned<IConstWUResultIterator> results = &cw->getResults();
-            ForEach(*results)
-            {
-                IConstWUResult &ds = results->query();
-                if (ds.getResultSequence()>=0 && (ds.getResultStatus() != ResultStatusUndefined))
-                {
-                    SCMStringBuffer name;
-                    ds.getResultName(name);
-                    Owned<INewResultSet> nr = factory->createNewResultSet(&ds, cw->queryWuid());
-                    const IProperties *xmlns = ds.queryResultXmlns();
-                    writeResultXml(writer, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL, xmlns);
-                }
-            }
-        }
-        break;
-
         case WUStateAborted:
             writer.outputBeginNested("Exception", false);
             writer.outputCString("System", "Source");

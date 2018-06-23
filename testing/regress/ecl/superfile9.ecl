@@ -18,6 +18,9 @@
 import Std.System.Thorlib;
 import Std.File AS FileServices;
 import Std.Str;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
 // Super File regression test
 
 rec :=
@@ -29,10 +32,6 @@ END;
 ds1 := DATASET([{1,'A'}, {1,'B'}, {1,'C'}], rec);
 ds2 := DATASET([{1,'A'}, {1,'B'}, {1,'C'}], rec);
 
-clusterLFNPrefix := thorlib.getExpandLogicalName('regress::');
-
-string stripPrefix(string qlfn) := IF (Str.Find(qlfn, clusterLFNprefix, 1) = 1, Str.FindReplace(qlfn, clusterLFNPrefix, ''), qlfn);
-
 conditionalDelete(string lfn) := FUNCTION
         RETURN IF(FileServices.FileExists(lfn), FileServices.DeleteLogicalFile(lfn));
 END;
@@ -40,31 +39,31 @@ END;
 
 SEQUENTIAL(
   // Prepare
-  conditionalDelete ('regress::subfile12'),
-  conditionalDelete ('regress::subfile13'),
-  OUTPUT(ds1,,'regress::subfile10',overwrite),
-  OUTPUT(ds2,,'regress::subfile11',overwrite),
-  OUTPUT(FileServices.FileExists('regress::subfile10')), // true
-  OUTPUT(FileServices.FileExists('regress::subfile11')), // true
-  OUTPUT(FileServices.FileExists('regress::subfile12')), // false
-  OUTPUT(FileServices.FileExists('regress::subfile13')), // false
+  conditionalDelete (prefix + 'subfile12'),
+  conditionalDelete (prefix + 'subfile13'),
+  OUTPUT(ds1,,prefix + 'subfile10',overwrite),
+  OUTPUT(ds2,,prefix + 'subfile11',overwrite),
+  OUTPUT(FileServices.FileExists(prefix + 'subfile10')), // true
+  OUTPUT(FileServices.FileExists(prefix + 'subfile11')), // true
+  OUTPUT(FileServices.FileExists(prefix + 'subfile12')), // false
+  OUTPUT(FileServices.FileExists(prefix + 'subfile13')), // false
 
   // Rename Auto-commit
-  FileServices.RenameLogicalFile('regress::subfile10','regress::subfile12'),
-  OUTPUT(FileServices.FileExists('regress::subfile10')), // false
-  OUTPUT(FileServices.FileExists('regress::subfile12')), // true
+  FileServices.RenameLogicalFile(prefix + 'subfile10',prefix + 'subfile12'),
+  OUTPUT(FileServices.FileExists(prefix + 'subfile10')), // false
+  OUTPUT(FileServices.FileExists(prefix + 'subfile12')), // true
 
   // Rename + Rollback
   FileServices.StartSuperFileTransaction(),
-  FileServices.RenameLogicalFile('regress::subfile11','regress::subfile13'),
+  FileServices.RenameLogicalFile(prefix + 'subfile11',prefix + 'subfile13'),
   FileServices.FinishSuperFileTransaction(true),    // rollback
-  OUTPUT(FileServices.FileExists('regress::subfile11')), // true
-  OUTPUT(FileServices.FileExists('regress::subfile13')), // false
+  OUTPUT(FileServices.FileExists(prefix + 'subfile11')), // true
+  OUTPUT(FileServices.FileExists(prefix + 'subfile13')), // false
 
   // Rename + Commit
   FileServices.StartSuperFileTransaction(),
-  FileServices.RenameLogicalFile('regress::subfile11','regress::subfile13'),
+  FileServices.RenameLogicalFile(prefix + 'subfile11',prefix + 'subfile13'),
   FileServices.FinishSuperFileTransaction(),    // commit
-  OUTPUT(FileServices.FileExists('regress::subfile11')), // false
-  OUTPUT(FileServices.FileExists('regress::subfile13')), // true
+  OUTPUT(FileServices.FileExists(prefix + 'subfile11')), // false
+  OUTPUT(FileServices.FileExists(prefix + 'subfile13')), // true
 );

@@ -57,7 +57,10 @@
 
 #include "jhtree.ipp"
 #include "keybuild.hpp"
-#include "layouttrans.hpp"
+#include "bloom.hpp"
+#include "eclhelper_dyn.hpp"
+#include "rtlrecord.hpp"
+#include "rtldynfield.hpp"
 
 static std::atomic<CKeyStore *> keyStore(nullptr);
 static unsigned defaultKeyIndexLimit = 200;
@@ -85,12 +88,64 @@ MODULE_EXIT()
 
 //#define DUMP_NODES
 
-unsigned SegMonitorList::ordinality() const
+SegMonitorList::SegMonitorList(const RtlRecord &_recInfo) : recInfo(_recInfo)
 {
-    return segMonitors.length();
+    keySegCount = recInfo.getNumKeyedFields();
+    reset();
 }
 
-IKeySegmentMonitor *SegMonitorList::item(unsigned idx) const
+SegMonitorList::SegMonitorList(const SegMonitorList &from, const char *fixedVals, unsigned sortFieldOffset)
+: recInfo(from.recInfo), keySegCount(from.keySegCount)
+{
+    ForEachItemIn(idx, from.segMonitors)
+    {
+        IKeySegmentMonitor &seg = from.segMonitors.item(idx);
+        unsigned offset = seg.getOffset();
+        if (offset < sortFieldOffset)
+            segMonitors.append(*createSingleKeySegmentMonitor(false, seg.queryFieldIndex(), offset, seg.getSize(), fixedVals+offset));
+        else
+            segMonitors.append(OLINK(seg));
+    }
+    recalculateCache();
+    modified = false;
+}
+
+void SegMonitorList::describe(StringBuffer &out) const
+{
+    for (unsigned idx=0; idx < lastRealSeg(); idx++)
+    {
+        auto &filter = segMonitors.item(idx);
+        if (idx)
+            out.append(',');
+        out.appendf("%s=", recInfo.queryName(idx));
+        filter.describe(out, *recInfo.queryType(idx));
+    }
+}
+
+bool SegMonitorList::matchesBuffer(const void *buffer, unsigned lastSeg, unsigned &matchSeg) const
+{
+    if (segMonitors.length())
+    {
+        for (; matchSeg <= lastSeg; matchSeg++)
+        {
+            if (!segMonitors.item(matchSeg).matchesBuffer(buffer))
+                return false;
+        }
+    }
+    return true;
+}
+
+bool SegMonitorList::canMatch() const
+{
+    ForEachItemIn(idx, segMonitors)
+    {
+        if (segMonitors.item(idx).isEmpty())
+            return false;
+    }
+    return true;
+}
+
+IIndexFilter *SegMonitorList::item(unsigned idx) const
 {
     return &segMonitors.item(idx);
 }
@@ -107,9 +162,10 @@ size32_t SegMonitorList::getSize() const
         return 0;
 }
 
-void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname)
+void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname) const
 {
-    if (getSize() != keyedSize)
+    size32_t segSize = getSize();
+    if (segSize != keyedSize)
     {
         StringBuffer err;
         err.appendf("Key size mismatch on key %s - key size is %u, expected %u", keyname, keyedSize, getSize());
@@ -181,7 +237,7 @@ unsigned SegMonitorList::_lastRealSeg() const
         if (!seg)
             return 0;
         seg--;
-        if (!segMonitors.item(seg).isWild())
+        if (!segMonitors.item(seg).isWild()) // MORE - why not just remove them? Stepping/overrides?
             return seg;
     }
 }
@@ -212,44 +268,19 @@ unsigned SegMonitorList::lastFullSeg() const
     return ret;
 }
 
-void SegMonitorList::finish()
+void SegMonitorList::finish(unsigned keyedSize)
 {
     if (modified)
     {
-        unsigned len = segMonitors.length();
-        unsigned curOffset = 0;
-        unsigned curSize = 0;
-        if (len)
+        while (segMonitors.length() < keySegCount)
         {
-            IKeySegmentMonitor *current = &segMonitors.item(0);
-            curOffset = current->getOffset();
-            curSize = current->getSize();
-            for (unsigned seg = 1; seg < len; seg++)
-            {
-                IKeySegmentMonitor *next = &segMonitors.item(seg);
-                unsigned nextOffset = next->getOffset();
-                unsigned nextSize = next->getSize();
-                assertex(curOffset + curSize == nextOffset) ;
-                IKeySegmentMonitor *merged = NULL;
-                if (nextOffset != mergeBarrier)
-                    merged = current->merge(next);
-                if (merged)
-                {
-                    current = merged;
-                    segMonitors.replace(*current, seg-1);
-                    segMonitors.remove(seg);
-                    curSize += nextSize;
-                    seg--;
-                    len--;
-                }
-                else
-                {
-                    current = next;
-                    curOffset = nextOffset;
-                    curSize = nextSize;
-                }
-            }
+            unsigned idx = segMonitors.length();
+            size32_t offset = recInfo.getFixedOffset(idx);
+            size32_t size = recInfo.getFixedOffset(idx+1) - offset;
+            segMonitors.append(*createWildKeySegmentMonitor(idx, offset, size));
         }
+        size32_t segSize = getSize();
+        assertex(segSize == keyedSize);
         recalculateCache();
         modified = false;
     }
@@ -263,347 +294,87 @@ void SegMonitorList::recalculateCache()
 void SegMonitorList::reset()
 {
     segMonitors.kill();
-    modified = true; mergeBarrier = 0;
-}
-
-void SegMonitorList::swapWith(SegMonitorList &other)
-{
-    reset();
-    other.segMonitors.swapWith(segMonitors);
-}
-
-void SegMonitorList::deserialize(MemoryBuffer &mb)
-{
-    unsigned num;
-    mb.read(num);
-    while (num--)
-        append(deserializeKeySegmentMonitor(mb));
-}
-
-void SegMonitorList::serialize(MemoryBuffer &mb) const
-{
-    mb.append((unsigned) ordinality());
-    ForEachItemIn(idx, segMonitors)
-        segMonitors.item(idx).serialize(mb);
+    modified = true;
 }
 
 // interface IIndexReadContext
 void SegMonitorList::append(IKeySegmentMonitor *segment)
 {
     modified = true;
+    unsigned fieldIdx = segment->queryFieldIndex();
     unsigned offset = segment->getOffset();
     unsigned size = segment->getSize();
-    if (mergeBarrier)
+    while (segMonitors.length() < fieldIdx)
     {
-        // check if we need to split
-        if (offset < mergeBarrier && offset+size > mergeBarrier)
-        {
-            IKeySegmentMonitor *split = segment->split(mergeBarrier - offset);
-            assertex(split);
-            append(split);   // note - recursive call
-            append(segment);
-            return;
-        }
+        unsigned idx = segMonitors.length();
+        size32_t offset = recInfo.getFixedOffset(idx);
+        size32_t size = recInfo.getFixedOffset(idx+1) - offset;
+        segMonitors.append(*createWildKeySegmentMonitor(idx, offset, size));
     }
-    if (segMonitors.length())
-    {
-        unsigned lpos = segMonitors.length()-1;
-        IKeySegmentMonitor &last = segMonitors.item(lpos);
-        if (last.getOffset() + last.getSize() == offset)
-        {
-            segMonitors.append(*segment);
-        }
-        else
-        {
-            // we need to combine new segmonitor with existing segmonitors
-            assertex (offset + size <= last.getOffset() + last.getSize());   // no holes should ever be created...
-            if (!segment->isWild())  // X and wild is always X
-            {
-                // Find segmonitor that overlaps the new one, splitting if necessary
-                unsigned idx = 0;
-                while (segMonitors.isItem(idx))
-                {
-                    IKeySegmentMonitor &existing = segMonitors.item(idx);
-                    unsigned existingOffset = existing.getOffset();
-                    unsigned existingSize = existing.getSize();
-                    if (existingOffset <= offset && existingOffset+existingSize > offset)
-                    {
-                        // There is some overlap ...
-                        if (existingOffset < offset)
-                        {
-                            // split existing at start
-                            IKeySegmentMonitor *splitExisting = existing.split(offset-existingOffset);
-                            segMonitors.add(*splitExisting, idx);
-                            // now loop around to handle second half of existing
-                        }
-                        else if (size > existingSize)
-                        {
-                            // split new, merge first half into existing, and loop around to merge second half
-                            Owned<IKeySegmentMonitor> splitNew = segment->split(existingSize);
-                            IKeySegmentMonitor *combined = existing.combine(splitNew);
-                            segMonitors.replace(*combined, idx);
-                        }
-                        else if (size < existingSize)
-                        {
-                            // split existing, then merge new into first half
-                            Owned<IKeySegmentMonitor> split = existing.split(size); // leaves existing in the array as the tail
-                            IKeySegmentMonitor *combined = segment->combine(split);
-                            segMonitors.add(*combined, idx);
-                            break;
-                        }
-                        else // perfect overlap
-                        {
-                            IKeySegmentMonitor *combined = segment->combine(&existing);
-                            segMonitors.add(*combined, idx);
-                            break;
-                        }
-                    }
-                    idx++;
-                }
-            }
-            segment->Release();
-        }
-    }
-    else
-        segMonitors.append(*segment);
+    segMonitors.append(*segment);
 }
 
-bool SegMonitorList::matched(void *keyBuffer, unsigned &lastMatch) const
+void SegMonitorList::append(FFoption option, const IFieldFilter * filter)
 {
-    lastMatch = 0;
-    for (; lastMatch < segMonitors.length(); lastMatch++)
-    {
-        if (!segMonitors.item(lastMatch).matches(keyBuffer))
-            return false;
-    }
-    return true;
+    throwUnexpected();
 }
-
 
 ///
-
+static UnexpectedVirtualFieldCallback unexpectedFieldCallback;
 class jhtree_decl CKeyLevelManager : implements IKeyManager, public CInterface
 {
 protected:
-    IContextLogger *ctx;
-    SegMonitorList segs;
+    KeyStatsCollector stats;
+    Owned <IIndexFilterList> filter;
     IKeyCursor *keyCursor;
-    char *keyBuffer;
-    offset_t lookupFpos;
-    unsigned keySize;       // size of key record including payload
+    ConstPointerArray activeBlobs;
+    __uint64 partitionFieldMask = 0;
+    unsigned indexParts = 0;
     unsigned keyedSize;     // size of non-payload part of key
-    unsigned eclKeySize;    // size of output record according to ecl
-    unsigned numsegs;
-    bool matched;
-    bool eof;
-    bool started;
-    StringAttr keyName;
-    unsigned seeks;
-    unsigned scans;
-    unsigned skips;
-    unsigned nullSkips;
-    unsigned wildseeks;
+    bool started = false;
+    bool newFilters = false;
 
-    Owned<IRecordLayoutTranslator> layoutTrans;
-    bool transformSegs;
-    IIndexReadContext * activitySegs;
-    CMemoryBlock layoutTransBuff;
-    Owned<IRecordLayoutTranslator::SegmentMonitorContext> layoutTransSegCtx;
-    Owned<IRecordLayoutTranslator::RowTransformContext> layoutTransRowCtx;
-
-    inline void setLow(unsigned segNo) 
-    {
-        segs.setLow(segNo, keyBuffer);
-    }
-
-    inline unsigned setLowAfter(size32_t offset) 
-    {
-        return segs.setLowAfter(offset, keyBuffer);
-    }
-
-    inline bool incrementKey(unsigned segno) const
-    {
-        return segs.incrementKey(segno, keyBuffer);
-    }
-
-    inline void endRange(unsigned segno)
-    {
-        segs.endRange(segno, keyBuffer);
-    }
-
-    byte const * doRowLayoutTransform(offset_t & fpos)
-    {
-        layoutTrans->transformRow(layoutTransRowCtx, reinterpret_cast<byte const *>(keyBuffer), keySize, layoutTransBuff, fpos);
-        return layoutTransBuff.get();
-    }
-
-    bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen)
-    {
-        // Modify the current key contents buffer as follows
-        // Take bytes up to seekoffset from current buffer (i.e. leave them alone)
-        // Take up to seeklen bytes from seek comparing them as I go. If I see a lower one before I see a higher one, stop.
-        // If I didn't see any higher ones, return (at which point the skipto was a no-op
-        // If I saw higher ones, call setLowAfter for all remaining segmonitors
-        // If the current contents of buffer could not match, call incremementKey at the appropriate monitor so that it can
-        // Clear the matched flag
-        const byte *seek = (const byte *) _seek;
-        while (seeklen)
-        {
-            int c = *seek - (byte) (keyBuffer[seekOffset]);
-            if (c < 0)
-                return false;
-            else if (c>0)
-            {
-                memcpy(keyBuffer+seekOffset, seek, seeklen);
-                break;
-            }
-            seek++;
-            seekOffset++;
-            seeklen--;
-        }
-#ifdef _DEBUG
-        if (traceSmartStepping)
-        {
-            StringBuffer recstr;
-            unsigned i;
-            for (i = 0; i < keySize; i++)
-            {
-                unsigned char c = ((unsigned char *) keyBuffer)[i];
-                recstr.appendf("%c", isprint(c) ? c : '.');
-            }
-            recstr.append ("    ");
-            for (i = 0; i < keySize; i++)
-            {
-                recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
-            }
-            DBGLOG("SKIP: IN  skips=%02d nullskips=%02d seeks=%02d scans=%02d : %s", skips, nullSkips, seeks, scans, recstr.str());
-        }
-#endif
-        if (!seeklen) return false;
-
-        unsigned j = setLowAfter(seekOffset + seeklen); 
-        bool canmatch = true;
-        unsigned lastSeg = segs.lastRealSeg();
-        for (; j <= lastSeg; j++)
-        {
-            canmatch = segs.segMonitors.item(j).matches(keyBuffer);
-            if (!canmatch)
-            {
-                eof = !incrementKey(j);
-                break;
-            }
-        }
-        matched = false;
-        return true;
-    }
-
-    void noteSeeks(unsigned lseeks, unsigned lscans, unsigned lwildseeks)
-    {
-        seeks += lseeks;
-        scans += lscans;
-        wildseeks += lwildseeks;
-        if (ctx)
-        {
-            if (lseeks) ctx->noteStatistic(StNumIndexSeeks, lseeks);
-            if (lscans) ctx->noteStatistic(StNumIndexScans, lscans);
-            if (lwildseeks) ctx->noteStatistic(StNumIndexWildSeeks, lwildseeks);
-        }
-    }
-
-    void noteSkips(unsigned lskips, unsigned lnullSkips)
-    {
-        skips += lskips;
-        nullSkips += lnullSkips;
-        if (ctx)
-        {
-            if (lskips) ctx->noteStatistic(StNumIndexSkips, lskips);
-            if (lnullSkips) ctx->noteStatistic(StNumIndexNullSkips, lnullSkips);
-        }
-    }
-
-    void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg)
-    {
-        StringBuffer recstr;
-        unsigned i;
-        for (i = 0; i < keySize; i++)
-        {
-            unsigned char c = ((unsigned char *) keyBuffer)[i];
-            recstr.appendf("%c", isprint(c) ? c : '.');
-        }
-        recstr.append ("\n");
-        for (i = 0; i < keySize; i++)
-        {
-            recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
-        }
-        recstr.append ("\nusing segmonitors:\n");
-        for (i=0; i <= lastSeg; i++)
-        {
-            unsigned size = segs.segMonitors.item(i).getSize();
-            while (size--)
-                recstr.append( segs.segMonitors.item(i).isWild() ? '?' : '#');
-        }
-        if (ctx)
-            ctx->CTXLOG("%d seeks to lookup record \n%s\n in key %s", numSeeks, recstr.str(), keyName.get());
-        else
-            DBGLOG("%d seeks to lookup record \n%s\n in key %s", numSeeks, recstr.str(), keyName.get());
-    }
-
+    Owned<const IDynamicTransform> layoutTrans;
+    MemoryBuffer buf;  // used when translating
+    size32_t layoutSize = 0;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyLevelManager(IKeyIndex * _key, unsigned _eclKeySize, IContextLogger *_ctx)
+    CKeyLevelManager(const RtlRecord &_recInfo, IKeyIndex * _key, IContextLogger *_ctx, bool _newFilters) : stats(_ctx), newFilters(_newFilters)
     {
-        ctx = _ctx;
-        numsegs = 0;
-        keyBuffer = NULL;
+        if (newFilters)
+            filter.setown(new IndexRowFilter(_recInfo));
+        else
+            filter.setown(new SegMonitorList(_recInfo));
         keyCursor = NULL;
-        keySize = 0;
         keyedSize = 0;
-        eclKeySize = _eclKeySize;
-        started = false;
         setKey(_key);
-        seeks = 0;
-        scans = 0;
-        skips = 0;
-        nullSkips = 0;
-        wildseeks = 0;
-        transformSegs = false;
-        activitySegs = &segs;
     }
 
     ~CKeyLevelManager()
     {
-        free (keyBuffer);
         ::Release(keyCursor);
+        releaseBlobs();
     }
 
     virtual unsigned querySeeks() const
     {
-        return seeks;
+        return stats.seeks;
     }
 
     virtual unsigned queryScans() const
     {
-        return scans;
+        return stats.scans;
     }
 
     virtual unsigned querySkips() const
     {
-        return skips;
-    }
-
-    virtual unsigned queryNullSkips() const
-    {
-        return nullSkips;
+        return stats.skips;
     }
 
     virtual void resetCounts()
     {
-        scans = 0;
-        seeks = 0;
-        skips = 0;
-        nullSkips = 0;
-        wildseeks = 0;
+        stats.reset();
     }
 
     void setKey(IKeyIndexBase * _key)
@@ -614,37 +385,25 @@ public:
         {
             assertex(_key->numParts()==1);
             IKeyIndex *ki = _key->queryPart(0);
-            keyCursor = ki->getCursor(ctx);
-            keyName.set(ki->queryFileName());
-            if (!keyBuffer)
-            {
-                keySize = ki->keySize();
-                keyedSize = ki->keyedSize();
-                if (!keySize)
-                {
-                    StringBuffer err;
-                    err.appendf("Key appears corrupt - key file (%s) indicates record size is zero", keyName.get());
-                    IException *e = MakeStringExceptionDirect(1000, err.str());
-                    EXCLOG(e, err.str());
-                    throw e;
-                }
-                keyBuffer = (char *) malloc(keySize);
-
-            }
+            keyCursor = ki->getCursor(filter);
+            if (keyedSize)
+                assertex(keyedSize == ki->keyedSize());
             else
-            {
-                assertex(keyedSize==ki->keyedSize());
-                assertex(keySize==ki->keySize());
-            }
-            if (eclKeySize && (0 == (ki->getFlags() & HTREE_VARSIZE)) && (eclKeySize != keySize))
-            {
-                StringBuffer err;
-                err.appendf("Key size mismatch - key file (%s) indicates record size should be %d, but ECL declaration was %d", keyName.get(), keySize, eclKeySize);
-                IException *e = MakeStringExceptionDirect(1000, err.str());
-                EXCLOG(e, err.str());
-                throw e;
-            }
+                keyedSize = ki->keyedSize();
+            partitionFieldMask = ki->getPartitionFieldMask();
+            indexParts = ki->numPartitions();
         }
+    }
+
+    virtual unsigned getPartition() override
+    {
+        if (partitionFieldMask)
+        {
+            hash64_t hash = HASH64_INIT;
+            if (getBloomHash(partitionFieldMask, *filter, hash))
+                return (((unsigned) hash) % indexParts) + 1;  // NOTE - the Hash distribute function that distributes the index when building will truncate to 32-bits before taking modulus - so we must too!
+        }
+        return 0;
     }
 
     virtual void setChooseNLimit(unsigned __int64 _rowLimit) override
@@ -659,15 +418,10 @@ public:
             if (!started)
             {
                 started = true;
-                numsegs = segs.ordinality();
-                if (numsegs)
-                    segs.checkSize(keyedSize, keyName.get());
+                filter->checkSize(keyedSize, keyCursor->queryName());
             }
             if (!crappyHack)
             {
-                matched = false;
-                eof = false;
-                setLow(0);
                 keyCursor->reset();
             }
         }
@@ -675,324 +429,127 @@ public:
 
     virtual void releaseSegmentMonitors()
     {
-        segs.segMonitors.kill();    
+        filter->reset();
         started = false;
-        if(layoutTransSegCtx)
-            layoutTransSegCtx->reset();
     }
 
     virtual void append(IKeySegmentMonitor *segment) 
     { 
-        assertex(!started);
-        activitySegs->append(segment);
+        assertex(!newFilters && !started);
+        filter->append(segment);
     }
 
-    virtual unsigned ordinality() const 
+
+    virtual void append(FFoption option, const IFieldFilter * fieldFilter)
     {
-        return activitySegs->ordinality();
+        assertex(newFilters && !started);
+        filter->append(option, fieldFilter);
     }
 
-    virtual IKeySegmentMonitor *item(unsigned idx) const
+    inline const byte *queryKeyBuffer()
     {
-        return activitySegs->item(idx);
-    }
-
-    inline const byte *queryKeyBuffer(offset_t & fpos)
-    {
-        fpos = lookupFpos;
         if(layoutTrans)
-            return doRowLayoutTransform(fpos);
-        else
-            return reinterpret_cast<byte const *>(keyBuffer);
-    }
-
-    inline offset_t queryFpos()
-    {
-        return lookupFpos;
-    }
-
-    inline unsigned queryRecordSize() { return keySize; }
-
-    bool _lookup(bool exact, unsigned lastSeg)
-    {
-        bool ret = false;
-        unsigned lwildseeks = 0;
-        unsigned lseeks = 0;
-        unsigned lscans = 0;
-        while (!eof)
         {
-            bool ok;
-            if (matched)
-            {
-                ok = keyCursor->next(keyBuffer);
-                lscans++;
-            }
-            else
-            {
-                ok = keyCursor->gtEqual(keyBuffer, keyBuffer, true);
-                lseeks++;
-            }
-            if (ok)
-            {
-                lookupFpos = keyCursor->getFPos();
-                unsigned i = 0;
-                matched = true;
-                for (; i <= lastSeg; i++)
-                {
-                    matched = segs.segMonitors.item(i).matches(keyBuffer);
-                    if (!matched)
-                        break;
-                }
-                if (matched)
-                {
-                    ret = true;
-                    break;
-                }
-#ifdef  __linux__
-                if (linuxYield)
-                    sched_yield();
-#endif
-                eof = !incrementKey(i);
-                if (!exact)
-                {
-                    ret = true;
-                    break;
-                }
-                lwildseeks++;
-            }
-            else
-                eof = true;
+            buf.setLength(0);
+            MemoryBufferBuilder aBuilder(buf, 0);
+            layoutSize = layoutTrans->translate(aBuilder, unexpectedFieldCallback, reinterpret_cast<byte const *>(keyCursor->queryKeyBuffer()));
+            return reinterpret_cast<byte const *>(buf.toByteArray());
         }
-        if (logExcessiveSeeks && lwildseeks > 1000)
-            reportExcessiveSeeks(lwildseeks, lastSeg);
-        noteSeeks(lseeks, lscans, lwildseeks);
-        return ret;
+        else
+            return reinterpret_cast<byte const *>(keyCursor->queryKeyBuffer());
+    }
+
+    inline size32_t queryRowSize()
+    {
+        if (layoutTrans)
+            return layoutSize;
+        else
+            return keyCursor ? keyCursor->getSize() : 0;
+    }
+
+    inline unsigned __int64 querySequence()
+    {
+        return keyCursor ? keyCursor->getSequence() : 0;
     }
 
     virtual bool lookup(bool exact)
     {
         if (keyCursor)
-            return _lookup(exact, segs.lastRealSeg());
+            return keyCursor->lookup(exact, stats);
         else
             return false;
     }
 
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen)
     {
-        if (keyCursor)
-        {
-            if (skipTo(seek, seekOffset, seeklen))
-                noteSkips(1, 0);
-            else
-                noteSkips(0, 1);
-            bool ret = _lookup(true, segs.lastRealSeg());
-#ifdef _DEBUG
-            if (traceSmartStepping)
-            {
-                StringBuffer recstr;
-                unsigned i;
-                for (i = 0; i < keySize; i++)
-                {
-                    unsigned char c = ((unsigned char *) keyBuffer)[i];
-                    recstr.appendf("%c", isprint(c) ? c : '.');
-                }
-                recstr.append ("    ");
-                for (i = 0; i < keySize; i++)
-                {
-                    recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
-                }
-                DBGLOG("SKIP: Got skips=%02d nullSkips=%02d seeks=%02d scans=%02d : %s", skips, nullSkips, seeks, scans, recstr.str());
-            }
-#endif
-            return ret;
-        }
-        else
-            return false;
+        return keyCursor ? keyCursor->lookupSkip(seek, seekOffset, seeklen, stats) : false;
     }
 
     unsigned __int64 getCount()
     {
-        matched = false;
-        eof = false;
-        setLow(0);
-        keyCursor->reset();
-        unsigned __int64 result = 0;
-        unsigned lseeks = 0;
-        if (keyCursor)
-        {
-            unsigned lastRealSeg = segs.lastRealSeg();
-            for (;;)
-            {
-                if (_lookup(true, lastRealSeg))
-                {
-                    unsigned __int64 locount = keyCursor->getSequence();
-                    endRange(lastRealSeg);
-                    keyCursor->ltEqual(keyBuffer, NULL, true);
-                    lseeks++;
-                    result += keyCursor->getSequence()-locount+1;
-                    if (!incrementKey(lastRealSeg))
-                        break;
-                    matched = false;
-                }
-                else
-                    break;
-            }
-        }
-        noteSeeks(lseeks, 0, 0);
-        return result;
+        assertex(keyCursor);
+        return keyCursor->getCount(stats);
     }
 
     unsigned __int64 getCurrentRangeCount(unsigned groupSegCount)
     {
-        unsigned __int64 result = 0;
-        if (keyCursor)
-        {
-            unsigned __int64 locount = keyCursor->getSequence();
-            endRange(groupSegCount);
-            keyCursor->ltEqual(keyBuffer, NULL, true);
-            result = keyCursor->getSequence()-locount+1;
-            noteSeeks(1, 0, 0);
-        }
-        return result;
+        assertex(keyCursor);
+        return keyCursor->getCurrentRangeCount(groupSegCount, stats);
     }
 
     bool nextRange(unsigned groupSegCount)
     {
-        if (!incrementKey(groupSegCount-1))
-            return false;
-        matched = false;
-        return true;
+        assertex(keyCursor);
+        return keyCursor->nextRange(groupSegCount);
     }
 
     unsigned __int64 checkCount(unsigned __int64 max)
     {
-        matched = false;
-        eof = false;
-        setLow(0);
-        keyCursor->reset();
-        unsigned __int64 result = 0;
-        unsigned lseeks = 0;
-        if (keyCursor)
-        {
-            unsigned lastFullSeg = segs.lastFullSeg();
-            if (lastFullSeg == (unsigned) -1)
-            {
-                noteSeeks(1, 0, 0);
-                if (keyCursor->last(NULL))
-                    return keyCursor->getSequence()+1;
-                else
-                    return 0;
-            }
-            for (;;)
-            {
-                if (_lookup(true, lastFullSeg))
-                {
-                    unsigned __int64 locount = keyCursor->getSequence();
-                    endRange(lastFullSeg);
-                    keyCursor->ltEqual(keyBuffer, NULL, true);
-                    lseeks++;
-                    result += keyCursor->getSequence()-locount+1;
-                    if (max && (result > max))
-                        break;
-                    if (!incrementKey(lastFullSeg))
-                        break;
-                    matched = false;
-                }
-                else
-                    break;
-            }
-        }
-        noteSeeks(lseeks, 0, 0);
-        return result;
+        assertex(keyCursor);
+        return keyCursor->checkCount(max, stats);
     }
 
     virtual void serializeCursorPos(MemoryBuffer &mb)
     {
-        mb.append(eof);
-        if (!eof)
-        {
-            keyCursor->serializeCursorPos(mb);
-            mb.append(matched);
-        }
+        keyCursor->serializeCursorPos(mb);
     }
 
     virtual void deserializeCursorPos(MemoryBuffer &mb)
     {
-        mb.read(eof);
-        if (!eof)
-        {
-            assertex(keyBuffer);
-            keyCursor->deserializeCursorPos(mb, keyBuffer);
-            mb.read(matched);
-        }
+        keyCursor->deserializeCursorPos(mb, stats);
     }
 
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize)
     {
+        const byte *ret = keyCursor->loadBlob(blobid, blobsize);
+        activeBlobs.append(ret);
         return keyCursor->loadBlob(blobid, blobsize);
     }
 
     virtual void releaseBlobs()
     {
-        if (keyCursor)
-            keyCursor->releaseBlobs();
+        ForEachItemIn(idx, activeBlobs)
+        {
+            free((void *) activeBlobs.item(idx));
+        }
+        activeBlobs.kill();
     }
 
-    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans)
+    virtual void setLayoutTranslator(const IDynamicTransform * trans) override
     {
         layoutTrans.set(trans);
-        if(layoutTrans && layoutTrans->queryKeysTransformed())
-        {
-            transformSegs = true;
-            layoutTransSegCtx.setown(layoutTrans->getSegmentMonitorContext());
-            activitySegs = layoutTransSegCtx;
-        }
-        else
-        {
-            transformSegs = false;
-            layoutTransSegCtx.clear();
-            activitySegs = &segs;
-        }
-        if(layoutTrans)
-        {
-            layoutTransRowCtx.setown(layoutTrans->getRowTransformContext());
-        }
-        else
-        {
-            layoutTransRowCtx.clear();
-        }
-    }
-
-    virtual void setMergeBarrier(unsigned offset)
-    {
-        activitySegs->setMergeBarrier(offset); 
-    }
-
-    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override
-    {
-        segs.swapWith(segmentMonitors);
-    }
-
-    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) override
-    {
-        segs.deserialize(mb);
     }
 
     virtual void finishSegmentMonitors()
     {
-        if(transformSegs)
-        {
-            layoutTrans->createDiskSegmentMonitors(*layoutTransSegCtx, segs);
-            if(!layoutTrans->querySuccess())
-            {
-                StringBuffer err;
-                err.append("Could not translate index read filters during layout translation of index ").append(keyName.get()).append(": ");
-                layoutTrans->queryFailure().getDetail(err);
-                throw MakeStringExceptionDirect(0, err.str());
-            }
-        }
-        segs.finish();
+        filter->finish(keyedSize);
     }
+
+    virtual void describeFilter(StringBuffer &out) const override
+    {
+        filter->describe(out);
+    }
+
 };
 
 
@@ -1432,6 +989,7 @@ void CKeyIndex::init(KeyHdr &hdr, bool isTLK, bool allowPreload)
         }
     }
     rootNode = nodeCache->getNode(this, iD, rootPos, NULL, isTLK);
+    loadBloomFilters();
 }
 
 CKeyIndex::~CKeyIndex()
@@ -1510,10 +1068,12 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
             ret.setown(new CJHTreeNode());
             break;
         case 1:
-        	if (keyHdr->isVariable())
-        		ret.setown(new CJHVarTreeNode());
-        	else
-        		ret.setown(new CJHTreeNode());
+            if (keyHdr->isVariable())
+                ret.setown(new CJHVarTreeNode());
+            else if (keyHdr->isRowCompressed())
+                ret.setown(new CJHRowCompressedNode());
+            else
+                ret.setown(new CJHTreeNode());
             break;
         case 2:
             ret.setown(new CJHTreeBlobNode());
@@ -1521,12 +1081,15 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
         case 3:
             ret.setown(new CJHTreeMetadataNode());
             break;
+        case 4:
+            ret.setown(new CJHTreeBloomTableNode());
+            break;
         default:
             throwUnexpected();
         }
         {
             MTIME_SECTION(queryActiveTimer(), "JHTREE load node");
-            ret->load(keyHdr, nodeData, pos, true);
+            ret->load(keyHdr, nodeData, pos, needsCopy);
         }
         return ret.getClear();
     }
@@ -1554,9 +1117,19 @@ bool CKeyIndex::isFullySorted()
     return (keyHdr->getKeyType() & HTREE_FULLSORT_KEY) != 0;
 }
 
-IKeyCursor *CKeyIndex::getCursor(IContextLogger *ctx)
+__uint64 CKeyIndex::getPartitionFieldMask()
 {
-    return new CKeyCursor(*this, ctx);      // MORE - pool them?
+    return keyHdr->getPartitionFieldMask();
+}
+unsigned CKeyIndex::numPartitions()
+{
+    return keyHdr->numPartitions();
+}
+
+
+IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter)
+{
+    return new CKeyCursor(*this, filter);
 }
 
 CJHTreeNode *CKeyIndex::getNode(offset_t offset, IContextLogger *ctx) 
@@ -1597,9 +1170,20 @@ void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
     ::dumpNode(out, node, keySize(), count, isRaw);
 }
 
+bool CKeyIndex::hasSpecialFileposition() const
+{
+    return keyHdr->hasSpecialFileposition();
+}
+
+bool CKeyIndex::needsRowBuffer() const
+{
+    return keyHdr->hasSpecialFileposition() || keyHdr->isRowCompressed();
+}
+
 size32_t CKeyIndex::keySize()
 {
-    return keyHdr->getMaxKeyLength();
+    size32_t fileposSize = keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0;
+    return keyHdr->getMaxKeyLength() + fileposSize;
 }
 
 size32_t CKeyIndex::keyedSize()
@@ -1654,6 +1238,50 @@ offset_t CKeyIndex::queryMetadataHead()
     return ret;
 }
 
+void CKeyIndex::loadBloomFilters()
+{
+    offset_t bloomAddr = keyHdr->getHdrStruct()->bloomHead;
+    if (!bloomAddr || bloomAddr == static_cast<offset_t>(-1))
+        return; // indexes created before introduction of bloomfilter would have FFFF... in this space
+
+    while (bloomAddr)
+    {
+        Owned<CJHTreeNode> node = loadNode(bloomAddr);
+        assertex(node->isBloom());
+        CJHTreeBloomTableNode &bloomNode = *static_cast<CJHTreeBloomTableNode *>(node.get());
+        bloomAddr = bloomNode.get8();
+        unsigned numHashes = bloomNode.get4();
+        __uint64 fields =  bloomNode.get8();
+        unsigned bloomTableSize = bloomNode.get4();
+        MemoryBuffer bloomTable;
+        bloomTable.ensureCapacity(bloomTableSize);
+        for (;;)
+        {
+            static_cast<CJHTreeBloomTableNode *>(node.get())->get(bloomTable);
+            offset_t next = node->getRightSib();
+            if (!next)
+                break;
+            node.setown(loadNode(next));
+            assertex(node->isBloom());
+        }
+        assertex(bloomTable.length()==bloomTableSize);
+        //DBGLOG("Creating bloomfilter(%d, %d) for fields %" I64F "x",numHashes, bloomTableSize, fields);
+        bloomFilters.append(*new IndexBloomFilter(numHashes, bloomTableSize, (byte *) bloomTable.detach(), fields));
+    }
+    bloomFilters.sort(IndexBloomFilter::compare);
+}
+
+bool CKeyIndex::bloomFilterReject(const IIndexFilterList &segs) const
+{
+    ForEachItemIn(idx, bloomFilters)
+    {
+        IndexBloomFilter &filter = bloomFilters.item(idx);
+        if (filter.reject(segs))
+            return true;
+    }
+    return false;
+}
+
 IPropertyTree * CKeyIndex::getMetadata()
 {
     offset_t nodepos = queryMetadataHead();
@@ -1682,58 +1310,115 @@ IPropertyTree * CKeyIndex::getMetadata()
     return ret;
 }
 
-CKeyCursor::CKeyCursor(CKeyIndex &_key, IContextLogger *_ctx)
-    : key(_key), ctx(_ctx)
+CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
 {
-    key.Link();
-    nodeKey = 0;
+    keySeeks++;
+    stats.seeks++;
+    CJHTreeNode * n = 0;
+    CJHTreeNode * p = LINK(rootNode);
+    while (p != 0)
+    {
+        n = p;
+        p = getNode(n->prevNodeFpos(), stats.ctx);
+        if (p != 0)
+            n->Release();
+    }
+    return n;
 }
+
+CJHTreeNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
+{
+    keySeeks++;
+    stats.seeks++;
+    CJHTreeNode * n = 0;
+    CJHTreeNode * p = LINK(rootNode);
+
+    while (p != 0)
+    {
+        n = p;
+        p = getNode(n->nextNodeFpos(), stats.ctx);
+        if (p != 0)
+            n->Release();
+    }
+    return n;
+}
+
+
+void KeyStatsCollector::noteSeeks(unsigned lseeks, unsigned lscans, unsigned lwildseeks)
+{
+    seeks += lseeks;
+    scans += lscans;
+    wildseeks += lwildseeks;
+    if (ctx)
+    {
+        if (lseeks) ctx->noteStatistic(StNumIndexSeeks, lseeks);
+        if (lscans) ctx->noteStatistic(StNumIndexScans, lscans);
+        if (lwildseeks) ctx->noteStatistic(StNumIndexWildSeeks, lwildseeks);
+    }
+}
+
+void KeyStatsCollector::noteSkips(unsigned lskips, unsigned lnullSkips)
+{
+    skips += lskips;
+    if (ctx)
+    {
+        if (lskips) ctx->noteStatistic(StNumIndexSkips, lskips);
+        if (lnullSkips) ctx->noteStatistic(StNumIndexNullSkips, lnullSkips);
+    }
+}
+
+void KeyStatsCollector::reset()
+{
+    seeks = 0;
+    scans = 0;
+    wildseeks = 0;
+    skips = 0;
+    nullskips = 0;
+}
+
+CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter)
+    : key(OLINK(_key)), filter(_filter)
+{
+    nodeKey = 0;
+    keyBuffer = (char *) malloc(key.keySize());  // MORE - keyedSize would do eventually
+}
+
+CKeyCursor::CKeyCursor(const CKeyCursor &from)
+: key(OLINK(from.key)), filter(from.filter)
+{
+    nodeKey = from.nodeKey;
+    node.set(from.node);
+    unsigned keySize = key.keySize();
+    keyBuffer = (char *) malloc(keySize);  // MORE - keyedSize would do eventually. And we may not even need all of that in the derived case
+    memcpy(keyBuffer, from.keyBuffer, keySize);
+    eof = from.eof;
+    matched = from.matched;
+}
+
 
 CKeyCursor::~CKeyCursor()
 {
     key.Release();
-    releaseBlobs();
+    free(keyBuffer);
 }
 
 void CKeyCursor::reset()
 {
     node.clear();
+    matched = false;
+    eof = key.bloomFilterReject(*filter) || !filter->canMatch();
+    if (!eof)
+        setLow(0);
 }
 
-CJHTreeNode *CKeyCursor::locateFirstNode()
-{
-    CJHTreeNode * n = 0;
-    CJHTreeNode * p = LINK(key.rootNode);
-    while (p != 0)
-    {
-        n = p;
-        p = key.getNode(n->prevNodeFpos(), ctx);
-        if (p != 0)
-            n->Release();
-    }
-    return n;
-}
-
-CJHTreeNode *CKeyCursor::locateLastNode()
-{
-    CJHTreeNode * n = 0;
-    CJHTreeNode * p = LINK(key.rootNode);
-
-    while (p != 0)
-    {
-        n = p;
-        p = key.getNode(n->nextNodeFpos(), ctx);
-        if (p != 0)
-            n->Release();
-    }
-
-    return n;
-}
-
-bool CKeyCursor::next(char *dst)
+bool CKeyCursor::next(char *dst, KeyStatsCollector &stats)
 {
     if (!node)
-        return first(dst);
+    {
+        node.setown(key.locateFirstNode(stats));
+        nodeKey = 0;
+        return node && node->getValueAt(nodeKey, dst);
+    }
     else
     {
         key.keyScans++;
@@ -1743,7 +1428,7 @@ bool CKeyCursor::next(char *dst)
             node.clear();
             if (rsib != 0)
             {
-                node.setown(key.getNode(rsib, ctx));
+                node.setown(key.getNode(rsib, stats.ctx));
                 if (node != NULL)
                 {
                     nodeKey = 0;
@@ -1757,33 +1442,21 @@ bool CKeyCursor::next(char *dst)
     }
 }
 
-bool CKeyCursor::prev(char *dst)
+const char *CKeyCursor::queryName() const
 {
-    if (!node)
-        return last(dst); // Note - this used to say First - surely a typo
-    else
-    {
-        key.keyScans++;
-        if (!nodeKey)
-        {
-            offset_t lsib = node->getLeftSib();
-            node.clear();
-            
-            if (lsib != 0)
-            {
-                node.setown(key.getNode(lsib, ctx));
-                if (node)
-                {
-                    nodeKey = node->getNumKeys()-1;
-                    return node->getValueAt(nodeKey, dst );
-                }
-            }
-            return false;
-        }
-        else
-            return node->getValueAt(--nodeKey, dst);
-    }
+    return key.queryFileName();
 }
+
+size32_t CKeyCursor::getKeyedSize() const
+{
+    return key.keyedSize();
+}
+
+const byte *CKeyCursor::queryKeyBuffer() const
+{
+    return (const byte *) keyBuffer;
+}
+
 
 size32_t CKeyCursor::getSize()
 {
@@ -1803,27 +1476,18 @@ unsigned __int64 CKeyCursor::getSequence()
     return node->getSequence(nodeKey);
 }
 
-bool CKeyCursor::first(char *dst)
+bool CKeyCursor::last(char *dst, KeyStatsCollector &stats)
 {
-    key.keySeeks++;
-    node.setown(locateFirstNode());
-    nodeKey = 0;
-    return node->getValueAt(nodeKey, dst);
-}
-
-bool CKeyCursor::last(char *dst)
-{
-    key.keySeeks++;
-    node.setown(locateLastNode());
+    node.setown(key.locateLastNode(stats));
     nodeKey = node->getNumKeys()-1;
     return node->getValueAt( nodeKey, dst );
 }
 
-bool CKeyCursor::gtEqual(const char *src, char *dst, bool seekForward)
+bool CKeyCursor::gtEqual(const char *src, char *dst, KeyStatsCollector &stats)
 {
     key.keySeeks++;
     unsigned lwm = 0;
-    if (seekForward && node)
+    if (node)
     {
         // When seeking forward, there are two cases worth optimizing:
         // 1. the next record is actually the one we want
@@ -1868,7 +1532,7 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, bool seekForward)
             else
             {
                 offset_t nextPos = node->nextNodeFpos();  // This can happen at eof because of key peculiarity where level above reports ffff as last
-                node.setown(key.getNode(nextPos, ctx));
+                node.setown(key.getNode(nextPos, stats.ctx));
                 nodeKey = 0;
             }
             if (node)
@@ -1884,7 +1548,7 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, bool seekForward)
             if (a<node->getNumKeys())
             {
                 offset_t npos = node->getFPosAt(a);
-                node.setown(key.getNode(npos, ctx));
+                node.setown(key.getNode(npos, stats.ctx));
             }
             else
                 return false;
@@ -1892,11 +1556,12 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, bool seekForward)
     }
 }
 
-bool CKeyCursor::ltEqual(const char *src, char *dst, bool seekForward)
+bool CKeyCursor::ltEqual(const char *src, KeyStatsCollector &stats)
 {
     key.keySeeks++;
+    matched = false;
     unsigned lwm = 0;
-    if (seekForward && node)
+    if (node)
     {
         // When seeking forward, there are two cases worth optimizing:
         // 1. next record is > src, so we return current
@@ -1907,7 +1572,7 @@ bool CKeyCursor::ltEqual(const char *src, char *dst, bool seekForward)
             int rc = node->compareValueAt(src, ++nodeKey);
             if (rc < 0)
             {
-                node->getValueAt(--nodeKey, dst);
+                --nodeKey;
                 return true; 
             }
             if (nodeKey < numKeys-1)
@@ -1942,13 +1607,12 @@ bool CKeyCursor::ltEqual(const char *src, char *dst, bool seekForward)
             else
             {
                 offset_t prevPos = node->prevNodeFpos();
-                node.setown(key.getNode(prevPos, ctx));
+                node.setown(key.getNode(prevPos, stats.ctx));
                 if (node)
                     nodeKey = node->getNumKeys()-1;
             }
             if (node)
             {
-                node->getValueAt(nodeKey, dst);
                 return true; 
             }
             else
@@ -1960,7 +1624,7 @@ bool CKeyCursor::ltEqual(const char *src, char *dst, bool seekForward)
             if (a==node->getNumKeys())
                 a--;   // value being looked for is off the end of the index.
             offset_t npos = node->getFPosAt(a);
-            node.setown(key.getNode(npos, ctx));
+            node.setown(key.getNode(npos, stats.ctx));
             if (!node)
                 throw MakeStringException(0, "Invalid key %s: child node pointer should never be NULL", key.name.get());
         }
@@ -1969,63 +1633,509 @@ bool CKeyCursor::ltEqual(const char *src, char *dst, bool seekForward)
 
 void CKeyCursor::serializeCursorPos(MemoryBuffer &mb)
 {
-    if (node)
+    mb.append(eof);
+    if (!eof)
     {
-        mb.append(node->getFpos());
-        mb.append(nodeKey);
-    }
-    else
-    {
-        offset_t zero = 0;
-        unsigned zero2 = 0;
-        mb.append(zero);
-        mb.append(zero2);
+        mb.append(matched);
+        if (node)
+        {
+            mb.append(node->getFpos());
+            mb.append(nodeKey);
+        }
+        else
+        {
+            offset_t zero = 0;
+            unsigned zero2 = 0;
+            mb.append(zero);
+            mb.append(zero2);
+        }
     }
 }
 
-void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, char *keyBuffer)
+void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats)
 {
-    offset_t nodeAddress;
-    mb.read(nodeAddress);
-    mb.read(nodeKey);
-    if (nodeAddress)
+    mb.read(eof);
+    node.clear();
+    if (!eof)
     {
-        node.setown(key.getNode(nodeAddress, ctx));
-        if (node && keyBuffer)
-            node->getValueAt(nodeKey, keyBuffer);
+        mb.read(matched);
+        offset_t nodeAddress;
+        mb.read(nodeAddress);
+        mb.read(nodeKey);
+        if (nodeAddress)
+        {
+            node.setown(key.getNode(nodeAddress, stats.ctx));
+            if (node && keyBuffer)
+                node->getValueAt(nodeKey, keyBuffer);
+        }
     }
-    else
-        node.clear();
 }
 
 const byte *CKeyCursor::loadBlob(unsigned __int64 blobid, size32_t &blobsize)
 {
-    const byte *ret = key.loadBlob(blobid, blobsize);
-    activeBlobs.append(ret);
+    return key.loadBlob(blobid, blobsize);
+}
+
+bool CKeyCursor::lookup(bool exact, KeyStatsCollector &stats)
+{
+    return _lookup(exact, filter->lastRealSeg(), stats);
+}
+
+bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats)
+{
+    bool ret = false;
+    unsigned lwildseeks = 0;
+    unsigned lseeks = 0;
+    unsigned lscans = 0;
+    while (!eof)
+    {
+        if (matched)
+        {
+            if (!next(keyBuffer, stats))
+                eof = true;
+            lscans++;
+        }
+        else
+        {
+            if (!gtEqual(keyBuffer, keyBuffer, stats))
+                eof = true;
+            lseeks++;
+        }
+        if (!eof)
+        {
+            unsigned i = 0;
+            matched = filter->matchesBuffer(keyBuffer, lastSeg, i);
+            if (matched)
+            {
+                ret = true;
+                break;
+            }
+#ifdef  __linux__
+            if (linuxYield)
+                sched_yield();
+#endif
+            eof = !filter->incrementKey(i, keyBuffer);
+            if (!exact)
+            {
+                ret = true;
+                break;
+            }
+            lwildseeks++;
+        }
+        else
+            eof = true;
+    }
+    if (logExcessiveSeeks && lwildseeks > 1000)
+        reportExcessiveSeeks(lwildseeks, lastSeg, stats);
+    stats.noteSeeks(lseeks, lscans, lwildseeks);
     return ret;
 }
 
-void CKeyCursor::releaseBlobs()
+bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, KeyStatsCollector &stats)
 {
-    ForEachItemIn(idx, activeBlobs)
+    if (skipTo(seek, seekOffset, seeklen))
+        stats.noteSkips(1, 0);
+    else
+        stats.noteSkips(0, 1);
+    bool ret = lookup(true, stats);
+#ifdef _DEBUG
+    if (traceSmartStepping)
     {
-        free((void *) activeBlobs.item(idx));
+        StringBuffer recstr;
+        unsigned i;
+        for (i = 0; i < key.keySize(); i++)
+        {
+            unsigned char c = ((unsigned char *) keyBuffer)[i];
+            recstr.appendf("%c", isprint(c) ? c : '.');
+        }
+        recstr.append ("    ");
+        for (i = 0; i < key.keySize(); i++)
+        {
+            recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
+        }
+        DBGLOG("SKIP: Got skips=%02d seeks=%02d scans=%02d : %s", stats.skips, stats.seeks, stats.scans, recstr.str());
     }
-    activeBlobs.kill();
+#endif
+    return ret;
 }
+
+
+unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
+{
+    reset();
+    unsigned __int64 result = 0;
+    unsigned lseeks = 0;
+    unsigned lastRealSeg = filter->lastRealSeg();
+    for (;;)
+    {
+        if (_lookup(true, lastRealSeg, stats))
+        {
+            unsigned __int64 locount = getSequence();
+            endRange(lastRealSeg);
+            ltEqual(keyBuffer, stats);
+            lseeks++;
+            result += getSequence()-locount+1;
+            if (!incrementKey(lastRealSeg))
+                break;
+        }
+        else
+            break;
+    }
+    stats.noteSeeks(lseeks, 0, 0);
+    return result;
+}
+
+unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector &stats)
+{
+    reset();
+    unsigned __int64 result = 0;
+    unsigned lseeks = 0;
+    unsigned lastFullSeg = filter->lastFullSeg();
+    if (lastFullSeg == (unsigned) -1)
+    {
+        stats.noteSeeks(1, 0, 0);
+        if (last(nullptr, stats))
+            return getSequence()+1;
+        else
+            return 0;
+    }
+    for (;;)
+    {
+        if (_lookup(true, lastFullSeg, stats))
+        {
+            unsigned __int64 locount = getSequence();
+            endRange(lastFullSeg);
+            ltEqual(keyBuffer, stats);
+            lseeks++;
+            result += getSequence()-locount+1;
+            if (max && (result > max))
+                break;
+            if (!incrementKey(lastFullSeg))
+                break;
+        }
+        else
+            break;
+    }
+    stats.noteSeeks(lseeks, 0, 0);
+    return result;
+}
+
+unsigned __int64 CKeyCursor::getCurrentRangeCount(unsigned groupSegCount, KeyStatsCollector &stats)
+{
+    unsigned __int64 locount = getSequence();
+    endRange(groupSegCount);
+    ltEqual(keyBuffer, stats);
+    stats.noteSeeks(1, 0, 0);
+    return getSequence()-locount+1;
+}
+
+bool CKeyCursor::nextRange(unsigned groupSegCount)
+{
+    matched = false;
+    if (!incrementKey(groupSegCount-1))
+        return false;
+    return true;
+}
+
+void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeyStatsCollector &stats)
+{
+    StringBuffer recstr;
+    unsigned i;
+    for (i = 0; i < key.keySize(); i++)
+    {
+        unsigned char c = ((unsigned char *) keyBuffer)[i];
+        recstr.appendf("%c", isprint(c) ? c : '.');
+    }
+    recstr.append ("\n");
+    for (i = 0; i < key.keySize(); i++)
+    {
+        recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
+    }
+    recstr.append ("\nusing filter:\n");
+    filter->describe(recstr);
+    if (stats.ctx)
+        stats.ctx->CTXLOG("%d seeks to lookup record \n%s\n in key %s", numSeeks, recstr.str(), key.queryFileName());
+    else
+        DBGLOG("%d seeks to lookup record \n%s\n in key %s", numSeeks, recstr.str(), key.queryFileName());
+}
+
+bool CKeyCursor::skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen)
+{
+    // Modify the current key contents buffer as follows
+    // Take bytes up to seekoffset from current buffer (i.e. leave them alone)
+    // Take up to seeklen bytes from seek comparing them as I go. If I see a lower one before I see a higher one, stop.
+    // If I didn't see any higher ones, return (at which point the skipto was a no-op
+    // If I saw higher ones, call setLowAfter for all remaining segmonitors
+    // If the current contents of buffer could not match, call incremementKey at the appropriate monitor so that it can
+    // Clear the matched flag
+    const byte *seek = (const byte *) _seek;
+    while (seeklen)
+    {
+        int c = *seek - (byte) (keyBuffer[seekOffset]);
+        if (c < 0)
+            return false;
+        else if (c>0)
+        {
+            memcpy(keyBuffer+seekOffset, seek, seeklen);
+            break;
+        }
+        seek++;
+        seekOffset++;
+        seeklen--;
+    }
+    if (!seeklen) return false;
+
+    unsigned j = setLowAfter(seekOffset + seeklen);
+    bool canmatch = filter->matchesBuffer(keyBuffer, filter->lastRealSeg(), j);
+    if (!canmatch)
+        eof = !incrementKey(j);
+    matched = false;
+    return true;
+}
+
+IKeyCursor * CKeyCursor::fixSortSegs(unsigned sortFieldOffset)
+{
+    return new CPartialKeyCursor(*this, sortFieldOffset);
+}
+
+CPartialKeyCursor::CPartialKeyCursor(const CKeyCursor &from, unsigned sortFieldOffset)
+: CKeyCursor(from)
+{
+    filter = filter->fixSortSegs(keyBuffer, sortFieldOffset);
+}
+
+CPartialKeyCursor::~CPartialKeyCursor()
+{
+    ::Release(filter);
+}
+
+//-------------------------------------------------------
+
+IndexRowFilter::IndexRowFilter(const RtlRecord &_recInfo) : recInfo(_recInfo)
+{
+    keySegCount = recInfo.getNumKeyedFields();
+    lastReal = 0;
+    lastFull = 0;
+    keyedSize = 0;
+}
+
+IndexRowFilter::IndexRowFilter(const IndexRowFilter &from, const char *fixedVals, unsigned sortFieldOffset)
+: recInfo(from.recInfo), keySegCount(from.keySegCount)
+{
+    lastReal = 0;
+    lastFull = 0;
+    keyedSize = 0;
+    ForEachItemIn(idx, from.filters)
+    {
+        auto &filter = from.filters.item(idx);
+        unsigned field = filter.queryFieldIndex();
+        unsigned offset = recInfo.getFixedOffset(field);
+        if (offset < sortFieldOffset)
+            append(FFkeyed, createFieldFilter(field, *recInfo.queryType(field), fixedVals+offset));
+        else
+            append(FFkeyed, LINK(&filter));  // MORE - FFopt vs FFkeyed is dodgy
+    }
+}
+
+
+void IndexRowFilter::append(IKeySegmentMonitor *segment)
+{
+    throwUnexpected();
+}
+
+const IIndexFilter *IndexRowFilter::item(unsigned idx) const
+{
+    return &queryFilter(idx);
+}
+
+void IndexRowFilter::append(FFoption option, const IFieldFilter * filter)
+{
+    assertex(filter->queryType().isFixedSize());
+    unsigned idx = filter->queryFieldIndex();
+    while (idx > numFilterFields())
+    {
+        append(FFkeyed, createWildFieldFilter(numFilterFields(), *recInfo.queryType(numFilterFields())));
+    }
+    assertex(idx == numFilterFields());
+    if (!filter->isWild())
+    {
+        lastReal = idx;
+        if (option != FFopt || lastFull == idx-1)
+            lastFull = idx;
+    }
+    keyedSize += filter->queryType().getMinSize();
+    addFilter(*filter);
+}
+
+void IndexRowFilter::setLow(unsigned field, void *keyBuffer) const
+{
+    unsigned lim = numFilterFields();
+    while (field < lim)
+    {
+        unsigned offset = recInfo.getFixedOffset(field);
+        const IFieldFilter &filter = queryFilter(field);
+        filter.setLow(keyBuffer, offset);
+        field++;
+    }
+}
+
+unsigned IndexRowFilter::setLowAfter(size32_t offset, void *keyBuffer) const
+{
+    unsigned lim = filters.length();
+    unsigned field = 0;
+    unsigned skipped = 0;
+    unsigned fieldOffset = recInfo.getFixedOffset(field);
+    while (field < lim)
+    {
+        unsigned nextOffset = recInfo.getFixedOffset(field+1);
+        if (fieldOffset >= offset)
+            filters.item(field).setLow(keyBuffer, fieldOffset);
+        else if (nextOffset <= offset)
+            skipped++;
+        else
+        {
+            byte *temp = (byte *) alloca(nextOffset - fieldOffset);
+            filters.item(field).setLow(temp, 0);
+            memcpy((byte *)keyBuffer+offset, temp, nextOffset - offset);
+        }
+        field++;
+        fieldOffset = nextOffset;
+    }
+    return skipped;
+}
+
+bool IndexRowFilter::incrementKey(unsigned segno, void *keyBuffer) const
+{
+    // Increment the key buffer to next acceptable value
+    for(;;)
+    {
+        if (queryFilter(segno).incrementKey(keyBuffer, recInfo.getFixedOffset(segno)))
+        {
+            setLow(segno+1, keyBuffer);
+            return true;
+        }
+        if (!segno)
+            return false;
+        segno--;
+    }
+}
+
+void IndexRowFilter::endRange(unsigned field, void *keyBuffer) const
+{
+    unsigned lim = numFilterFields();
+    if (field < lim)
+    {
+        queryFilter(field).endRange(keyBuffer, recInfo.getFixedOffset(field));
+        field++;
+    }
+    while (field < lim)
+    {
+        queryFilter(field).setHigh(keyBuffer, recInfo.getFixedOffset(field));
+        field++;
+    }
+}
+
+unsigned IndexRowFilter::lastRealSeg() const
+{
+    return lastReal;
+}
+
+unsigned IndexRowFilter::lastFullSeg() const
+{
+    return lastFull;
+}
+
+unsigned IndexRowFilter::numFilterFields() const
+{
+    return RowFilter::numFilterFields();
+}
+
+IIndexFilterList *IndexRowFilter::fixSortSegs(const char *fixedVals, unsigned sortFieldOffset) const
+{
+    return new IndexRowFilter(*this, fixedVals, sortFieldOffset);
+}
+
+void IndexRowFilter::reset()
+{
+    RowFilter::clear();
+    lastReal = 0;
+    lastFull = 0;
+    keyedSize = 0;
+}
+
+void IndexRowFilter::checkSize(size32_t _keyedSize, char const * keyname) const
+{
+    if (_keyedSize != keyedSize)
+    {
+        StringBuffer err;
+        err.appendf("Key size mismatch on key %s - key size is %u, expected %u", keyname, _keyedSize, keyedSize);
+    }
+}
+
+void IndexRowFilter::recalculateCache()
+{
+    // Nothing to do. This probably should be moved to be local to SegMonitorList
+}
+
+void IndexRowFilter::finish(size32_t _keyedSize)
+{
+    while (numFilterFields() < keySegCount)
+    {
+        unsigned idx = numFilterFields();
+        append(FFkeyed, createWildFieldFilter(idx, *recInfo.queryType(idx)));
+    }
+}
+
+void IndexRowFilter::describe(StringBuffer &out) const
+{
+    for (unsigned idx=0; idx < lastRealSeg(); idx++)
+    {
+        auto &filter = queryFilter(idx);
+        if (idx)
+            out.append(',');
+        out.appendf("%s=", recInfo.queryName(idx));
+        filter.describe(out);
+    }
+}
+
+bool IndexRowFilter::matchesBuffer(const void *buffer, unsigned lastSeg, unsigned &matchSeg) const
+{
+    if (numFilterFields())
+    {
+        RtlFixedRow rowInfo(recInfo, buffer, numFilterFields());
+        for (; matchSeg <= lastSeg; matchSeg++)
+        {
+            if (!queryFilter(matchSeg).matches(rowInfo))
+                return false;
+        }
+    }
+    return true;
+}
+
+bool IndexRowFilter::canMatch() const
+{
+    ForEachItemIn(idx, filters)
+    {
+        if (filters.item(idx).isEmpty())
+            return false;
+    }
+    return true;
+}
+
+//-------------------------------------------------------
 
 class CLazyKeyIndex : implements IKeyIndex, public CInterface
 {
     StringAttr keyfile;
     unsigned crc; 
     Linked<IDelayedFile> delayedFile;
-    Owned<IFileIO> iFileIO;
-    Owned<IKeyIndex> realKey;
-    CriticalSection c;
+    mutable Owned<IFileIO> iFileIO;
+    mutable Owned<IKeyIndex> realKey;
+    mutable CriticalSection c;
     bool isTLK;
     bool preloadAllowed;
 
-    inline IKeyIndex &checkOpen()
+    inline IKeyIndex &checkOpen() const
     {
         CriticalBlock b(c);
         if (!realKey)
@@ -2055,12 +2165,14 @@ public:
 
     virtual bool IsShared() const { return CInterface::IsShared(); }
 
-    virtual IKeyCursor *getCursor(IContextLogger *ctx) { return checkOpen().getCursor(ctx); }
+    virtual IKeyCursor *getCursor(const IIndexFilterList *filter) override { return checkOpen().getCursor(filter); }
     virtual size32_t keySize() { return checkOpen().keySize(); }
     virtual size32_t keyedSize() { return checkOpen().keyedSize(); }
     virtual bool hasPayload() { return checkOpen().hasPayload(); }
-    virtual bool isTopLevelKey() { return checkOpen().isTopLevelKey(); }
-    virtual bool isFullySorted() { return checkOpen().isFullySorted(); }
+    virtual bool isTopLevelKey() override { return checkOpen().isTopLevelKey(); }
+    virtual bool isFullySorted() override { return checkOpen().isFullySorted(); }
+    virtual __uint64 getPartitionFieldMask() { return checkOpen().getPartitionFieldMask(); }
+    virtual unsigned numPartitions() { return checkOpen().numPartitions(); }
     virtual unsigned getFlags() { return checkOpen().getFlags(); }
     virtual void dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw) { checkOpen().dumpNode(out, pos, count, isRaw); }
     virtual unsigned numParts() { return 1; }
@@ -2075,6 +2187,8 @@ public:
     virtual IPropertyTree * getMetadata() { return checkOpen().getMetadata(); }
     virtual unsigned getNodeSize() { return checkOpen().getNodeSize(); }
     virtual const IFileIO *queryFileIO() const override { return iFileIO; } // NB: if not yet opened, will be null
+    virtual bool hasSpecialFileposition() const { return checkOpen().hasSpecialFileposition(); }
+    virtual bool needsRowBuffer() const { return checkOpen().needsRowBuffer(); }
 };
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, bool isTLK, bool preloadAllowed)
@@ -2353,19 +2467,12 @@ class CKeyMerger : public CKeyLevelManager
     unsigned *mergeheap;
     unsigned numkeys;
     unsigned activekeys;
+    unsigned compareSize = 0;
     IArrayOf<IKeyCursor> cursorArray;
-    PointerArray bufferArray;
-    PointerArray fixedArray;
-    BoolArray matchedArray; 
-    UInt64Array fposArray;
     UnsignedArray mergeHeapArray;
     UnsignedArray keyNoArray;
-    offset_t *fposes;
 
     IKeyCursor **cursors;
-    char **buffers;
-    void **fixeds;
-    bool *matcheds;
     unsigned sortFieldOffset;
     unsigned sortFromSeg;
 
@@ -2374,9 +2481,12 @@ class CKeyMerger : public CKeyLevelManager
 //  #define BuffCompare(a, b) memcmp(buffers[mergeheap[a]]+sortFieldOffset, buffers[mergeheap[b]]+sortFieldOffset, keySize-sortFieldOffset) // NOTE - compare whole key not just keyed part.
     inline int BuffCompare(unsigned a, unsigned b)
     {
-        const char *c1 = buffers[mergeheap[a]];
-        const char *c2 = buffers[mergeheap[b]];
-        int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, keySize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
+        const byte *c1 = cursors[mergeheap[a]]->queryKeyBuffer();
+        const byte *c2 = cursors[mergeheap[b]]->queryKeyBuffer();
+        //Backwards compatibility - do not compare the fileposition field, even if it would be significant.
+        //int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, keySize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
+        int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, compareSize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
+        // MORE - this is wrong! variable-size fields will not compare correctly.
         if (!ret && sortFieldOffset)
             ret = memcmp(c1, c2, sortFieldOffset);
         return ret;
@@ -2384,74 +2494,34 @@ class CKeyMerger : public CKeyLevelManager
 
     Linked<IKeyIndexBase> keyset;
 
-    void resetKey(unsigned i)
+    void calculateSortSeg()
     {
-        matcheds[i] = false;
-        segs.setLow(sortFromSeg, buffers[i]);
-        IKeyCursor *cursor = cursors[i];
-        if (cursor)
-            cursor->reset();
-    }
-
-    void replicateForTrailingSort()
-    {
-        // For each key that is present, we need to repeat it for each distinct value of leading segmonitor fields that is present in the index.
-        // We also need to make sure that sortFromSeg is properly set
+        // Make sure that sortFromSeg is properly set
         sortFromSeg = (unsigned) -1;
-        ForEachItemIn(idx, segs.segMonitors)
+        unsigned numFilters = filter->numFilterFields();
+        for (unsigned idx = 0; idx < numFilters; idx++)
         {
-            IKeySegmentMonitor &seg = segs.segMonitors.item(idx);
-            unsigned offset = seg.getOffset();
+            unsigned offset = filter->getFieldOffset(idx);
             if (offset == sortFieldOffset)
             {
                 sortFromSeg = idx;
                 break;
             }
-            IKeySegmentMonitor *override = createOverrideableKeySegmentMonitor(LINK(&seg));
-            segs.segMonitors.replace(*override, idx);
-
         }
         if (sortFromSeg == -1)
-            assertex(!"Attempting to sort from offset that is not on a segment boundary"); // MORE - can use the information that we have earlier to make sure not merged
-        assertex(resetPending == true); // we do the actual replication in reset
-    }
-
-    void dumpMergeHeap()
-    {
-        DBGLOG("---------");
-        for (unsigned i = 0; i < activekeys; i++)
-        {
-            int key = mergeheap[i];
-            DBGLOG("%d %.*s %d", key, keySize, buffers[key], matcheds[key]);
-        }
-
-    }
-
-    inline void setSegOverrides(unsigned key)
-    {
-        keyBuffer = buffers[key];
-        keyCursor = cursors[key];
-        matched = matcheds[key];
-        lookupFpos = fposes[key];
-        for (unsigned segno = 0; segno < sortFromSeg; segno++)
-        {
-            IOverrideableKeySegmentMonitor *sm = QUERYINTERFACE(&segs.segMonitors.item(segno), IOverrideableKeySegmentMonitor);
-            sm->setOverrideBuffer(fixeds[key]);
-        }
-        segs.recalculateCache();
+            assertex(!"Attempting to sort from offset that is not on a segment boundary");
+        assertex(resetPending == true);
     }
 
 public:
-    CKeyMerger(IKeyIndexSet *_keyset, size32_t _eclKeySize, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(NULL, _eclKeySize, _ctx), sortFieldOffset(_sortFieldOffset)
+    CKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet *_keyset, unsigned _sortFieldOffset, IContextLogger *_ctx, bool _newFilters) : CKeyLevelManager(_recInfo, NULL, _ctx, _newFilters), sortFieldOffset(_sortFieldOffset)
     {
-        segs.setMergeBarrier(sortFieldOffset);
         init();
         setKey(_keyset);
     }
 
-    CKeyMerger(IKeyIndex *_onekey, size32_t _eclKeySize, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(NULL, _eclKeySize, _ctx), sortFieldOffset(_sortFieldOffset)
+    CKeyMerger(const RtlRecord &_recInfo, IKeyIndex *_onekey, unsigned _sortFieldOffset, IContextLogger *_ctx, bool _newFilters) : CKeyLevelManager(_recInfo, NULL, _ctx, _newFilters), sortFieldOffset(_sortFieldOffset)
     {
-        segs.setMergeBarrier(sortFieldOffset);
         init();
         setKey(_onekey);
     }
@@ -2459,35 +2529,17 @@ public:
     ~CKeyMerger()
     {
         killBuffers();
-        keyCursor = NULL; // so parent class doesn't delete it!
-        keyBuffer = NULL; // ditto
     }
 
     void killBuffers()
     {
-        ForEachItemIn(idx, bufferArray)
-        {
-            free(bufferArray.item(idx));
-        }
-        ForEachItemIn(idx1, fixedArray)
-        {
-            free(fixedArray.item(idx1));
-        }
         cursorArray.kill();
         keyCursor = NULL; // cursorArray owns cursors
-        matchedArray.kill();
-        fposArray.kill();
         mergeHeapArray.kill();
-        bufferArray.kill();
-        fixedArray.kill();
         keyNoArray.kill();
 
         cursors = NULL;
-        matcheds = NULL;
-        fposes = NULL;
         mergeheap = NULL;
-        buffers = NULL; 
-        fixeds = NULL;
     }
 
     void init()
@@ -2496,6 +2548,11 @@ public:
         activekeys = 0;
         resetPending = true;
         sortFromSeg = 0;
+    }
+
+    virtual unsigned getPartition() override
+    {
+        return 0;   // If all keys share partition info (is that required?) then we can do better
     }
 
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen)
@@ -2530,20 +2587,15 @@ public:
             unsigned compares = 0;
             for (;;)
             {
-                if (CKeyLevelManager::lookupSkip(seek, seekOffset, seeklen) )
-                {
-                    fposes[key] = lookupFpos;
-                }
-                else
+                if (!CKeyLevelManager::lookupSkip(seek, seekOffset, seeklen) )
                 {
                     activekeys--;
                     if (!activekeys)
                     {
-                        if (ctx)
-                            ctx->noteStatistic(StNumIndexMergeCompares, compares);
+                        if (stats.ctx)
+                            stats.ctx->noteStatistic(StNumIndexMergeCompares, compares);
                         return false;
                     }
-                    eof = false;
                     mergeheap[0] = mergeheap[activekeys];
                 }
                 /* The key associated with mergeheap[0] will have changed
@@ -2570,13 +2622,15 @@ public:
                 if (key != mergeheap[0])
                 {
                     key = mergeheap[0];
-                    setSegOverrides(key);
+                    keyCursor = cursors[key];
                 }
+                const byte *keyBuffer = keyCursor->queryKeyBuffer();
                 if (memcmp(seek, keyBuffer+seekOffset, seeklen) <= 0)
                 {
 #ifdef _DEBUG
                     if (traceSmartStepping)
                     {
+                        unsigned keySize = keyCursor->getSize();  // MORE - is this the current row size?
                         DBGLOG("SKIP: merged key = %d", key);
                         StringBuffer recstr;
                         unsigned i;
@@ -2590,19 +2644,19 @@ public:
                         {
                             recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
                         }
-                        DBGLOG("SKIP: Out skips=%02d nullSkips=%02d seeks=%02d scans=%02d : %s", skips, nullSkips, seeks, scans, recstr.str());
+                        DBGLOG("SKIP: Out skips=%02d seeks=%02d scans=%02d : %s", stats.skips, stats.seeks, stats.scans, recstr.str());
                     }
 #endif
-                    if (ctx)
-                        ctx->noteStatistic(StNumIndexMergeCompares, compares);
+                    if (stats.ctx)
+                        stats.ctx->noteStatistic(StNumIndexMergeCompares, compares);
                     return true;
                 }
                 else
                 {
                     compares++;
-                    if (ctx && (compares == 100))
+                    if (stats.ctx && (compares == 100))
                     {
-                        ctx->noteStatistic(StNumIndexMergeCompares, compares); // also checks for abort...
+                        stats.ctx->noteStatistic(StNumIndexMergeCompares, compares); // also checks for abort...
                         compares = 0;
                     }
                 }
@@ -2610,11 +2664,11 @@ public:
         }
     }
 
-    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) 
+    virtual void setLayoutTranslator(const IDynamicTransform * trans) override
     { 
         if (trans)
             throw MakeStringException(0, "Layout translation not supported when merging key parts, as it may change sort order"); 
-        // it MIGHT be possible to support translation still if all keyCursors have the same translation 
+        // It MIGHT be possible to support translation still if all keyCursors have the same translation
         // would have to translate AFTER the merge, but that's ok
         // HOWEVER the result won't be guaranteed to be in sorted order afterwards so is there any point?
     }
@@ -2625,11 +2679,9 @@ public:
         if (_keyset && _keyset->numParts())
         {
             IKeyIndex *ki = _keyset->queryPart(0);
-            keySize = ki->keySize();
-            if (!keySize)
-                throw MakeStringException(0, "Invalid key size 0 in key %s", ki->queryFileName());
             keyedSize = ki->keyedSize();
             numkeys = _keyset->numParts();
+            compareSize = ki->keySize() - (ki->hasSpecialFileposition() ? sizeof(offset_t) : 0);  // MORE - feels wrong
         }
         else
             numkeys = 0;
@@ -2639,27 +2691,14 @@ public:
     void resetSort(const void *seek, size32_t seekOffset, size32_t seeklen)
     {
         activekeys = 0;
-        keyBuffer = NULL;
-        void *fixedValue = NULL;
-        unsigned segno;
-        for (segno = 0; segno < sortFromSeg; segno++)
-        {
-            IOverrideableKeySegmentMonitor *sm = QUERYINTERFACE(&segs.segMonitors.item(segno), IOverrideableKeySegmentMonitor);
-            sm->setOverrideBuffer(NULL);
-        }
-        segs.recalculateCache();
+        filter->recalculateCache();
         unsigned i;
         for (i = 0; i < numkeys; i++)
         {
-            assertex(keySize);
-            if (!keyBuffer) keyBuffer = (char *) malloc(keySize);
-            segs.setLow(0, keyBuffer);
+            keyCursor = keyset->queryPart(i)->getCursor(filter);
+            keyCursor->reset();
             for (;;)
             {
-                keyCursor = keyset->queryPart(i)->getCursor(ctx);
-                matched = false;
-                eof = false;
-                keyCursor->reset();
                 bool found;
                 unsigned lskips = 0;
                 unsigned lnullSkips = 0;
@@ -2667,61 +2706,25 @@ public:
                 {
                     if (seek)
                     {
-                        if (skipTo(seek, seekOffset, seeklen))
+                        if (keyCursor->skipTo(seek, seekOffset, seeklen))
                             lskips++;
                         else
                             lnullSkips++;
                     }
-                    found = _lookup(true, segs.lastRealSeg());
-                    if (!found || !seek || memcmp(keyBuffer + seekOffset, seek, seeklen) >= 0)
+                    found = keyCursor->lookup(true, stats);
+                    if (!found || !seek || memcmp(keyCursor->queryKeyBuffer() + seekOffset, seek, seeklen) >= 0)
                         break;
                 }
-                noteSkips(lskips, lnullSkips);
+                stats.noteSkips(lskips, lnullSkips);
                 if (found)
                 {
+                    IKeyCursor *mergeCursor = LINK(keyCursor);
+                    if (sortFromSeg)
+                        mergeCursor = keyCursor->fixSortSegs(sortFieldOffset);
                     keyNoArray.append(i);
-                    cursorArray.append(*keyCursor);
-                    bufferArray.append(keyBuffer);
-                    matchedArray.append(matched);
-                    fposArray.append(lookupFpos);
+                    cursorArray.append(*mergeCursor);
                     mergeHeapArray.append(activekeys++);
-                    if (!sortFromSeg)
-                    {
-                        keyBuffer = NULL;
-                        fixedValue = NULL;
-                        break;
-                    }
-                    assertex(sortFieldOffset);
-                    void *fixedValue = malloc(sortFieldOffset);
-                    memcpy(fixedValue, keyBuffer, sortFieldOffset);
-                    fixedArray.append(fixedValue);
-#ifdef _DEBUG
-                    if (traceSmartStepping)
-                    {
-                        StringBuffer recstr;
-                        unsigned i;
-                        for (i = 0; i < sortFieldOffset; i++)
-                        {
-                            unsigned char c = ((unsigned char *) keyBuffer)[i];
-                            recstr.appendf("%c", isprint(c) ? c : '.');
-                        }
-                        recstr.append ("    ");
-                        for (i = 0; i < keySize; i++)
-                        {
-                            recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
-                        }
-                        DBGLOG("Adding key cursor info for %s", recstr.str());
-                    }
-#endif
-                    // Now advance segments 0 through sortFromSeg-1 to next legal value...
-                    assertex(keySize);
-                    char *nextBuffer = (char *) malloc(keySize);
-                    memcpy(nextBuffer, keyBuffer, keySize);
-                    keyBuffer = nextBuffer;
-#ifdef _DEBUG
-                    assertex(segs.segMonitors.item(sortFromSeg-1).matches(keyBuffer));
-#endif
-                    if (!segs.incrementKey(sortFromSeg-1, keyBuffer))
+                    if (!sortFromSeg || !keyCursor->nextRange(sortFromSeg))
                         break;
                 }
                 else
@@ -2731,18 +2734,12 @@ public:
                 }
             }
         }
-        free (keyBuffer);
-        keyBuffer = NULL;
         if (activekeys>0) 
         {
-            if (ctx)
-                ctx->noteStatistic(StNumIndexMerges, activekeys);
+            if (stats.ctx)
+                stats.ctx->noteStatistic(StNumIndexMerges, activekeys);
             cursors = cursorArray.getArray();
-            fposes = fposArray.getArray();
-            matcheds = (bool *) matchedArray.getArray();  // For some reason BoolArray is typedef'd to CharArray on linux...
-            buffers = (char **) bufferArray.getArray();
             mergeheap = mergeHeapArray.getArray();
-            fixeds = fixedArray.getArray();
             /* Permute mergeheap to establish the heap property
                For each element p, the children are p*2+1 and p*2+2 (provided these are in range)
                The children of p must both be greater than or equal to p
@@ -2762,18 +2759,13 @@ public:
                     c = p;
                 }
             }
-            setSegOverrides(mergeheap[0]);
-            eof = false;
+            keyCursor = cursors[mergeheap[0]];
         }
         else
         {
-            keyBuffer = NULL;
             keyCursor = NULL;
-            matched = false;
-            eof = true;
         }
         resetPending = false;
-
     }
 
     virtual void reset(bool crappyHack)
@@ -2781,8 +2773,7 @@ public:
         if (!started)
         {
             started = true;
-            if (keyedSize)
-                segs.checkSize(keyedSize, "[merger]"); //PG: not sure what keyname to use here
+            filter->checkSize(keyedSize, "[merger]"); //PG: not sure what keyname to use here
         }
         if (!crappyHack)
         {
@@ -2791,7 +2782,14 @@ public:
         }
         else
         {
-            setSegOverrides(mergeheap[0]);
+            if (sortFieldOffset)
+            {
+                ForEachItemIn(idx, cursorArray)
+                {
+                    cursorArray.replace(*cursorArray.item(idx).fixSortSegs(sortFieldOffset), idx);
+                }
+            }
+            keyCursor = cursors[mergeheap[0]];
             resetPending = false;
         }
     }
@@ -2810,16 +2808,11 @@ public:
             if (!activekeys)
                 return false;
             unsigned key = mergeheap[0];
-            if (CKeyLevelManager::lookup(exact)) 
-            {
-                fposes[key] = lookupFpos;
-            }
-            else
+            if (!keyCursor->lookup(exact, stats))
             {
                 activekeys--;
                 if (!activekeys)
                     return false; // MORE - does this lose a record?
-                eof = false;
                 mergeheap[0] = mergeheap[activekeys];
             }
 
@@ -2846,7 +2839,7 @@ public:
             }
 //          dumpMergeHeap();
             if (mergeheap[0] != key)
-                setSegOverrides(mergeheap[0]);
+                keyCursor = cursors[mergeheap[0]];
         }
         return true;
     }
@@ -2861,7 +2854,6 @@ public:
         for (unsigned i = 0; i < activekeys; i++)
         {
             unsigned key = mergeheap[i];
-            keyBuffer = buffers[key];
             keyCursor = cursors[key];
             ret += CKeyLevelManager::getCount();
         }
@@ -2878,7 +2870,6 @@ public:
         for (unsigned i = 0; i < activekeys; i++)
         {
             unsigned key = mergeheap[i];
-            keyBuffer = buffers[key];
             keyCursor = cursors[key];
             unsigned __int64 thisKeyCount = CKeyLevelManager::checkCount(max);
             ret += thisKeyCount;
@@ -2892,74 +2883,58 @@ public:
     virtual void serializeCursorPos(MemoryBuffer &mb)
     {
 //      dumpMergeHeap();
-        mb.append(eof);
         mb.append(activekeys);
         for (unsigned i = 0; i < activekeys; i++)
         {
             unsigned key = mergeheap[i];
             mb.append(keyNoArray.item(key));
             cursors[key]->serializeCursorPos(mb);
-            mb.append(matcheds[key]);
-            mb.append(fposes[key]);
         }
     }
 
     virtual void deserializeCursorPos(MemoryBuffer &mb)
     {
-        mb.read(eof);
         mb.read(activekeys);
         for (unsigned i = 0; i < activekeys; i++)
         {
             unsigned keyno;
             mb.read(keyno);
             keyNoArray.append(keyno);
-            keyCursor = keyset->queryPart(keyno)->getCursor(ctx);
-            assertex(keySize);
-            keyBuffer = (char *) malloc(keySize);
+            keyCursor = keyset->queryPart(keyno)->getCursor(filter);
+            keyCursor->deserializeCursorPos(mb, stats);
             cursorArray.append(*keyCursor);
-            keyCursor->deserializeCursorPos(mb, keyBuffer);
-            mb.read(matched);
-            matchedArray.append(matched);
-            offset_t fpos;
-            mb.read(fpos);
-            fposArray.append(fpos);
-            bufferArray.append(keyBuffer);
-            void *fixedValue = (char *) malloc(sortFieldOffset);
-            memcpy(fixedValue, keyBuffer, sortFieldOffset); // If it's not at EOF then it must match
-            fixedArray.append(fixedValue);
             mergeHeapArray.append(i);
         }
         cursors = cursorArray.getArray();
-        fposes = fposArray.getArray();
-        matcheds = (bool *) matchedArray.getArray();  // For some reason BoolArray is typedef'd to CharArray on linux...
-        buffers = (char **) bufferArray.getArray();
         mergeheap = mergeHeapArray.getArray();
-        fixeds = fixedArray.getArray();
     }
 
     virtual void finishSegmentMonitors()
     {
         CKeyLevelManager::finishSegmentMonitors();
         if (sortFieldOffset)
-            replicateForTrailingSort();
+        {
+            filter->checkSize(keyedSize, "[merger]"); // Ensures trailing KSM is setup
+            calculateSortSeg();
+        }
     }
 };
 
-extern jhtree_decl IKeyManager *createKeyMerger(IKeyIndexSet * _keys, unsigned _rawSize, unsigned _sortFieldOffset, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet * _keys, unsigned _sortFieldOffset, IContextLogger *_ctx, bool _newFilters)
 {
-    return new CKeyMerger(_keys, _rawSize, _sortFieldOffset, _ctx);
+    return new CKeyMerger(_recInfo, _keys, _sortFieldOffset, _ctx, _newFilters);
 }
 
-extern jhtree_decl IKeyManager *createSingleKeyMerger(IKeyIndex * _onekey, unsigned _rawSize, unsigned _sortFieldOffset, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo, IKeyIndex * _onekey, unsigned _sortFieldOffset, IContextLogger *_ctx, bool _newFilters)
 {
-    return new CKeyMerger(_onekey, _rawSize, _sortFieldOffset, _ctx);
+    return new CKeyMerger(_recInfo, _onekey, _sortFieldOffset, _ctx, _newFilters);
 }
 
 class CKeyIndexSet : implements IKeyIndexSet, public CInterface
 {
     IPointerArrayOf<IKeyIndex> indexes;
-    offset_t recordCount;
-    offset_t totalSize;
+    offset_t recordCount = 0;
+    offset_t totalSize = 0;
     StringAttr origFileName;
 
 public:
@@ -2980,9 +2955,9 @@ extern jhtree_decl IKeyIndexSet *createKeyIndexSet()
     return new CKeyIndexSet;
 }
 
-extern jhtree_decl IKeyManager *createLocalKeyManager(IKeyIndex *key, unsigned _rawSize, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createLocalKeyManager(const RtlRecord &_recInfo, IKeyIndex *_key, IContextLogger *_ctx, bool newFilters)
 {
-    return new CKeyLevelManager(key, _rawSize, _ctx);
+    return new CKeyLevelManager(_recInfo, _key, _ctx, newFilters);
 }
 
 class CKeyArray : implements IKeyArray, public CInterface
@@ -2996,8 +2971,6 @@ public:
         if (!keys.isItem(partNo))
         {
             return NULL;
-            DBGLOG("getKeyPart requested invalid part %d", partNo);
-            throw MakeStringException(0, "queryKeyPart requested invalid part %d", partNo);
         }
         IKeyIndexBase *key = keys.item(partNo);
         return key;
@@ -3012,6 +2985,40 @@ extern jhtree_decl IKeyArray *createKeyArray()
     return new CKeyArray;
 }
 
+
+extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager)
+{
+    class CIndexLookup : public CSimpleInterfaceOf<IIndexLookup>
+    {
+        Linked<IKeyManager> keyManager;
+    public:
+        CIndexLookup(IKeyManager *_keyManager) : keyManager(_keyManager)
+        {
+        }
+        virtual void ensureAvailable() override { }
+        virtual unsigned __int64 getCount() override
+        {
+            return keyManager->getCount();
+        }
+        virtual unsigned __int64 checkCount(unsigned __int64 limit) override
+        {
+            return keyManager->checkCount(limit);
+        }
+        virtual const void *nextKey() override
+        {
+            if (keyManager->lookup(true))
+                return keyManager->queryKeyBuffer();
+            else
+                return nullptr;
+        }
+        virtual unsigned querySeeks() const override { return keyManager->querySeeks(); }
+        virtual unsigned queryScans() const override { return keyManager->queryScans(); }
+        virtual unsigned querySkips() const override { return keyManager->querySkips(); }
+    };
+    return new CIndexLookup(keyManager);
+}
+
+
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 
@@ -3024,99 +3031,106 @@ class IKeyManagerTest : public CppUnit::TestFixture
 
     void testStepping()
     {
-        buildTestKeys(false, false, false, false);
+        buildTestKeys(false);
         {
             // We are going to treat as a 7-byte field then a 3-byte field, and request the datasorted by the 3-byte...
-            unsigned maxSize = 10; // (variable && blobby) ? 18 : 10;
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
             Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, false);
             Owned<IKeyIndexSet> keyset = createKeyIndexSet();
             keyset->addIndex(index1.getClear());
             keyset->addIndex(index2.getClear());
-            Owned <IKeyManager> tlk1 = createKeyMerger(keyset, maxSize, 7, NULL);
+            const char *json = "{ \"ty1\": { \"fieldType\": 4, \"length\": 7 }, "
+                               "  \"ty2\": { \"fieldType\": 4, \"length\": 3 }, "
+                               " \"fieldType\": 13, \"length\": 10, "
+                               " \"fields\": [ "
+                               " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
+                               " { \"name\": \"f2\", \"type\": \"ty2\", \"flags\": 4 } ] "
+                               "}";
+            Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false, nullptr);
+            Owned <IKeyManager> tlk1 = createKeyMerger(meta->queryRecordAccessor(true), keyset, 7, NULL, false);
             Owned<IStringSet> sset1 = createStringSet(7);
             sset1->addRange("0000003", "0000003");
             sset1->addRange("0000005", "0000006");
-            tlk1->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
+            tlk1->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
             Owned<IStringSet> sset2 = createStringSet(3);
             sset2->addRange("010", "010");
             sset2->addRange("030", "033");
             Owned<IStringSet> sset3 = createStringSet(3);
             sset3->addRange("999", "XXX");
             sset3->addRange("000", "002");
-            tlk1->append(createKeySegmentMonitor(false, sset2.getLink(), 7, 3));
+            tlk1->append(createKeySegmentMonitor(false, sset2.getLink(), 1, 7, 3));
             tlk1->finishSegmentMonitors();
 
             tlk1->reset();
 
             offset_t fpos;
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000003010", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000005010", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000006010", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000003030", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000005030", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000006030", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000003031", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000005031", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000006031", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003010", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005010", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006010", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003030", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005030", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006030", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003031", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005031", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006031", 10)==0);
             MemoryBuffer mb;
             tlk1->serializeCursorPos(mb);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000003032", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000005032", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000006032", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000003033", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000005033", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000006033", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003032", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005032", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006032", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003033", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005033", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006033", 10)==0);
             ASSERT(!tlk1->lookup(true)); 
             ASSERT(!tlk1->lookup(true)); 
 
-            Owned <IKeyManager> tlk2 = createKeyMerger(NULL, maxSize, 7, NULL);
+            Owned <IKeyManager> tlk2 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false);
             tlk2->setKey(keyset);
             tlk2->deserializeCursorPos(mb);
-            tlk2->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
-            tlk2->append(createKeySegmentMonitor(false, sset2.getLink(), 7, 3));
+            tlk2->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
+            tlk2->append(createKeySegmentMonitor(false, sset2.getLink(), 1, 7, 3));
             tlk2->finishSegmentMonitors();
             tlk2->reset(true);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000003032", 10)==0);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000005032", 10)==0);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000006032", 10)==0);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000003033", 10)==0);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000005033", 10)==0);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000006033", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000003032", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000005032", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000006032", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000003033", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000005033", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000006033", 10)==0);
             ASSERT(!tlk2->lookup(true)); 
             ASSERT(!tlk2->lookup(true)); 
 
-            Owned <IKeyManager> tlk3 = createKeyMerger(NULL, maxSize, 7, NULL);
+            Owned <IKeyManager> tlk3 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false);
             tlk3->setKey(keyset);
-            tlk3->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
-            tlk3->append(createKeySegmentMonitor(false, sset2.getLink(), 7, 3));
+            tlk3->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
+            tlk3->append(createKeySegmentMonitor(false, sset2.getLink(), 1, 7, 3));
             tlk3->finishSegmentMonitors();
             tlk3->reset(false);
-            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), "0000003010", 10)==0);
-            ASSERT(tlk3->lookupSkip("031", 7, 3)); ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), "0000003031", 10)==0);
-            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), "0000005031", 10)==0);
-            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), "0000006031", 10)==0);
+            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000003010", 10)==0);
+            ASSERT(tlk3->lookupSkip("031", 7, 3)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000003031", 10)==0);
+            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000005031", 10)==0);
+            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000006031", 10)==0);
             ASSERT(!tlk3->lookupSkip("081", 7, 3)); 
             ASSERT(!tlk3->lookup(true)); 
 
-            Owned <IKeyManager> tlk4 = createKeyMerger(NULL, maxSize, 7, NULL);
+            Owned <IKeyManager> tlk4 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false);
             tlk4->setKey(keyset);
-            tlk4->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
-            tlk4->append(createKeySegmentMonitor(false, sset3.getLink(), 7, 3));
+            tlk4->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
+            tlk4->append(createKeySegmentMonitor(false, sset3.getLink(), 1, 7, 3));
             tlk4->finishSegmentMonitors();
             tlk4->reset(false);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000003000", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000005000", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000006000", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000003001", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000005001", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000006001", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000003002", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000005002", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000006002", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000003999", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000005999", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000006999", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000003000", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000005000", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006000", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000003001", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000005001", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006001", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000003002", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000005002", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006002", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000003999", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000005999", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006999", 10)==0);
             ASSERT(!tlk4->lookup(true)); 
             ASSERT(!tlk4->lookup(true)); 
 
@@ -3125,27 +3139,27 @@ class IKeyManagerTest : public CppUnit::TestFixture
         removeTestKeys();
     }
 
-    void buildTestKeys(bool shortForm, bool indar, bool variable, bool blobby)
+    void buildTestKeys(bool variable)
     {
-        buildTestKey("keyfile1.$$$", false, shortForm, indar, variable, blobby);
-        buildTestKey("keyfile2.$$$", true, shortForm, indar, variable, blobby);
+        buildTestKey("keyfile1.$$$", false, variable);
+        buildTestKey("keyfile2.$$$", true, variable);
     }
 
-    void buildTestKey(const char *filename, bool skip, bool shortForm, bool indar, bool variable, bool blobby)
+    void buildTestKey(const char *filename, bool skip, bool variable)
     {
         OwnedIFile file = createIFile(filename);
         OwnedIFileIO io = file->openShared(IFOcreate, IFSHfull);
         Owned<IFileIOStream> out = createIOStream(io);
-        unsigned maxRecSize = (variable && blobby) ? 18 : 10;
-        unsigned keyedSize = (shortForm || (variable && blobby)) ? 10 : (unsigned) -1;
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, NODESIZE, keyedSize, 0);
+        unsigned maxRecSize = variable ? 18 : 10;
+        unsigned keyedSize = 10;
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, NODESIZE, keyedSize, 0, nullptr, true, false);
 
         char keybuf[18];
         memset(keybuf, '0', 18);
         for (unsigned count = 0; count < 10000; count++)
         {
             unsigned datasize = 10;
-            if (blobby && variable && (count % 10)==0)
+            if (variable && (count % 10)==0)
             {
                 char *blob = new char[count+100000];
                 byte seed = count;
@@ -3178,7 +3192,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
                 }
             }
         }
-        builder->finish();
+        builder->finish(nullptr, nullptr);
         out->flush();
     }
 
@@ -3191,8 +3205,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
     void checkBlob(IKeyManager *key, unsigned size)
     {
         unsigned __int64 blobid;
-        offset_t fpos;
-        memcpy(&blobid, key->queryKeyBuffer(fpos)+10, sizeof(blobid));
+        memcpy(&blobid, key->queryKeyBuffer()+10, sizeof(blobid));
         ASSERT(blobid != 0);
         size32_t blobsize;
         const byte *blob = key->loadBlob(blobid, blobsize);
@@ -3207,50 +3220,47 @@ class IKeyManagerTest : public CppUnit::TestFixture
         key->releaseBlobs();
     }
 protected:
-    void testKeys(bool shortForm, bool indar, bool variable, bool blobby)
+    void testKeys(bool variable)
     {
-        // If it is not a supported combination, just return
-        if (indar)
+        const char *json = variable ?
+                "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "
+                "  \"ty2\": { \"fieldType\": 15, \"length\": 8 }, "
+                " \"fieldType\": 13, \"length\": 10, "
+                " \"fields\": [ "
+                " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
+                " { \"name\": \"f3\", \"type\": \"ty2\", \"flags\": 65551 } "  // 0x01000f i.e. payload and blob
+                " ]"
+                "}"
+                :
+                "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "
+                " \"fieldType\": 13, \"length\": 10, "
+                " \"fields\": [ "
+                " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
+                " ] "
+                "}";
+        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false, nullptr);
+        const RtlRecord &recInfo = meta->queryRecordAccessor(true);
+        buildTestKeys(variable);
         {
-            if (shortForm || variable || blobby)
-                return;
-        }
-        if (blobby)
-        {
-            if (!shortForm || !variable)
-                return;
-        }
-        buildTestKeys(shortForm, indar, variable, blobby);
-        {
-            unsigned maxSize = (variable && blobby) ? 18 : 10;
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
-            Owned <IKeyManager> tlk1 = createLocalKeyManager(index1, maxSize, NULL);
+            Owned <IKeyManager> tlk1 = createLocalKeyManager(recInfo, index1, NULL, false);
             Owned<IStringSet> sset1 = createStringSet(10);
             sset1->addRange("0000000001", "0000000100");
-            tlk1->append(createKeySegmentMonitor(false, sset1.getClear(), 0, 10));
+            tlk1->append(createKeySegmentMonitor(false, sset1.getClear(), 0, 0, 10));
             tlk1->finishSegmentMonitors();
             tlk1->reset();
 
-            Owned <IKeyManager> tlk1a = createLocalKeyManager(index1, maxSize, NULL);
+            Owned <IKeyManager> tlk1a = createLocalKeyManager(recInfo, index1, NULL, false);
             Owned<IStringSet> sset1a = createStringSet(8);
             sset1a->addRange("00000000", "00000001");
-            tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 0, 8));
-            tlk1a->append(createKeySegmentMonitor(false, NULL, 8, 1));
+            tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 0, 0, 8));
+            tlk1a->append(createKeySegmentMonitor(false, NULL, 1, 8, 1));
             sset1a.setown(createStringSet(1));
             sset1a->addRange("0", "1");
-            tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 9, 1));
+            tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 2, 9, 1));
             tlk1a->finishSegmentMonitors();
             tlk1a->reset();
 
-/*          for (;;)
-            {
-                offset_t fpos;
-                if (!tlk1a->lookup(true))
-                    break;
-                DBGLOG("%.10s", tlk1a->queryKeyBuffer(fpos));
-            }
-            tlk1a->reset();
-*/
 
             Owned<IStringSet> ssetx = createStringSet(10);
             ssetx->addRange("0000000001", "0000000002");
@@ -3264,11 +3274,11 @@ protected:
 
 
             Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, false);
-            Owned <IKeyManager> tlk2 = createLocalKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2 = createLocalKeyManager(recInfo, index2, NULL, false);
             Owned<IStringSet> sset2 = createStringSet(10);
             sset2->addRange("0000000001", "0000000100");
             ASSERT(sset2->numValues() == 65536);
-            tlk2->append(createKeySegmentMonitor(false, sset2.getClear(), 0, 10));
+            tlk2->append(createKeySegmentMonitor(false, sset2.getClear(), 0, 0, 10));
             tlk2->finishSegmentMonitors();
             tlk2->reset();
 
@@ -3279,34 +3289,34 @@ protected:
                 both->addIndex(index1.getLink());
                 both->addIndex(index2.getLink());
                 Owned<IStringSet> sset3 = createStringSet(10);
-                tlk3.setown(createKeyMerger(NULL, maxSize, 0, NULL));
+                tlk3.setown(createKeyMerger(recInfo, NULL, 0, NULL, false));
                 tlk3->setKey(both);
                 sset3->addRange("0000000001", "0000000100");
-                tlk3->append(createKeySegmentMonitor(false, sset3.getClear(), 0, 10));
+                tlk3->append(createKeySegmentMonitor(false, sset3.getClear(), 0, 0, 10));
                 tlk3->finishSegmentMonitors();
                 tlk3->reset();
             }
 
-            Owned <IKeyManager> tlk2a = createLocalKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2a = createLocalKeyManager(recInfo, index2, NULL, false);
             Owned<IStringSet> sset2a = createStringSet(10);
             sset2a->addRange("0000000048", "0000000048");
             ASSERT(sset2a->numValues() == 1);
-            tlk2a->append(createKeySegmentMonitor(false, sset2a.getClear(), 0, 10));
+            tlk2a->append(createKeySegmentMonitor(false, sset2a.getClear(), 0, 0, 10));
             tlk2a->finishSegmentMonitors();
             tlk2a->reset();
 
-            Owned <IKeyManager> tlk2b = createLocalKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2b = createLocalKeyManager(recInfo, index2, NULL, false);
             Owned<IStringSet> sset2b = createStringSet(10);
             sset2b->addRange("0000000047", "0000000049");
             ASSERT(sset2b->numValues() == 3);
-            tlk2b->append(createKeySegmentMonitor(false, sset2b.getClear(), 0, 10));
+            tlk2b->append(createKeySegmentMonitor(false, sset2b.getClear(), 0, 0, 10));
             tlk2b->finishSegmentMonitors();
             tlk2b->reset();
 
-            Owned <IKeyManager> tlk2c = createLocalKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2c = createLocalKeyManager(recInfo, index2, NULL, false);
             Owned<IStringSet> sset2c = createStringSet(10);
             sset2c->addRange("0000000047", "0000000047");
-            tlk2c->append(createKeySegmentMonitor(false, sset2c.getClear(), 0, 10));
+            tlk2c->append(createKeySegmentMonitor(false, sset2c.getClear(), 0, 0, 10));
             tlk2c->finishSegmentMonitors();
             tlk2c->reset();
 
@@ -3329,42 +3339,42 @@ protected:
             {
                 offset_t fpos;
                 tlk1->reset();
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000001", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000002", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000003", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000005", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000006", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000007", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000009", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000010", 10)==0);
-                if (blobby)
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000001", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000002", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000003", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000005", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000006", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000007", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000009", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000010", 10)==0);
+                if (variable)
                     checkBlob(tlk1, 10+100000);
 
                 tlk1a->reset();
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000001", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000010", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000011", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000021", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000030", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000031", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000041", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000050", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000001", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000010", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000011", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000021", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000030", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000031", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000041", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000050", 10)==0);
 
                 tlk2->reset();
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000004", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000008", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000012", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000016", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000020", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000024", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000028", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000032", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000036", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000040", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000044", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000048", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000048", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000052", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000004", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000008", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000012", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000016", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000020", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000024", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000028", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000032", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000036", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000040", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000044", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000048", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000048", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000052", 10)==0);
 
                 if (tlk3)
                 {
@@ -3373,11 +3383,11 @@ protected:
                     {
                         ASSERT(tlk3->lookup(true)); 
                         sprintf(buf, "%010d", i);
-                        ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), buf, 10)==0);
+                        ASSERT(memcmp(tlk3->queryKeyBuffer(), buf, 10)==0);
                         if (i==48 || i==49)
                         {
                             ASSERT(tlk3->lookup(true)); 
-                            ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), buf, 10)==0);
+                            ASSERT(memcmp(tlk3->queryKeyBuffer(), buf, 10)==0);
                         }
                     }
                     ASSERT(!tlk3->lookup(true)); 
@@ -3396,8 +3406,8 @@ protected:
     void testKeys()
     {
         ASSERT(sizeof(CKeyIdAndPos) == sizeof(unsigned __int64) + sizeof(offset_t));
-        for (unsigned i = 0; i < 16; i++)
-            testKeys((i & 0x8)!=0,(i & 0x4)!=0,(i & 0x2)!=0,(i & 0x1)!=0);
+        testKeys(false);
+        testKeys(true);
     }
 };
 

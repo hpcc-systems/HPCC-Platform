@@ -30,7 +30,7 @@ define([
     "dojox/treemap/TreeMap",
 
     "hpcc/_Widget",
-    "hpcc/ESPWorkunit",
+    "src/ESPWorkunit",
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
@@ -159,9 +159,9 @@ define([
                     var selectedItems = [];
                     for (var i = 0; i < selItems.length; ++i) {
                         arrayUtil.forEach(this.store.data, function (item, idx) {
-                            if (selItems[i].__hpcc_id && item.__hpcc_id == selItems[i].__hpcc_id) {
+                            if (selItems[i].__hpcc_id && item.__hpcc_id === selItems[i].__hpcc_id) {
                                 selectedItems.push(item);
-                            } else if (item.GraphName == selItems[i].Name) {
+                            } else if (item.GraphName === selItems[i].Name) {
                                 selectedItems.push(item);
                             }
                         });
@@ -212,10 +212,10 @@ define([
                 if (lang.exists("params.query.graphsOnly", this) && this.params.query.graphsOnly) {
                     return (timer.SubGraphId && (this.params.query.graphName === "*" || this.params.query.graphName === timer.GraphName) && (this.params.query.subGraphId === "*" || this.params.query.subGraphId === timer.SubGraphId));
                 }
-                return (timer.Name != "Process" &&
-                        timer.Name != "compile" &&
-                        timer.Name != "Total thor time" &&
-                        timer.Name != "Total cluster time" &&
+                return (timer.Name !== "Process" &&
+                        timer.Name !== "compile" &&
+                        timer.Name !== "Total thor time" &&
+                        timer.Name !== "Total cluster time" &&
                         timer.Name.indexOf(":TimeElapsed") < 0);
             },
 

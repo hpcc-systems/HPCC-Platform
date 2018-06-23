@@ -40,10 +40,17 @@
 
 CHttpClientContext::CHttpClientContext()
 {
+    initPersistentHandler();
 }
 
 CHttpClientContext::CHttpClientContext(IPropertyTree* config) : m_config(config)
 {
+    initPersistentHandler();
+}
+
+void CHttpClientContext::initPersistentHandler()
+{
+    m_persistentHandler.setown(createPersistentHandler(nullptr, DEFAULT_MAX_PERSISTENT_IDLE_TIME, DEFAULT_MAX_PERSISTENT_REQUESTS, static_cast<PersistentLogLevel>(getEspLogLevel())));
 }
 
 CHttpClientContext::~CHttpClientContext()
@@ -90,6 +97,8 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
         client->setSsCtx(m_ssctx.get());
     }
 
+    client->setPersistentHandler(m_persistentHandler);
+
 #ifdef COOKIE_HANDLING
     client->m_context = this;
     if(url && *url)
@@ -121,7 +130,7 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
 
 
 
-CHttpClient::CHttpClient(const char *proxy, const char* url) : m_proxy(proxy), m_url(url), m_disableKeepAlive(false)
+CHttpClient::CHttpClient(const char *proxy, const char* url) : m_proxy(proxy), m_url(url), m_disableKeepAlive(false), m_isPersistentSocket(false), m_numRequests(0)
 {
     StringBuffer protocol,username,password, host, port, path;
     Utils::SplitURL(url, protocol,username,password, host, port, path);
@@ -146,14 +155,25 @@ CHttpClient::~CHttpClient()
 {
     if(m_socket)
     {
-        try
+        Owned<ISocket> forRelease(m_socket);
+        if(m_isPersistentSocket)
         {
-            m_socket->shutdown();
-            m_socket->close();
-            m_socket->Release();
+            m_persistentHandler->doneUsing(m_socket, !m_disableKeepAlive, m_numRequests>1?(m_numRequests-1):0);
         }
-        catch(...)
+        else if(!m_disableKeepAlive)
         {
+            m_persistentHandler->add(m_socket, &m_ep);
+        }
+        else
+        {
+            try
+            {
+                m_socket->shutdown();
+                m_socket->close();
+            }
+            catch(...)
+            {
+            }
         }
     }
 }
@@ -196,7 +216,7 @@ void CHttpClient::setTimeOut(unsigned int timeout)
 int CHttpClient::connect(StringBuffer& errmsg)
 {
     SocketEndpoint ep;
-    
+
     if(m_proxy.length() == 0)
     {
         if(m_host.length() <= 0)
@@ -223,46 +243,55 @@ int CHttpClient::connect(StringBuffer& errmsg)
         if (ep.port==0)
             ep.port=80;
     }
-
-    try
+    m_ep = ep;
+    Linked<ISocket> pSock = m_disableKeepAlive?nullptr:m_persistentHandler->getAvailable(&ep);
+    if(pSock)
     {
-        m_socket = ISocket::connect_timeout(ep, m_connectTimeoutMs);
-
-        if(strcmp(m_protocol.get(), "HTTPS") == 0)
+        m_isPersistentSocket = true;
+        m_socket = pSock.getLink();
+    }
+    else
+    {
+        m_isPersistentSocket = false;
+        try
         {
-            ISecureSocket* securesocket = m_ssctx->createSecureSocket(m_socket);
-            int res = securesocket->secure_connect();
-            if(res < 0)
+            m_socket = ISocket::connect_timeout(ep, m_connectTimeoutMs);
+
+            if(strcmp(m_protocol.get(), "HTTPS") == 0)
             {
-                m_socket->shutdown();
-                m_socket->close();
-                m_socket->Release();
-                m_socket = NULL;
-            }
-            else
-            {
-                m_socket = securesocket;
+                ISecureSocket* securesocket = m_ssctx->createSecureSocket(m_socket);
+                int res = securesocket->secure_connect();
+                if(res < 0)
+                {
+                    m_socket->shutdown();
+                    m_socket->close();
+                    m_socket->Release();
+                    m_socket = nullptr;
+                }
+                else
+                {
+                    m_socket = securesocket;
+                }
             }
         }
+        catch(IException *e)
+        {
+            StringBuffer url;
+            ERRLOG("Error connecting to %s", ep.getUrlStr(url).str());
+            DBGLOG(e);
+            e->Release();
+            m_socket = nullptr;
+            return -1;
+        }
+        catch(...)
+        {
+            StringBuffer url;
+            ERRLOG("Unknown exception connecting to %s", ep.getUrlStr(url).str());
+            m_socket = nullptr;
+            return -1;
+        }
     }
-    catch(IException *e)
-    {
-        StringBuffer url;
-        ERRLOG("Error connecting to %s", ep.getUrlStr(url).str());
-        DBGLOG(e);
-        e->Release();
-        m_socket = NULL;
-        return -1;
-    }
-    catch(...)
-    {
-        StringBuffer url;
-        ERRLOG("Unknown exception connecting to %s", ep.getUrlStr(url).str());
-        m_socket = NULL;
-        return -1;
-    }
-
-    if(m_socket == NULL)
+    if(m_socket == nullptr)
     {
         StringBuffer urlstr;
         DBGLOG(">>Can't connect to %s", ep.getUrlStr(urlstr).str());
@@ -366,6 +395,9 @@ int CHttpClient::sendRequest(const char* method, const char* contenttype, String
 
     httpresponse->getContent(response);
 
+    if(!httpresponse->getPersistentEligible())
+        m_disableKeepAlive = true;
+    m_numRequests++;
 
     if (getEspLogLevel()>LogNormal)
         DBGLOG("Response content: %s", response.str());
@@ -494,6 +526,10 @@ int CHttpClient::sendRequest(IProperties *headers, const char* method, const cha
 //write(ofile, response.str(), response.length());
 //close(ofile);
 //}
+    if(!httpresponse->getPersistentEligible())
+        m_disableKeepAlive = true;
+    m_numRequests++;
+
     if (getEspLogLevel()>LogNormal)
         DBGLOG("Response content: %s", response.str());
 
@@ -730,6 +766,10 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
         return -1;
     }
 
+    if(!httpresponse->getPersistentEligible())
+        m_disableKeepAlive = true;
+    m_numRequests++;
+
     StringBuffer contenttype;
     httpresponse->getContentType(contenttype);
     response.set_content_type(contenttype.str());
@@ -741,7 +781,7 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
         if(httpresponse->isTextMessage())
             DBGLOG("http response content = %s", content.str());
     }
-   
+
     response.set_text(content.str());
             
     // parse soap fault

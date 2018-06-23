@@ -148,6 +148,8 @@ void  jlib_decl printStackReport(__int64 startIP = 0);
 // Macro for legacy name of above function
 #define PrintStackReport printStackReport
 
+bool jlib_decl getAllStacks(StringBuffer &output);
+
 #ifdef _DEBUG
 #define RELEASE_CATCH_ALL       int*********
 #else
@@ -220,13 +222,37 @@ public:
     virtual ErrorSeverity getSeverity() const = 0;
     virtual IError * cloneSetSeverity(ErrorSeverity _severity) const = 0;
     virtual unsigned getActivity() const = 0;
+    virtual const char * queryScope() const = 0;
+    virtual IPropertyTree * toTree() const = 0;
 };
+
+interface IWorkUnit;
+interface jlib_decl IErrorReceiver : public IInterface
+{
+    virtual void report(IError* error) = 0;
+    virtual IError * mapError(IError * error) = 0;
+    virtual size32_t errCount() = 0;
+    virtual size32_t warnCount() = 0;
+    virtual void exportMappings(IWorkUnit * wu) const = 0;
+    virtual __declspec(noreturn) void ThrowStringException(int code,const char *format, ...) const __attribute__((format(printf, 3, 4), noreturn));            // override the global function to try and add more context information
+
+    //global helper functions
+    void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos);
+    void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
+};
+
 
 inline bool isError(IError * error) { return isError(error->getSeverity()); }
 inline bool isFatal(IError * error) { return isFatal(error->getSeverity()); }
+extern jlib_decl ErrorSeverity queryDefaultSeverity(WarnErrorCategory category);
 
-extern jlib_decl IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0, unsigned activity = 0);
-extern jlib_decl IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, unsigned activity);
+extern jlib_decl IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0, unsigned activity = 0, const char * scope = nullptr);
+extern jlib_decl IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, unsigned activity, const char * scope);
+extern jlib_decl IError *createError(IPropertyTree * tree);
+inline IError * createError(int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0)
+{
+    return createError(CategoryError, SeverityFatal, errNo, msg, filename, lineno, column, pos);
+}
 
 #endif
 

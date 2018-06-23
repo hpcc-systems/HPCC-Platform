@@ -32,17 +32,16 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsDFUXref",
-    "hpcc/ESPWorkunit",
+    "src/WsDFUXref",
+    "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
-    "hpcc/XrefDetailsWidget"
+    "src/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domConstruct, domClass,
                 registry, ToggleButton, ToolbarSeparator, Button,
                 selector,
-                GridDetailsWidget, WsDFUXref, ESPWorkunit, DelayLoadWidget, ESPUtil, FilterDropDownWidget, XrefDetailsWidget) {
-    return declare("XrefFoundFilesWidget", [GridDetailsWidget], {
+                GridDetailsWidget, WsDFUXref, ESPWorkunit, DelayLoadWidget, ESPUtil) {
+    return declare("XrefLostFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.title_LostFilesFor,
         idProperty: "Name",
@@ -84,8 +83,8 @@ define([
                     Name: {label: this.i18n.Name, width:100, sortable: false},
                     Modified: {label: this.i18n.Modified, width: 30, sortable: true},
                     Numparts: {label: this.i18n.TotalParts, width: 30, sortable: false},
-                    Size: {label:this.i18n.Size, width: 30, sortable: true},
-                    Partslost: {label:this.i18n.PartsLost, width: 30, sortable: true},
+                    Size: {label:this.i18n.Size, width: 30, sortable: false},
+                    Partslost: {label:this.i18n.PartsLost, width: 30, sortable: false},
                     Primarylost: {label: this.i18n.PrimaryLost, width: 30, sortable: false},
                     Replicatedlost: {label: this.i18n.ReplicatedLost, width: 30, sortable: false}
                 }

@@ -140,7 +140,7 @@ define([
             if (this.endsWith(newSel, "-DL")) {
                 newSel = newSel.substring(0, newSel.length - 3);
             }
-            if (!currSel || currSel.id != newSel) {
+            if (!currSel || currSel.id !== newSel) {
                 this.selectChild(newSel, null);
             } else if (this.initTab) {
                 this.initTab();
@@ -153,7 +153,7 @@ define([
 
         getSelectedPath: function () {
             var selWidget = this._tabContainer.get("selectedChildWidget");
-            if (!selWidget || selWidget == this._tabContainer) {
+            if (!selWidget || selWidget === this._tabContainer) {
                 return null;
             }
             if (selWidget.getPath) {
@@ -196,7 +196,7 @@ define([
             }
             var currSel = this.getSelectedChild();
             var child = registry.byId(childID);
-            if (currSel != child) {
+            if (currSel !== child) {
                 var childIndex = this._tabContainer.getIndexOfChild(child);
                 if (childIndex >= 0) {
                     this._tabContainer.selectChild(child);

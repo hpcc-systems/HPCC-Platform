@@ -51,6 +51,35 @@
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}RecreateQueryDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.RecreateQuery}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}RecreateForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Queries}</legend>
+                                    <div id="${id}RecreateQueriesGrid" data-dojo-type="SelectionGridWidget"></div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Options}</legend>
+                                    <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}RemoteDali" title="${i18n.RemoteDali}:" name="RemoteDali" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                        <input id="${id}SourceProcess" title="${i18n.SourceProcess}:" name="SourceProcess" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                        <input id="${id}AllowForeignFiles" title="${i18n.AllowForeignFiles}:" name="AllowForeignFiles" required="false" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}UpdateDFs" title="${i18n.UpdateDFs}:" name="UpdateDfs" required="false" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}UpdateSuperFiles" title="${i18n.UpdateSuperFiles}:" name="UpdateSuperFiles" required="false" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}SetRepublish" title="${i18n.DoNotRepublish}:" name="Republish" required="false" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onRecreateQueries" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <img src="${dojoConfig.urlInfo.resourcePath}/img/person.png" style="vertical-align: middle" alt="${i18n.Mine}">
+                    <label for="Mine" class="bold" style="vertical-align: middle;">${i18n.PublishedByMe}</label>
+                    <input id="${id}Mine" name="PublishedBy" title="${i18n.Mine}" data-dojo-attach-event="onChange:_onMine" data-dojo-type="dijit.form.CheckBox"/>
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
                     <div id="${id}DownloadToList" class="right" data-dojo-attach-event="onClick:_onDownloadToList" data-dojo-type="dijit.form.Button">
                         <span>${i18n.DownloadToCSV}</span>

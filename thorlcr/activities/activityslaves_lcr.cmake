@@ -37,6 +37,7 @@ set (    SRCS
          diskwrite/thdwslave.cpp 
          distribution/thdistributionslave.cpp 
          enth/thenthslave.cpp 
+         external/thexternalslave.cpp
          fetch/thfetchslave.cpp 
          filter/thfilterslave.cpp 
          firstn/thfirstnslave.cpp 
@@ -50,6 +51,7 @@ set (    SRCS
          join/thjoinslave.cpp 
          keydiff/thkeydiffslave.cpp 
          keyedjoin/thkeyedjoinslave.cpp 
+         keyedjoin/thkeyedjoinslave-legacy.cpp 
          keypatch/thkeypatchslave.cpp 
          limit/thlimitslave.cpp 
          lookupjoin/thlookupjoinslave.cpp 
@@ -119,6 +121,7 @@ target_link_libraries ( activityslaves_lcr
          jlib
          thorsort_lcr 
          nbcd 
+         hql
          eclrtl 
          deftype 
          thorhelper 

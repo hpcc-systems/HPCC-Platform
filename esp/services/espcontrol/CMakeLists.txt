@@ -41,10 +41,13 @@ include_directories (
          ./../../../system/security/securesocket
          ./../../../system/security/LdapSecurity
          ./../../../system/security/shared
+         ./../../../system/mp 
+         ./../../../dali/base
          ./../../clients
          ./../../bindings
          ./../../bindings/SOAP/xpp
          ./../../smc/SMCLib
+         ./../../../common/environment
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

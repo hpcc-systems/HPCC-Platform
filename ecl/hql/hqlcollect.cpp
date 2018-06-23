@@ -104,7 +104,8 @@ protected:
 IEclSource * CEclCollection::getSource(IIdAtom * searchName)
 {
     ensureChildren();
-    return find(searchName);
+    IEclSource * match = find(searchName);
+    return LINK(match);
 }
 
 IEclSourceIterator * CEclCollection::getContained()
@@ -149,6 +150,7 @@ class FileSystemFile : public CEclSource
 {
 public:
     FileSystemFile(EclSourceType _type, IFile & _file, bool _allowPlugins);
+    FileSystemFile(const char * eclName, IFileContents * _fileContents);
 
 //interface IEclSource
     virtual IProperties * getProperties();
@@ -165,7 +167,7 @@ public:
     Linked<IFileContents> fileContents;
     StringAttr version;
     SharedObject pluginSO;
-    unsigned extraFlags;
+    unsigned extraFlags = 0;
 };
 
 
@@ -179,6 +181,9 @@ public:
 
     void expandDirectoryTree(IDirectoryIterator * dir, bool allowPlugins);
     void addFile(IFile &file, bool allowPlugins);
+
+    void addFile(const char * eclName, IFileContents * fileContents);
+    FileSystemDirectory * addDirectory(const char * name);
 
 protected:
     virtual void populateChildren();
@@ -203,6 +208,7 @@ public:
     virtual void checkCacheValid();
 
     void processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins);
+    void processSingle(const char * attrName, IFileContents * contents);
 
 public:
     FileSystemDirectory root;
@@ -277,6 +283,11 @@ FileSystemFile::FileSystemFile(EclSourceType _type, IFile & _file, bool _allowPl
     }
 }
 
+FileSystemFile::FileSystemFile(const char * eclName, IFileContents * _fileContents)
+: CEclSource(createIdAtom(eclName), ESTdefinition), file(nullptr), fileContents(_fileContents)
+{
+}
+
 bool FileSystemFile::checkValid()
 {
     if (!eclId)
@@ -306,7 +317,7 @@ bool FileSystemFile::checkValid()
                         version.set(pb.version);
 
                         Owned<ISourcePath> pluginPath = createSourcePath(pb.moduleName);
-                        fileContents.setown(createFileContentsFromText(pb.ECL, pluginPath, true, NULL));
+                        fileContents.setown(createFileContentsFromText(pb.ECL, pluginPath, true, NULL, ::getTimeStamp(file)));
 
                         //if (traceMask & PLUGIN_DLL_MODULE)
                         DBGLOG("Loading plugin %s[%s] version = %s", filename, pb.moduleName, version.get());
@@ -410,6 +421,19 @@ void FileSystemDirectory::addFile(IFile &file, bool allowPlugins)
     expandedChildren = true;
 }
 
+void FileSystemDirectory::addFile(const char * eclName, IFileContents * fileContents)
+{
+    contents.append(*new FileSystemFile(eclName, fileContents));
+}
+
+FileSystemDirectory * FileSystemDirectory::addDirectory(const char * name)
+{
+    FileSystemDirectory * dir = new FileSystemDirectory(createIdAtom(name), nullptr);
+    contents.append(*dir);
+    return dir;
+}
+
+
 void FileSystemDirectory::expandDirectoryTree(IDirectoryIterator * dir, bool allowPlugins)
 {
     ForEach (*dir)
@@ -490,6 +514,23 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
     }
 }
 
+void FileSystemEclCollection::processSingle(const char * attrName, IFileContents * contents)
+{
+    FileSystemDirectory * directory = &root;
+    for (;;)
+    {
+        const char * dot = strchr(attrName, '.');
+        if (!dot)
+            break;
+
+        StringAttr name(attrName, dot-attrName);
+        directory = directory->addDirectory(name);
+        attrName = dot + 1;
+    }
+    directory->addFile(attrName, contents);
+}
+
+
 void FileSystemEclCollection::checkCacheValid()
 {
 }
@@ -498,6 +539,14 @@ extern HQL_API IEclSourceCollection * createFileSystemEclCollection(IErrorReceiv
 {
     Owned<FileSystemEclCollection> collection = new FileSystemEclCollection(trace);
     collection->processFilePath(errs, path, (flags & ESFallowplugins) != 0);
+    return collection.getClear();
+}
+
+
+static IEclSourceCollection * createSingleDefinitionEclCollectionNew(const char * attrName, IFileContents * contents)
+{
+    Owned<FileSystemEclCollection> collection = new FileSystemEclCollection(0);
+    collection->processSingle(attrName, contents);
     return collection.getClear();
 }
 
@@ -682,7 +731,8 @@ IFileContents * CXmlEclElement::queryFileContents()
                 getFullName(defaultName);
                 sourcePath.setown(createSourcePath(defaultName));
             }
-            fileContents.setown(createFileContentsFromText(text, sourcePath, false, NULL));
+            timestamp_type ts = elemTree->getPropInt64("@ts");
+            fileContents.setown(createFileContentsFromText(text, sourcePath, false, NULL, ts));
         }
     }
     return fileContents;
@@ -827,6 +877,9 @@ IEclSourceCollection * createSingleDefinitionEclCollection(const char * moduleNa
     const char * filename = str(contents->querySourcePath());
     if (filename)
         attr->setProp("@sourcePath", filename);
+    timestamp_type ts = contents->getTimeStamp();
+    if (ts)
+        attr->setPropInt64("@ts", ts);
 
     StringBuffer temp;
     temp.append(contents->length(), contents->getText());
@@ -836,6 +889,9 @@ IEclSourceCollection * createSingleDefinitionEclCollection(const char * moduleNa
 
 IEclSourceCollection * createSingleDefinitionEclCollection(const char * attrName, IFileContents * contents)
 {
+    //Use the directory and file based collection - so that file information (including timestamps) is preserved.
+    return createSingleDefinitionEclCollectionNew(attrName, contents);
+#if 0
     const char * dot = strrchr(attrName, '.');
     if (dot)
     {
@@ -843,6 +899,7 @@ IEclSourceCollection * createSingleDefinitionEclCollection(const char * attrName
         return createSingleDefinitionEclCollection(module, dot+1, contents);
     }
     return createSingleDefinitionEclCollection("", attrName, contents);
+#endif
 }
 
 //---------------------------------------------------------------------------------------
@@ -930,7 +987,7 @@ protected:
 
 private:
     IPropertyTree * getAttributes(const char *module, const char *attr, int version, unsigned char infoLevel);
-    IPropertyTree * getModules(timestamp_t from);
+    IPropertyTree * getModules(timestamp_type from);
 
     static IPropertyTree * lookup(IPropertyTree * parent, const char * name);
     static IPropertyTree * update(IPropertyTree * parent, IPropertyTree * child, bool needToDelete);
@@ -940,7 +997,7 @@ public:
     Linked<IEclUser> user;
     StringAttr snapshot;
     StringBuffer lastError;
-    timestamp_t cachestamp;
+    timestamp_type cachestamp;
     bool useSandbox;
     bool preloadText;
 };
@@ -1017,12 +1074,12 @@ void RemoteXmlEclCollection::checkCacheValid()
     }
 
     bool somethingChanged = false;
-    timestamp_t newest = cachestamp;
+    timestamp_type newest = cachestamp;
     Owned<IPropertyTreeIterator> it = repository->getElements("./Module");
     for (it->first(); it->isValid(); it->next())
     {
         IPropertyTree & cur = it->query();
-        timestamp_t timestamp = (timestamp_t)cur.getPropInt64("@timestamp");
+        timestamp_type timestamp = (timestamp_type)cur.getPropInt64("@timestamp");
         if ((cachestamp == 0) || (timestamp > cachestamp))
         {
             updateModule(cur);
@@ -1119,7 +1176,7 @@ IPropertyTree * RemoteXmlEclCollection::fetchAttribute(const char * moduleName, 
     return updateAttribute(module, attributeTree);
 }
 
-IPropertyTree* RemoteXmlEclCollection::getModules(timestamp_t from)
+IPropertyTree* RemoteXmlEclCollection::getModules(timestamp_type from)
 {
     StringBuffer modNames;
     IPropertyTree* repositoryTree = 0;
@@ -1207,7 +1264,7 @@ public:
         return NULL;
     }
 
-    virtual int getModules(StringBuffer & xml, IEclUser * , timestamp_t )
+    virtual int getModules(StringBuffer & xml, IEclUser * , timestamp_type )
     {
         Owned<IPropertyTree> result = createPTree("Repository");
         Owned<IPropertyTreeIterator> iter = archive->getElements("./Module");
@@ -1266,7 +1323,7 @@ public:
     }
     IMPLEMENT_IINTERFACE;
 
-    virtual int getModules(StringBuffer & xml, IEclUser * user, timestamp_t timestamp)
+    virtual int getModules(StringBuffer & xml, IEclUser * user, timestamp_type timestamp)
     {
         StringBuffer xpath;
         xpath.append("Timestamp[@seq=\"").append(++seq).append("\"]");

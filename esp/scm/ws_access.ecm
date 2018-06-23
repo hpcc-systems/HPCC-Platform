@@ -34,6 +34,19 @@ ESPenum ResourceSortBy : string
     Name("Name"),
 };
 
+ESPenum ResourcePermissionSortBy : string
+{
+    Name("Name"),
+    Type("Type"),
+};
+
+ESPenum AccountTypeReq : string //Match with enum ACCOUNT_TYPE_REQ in ldapconnection.hpp
+{
+    Any("Any"),
+    User("User"),
+    Group("Group"),
+};
+
 ESPstruct UserInfo
 {
     string username;
@@ -577,6 +590,30 @@ ESPresponse ResourcePermissionsResponse
     ESParray<ESPstruct ResourcePermission, Permission> Permissions;
 };
 
+ESPrequest [nil_remove] ResourcePermissionQueryRequest
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string prefix;
+    string Name;
+    ESPenum AccountTypeReq AccountType;
+    unsigned PageSize;
+    int64 PageStartFrom;
+    ESPenum ResourcePermissionSortBy SortBy;
+    bool Descending(false);
+    int64 CacheHint;
+};
+
+ESPresponse [nil_remove] ResourcePermissionQueryResponse
+{
+    bool NoSecMngr(false);
+    ESParray<ESPstruct ResourcePermission, Permission> Permissions;
+    int64 TotalResourcePermissions;
+    int64 CacheHint;
+};
+
+
 
 ESPstruct View
 {
@@ -939,7 +976,7 @@ ESPresponse [nil_remove] UserAccountExportResponse
     [http_content("application/octet-stream")] binary Result;
 };
 
-ESPservice [version("1.10"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+ESPservice [version("1.11"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
 {
     ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
     ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);
@@ -995,6 +1032,7 @@ ESPservice [version("1.10"), auth_feature("NONE"), exceptions_inline("./smc_xslt
     ESPmethod GroupQuery(GroupQueryRequest, GroupQueryResponse);
     ESPmethod GroupMemberQuery(GroupMemberQueryRequest, GroupMemberQueryResponse);
     ESPmethod ResourceQuery(ResourceQueryRequest, ResourceQueryResponse);
+    ESPmethod [min_ver("1.11")] ResourcePermissionQuery(ResourcePermissionQueryRequest, ResourcePermissionQueryResponse);
 };
 
 SCMexportdef(ws_access);

@@ -26,7 +26,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 
 //--- end of version configuration ---
 
-#option ('layoutTranslationEnabled', useTranslation);
+#option ('layoutTranslation', useTranslation);
 
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
@@ -44,7 +44,7 @@ recordof(Files.DG_FlatFile) createError := TRANSFORM
     SELF := [];
 END;
 
-o1 := output(LIMIT(Files.DG_FlatFile(DG_firstname=c1), 2, skip)) : independent;
+o1 := output(LIMIT(Files.DG_FlatFile(DG_firstname=c1), 2, skip)) : independent(LABEL('Execute o1'));
 o2 := output(LIMIT(Files.DG_FlatFile(DG_firstname=c2), 2, ONFAIL(createError))) : independent;
 o3 := count(LIMIT(Files.DG_FlatFile(DG_firstname=c3), 2, skip)) : independent;
 o4 := count(LIMIT(Files.DG_FlatFile(DG_firstname=c4), 2, ONFAIL(createError))) : independent;

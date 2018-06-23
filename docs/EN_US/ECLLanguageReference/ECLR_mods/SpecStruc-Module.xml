@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MODULE_Structure">
+  <title>MODULE Structure<indexterm>
+      <primary>MODULE Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>modulename </emphasis><emphasis role="bold">[
+  (</emphasis><emphasis> parameters </emphasis><emphasis role="bold">) ] :=
+  MODULE<indexterm>
+      <primary>MODULE</primary>
+    </indexterm> [ (</emphasis><emphasis> inherit </emphasis><emphasis
+  role="bold">) ] [, VIRTUAL<indexterm>
+      <primary>VIRTUAL</primary>
+    </indexterm> ]</emphasis><emphasis role="bold"> [, LIBRARY<indexterm>
+      <primary>LIBRARY</primary>
+    </indexterm>(</emphasis><emphasis>interface</emphasis><emphasis
+  role="bold">) ]</emphasis><emphasis role="bold"> <emphasis role="bold">[,
+  FORWARD<indexterm>
+      <primary>FORWARD</primary>
+    </indexterm> ]</emphasis></emphasis><emphasis></emphasis></para>
+
+  <para><emphasis>members;</emphasis></para>
+
+  <para><emphasis></emphasis><emphasis role="bold">END;</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>modulename</emphasis></entry>
+
+          <entry>The ECL definition name of the module.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameters</emphasis></entry>
+
+          <entry>Optional. The parameters to make available to all the
+          <emphasis>definitions</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>inherit</emphasis></entry>
+
+          <entry>A comma-delimited list of INTERFACE or abstract MODULE
+          structures on which to base this instance. The current instance
+          inherits all the <emphasis>members</emphasis> from the base
+          structures. This may not be a passed parameter.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>members</emphasis></entry>
+
+          <entry>The definitions that comprise the module. These definitions
+          may receive parameters, may include actions (such as OUTPUT), and
+          may use the EXPORT or SHARED scope types. These may not include
+          INTERFACE or abstract MODULEs (see below). If the LIBRARY option is
+          specified, the <emphasis>definitions</emphasis> must exactly
+          implement the EXPORTed members of the
+          <emphasis>interface</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">VIRTUAL</emphasis></entry>
+
+          <entry>Optional. Specifies the MODULE defines an abstract interface
+          whose <emphasis>definitions</emphasis> do not require values to be
+          defined for them.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LIBRARY</emphasis></entry>
+
+          <entry>Optional. Specifies the MODULE implements a query library
+          <emphasis>interface</emphasis> definition.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>interface</emphasis></entry>
+
+          <entry>Specifies the INTERFACE that defines the
+          <emphasis>parameters</emphasis> passed to the query
+          library<indexterm>
+              <primary>query library</primary>
+            </indexterm>. The <emphasis>parameters</emphasis> passed to the
+          MODULE must exactly match the parameters passed to the specified
+          <emphasis>interface</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">FORWARD</emphasis></entry>
+
+          <entry>Optional. Delays processing of definitions until they are
+          used. Adding <emphasis role="bold">,FORWARD</emphasis> to a MODULE
+          delays processing of definitions within the module until they are
+          used. This has two main effects: It prevents pulling in dependencies
+          for definitions that are never used and it allows earlier
+          definitions to refer to later definitions. <emphasis
+          role="bold">Note: Circular references are still
+          illegal.</emphasis></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">MODULE </emphasis>structure is a container
+  that allows you to group related definitions. The
+  <emphasis>parameters</emphasis> passed to the MODULE are shared by all the
+  related <emphasis>members </emphasis>definitions. This is similar to the
+  FUNCTION structure except that there is no RETURN.</para>
+
+  <sect2 id="Attribute_Visibility_Rules">
+    <title>Definition Visibility<indexterm>
+        <primary>Definition Visibility</primary>
+      </indexterm> Rules</title>
+
+    <para>The scoping rules for the <emphasis>members</emphasis> are the same
+    as those previously described in the <emphasis role="bold">Definition
+    Visibility</emphasis> discussion:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Local definitions are visible only through the next EXPORT or
+        SHARED definition (including <emphasis>members</emphasis> of the
+        nested MODULE structure, if the next EXPORT or SHARED definition is a
+        MODULE).</para>
+      </listitem>
+
+      <listitem>
+        <para>SHARED definitions are visible to all subsequent definitions in
+        the structure (including <emphasis>members</emphasis> of any nested
+        MODULE structures) but not outside of it.</para>
+      </listitem>
+
+      <listitem>
+        <para>EXPORT definitions are visible within the MODULE structure
+        (including <emphasis>members</emphasis> of any subsequent nested
+        MODULE structures) and outside of it .</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Any EXPORT <emphasis>members</emphasis> may be referenced using an
+    additional level of standard object.property syntax. For example, assuming
+    the EXPORT MyModuleStructure MODULE structure is contained in an ECL
+    Repository module named MyModule and that it contains an EXPORT
+    <emphasis>member</emphasis> named MyDefinition, you would reference that
+    <emphasis>definition</emphasis> as:</para>
+
+    <para><programlisting>MyModule.MyModuleStructure.MyDefinition
+
+MyMod := MODULE
+  SHARED x := 88;
+  y := 42;
+  EXPORT InMod := MODULE //nested MODULE
+    EXPORT Val1 := x + 10;
+    EXPORT Val2 := y + 10;
+  END;
+END;
+
+MyMod.InMod.Val1;
+MyMod.InMod.Val2;</programlisting></para>
+  </sect2>
+
+  <sect2 id="Side-Effect_Actions">
+    <title>MODULE Side-Effect Actions</title>
+
+    <para>Side-effect Actions are allowed in the MODULE only by using the WHEN
+    function, as in this example:</para>
+
+    <programlisting>//An Example with a side-effect action 
+EXPORT customerNames := MODULE 
+  EXPORT Layout := RECORD 
+    STRING20 surname;  
+    STRING10 forename; 
+    INTEGER2 age := 25; 
+  END; 
+  Act := OUTPUT('customer file used by user &lt;x&gt;'); 
+  EXPORT File := WHEN(DATASET([{'x','y',22}],Layout),Act); 
+END; 
+BOOLEAN doIt := TRUE : STORED('doIt'); 
+IF (doIt, OUTPUT(customerNames.File));
+//This code produces two results: the dataset, and the string</programlisting>
+  </sect2>
+
+  <sect2 id="Concrete_vs_Abstract_Modules">
+    <title>Concrete vs. Abstract (VIRTUAL) Modules</title>
+
+    <para>A MODULE may contain a mixture of VIRTUAL and non-VIRTUAL
+    <emphasis>members</emphasis>. The rules are:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>ALL <emphasis>members</emphasis> are VIRTUAL if the MODULE has
+        the VIRTUAL option or is an INTERFACE</para>
+      </listitem>
+
+      <listitem>
+        <para>A <emphasis>member</emphasis> is VIRTUAL if it is declared using
+        the EXPORT VIRTUAL or SHARED VIRTUAL keywords</para>
+      </listitem>
+
+      <listitem>
+        <para>A <emphasis>member</emphasis> is VIRTUAL if the definition of
+        the same name in the <emphasis>inherited</emphasis> module is
+        VIRTUAL.</para>
+      </listitem>
+
+      <listitem>
+        <para>Some <emphasis>members</emphasis> can never be virtual -- RECORD
+        structures.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>All EXPORTed and SHARED <emphasis>members</emphasis> of an
+    <emphasis>inherited</emphasis> abstract module can be overridden by
+    re-defining them in the current instance, whether that current instance is
+    abstract or concrete. Overridden definitions must exactly match the type
+    and parameters of the <emphasis>inherited</emphasis>
+    <emphasis>members</emphasis>. Multiple <emphasis>inherited
+    </emphasis>interfaces may contain definitions with the same name if they
+    are the same type and receive the same parameters, but if those
+    <emphasis>inherited</emphasis> <emphasis>members</emphasis> have different
+    values defined for them, the conflict must be resolved by overriding that
+    <emphasis>member </emphasis>in the current instance.</para>
+  </sect2>
+
+  <sect2 id="LIBRARY_Modules">
+    <title>LIBRARY Modules</title>
+
+    <para>A MODULE with the LIBRARY option defines a related set of functions
+    meant to be used as a query library (see the LIBRARY function and BUILD
+    action discussions). There are several restrictions on what may be
+    included in a query library. They are:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>It may not contain side-effect actions (like OUTPUT or
+        BUILD)</para>
+      </listitem>
+
+      <listitem>
+        <para>It may not contain definitions with workflow services attached
+        to them (such as PERSIST, STORED, SUCCESS, etc.)</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>It may only EXPORT:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Dataset/recordset definitions</para>
+      </listitem>
+
+      <listitem>
+        <para>Datarow definitions (such as the ROW function<indexterm>
+            <primary>ROW function</primary>
+          </indexterm>)</para>
+      </listitem>
+
+      <listitem>
+        <para>Single-valued and Boolean definitions</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>And may NOT export:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Actions (like OUTPUT or BUILD)</para>
+      </listitem>
+
+      <listitem>
+        <para>TRANSFORM functions</para>
+      </listitem>
+
+      <listitem>
+        <para>Other MODULE structures</para>
+      </listitem>
+
+      <listitem>
+        <para>MACRO definitions</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Example:</para>
+
+    <programlisting>EXPORT filterDataset(STRING search, BOOLEAN onlyOldies) := MODULE
+  f := namesTable; //local to the "g" definition
+  SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
+          //SHARED = visible only within the structure
+  EXPORT included := g(surname != search);
+  EXPORT excluded := g(surname = search);
+          //EXPORT = visible outside the structure
+END;
+filtered := filterDataset('Halliday', TRUE);
+OUTPUT(filtered.included,,NAMED('Included'));
+OUTPUT(filtered.excluded,,NAMED('Excluded'));
+       
+//same result, different coding style:
+EXPORT filterDataset(BOOLEAN onlyOldies) := MODULE
+  f := namesTable;
+  SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
+  EXPORT included(STRING search) := g(surname &lt;&gt; search);
+  EXPORT excluded(STRING search) := g(surname = search);
+END;
+filtered := filterDataset(TRUE);
+OUTPUT(filtered.included('Halliday'),,NAMED('Included'));
+OUTPUT(filterDataset(true).excluded('Halliday'),,NAMED('Excluded'));
+          
+          
+//VIRTUAL examples
+Mod1 := MODULE,VIRTUAL //a fully abstract module
+  EXPORT val := 1;
+  EXPORT func(INTEGER sc) := val * sc;
+END;
+         
+Mod2 := MODULE(Mod1) //instance
+  EXPORT val := 3; //a concete member, overriding default value
+                   //while func remains abstract
+END;
+     
+Mod3 := MODULE(Mod1) //a fully concete instance
+  EXPORT func(INTEGER sc) := val + sc; //overrides inherited func
+END;
+OUTPUT(Mod2.func(5)); //result is 15
+OUTPUT(Mod3.func(5)); //result is 6
+
+//FORWARD example
+EXPORT MyModule := MODULE, FORWARD
+  EXPORT INTEGER foo := bar;
+  EXPORT INTEGER bar := 42;
+END;
+
+MyModule.foo;
+
+</programlisting>
+
+    <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
+    Structure</link>, <link linkend="Attribute_Visibility">Definition
+    Visibility</link>, <link linkend="INTERFACE_Structure">INTERFACE
+    Structure</link>, <link linkend="LIBRARY">LIBRARY</link>, <link
+    linkend="BUILD">BUILD</link></para>
+  </sect2>
+</sect1>

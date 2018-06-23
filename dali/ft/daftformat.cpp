@@ -58,6 +58,16 @@ CPartitioner::CPartitioner()
     partitioning = false;
 }
 
+void CPartitioner::setAbort(IAbortRequestCallback * _abort)
+{
+    abortChecker = _abort;
+}
+
+bool CPartitioner::isAborting()
+{
+    return abortChecker && abortChecker->abortRequested();
+}
+
 void CPartitioner::calcPartitions(Semaphore * sem)
 {
     commonCalcPartitions();
@@ -94,6 +104,9 @@ void CPartitioner::commonCalcPartitions()
     if (endOffset == totalSize) lastSplit = numParts-1;
     if (lastSplit >= numParts) lastSplit = numParts-1;                                      // very rare with variable length records, last file is very small or copying a couple of records 50 ways.
 
+    //LOG(MCdebugInfo, unknownJob, "commonCalcPartitions: partSize:%lld, endOffset: %lld, firstSplit: %d, lastSplit: %d ",partSize ,endOffset, firstSplit, lastSplit);
+    JSON_DBGLOG("commonCalcPartitions: partSize:%lld, endOffset: %lld, firstSplit: %d, lastSplit: %d ",partSize ,endOffset, firstSplit, lastSplit);
+
     if (!partSeparator.isEmpty() && appendingContent) //appending to existing content, add a separator if necessary
     {
         Owned<PartitionPoint> separator = new PartitionPoint;
@@ -122,6 +135,7 @@ void CPartitioner::commonCalcPartitions()
             splitPoint =  (split * totalSize) / numParts;
         else
             splitPoint =  split * partSize;
+        JSON_DBGLOG("commonCalcPartitions: split:%d, splitPoint: %lld",split ,splitPoint);
         findSplitPoint(splitPoint, cursor);
         const offset_t inputOffset = cursor.inputOffset;
         assertex(inputOffset >= thisOffset && inputOffset <= thisOffset + thisSize);
@@ -130,14 +144,18 @@ void CPartitioner::commonCalcPartitions()
         if ((split != firstSplit) || (inputOffset != startInputOffset))
         {
             results.append(*new PartitionPoint(whichInput, split-1, startInputOffset-thisOffset+thisHeaderSize, inputOffset - startInputOffset - cursor.trimLength, cursor.outputOffset-startOutputOffset));
+            JSON_DBGLOG("commonCalcPartitions: startInputOffset:%lld, inputOffset: %lld, startOutputOffset: %lld, cursor.outputOffset: %lld",startInputOffset ,inputOffset, startOutputOffset, cursor.outputOffset);
             startInputOffset = inputOffset;
             startOutputOffset = cursor.outputOffset;
         }
+
+        if (isAborting())
+            throwAbortException();
     }
 
     assertex(startInputOffset != endOffset || splitAfterPoint());
     findSplitPoint(endOffset, cursor);
-
+    JSON_DBGLOG("commonCalcPartitions: lastSplit: %d, startInputOffset: %lld, thisOffset: %lld, thisHeaderSize: %d, startOutputOffset: %lld, cursor.outputOffset: %lld", lastSplit, startInputOffset, thisOffset, thisHeaderSize ,startOutputOffset, cursor.outputOffset);
     killBuffer(); // don't keep buffer longer than needed
 
     results.append(*new PartitionPoint(whichInput, lastSplit, startInputOffset-thisOffset+thisHeaderSize, endOffset - startInputOffset, cursor.outputOffset-startOutputOffset));

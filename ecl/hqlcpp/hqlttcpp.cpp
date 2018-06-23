@@ -41,6 +41,7 @@
 #include "hqlerror.hpp"
 #include "hqlalias.hpp"
 #include "hqlir.hpp"
+#include "hqliproj.hpp"
 
 #define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea
@@ -153,7 +154,7 @@ public:
     }
 
     void extractGlobal(IHqlExpression * global, ClusterType platform);
-    void extractStoredInfo(IHqlExpression * expr, IHqlExpression * codehash, bool isRoxie, int multiplePersistInstances);
+    void extractStoredInfo(IHqlExpression * expr, const char * id, IHqlExpression * codehash, bool isRoxie, int multiplePersistInstances);
     void checkFew(HqlCppTranslator & translator);
     void splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
     IHqlExpression * getStoredKey();
@@ -161,6 +162,7 @@ public:
     IHqlExpression * queryCluster() const { return cluster; }
     int queryMaxPersistCopies() const { return numPersistInstances; }
     bool queryPersistRefresh() const { return persistRefresh; }
+    const char * queryLabel() const { return label ? label.str() : nullptr; }
 
 protected:
     void doSplitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
@@ -186,6 +188,7 @@ protected:
     OwnedHqlExpr extraSetAttr;
     OwnedHqlExpr extraOutputAttr;
     OwnedHqlExpr codehash;
+    StringBuffer label;
     const char * filePrefix;
     const char * storedPrefix;
     int numPersistInstances;
@@ -985,6 +988,8 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
 
     case no_call:
         {
+            if (functionCallIsActivity(expr))
+                return OptionYes;
             YesNoOption bodyOption = normalizeThor(expr->queryBody()->queryFunctionDefinition());
             //do Something with it
             break;
@@ -995,6 +1000,8 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             IHqlExpression * funcDef = func->queryChild(0);
             if (funcDef->hasAttribute(gctxmethodAtom) || funcDef->hasAttribute(globalContextAtom))
                 return OptionNo;
+            if (externalCallIsActivity(expr))
+                return OptionYes;
 //          if (funcDef->hasAttribute(graphAtom))
 //              return OptionYes;
             if (!resourceConditionalActions && expr->isAction())
@@ -1118,13 +1125,14 @@ void ThorScalarTransformer::doAnalyseExpr(IHqlExpression * expr)
     {
     case no_thor:
         {
-            ITypeInfo * type = expr->queryType();
-            if (type && (type->isScalar() || type->getTypeCode() == type_row))
+            if (!expr->isAction())
                 seenCandidate = true;
             //No point looking further than a no_thor they don't (currently) get nested within each other.
             return;
         }
     }
+    if (seenCandidate)
+        return;
 
     HoistingHqlTransformer::doAnalyseExpr(expr);
 }
@@ -1154,9 +1162,10 @@ IHqlExpression * ThorScalarTransformer::createTransformed(IHqlExpression * expr)
 {
     if (expr->isConstant())
     {
-        //THOR(NULL) is marked as constant (probably incorrectly), but still needs hoisting.
-//      if ((expr->getOperator() != no_thor) || (expr->numChildren() == 0))
-            return LINK(expr);
+        //THOR(NULL) is marked as constant (probably incorrectly), but if it is constant can be evaluated inline
+        if ((expr->getOperator() == no_thor) && (expr->numChildren() != 0))
+            return LINK(expr->queryChild(0));
+        return LINK(expr);
     }
 
     IHqlExpression * ret = queryTransformAnnotation(expr);
@@ -1181,9 +1190,7 @@ IHqlExpression * ThorScalarTransformer::createTransformed(IHqlExpression * expr)
         }
     case no_thor:
         {
-            ITypeInfo * type = expr->queryType();
-//          if (isUsedUnconditionally(expr) && type && (type->isScalar() || type->getTypeCode() == type_row))
-            if ((type->isScalar() || type->getTypeCode() == type_row))
+            if (!expr->isAction())
             {
                 //only other solution is to have some kind of graph result which is returned.
                 assertex(options.workunitTemporaries);
@@ -2212,6 +2219,8 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
                 if (expr->isDatarow())
                     args.append(*createAttribute(allocatorAtom));
             }
+            inheritAttribute(args, expr, activityAtom);
+
             OwnedHqlExpr body = createWrapper(no_outofline, expr->queryType(), args);
             HqlExprArray newFormals;
             if (expr->hasAttribute(languageAtom))
@@ -3911,16 +3920,10 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
 void HqlCppTranslator::convertLogicalToActivities(WorkflowItem & curWorkflow)
 {
     {
-        cycle_t startCycles = get_cycles_now();
         ThorHqlTransformer transformer(*this, targetClusterType, wu(), implicitFunctionId);
 
         HqlExprArray & exprs = curWorkflow.queryExprs();
-        HqlExprArray transformed;
-
-        transformer.transformRoot(exprs, transformed);
-
-        replaceArray(exprs, transformed);
-        noteFinishedTiming("compile:tree transform: convert logical", startCycles);
+        transformer.transformRoot(exprs);
     }
 
     if (queryOptions().normalizeLocations)
@@ -4296,7 +4299,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
             {
                 IHqlExpression * dataset = expr->queryChild(0);
                 CompoundSourceInfo * parentExtra = queryBodyExtra(dataset);
-                if (!parentExtra->isAggregate() && !parentExtra->hasAnyLimit() && parentExtra->isBinary())
+                if (!parentExtra->isAggregate() && !parentExtra->hasAnyLimit() && parentExtra->isBinary() && !isGrouped(dataset))
                 {
                     node_operator newOp = no_none;
                     switch (parentExtra->sourceOp)
@@ -4459,8 +4462,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                                 IHqlExpression * root = queryRoot(expr);
                                 if (root)
                                 {
-                                    ColumnToOffsetMap * map = translator.queryRecordOffsetMap(root->queryRecord());
-                                    if (map->isFixedWidth())
+                                    if (translator.isFixedRecordSize(root->queryRecord()))
                                         extra->forceCompound = true;
                                 }
                             }
@@ -5301,10 +5303,12 @@ void GlobalAttributeInfo::extractGlobal(IHqlExpression * global, ClusterType pla
     persistOp = no_global;
 }
 
-void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpression * _codehash, bool isRoxie, int multiplePersistInstances)
+void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, const char * id, IHqlExpression * _codehash, bool isRoxie, int multiplePersistInstances)
 {
     node_operator op = expr->getOperator();
     few = expr->hasAttribute(fewAtom) || (isRoxie) || (value->isDictionary() && !expr->hasAttribute(manyAtom));
+
+    getUTF8Value(label, queryAttributeChild(expr, labelAtom, 0), nullptr);
     switch (op)
     {
     case no_stored:
@@ -5347,7 +5351,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
             getStringValue(s, codehash);
             storedName.setown(createConstant(s.str()));
         }
-	persistRefresh = getBoolValue(queryAttributeChild(expr, refreshAtom, 0), true);
+        persistRefresh = getBoolValue(queryAttributeChild(expr, refreshAtom, 0), true);
         break;
     case no_critical:
         setOp = no_setresult;
@@ -5384,6 +5388,26 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         break;
     default:
         return;
+    }
+
+    if (!label)
+    {
+        switch (op)
+        {
+        case no_stored:
+        case no_persist:
+            label.append("Create ");
+            getStoredDescription(label, sequence, storedName, true);
+            break;
+        case no_critical:
+            label.append("CRITICAL(");
+            getStringValue(label, storedName);
+            label.append(")");
+            break;
+        default:
+            label.append(id);
+            break;
+        }
     }
     persistOp = op;
 }
@@ -5786,7 +5810,7 @@ WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _tr
 
 //-- Helper routines --
 
-IWorkflowItem * WorkflowTransformer::addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, ContingencyData const & conts, IHqlExpression * cluster)
+IWorkflowItem * WorkflowTransformer::addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, ContingencyData const & conts, IHqlExpression * cluster, const char * label)
 {
     Owned<IWorkflowItem> wf(wu->addWorkflowItem(wfid, type, mode, conts.success, conts.failure, conts.recovery, conts.retries, conts.contingencyFor));
     if (cluster)
@@ -5795,6 +5819,8 @@ IWorkflowItem * WorkflowTransformer::addWorkflowToWorkunit(unsigned wfid, WFType
         getStringValue(clusterText, cluster);
         wf->setCluster(clusterText);
     }
+    if (label && *label)
+        wf->setLabel(label);
     ForEachItemIn(idx, dependencies)
         wf->addDependency(dependencies.item(idx));
     return wf.getClear();
@@ -5833,9 +5859,9 @@ void WorkflowTransformer::setWorkflowCritical(IWorkflowItem * wf, char const * c
     wf->setCriticalInfo(criticalName);
 }
 
-WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp)
+WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp, const char * label)
 {
-    WorkflowItem * item = new WorkflowItem(wfid, workflowOp);
+    WorkflowItem * item = new WorkflowItem(wfid, workflowOp, label);
     expr->unwindList(item->queryExprs(), no_comma);
     gatherIndirectDependencies(item->dependencies, expr);
     return item;
@@ -5891,8 +5917,9 @@ unsigned WorkflowTransformer::ensureWorkflowAction(IHqlExpression * expr)
     if (isWorkflowAction(expr))
         return (unsigned)getIntValue(expr->queryChild(0));
     unsigned wfid = ++wfidCount;
-    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(expr), rootCluster);
-    addWorkflowItem(*createWorkflowItem(expr, wfid, no_actionlist));
+    const char * label = str(expr->queryId());
+    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(expr), rootCluster, label);
+    addWorkflowItem(*createWorkflowItem(expr, wfid, no_actionlist, label));
     return wfid;
 }
 
@@ -5910,7 +5937,7 @@ unsigned WorkflowTransformer::splitValue(IHqlExpression * value)
     info.splitGlobalDefinition(value->queryType(), value, wu, setValue, 0, (translator.getTargetClusterType() == RoxieCluster));
     inheritDependencies(setValue);
     unsigned wfid = ++wfidCount;
-    addWorkflowItem(*createWorkflowItem(setValue, wfid, no_global));
+    addWorkflowItem(*createWorkflowItem(setValue, wfid, no_global, nullptr));
     return wfid;
 }
 
@@ -5959,6 +5986,19 @@ void WorkflowTransformer::extractDependentInputs(UnsignedArray & visited, Depend
 
 IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransformed, IHqlExpression * expr)
 {
+    const char * id = nullptr;
+    ForEachItemInRev(i, activeLocations)
+    {
+        IHqlExpression & next = activeLocations.item(i);
+        if (next.queryBody() != untransformed)
+            break;
+        if (next.queryId())
+        {
+            id = str(next.queryId());
+            break;
+        }
+    }
+
     IHqlExpression * value = expr->queryChild(0);
     GlobalAttributeInfo info("jobtemp::wf", "wf", value);
     info.sequence.setown(getLocalSequenceNumber());
@@ -5986,7 +6026,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_persist:
         case no_checkpoint:
         case no_stored:
-            info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
+            info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
 
             OwnedHqlExpr id = info.getStoredKey();
             unsigned match = alreadyProcessed.find(*id);
@@ -6049,7 +6089,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_checkpoint:
         case no_stored:
             {
-                info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
 
                 OwnedHqlExpr id = info.getStoredKey();
                 alreadyProcessed.append(*id.getClear());
@@ -6059,31 +6099,31 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             break;
         case no_independent:
         case no_once:
-            info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
+            info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
             break;
         case no_success:
             {
                 OwnedHqlExpr successExpr = transformSequentialEtc(cur.queryChild(0));
                 conts.success = splitValue(successExpr);
-                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.success, WFTypeSuccess, WFModeNormal, queryDirectDependencies(successExpr), NULL, wfid);
-                info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
+                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.success, WFTypeSuccess, WFModeNormal, queryDirectDependencies(successExpr), NULL, wfid, info.queryLabel());
+                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
                 break;
             }
         case no_failure:
             {
                 OwnedHqlExpr failureExpr = transformSequentialEtc(cur.queryChild(0));
                 conts.failure = splitValue(failureExpr);
-                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.failure, WFTypeFailure, WFModeNormal, queryDirectDependencies(failureExpr), NULL, wfid);
-                info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
+                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.failure, WFTypeFailure, WFModeNormal, queryDirectDependencies(failureExpr), NULL, wfid, info.queryLabel());
+                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
                 break;
             }
         case no_recovery:
             {
-            conts.recovery = splitValue(cur.queryChild(0));
-            conts.retries = (unsigned)getIntValue(cur.queryChild(1), 0);
-                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.recovery, WFTypeRecovery, WFModeNormal, queryDirectDependencies(cur.queryChild(0)), NULL, wfid);
-            info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
-            break;
+                conts.recovery = splitValue(cur.queryChild(0));
+                conts.retries = (unsigned)getIntValue(cur.queryChild(1), 0);
+                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.recovery, WFTypeRecovery, WFModeNormal, queryDirectDependencies(cur.queryChild(0)), NULL, wfid, info.queryLabel());
+                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
+                break;
             }
         case no_attr:
             assertex(cur.queryName() == _original_Atom);
@@ -6218,10 +6258,10 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
          {
             StringBuffer criticalName;
             info.storedName->queryValue()->getStringValue(criticalName);
-            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCritical, queryDirectDependencies(setValue), conts, info.queryCluster());
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCritical, queryDirectDependencies(setValue), conts, info.queryCluster(), info.queryLabel());
             setWorkflowCritical(wf, criticalName.str());
 
-            addWorkflowItem(*createWorkflowItem(getValue, wfid, no_none));
+            addWorkflowItem(*createWorkflowItem(getValue, wfid, no_none, info.queryLabel()));
             getValue.setown(createNullExpr(expr->queryType()));
         }
         else if(info.persistOp == no_persist)
@@ -6229,7 +6269,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             StringBuffer persistName;
             info.storedName->queryValue()->getStringValue(persistName);
             unsigned persistWfid = ++wfidCount;
-            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModePersist, queryDirectDependencies(setValue), conts, info.queryCluster());
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModePersist, queryDirectDependencies(setValue), conts, info.queryCluster(), info.queryLabel());
             setWorkflowPersist(wf, persistName.str(), persistWfid, info.queryMaxPersistCopies(), info.queryPersistRefresh());
 
             DependenciesUsed dependencies(false);
@@ -6253,10 +6293,10 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             OwnedHqlExpr check = createValue(no_persist_check, makeVoidType(), checkArgs);
             inheritDependencies(check);
 
-            addWorkflowItem(*createWorkflowItem(check, persistWfid, no_actionlist));
-            addWorkflowItem(*createWorkflowItem(setValue, wfid, no_persist));
+            addWorkflowItem(*createWorkflowItem(check, persistWfid, no_actionlist, nullptr));
+            addWorkflowItem(*createWorkflowItem(setValue, wfid, no_persist, info.queryLabel()));
 
-            Owned<IWorkflowItem> wfPersist = addWorkflowToWorkunit(persistWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(check), NULL);
+            Owned<IWorkflowItem> wfPersist = addWorkflowToWorkunit(persistWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(check), nullptr, nullptr);
         }
         else
         {
@@ -6266,8 +6306,8 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 inheritDependencies(cluster);
                 setValue.set(cluster);
             }
-            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, info.queryCluster());
-            addWorkflowItem(*createWorkflowItem(setValue, wfid, info.persistOp));
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, info.queryCluster(), info.queryLabel());
+            addWorkflowItem(*createWorkflowItem(setValue, wfid, info.persistOp, info.queryLabel()));
         }
     }
 
@@ -6275,9 +6315,9 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
     {
         if (schedWfid == 0)
             schedWfid = ++wfidCount;
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(schedWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(getValue), info.queryCluster());
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(schedWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(getValue), info.queryCluster(), info.queryLabel());
         setWorkflowSchedule(wf, sched);
-        addWorkflowItem(*createWorkflowItem(getValue, schedWfid, no_none));
+        addWorkflowItem(*createWorkflowItem(getValue, schedWfid, no_none, info.queryLabel()));
         getValue.setown(createNullExpr(expr->queryType()));
     }
     else
@@ -6318,8 +6358,8 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     unsigned wfid = ++wfidCount;
 
     s.appendf("AutoWorkflow: Spotted %s ", getOpString(expr->getOperator()));
-    if (expr->queryName())
-        s.append("[").append(expr->queryName()).append("] ");
+    if (expr->queryId())
+        s.append("[").append(expr->queryId()).append("] ");
     s.append(" to common up between workflow items [").append(wfid).append("]");
     DBGLOG("%s", s.str());
     translator.addWorkunitException(SeverityInformation, 0, s.str(), location);
@@ -6334,8 +6374,8 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     info.splitGlobalDefinition(transformed->queryType(), transformed, wu, setValue, &getValue, isRoxie);
     copySetValueDependencies(transformedExtra, setValue);
 
-    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, NULL);
-    addWorkflowItem(*createWorkflowItem(setValue, wfid, no_actionlist));
+    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, NULL, info.queryLabel());
+    addWorkflowItem(*createWorkflowItem(setValue, wfid, no_actionlist, str(expr->queryId())));
 
     queryBodyExtra(getValue.get())->addDependency(wfid);
     return getValue.getClear();
@@ -6635,7 +6675,7 @@ UnsignedArray const & WorkflowTransformer::queryDirectDependencies(IHqlExpressio
 
 void WorkflowTransformer::cacheWorkflowDependencies(unsigned wfid, UnsignedArray & extra)
 {
-    WorkflowItem * item = new WorkflowItem(wfid, no_actionlist);
+    WorkflowItem * item = new WorkflowItem(wfid, no_actionlist, nullptr);
     ForEachItemIn(i, extra)
     {
         unsigned wfid = extra.item(i);
@@ -6701,7 +6741,7 @@ IHqlExpression * WorkflowTransformer::createCompoundWorkflow(IHqlExpression * ex
         }
 
         unsigned wfid = ++wfidCount;
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeSequential, childWfid, rootCluster);
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeSequential, childWfid, rootCluster, str(expr->queryId()));
         cacheWorkflowDependencies(wfid, childWfid);
         return createWorkflowAction(wfid);
     }
@@ -6753,7 +6793,7 @@ IHqlExpression * WorkflowTransformer::createSequentialWorkflow(IHqlExpression * 
             ensureWorkflowAction(childWfid, nextBranch);
 
         unsigned wfid = ++wfidCount;
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeSequential, childWfid, rootCluster);
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeSequential, childWfid, rootCluster, str(expr->queryId()));
         cacheWorkflowDependencies(wfid, childWfid);
         return createWorkflowAction(wfid);
     }
@@ -6790,7 +6830,7 @@ IHqlExpression * WorkflowTransformer::createParallelWorkflow(IHqlExpression * ex
         }
 
         unsigned wfid = ++wfidCount;
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeParallel, childWfid, rootCluster);
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeParallel, childWfid, rootCluster, str(expr->queryId()));
         cacheWorkflowDependencies(wfid, childWfid);
         return createWorkflowAction(wfid);
     }
@@ -6857,9 +6897,9 @@ IHqlExpression * WorkflowTransformer::createIfWorkflow(IHqlExpression * expr)
                 ensureWorkflowAction(dependencies, newFalseExpr);
 
             unsigned wfid = ++wfidCount;
-            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCondition, dependencies, rootCluster);
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCondition, dependencies, rootCluster, str(expr->queryId()));
 
-            WorkflowItem * item = new WorkflowItem(wfid, no_if);
+            WorkflowItem * item = new WorkflowItem(wfid, no_if, "IF");
             cloneDependencies(item->dependencies, dependencies);
 
             if (falseExpr)
@@ -6900,17 +6940,17 @@ IHqlExpression * WorkflowTransformer::createWaitWorkflow(IHqlExpression * expr)
 
     unsigned endWaitWfid = ++wfidCount;
     UnsignedArray noDependencies;
-    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(endWaitWfid, WFTypeNormal, WFModeWait, noDependencies, rootCluster);
+    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(endWaitWfid, WFTypeNormal, WFModeWait, noDependencies, rootCluster, str(expr->queryId()));
     setWorkflowSchedule(wf, sched);
     OwnedHqlExpr doNothing = createValue(no_null, makeVoidType());
-    addWorkflowItem(*createWorkflowItem(doNothing, endWaitWfid, no_wait));
+    addWorkflowItem(*createWorkflowItem(doNothing, endWaitWfid, no_wait, "WAIT"));
 
     //Now create a wait entry, with the EndWait as the dependency
     UnsignedArray dependencies;
     dependencies.append(endWaitWfid);
 
     unsigned beginWaitWfid = ++wfidCount;
-    Owned<IWorkflowItem> wfWait = addWorkflowToWorkunit(beginWaitWfid, WFTypeNormal, WFModeBeginWait, dependencies, rootCluster);
+    Owned<IWorkflowItem> wfWait = addWorkflowToWorkunit(beginWaitWfid, WFTypeNormal, WFModeBeginWait, dependencies, rootCluster, str(expr->queryId()));
     cacheWorkflowDependencies(beginWaitWfid, dependencies);
     return createWorkflowAction(beginWaitWfid);
 }
@@ -7087,17 +7127,17 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
     {
         //By definition they don't have any dependencies, so no need to call inheritDependencies.
         OwnedHqlExpr onceExpr = createActionList(onceExprs);
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(onceWfid, WFTypeNormal, WFModeOnce, queryDirectDependencies(onceExpr), NULL);
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(onceWfid, WFTypeNormal, WFModeOnce, queryDirectDependencies(onceExpr), NULL, "ONCE");
         wf->setScheduledNow();
-        addWorkflowItem(*createWorkflowItem(onceExpr, onceWfid, no_once));
+        addWorkflowItem(*createWorkflowItem(onceExpr, onceWfid, no_once, "ONCE"));
     }
 
     if (trivialStoredExprs.length())
     {
         //By definition they don't have any dependencies, so no need to call inheritDependencies.
         OwnedHqlExpr trivialStoredExpr = createActionList(trivialStoredExprs);
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(trivialStoredWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(trivialStoredExpr), NULL);
-        addWorkflowItem(*createWorkflowItem(trivialStoredExpr, trivialStoredWfid, no_stored));
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(trivialStoredWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(trivialStoredExpr), NULL, nullptr);
+        addWorkflowItem(*createWorkflowItem(trivialStoredExpr, trivialStoredWfid, no_stored, "Trivial STORED"));
     }
 
     if (transformed.ordinality())
@@ -7128,9 +7168,9 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
             {
                 wfid = ++wfidCount;
                 ScheduleData sched;
-                Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, dependencies, NULL);
+                Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, dependencies, NULL, nullptr);
                 setWorkflowSchedule(wf, sched);
-                addWorkflowItem(*createWorkflowItem(combinedItems, wfid, no_actionlist));
+                addWorkflowItem(*createWorkflowItem(combinedItems, wfid, no_actionlist, nullptr));
             }
             else
                 wfid = ensureWorkflowAction(combinedItems);
@@ -8960,7 +9000,7 @@ IHqlExpression * DFSLayoutTransformer::createTransformed(IHqlExpression * expr)
                 unsigned dfsPayload = 0;
                 if (payload)
                 {
-                    dfsPayload = getIntValue(payload->queryChild(0));
+                    dfsPayload = (unsigned)getIntValue(payload->queryChild(0));
                     dfsLayout.setown(removeAttribute(dfsLayout, _payload_Atom));
                 }
 
@@ -10251,6 +10291,10 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
                 VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), str(lhs->queryChild(1)->queryName()));
                 reportError(CategoryError, msg.str());
             }
+
+            //Ensure datasets assigned to child datasets are not grouped (until grouped child datasets are supported).
+            if (isGrouped(newRhs))
+                newRhs.setown(createDataset(no_group, newRhs.getClear()));
             if (rhs == newRhs)
                 return LINK(expr);
             HqlExprArray children;
@@ -10948,13 +10992,11 @@ void normalizeAnnotations(HqlCppTranslator & translator, HqlExprArray & exprs)
 
     translator.traceExpressions("before annotation normalize", exprs);
 
-    cycle_t startCycles = get_cycles_now();
     AnnotationNormalizerTransformer normalizer;
     HqlExprArray transformed;
     normalizer.analyseArray(exprs, 0);
     normalizer.transformRoot(exprs, transformed);
     replaceArray(exprs, transformed);
-    translator.noteFinishedTiming("compile:tree transform: normalize.annotations", startCycles);
 }
 
 //---------------------------------------------------------------------------
@@ -12690,10 +12732,11 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         }
     case no_trim:
         //TRIM(x,RIGHT) should be represented the same way as TRIM(x) - and it's more efficient
-        if ((expr->numChildren() == 2) && (expr->queryChild(1)->queryName() == rightAtom))
+        if (expr->hasAttribute(rightAtom) && !expr->hasAttribute(leftAtom))
         {
             HqlExprArray children;
-            children.append(*transform(expr->queryChild(0)));
+            transformChildren(expr, children);
+            removeAttribute(children, rightAtom);
             return expr->clone(children);
         }
         break;
@@ -13364,7 +13407,6 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
 //      ForEachItemIn(iInit, exprs)
 //          queryLocationIndependent(&exprs.item(iInit));
 
-        cycle_t startCycles = get_cycles_now();
         HqlTreeNormalizer normalizer(translator);
         HqlExprArray transformed;
         normalizer.analyseArray(exprs, 0);
@@ -13375,25 +13417,20 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         replaceArray(exprs, transformed);
         seenForceLocal = normalizer.querySeenForceLocal();
         seenLocalUpload = normalizer.querySeenLocalUpload();
-        translator.noteFinishedTiming("compile:tree transform: normalize.initial", startCycles);
     }
 
     if (translator.queryOptions().constantFoldPostNormalize)
     {
-        cycle_t startCycles = get_cycles_now();
         HqlExprArray transformed;
         quickFoldExpressions(transformed, exprs, NULL, 0);
         replaceArray(exprs, transformed);
-        translator.noteFinishedTiming("compile:tree transform: normalize.fold", startCycles);
     }
 
     translator.traceExpressions("before scope tag", exprs);
 
     {
-        cycle_t startCycles = get_cycles_now();
         HqlScopeTagger normalizer(translator.queryErrorProcessor(), translator.queryLocalOnWarningMapper());
         normalizer.transformRoot(exprs);
-        translator.noteFinishedTiming("compile:tree transform: normalize.scope", startCycles);
     }
 
     translator.checkNormalized(exprs);
@@ -13403,30 +13440,24 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
 
     translator.traceExpressions("after scope tag", exprs);
     {
-        cycle_t startCycles = get_cycles_now();
         DFSLayoutTransformer transformer(translator.queryErrorProcessor(), translator.queryCallback(), translator.queryOptions());
         HqlExprArray transformed;
         transformer.transformRoot(exprs, transformed);
         replaceArray(exprs, transformed);
-        translator.noteFinishedTiming("compile:tree transform: normalize.DFStransform", startCycles);
     }
 
     {
-        cycle_t startCycles = get_cycles_now();
         KeyedProjectTransformer transformer;
         HqlExprArray transformed;
         transformer.transformRoot(exprs, transformed);
         replaceArray(exprs, transformed);
-        translator.noteFinishedTiming("compile:tree transform: normalize.KeyedProjectTransformer", startCycles);
     }
 
     {
-        cycle_t startCycles = get_cycles_now();
         HqlLinkedChildRowTransformer transformer(translator.queryOptions().implicitLinkedChildRows);
         HqlExprArray transformed;
         transformer.transformArray(exprs, transformed);
         replaceArray(exprs, transformed);
-        translator.noteFinishedTiming("compile:tree transform: normalize.linkedChildRows", startCycles);
     }
 
     if (seenLocalUpload)
@@ -13652,16 +13683,12 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
     //Don't change the engine if libraries are involved, otherwise things will get very confused.
 
     {
-        cycle_t startCycles = get_cycles_now();
         expandDelayedFunctionCalls(&queryErrorProcessor(), exprs);
-        noteFinishedTiming("compile:tree transform: expand delayed calls", startCycles);
     }
 
     {
-        cycle_t startCycles = get_cycles_now();
         traceExpressions("before normalize", exprs);
         normalizeHqlTree(*this, exprs);
-        noteFinishedTiming("compile:tree transform: normalize", startCycles);
     }
 
     if (wu()->getDebugValueBool("dumpIR", false))
@@ -13670,7 +13697,12 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
     checkNormalized(exprs);
 #ifdef PICK_ENGINE_EARLY
     if (options.pickBestEngine)
+    {
+        cycle_t startCycles = get_cycles_now();
         pickBestEngine(exprs);
+        if (options.timeTransforms)
+            noteFinishedTiming("compile:transform:pick engine", startCycles);
+    }
 #endif
 
     allocateSequenceNumbers(exprs);                                             // Added to all expressions/output statements etc.
@@ -13686,13 +13718,10 @@ void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
     checkNormalized(exprs);
 
     {
-        cycle_t startCycles = get_cycles_now();
         substituteClusterSize(exprs);
-        noteFinishedTiming("compile:tree transform: substituteClusterSize", startCycles);
     }
 
     {
-        cycle_t startCycles = get_cycles_now();
         HqlExprArray folded;
         unsigned foldOptions = DEFAULT_FOLD_OPTIONS;
         if (options.foldConstantDatasets) foldOptions |= HFOconstantdatasets;
@@ -13704,7 +13733,6 @@ void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
 
         foldHqlExpression(queryErrorProcessor(), folded, exprs, foldOptions);
         replaceArray(exprs, folded);
-        noteFinishedTiming("compile:tree transform: global fold", startCycles);
     }
 
     traceExpressions("after global fold", exprs);
@@ -13712,11 +13740,9 @@ void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
 
     if (options.globalOptimize)
     {
-        cycle_t startCycles = get_cycles_now();
         HqlExprArray folded;
         optimizeHqlExpression(queryErrorProcessor(), folded, exprs, HOOfold);
         replaceArray(exprs, folded);
-        noteFinishedTiming("compile:tree transform: global optimize", startCycles);
     }
 
     traceExpressions("alloc", exprs);
@@ -13729,34 +13755,26 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
 #ifdef USE_SELSEQ_UID
     if (options.normalizeSelectorSequence)
     {
-        cycle_t startCycles = get_cycles_now();
         LeftRightTransformer normalizer;
         normalizer.process(curWorkflow.queryExprs());
-        noteFinishedTiming("compile:tree transform: left right", startCycles);
         //traceExpressions("after implicit alias", workflow);
     }
 #endif
 
     if (queryOptions().createImplicitAliases)
     {
-        cycle_t startCycles = get_cycles_now();
         ImplicitAliasTransformer normalizer;
         normalizer.process(curWorkflow.queryExprs());
-        noteFinishedTiming("compile:tree transform: implicit alias", startCycles);
         //traceExpressions("after implicit alias", workflow);
     }
 
     {
-        cycle_t startCycles = get_cycles_now();
         hoistNestedCompound(*this, curWorkflow.queryExprs());
-        noteFinishedTiming("compile:tree transform: hoist nested compound", startCycles);
     }
 
     if (options.optimizeNestedConditional)
     {
-        cycle_t startCycles = get_cycles_now();
         optimizeNestedConditional(curWorkflow.queryExprs());
-        noteFinishedTiming("compile:optimize nested conditional", startCycles);
         traceExpressions("nested", curWorkflow);
         checkNormalized(curWorkflow);
     }
@@ -13764,43 +13782,33 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
     checkNormalized(curWorkflow);
     //sort(x)[n] -> topn(x, n)[]n, count(x)>n -> count(choosen(x,n+1)) > n and possibly others
     {
-        cycle_t startCycles = get_cycles_now();
         optimizeActivities(curWorkflow.queryWfid(), curWorkflow.queryExprs(), !targetThor(), options.optimizeNonEmpty);
-        noteFinishedTiming("compile:tree transform: optimize activities", startCycles);
     }
     checkNormalized(curWorkflow);
 
     //----------------------------- Transformations below this mark may have created globals so be very careful with hoisting ---------------------
 
     {
-        cycle_t startCycles = get_cycles_now();
         migrateExprToNaturalLevel(curWorkflow, wu(), *this);       // Ensure expressions are evaluated at the best level - e.g., counts moved to most appropriate level.
-        noteFinishedTiming("compile:tree transform: migrate", startCycles);
         //transformToAliases(exprs);
         traceExpressions("migrate", curWorkflow);
         checkNormalized(curWorkflow);
     }
 
     {
-        cycle_t startCycles = get_cycles_now();
         markThorBoundaries(curWorkflow);                                               // work out which engine is going to perform which operation.
-        noteFinishedTiming("compile:tree transform: thor hole", startCycles);
         traceExpressions("boundary", curWorkflow);
         checkNormalized(curWorkflow);
     }
 
     if (options.optimizeGlobalProjects)
     {
-        cycle_t startCycles = get_cycles_now();
         insertImplicitProjects(*this, curWorkflow.queryExprs());
-        noteFinishedTiming("compile:global implicit projects", startCycles);
         traceExpressions("implicit", curWorkflow);
         checkNormalized(curWorkflow);
     }
 
-    cycle_t startCycles3 = get_cycles_now();
     normalizeResultFormat(curWorkflow, options);
-    noteFinishedTiming("compile:tree transform: normalize result", startCycles3);
     traceExpressions("results", curWorkflow);
     checkNormalized(curWorkflow);
 
@@ -13812,9 +13820,7 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
 //  traceExpressions("flatten", workflow);
 
     {
-        cycle_t startCycles = get_cycles_now();
         mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);          // reduces number of graphs sent to thor
-        noteFinishedTiming("compile:tree transform: merge thor", startCycles);
     }
 
     traceExpressions("merged", curWorkflow);
@@ -13829,9 +13835,7 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
     //expandGlobalDatasets(workflow, wu(), *this);
 
     {
-        cycle_t startCycles = get_cycles_now();
         mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);
-        noteFinishedTiming("compile:tree transform: merge thor", startCycles);
     }
     checkNormalized(curWorkflow);
 
@@ -13857,12 +13861,10 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     if (exprs.ordinality() == 0)
         return false;   // No action needed
 
-    cycle_t startCycles = get_cycles_now();
     ::extractWorkflow(*this, exprs, workflow);
 
     traceExpressions("workflow", workflow);
     checkNormalized(workflow);
-    noteFinishedTiming("compile:tree transform: stored results", startCycles);
 
     if (outputLibrary && workflow.ordinality() > 1)
     {
@@ -13888,7 +13890,12 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
 
 #ifndef PICK_ENGINE_EARLY
     if (options.pickBestEngine)
+    {
+        cycle_t startCycles = get_cycles_now();
         pickBestEngine(workflow);
+        if (options.timeTransforms)
+            noteFinishedTiming("compile:transform:pick engine", startCycles);
+    }
 #endif
     updateClusterType();
 
@@ -13905,7 +13912,8 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         {
             cycle_t startCycles = get_cycles_now();
             checkDependencyConsistency(curWorkflow.queryExprs());
-            noteFinishedTiming("compile:tree transform: check dependency", startCycles);
+            if (options.timeTransforms)
+                noteFinishedTiming("compile:transform:check dependency", startCycles);
         }
 
         traceExpressions("end transformGraphForGeneration", curWorkflow);
@@ -13914,7 +13922,213 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     return true;
 }
 
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+
+static HqlTransformerInfo semanticErrorCheckerInfo("SemanticErrorChecker");
+class SemanticErrorChecker : public QuickHqlTransformer
+{
+public:
+    SemanticErrorChecker(IErrorReceiver & _errs) :
+        QuickHqlTransformer(semanticErrorCheckerInfo, &_errs), mapper(_errs)
+    {
+    }
+
+    virtual void doAnalyse(IHqlExpression * expr)
+    {
+        switch (expr->getAnnotationKind())
+        {
+        case annotate_meta:
+            {
+                unsigned max = mapper.processMetaAnnotation(expr);
+                QuickHqlTransformer::doAnalyse(expr);
+                mapper.restoreLocalOnWarnings(max);
+                return;
+            }
+        case annotate_symbol:
+            {
+                ErrorSeverityMapper::SymbolScope saved(mapper, expr);
+                locations.append(*expr);
+                QuickHqlTransformer::doAnalyse(expr);
+                locations.pop();
+                return;
+            }
+        case annotate_location:
+            {
+                locations.append(*expr);
+                QuickHqlTransformer::doAnalyse(expr);
+                locations.pop();
+                return;
+            }
+        }
+        switch (expr->getOperator())
+        {
+        case no_attr_expr:
+            if (expr->queryName()==bloomAtom)
+                checkBloom(expr);
+            break;
+        case no_join:
+            checkJoin(expr);
+            break;
+        case no_choosen:
+            checkChoosen(expr);
+            break;
+        case no_call:
+            if (callIsActivity(expr))
+                checkEmbedActivity(expr);
+            break;
+        }
+        QuickHqlTransformer::doAnalyse(expr);
+    }
+
+protected:
+    void checkBloom(IHqlExpression * expr);
+    void checkJoin(IHqlExpression * expr);
+    void checkChoosen(IHqlExpression * expr);
+    void checkEmbedActivity(IHqlExpression * expr);
+    void reportError(int errNo, const char * format, ...) __attribute__((format(printf, 3, 4)));
+    void reportWarning(WarnErrorCategory category, int warnNo, const char * format, ...) __attribute__((format(printf, 4, 5)));
+protected:
+    ErrorSeverityMapper mapper;
+    HqlExprCopyArray locations;
+};
+
+void SemanticErrorChecker::checkBloom(IHqlExpression * bloom)
+{
+    // Possible semantic errors caught here:
+    // 1. Args to active, limit, or probability sub-attrs not constant
+    // 2. Arg to probability out of range
+    ForEachChildFrom(i, bloom, 1)
+    {
+        IHqlExpression * cur = bloom->queryChild(i);
+        const IAtom *name = cur->queryName();
+        if (name==activeAtom)
+            name = bloomAtom;
+        else if (name==probabilityAtom)
+        {
+            IValue *cval = cur->queryChild(0)->queryValue();
+            if (cval)
+            {
+                double rval = cval->getRealValue();
+                if (rval <= 0.01 || rval > 0.3)
+                    reportError(ERR_INVALID_PROBABILITY,"Probability argument is not in permitted range 0.01 to 0.3");
+            }
+        }
+        if (!cur->isConstant())
+            reportError(ERR_KEYEDINDEXINVALID, "Parameter to %s must be constant", str(name));
+    }
+}
+
+void SemanticErrorChecker::checkJoin(IHqlExpression * join)
+{
+    IHqlExpression * atmost = join->queryAttribute(atmostAtom);
+    if (atmost)
+    {
+        IHqlExpression * val = atmost->queryChild(0);
+        if (matchesConstantValue(val, 0))
+            reportError(ERR_BAD_JOINFLAG, "ATMOST(0) doesn't make any sense");
+    }
+    IHqlExpression * group = join->queryAttribute(groupAtom);
+    if (group)
+    {
+        //Check that each of the fields mentioned in the group are projected into the output.
+        OwnedHqlExpr left = createSelector(no_left, join->queryChild(0), querySelSeq(join));
+        OwnedHqlExpr right = createSelector(no_right, join->queryChild(1), querySelSeq(join));
+        NewProjectMapper2 mapper;
+        mapper.setMapping(join->queryChild(3));
+        IHqlExpression * sortlist = group->queryChild(0);
+        ForEachChild(i, sortlist)
+        {
+            IHqlExpression * cur = sortlist->queryChild(i);
+            if (cur->usesSelector(right))
+            {
+                StringBuffer s;
+                getExprECL(cur, s);
+                reportError(ERR_BAD_JOINGROUP_FIELD, "GROUP expression '%s' cannot include fields from RIGHT", s.str());
+            }
+            else
+            {
+                bool matchedAll = true;
+                OwnedHqlExpr mapped = mapper.collapseFields(cur, left, queryActiveTableSelector(), left, &matchedAll);
+                if (!matchedAll)
+                {
+                    StringBuffer s;
+                    getExprECL(cur, s);
+                    reportError(ERR_BAD_JOINGROUP_FIELD, "GROUP expression '%s' is not included in the JOIN output", s.str());
+                }
+            }
+        }
+    }
+}
+
+void SemanticErrorChecker::checkChoosen(IHqlExpression * expr)
+{
+    IHqlExpression * limit = expr->queryChild(1);
+    if (limit->queryValue() && limit->queryValue()->getIntValue() == 0)
+        reportWarning(CategoryUnusual, WRN_CHOOSEN_ALL,"Use CHOOSEN(dataset, ALL) to remove implicit choosen.  CHOOSEN(dataset, 0) now returns no records.");
+}
+
+void SemanticErrorChecker::checkEmbedActivity(IHqlExpression * call)
+{
+    //Substitute the parameters into the external call/embed definition, so that any attributes that depend on the arguments
+    //are expanded.
+    OwnedHqlExpr expandedCall = expandOutOfLineFunctionCall(call);
+
+    //The setting for the local attribute allows the localness to be configured for the activity
+    IHqlExpression * localAttr = expandedCall->queryAttribute(localAtom);
+    if (localAttr)
+    {
+        IHqlExpression * value = localAttr->queryChild(0);
+        if (value && !value->isConstant())
+            reportError(ECODETEXT(HQLERR_AttributeXMustBeConstant), "LOCAL");
+    }
+}
+
+void SemanticErrorChecker::reportError(int errNo, const char * format, ...)
+{
+    ECLlocation location;
+    ForEachItemInRev(i, locations)
+    {
+        if (location.extractLocationAttr(&locations.item(i)))
+            break;
+    }
+    va_list args;
+    va_start(args, format);
+    reportErrorVa(&mapper, errNo, location, format, args);
+    va_end(args);
+}
+
+void SemanticErrorChecker::reportWarning(WarnErrorCategory category, int warnNo, const char * format, ...)
+{
+    ECLlocation location;
+    ForEachItemInRev(i, locations)
+    {
+        if (location.extractLocationAttr(&locations.item(i)))
+            break;
+    }
+    va_list args;
+    va_start(args, format);
+
+    StringBuffer msg;
+    msg.valist_appendf(format, args);
+    va_end(args);
+
+    ErrorSeverity severity = queryDefaultSeverity(category);
+    Owned<IError> err = createError(category, severity, warnNo, msg, str(location.sourcePath), location.lineno, location.column);
+    Owned<IError> mappedError = mapper.mapError(err);
+    mapper.report(mappedError);
+}
+
+
+bool reportSemanticErrors(IHqlExpression * expr, IErrorReceiver & errors)
+{
+    SemanticErrorChecker checker(errors);
+    checker.analyse(expr);
+    return errors.errCount() != 0;
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
 /*
 Different transformers:
 merge: required if a child get removed or merged with a parent of a non-table dataset.

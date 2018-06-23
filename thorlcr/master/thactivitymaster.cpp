@@ -19,6 +19,8 @@
 
 #include "jprop.hpp"
 #include "jstring.hpp"
+#include "eclhelper_dyn.hpp"
+#include "hqlexpr.hpp"
 
 #include "commonext.hpp"
 
@@ -45,6 +47,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 #include "diskwrite/thdiskwrite.ipp"
 #include "distribution/thdistribution.ipp"
 #include "enth/thenth.ipp"
+#include "external/thexternal.ipp"
 #include "filter/thfilter.ipp"
 #include "firstn/thfirstn.ipp"
 #include "funnel/thfunnel.ipp"
@@ -162,6 +165,7 @@ public:
                 break;
             case TAKdiskread:
             case TAKdisknormalize:
+            case TAKspillread:
                 ret = createDiskReadActivityMaster(this);
                 break;
             case TAKdiskaggregate:
@@ -191,6 +195,7 @@ public:
                 ret = createIndexGroupAggregateActivityMaster(this);
                 break;
             case TAKdiskwrite:
+            case TAKspillwrite:
                 ret = createDiskWriteActivityMaster(this);
                 break;
             case TAKcsvwrite:
@@ -391,6 +396,11 @@ public:
             case TAKwhen_dataset:
                 ret = createWhenActivityMaster(this);
                 break;
+            case TAKexternalprocess:
+            case TAKexternalsink:
+            case TAKexternalsource:
+                ret = createExternalActivityMaster(this);
+                break;
             default:
                 throw MakeActivityException(this, TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));
         }
@@ -439,51 +449,31 @@ void CSlavePartMapping::serializeNullOffsetMap(MemoryBuffer &mb)
     mb.append((unsigned)0);
 }
 
-void CSlavePartMapping::serializeMap(unsigned i, MemoryBuffer &mb, IGetSlaveData *extra)
+void CSlavePartMapping::serializeMap(unsigned i, MemoryBuffer &mb, bool countPrefix)
 {
     if (local)
         i = 0;
-    if (i >= maps.ordinality())
+    if (i >= maps.ordinality() || (0 == maps.item(i).ordinality()))
     {
-        mb.append((unsigned)0);
+        if (countPrefix)
+            mb.append((unsigned)0);
         return;
     }
 
     CSlaveMap &map = maps.item(i);
     unsigned nPos = mb.length();
     unsigned n=0;
-    mb.append(n);
+    if (countPrefix)
+        mb.append(n);
     UnsignedArray parts;
     ForEachItemIn(m, map)
         parts.append(map.item(m).queryPartIndex());
-    MemoryBuffer extraMb;
-    if (extra)
+    if (countPrefix)
     {
-        ForEachItemIn(m2, map)
-        {
-            unsigned xtraLen = 0;
-            unsigned xtraPos = extraMb.length();
-            extraMb.append(xtraLen);
-            IPartDescriptor &partDesc = map.item(m2);
-            if (!extra->getData(m2, partDesc.queryPartIndex(), extraMb))
-            {
-                parts.zap(partDesc.queryPartIndex());
-                extraMb.rewrite(xtraPos);
-            }
-            else
-            {
-                xtraLen = (extraMb.length()-xtraPos)-sizeof(xtraLen);
-                extraMb.writeDirect(xtraPos, sizeof(xtraLen), &xtraLen);
-            }
-        }
+        n = parts.ordinality();
+        mb.writeDirect(nPos, sizeof(n), &n);
     }
-    n = parts.ordinality();
-    mb.writeDirect(nPos, sizeof(n), &n);
-    if (n)
-    {
-        fileDesc->serializeParts(mb, parts);
-        mb.append(extraMb);
-    }
+    fileDesc->serializeParts(mb, parts);
 }
 
 CSlavePartMapping::CSlavePartMapping(const char *_logicalName, IFileDescriptor &_fileDesc, IUserDescriptor *_userDesc, IGroup &localGroup, bool _local, bool index, IHash *hash, IDistributedSuperFile *super)
@@ -621,7 +611,8 @@ void checkSuperFileOwnership(IDistributedFile &file)
     }
 }
 
-void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned helperCrc, bool index)
+void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned expectedFormatCrc, IOutputMetaData *expected,
+                               unsigned projectedFormatCrc, IOutputMetaData *projected, bool index)
 {
     IDistributedFile *f = file;
     IDistributedSuperFile *super = f->querySuperFile();
@@ -632,27 +623,31 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned he
         verifyex(iter->first());
         f = &iter->query();
     }
+    Owned<IOutputMetaData> actualFormat;
+    Owned<const IDynamicTransform> translator;    // Translates rows from actual to projected
+    Owned<const IKeyTranslator> keyedTranslator;  // translate filter conditions from expected to actual
+    unsigned prevFormatCrc = 0;
     StringBuffer kindStr(activityKindStr(activity->queryContainer().getKind()));
+    RecordTranslationMode mode = getTranslationMode(*activity);
     for (;;)
     {
-        unsigned dfsCrc;
-        if (f->getFormatCrc(dfsCrc) && helperCrc != dfsCrc)
+        unsigned dfsCrc = 0;
+        f->getFormatCrc(dfsCrc);
+        if (!dfsCrc || ((dfsCrc==expectedFormatCrc) && (expectedFormatCrc==projectedFormatCrc)))
+            translator.clear();
+        else
         {
-            StringBuffer fileStr;
-            if (super) fileStr.append("Superfile: ").append(file->queryLogicalName()).append(", subfile: ");
-            else fileStr.append("File: ");
-            fileStr.append(f->queryLogicalName());
-            Owned<IThorException> e = MakeActivityException(activity, TE_FormatCrcMismatch, "%s: Layout does not match published layout. %s", kindStr.str(), fileStr.str());
-            if (index && !f->queryAttributes().hasProp("_record_layout")) // Cannot verify if _true_ crc mismatch if soft layout missing anymore
-                LOG(MCwarning, thorJob, e);
-            else
+            if (dfsCrc != prevFormatCrc)  // Check if same translation as last subfile
             {
-                if (!activity->queryContainer().queryJob().getWorkUnitValueInt("skipFileFormatCrcCheck", 0))
-                    throw LINK(e);
-                e->setAction(tea_warning);
-                activity->fireException(e);
+                IPropertyTree &props = f->queryAttributes();
+                actualFormat.setown(getDaliLayoutInfo(props));
+                const char *subname = f->queryLogicalName();
+                translator.clear();
+                keyedTranslator.clear();
+                getTranslators(translator, keyedTranslator, subname, expectedFormatCrc, expected, dfsCrc, actualFormat, projectedFormatCrc, projected, mode);
             }
         }
+        prevFormatCrc = dfsCrc;
         if (!super||!iter->next())
             break;
         f = &iter->query();

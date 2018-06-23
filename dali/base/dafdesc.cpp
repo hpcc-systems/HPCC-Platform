@@ -3057,7 +3057,9 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
     if (tree->getProp("@formatCrc",fps.clear())&&fps.length())
         fprop.setProp("@formatCrc",fps.str());
     MemoryBuffer mb;
-    if (tree->getPropBin("_record_layout", mb))
+    if (tree->getPropBin("_rtlType", mb))
+        fprop.setPropBin("_rtlType", mb.length(), mb.toByteArray());
+    if (tree->getPropBin("_record_layout", mb.clear()))  // Legacy info
         fprop.setPropBin("_record_layout", mb.length(), mb.toByteArray());
     if (iskey) {
         fprop.setProp("@kind","key");

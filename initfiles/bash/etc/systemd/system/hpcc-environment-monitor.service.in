@@ -1,0 +1,7 @@
+[Unit]
+Description=regeneration of hpccsystems-platform.target
+Conflicts=hpccsystems-platform.target
+
+[Service]
+Type=oneshot
+ExecStart=@ADMIN_PATH@/generate-hpccsystems-target.sh

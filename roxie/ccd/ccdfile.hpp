@@ -21,7 +21,7 @@
 #include "eclhelper.hpp"
 #include "ccddali.hpp"
 #include "dautils.hpp"
-#include "layouttrans.hpp"
+#include "rtldynfield.hpp"
 
 enum RoxieFileStatus { FileSizeMismatch, FileDateMismatch, FileCRCMismatch, FileIsValid, FileNotFound };
 enum RoxieFileType { ROXIE_KEY, ROXIE_FILE, ROXIE_PATCH, ROXIE_BASEINDEX };
@@ -81,21 +81,21 @@ interface IMemoryFile : extends IFileIO
 };
 
 interface IKeyArray;
-interface IDefRecordMeta;
 interface IFilePartMap;
-class TranslatorArray;
-interface IInMemoryIndexManager ;
+interface ITranslatorSet;
+interface IInMemoryIndexManager;
 interface IResolvedFileCache;
 
 interface IResolvedFile : extends ISimpleSuperFileEnquiry
 {
     virtual void serializePartial(MemoryBuffer &mb, unsigned channel, bool localInfoOnly) const = 0;
 
+    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, IOutputMetaData *projected, int expectedFormatCrc, IOutputMetaData *expected, RecordTranslationMode mode, bool isIndex) const = 0;
     virtual IFileIOArray *getIFileIOArray(bool isOpt, unsigned channel) const = 0;
-    virtual IKeyArray *getKeyArray(IDefRecordMeta *activityMeta, TranslatorArray *translators, bool isOpt, unsigned channel, IRecordLayoutTranslator::Mode allowFieldTranslation) const = 0;
+    virtual IKeyArray *getKeyArray(bool isOpt, unsigned channel) const = 0;
     virtual IFilePartMap *getFileMap() const = 0;
     virtual unsigned getNumParts() const = 0;
-    virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IFileIOArray *files, IRecordSize *recs, bool preload, int numKeys) const = 0;
+    virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IOutputMetaData *disklayout, bool preload) const = 0;
     virtual offset_t getFileSize() const = 0;
 
     virtual const CDateTime &queryTimeStamp() const = 0;

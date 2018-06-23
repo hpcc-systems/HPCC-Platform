@@ -32,6 +32,7 @@
 #include "hqlcpputil.hpp"
 #include "hqlcatom.hpp"
 #include "hqlcerrors.hpp"
+#include "hqlthql.hpp"
 
 #define INTEGER_SEARCH_THRESHOLD                    30      // above this, a table search is generated.
 #define MAX_NUM_NOBREAK_CASE                        80      // maximum number of case: without a break - compiler workaround
@@ -406,7 +407,7 @@ IHqlExpression * HqlCppCaseInfo::buildIndexedMap(BuildCtx & ctx, const CHqlBound
     HqlExprArray values;
     IHqlExpression * dft = queryActiveTableSelector();  // value doesn't matter as long as it will not occur
     __int64 lower = getIntValue(lowerTableBound, 0);
-    unsigned num = (getIntValue(upperTableBound, 0)-lower)+1;
+    unsigned num = (unsigned)((getIntValue(upperTableBound, 0)-lower)+1);
 
     CHqlBoundExpr indexExpr;
     switch (compareTypeCode)
@@ -770,6 +771,15 @@ void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, const CHqlBoundTarget * targ
 #endif
             }
         }
+
+        if (compare->queryValue()->rangeCompare(cond->queryType()) != 0)
+        {
+            StringBuffer ecl;
+            getExprECL(compare, ecl);
+            translator.reportWarning(CategoryIgnored, HQLWRN_CaseCanNeverMatch, "CASE entry %s can never match the test condition", ecl.str());
+            skip = true;
+        }
+
         if (sameCount >= MAX_NUM_NOBREAK_CASE)
             same = false;
 

@@ -29,9 +29,9 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ws_access",
-    "hpcc/ws_account",
-    "hpcc/ESPUtil",
+    "src/ws_access",
+    "src/ws_account",
+    "src/ESPUtil",
     "hpcc/TargetSelectWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, all,
@@ -85,7 +85,7 @@ define([
                     context._onDeleteMember(event);
                 }
             }).placeAt(this.addButton.domNode, "after");
-            tmpSplitter = new ToolbarSeparator().placeAt(this.addButton.domNode, "before");
+            var tmpSplitter = new ToolbarSeparator().placeAt(this.addButton.domNode, "before");
             this.dialog = new Dialog({
                 title: this.i18n.PleaseSelectAGroupToAddUser,
                 style: "width: 320px;"

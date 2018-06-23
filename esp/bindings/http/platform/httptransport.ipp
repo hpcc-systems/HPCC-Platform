@@ -37,7 +37,6 @@
 
 #include "xslprocessor.hpp"
 
-
 #define POST_METHOD "POST"
 #define GET_METHOD "GET"
 #define HEAD_METHOD "HEAD"
@@ -60,6 +59,7 @@ protected:
     ISocket&     m_socket;
     Owned<IBufferedSocket> m_bufferedsocket;
 
+    StringAttr   m_httpPath;
     StringAttr   m_content_type;
     __int64      m_content_length;
     StringBuffer m_content;
@@ -71,12 +71,15 @@ protected:
     StringAttr   m_paramstr;
     int m_supportClientXslt;
     bool         m_isForm;
+    bool         m_persistentEligible = false;
+    bool         m_persistentEnabled = false;
 
     int m_paramCount;
     int m_attachCount;
     Owned<IProperties> m_queryparams;
     MapStrToBuf  m_attachments;
     StringArray  m_headers;
+    StringBuffer allParameterString;
 
     Owned<IEspContext> m_context;
     IArrayOf<CEspCookie> m_cookies;
@@ -140,6 +143,10 @@ public:
     {
         port = m_socket.name(host.reserveTruncate(32), 32);
     }
+
+    virtual void setPath(const char* path) { m_httpPath.set(path); };
+    virtual StringBuffer& getPath(StringBuffer& path) { return path.append(m_httpPath.str()); };
+    virtual const char* queryPath() {return m_httpPath.str();}
 
     virtual StringBuffer& getParameter(const char* paramname, StringBuffer& paramval);
     virtual StringBuffer& getAttachment(const char* name, StringBuffer& attachment);
@@ -248,6 +255,11 @@ public:
         }
         return false;
     }
+    const char* queryAllParameterString() { return allParameterString.str(); }
+
+    virtual void setPersistentEligible(bool eligible) { m_persistentEligible = eligible; }
+    virtual bool getPersistentEligible() { return m_persistentEligible; }
+    virtual void setPersistentEnabled(bool enabled) { m_persistentEnabled = enabled; }
 };
 
 
@@ -291,7 +303,6 @@ class esp_http_decl CHttpRequest : public CHttpMessage
 {
 private:
     StringAttr    m_httpMethod;
-    StringAttr    m_httpPath;
     StringAttr    m_espServiceName;
     StringAttr    m_espMethodName;
     StringAttr    m_espPathEx;
@@ -300,11 +311,11 @@ private:
     bool            m_authrequired;
     int             m_MaxRequestEntityLength;
     ESPSerializationFormat respSerializationFormat;
-
     virtual int parseFirstLine(char* oneline);
     virtual StringBuffer& constructHeaderBuffer(StringBuffer& headerbuf, bool inclLen);
     virtual int processHeaders(IMultiException *me);
     virtual void parseCookieHeader(char* cookiestr);
+    inline bool checkPersistentEligible();
 
 public:
     
@@ -319,10 +330,6 @@ public:
     virtual const char* queryServiceName() { return m_espServiceName.str(); }
     virtual const char* queryServiceMethod() { return m_espMethodName.str(); }
     
-    virtual void setPath(const char* path);
-    virtual StringBuffer& getPath(StringBuffer& path);
-    virtual const char *queryPath(){return m_httpPath.str();}
-
     virtual void parseQueryString(const char* querystr);
 
     virtual void parseEspPathInfo();
@@ -369,6 +376,7 @@ public:
 
     virtual bool httpContentFromFile(const char *filepath);
     virtual bool handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt);
+    virtual void handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt, bool logHandleExceptions);
 
     virtual void redirect(CHttpRequest &req, const char *url)
     {

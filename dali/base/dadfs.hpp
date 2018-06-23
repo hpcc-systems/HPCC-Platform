@@ -270,7 +270,8 @@ enum DFUQResultField
     DFUQRFsuperowners = 20,
     DFUQRFpersistent = 21,
     DFUQRFprotect = 22,
-    DFUQRFterm = 23,
+    DFUQRFiscompressed = 23,
+    DFUQRFterm = 24,
     DFUQRFreverse = 256,
     DFUQRFnocase = 512,
     DFUQRFnumeric = 1024
@@ -379,7 +380,7 @@ interface IDistributedFile: extends IInterface
 
     virtual bool getFormatCrc(unsigned &crc) =0;   // CRC for record format
     virtual bool getRecordSize(size32_t &rsz) =0;
-    virtual bool getRecordLayout(MemoryBuffer &layout) =0;
+    virtual bool getRecordLayout(MemoryBuffer &layout, const char *attrname) =0;
 
 
     virtual void enqueueReplicate()=0;

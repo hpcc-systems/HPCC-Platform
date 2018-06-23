@@ -36,6 +36,7 @@
 #include "hqlfold.hpp"
 #include "hqlthql.hpp"
 #include "eclhelper.hpp"
+#include "math.h"
 
 #ifdef __APPLE__
 #include <dlfcn.h>
@@ -595,8 +596,13 @@ bool checkExternFoldable(IHqlExpression* expr, unsigned foldOptions, StringBuffe
     unsigned numParam = expr->numChildren();
     for(unsigned iparam = 0; iparam < numParam; iparam++)
     {
-        if (!expr->queryChild(iparam)->queryValue())            //NB: Already folded...
+        switch (expr->queryChild(iparam)->getOperator())
+        {
+        case no_record: case no_constant: case no_null: case no_all:  // NOTE: no_all still needs work elsewhere before it will be supported fully
+            break;
+        default:
             return false;
+        }
     }
 
     IHqlExpression * formals = funcdef->queryChild(1);
@@ -724,7 +730,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
 
     // create a FuncCallStack to generate a stack used to pass parameters to 
     // the called function
-    FuncCallStack fstack;
+    FuncCallStack fstack(getBoolAttribute(body, passParameterMetaAtom, false), DEFAULTSTACKSIZE);
     
     if(body->hasAttribute(templateAtom))
         fstack.pushPtr(templateContext);
@@ -823,8 +829,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
             free(tgt);
             return NULL;
         }
-        IValue * paramValue = curParam->queryValue();
-        if (fstack.push(argType, paramValue) == -1)
+        if (fstack.push(argType, curParam) == -1)
         {
             free(tgt);
             return NULL;
@@ -1431,12 +1436,12 @@ class DummyContext: implements ICodeContext
     virtual bool getResultBool(const char * name, unsigned sequence) { throwUnexpected(); }
     virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
     virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { throwUnexpected(); }
+    virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override { throwUnexpected(); }
     virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
     virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
     virtual __int64 getResultInt(const char * name, unsigned sequence) { throwUnexpected(); }
     virtual double getResultReal(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override { throwUnexpected(); }
     virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
     virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) { throwUnexpected(); }
     virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
@@ -1657,7 +1662,7 @@ IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, IT
 
     Owned<IEmbedContext> __plugin = (IEmbedContext *) plugin->getIntValue();  // We declared as int since ecl has no pointer type - not sure what the clean fix is here...
     DummyContext dummyContext;
-    Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(&dummyContext,flags,optionsStr.str());
+    Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(&dummyContext,nullptr,flags,optionsStr.str());
 
     IValue *query = body->queryChild(0)->queryValue();
     assertex(query);
@@ -2407,6 +2412,7 @@ static IHqlExpression * foldHashXX(IHqlExpression * expr)
 
 IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOptions, ITemplateContext * templateContext)
 {
+    DBZaction onZero = (foldOptions & HFOforcefold) ? DBZfail : DBZnone;
     node_operator op = expr->getOperator();
     switch (op)
     {
@@ -2568,7 +2574,6 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             IValue * rightValue = expr->queryChild(1)->queryValue();
             if (leftValue && rightValue)
             {
-                DBZaction onZero = (foldOptions & HFOforcefold) ? DBZfail : DBZnone;
                 IValue * res;
                 if (op == no_div)
                     res = divideValues(leftValue, rightValue, onZero);
@@ -3116,7 +3121,9 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 case no_exp:
                     return createConstant(expValue(constValue));
                 case no_ln:
-                    return createConstant(lnValue(constValue));
+                    if (onZero == DBZnone && constValue->getRealValue() <= 0)
+                        break;
+                    return createConstant(lnValue(constValue, onZero));
                 case no_sin:
                     return createConstant(sinValue(constValue));
                 case no_cos:
@@ -3124,9 +3131,13 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 case no_tan:
                     return createConstant(tanValue(constValue));
                 case no_asin:
-                    return createConstant(asinValue(constValue));
+                    if (onZero == DBZnone && fabs(constValue->getRealValue()) > 1.0)
+                        break;
+                    return createConstant(asinValue(constValue, onZero));
                 case no_acos:
-                    return createConstant(acosValue(constValue));
+                    if (onZero == DBZnone && fabs(constValue->getRealValue()) > 1.0)
+                        break;
+                    return createConstant(acosValue(constValue, onZero));
                 case no_atan:
                     return createConstant(atanValue(constValue));
                 case no_sinh:
@@ -3136,9 +3147,13 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 case no_tanh:
                     return createConstant(tanhValue(constValue));
                 case no_log10:
-                    return createConstant(log10Value(constValue));
+                    if (onZero == DBZnone && constValue->getRealValue() <= 0)
+                        break;
+                    return createConstant(log10Value(constValue, onZero));
                 case no_sqrt:
-                    return createConstant(sqrtValue(constValue));
+                    if (onZero == DBZnone && constValue->getRealValue() < 0)
+                        break;
+                    return createConstant(sqrtValue(constValue, onZero));
                 case no_abs:
                     return createConstant(absValue(constValue));
                 }
@@ -3368,6 +3383,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     {
                     case type_string:
                     case type_varstring:
+                    case type_data:
                         newLen = childSize;
                         break;
                     case type_unicode:
@@ -3509,6 +3525,32 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 OwnedITypeInfo type = getPromotedCompareType(leftExpr->queryType(), key->queryType());
                 IHqlExpression * newEqual = createBoolExpr(no_eq, ensureExprType(leftExpr, type), ensureExprType(key, type));
                 return createIf(newEqual, LINK(mapto->queryChild(1)), LINK(expr->queryChild(2)));
+            }
+
+            // Special case boolean cases matching constant values
+            if (leftExpr->isBoolean())
+            {
+                HqlExprArray args;
+                bool seenOpt[2] = { false, false };
+                args.append(*LINK(leftExpr));
+                for (unsigned idx = 1; idx <= numCases; idx++)
+                {
+                    IHqlExpression * child = expr->queryChild(idx);
+                    IHqlExpression * grand = child->queryChild(0);
+                    IValue * grandValue = grand->queryValue();
+                    if (grandValue)
+                    {
+                        seenOpt[grandValue->getBoolValue()] = true;
+                        //Once both true and false branches have been seen, no other options can possibly match.
+                        //Therefore add this value as the default and remove any trailing arguments
+                        if (seenOpt[false] && seenOpt[true])
+                        {
+                            args.append(*LINK(child->queryChild(1)));
+                            return expr->clone(args);
+                        }
+                    }
+                    args.append(*LINK(child));
+                }
             }
             break;
         }
@@ -3780,12 +3822,12 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             IValue * constValue = child->queryValue();
             IValue* resultstr = NULL;
             if (constValue) 
-                resultstr = trimStringValue(constValue, typecode);
+                resultstr = trimStringValue(constValue, typecode, expr->hasAttribute(whitespaceAtom));
 
             if (resultstr) 
                 return createConstant(resultstr);
 
-            //extendin a string won't change the alue of trim(x), unless not trimming the rhs
+            //extending a string won't change the value of trim(x), unless not trimming the rhs
             //i.e., trim((string60)string12expression)  => trim(string12expression);
             if ((typecode != 'L') && isCast(child))
             {

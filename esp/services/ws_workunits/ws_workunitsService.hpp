@@ -91,9 +91,10 @@ public:
             dirty |= UFO_RELOAD_TARGETS_CHANGED_PMID;
         PROGLOG("QueryFilesInUse.notify() called: <%d>", dirty);
     }
-    virtual void subscribe()
+    virtual bool subscribe()
     {
         CriticalBlock b(crit);
+        bool success = true;
         try
         {
             qsChange = querySDS().subscribe("QuerySets", *this, true);
@@ -103,13 +104,16 @@ public:
         }
         catch (IException *E)
         {
+            success = false;
             //TBD failure to subscribe implies dali is down...
             E->Release();
         }
+        return success && qsChange != 0 && pmChange != 0 && psChange != 0;
     }
-    virtual void unsubscribe()
+    virtual bool unsubscribe()
     {
         CriticalBlock b(crit);
+        bool success = true;
         try
         {
             if (qsChange)
@@ -121,12 +125,14 @@ public:
         }
         catch (IException *E)
         {
+            success = false;
             E->Release();
         }
         qsChange = 0;
         pmChange = 0;
         psChange = 0;
         PROGLOG("QueryFilesInUse.unsubscribe() called");
+        return success && qsChange == 0 && pmChange == 0 && psChange == 0;
     }
 
     void abort()
@@ -170,6 +176,7 @@ public:
         filesInUse.abort();
         clusterQueryStatePool.clear();
     };
+
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
     virtual void setContainer(IEspContainer * container)
     {
@@ -190,6 +197,8 @@ public:
     bool onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp);
     bool onWUQuerysets(IEspContext &context, IEspWUQuerysetsRequest & req, IEspWUQuerysetsResponse & resp);
     bool onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDetailsRequest & req, IEspWUQuerySetDetailsResponse & resp);
+    bool onWUQuerysetExport(IEspContext &context, IEspWUQuerysetExportRequest &req, IEspWUQuerysetExportResponse &resp);
+    bool onWUQuerysetImport(IEspContext &context, IEspWUQuerysetImportRequest &req, IEspWUQuerysetImportResponse &resp);
     bool onWUMultiQuerysetDetails(IEspContext &context, IEspWUMultiQuerySetDetailsRequest &req, IEspWUMultiQuerySetDetailsResponse &resp);
     bool onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySetQueryActionRequest & req, IEspWUQuerySetQueryActionResponse & resp);
     bool onWUQuerysetAliasAction(IEspContext &context, IEspWUQuerySetAliasActionRequest &req, IEspWUQuerySetAliasActionResponse &resp);
@@ -230,6 +239,7 @@ public:
     bool onWURun(IEspContext &context, IEspWURunRequest &req, IEspWURunResponse &resp);
     bool onWUCreate(IEspContext &context, IEspWUCreateRequest &req, IEspWUCreateResponse &resp);
     bool onWUCreateAndUpdate(IEspContext &context, IEspWUUpdateRequest &req, IEspWUUpdateResponse &resp);
+    bool onWURecreateQuery(IEspContext &context, IEspWURecreateQueryRequest &req, IEspWURecreateQueryResponse &resp);
     bool onWUResubmit(IEspContext &context, IEspWUResubmitRequest &req, IEspWUResubmitResponse &resp);
     bool onWUPushEvent(IEspContext &context, IEspWUPushEventRequest &req, IEspWUPushEventResponse &resp);
 
@@ -241,6 +251,7 @@ public:
     bool onWUCompileECL(IEspContext &context, IEspWUCompileECLRequest &req, IEspWUCompileECLResponse &resp);
     bool onWUJobList(IEspContext &context, IEspWUJobListRequest &req, IEspWUJobListResponse &resp);
     bool onWUQueryGetGraph(IEspContext& context, IEspWUQueryGetGraphRequest& req, IEspWUQueryGetGraphResponse& resp);
+    bool onWUQueryGetSummaryStats(IEspContext& context, IEspWUQueryGetSummaryStatsRequest& req, IEspWUQueryGetSummaryStatsResponse& resp);
     bool onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& req, IEspWUGetGraphResponse& resp);
     bool onWUGraphTiming(IEspContext& context, IEspWUGraphTimingRequest& req, IEspWUGraphTimingResponse& resp);
     bool onWUGetDependancyTrees(IEspContext& context, IEspWUGetDependancyTreesRequest& req, IEspWUGetDependancyTreesResponse& resp);
@@ -256,6 +267,8 @@ public:
 
     bool onWUCDebug(IEspContext &context, IEspWUDebugRequest &req, IEspWUDebugResponse &resp);
     bool onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp);
+    bool onWUDetails(IEspContext &context, IEspWUDetailsRequest &req, IEspWUDetailsResponse &resp);
+    bool onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequest &req, IEspWUDetailsMetaResponse &resp);
 
     void setPort(unsigned short _port){port=_port;}
 
@@ -267,15 +280,31 @@ public:
 
     bool onWUListArchiveFiles(IEspContext &context, IEspWUListArchiveFilesRequest &req, IEspWUListArchiveFilesResponse &resp);
     bool onWUGetArchiveFile(IEspContext &context, IEspWUGetArchiveFileRequest &req, IEspWUGetArchiveFileResponse &resp);
+    bool onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefinitionActionRequest &req, IEspWUEclDefinitionActionResponse &resp);
+
+    bool unsubscribeServiceFromDali() override
+    {
+        return filesInUse.unsubscribe();
+    }
+
+    bool subscribeServiceToDali() override
+    {
+        return filesInUse.subscribe();
+    }
+
+    bool attachServiceToDali() override
+    {
+        m_sched.setDetachedState(false);
+        return true;
+    }
+
+    bool detachServiceFromDali() override
+    {
+        m_sched.setDetachedState(true);
+        return true;
+    }
+
 private:
-    void addProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, const char* path);
-    void addThorSlaveLogfile(Owned<IConstWorkUnit> &cwu,WsWuInfo& winfo, const char* path);
-    void createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
-    void createZAPWUXMLFile(WsWuInfo &winfo, const char* pathNameStr);
-    void createZAPWUGraphProgressFile(const char* wuid, const char* pathNameStr);
-    void createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
-    void createZAPFile(const char* fileName, size32_t len, const void* data);
-    void cleanZAPFolder(IFile* zipDir, bool removeFolder);
     IPropertyTree* sendControlQuery(IEspContext &context, const char* target, const char* query, unsigned timeout);
     bool resetQueryStats(IEspContext &context, const char* target, IProperties* queryIds, IEspWUQuerySetQueryActionResponse& resp);
     void readGraph(IEspContext& context, const char* subGraphId, WUGraphIDType& id, bool running,
@@ -283,6 +312,19 @@ private:
     IPropertyTree* getWorkunitArchive(IEspContext &context, WsWuInfo& winfo, const char* wuid, unsigned cacheMinutes);
     void readSuperFiles(IEspContext &context, IReferencedFile* rf, const char* fileName, IReferencedFileList* wufiles, IArrayOf<IEspQuerySuperFile>* files);
     IReferencedFile* getReferencedFileByName(const char* name, IReferencedFileList* wufiles);
+    void checkEclDefinitionSyntax(IEspContext &context, const char *target, const char *eclDefinition,
+        int msToWait, IArrayOf<IConstWUEclDefinitionActionResult> &results);
+    bool deployEclDefinition(IEspContext &context, const char *target, const char *name, int msToWait, StringBuffer &wuid, StringBuffer &result);
+    void deployEclDefinition(IEspContext &context, const char *target, const char *eclDefinition, int msToWait, IArrayOf<IConstWUEclDefinitionActionResult> &results);
+    void publishEclDefinition(IEspContext &context, const char *target, const char* eclDefinition, int msToWait, IEspWUEclDefinitionActionRequest &req,
+        IArrayOf<IConstWUEclDefinitionActionResult> &results);
+    const char* gatherQueryFileCopyErrors(IArrayOf<IConstLogicalFileError> &errors, StringBuffer &msg);
+    bool readDeployWUResponse(CWUDeployWorkunitResponse* deployResponse, StringBuffer &wuid, StringBuffer &result);
+    const char* gatherExceptionMessage(const IMultiException &me, StringBuffer &exceptionMsg);
+    const char* gatherWUException(IConstWUExceptionIterator &it, StringBuffer &exceptionMsg);
+    const char* gatherECLException(IArrayOf<IConstECLException> &exceptions, StringBuffer &exceptionMsg);
+    void addEclDefinitionActionResult(const char *eclDefinition, const char *result, const char *wuid,
+        const char *queryID, const char* strAction, bool logResult, IArrayOf<IConstWUEclDefinitionActionResult> &results);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
@@ -306,12 +348,15 @@ public:
 
 class CWsWorkunitsSoapBindingEx : public CWsWorkunitsSoapBinding
 {
+    void createAndDownloadWUZAPFile(IEspContext &context, CHttpRequest *request, CHttpResponse *response);
+    void downloadWUFiles(IEspContext &context, CHttpRequest *request, CHttpResponse *response);
 public:
     CWsWorkunitsSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel) : CWsWorkunitsSoapBinding(cfg, name, process, llevel)
     {
         wswService = NULL;
         VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspBinding[@name=\"%s\"]/BatchWatch", process, name);
         batchWatchFeaturesOnly = cfg->getPropBool(xpath.str(), false);
+        directories.set(cfg->queryPropTree("Software/Directories"));
     }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
@@ -342,6 +387,7 @@ public:
 private:
     bool batchWatchFeaturesOnly;
     CWsWorkunitsEx *wswService;
+    Owned<IPropertyTree> directories;
 };
 
 void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);
@@ -376,20 +422,20 @@ class CClusterQueryStateThreadFactory : public CInterface, public IThreadFactory
     public:
         IMPLEMENT_IINTERFACE;
 
-        void init(void *_param)
+        virtual void init(void *_param) override
         {
             param.setown((CClusterQueryStateParam *)_param);
         }
-        void main()
+        virtual void threadmain() override
         {
             param->doWork();
             param.clear();
         }
-        bool canReuse()
+        virtual bool canReuse() const override
         {
             return true;
         }
-        bool stop()
+        virtual bool stop() override
         {
             return true;
         }
@@ -402,5 +448,9 @@ public:
         return new CClusterQueryStateThread();
     }
 };
+
+bool origValueChanged(const char *newValue, const char *origValue, StringBuffer &s, bool nillable=true);
+bool doProtectWorkunits(IEspContext& context, StringArray& wuids, IArrayOf<IConstWUActionResult>* results);
+bool doUnProtectWorkunits(IEspContext& context, StringArray& wuids, IArrayOf<IConstWUActionResult>* results);
 
 #endif

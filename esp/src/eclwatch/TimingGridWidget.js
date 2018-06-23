@@ -27,8 +27,8 @@ define([
     "dgrid/selector",
 
     "hpcc/_Widget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPWorkunit",
+    "src/ESPUtil",
+    "src/ESPWorkunit",
 
     "dojo/text!../templates/TimingGridWidget.html"
 ],
@@ -125,7 +125,7 @@ define([
             },
 
             setQuery: function (graphName) {
-                if (!graphName || graphName == "*") {
+                if (!graphName || graphName === "*") {
                     this.timingGrid.refresh();
                 } else {
                     this.timingGrid.set("query", {

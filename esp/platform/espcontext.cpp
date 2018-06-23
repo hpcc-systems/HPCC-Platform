@@ -78,6 +78,10 @@ private:
     unsigned    m_exceptionTime;
     bool        m_hasException;
     int         m_exceptionCode;
+    StringAttr  respMsg;
+    StringAttr  authenticationMethod;
+    AuthType    domainAuthType;
+    AuthError   authError = EspAuthErrorNone;
 
     ESPSerializationFormat respSerializationFormat;
 
@@ -169,7 +173,24 @@ public:
     {
         return m_password.get();
     }
-
+    virtual void setSessionToken(unsigned token)
+    {
+        if (m_user)
+            m_user->credentials().setSessionToken(token);
+    }
+    virtual unsigned querySessionToken()
+    {
+        return m_user ? m_user->credentials().getSessionToken() : 0;
+    }
+    virtual void setSignature(const char * signature)
+    {
+        if (m_user)
+            m_user->credentials().setSignature(signature);
+    }
+    virtual const char * querySignature()
+    {
+        return m_user ? m_user->credentials().getSignature() : nullptr;
+    }
     virtual void setRealm(const char* realm)
     {
         m_realm.set(realm);
@@ -490,6 +511,30 @@ public:
 
         m_txSummary->clear();
         m_txSummary.clear();
+    }
+
+    virtual void setAuthenticationMethod(const char* method)
+    {
+        authenticationMethod.set(method);
+    }
+
+    virtual const char * getAuthenticationMethod()
+    {
+        return authenticationMethod.get();
+    }
+
+    virtual void setDomainAuthType(AuthType type) { domainAuthType = type; }
+    virtual AuthType getDomainAuthType(){ return domainAuthType; }
+    virtual void setAuthError(AuthError error) { authError = error; }
+    virtual AuthError getAuthError(){ return authError; }
+    virtual void setRespMsg(const char* msg)
+    {
+        respMsg.set(msg);
+    }
+
+    virtual const char* getRespMsg()
+    {
+        return respMsg.get();
     }
 
     virtual ESPSerializationFormat getResponseFormat(){return respSerializationFormat;}
@@ -892,4 +937,9 @@ void setBuildLevel(const char* buildLevel)
 const char* getBuildLevel()
 {
     return g_buildLevel.str();
+}
+
+IEspServer* queryEspServer()
+{
+    return dynamic_cast<IEspServer*>(getESPContainer());
 }

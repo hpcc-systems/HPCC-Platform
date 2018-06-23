@@ -26,7 +26,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 
 //--- end of version configuration ---
 
-#option ('layoutTranslationEnabled', useTranslation);
+#option ('layoutTranslation', useTranslation);
 
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
@@ -104,7 +104,7 @@ output(DG_FlatFile_pl0(KEYED(DG_firstname='CLAIRE')));
 output(DG_FlatFileEvens_pl0(KEYED(DG_firstname='CLAIRE')));
 //output(DG_CSVFile_pl0(KEYED(DG_firstname='CLAIRE')));
 //output(DG_XMLFile_pl0(KEYED(DG_firstname='CLAIRE')));
-output(DG_VarFile_pl0(KEYED(DG_firstname='CLAIRE')));
+//output(DG_VarFile_pl0(KEYED(DG_firstname='CLAIRE')));
 
 /*
 // now repeat with preload(n)....
@@ -145,7 +145,7 @@ output(DG_FlatFile_pl2(KEYED(DG_firstname='CLAIRE')));
 output(DG_FlatFileEvens_pl2(KEYED(DG_firstname='CLAIRE')));
 //output(DG_CSVFile_pl2(KEYED(DG_firstname='CLAIRE')));
 //output(DG_XMLFile_pl2(KEYED(DG_firstname='CLAIRE')));
-output(DG_VarFile_pl2(KEYED(DG_firstname='CLAIRE')));
+//output(DG_VarFile_pl2(KEYED(DG_firstname='CLAIRE')));
 
 */
 

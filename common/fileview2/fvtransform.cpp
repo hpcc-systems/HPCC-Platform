@@ -297,8 +297,9 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
     dataServer.setown(createNewSourceFileEclRepository(errorReporter, name, ESFallowplugins, 0));
 
+    NullStatisticTarget nullStats;
     HqlScopeArray scopes;
-    HqlParseContext parseCtx(dataServer, NULL, NULL);
+    HqlParseContext parseCtx(dataServer, NULL, NULL, nullStats);
     HqlLookupContext ctx(parseCtx, errorReporter);
     getRootScopes(scopes, dataServer, ctx);
 

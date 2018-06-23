@@ -23,6 +23,20 @@
 #include "logthread.hpp"
 #include "loggingagentbase.hpp"
 
+
+class CWsLoggingServiceSoapBindingEx : public CWsLoggingServiceSoapBinding
+{
+public:
+
+    CWsLoggingServiceSoapBindingEx(http_soap_log_level level=hsl_none) : CWsLoggingServiceSoapBinding(level)
+    {
+    }
+
+    CWsLoggingServiceSoapBindingEx(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level=hsl_none) : CWsLoggingServiceSoapBinding(cfg, bindname, procname, level)
+    {
+    }
+};
+
 class CWsLoggingServiceEx : public CWsLoggingService
 {
     typedef std::vector<IUpdateLogThread*> LOGGING_AGENTTHREADS;

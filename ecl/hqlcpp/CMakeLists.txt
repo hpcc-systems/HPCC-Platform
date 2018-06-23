@@ -30,6 +30,7 @@ set (    SRCS
          hqlalias.cpp
          hqlcatom.cpp
          hqlccommon.cpp 
+         hqlcfilter.cpp
          hqlckey.cpp 
          hqlcpp.cpp 
          hqlcppc.cpp 
@@ -64,6 +65,7 @@ set (    SRCS
          hqlcatom.hpp
          hqlccommon.hpp
          hqlcerrors.hpp
+         hqlcfilter.hpp
          hqlcpp.hpp
          hqlcppc.hpp
          hqlcppds.hpp
@@ -85,6 +87,7 @@ set (    SRCS
          hqlgraph.ipp
          hqlhoist.hpp
          hqlhtcpp.ipp
+         hqliproj.hpp
          hqliproj.ipp
          hqliter.ipp
          hqllib.ipp

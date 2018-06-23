@@ -36,6 +36,7 @@ set (    SRCS
          diskwrite/thdiskwrite.cpp 
          distribution/thdistribution.cpp 
          enth/thenth.cpp 
+         external/thexternal.cpp
          fetch/thfetch.cpp 
          filter/thfilter.cpp 
          firstn/thfirstn.cpp 
@@ -48,6 +49,7 @@ set (    SRCS
          join/thjoin.cpp 
          keydiff/thkeydiff.cpp 
          keyedjoin/thkeyedjoin.cpp 
+         keyedjoin/thkeyedjoin-legacy.cpp 
          keypatch/thkeypatch.cpp 
          limit/thlimit.cpp 
          lookupjoin/thlookupjoin.cpp 
@@ -70,6 +72,8 @@ set (    SRCS
     )
 
 include_directories ( 
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
          ./../thorutil 
          ./../../common/remote 
          ./../../system/jhtree 
@@ -81,6 +85,7 @@ include_directories (
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 
+         ./../../ecl/hql
          ./../../rtl/include 
          ./../../common/dllserver 
          ./../msort 
@@ -102,6 +107,7 @@ install ( TARGETS activitymasters_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DE
 target_link_libraries ( activitymasters_lcr
          jlib
          remote 
+         hql
          thorsort_lcr 
          jhtree 
          nbcd 

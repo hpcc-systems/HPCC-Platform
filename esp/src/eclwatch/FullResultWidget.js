@@ -26,13 +26,15 @@ define([
 
     "dijit/registry",
 
+    "dgrid/Grid",
     "dgrid/selector",
+    "dgrid/extensions/DijitRegistry",
 
     "hpcc/_Widget",
-    "hpcc/ESPBase",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPLogicalFile",
-    "hpcc/ESPUtil",
+    "src/ESPBase",
+    "src/ESPWorkunit",
+    "src/ESPLogicalFile",
+    "src/ESPUtil",
 
     "dojo/text!../templates/FullResultWidget.html",
 
@@ -43,7 +45,7 @@ define([
     "dijit/ToolbarSeparator"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, iframe, Memory, Observable,
                 registry,
-                selector,
+                Grid, selector, DijitRegistry,
                 _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, ESPUtil,
                 template) {
     return declare("FullResultWidget", [_Widget], {
@@ -85,7 +87,7 @@ define([
 
         _doDownload: function (type) {
             //TODO Fix
-            var base = new ESPBase();
+            var base = new ESPBase.default();
             if (lang.exists("result.Sequence", this)) {
                 var sequence = this.result.Sequence;
                 var downloadPdfIframeName = "downloadIframe_" + sequence;

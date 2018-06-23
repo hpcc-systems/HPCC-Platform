@@ -46,47 +46,22 @@ class WORKUNIT_API CLocalWUStatistic : implements IConstWUStatistic, public CInt
     Owned<IPropertyTree> p;
 public:
     IMPLEMENT_IINTERFACE;
+
     CLocalWUStatistic(IPropertyTree *p);
 
-    virtual IStringVal & getCreator(IStringVal & str) const;
-    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const;
-    virtual IStringVal & getFormattedValue(IStringVal & str) const;
-    virtual IStringVal & getType(IStringVal & str) const;
-    virtual IStringVal & getScope(IStringVal & str) const;
-    virtual StatisticMeasure getMeasure() const;
-    virtual StatisticCreatorType getCreatorType() const;
-    virtual StatisticScopeType getScopeType() const;
-    virtual StatisticKind getKind() const;
-    virtual unsigned __int64 getValue() const;
-    virtual unsigned __int64 getCount() const;
-    virtual unsigned __int64 getMax() const;
-    virtual unsigned __int64 getTimestamp() const;
+    virtual IStringVal & getCreator(IStringVal & str) const override;
+    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const override;
+    virtual IStringVal & getFormattedValue(IStringVal & str) const override;
+    virtual const char * queryScope() const override;
+    virtual StatisticMeasure getMeasure() const override;
+    virtual StatisticCreatorType getCreatorType() const override;
+    virtual StatisticScopeType getScopeType() const override;
+    virtual StatisticKind getKind() const override;
+    virtual unsigned __int64 getValue() const override;
+    virtual unsigned __int64 getCount() const override;
+    virtual unsigned __int64 getMax() const override;
+    virtual unsigned __int64 getTimestamp() const override;
 
-    virtual bool matches(const IStatisticsFilter * filter) const;
-};
-
-class WORKUNIT_API CLocalWULegacyTiming : implements IConstWUStatistic, public CInterface
-{
-    Owned<IPropertyTree> p;
-public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWULegacyTiming(IPropertyTree *p);
-
-    virtual IStringVal & getCreator(IStringVal & str) const;
-    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const;
-    virtual IStringVal & getFormattedValue(IStringVal & str) const;
-    virtual IStringVal & getType(IStringVal & str) const;
-    virtual IStringVal & getScope(IStringVal & str) const;
-    virtual StatisticMeasure getMeasure() const;
-    virtual StatisticCreatorType getCreatorType() const;
-    virtual StatisticScopeType getScopeType() const;
-    virtual StatisticKind getKind() const;
-    virtual unsigned __int64 getValue() const;
-    virtual unsigned __int64 getCount() const;
-    virtual unsigned __int64 getMax() const;
-    virtual unsigned __int64 getTimestamp() const;
-
-    virtual bool matches(const IStatisticsFilter * filter) const;
 };
 
 //==========================================================================================
@@ -136,6 +111,7 @@ template <typename T, typename IT> struct CachedTags
 
     operator IArrayOf<IT>&() { return tags; }
     unsigned ordinality() const { return tags.ordinality(); }
+    IT & item(unsigned i) const { return tags.item(i); }
 
     void kill()
     {
@@ -241,7 +217,6 @@ protected:
     mutable IArrayOf<IWUResult> variables;
     mutable CachedTags<CLocalWUAppValue,IConstWUAppValue> appvalues;
     mutable CachedTags<CLocalWUStatistic,IConstWUStatistic> statistics;
-    mutable CachedTags<CLocalWULegacyTiming,IConstWUStatistic> legacyTimings;
     mutable Owned<IUserDescriptor> userDesc;
     Mutex locked;
     Owned<ISecManager> secMgr;
@@ -300,7 +275,7 @@ public:
     virtual void setGraphState(const char *graphName, WUGraphState state) const;
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const;
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const;
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const;
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override;
     void clearGraphProgress() const;
 
     virtual const char *queryJobName() const;
@@ -326,8 +301,8 @@ public:
     virtual const char *queryStateDesc() const;
     virtual IConstWUResult * getTemporaryByName(const char * name) const;
     virtual IConstWUResultIterator & getTemporaries() const;
-    virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const;
-    virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const;
+    virtual IConstWUScopeIterator & getScopeIterator(const WuScopeFilter & filter) const override;
+    virtual bool getStatistic(stat_type & value, const char * scope, StatisticKind kind) const override;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const;
     virtual IStringVal & getXmlParams(IStringVal & params, bool hidePasswords) const;
     virtual const IPropertyTree *getXmlParams() const;
@@ -349,7 +324,7 @@ public:
     virtual IWorkUnit& lock();
     virtual void requestAbort();
     virtual unsigned calculateHash(unsigned prevHash);
-    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all);
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all);
     virtual IPropertyTree *queryPTree() const;
     virtual unsigned queryFileUsage(const char *filename) const;
     virtual IConstWUFileUsageIterator * getFieldUsage() const;
@@ -419,7 +394,7 @@ public:
     void deschedule();
     unsigned addLocalFileUpload(LocalFileUploadType type, char const * source, char const * destination, char const * eventTag);
     IWUResult * updateGlobalByName(const char * name);
-    void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml);
+    void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml, unsigned wfid);
     IWUQuery * updateQuery();
     IWUWebServicesInfo* updateWebServicesInfo(bool create);
 
@@ -698,18 +673,20 @@ public:
     IMPLEMENT_IINTERFACE;
     CLocalWUGraph(const CLocalWorkUnit &owner, IPropertyTree *p);
 
-    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const;
-    virtual IStringVal & getName(IStringVal & ret) const;
-    virtual IStringVal & getLabel(IStringVal & ret) const;
-    virtual IStringVal & getTypeName(IStringVal & ret) const;
-    virtual WUGraphType getType() const;
-    virtual WUGraphState getState() const;
-    virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const;
-    virtual IPropertyTree * getXGMMLTreeRaw() const;
+    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const override;
+    virtual IStringVal & getName(IStringVal & ret) const override;
+    virtual IStringVal & getLabel(IStringVal & ret) const override;
+    virtual IStringVal & getTypeName(IStringVal & ret) const override;
+    virtual WUGraphType getType() const override;
+    virtual WUGraphState getState() const override;
+    virtual unsigned getWfid() const override;
+    virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const override;
+    virtual IPropertyTree * getXGMMLTreeRaw() const override;
 
     void setName(const char *str);
     void setLabel(const char *str);
     void setType(WUGraphType type);
+    void setWfid(unsigned wfid);
     void setXGMML(const char *str);
     void setXGMMLTree(IPropertyTree * tree);
 };
@@ -717,7 +694,7 @@ public:
 class WORKUNIT_API CWuGraphStats : public CInterfaceOf<IWUGraphStats>
 {
 public:
-    CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id);
+    CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id);
     virtual void beforeDispose();
     virtual IStatisticGatherer & queryStatsBuilder();
 protected:

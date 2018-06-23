@@ -253,13 +253,14 @@ personBooks := normalize(final, left.persons, extractPersonBook(LEFT, RIGHT));
 personOut := project(personBooks, extractPerson(LEFT));
 bookOut := normalize(personBooks, count(left.books), extractBook(LEFT.books[COUNTER], LEFT.id));
 
-simplePersonBooks := project(personBooks, transform(sq.SimplePersonBookRec, SELF := LEFT, SELF.limit.booklimit := LEFT.booklimit));
+simplePersonBooks := project(personBooks, transform(sq.SimplePersonBookRec, SELF.surname := (STRING)LEFT.surname; SELF := LEFT, SELF.limit.booklimit := LEFT.booklimit));
 
 output(final,, sq.HousePersonBookName,overwrite);
 output(personBooks,, sq.PersonBookName,overwrite);
 output(houseOut,,sq.HouseName,overwrite);
 output(personOut,,sq.PersonName,overwrite);
 output(bookOut,,sq.BookName,overwrite);
+output(group(sort(sq.BookDs, author), author), , sq.BookNameAuthorGrouped, OVERWRITE, __GROUPED__);
 
 output(simplePersonBooks,, sq.SimplePersonBookName,overwrite);
 buildindex(
@@ -289,7 +290,7 @@ fileServices.AddFileRelationship( __nameof__(sq.BookExDs), sq.BookIndexName+'ID'
 
 //Some more conventional indexes - some requiring a double lookup to resolve the payload
 buildindex(sq.HouseExDs, { string40 addr := sq.HouseExDs.addr, postcode }, { filepos }, sq.HouseIndexName, overwrite);
-buildindex(sq.PersonExDs, { string40 forename := sq.PersonExDs.forename, string40 surname := sq.PersonExDs.surname }, { id }, sq.PersonIndexName, overwrite);
+buildindex(sq.PersonExDs, { string40 forename := sq.PersonExDs.forename, string40 surname := (string)sq.PersonExDs.surname }, { id }, sq.PersonIndexName, overwrite);
 buildindex(sq.BookExDs, { string40 name := sq.BookExDs.name, string40 author := sq.BookExDs.author }, { id }, sq.BookIndexName, overwrite);
 
 fileServices.AddFileRelationship( __nameof__(sq.HouseExDs), sq.HouseIndexName, '', '', 'view', '1:1', false);

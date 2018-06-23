@@ -21,6 +21,7 @@
 #include "thexception.hpp"
 #include "thmfilemanager.hpp"
 #include "eclhelper.hpp"
+#include "rtldynfield.hpp"
 #include "jlzw.hpp"
 
 #include "thmem.hpp"
@@ -40,30 +41,32 @@ public:
             Owned<IException> e = MakeActivityWarning(&container, TE_GroupMismatch, "DFS and code generated group info. differs: DFS(%s), CodeGen(%s), using DFS info", isGrouped?"grouped":"ungrouped", codeGenGrouped?"grouped":"ungrouped");
             queryJobChannel().fireException(e);
         }
-        IOutputMetaData *recordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta();
-        if (recordSize->isFixedSize()) // fixed size
+        if (RecordTranslationMode::None == getTranslationMode(*this))
         {
-            if (0 != fileDesc->queryProperties().getPropInt("@recordSize"))
+            IOutputMetaData *recordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta();
+            if (recordSize->isFixedSize()) // fixed size
             {
-                size32_t rSz = fileDesc->queryProperties().getPropInt("@recordSize");
-                if (isGrouped)
-                    rSz--; // eog byte not to be included in this test.
-                if (rSz != recordSize->getMinRecordSize())
-                    throw MakeThorException(TE_RecordSizeMismatch, "Published record size %d for file %s, does not match coded record size %d", rSz, fileName.get(), recordSize->getMinRecordSize());
-            }
-            if (!fileDesc->isCompressed() && (TDXcompress & helper->getFlags()))
-            {
-                size32_t rSz = recordSize->getMinRecordSize();
-                if (isGrouped) rSz++;
-                if (rSz >= MIN_ROWCOMPRESS_RECSIZE)
+                if (0 != fileDesc->queryProperties().getPropInt("@recordSize"))
                 {
-                    Owned<IException> e = MakeActivityWarning(&container, TE_CompressionMismatch, "Ignoring compression attribute on file '%s', which is not published as compressed in DFS", fileName.get());
-                    queryJobChannel().fireException(e);
+                    size32_t rSz = fileDesc->queryProperties().getPropInt("@recordSize");
+                    if (isGrouped)
+                        rSz--; // eog byte not to be included in this test.
+                    if (rSz != recordSize->getMinRecordSize())
+                        throw MakeThorException(TE_RecordSizeMismatch, "Published record size %d for file %s, does not match coded record size %d", rSz, fileName.get(), recordSize->getMinRecordSize());
+                }
+                if (!fileDesc->isCompressed() && (TDXcompress & helper->getFlags()))
+                {
+                    size32_t rSz = recordSize->getMinRecordSize();
+                    if (isGrouped) rSz++;
+                    if (rSz >= MIN_ROWCOMPRESS_RECSIZE)
+                    {
+                        Owned<IException> e = MakeActivityWarning(&container, TE_CompressionMismatch, "Ignoring compression attribute on file '%s', which is not published as compressed in DFS", fileName.get());
+                        queryJobChannel().fireException(e);
+                    }
                 }
             }
         }
-        if (0 == (TDRnocrccheck & helper->getFlags()))
-            checkFormatCrc(this, file, helper->getFormatCrc(), false);
+        checkFormatCrc(this, file, helper->getDiskFormatCrc(), helper->queryDiskRecordSize(), helper->getProjectedFormatCrc(), helper->queryProjectedDiskRecordSize(), false);
     }
 };
 

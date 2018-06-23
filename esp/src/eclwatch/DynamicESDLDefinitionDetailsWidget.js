@@ -21,7 +21,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/ECLSourceWidget",
-    "hpcc/WsESDLConfig",
+    "src/WsESDLConfig",
 
     "dojo/text!../templates/DynamicESDLDefinitionDetailsWidget.html",
 
@@ -46,7 +46,8 @@ define([
             }
             WsESDLConfig.GetESDLDefinition({
                 request: {
-                    Id: params.Id
+                    Id: params.Id,
+                    ver_: "1.3"
                 }
             }).then(function (response) {
                 var xml = context.formatXml(response.GetESDLDefinitionResponse.XMLDefinition);

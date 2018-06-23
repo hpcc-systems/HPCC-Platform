@@ -43,11 +43,14 @@
 #include "thorsort.hpp"
 #include "thorparse.ipp"
 #include "thorxmlwrite.hpp"
+#include "thorcommon.hpp"
 #include "jsmartsock.hpp"
 #include "thorstep.hpp"
 #include "eclagent.ipp"
 #include "roxierowbuff.hpp"
 #include "ftbase.ipp"
+#include "rtldynfield.hpp"
+#include "rtlnewkey.hpp"
 
 #define EMPTY_LOOP_LIMIT 1000
 
@@ -151,6 +154,28 @@ const void * CRowBuffer::next()
         return NULL;
 }
 
+
+ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional)
+{
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional);
+    if (!ldFile)
+        return nullptr;
+    IDistributedFile *dFile = ldFile->queryDistributedFile();
+    if (dFile && isFileKey(dFile))
+        throw MakeStringException(0, "Attempting to read index as a flat file: %s", logicalName);
+    return ldFile.getClear();
+}
+
+bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn, StringBuffer &localPath)
+{
+    if (!agent.queryWorkUnit()->getDebugValueBool("forceRemoteDisabled", false))
+    {
+        if (!rfn.isLocal() || agent.queryWorkUnit()->getDebugValueBool("forceRemoteRead", testForceRemote(rfn.getLocalPath(localPath))))
+            return true;
+    }
+    return false;
+}
+
 //=====================================================================================================
 
 CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind) : agent(_agent), help(_help),  outputMeta(help.queryOutputMeta()), kind(_kind), activityId(_activityId), subgraphId(_subgraphId)
@@ -222,7 +247,8 @@ void CHThorActivityBase::resetEOF()
 
 void CHThorActivityBase::updateProgress(IStatisticGatherer &progress) const
 {
-    updateProgressForOther(progress, activityId, subgraphId);
+    if (queryOutputs()>0)
+        updateProgressForOther(progress, activityId, subgraphId);
     if (input)
         input->updateProgress(progress);
 }
@@ -236,8 +262,8 @@ void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, un
 {
     StatsEdgeScope scope(progress, otherActivity, whichOutput);
     progress.addStatistic(StNumRowsProcessed, numProcessed);
-    progress.addStatistic(StNumStarted, 1);  // wrong for an activity in a subquery
-    progress.addStatistic(StNumStopped, 1);
+    progress.addStatistic(StNumStarts, 1);  // wrong for an activity in a subquery
+    progress.addStatistic(StNumStops, 1);
     progress.addStatistic(StNumSlaves, 1);  // MORE: A bit pointless for an hthor graph
 }
 
@@ -304,7 +330,7 @@ private:
     virtual void getTempFilename(StringAttr & out) const
     {
         StringBuffer buff;
-        agent.getTempfileBase(buff).appendf(".cluster_write_%p.%" I64F "d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
+        agent.getTempfileBase(buff).append(PATHSEPCHAR).appendf("cluster_write_%p.%" I64F "d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
         out.set(buff.str());
     }
 };
@@ -502,7 +528,7 @@ void CHThorDiskWriteActivity::open()
     serializedOutputMeta.set(input->queryOutputMeta()->querySerializedDiskMeta());//returns outputMeta if serialization not needed
 
     Linked<IRecordSize> groupedMeta = input->queryOutputMeta()->querySerializedDiskMeta();
-    if(grouped)
+    if (grouped)
         groupedMeta.setown(createDeltaRecordSize(groupedMeta, +1));
     blockcompressed = checkIsCompressed(helper.getFlags(), serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
     void *ekey;
@@ -510,7 +536,8 @@ void CHThorDiskWriteActivity::open()
     helper.getEncryptKey(ekeylen,ekey);
     encrypted = false;
     Owned<ICompressor> ecomp;
-    if (ekeylen!=0) {
+    if (ekeylen!=0)
+    {
         ecomp.setown(createAESCompressor256(ekeylen,ekey));
         memset(ekey,0,ekeylen);
         rtlFree(ekey);
@@ -531,9 +558,9 @@ void CHThorDiskWriteActivity::open()
         diskout->seek(0, IFSend);
 
     unsigned rwFlags = rw_autoflush;
-    if(grouped)
+    if (grouped)
         rwFlags |= rw_grouped;
-    if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
+    if (true) // MORE: Should this be controlled by an activity hint/flag?
         rwFlags |= rw_crc;
     IExtRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
@@ -746,6 +773,8 @@ void CHThorDiskWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+
+    setRtlFormat(desc->queryProperties(), helper.queryDiskRecordSize());
     desc->queryProperties().setProp("@kind", "flat");
 }
 
@@ -883,6 +912,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+    setRtlFormat(desc->queryProperties(), helper.queryDiskRecordSize());
 }
 
 //=====================================================================================================
@@ -971,6 +1001,7 @@ void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+    setRtlFormat(desc->queryProperties(), helper.queryDiskRecordSize());
 }
 
 //=====================================================================================================
@@ -1083,7 +1114,10 @@ void CHThorIndexWriteActivity::execute()
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
         size32_t keyMaxSize = helper.queryDiskRecordSize()->getRecordSize(NULL);
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0);
+        if (hasTrailingFileposition(helper.queryDiskRecordSize()->queryTypeInfo()))
+            keyMaxSize -= sizeof(offset_t);
+
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0, &helper, true, false);
         class BcWrapper : implements IBlobCreator
         {
             IKeyBuilder *builder;
@@ -1123,10 +1157,9 @@ void CHThorIndexWriteActivity::execute()
             }
             reccount++;
         }
-        if(metadata)
-            builder->finish(metadata,&fileCrc);
-        else
-            builder->finish(&fileCrc);
+        builder->finish(metadata, &fileCrc);
+        duplicateKeyCount = builder->getDuplicateCount();
+        cummulativeDuplicateKeyCount += duplicateKeyCount;
         out->flush();
         out.clear();
     }
@@ -1186,11 +1219,7 @@ void CHThorIndexWriteActivity::execute()
     properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
     properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
     properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
-#if 0
-    IRecordSize * irecsize = helper.queryDiskRecordSize();
-    if(irecsize && (irecsize->isFixedSize()))
-        properties.setPropInt("@recordSize", irecsize->getFixedSize());
-#endif
+    properties.setPropInt64("@duplicateKeyCount",duplicateKeyCount);
     char const * rececl = helper.queryRecordECL();
     if(rececl && *rececl)
         properties.setProp("ECL", rececl);
@@ -1209,6 +1238,7 @@ void CHThorIndexWriteActivity::execute()
 
     properties.setPropInt("@fileCrc", fileCrc);
     properties.setPropInt("@formatCrc", helper.getFormatCrc());
+    // Legacy record layout info
     void * layoutMetaBuff;
     size32_t layoutMetaSize;
     if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
@@ -1216,6 +1246,20 @@ void CHThorIndexWriteActivity::execute()
         properties.setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
         rtlFree(layoutMetaBuff);
     }
+    // New record layout info
+    setRtlFormat(properties, helper.queryDiskRecordSize());
+    // Bloom info
+    const IBloomBuilderInfo * const *bloomFilters = helper.queryBloomInfo();
+    while (bloomFilters && *bloomFilters)
+    {
+        const IBloomBuilderInfo *info = *bloomFilters++;
+        IPropertyTree *bloom = properties.addPropTree("Bloom");
+        bloom->setPropInt64("@bloomFieldMask", info->getBloomFields());
+        bloom->setPropInt64("@bloomLimit", info->getBloomLimit());  // MORE - if we didn't actually build because of the limit that might be interesting. Though that's going to vary by part.
+        VStringBuffer pval("%f", info->getBloomProbability());
+        bloom->setProp("@bloomProbability", pval.str());
+    }
+
     StringBuffer lfn;
     Owned<IDistributedFile> dfile = NULL;
     if (!agent.queryResolveFilesLocally())
@@ -1279,13 +1323,7 @@ void CHThorIndexWriteActivity::buildLayoutMetadata(Owned<IPropertyTree> & metada
     if(!metadata) metadata.setown(createPTree("metadata"));
     metadata->setProp("_record_ECL", helper.queryRecordECL());
 
-    void * layoutMetaBuff;
-    size32_t layoutMetaSize;
-    if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
-    {
-        metadata->setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
-        rtlFree(layoutMetaBuff);
-    }
+    setRtlFormat(*metadata, helper.queryDiskRecordSize());
 }
 
 //=====================================================================================================
@@ -2441,7 +2479,7 @@ void CHThorGroupDedupKeepLeftActivity::resetEOF()
 
 //=====================================================================================================
 
-CHThorGroupDedupKeepRightActivity::CHThorGroupDedupKeepRightActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorGroupDedupKeepRightActivity::CHThorGroupDedupKeepRightActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, _arg, _kind), compareBest(nullptr)
 {
 }
 
@@ -2450,6 +2488,8 @@ void CHThorGroupDedupKeepRightActivity::ready()
     CHThorGroupDedupActivity::ready();
     assertex(numToKeep==1);
     firstDone = false;
+    if (helper.keepBest())
+        compareBest = helper.queryCompareBest();
 }
 
 void CHThorGroupDedupKeepRightActivity::stop()
@@ -2476,13 +2516,21 @@ const void *CHThorGroupDedupKeepRightActivity::nextRow()
             break;
         }
 
-        if (numKept < numToKeep-1)
+        if (compareBest)
         {
-            numKept++;
-            break;
+            if (compareBest->docompare(kept,next) > 0)
+                kept.setown(next.getClear());
         }
+        else
+        {
+            if (numKept < numToKeep-1)
+            {
+                numKept++;
+                break;
+            }
 
-        kept.setown(next.getClear());
+            kept.setown(next.getClear());
+        }
     }
 
     const void * ret = kept.getClear();
@@ -2628,9 +2676,28 @@ bool HashDedupTable::insert(const void * row)
     addNew(new HashDedupElement(hash, keyRow.getClear()), hash);
     return true;
 }
-
-CHThorHashDedupActivity::CHThorHashDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashDedupArg & _arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), table(_arg, activityId)
+bool HashDedupTable::insertBest(const void * nextrow)
 {
+    unsigned hash = helper.queryHash()->hash(nextrow);
+    const void *et = find(hash, nextrow);
+    if (et)
+    {
+        const HashDedupElement *element = reinterpret_cast<const HashDedupElement *>(et);
+        const void * row = element->queryRow();
+        if (queryBestCompare->docompare(row,nextrow) <= 0)
+            return false;
+        removeExact( const_cast<void *>(et));
+        // drop-through to add new row
+    }
+    LinkRoxieRow(nextrow);
+    addNew(new HashDedupElement(hash, nextrow), hash);
+    return true;
+}
+
+CHThorHashDedupActivity::CHThorHashDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashDedupArg & _arg, ThorActivityKind _kind)
+: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), table(_arg, activityId), hashTableFilled(false), hashDedupTableIter(table)
+{
+    keepBest = helper.keepBest();
 }
 
 void CHThorHashDedupActivity::ready()
@@ -2647,16 +2714,47 @@ void CHThorHashDedupActivity::stop()
 
 const void * CHThorHashDedupActivity::nextRow()
 {
-    while(true)
+    if (keepBest)
     {
-        OwnedConstRoxieRow next(input->nextRow());
-        if(!next)
+        // Populate hash table with best rows
+        if (!hashTableFilled)
         {
-            table.kill();
-            return NULL;
+            OwnedConstRoxieRow next(input->nextRow());
+            while(next)
+            {
+                table.insertBest(next);
+                next.setown(input->nextRow());
+            }
+            hashTableFilled = true;
+            hashDedupTableIter.first();
         }
-        if(table.insert(next))
-            return next.getClear();
+
+        // Iterate through hash table returning rows
+        if (hashDedupTableIter.isValid())
+        {
+            HashDedupElement &el = hashDedupTableIter.query();
+
+            OwnedConstRoxieRow row(el.getRow());
+            hashDedupTableIter.next();
+            return row.getClear();
+        }
+        table.kill();
+        hashTableFilled = false;
+        return NULL;
+    }
+    else
+    {
+        while(true)
+        {
+            OwnedConstRoxieRow next(input->nextRow());
+            if(!next)
+            {
+                table.kill();
+                return NULL;
+            }
+            if(table.insert(next))
+                return next.getClear();
+        }
     }
 }
 
@@ -3046,8 +3144,6 @@ const void * CHThorSkipCatchActivity::nextRow()
 
 CHThorOnFailLimitActivity::CHThorOnFailLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind) : CHThorSkipLimitActivity(_agent, _activityId, _subgraphId, _arg, _kind)
 {
-    transformExtra = static_cast<IHThorLimitTransformExtra *>(helper.selectInterface(TAIlimittransformextra_1));
-    assertex(transformExtra);
 }
 
 void CHThorOnFailLimitActivity::onLimitExceeded() 
@@ -3055,7 +3151,7 @@ void CHThorOnFailLimitActivity::onLimitExceeded()
     buffer->clear(); 
 
     RtlDynamicRowBuilder rowBuilder(rowAllocator);
-    size32_t newSize = transformExtra->transformOnLimitExceeded(rowBuilder);
+    size32_t newSize = helper.transformOnLimitExceeded(rowBuilder);
     if (newSize)
         buffer->insert(rowBuilder.finalizeRowClear(newSize));
 }
@@ -3275,7 +3371,7 @@ const void * CHThorHashAggregateActivity::nextRow()
     if (!gathered)
     {
         bool eog = true;
-        aggregated.start(rowAllocator);
+        aggregated.start(rowAllocator, agent.queryCodeContext(), activityId);
         for (;;)
         {
             OwnedConstRoxieRow next(input->nextRow());
@@ -3794,15 +3890,9 @@ const void *CHThorGroupSortActivity::nextRow()
 
 void CHThorGroupSortActivity::createSorter()
 {
-    IHThorAlgorithm * algo = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
-    if(!algo)
-    {
-        sorter.setown(new CHeapSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
-        return;
-    }
-    unsigned flags = algo->getAlgorithmFlags();
+    unsigned flags = helper.getAlgorithmFlags();
     sorterIsConst = ((flags & TAFconstant) != 0);
-    OwnedRoxieString algoname(algo->getAlgorithm());
+    OwnedRoxieString algoname(helper.getAlgorithm());
     if(!algoname)
     {
         if((flags & TAFunstable) != 0)
@@ -3926,7 +4016,7 @@ bool CHThorGroupSortActivity::sortAndSpillRows()
     if(!diskMerger)
     {
         StringBuffer fbase;
-        agent.getTempfileBase(fbase).appendf(".spill_sort_%p", this);
+        agent.getTempfileBase(fbase).append(PATHSEPCHAR).appendf("spill_sort_%p", this);
         PROGLOG("SORT: spilling to disk, filename base %s", fbase.str());
         class CHThorRowLinkCounter : implements IRowLinkCounter, public CSimpleInterface
         {
@@ -4594,12 +4684,12 @@ void CHThorJoinActivity::fillRight()
         matchedRight.append(false);
 }
 
-const void * CHThorJoinActivity::joinRecords(const void * curLeft, const void * curRight, unsigned counter)
+const void * CHThorJoinActivity::joinRecords(const void * curLeft, const void * curRight, unsigned counter, unsigned flags)
 {
     try
     {
         outBuilder.ensureRow();
-        size32_t thisSize = helper.transform(outBuilder, curLeft, curRight, counter);
+        size32_t thisSize = helper.transform(outBuilder, curLeft, curRight, counter, flags);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -4611,14 +4701,16 @@ const void * CHThorJoinActivity::joinRecords(const void * curLeft, const void * 
     }
 }
 
-const void * CHThorJoinActivity::groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows)
+const void * CHThorJoinActivity::groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows, unsigned flags)
 {
     try
     {
         outBuilder.ensureRow();
         unsigned numRows = rows.ordinality();
         const void * rhs = numRows ? rows.item(0) : defaultRight.get();
-        memsize_t thisSize = helper.transform(outBuilder, curLeft, rhs, numRows, (const void * *)rows.getArray());
+        if (numRows>0)
+            flags |= JTFmatchedright;
+        memsize_t thisSize = helper.transform(outBuilder, curLeft, rhs, numRows, (const void * *)rows.getArray(), flags);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -4635,7 +4727,7 @@ const void * CHThorJoinActivity::joinException(const void * curLeft, IException 
     try
     {
         outBuilder.ensureRow();
-        size32_t thisSize = helper.onFailTransform(outBuilder, curLeft, defaultRight, except);
+        size32_t thisSize = helper.onFailTransform(outBuilder, curLeft, defaultRight, except, JTFmatchedleft);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -4750,7 +4842,7 @@ const void *CHThorJoinActivity::nextRow()
                             if (!matchedRight.item(rightIndex))
                             {
                                 const void * rhs = right.item(rightIndex++);
-                                const void * ret = joinRecords(defaultLeft, rhs, 0);
+                                const void * ret = joinRecords(defaultLeft, rhs, 0, JTFmatchedright);
                                 if (ret)
                                 {
                                     processed++;
@@ -4776,7 +4868,7 @@ const void *CHThorJoinActivity::nextRow()
                                 try
                                 {
                                     RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                                    size32_t thisSize = helper.transform(rowBuilder, newLeft, rhs, ++leftCount);
+                                    size32_t thisSize = helper.transform(rowBuilder, newLeft, rhs, ++leftCount, JTFmatchedright);
                                     if (thisSize)
                                     {
                                         rowSize = thisSize;
@@ -4810,7 +4902,7 @@ const void *CHThorJoinActivity::nextRow()
                         state = JSfillright;
                         if (filteredRight.ordinality())
                         {
-                            const void * ret = groupDenormalizeRecords(defaultLeft, filteredRight);
+                            const void * ret = groupDenormalizeRecords(defaultLeft, filteredRight, 0);
                             filteredRight.kill();
 
                             if (ret)
@@ -4836,14 +4928,14 @@ const void *CHThorJoinActivity::nextRow()
                 switch (kind)
                 {
                 case TAKjoin:
-                    ret = joinRecords(left, defaultRight, 0);
+                    ret = joinRecords(left, defaultRight, 0, JTFmatchedleft);
                     break;
                 case TAKdenormalize:
                     ret = left.getClear();
                     break;
                 case TAKdenormalizegroup:
                     filteredRight.kill();
-                    ret = groupDenormalizeRecords(left, filteredRight);
+                    ret = groupDenormalizeRecords(left, filteredRight, JTFmatchedleft);
                     break;
                 default:
                     throwUnexpected();
@@ -4875,7 +4967,7 @@ const void *CHThorJoinActivity::nextRow()
                                 matchedLeft = true;
                                 if (!exclude)
                                 {
-                                    const void *ret = joinRecords(left, rhs, ++joinCounter);
+                                    const void *ret = joinRecords(left, rhs, ++joinCounter, JTFmatchedleft|JTFmatchedright);
                                     if (ret)
                                     {
                                         processed++;
@@ -4905,7 +4997,7 @@ const void *CHThorJoinActivity::nextRow()
                                     try
                                     {
                                         RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                                        unsigned thisSize = helper.transform(rowBuilder, newLeft, rhs, ++leftCount);
+                                        unsigned thisSize = helper.transform(rowBuilder, newLeft, rhs, ++leftCount, JTFmatchedleft|JTFmatchedright);
                                         if (thisSize)
                                         {
                                             rowSize = thisSize;
@@ -4949,7 +5041,7 @@ const void *CHThorJoinActivity::nextRow()
 
                         if (!exclude && filteredRight.ordinality())
                         {
-                            const void * ret = groupDenormalizeRecords(left, filteredRight);
+                            const void * ret = groupDenormalizeRecords(left, filteredRight, JTFmatchedleft);
                             filteredRight.kill();
 
                             if (ret)
@@ -5169,7 +5261,7 @@ const void * CHThorSelfJoinActivity::nextRow()
                 const void * rhs = group.item(rightIndex++);
                 if(helper.match(lhs, rhs))
                 {
-                    const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
+                    const void * ret = joinRecords(lhs, rhs, ++joinCounter, JTFmatchedleft|JTFmatchedright, NULL);
                     if(ret)
                     {
                         processed++;
@@ -5191,7 +5283,7 @@ const void * CHThorSelfJoinActivity::nextRow()
         if(failingOuterAtmost)
             while(group.isItem(leftIndex))
             {
-                const void * ret = joinRecords(group.item(leftIndex++), defaultRight, 0, NULL);
+                const void * ret = joinRecords(group.item(leftIndex++), defaultRight, 0, JTFmatchedleft, NULL);
                 if(ret)
                 {
                     processed++;
@@ -5202,7 +5294,7 @@ const void * CHThorSelfJoinActivity::nextRow()
         {
             if(leftOuterJoin && !matchedLeft && !failingLimit)
             {
-                const void * ret = joinRecords(group.item(leftIndex), defaultRight, 0, NULL);
+                const void * ret = joinRecords(group.item(leftIndex), defaultRight, 0, JTFmatchedleft, NULL);
                 if(ret)
                 {
                     matchedLeft = true;
@@ -5223,7 +5315,7 @@ const void * CHThorSelfJoinActivity::nextRow()
                 OwnedConstRoxieRow lhs(groupedInput->nextRow());  // dualCache never active here
                 while(lhs)
                 {
-                    const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
+                    const void * ret = joinRecords(lhs, defaultRight, 0, JTFmatchedleft, failingLimit);
                     if(ret)
                     {
                         processed++;
@@ -5237,7 +5329,7 @@ const void * CHThorSelfJoinActivity::nextRow()
                 while(group.isItem(rightOuterIndex))
                     if(!matchedRight.item(rightOuterIndex++))
                     {
-                        const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1), 0, NULL);
+                        const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1), 0, JTFmatchedright, NULL);
                         if(ret)
                         {
                             processed++;
@@ -5252,7 +5344,7 @@ const void * CHThorSelfJoinActivity::nextRow()
         if(failingLimit)
         {
             leftIndex++;
-            const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
+            const void * ret = joinRecords(lhs, defaultRight, 0, JTFmatchedleft, failingLimit);
             if(ret)
             {
                 processed++;
@@ -5268,7 +5360,7 @@ const void * CHThorSelfJoinActivity::nextRow()
                 matchedRight.replace(true, rightIndex-1);
                 if(!exclude)
                 {
-                    const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
+                    const void * ret = joinRecords(lhs, rhs, ++joinCounter, JTFmatchedleft|JTFmatchedright, NULL);
                     if(ret)
                     {
                         processed++;
@@ -5282,12 +5374,12 @@ const void * CHThorSelfJoinActivity::nextRow()
     return NULL;
 }
 
-const void * CHThorSelfJoinActivity::joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except)
+const void * CHThorSelfJoinActivity::joinRecords(const void * curLeft, const void * curRight, unsigned counter, unsigned flags, IException * except)
 {
     outBuilder.ensureRow();
     try
     {
-            size32_t thisSize = (except ? helper.onFailTransform(outBuilder, curLeft, curRight, except) : helper.transform(outBuilder, curLeft, curRight, counter));
+            size32_t thisSize = (except ? helper.onFailTransform(outBuilder, curLeft, curRight, except, flags) : helper.transform(outBuilder, curLeft, curRight, counter, flags));
             if(thisSize){
                 return outBuilder.finalizeRowClear(thisSize);   
             }
@@ -5482,12 +5574,12 @@ void CHThorLookupJoinActivity::setInput(unsigned index, IHThorInput * _input)
 }
 
 //following are all copied from CHThorJoinActivity - should common up.
-const void * CHThorLookupJoinActivity::joinRecords(const void * left, const void * right, unsigned counter)
+const void * CHThorLookupJoinActivity::joinRecords(const void * left, const void * right, unsigned counter, unsigned flags)
 {
     try
     {
         outBuilder.ensureRow();
-        size32_t thisSize = helper.transform(outBuilder, left, right, counter);
+        size32_t thisSize = helper.transform(outBuilder, left, right, counter, flags);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -5504,7 +5596,7 @@ const void * CHThorLookupJoinActivity::joinException(const void * left, IExcepti
     try
     {
         outBuilder.ensureRow();
-        memsize_t thisSize = helper.onFailTransform(outBuilder, left, defaultRight, except);
+        memsize_t thisSize = helper.onFailTransform(outBuilder, left, defaultRight, except, JTFmatchedleft);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -5516,14 +5608,16 @@ const void * CHThorLookupJoinActivity::joinException(const void * left, IExcepti
     }
 }
 
-const void * CHThorLookupJoinActivity::groupDenormalizeRecords(const void * left, ConstPointerArray & rows)
+const void * CHThorLookupJoinActivity::groupDenormalizeRecords(const void * left, ConstPointerArray & rows, unsigned flags)
 {
     try
     {
         outBuilder.ensureRow();
         unsigned numRows = rows.ordinality();
         const void * right = numRows ? rows.item(0) : defaultRight.get();
-        memsize_t thisSize = helper.transform(outBuilder, left, right, numRows, (const void * *)rows.getArray());
+        if (numRows>0)
+            flags |= JTFmatchedright;
+        memsize_t thisSize = helper.transform(outBuilder, left, right, numRows, (const void * *)rows.getArray(), flags);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -5599,7 +5693,7 @@ const void * CHThorLookupJoinActivity::nextRowJoin()
                     gotMatch = true;
                     if(exclude)
                         break;
-                    ret = joinRecords(left, right, ++joinCounter);
+                    ret = joinRecords(left, right, ++joinCounter, JTFmatchedleft|JTFmatchedright);
                     if(ret)
                     {
                         processed++;
@@ -5611,7 +5705,7 @@ const void * CHThorLookupJoinActivity::nextRowJoin()
             }
             if(leftOuterJoin && !gotMatch)
             {
-                ret = joinRecords(left, defaultRight, 0);
+                ret = joinRecords(left, defaultRight, 0, JTFmatchedleft);
                 gotMatch = true;
             }
         }
@@ -5671,7 +5765,7 @@ const void * CHThorLookupJoinActivity::nextRowDenormalize()
                     try
                     {
                         RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                        unsigned thisSize = helper.transform(rowBuilder, newLeft, right, ++leftCount);
+                        unsigned thisSize = helper.transform(rowBuilder, newLeft, right, ++leftCount, JTFmatchedleft|JTFmatchedright);
                         if (thisSize)
                         {
                             rowSize = thisSize;
@@ -5712,7 +5806,7 @@ const void * CHThorLookupJoinActivity::nextRowDenormalize()
             }
 
             if((filteredRight.ordinality() > 0) || (leftOuterJoin && !gotMatch))
-                ret = groupDenormalizeRecords(left, filteredRight);
+                ret = groupDenormalizeRecords(left, filteredRight, JTFmatchedleft);
             filteredRight.kill();
         }
         left.clear();
@@ -5859,12 +5953,12 @@ void CHThorAllJoinActivity::loadRight()
     rightOrdinality = rightset.ordinality();
 }
 
-const void * CHThorAllJoinActivity::joinRecords(const void * left, const void * right, unsigned counter)
+const void * CHThorAllJoinActivity::joinRecords(const void * left, const void * right, unsigned counter, unsigned flags)
 {
     try
     {
         outBuilder.ensureRow();
-        memsize_t thisSize = helper.transform(outBuilder, left, right, counter);
+        memsize_t thisSize = helper.transform(outBuilder, left, right, counter, flags);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -5876,14 +5970,16 @@ const void * CHThorAllJoinActivity::joinRecords(const void * left, const void * 
     }
 }
 
-const void * CHThorAllJoinActivity::groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows)
+const void * CHThorAllJoinActivity::groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows, unsigned flags)
 {
     try
     {
         outBuilder.ensureRow();
         unsigned numRows = rows.ordinality();
         const void * right = numRows ? rows.item(0) : defaultRight.get();
-        memsize_t thisSize = helper.transform(outBuilder, curLeft, right, numRows, (const void * *)rows.getArray());
+        if (numRows>0)
+            flags |= JTFmatchedright;
+        memsize_t thisSize = helper.transform(outBuilder, curLeft, right, numRows, (const void * *)rows.getArray(), flags);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -5938,14 +6034,14 @@ const void * CHThorAllJoinActivity::nextRow()
                 switch(kind)
                 {
                 case TAKalljoin:
-                    ret = joinRecords(left, defaultRight, 0);
+                    ret = joinRecords(left, defaultRight, 0, JTFmatchedleft);
                     break;
                 case TAKalldenormalize:
                     ret = left.getClear();
                     break;
                 case TAKalldenormalizegroup:
                     filteredRight.kill();
-                    ret = groupDenormalizeRecords(left, filteredRight);
+                    ret = groupDenormalizeRecords(left, filteredRight, JTFmatchedleft);
                     break;
                 default:
                     throwUnexpected();
@@ -5998,7 +6094,7 @@ const void * CHThorAllJoinActivity::nextRow()
                     matchedLeft = true;
                     matchedRight.replace(true, rightIndex);
                     if(!exclude)
-                        ret = joinRecords(left, right, ++joinCounter);
+                        ret = joinRecords(left, right, ++joinCounter, JTFmatchedleft|JTFmatchedright);
                 }
                 rightIndex++;
                 if(ret)
@@ -6027,7 +6123,7 @@ const void * CHThorAllJoinActivity::nextRow()
                             try
                             {
                                 RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                                unsigned thisSize = helper.transform(rowBuilder, newLeft, right, ++leftCount);
+                                unsigned thisSize = helper.transform(rowBuilder, newLeft, right, ++leftCount, JTFmatchedleft|JTFmatchedright);
                                 if(thisSize)
                                 {
                                     rowSize = thisSize;
@@ -6066,7 +6162,7 @@ const void * CHThorAllJoinActivity::nextRow()
             }
             if(!exclude && filteredRight.ordinality())
             {
-                const void * ret = groupDenormalizeRecords(left, filteredRight);
+                const void * ret = groupDenormalizeRecords(left, filteredRight, JTFmatchedleft);
                 filteredRight.kill();
                 if(ret)
                 {
@@ -7810,7 +7906,7 @@ void CHThorChildGroupAggregateActivity::ready()
     CHThorSimpleActivityBase::ready();
     eof = false;
     gathered = false;
-    aggregated.start(rowAllocator);
+    aggregated.start(rowAllocator, agent.queryCodeContext(), activityId);
 }
 
 void CHThorChildGroupAggregateActivity::stop()
@@ -7921,6 +8017,8 @@ const void *CHThorChildThroughNormalizeActivity::nextRow()
 CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
     helper.setCallback(this);
+    expectedDiskMeta = helper.queryDiskRecordSize();
+    projectedDiskMeta = helper.queryProjectedDiskRecordSize();
 }
 
 CHThorDiskReadBaseActivity::~CHThorDiskReadBaseActivity()
@@ -7933,7 +8031,6 @@ void CHThorDiskReadBaseActivity::ready()
     CHThorActivityBase::ready(); 
 
     grouped = false;
-    recordsize = 0;
     fixedDiskRecordSize = 0;
     eofseen = false;
     opened = false;
@@ -7968,7 +8065,7 @@ void CHThorDiskReadBaseActivity::resolve()
     }
     else
     {
-        ldFile.setown(agent.resolveLFN(mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
+        ldFile.setown(resolveLFNFlat(agent, mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
         if ( mangledHelperFileName.charAt(0) == '~')
             logicalFileName.set(mangledHelperFileName.str()+1);
         else
@@ -8005,7 +8102,7 @@ void CHThorDiskReadBaseActivity::resolve()
                 }
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
-                if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
+                if(agent.getLayoutTranslationMode()==RecordTranslationMode::None)
                     verifyRecordFormatCrc();
             }
         }
@@ -8021,12 +8118,12 @@ void CHThorDiskReadBaseActivity::resolve()
 
 void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
 {
-    if(fileDesc)
+    if (fileDesc)
     {
         if (!agent.queryResolveFilesLocally())
         {
             grouped = fileDesc->isGrouped();
-            if(grouped != ((helper.getFlags() & TDXgrouped) != 0))
+            if (grouped != ((helper.getFlags() & TDXgrouped) != 0))
             {
                 StringBuffer msg;
                 msg.append("DFS and code generated group info. differs: DFS(").append(grouped ? "grouped" : "ungrouped").append("), CodeGen(").append(grouped ? "ungrouped" : "grouped").append("), using DFS info");
@@ -8042,26 +8139,15 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
         grouped = ((helper.getFlags() & TDXgrouped) != 0);
     }
 
-    diskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
-    if (grouped)
-        diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta));
-    if (outputMeta.isFixedSize())
-    {
-        recordsize = outputMeta.getFixedSize();
-        if (grouped)
-            recordsize++;
-    }
-    else
-        recordsize = 0;
+    actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
     calcFixedDiskRecordSize();
-
-    if(fileDesc)
+    if (fileDesc)
     {
         compressed = fileDesc->isCompressed(&blockcompressed); //try new decompression, fall back to old unless marked as block
-        if(fixedDiskRecordSize)
+        if (fixedDiskRecordSize)
         {
             size32_t dfsSize = fileDesc->queryProperties().getPropInt("@recordSize");
-            if(!((dfsSize == 0) || (dfsSize == fixedDiskRecordSize) || (grouped && (dfsSize+1 == fixedDiskRecordSize)))) //third option for backwards compatibility, as hthor used to publish @recordSize not including the grouping byte
+            if (!((dfsSize == 0) || (dfsSize == fixedDiskRecordSize) || (grouped && (dfsSize+1 == fixedDiskRecordSize)))) //third option for backwards compatibility, as hthor used to publish @recordSize not including the grouping byte
                 throw MakeStringException(0, "Published record size %d for file %s does not match coded record size %d", dfsSize, mangledHelperFileName.str(), fixedDiskRecordSize);
             if (!compressed && (((helper.getFlags() & TDXcompress) != 0) && (fixedDiskRecordSize >= MIN_ROWCOMPRESS_RECSIZE)))
             {
@@ -8125,6 +8211,9 @@ bool CHThorDiskReadBaseActivity::openNext()
     offsetOfPart += localOffset;
     localOffset = 0;
     saveOpenExc.clear();
+    actualFilter.clear();
+    unsigned expectedCrc = helper.getDiskFormatCrc();
+    unsigned projectedCrc = helper.getProjectedFormatCrc();
 
     if (dfsParts||ldFile)
     {
@@ -8133,6 +8222,8 @@ bool CHThorDiskReadBaseActivity::openNext()
               (!dfsParts&&(partNum<ldFile->numParts())))
         {
             IDistributedFilePart * curPart = dfsParts?&dfsParts->query():NULL;
+            IDistributedFile *dFile = ldFile->queryDistributedFile();  // Null for local file usage
+
             unsigned numCopies = curPart?curPart->numCopies():ldFile->numPartCopies(partNum);
             //MORE: Order of copies should be optimized at this point....
             StringBuffer file, filelist;
@@ -8142,8 +8233,28 @@ bool CHThorDiskReadBaseActivity::openNext()
                 unsigned subfile;
                 unsigned lnum;
                 if (superfile->mapSubPart(partNum, subfile, lnum))
+                {
                     logicalFileName.set(subfileLogicalFilenames.item(subfile));
+                    // MORE - need to set dFile = superfile->getSubFilePart(subfile) to support different formats on different file parts
+                }
             }
+
+            unsigned actualCrc = 0;
+            if (dFile)
+            {
+                IPropertyTree &props = dFile->queryAttributes();
+                actualDiskMeta.setown(getDaliLayoutInfo(props));
+                actualCrc = props.getPropInt("@formatCrc");
+            }
+            if (!actualDiskMeta)
+                actualDiskMeta.set(expectedDiskMeta->querySerializedDiskMeta());
+            keyedTranslator.setown(createKeyTranslator(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true)));
+            if (keyedTranslator && keyedTranslator->needsTranslate())
+                keyedTranslator->translate(actualFilter, fieldFilters);
+            else
+                actualFilter.appendFilters(fieldFilters);
+
+            bool canSerializeTypeInfo = actualDiskMeta->queryTypeInfo()->canSerialize() && projectedDiskMeta->queryTypeInfo()->canSerialize();
             for (unsigned copy=0; copy < numCopies; copy++)
             {
                 RemoteFilename rfilename;
@@ -8155,22 +8266,48 @@ bool CHThorDiskReadBaseActivity::openNext()
                 filelist.append('\n').append(file);
                 try
                 {
-                    inputfile.setown(createIFile(rfilename));   
-                    if(compressed)
+                    inputfile.setown(createIFile(rfilename));
+
+                    // NB: only binary handles can be remotely processed by dafilesrv at the moment
+
+                    StringBuffer path;
+                    if ((rt_binary != readType) || !canSerializeTypeInfo || !isRemoteReadCandidate(agent, rfilename, path))
                     {
-                        Owned<IExpander> eexp;
-                        if (encryptionkey.length()!=0) 
-                            eexp.setown(createAESExpander256((size32_t)encryptionkey.length(),encryptionkey.bufferBase()));
-                        inputfileio.setown(createCompressedFileReader(inputfile,eexp));
-                        if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
+                        if (compressed)
                         {
-                            inputfileio.setown(inputfile->open(IFOread));
-                            if(inputfileio)
-                                rowcompressed = true;
+                            Owned<IExpander> eexp;
+                            if (encryptionkey.length()!=0)
+                                eexp.setown(createAESExpander256((size32_t)encryptionkey.length(),encryptionkey.bufferBase()));
+                            inputfileio.setown(createCompressedFileReader(inputfile,eexp));
+                            if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
+                            {
+                                inputfileio.setown(inputfile->open(IFOread));
+                                if(inputfileio)
+                                    rowcompressed = true;
+                            }
                         }
+                        else
+                            inputfileio.setown(inputfile->open(IFOread));
                     }
                     else
-                        inputfileio.setown(inputfile->open(IFOread));
+                    {
+                        // Open a stream from remote file, having passed actual, expected, projected, and filters to it
+                        SocketEndpoint ep(rfilename.queryEndpoint());
+                        setDafsEndpointPort(ep);
+
+                        Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
+                        if (remoteFileIO)
+                        {
+                            StringBuffer tmp;
+                            remoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFileName.str());
+                            remoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(offsetOfPart).str());
+                            remoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(curPart->getPartIndex()).str());
+                            actualDiskMeta.set(projectedDiskMeta);
+                            expectedDiskMeta = projectedDiskMeta;
+                            actualFilter.clear();
+                            inputfileio.setown(remoteFileIO.getClear());
+                        }
+                    }
                     if (inputfileio)
                         break;
                 }
@@ -8184,6 +8321,28 @@ bool CHThorDiskReadBaseActivity::openNext()
                 closepart();
             }
 
+            //Check if the file requires translation, but translation is disabled
+            if (actualCrc && expectedCrc && (actualCrc != expectedCrc) && (agent.getLayoutTranslationMode()==RecordTranslationMode::None))
+            {
+                IOutputMetaData * expectedDiskMeta = helper.queryDiskRecordSize();
+                throwTranslationError(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true), logicalFileName.str());
+            }
+
+            //The projected format will often not match the expected format, and if it differs it must be translated
+            if (projectedCrc && actualCrc != projectedCrc)
+                translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
+
+            if (translator && translator->needsTranslate())
+            {
+                if (!translator->canTranslate())
+                    throw MakeStringException(0, "Untranslatable key layout mismatch reading file %s", logicalFileName.str());
+            }
+            else
+            {
+                translator.clear();
+                keyedTranslator.clear();
+            }
+            calcFixedDiskRecordSize();
             if (dfsParts)
                 dfsParts->next();
             partNum++;
@@ -8229,6 +8388,23 @@ bool CHThorDiskReadBaseActivity::openNext()
             else
                 saveOpenExc.setown(E);
         }
+
+        //A spill file - actual will always equal expected, so keyed translator will never be used.
+        keyedTranslator.clear();
+
+        //The projected format will often not match the expected format, and if it differs it must be translated
+        translator.clear();
+        if (projectedCrc != expectedCrc)
+            translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
+
+        if (translator && translator->needsTranslate())
+        {
+            assertex(translator->canTranslate());
+        }
+        else
+        {
+            translator.clear();
+        }
         partNum++;
         if (checkOpenedFile(file.str(), NULL))
         {
@@ -8271,7 +8447,7 @@ bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char con
     saveOpenExc.clear();
     if (filesize)
     {
-        if (!compressed && fixedDiskRecordSize && (filesize % fixedDiskRecordSize) != 0)
+        if (!compressed && fixedDiskRecordSize && ((offset_t)-1 != filesize) && (filesize % fixedDiskRecordSize) != 0)
         {
             StringBuffer s;
             s.append("File ").append(filename).append(" size is ").append(filesize).append(" which is not a multiple of ").append(fixedDiskRecordSize);
@@ -8305,50 +8481,32 @@ void CHThorDiskReadBaseActivity::open()
 //=====================================================================================================
 
 CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind)
-: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), segHelper(_segHelper), prefetchBuffer(NULL)
+: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind),
+  segHelper(_segHelper), prefetchBuffer(NULL)
 {
+    readType = rt_binary;
 }
 
 void CHThorBinaryDiskReadBase::calcFixedDiskRecordSize()
 {
-    fixedDiskRecordSize = diskMeta->getFixedSize();
+    fixedDiskRecordSize = actualDiskMeta->getFixedSize();
+    if (fixedDiskRecordSize && grouped)
+        fixedDiskRecordSize += 1;
 }
 
-void CHThorBinaryDiskReadBase::append(IKeySegmentMonitor *segment)
+void CHThorBinaryDiskReadBase::append(FFoption option, const IFieldFilter * filter)
 {
-    if (segment->isWild())
-        segment->Release();
+    if (filter->isWild())
+        filter->Release();
     else
-        segMonitors.append(*segment);
-}
-
-void CHThorBinaryDiskReadBase::setMergeBarrier(unsigned barrierOffset)
-{
-    // nothing to do - we don't merge...
-}
-
-unsigned CHThorBinaryDiskReadBase::ordinality() const
-{
-    return segMonitors.length();
-}
-
-IKeySegmentMonitor *CHThorBinaryDiskReadBase::item(unsigned idx) const
-{
-    if (segMonitors.isItem(idx))
-        return &segMonitors.item(idx);
-    else
-        return NULL;
+        fieldFilters.append(*filter);
 }
 
 void CHThorBinaryDiskReadBase::ready()      
 { 
     CHThorDiskReadBaseActivity::ready(); 
-    if (!diskMeta)
-        diskMeta.set(outputMeta);
-    segMonitors.kill();
+    fieldFilters.kill();
     segHelper.createSegmentMonitors(this);
-    prefetcher.setown(diskMeta->createDiskPrefetcher(agent.queryCodeContext(), activityId));
-    deserializer.setown(diskMeta->createDiskDeserializer(agent.queryCodeContext(), activityId));
 }
 
 bool CHThorBinaryDiskReadBase::openNext()
@@ -8362,8 +8520,9 @@ bool CHThorBinaryDiskReadBase::openNext()
             PROGLOG("Disk read falling back to legacy decompression routine");
             //in.setown(createRowCompReadSeq(*inputfileiostream, 0, fixedDiskRecordSize));
         }
-
         //Only one of these will actually be used.
+        prefetcher.setown(actualDiskMeta->createDiskPrefetcher());
+        deserializer.setown(actualDiskMeta->createDiskDeserializer(agent.queryCodeContext(), activityId));
         prefetchBuffer.setStream(inputstream);
         deserializeSource.setStream(inputstream);
         return true;
@@ -8410,11 +8569,13 @@ void CHThorDiskReadActivity::ready()
     outBuilder.setAllocator(rowAllocator);
     eogPending = false;
     lastGroupProcessed = processed;
-    needTransform = helper.needTransform() || segMonitors.length();
+    needTransform = helper.needTransform() || fieldFilters.length();
     limit = helper.getRowLimit();
     if (helper.getFlags() & TDRlimitskips)
         limit = (unsigned __int64) -1;
     stopAfter = helper.getChooseNLimit();
+    if (!helper.transformMayFilter())
+        remoteLimit = stopAfter;
 }
 
 
@@ -8437,7 +8598,7 @@ const void *CHThorDiskReadActivity::nextRow()
 
     try
     {
-        if (needTransform || grouped)
+        if (needTransform || grouped || translator || keyedTranslator)
         {
             while (!eofseen && ((stopAfter == 0) || ((processed - initialProcessed) < stopAfter)))
             {
@@ -8449,15 +8610,23 @@ const void *CHThorDiskReadActivity::nextRow()
                     prefetcher->readAhead(prefetchBuffer);
                     const byte * next = prefetchBuffer.queryRow();
                     size32_t sizeRead = prefetchBuffer.queryRowSize();
-                    size32_t thisSize;
-                    if (segMonitorsMatch(next))
+                    size32_t thisSize = 0;
+                    if (likely(segMonitorsMatch(next))) // NOTE - keyed fields are checked pre-translation
                     {
-                        thisSize = helper.transform(outBuilder.ensureRow(), next);
+                        MemoryBuffer translated;
+                        if (translator)
+                        {
+                            MemoryBufferBuilder aBuilder(translated, 0);
+                            translator->translate(aBuilder, *this, next);
+                            next = reinterpret_cast<const byte *>(translated.toByteArray());
+                        }
+                        if (likely(helper.canMatch(next)))
+                            thisSize = helper.transform(outBuilder.ensureRow(), next);
                     }
-                    else
-                        thisSize = 0;
+                    bool eog = false;
+                    if (grouped)
+                        prefetchBuffer.read(sizeof(eog), &eog);
 
-                    bool eog = grouped && next[sizeRead-1];
                     prefetchBuffer.finishedRow();
 
                     localOffset += sizeRead;
@@ -8465,7 +8634,7 @@ const void *CHThorDiskReadActivity::nextRow()
                     {
                         if (grouped)
                             eogPending = eog;
-                        if ((processed - initialProcessed) >=limit)
+                        if ((processed - initialProcessed) >= limit)
                         {
                             outBuilder.clear();
                             if ( agent.queryCodeContext()->queryDebugContext())
@@ -8487,26 +8656,28 @@ const void *CHThorDiskReadActivity::nextRow()
         }
         else
         {
-            assertex(outputMeta == diskMeta);
             while(!eofseen && ((stopAfter == 0) || (processed - initialProcessed) < stopAfter)) 
             {
                 queryUpdateProgress();
 
-                if (!inputstream->eos())
+                while (!inputstream->eos())
                 {
                     size32_t sizeRead = deserializer->deserialize(outBuilder.ensureRow(), deserializeSource);
                     //In this case size read from disk == size created in memory
                     localOffset += sizeRead;
+                    OwnedConstRoxieRow ret = outBuilder.finalizeRowClear(sizeRead);
                     if ((processed - initialProcessed)>=limit)
                     {
-                        outBuilder.clear();
                         if ( agent.queryCodeContext()->queryDebugContext())
                             agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
                         helper.onLimitExceeded();
                         return NULL;
                     }
-                    processed++;
-                    return outBuilder.finalizeRowClear(sizeRead);
+                    if (likely(helper.canMatch(ret)))
+                    {
+                        processed++;
+                        return ret.getClear();
+                    }
                 }
                 eofseen = !openNext();
             }
@@ -8717,6 +8888,8 @@ void CHThorDiskCountActivity::ready()
     PARENT::ready(); 
     finished = false;
     stopAfter = helper.getChooseNLimit();
+    if (!helper.hasFilter())
+        remoteLimit = stopAfter;
 }
 
 void CHThorDiskCountActivity::gatherInfo(IFileDescriptor * fd)
@@ -8731,8 +8904,9 @@ const void *CHThorDiskCountActivity::nextRow()
     if (finished) return NULL;
 
     unsigned __int64 totalCount = 0;
-    if ((segMonitors.ordinality() == 0) && !helper.hasFilter() && (fixedDiskRecordSize != 0) && !(helper.getFlags() & (TDXtemporary | TDXjobtemp))
-        && !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
+    if (fieldFilters.ordinality() == 0 && !helper.hasFilter() &&
+        (fixedDiskRecordSize != 0) && !(helper.getFlags() & (TDXtemporary | TDXjobtemp)) &&
+        !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
     {
         resolve();
         if (segHelper.canMatchAny() && ldFile)
@@ -8812,7 +8986,7 @@ void CHThorDiskGroupAggregateActivity::gatherInfo(IFileDescriptor * fd)
 {
     PARENT::gatherInfo(fd);
     assertex(!grouped);
-    aggregated.start(rowAllocator);
+    aggregated.start(rowAllocator, agent.queryCodeContext(), activityId);
 }
 
 void CHThorDiskGroupAggregateActivity::processRow(const void * next)
@@ -8841,8 +9015,8 @@ const void *CHThorDiskGroupAggregateActivity::nextRow()
                     const byte * next = prefetchBuffer.queryRow();
                     size32_t sizeRead = prefetchBuffer.queryRowSize();
 
-                        //helper.processRows(sizeRead, next, this);
-                    helper.processRow(next, this);
+                    if (segMonitorsMatch(next))
+                        helper.processRow(next, this);
 
                     prefetchBuffer.finishedRow();
                     localOffset += sizeRead;
@@ -8873,6 +9047,7 @@ const void *CHThorDiskGroupAggregateActivity::nextRow()
 CHThorCsvReadActivity::CHThorCsvReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
     maxRowSize = agent.queryWorkUnit()->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
+    readType = rt_csv;
 }
 
 CHThorCsvReadActivity::~CHThorCsvReadActivity()
@@ -8931,28 +9106,9 @@ const void *CHThorCsvReadActivity::nextRow()
         checkOpenNext();
         if (eofseen)
             break;
-        if (!inputstream->eos())
+        size32_t thisLineLength = csvSplitter.splitLine(inputstream, maxRowSize);
+        if (thisLineLength)
         {
-            size32_t rowSize = 4096; // MORE - make configurable
-            size32_t thisLineLength;
-            for (;;)
-            {
-                size32_t avail;
-                const void *peek = inputstream->peek(rowSize, avail);
-                thisLineLength = csvSplitter.splitLine(avail, (const byte *)peek);
-                if (thisLineLength < rowSize || avail < rowSize)
-                    break;
-                if (rowSize == maxRowSize)
-                {
-                    OwnedRoxieString fileName(helper.getFileName());
-                    throw MakeStringException(99, "File %s contained a line of length greater than %d bytes.", fileName.get(), rowSize);
-                }
-                if (rowSize >= maxRowSize/2)
-                    rowSize = maxRowSize;
-                else
-                    rowSize += rowSize;
-            }
-
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned thisSize;
             try
@@ -9031,6 +9187,7 @@ void CHThorCsvReadActivity::checkOpenNext()
 
 CHThorXmlReadActivity::CHThorXmlReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
+    readType = rt_xml;
 }
 
 void CHThorXmlReadActivity::ready()
@@ -9220,10 +9377,10 @@ void CHThorDictionaryResultWriteActivity::execute()
     }
     IHThorGraphResult * result = graph->createResult(helper.querySequence(), LINK(rowAllocator));
     size32_t dictSize = builder.getcount();
-    byte ** dictRows = builder.queryrows();
+    const byte ** dictRows = builder.queryrows();
     for (size32_t row = 0; row < dictSize; row++)
     {
-        byte *thisRow = dictRows[row];
+        const byte *thisRow = dictRows[row];
         if (thisRow)
             LinkRoxieRow(thisRow);
         result->addRowOwn(thisRow);
@@ -9527,12 +9684,13 @@ public:
     virtual void destruct(byte * self)  {}
     virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createDiskPrefetcher() { return NULL; }
     virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); } // could provide a static implementation if needed
 };
 
 //=====================================================================================================
@@ -10062,24 +10220,23 @@ void CHThorStreamedIteratorActivity::stop()
 //=====================================================================================================
 
 CHThorExternalActivity::CHThorExternalActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorExternalArg &_arg, ThorActivityKind _kind, IPropertyTree * _graphNode) 
-: CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), graphNode(_graphNode)
+: CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), graphNode(_graphNode), activityContext(1, 0)
 {
+}
+
+void CHThorExternalActivity::setInput(unsigned index, IHThorInput *_input)
+{
+    CHThorMultiInputActivity::setInput(index, _input);
+    CHThorInputAdaptor * adaptedInput = new CHThorInputAdaptor(_input);
+    inputAdaptors.append(*adaptedInput);
+    helper.setInput(index, adaptedInput);
 }
 
 void CHThorExternalActivity::ready()
 {
     CHThorMultiInputActivity::ready();
-    //must be called after onStart()
-    processor.setown(helper.createProcessor());
-    processor->onCreate(agent.queryCodeContext(), graphNode);
-    ForEachItemIn(idx, inputs)
-    {
-        Owned<CHThorInputAdaptor> adaptedInput = new CHThorInputAdaptor(inputs.item(idx));
-        processor->addInput(idx, adaptedInput);
-    }
-    processor->start();
-    if (outputMeta.getMinRecordSize() > 0)
-        rows.setown(processor->createOutput(0));
+    if (kind != TAKexternalsink)
+        rows.setown(helper.createOutput(&activityContext));
 }
 
 const void *CHThorExternalActivity::nextRow()
@@ -10094,14 +10251,7 @@ const void *CHThorExternalActivity::nextRow()
 void CHThorExternalActivity::execute()
 {
     assertex(!rows);
-    processor->execute();
-}
-
-void CHThorExternalActivity::reset()
-{
-    rows.clear();
-    processor->reset();
-    processor.clear();
+    helper.execute(&activityContext);
 }
 
 void CHThorExternalActivity::stop()
@@ -10111,7 +10261,7 @@ void CHThorExternalActivity::stop()
         rows->stop();
         rows.clear();
     }
-    processor->stop();
+    CHThorMultiInputActivity::stop();
 }
 
 
@@ -10130,7 +10280,7 @@ extern HTHOR_API IHThorActivity * createGroupDedupActivity(IAgentContext & _agen
 {
     if(arg.compareAll())
         return new CHThorGroupDedupAllActivity(_agent, _activityId, _subgraphId, arg, kind);
-    else if (arg.keepLeft())
+    else if (arg.keepLeft() && !arg.keepBest())
         return new CHThorGroupDedupKeepLeftActivity(_agent, _activityId, _subgraphId, arg, kind);
     else
         return new CHThorGroupDedupKeepRightActivity(_agent, _activityId, _subgraphId, arg, kind);

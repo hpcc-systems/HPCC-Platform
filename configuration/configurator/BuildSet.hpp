@@ -45,7 +45,7 @@ public:
     const char* getBuildSetComponentTypeName(int index) const;
     const char* getBuildSetComponentFileName(int index) const;
     const char* getBuildSetProcessName(int index) const;
-    const char* getBuildSetSchema(int index) const;
+    const char* getBuildSetSchema(unsigned index) const;
     const int getBuildSetSchemaCount() const;
     const int getBuildSetServiceCount() const;
     const int getBuildSetComponentCount() const;

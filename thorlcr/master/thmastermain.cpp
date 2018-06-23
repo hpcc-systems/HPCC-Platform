@@ -103,7 +103,7 @@ class CRegistryServer : public CSimpleInterface
                 threaded.join();
             }
         }
-        virtual void main()
+        virtual void threadmain() override
         {
             running = true;
             for (;;)
@@ -263,6 +263,7 @@ public:
         queryRawGroup().serialize(msg);
         globals->serialize(msg);
         msg.append(masterSlaveMpTag);
+        msg.append(kjServiceMpTag);
         if (!queryNodeComm().send(msg, RANK_ALL_OTHER, MPTAG_THORREGISTRATION, MP_ASYNC_SEND))
         {
             PROGLOG("Failed to initialize slaves");
@@ -495,6 +496,15 @@ bool ControlHandler(ahType type)
 #include "thactivitymaster.hpp"
 int main( int argc, char *argv[]  )
 {
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
 #if defined(WIN32) && defined(_DEBUG)
     int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
     tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
@@ -718,7 +728,8 @@ int main( int argc, char *argv[]  )
         SetTempDir(tempDirStr.str(), tempPrefix.str(), true);
 
         char thorPath[1024];
-        if (!GetCurrentDirectory(1024, thorPath)) {
+        if (!GetCurrentDirectory(1024, thorPath))
+        {
             ERRLOG("ThorMaster::main: Current directory path too big, setting it to null");
             thorPath[0] = 0;
         }
@@ -763,7 +774,8 @@ int main( int argc, char *argv[]  )
     getThorQueueNames(_queueNames, thorName);
     queueName.set(_queueNames.str());
 
-    try {
+    try
+    {
         CSDSServerStatus &serverStatus = openThorServerStatus();
 
         Owned<CRegistryServer> registry = new CRegistryServer();
@@ -780,6 +792,7 @@ int main( int argc, char *argv[]  )
 
         addAbortHandler(ControlHandler);
         masterSlaveMpTag = allocateClusterMPTag();
+        kjServiceMpTag = allocateClusterMPTag();
 
         if (registry->connect())
         {

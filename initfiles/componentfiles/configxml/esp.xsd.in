@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
@@ -16,7 +17,6 @@
 ################################################################################
 -->
 
-<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
     <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="EspProcess">
@@ -298,6 +298,7 @@
                                 <xs:restriction base="xs:string">
                                     <xs:enumeration value="none"/>
                                     <xs:enumeration value="local"/>
+                                    <xs:enumeration value="userNameOnly"/>
                                     <xs:enumeration value="ldap"/>
                                     <xs:enumeration value="ldaps"/>
                                     <xs:enumeration value="secmgrPlugin"/>
@@ -345,8 +346,111 @@
                             </xs:appinfo>
                           </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="getUserNameURL" type="xs:string" use="optional" default="/esp/files/GetUserName.html">
+                          <xs:annotation>
+                            <xs:appinfo>
+                              <tooltip>URL to getUserName</tooltip>
+                            </xs:appinfo>
+                            </xs:annotation>
+                          </xs:attribute>
+                        <xs:attribute name="getUserNameUnrestrictedResources" type="xs:string" use="optional" default="/favicon.ico,/esp/files/*,/esp/xslt/*">
+                          <xs:annotation>
+                            <xs:appinfo>
+                              <tooltip>unrestricted resources for getUserNameURL</tooltip>
+                            </xs:appinfo>
+                          </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="AuthDomain" maxOccurs="unbounded">
+	          <xs:annotation>
+	            <xs:appinfo>
+	              <title>AuthDomain</title>
+	            </xs:appinfo>
+	          </xs:annotation>
+	          <!--DOC-Autobuild-code-->
+	          <xs:annotation>
+	            <xs:appinfo>
+	              <docid>ESP.t7</docid>
+	            </xs:appinfo>
+	          </xs:annotation>
+	          <xs:complexType>
+	            <xs:attribute name="domainName" type="xs:string" use="required" default="default">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>Unique string to identify an auth domain in case > 1 domains in an esp</tooltip>
+	                  <colIndex>1</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+	            <xs:attribute name="authType" use="optional" default="AuthTypeMixed">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>User session Authentication type</tooltip>
+	                  <colIndex>2</colIndex>
+	                  <required>true</required>
+	                </xs:appinfo>
+	              </xs:annotation>
+	              <xs:simpleType>
+	                <xs:restriction base="xs:string">
+	                  <xs:enumeration value="AuthTypeMixed"/>
+	                  <xs:enumeration value="AuthPerSessionOnly"/>
+	                  <xs:enumeration value="AuthPerRequestOnly"/>
+	                </xs:restriction>
+	              </xs:simpleType>
+	            </xs:attribute>
+	            <xs:attribute name="logonURL" type="xs:string" use="optional" default="/esp/files/Login.html">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>Logon URL</tooltip>
+	                  <colIndex>3</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+	            <xs:attribute name="logoutURL" type="xs:string" use="optional" default="">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>Logout URL</tooltip>
+	                  <colIndex>4</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+	            <xs:attribute name="clientSessionTimeoutMinutes" use="optional" default="120">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>Inactive session duration, in minutes, that is used to timeout a session on ESP client. Specify 0 for default timeout, -1 for never time out.</tooltip>
+	                  <colIndex>5</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+                <xs:attribute name="serverSessionTimeoutMinutes" use="optional" default="240">
+                  <xs:annotation>
+                    <xs:appinfo>
+                      <tooltip>Considering network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.\nIf serverSessionTimeoutMinutes is less than clientSessionTimeoutMinutes, serverSessionTimeoutMinutes = 2 * clientSessionTimeoutMinutes. -1 for never time out.</tooltip>
+                      <colIndex>6</colIndex>
+                    </xs:appinfo>
+                  </xs:annotation>
+                </xs:attribute>
+	            <xs:attribute name="unrestrictedResources" type="xs:string" use="optional" default="/favicon.ico,/esp/files/*,/esp/xslt/*">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <width>50</width>
+	                  <tooltip>unrestricted resources for user authentication</tooltip>
+	                  <colIndex>7</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+	            <xs:attribute name="invalidURLsAfterAuth" type="xs:string" use="optional" default="/esp/login">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <width>50</width>
+	                  <tooltip>After authentication, requests are redirected to the home page.</tooltip>
+	                  <colIndex>8</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+	          </xs:complexType>
+	        </xs:element>
                 <xs:element name="HTTPS" minOccurs="0">
                     <xs:complexType>
                      <!--DOC-Autobuild-code-->
@@ -362,21 +466,21 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="certificateFileName" type="xs:string" use="optional" default="certificate.cer">
+                        <xs:attribute name="certificateFileName" type="xs:string" use="optional" default="@HOME_DIR@/@RUNTIME_USER@/certificate/certificate.pem">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Name of destination file in which the certificate will be written.</tooltip>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="privateKeyFileName" type="xs:string" use="optional" default="privatekey.cer">
+                        <xs:attribute name="privateKeyFileName" type="xs:string" use="optional" default="@HOME_DIR@/@RUNTIME_USER@/certificate/key.pem">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Name of destination file in which the private key will be written.</tooltip>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="passphrase" type="xs:string" use="optional">
+                        <xs:attribute name="passphrase" type="xs:string" use="optional" default="hpccsystems-platform">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <viewType>password</viewType>
@@ -405,7 +509,7 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="CA_Certificates_Path" type="xs:string" use="optional" default="ca.pem">
+                        <xs:attribute name="CA_Certificates_Path" type="xs:string" use="optional" default="@HOME_DIR@/@RUNTIME_USER@/certificate">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>path to the file that contains CA certificates.</tooltip>
@@ -428,8 +532,7 @@
                         </xs:attribute>
                         <xs:attribute name="organizationalUnit" type="xs:string" use="optional">
                             <xs:annotation>
-                                <xs:appinfo>
-                            </xs:appinfo>
+                                <xs:appinfo/>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="city" type="xs:string" use="optional">
@@ -788,6 +891,55 @@
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>Log TxSummary for Resource Requests</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="espCacheInitString" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>String used for initializing ESP cache client.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="checkSessionTimeoutSeconds" type="xs:nonNegativeInteger" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Check Session Timeout in every given seconds.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="urlAlias" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The URL alias for this ESP. This can be used to detect Cross-Origin Resource Sharing (CORS) access.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="PageCacheTimeoutSeconds" type="xs:nonNegativeInteger" use="optional" default="600">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Paging data timeout in the given seconds.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="MaxPageCacheItems" type="xs:nonNegativeInteger" use="optional" default="1000">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The maximum number of cached items inside one page cache. 0 means no cache.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="maxPersistentIdleTime" type="xs:integer" use="optional" default="60">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The maximum idle time in seconds (-1 for unlimited, 0 to disable).</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="maxPersistentRequests" type="xs:integer" use="optional" default="100">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum number of query requests per persistent http connection. (-1 for unlimited, 0 to disable).</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>

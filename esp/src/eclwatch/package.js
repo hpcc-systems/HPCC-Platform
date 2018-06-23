@@ -1,5 +1,5 @@
 var profile = (function(){
-    copyOnly = function (filename, mid) {
+    var copyOnly = function (filename, mid) {
         var list = {
             "hpcc/eclwatch.profile": true,
             "hpcc/eclwatch.json": true,

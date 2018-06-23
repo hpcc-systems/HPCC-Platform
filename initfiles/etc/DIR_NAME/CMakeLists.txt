@@ -15,6 +15,11 @@
 #    limitations under the License.
 ################################################################################
 
+if(NOT WSSQL_SERVICE)
+    set(WSSQL_SERVICE_BLOCK_S "<!-- Built with -DWSSQL_SERVICE=OFF ")
+    set(WSSQL_SERVICE_BLOCK_E "-->")
+endif(NOT WSSQL_SERVICE)
+
 configure_file("version.in" "version")
 configure_file("environment.conf.in" "environment.conf" IMMEDIATE)
 configure_file("environment.xml.in" "environment.xml" IMMEDIATE)
@@ -29,6 +34,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.conf DESTINATION etc/${DIR
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime)
 
 add_subdirectory(configmgr)
+add_subdirectory(config2mgr)
 
 # Developer build
 # target: configure

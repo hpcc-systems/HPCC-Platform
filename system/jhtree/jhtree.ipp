@@ -24,6 +24,7 @@
 #include "ctfile.hpp"
 
 #include "jhtree.hpp"
+#include "bloom.hpp"
 
 typedef OwningStringHTMapping<IKeyIndex> CKeyIndexMapping;
 typedef OwningStringSuperHashTableOf<CKeyIndexMapping> CKeyIndexTable;
@@ -62,6 +63,8 @@ enum request { LTE, GTE };
 interface INodeLoader
 {
     virtual CJHTreeNode *loadNode(offset_t offset) = 0;
+    virtual CJHTreeNode *locateFirstNode(KeyStatsCollector &stats) = 0;
+    virtual CJHTreeNode *locateLastNode(KeyStatsCollector &stats) = 0;
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -77,6 +80,7 @@ protected:
     StringAttr name;
     CriticalSection blobCacheCrit;
     Owned<CJHTreeBlobNode> cachedBlobNode;
+    CIArrayOf<IndexBloomFilter> bloomFilters;
     offset_t cachedBlobNodePos;
 
     CKeyHdr *keyHdr;
@@ -95,19 +99,22 @@ protected:
     ~CKeyIndex();
     void init(KeyHdr &hdr, bool isTLK, bool allowPreload);
     void cacheNodes(CNodeCache *cache, offset_t nodePos, bool isTLK);
+    void loadBloomFilters();
     
 public:
     IMPLEMENT_IINTERFACE;
     virtual bool IsShared() const { return CInterface::IsShared(); }
 
 // IKeyIndex impl.
-    virtual IKeyCursor *getCursor(IContextLogger *ctx);
+    virtual IKeyCursor *getCursor(const IIndexFilterList *filter) override;
 
     virtual size32_t keySize();
     virtual bool hasPayload();
     virtual size32_t keyedSize();
-    virtual bool isTopLevelKey();
-    virtual bool isFullySorted();
+    virtual bool isTopLevelKey() override;
+    virtual bool isFullySorted() override;
+    virtual __uint64 getPartitionFieldMask() override;
+    virtual unsigned numPartitions() override;
     virtual unsigned getFlags() { return (unsigned char)keyHdr->getKeyType(); };
 
     virtual void dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw);
@@ -122,10 +129,17 @@ public:
     virtual offset_t queryLatestGetNodeOffset() const { return latestGetNodeOffset; }
     virtual offset_t queryMetadataHead();
     virtual IPropertyTree * getMetadata();
+
+    bool bloomFilterReject(const IIndexFilterList &segs) const;
+
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
+    virtual bool hasSpecialFileposition() const;
+    virtual bool needsRowBuffer() const;
  
  // INodeLoader impl.
     virtual CJHTreeNode *loadNode(offset_t offset) = 0;
+    CJHTreeNode *locateFirstNode(KeyStatsCollector &stats);
+    CJHTreeNode *locateLastNode(KeyStatsCollector &stats);
 };
 
 class jhtree_decl CMemKeyIndex : public CKeyIndex
@@ -156,38 +170,112 @@ public:
     virtual CJHTreeNode *loadNode(offset_t offset);
 };
 
-class jhtree_decl CKeyCursor : public IKeyCursor, public CInterface
+class jhtree_decl CKeyCursor : public CInterfaceOf<IKeyCursor>
 {
-private:
-    IContextLogger *ctx;
+protected:
     CKeyIndex &key;
+    const IIndexFilterList *filter;
+    char *keyBuffer = nullptr;
     Owned<CJHTreeNode> node;
     unsigned int nodeKey;
-    ConstPointerArray activeBlobs;
 
-    CJHTreeNode *locateFirstNode();
-    CJHTreeNode *locateLastNode();
+    bool eof=false;
+    bool matched=false; //MORE - this should probably be renamed. It's tracking state from one call of lookup to the next.
 
 public:
-    IMPLEMENT_IINTERFACE;
-    CKeyCursor(CKeyIndex &_key, IContextLogger *ctx);
+    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter);
     ~CKeyCursor();
 
-    virtual bool next(char *dst);
-    virtual bool prev(char *dst);
-    virtual bool first(char *dst);
-    virtual bool last(char *dst);
-    virtual bool gtEqual(const char *src, char *dst, bool seekForward);
-    virtual bool ltEqual(const char *src, char *dst, bool seekForward);
+    virtual bool next(char *dst, KeyStatsCollector &stats) override;
+    virtual const char *queryName() const override;
     virtual size32_t getSize();
+    virtual size32_t getKeyedSize() const;
     virtual offset_t getFPos(); 
     virtual void serializeCursorPos(MemoryBuffer &mb);
-    virtual void deserializeCursorPos(MemoryBuffer &mb, char *keyBuffer);
+    virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats);
     virtual unsigned __int64 getSequence(); 
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize);
-    virtual void releaseBlobs();
     virtual void reset();
+    virtual bool lookup(bool exact, KeyStatsCollector &stats) override;
+    virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, KeyStatsCollector &stats) override;
+    virtual bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen) override;
+    virtual IKeyCursor *fixSortSegs(unsigned sortFieldOffset) override;
+
+    virtual unsigned __int64 getCount(KeyStatsCollector &stats) override;
+    virtual unsigned __int64 checkCount(unsigned __int64 max, KeyStatsCollector &stats) override;
+    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount, KeyStatsCollector &stats) override;
+    virtual bool nextRange(unsigned groupSegCount) override;
+    virtual const byte *queryKeyBuffer() const override;
+protected:
+    CKeyCursor(const CKeyCursor &from);
+
+    bool last(char *dst, KeyStatsCollector &stats);
+    bool gtEqual(const char *src, char *dst, KeyStatsCollector &stats);
+    bool ltEqual(const char *src, KeyStatsCollector &stats);
+    bool _lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats);
+    void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeyStatsCollector &stats);
+
+    inline void setLow(unsigned segNo)
+    {
+        filter->setLow(segNo, keyBuffer);
+    }
+    inline unsigned setLowAfter(size32_t offset)
+    {
+        return filter->setLowAfter(offset, keyBuffer);
+    }
+    inline bool incrementKey(unsigned segno) const
+    {
+        return filter->incrementKey(segno, keyBuffer);
+    }
+    inline void endRange(unsigned segno)
+    {
+        filter->endRange(segno, keyBuffer);
+    }
 };
 
+class CPartialKeyCursor : public CKeyCursor
+{
+public:
+    CPartialKeyCursor(const CKeyCursor &from, unsigned sortFieldOffset);
+    ~CPartialKeyCursor();
+};
+
+// Specialization of a RowFilter allowing us to use them from JHTree. Allowed to assume that all keyed fields are fixed size (for now!)
+
+class IndexRowFilter : public RowFilter, public CInterfaceOf<IIndexFilterList>
+{
+public:
+    IndexRowFilter(const RtlRecord &_recInfo);
+    virtual void append(IKeySegmentMonitor *segment) override;
+    virtual const IIndexFilter *item(unsigned idx) const override;
+    virtual void append(FFoption option, const IFieldFilter * filter) override;
+
+    virtual void setLow(unsigned segno, void *keyBuffer) const override;
+    virtual unsigned setLowAfter(size32_t offset, void *keyBuffer) const override;
+    virtual bool incrementKey(unsigned segno, void *keyBuffer) const override;
+    virtual void endRange(unsigned segno, void *keyBuffer) const override;
+    virtual unsigned lastRealSeg() const override;
+    virtual unsigned lastFullSeg() const override;
+    virtual unsigned numFilterFields() const override;
+    virtual IIndexFilterList *fixSortSegs(const char *fixedVals, unsigned sortFieldOffset) const override;
+    virtual void reset() override;
+    virtual void checkSize(size32_t keyedSize, char const * keyname) const override;
+    virtual void recalculateCache() override;
+    virtual void finish(size32_t keyedSize) override;
+    virtual void describe(StringBuffer &out) const override;
+    virtual bool matchesBuffer(const void *buffer, unsigned lastSeg, unsigned &matchSeg) const override;
+    virtual unsigned getFieldOffset(unsigned idx) const override { return recInfo.getFixedOffset(idx); }
+    virtual bool canMatch() const override;
+
+protected:
+    IndexRowFilter(const IndexRowFilter &_from, const char *fixedVals, unsigned sortFieldOffset);
+
+    const RtlRecord &recInfo;
+    unsigned lastReal = 0;
+    unsigned lastFull = 0;
+    unsigned keyedSize = 0;
+    unsigned keySegCount = 0;
+
+};
 
 #endif

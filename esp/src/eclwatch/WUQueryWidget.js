@@ -35,13 +35,13 @@ define([
     "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/WsWorkunits",
-    "hpcc/ESPUtil",
-    "hpcc/ESPWorkunit",
+    "src/WsWorkunits",
+    "src/ESPUtil",
+    "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
-    "hpcc/Utility",
+    "src/Utility",
 
     "dojo/text!../templates/WUQueryWidget.html",
 
@@ -75,6 +75,7 @@ define([
         filter: null,
         clusterTargetSelect: null,
         stateSelect: null,
+        userName: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -319,12 +320,24 @@ define([
                     context.refreshGrid();
                 }
             });
+
+            this.userName = dojoConfig.username;
+        },
+
+        _onMine: function  (event) {
+            if (event) {
+                this.filter.setValue(this.id + "Owner", this.userName);
+                this.filter._onFilterApply();
+            } else {
+                this.filter._onFilterClear();
+                this.filter._onFilterApply();
+            }
         },
 
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.workunitsTab.id) {
+                if (currSel.id === this.workunitsTab.id) {
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel.params);
@@ -425,13 +438,13 @@ define([
                     }),
                     Protected: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("locked.png", context.i18n.Protected);
+                            node.innerHTML = Utility.getImageHTML("locked.png", context.i18n.Protected);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (_protected) {
                             if (_protected === true) {
-                                return dojoConfig.getImageHTML("locked.png");
+                                return Utility.getImageHTML("locked.png");
                             }
                             return "";
                         }
@@ -511,14 +524,14 @@ define([
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
                 if (selection[i] && selection[i].Protected !== null) {
-                    if (selection[i].Protected != "0") {
+                    if (selection[i].Protected !== false) {
                         hasProtected = true;
                     } else {
                         hasNotProtected = true;
                     }
                 }
                 if (selection[i] && selection[i].StateID !== null) {
-                    if (selection[i].StateID == "4") {
+                    if (selection[i].StateID === 4) {
                         hasFailed = true;
                     } else {
                         hasNotFailed = true;

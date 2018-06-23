@@ -61,7 +61,7 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "nbcd.hpp"
 #include "enginecontext.hpp"
 
@@ -95,15 +95,15 @@ extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 #define UNSUPPORTED(feature) throw MakeStringException(MSGAUD_user, 0, "Rembed: UNSUPPORTED feature: %s", feature)
 #define FAIL(msg) throw MakeStringException(MSGAUD_user, 0, "Rembed: Rcpp error: %s", msg)
 
+using Rcpp::_;
+
 namespace Rembed
 {
-// Copied from Rcpp 3.3's environment.h, in case an older version of Rcpp is in use
+// Copied from Rcpp 0.12.15's meat/Environment.h, in case an older version of Rcpp is in use
 inline Rcpp::Environment _new_env(SEXP parent, int size = 29) {
-    Rcpp::Shield<SEXP> sizeSEXP(Rf_ScalarInteger(size));
-    Rcpp::Shield<SEXP> parentSEXP(parent);
-    return R_NewHashedEnv(parentSEXP, sizeSEXP);
+    Rcpp::Function newEnv("new.env", R_BaseNamespace);
+    return newEnv(_["size"] = size, _["parent"] = parent);
 }
-
 
 
 __declspec(noreturn) static void failx(const char *msg, ...) __attribute__((format(printf, 1, 2), noreturn));
@@ -248,7 +248,7 @@ static void getFieldNames(Rcpp::CharacterVector &namevec, const RtlTypeInfo *typ
     {
         const RtlFieldInfo *child = *fields;
         // MORE - nested records may make this interesting
-        namevec.push_back(child->name->queryStr());
+        namevec.push_back(child->name);
         fields++;
     }
 }
@@ -1299,7 +1299,7 @@ public:
             break;
         }
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *row)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *row) override
     {
         // We create a list
         const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
@@ -1369,17 +1369,17 @@ private:
 class REmbedContext: public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) override
     {
-        return createFunctionContextEx(NULL, flags, options);
+        return createFunctionContextEx(nullptr, nullptr, flags, options);
     }
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
         Owned<REmbedFunctionContext> ret =  new REmbedFunctionContext(*queryGlobalState()->R);
         ret->setScopes(ctx, options);
         return ret.getClear();
     }
-    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         throwUnexpected();
     }

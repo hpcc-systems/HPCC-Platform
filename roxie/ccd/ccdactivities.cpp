@@ -32,6 +32,8 @@
 #include "rtlkey.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlread_imp.hpp"
+#include "rtlcommon.hpp"
+#include "rtldynfield.hpp"
 
 #include "jhtree.hpp"
 #include "jlog.hpp"
@@ -154,11 +156,6 @@ public:
     StringBuffer &toString(StringBuffer &ret) const
     {
         return ret.appendf("%p", this);
-    }
-
-    IRecordLayoutTranslator::Mode getEnableFieldTranslation() const
-    {
-        return queryFactory.queryOptions().enableFieldTranslation;
     }
 
     const char *queryQueryName() const
@@ -306,7 +303,7 @@ protected:
     bool resent;
     bool isOpt;
     bool variableFileName;
-    IRecordLayoutTranslator::Mode allowFieldTranslation;
+    RecordTranslationMode allowFieldTranslation;
     Owned<const IResolvedFile> varFileInfo;
 
     virtual void setPartNo(bool filechanged) = 0;
@@ -382,8 +379,14 @@ protected:
 
     ~CRoxieSlaveActivity()
     {
-        basefactory->mergeStats(logctx.queryStats());
         ::Release(basehelper);
+    }
+
+    virtual void beforeDispose() override
+    {
+        CRuntimeStatisticCollection merged(allStatistics);
+        logctx.gatherStats(merged);
+        basefactory->mergeStats(merged);
     }
 
 public:
@@ -528,11 +531,11 @@ public:
     {
         return queryContext->queryCodeContext()->getResultVarUnicode(name, sequence);
     }
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override
     {
         return queryContext->queryCodeContext()->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, isGrouped, xmlTransformer, csvTransformer);
     }
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+    virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override
     {
         return queryContext->queryCodeContext()->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher);
     }
@@ -815,21 +818,6 @@ private:
 
 class CRoxieDiskReadBaseActivity : public CRoxieSlaveActivity, implements IIndexReadContext//, implements IDiskReadActivity
 {
-    friend class RecordProcessor;
-    friend class KeyedRecordProcessor;
-    friend class UnkeyedRecordProcessor;
-    friend class UnkeyedVariableRecordProcessor;
-    friend class KeyedNormalizeRecordProcessor;
-    friend class UnkeyedNormalizeRecordProcessor;
-    friend class KeyedCountRecordProcessor;
-    friend class UnkeyedCountRecordProcessor;
-    friend class UnkeyedVariableCountRecordProcessor;
-    friend class KeyedAggregateRecordProcessor;
-    friend class UnkeyedAggregateRecordProcessor;
-    friend class UnkeyedVariableAggregateRecordProcessor;
-    friend class KeyedGroupAggregateRecordProcessor;
-    friend class UnkeyedGroupAggregateRecordProcessor;
-    friend class UnkeyedVariableGroupAggregateRecordProcessor;
 protected:
     IHThorDiskReadBaseArg *helper;
 
@@ -837,24 +825,26 @@ protected:
     unsigned parallelPartNo;
     unsigned numParallel;
 
-    bool isKeyed;
     bool isGrouped = false;
     bool forceUnkeyed;
 
     offset_t readPos;
     CachedOutputMetaData diskSize;
-    Owned<IInMemoryIndexCursor> cursor;
+    ScoredRowFilter postFilter;
+    Owned<IDirectReader> reader;
     Linked<IInMemoryIndexManager> manager;
+    Linked<ITranslatorSet> translators;
     Owned<IInMemoryFileProcessor> processor;
-    Owned<IFileIOArray> varFiles;
     CriticalSection pcrit;
 
 public:
     CRoxieDiskReadBaseActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
-        IInMemoryIndexManager *_manager, 
+        IInMemoryIndexManager *_manager,
+        ITranslatorSet *_translators,
         unsigned _parallelPartNo, unsigned _numParallel, bool _forceUnkeyed)
         : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory),
         manager(_manager),
+        translators(_translators),
         parallelPartNo(_parallelPartNo),
         numParallel(_numParallel),
         forceUnkeyed(_forceUnkeyed)
@@ -862,32 +852,12 @@ public:
         helper = (IHThorDiskReadBaseArg *) basehelper;
         variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
         isOpt = (helper->getFlags() & TDRoptional) != 0;
-        Linked<IOutputMetaData> diskMeta(helper->queryDiskRecordSize()->querySerializedDiskMeta());
-        if (diskMeta->isGrouped())
-        {
-            diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta.getClear()));
-            isGrouped = true;
-        }
-        else
-            isGrouped = false;
-        diskSize.set(diskMeta);
+        diskSize.set(helper->queryProjectedDiskRecordSize()->querySerializedDiskMeta());
+        isGrouped = diskSize.isGrouped();
         processed = 0;
         readPos = 0;
-        isKeyed = false;
         if (resent)
         {
-            bool usedKey;
-            resentInfo.read(processed);
-            resentInfo.read(usedKey);
-            if (usedKey)
-            {
-                cursor.setown(manager->createCursor());
-                cursor->deserializeCursorPos(resentInfo);
-                isKeyed = true;
-            }
-            else
-                resentInfo.read(readPos);
-            assertex(resentInfo.remaining() == 0);
         }
     }
 
@@ -895,8 +865,30 @@ public:
     {
         CRoxieSlaveActivity::onCreate();
         helper->createSegmentMonitors(this);
-        if (!resent)
-            isKeyed = (cursor && !forceUnkeyed && !isGrouped) ? cursor->selectKey() : false;
+        const IKeyTranslator *keyTranslator = translators->queryKeyTranslator(0);  // any part would do - in-memory requires all actuals to have same layout
+        if (keyTranslator)
+            keyTranslator->translate(postFilter);
+        if (resent)
+        {
+            bool usedKey;
+            resentInfo.read(processed);
+            resentInfo.read(usedKey);
+            if (usedKey)
+                reader.setown(manager->selectKey(resentInfo, postFilter, translators));
+            else
+            {
+                resentInfo.read(readPos);
+                reader.setown(manager->createReader(postFilter, isGrouped, readPos, parallelPartNo, numParallel, translators));
+            }
+            assertex(resentInfo.remaining() == 0);
+        }
+        else
+        {
+            if (!forceUnkeyed && !isGrouped)
+                reader.setown(manager->selectKey(postFilter, translators, logctx));
+            if (!reader)
+                reader.setown(manager->createReader(postFilter, isGrouped, readPos, parallelPartNo, numParallel, translators));
+        }
     }
 
     virtual const char *queryDynamicFileName() const
@@ -906,30 +898,16 @@ public:
 
     virtual void setVariableFileInfo()
     {
-        const IPropertyTree *options =  varFileInfo->queryProperties();
-        if (options)
-        {
-            bool isFileGrouped = options->getPropBool("@grouped");
-            if (isFileGrouped && !isGrouped)
-            {
-                // We are prepared to read contents of a grouped persist ungrouped... But not vice versa
-                WARNLOG("Published group information for file %s does not match coded information - assuming grouped", queryDynamicFileName());
-                Owned<IOutputMetaData> diskMeta(new CSuffixedOutputMeta(+1, LINK(diskSize.queryOriginal())));
-                diskSize.set(diskMeta);
-                isGrouped = true;
-            }
-            size32_t dfsSize = options->getPropInt("@recordSize");
-            if (dfsSize && diskSize.isFixedSize() && dfsSize != diskSize.getFixedSize())
-                throw MakeStringException(ROXIE_LAYOUT_MISMATCH, "Published record size %d for file %s (%s) does not match coded record size %d", dfsSize, queryDynamicFileName(), isGrouped ? "grouped" : "ungrouped", diskSize.getFixedSize());
-        }
         unsigned channel = packet->queryHeader().channel;
-        varFiles.setown(varFileInfo->getIFileIOArray(isOpt, channel)); // MORE could combine 
-        manager.setown(varFileInfo->getIndexManager(isOpt, channel, varFiles, diskSize, false, 0));
+        unsigned projectedCrc = helper->getProjectedFormatCrc();
+        unsigned expectedCrc = helper->getDiskFormatCrc();
+        translators.setown(varFileInfo->getTranslators(projectedCrc, helper->queryProjectedDiskRecordSize(), expectedCrc, helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), false));
+        manager.setown(varFileInfo->getIndexManager(isOpt, channel, translators->queryActualLayout(0), false));
     }
 
     inline bool queryKeyed() const
     {
-        return isKeyed;
+        return reader->isKeyed();
     }
 
     void setParallel(unsigned _partno, unsigned _numParallel)
@@ -947,27 +925,16 @@ public:
 
     virtual void append(IKeySegmentMonitor *segment)
     {
-        if (!segment->isWild())
-        {
-            if (!cursor)
-                cursor.setown(manager->createCursor());
-            cursor->append(segment);
-        }
+        segment->Release();
+        throwUnexpected();
     }
 
-    virtual unsigned ordinality() const
+    virtual void append(FFoption option, const IFieldFilter * filter)
     {
-        return cursor ? cursor->ordinality() : 0;
-    }
-
-    virtual IKeySegmentMonitor *item(unsigned idx) const
-    {
-        return cursor ? cursor->item(idx) : 0;
-    }
-
-    virtual void setMergeBarrier(unsigned barrierOffset)
-    {
-        // no merging so no issue...
+        if (filter->isWild())
+            filter->Release();
+        else
+            postFilter.addFilter(*filter);
     }
 
     virtual void abort() 
@@ -981,7 +948,7 @@ public:
     virtual IMessagePacker *process()
     {
         MTIME_SECTION(queryActiveTimer(), "CRoxieDiskReadBaseActivity::process");
-        atomic_inc(&diskReadStarted);
+        diskReadStarted++;
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         doProcess(output);
         helper->setCallback(NULL);
@@ -989,7 +956,7 @@ public:
             return NULL;
         else
         {
-            atomic_inc(&diskReadCompleted);
+            diskReadCompleted++;
             return output.getClear();
         }
     }
@@ -1014,9 +981,8 @@ public:
 class CRoxieDiskBaseActivityFactory : public CSlaveActivityFactory
 {
 protected:
-    Owned<IFileIOArray> fileArray;
+    Owned<ITranslatorSet> translators;
     Owned<IInMemoryIndexManager> manager;
-
 public:
     CRoxieDiskBaseActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CSlaveActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
@@ -1031,11 +997,21 @@ public:
             if (datafile)
             {
                 unsigned channel = queryFactory.queryChannel();
-                fileArray.setown(datafile->getIFileIOArray(isOpt, channel));
-                manager.setown(datafile->getIndexManager(isOpt, channel, fileArray, helper->queryDiskRecordSize(), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false), _graphNode.getPropInt("att[@name=\"_preloadSize\"]/@value", 0)));
+                unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
+                unsigned expectedFormatCrc = helper->getDiskFormatCrc();
+                translators.setown(datafile->getTranslators(projectedFormatCrc, helper->queryProjectedDiskRecordSize(), expectedFormatCrc, helper->queryDiskRecordSize(), getEnableFieldTranslation(), false));
+                manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false)));
                 Owned<IPropertyTreeIterator> memKeyInfo = queryFactory.queryPackage().getInMemoryIndexInfo(_graphNode);
+                Owned<IPropertyTree> memKeyHint;
+                if (!memKeyInfo && _graphNode.hasProp("hint[@name=\"key\"]"))
+                {
+                    memKeyHint.setown(createPTreeFromXMLString(_graphNode.queryProp("hint[@name=\"key\"]/@value")));
+                    memKeyInfo.setown(memKeyHint->getElements("MemIndex"));
+                }
                 if (memKeyInfo)
                 {
+                    // There's a small potential flaw that I can end up with indexes from a query that was unloaded active on some nodes but not others
+                    // which could mess up continuation. I think I don't care.
                     ForEach(*memKeyInfo)
                     {
                         IPropertyTree &info = memKeyInfo->query();
@@ -1044,7 +1020,7 @@ public:
                 }
             }
             else
-                manager.setown(getEmptyIndexManager());
+                manager.setown(createInMemoryIndexManager(helper->queryProjectedDiskRecordSize()->queryRecordAccessor(true), true, nullptr));
         }
     }
 
@@ -1059,8 +1035,7 @@ public:
 class CRoxieDiskReadActivity;
 class CRoxieCsvReadActivity;
 class CRoxieXmlReadActivity;
-IInMemoryFileProcessor *createKeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool resent);
-IInMemoryFileProcessor *createUnkeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool variableDisk, bool isGrouped, IDirectReader *reader);
+IInMemoryFileProcessor *createReadRecordProcessor(CRoxieDiskReadActivity &owner, bool isGrouped, IDirectReader *reader);
 IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *reader, bool _skipHeader, const IResolvedFile *datafile, size32_t maxRowSize);
 IInMemoryFileProcessor *createXmlRecordProcessor(CRoxieXmlReadActivity &owner, IDirectReader *reader);
 
@@ -1073,8 +1048,8 @@ protected:
 
 public:
     CRoxieDiskReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
-        IInMemoryIndexManager *_manager)
-        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, false)
+        IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, 1, false)
     {
         onCreate();
         helper = (IHThorDiskReadArg *) basehelper;
@@ -1088,9 +1063,8 @@ public:
     virtual void doProcess(IMessagePacker * output)
     {
         {
-            CriticalBlock p(pcrit);
-            processor.setown(isKeyed ? createKeyedRecordProcessor(cursor, *this, resent) : 
-                                       createUnkeyedRecordProcessor(cursor, *this, diskSize.isVariableSize(), isGrouped, manager->createReader(readPos, parallelPartNo, numParallel)));
+            CriticalBlock p(pcrit); // because of race with abort.
+            processor.setown(createReadRecordProcessor(*this, isGrouped, reader));
         }
         unsigned __int64 rowLimit = helper->getRowLimit();
         unsigned __int64 stopAfter = helper->getChooseNLimit();
@@ -1099,9 +1073,14 @@ public:
 
     size32_t doTransform(IMessagePacker * output, const void *src) const
     {
-        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
-        unsigned transformedSize = helper->transform(rowBuilder, src);
-        return rowBuilder.writeToOutput(transformedSize, false);
+        if (likely(helper->canMatch(src)))
+        {
+            OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
+            unsigned transformedSize = helper->transform(rowBuilder, src);
+            return rowBuilder.writeToOutput(transformedSize, false);
+        }
+        else
+            return 0;
     }
 
 };
@@ -1118,8 +1097,8 @@ protected:
 
 public:
     CRoxieCsvReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
-                          IInMemoryIndexManager *_manager, const IResolvedFile *_datafile, size32_t _maxRowSize)
-        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, true), datafile(_datafile), maxRowSize(_maxRowSize)
+                          IInMemoryIndexManager *_manager, ITranslatorSet *_translators, const IResolvedFile *_datafile, size32_t _maxRowSize)
+        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, 1, true), datafile(_datafile), maxRowSize(_maxRowSize)
     {
         onCreate();
         helper = (IHThorCsvReadArg *) basehelper;
@@ -1136,7 +1115,7 @@ public:
             CriticalBlock p(pcrit);
             processor.setown(
                     createCsvRecordProcessor(*this,
-                                             manager->createReader(readPos, parallelPartNo, numParallel),
+                                             manager->createReader(postFilter, false, readPos, parallelPartNo, numParallel, translators),
                                              packet->queryHeader().channel==1 && !resent,
                                              varFileInfo ? varFileInfo.get() : datafile, maxRowSize));
         }
@@ -1163,8 +1142,8 @@ protected:
 
 public:
     CRoxieXmlReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
-        IInMemoryIndexManager *_manager)
-        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, true)
+        IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, 1, true)
     {
         onCreate();
         helper = (IHThorXmlReadArg *) basehelper;
@@ -1179,7 +1158,7 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(createXmlRecordProcessor(*this, manager->createReader(readPos, parallelPartNo, numParallel))); 
+            processor.setown(createXmlRecordProcessor(*this, manager->createReader(postFilter, false, readPos, parallelPartNo, numParallel, translators)));
         }
         unsigned __int64 rowLimit = helper->getRowLimit();
         unsigned __int64 stopAfter = helper->getChooseNLimit();
@@ -1204,7 +1183,7 @@ public:
 
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return new CRoxieDiskReadActivity(logctx, packet, helperFactory, this, manager);
+        return new CRoxieDiskReadActivity(logctx, packet, helperFactory, this, manager, translators);
     }
 
     virtual StringBuffer &toString(StringBuffer &s) const
@@ -1230,7 +1209,7 @@ public:
 
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return new CRoxieCsvReadActivity(logctx, packet, helperFactory, this, manager, datafile, maxRowSize);
+        return new CRoxieCsvReadActivity(logctx, packet, helperFactory, this, manager, translators, datafile, maxRowSize);
     }
 
     virtual StringBuffer &toString(StringBuffer &s) const
@@ -1250,7 +1229,7 @@ public:
 
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return new CRoxieXmlReadActivity(logctx, packet, helperFactory, this, manager);
+        return new CRoxieXmlReadActivity(logctx, packet, helperFactory, this, manager, translators);
     }
 
     virtual StringBuffer &toString(StringBuffer &s) const
@@ -1263,292 +1242,103 @@ public:
 
 //================================================================================================
 
-// Note - the classes below could be commoned up to make the code smaller, but they have been deliberately unrolled to 
-// keep to a bare minimum the number of virtual calls/variable tests per record scanned. This is very speed critical.
-
 class RecordProcessor : implements IInMemoryFileProcessor, public CInterface
 {
 protected:
-    IInMemoryIndexCursor *cursor;  // Unkeyed variants still may need to check segmonitors in here
-    bool aborted;
-    const char *endRec;
-
-    static inline size32_t roundDown(size32_t got, size32_t fixedSize)
-    {
-        // Make sure that the buffer size we process is a multiple of the fixed record size
-        return (got / fixedSize) * fixedSize;
-    }
-
-    static size32_t getBufferSize(size32_t fixedSize)
-    {
-        // Calculate appropriate buffer size for fixed size record processors
-        assert(fixedSize);
-        unsigned recordsPerBuffer = diskReadBufferSize / fixedSize;
-        if (!recordsPerBuffer)
-            recordsPerBuffer = 1;
-        return fixedSize * recordsPerBuffer;
-    }
+    bool aborted = false;
+    IDirectReader *reader;
 
 public:
     IMPLEMENT_IINTERFACE
-    RecordProcessor(IInMemoryIndexCursor *_cursor) : cursor(_cursor)
-    {
-        aborted = false;
-        endRec = NULL;
-    }
+    RecordProcessor(IDirectReader *_reader) : reader(_reader) {}
     virtual void abort() 
     {
         aborted = true; 
-        endRec = NULL; // speeds up the abort in some of the derived classes
     }
 };
 
 //================================================================================================
 
-// Base class for all varieties of RecordProcessor used by disk read activity
+// Disk read activity
 
 class ReadRecordProcessor : public RecordProcessor
 {
-protected:
-    CRoxieDiskReadActivity &owner;
-    IHThorDiskReadArg *helper;
 public:
-    ReadRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskReadActivity &_owner)
-        : RecordProcessor(_cursor), owner(_owner)
+    ReadRecordProcessor(CRoxieDiskReadActivity &_owner, bool _isGrouped, IDirectReader *_reader)
+        : RecordProcessor(_reader), owner(_owner), isGrouped(_isGrouped)
     {
         helper = _owner.helper;
     }
-};
-
-// Used by disk read when an in-memory index is available
-
-class KeyedRecordProcessor : public ReadRecordProcessor
-{
-    bool resent;
-
-public:
-    KeyedRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskReadActivity &_owner, bool _resent) : ReadRecordProcessor(_cursor, _owner)
-    {
-        resent = _resent;
-        helper->setCallback(cursor);
-    }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
     {
-        // doQuery needs to be as fast as possible - we are making a virtual call to it per query in order to avoid tests of loop-invariants within it
         unsigned totalSizeSent = 0;
-        IInMemoryIndexCursor *lc = cursor;
-        if (!resent)
-            lc->reset();
-        bool continuationFailed = false;
+        helper->setCallback(reader);
+        unsigned lastGroupProcessed = processed;
+        bool someInGroup = false;
         while (!aborted)
         {
-            const void *nextCandidate = lc->nextMatch();
-            if (!nextCandidate)
-                break;
-            unsigned transformedSize = owner.doTransform(output, nextCandidate);
-            if (transformedSize)
+            // This loop is the inner loop for memory diskreads - so keep it efficient!
+            const byte *nextRec = reader->nextRow();
+            if (nextRec)
             {
-                processed++;
-                if (processed > rowLimit)
-                {
-                    owner.limitExceeded(); 
-                    break;
-                }
-                if (processed == stopAfter)
-                    break;
-                totalSizeSent += transformedSize;
-                if (totalSizeSent > indexReadChunkSize && !continuationFailed)
-                {
-                    MemoryBuffer si;
-                    unsigned short siLen = 0;
-                    si.append(siLen);
-                    si.append(processed);
-                    si.append(true);  // using a key
-                    lc->serializeCursorPos(si);
-                    if (si.length() <= maxContinuationSize)
-                    {
-                        siLen = si.length() - sizeof(siLen);
-                        si.writeDirect(0, sizeof(siLen), &siLen);
-                        output->sendMetaInfo(si.toByteArray(), si.length());
-                        return;
-                    }
-                    else
-                        continuationFailed = true;
-                }
-            }
-        }
-    }
-};
-
-IInMemoryFileProcessor *createKeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool resent)
-{
-    return new KeyedRecordProcessor(cursor, owner, resent);
-}
-
-// Used by disk read when an in-memory index is NOT available
-// We use different variants for fixed versus variable sized records, in order to make the fixed version as fast as possible
-
-class UnkeyedRecordProcessor : public ReadRecordProcessor
-{
-protected:
-    Owned<IDirectReader> reader;
-
-public:
-    UnkeyedRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskReadActivity &_owner, IDirectReader *_reader)
-        : ReadRecordProcessor(_cursor, _owner), reader(_reader)
-    {
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        unsigned totalSizeSent = 0;
-        helper->setCallback(reader->queryThorDiskCallback());
-        size32_t recordSize = owner.diskSize.getFixedSize();
-        size32_t bufferSize = getBufferSize(recordSize);
-        while (!aborted && !reader->eos())
-        {
-            size32_t gotSize;
-            const char *firstRec = (const char *) reader->peek(bufferSize, gotSize);
-            if (!gotSize)
-                break;
-            gotSize = roundDown(gotSize, recordSize);
-            const char *nextRec = firstRec;
-            endRec = firstRec + gotSize;
-            while (nextRec < endRec)
-            {
-                size32_t transformedSize;
-                if (cursor && cursor->isFiltered(nextRec))
-                    transformedSize = 0;
-                else
-                    transformedSize = owner.doTransform(output, nextRec);
-                nextRec += recordSize;
+                someInGroup = true;
+                size32_t transformedSize = owner.doTransform(output, nextRec);
+                reader->finishedRow();
                 if (transformedSize)
                 {
                     processed++;
                     if (processed > rowLimit)
                     {
-                        owner.limitExceeded(); 
+                        owner.limitExceeded();
                         return;
                     }
                     if (processed == stopAfter)
                         return;
                     totalSizeSent += transformedSize;
-                    if (totalSizeSent > indexReadChunkSize)
-                    {
-                        MemoryBuffer si;
-                        unsigned short siLen = 0;
-                        si.append(siLen);
-                        si.append(processed);
-                        si.append(false);  // not using a key
-                        offset_t readPos = reader->tell() + (nextRec - firstRec);
-                        si.append(readPos);
-                        siLen = si.length() - sizeof(siLen);
-                        si.writeDirect(0, sizeof(siLen), &siLen);
-                        output->sendMetaInfo(si.toByteArray(), si.length());
-                        return;
-                    }
+                    if (totalSizeSent > indexReadChunkSize && !isGrouped)
+                        break;
                 }
             }
-            reader->skip(gotSize);
-        }
-    }
-};
-
-class UnkeyedVariableRecordProcessor : public UnkeyedRecordProcessor
-{
-public:
-    UnkeyedVariableRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskReadActivity &_owner, bool _isGrouped, IDirectReader *_reader)
-      : UnkeyedRecordProcessor(_cursor, _owner, _reader), isGrouped(_isGrouped), deserializeSource(_reader)
-    {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        unsigned totalSizeSent = 0;
-        helper->setCallback(reader->queryThorDiskCallback());
-        unsigned lastGroupProcessed = processed;
-        while (!aborted && !deserializeSource.eos())
-        {
-            // This loop is the inner loop for memory diskreads - so keep it efficient!
-            prefetcher->readAhead(deserializeSource);
-            const byte *nextRec = deserializeSource.queryRow();
-            size32_t transformedSize;
-            if (cursor && cursor->isFiltered(nextRec))
-                transformedSize = 0;
-            else
-                transformedSize = owner.doTransform(output, nextRec);
-            bool eog;
-            if (isGrouped)
+            else if (isGrouped)
             {
-                size32_t sizeRead = deserializeSource.queryRowSize();
-                eog = nextRec[sizeRead-1];
+                if (processed>lastGroupProcessed)
+                    break; // We return grouped data one whole group at a time
+                else if (!someInGroup) // eof
+                    return;
             }
             else
-                eog = false;
-            deserializeSource.finishedRow();
-            if (transformedSize)
-            {
-                processed++;
-                if (processed > rowLimit)
-                {
-                    owner.limitExceeded(); 
-                    return;
-                }
-                if (processed == stopAfter)
-                    return;
-                totalSizeSent += transformedSize;
-                if (totalSizeSent > indexReadChunkSize && !isGrouped)
-                {
-                    MemoryBuffer si;
-                    unsigned short siLen = 0;
-                    si.append(siLen);
-                    si.append(processed);
-                    si.append(false);  // not using a key
-                    offset_t readPos = deserializeSource.tell();
-                    si.append(readPos);
-                    siLen = si.length() - sizeof(siLen);
-                    si.writeDirect(0, sizeof(siLen), &siLen);
-                    output->sendMetaInfo(si.toByteArray(), si.length());
-                    return;
-                }
-            }
-            if (eog && (lastGroupProcessed != processed))
-            {
-                // We return grouped data one whole group at a time
-                MemoryBuffer si;
-                unsigned short siLen = 0;
-                si.append(siLen);
-                si.append(processed);
-                si.append(false);  // not using a key
-                offset_t readPos = deserializeSource.tell();
-                si.append(readPos);
-                siLen = si.length() - sizeof(siLen);
-                si.writeDirect(0, sizeof(siLen), &siLen);
-                output->sendMetaInfo(si.toByteArray(), si.length());
                 return;
-            }
+        }
+        // Send continuation message indicating end of group or too much data
+        if (!aborted)
+        {
+            MemoryBuffer si;
+            unsigned short siLen = 0;
+            si.append(siLen);
+            si.append(processed);
+            si.append(reader->isKeyed());
+            reader->serializeCursorPos(si);
+            siLen = si.length() - sizeof(siLen);
+            si.writeDirect(0, sizeof(siLen), &siLen);
+            output->sendMetaInfo(si.toByteArray(), si.length());
         }
     }
 
 protected:
-    CThorContiguousRowBuffer deserializeSource;
-    Owned<ISourceRowPrefetcher> prefetcher;
+    CRoxieDiskReadActivity &owner;
+    IHThorDiskReadArg *helper;
     bool isGrouped;
 };
 
-IInMemoryFileProcessor *createUnkeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool variableDisk, bool isGrouped, IDirectReader *_reader)
+IInMemoryFileProcessor *createReadRecordProcessor(CRoxieDiskReadActivity &owner, bool isGrouped, IDirectReader *_reader)
 {
-    if (variableDisk || isGrouped)
-        return new UnkeyedVariableRecordProcessor(cursor, owner, isGrouped, _reader);
-    else
-        return new UnkeyedRecordProcessor(cursor, owner, _reader);
+    return new ReadRecordProcessor(owner, isGrouped, _reader);
 }
 
 //================================================================================================
 
-// RecordProcessor used by CSV read activity. We don't try to index these or optimize fixed size cases...
+// RecordProcessor used by CSV read activity. We don't try to index these ...
 
 class CsvRecordProcessor : public RecordProcessor
 {
@@ -1556,18 +1346,18 @@ protected:
     CRoxieCsvReadActivity &owner;
     IHThorCsvReadArg *helper;
 
-    Owned<IDirectReader> reader;
     bool skipHeader;
     const IResolvedFile *datafile;
     size32_t maxRowSize;
 
 public:
     CsvRecordProcessor(CRoxieCsvReadActivity &_owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *_datafile, size32_t _maxRowSize)
-      : RecordProcessor(NULL), owner(_owner), reader(_reader), datafile(_datafile), maxRowSize(_maxRowSize)
+      : RecordProcessor(_reader), owner(_owner), datafile(_datafile), maxRowSize(_maxRowSize)
     {
+        // NOTE - postfilter not used at present - but may be in future
         helper = _owner.helper;
         skipHeader = _skipHeader;
-        helper->setCallback(reader->queryThorDiskCallback());
+        helper->setCallback(reader);
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
@@ -1592,40 +1382,21 @@ public:
             }
         }
         csvSplitter.init(helper->getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
+        ISerialStream *stream = reader->queryDirectStreamReader();
         while (!aborted)
         {
-            // MORE - there are rumours of a  csvSplitter that operates on a stream... if/when it exists, this should use it
-            if (reader->eos())
-            {
-                break;
-            }
-            size32_t rowSize = 4096; // MORE - make configurable
-            size32_t thisLineLength;
-            for (;;)
-            {
-                size32_t avail;
-                const void *peek = reader->peek(rowSize, avail);
-                thisLineLength = csvSplitter.splitLine(avail, (const byte *)peek);
-                if (thisLineLength < rowSize || avail < rowSize)
-                    break;
-                if (rowSize == maxRowSize)
-                    throw MakeStringException(0, "File contained a line of length greater than %d bytes.", maxRowSize);
-                if (rowSize >= maxRowSize/2)
-                    rowSize = maxRowSize;
-                else
-                    rowSize += rowSize;
-            }
-            if (!thisLineLength)
+            size32_t thisLineLength = csvSplitter.splitLine(stream, maxRowSize);
+            if (0 == thisLineLength)
                 break;
             if (headerLines)
             {
                 headerLines--;
-                reader->skip(thisLineLength);
+                stream->skip(thisLineLength);
             }
             else
             {
                 unsigned transformedSize = owner.doTransform(output, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData());
-                reader->skip(thisLineLength);
+                stream->skip(thisLineLength);
                 if (transformedSize)
                 {
                     processed++;
@@ -1643,9 +1414,8 @@ public:
                         unsigned short siLen = 0;
                         si.append(siLen);
                         si.append(processed);
-                        si.append(false);  // not using a key
-                        offset_t readPos = reader->tell();
-                        si.append(readPos);
+                        si.append(reader->isKeyed());
+                        reader->serializeCursorPos(si);
                         siLen = si.length() - sizeof(siLen);
                         si.writeDirect(0, sizeof(siLen), &siLen);
                         output->sendMetaInfo(si.toByteArray(), si.length());
@@ -1659,14 +1429,14 @@ public:
 
 //================================================================================================
 
-// RecordProcessor used by XML read activity. We don't try to index these or optimize fixed size cases...
+// RecordProcessor used by XML read activity. We don't try to index these...
 
 class XmlRecordProcessor : public RecordProcessor, implements IXMLSelect, implements IThorDiskCallback
 {
 public:
     IMPLEMENT_IINTERFACE;
     XmlRecordProcessor(CRoxieXmlReadActivity &_owner, IDirectReader *_reader)
-        : RecordProcessor(NULL), owner(_owner), reader(_reader), fileposition(0)
+        : RecordProcessor(_reader), owner(_owner), streamReader(_reader->queryDirectStreamReader()), fileposition(0)
     {
         helper = _owner.helper;
         helper->setCallback(this);
@@ -1679,11 +1449,11 @@ public:
     }
     virtual unsigned __int64 getLocalFilePosition(const void * row)
     {
-        return reader->makeFilePositionLocal(fileposition);
+        return streamReader->makeFilePositionLocal(fileposition);
     }
     virtual const char * queryLogicalFilename(const void * row)
     {
-        return reader->queryThorDiskCallback()->queryLogicalFilename(row);
+        return reader->queryLogicalFilename(row);
     }
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
@@ -1694,17 +1464,14 @@ public:
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
     {
-#if 0
-        // xml read does not support continuation record stuff as too hard to serialize state of xml parser
-        unsigned totalSizeSent = 0;
-#endif
+        // Note: xml read does not support continuation record stuff as too hard to serialize state of xml parser
         Linked<IXmlToRowTransformer> rowTransformer = helper->queryTransformer();
         OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
         Owned<IXMLParse> xmlParser;
         if (owner.basefactory->getKind() == TAKjsonread)
-            xmlParser.setown(createJSONParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
+            xmlParser.setown(createJSONParse(*streamReader, xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
         else
-            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
+            xmlParser.setown(createXMLParse(*streamReader, xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
         while (!aborted)
         {
             //call to next() will callback on the IXmlSelect interface
@@ -1726,24 +1493,6 @@ public:
                     }
                     if (processed == stopAfter)
                         return;
-#if 0
-                    // xml read does not support continuation record stuff as too hard to serialize state of xml parser
-                    totalSizeSent += transformedSize;
-                    if (totalSizeSent > indexReadChunkSize)
-                    {
-                        MemoryBuffer si;
-                        unsigned short siLen = 0;
-                        si.append(siLen);
-                        si.append(processed);
-                        si.append(false);  // not using a key
-                        readPos = inputFileIOStream->tell();
-                        si.append(readPos);
-                        siLen = si.length() - sizeof(siLen);
-                        si.writeDirect(0, sizeof(siLen), &siLen);
-                        output->sendMetaInfo(si.toByteArray(), si.length());
-                        return;
-                    }
-#endif
                 }
             }
         }
@@ -1754,7 +1503,7 @@ protected:
     IHThorXmlReadArg *helper;
 
     Owned<IColumnProvider> lastMatch;
-    Owned<IDirectReader> reader;
+    IDirectStreamReader *streamReader;
     unsigned __int64 fileposition;
 };
 
@@ -1787,8 +1536,7 @@ ISlaveActivityFactory *createRoxieDiskReadActivityFactory(IPropertyTree &_graphN
 //================================================================================================
 
 class CRoxieDiskNormalizeActivity;
-IInMemoryFileProcessor *createKeyedNormalizeRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskNormalizeActivity &owner, bool resent);
-IInMemoryFileProcessor *createUnkeyedNormalizeRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskNormalizeActivity &owner, IDirectReader *reader);
+IInMemoryFileProcessor *createNormalizeRecordProcessor(CRoxieDiskNormalizeActivity &owner, IDirectReader *_reader);
 
 class CRoxieDiskNormalizeActivity : public CRoxieDiskReadBaseActivity
 {
@@ -1799,8 +1547,8 @@ protected:
 
 public:
     CRoxieDiskNormalizeActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
-        IInMemoryIndexManager *_manager)
-        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, false)
+        IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, 1, false)
     {
         onCreate();
         helper = (IHThorDiskNormalizeArg *) basehelper;
@@ -1815,9 +1563,7 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(isKeyed ? 
-                createKeyedNormalizeRecordProcessor(cursor, *this, resent) : 
-                createUnkeyedNormalizeRecordProcessor(cursor, *this, manager->createReader(readPos, parallelPartNo, numParallel)));
+            processor.setown(createNormalizeRecordProcessor(*this, reader));
         }
         unsigned __int64 rowLimit = helper->getRowLimit();
         unsigned __int64 stopAfter = helper->getChooseNLimit();
@@ -1843,7 +1589,7 @@ public:
 
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return new CRoxieDiskNormalizeActivity(logctx, packet, helperFactory, this, manager);
+        return new CRoxieDiskNormalizeActivity(logctx, packet, helperFactory, this, manager, translators);
     }
 
     virtual StringBuffer &toString(StringBuffer &s) const
@@ -1866,43 +1612,22 @@ ISlaveActivityFactory *createRoxieDiskNormalizeActivityFactory(IPropertyTree &_g
 class NormalizeRecordProcessor : public RecordProcessor
 {
 public:
-    NormalizeRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskNormalizeActivity &_owner)
-        : RecordProcessor(_cursor), owner(_owner)
+    NormalizeRecordProcessor(CRoxieDiskNormalizeActivity &_owner, IDirectReader *_reader)
+    : RecordProcessor(_reader), owner(_owner)
     {
         helper = _owner.helper;
-    }
-protected:
-    CRoxieDiskNormalizeActivity &owner;
-    IHThorDiskNormalizeArg *helper;
-};
-
-// Used when we have an in-memory key that matches at least some of the filter conditions
-
-class KeyedNormalizeRecordProcessor : public NormalizeRecordProcessor
-{
-public:
-    KeyedNormalizeRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskNormalizeActivity &_owner, bool _resent)
-        : NormalizeRecordProcessor(_cursor, _owner)
-    {
-        resent = _resent;
-        helper->setCallback(cursor);
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
     {
-        // doQuery needs to be as fast as possible - we are making a virtual call to it per query in order to avoid tests of loop-invariants within it
         unsigned totalSizeSent = 0;
-        IInMemoryIndexCursor *lc = cursor;
-        if (!resent)
-            lc->reset();
-        bool continuationFailed = false;
+        helper->setCallback(reader);
         while (!aborted)
         {
-            const void *nextCandidate = lc->nextMatch();
-            if (!nextCandidate)
+            const byte *nextRec = reader->nextRow();
+            if (!nextRec)
                 break;
-
-            if (helper->first(nextCandidate))
+            if (helper->first(nextRec))
             {
                 do
                 {
@@ -1912,93 +1637,24 @@ public:
                         processed++;
                         if (processed > rowLimit)
                         {
-                            owner.limitExceeded(); 
+                            owner.limitExceeded();
                             return;
                         }
-
                         totalSizeSent += transformedSize;
                         if (processed == stopAfter)
                             return;
                     }
                 } while (helper->next());
-                if (totalSizeSent > indexReadChunkSize && !continuationFailed)
-                {
-                    MemoryBuffer si;
-                    unsigned short siLen = 0;
-                    si.append(siLen);
-                    si.append(processed);
-                    si.append(true);  // using a key
-                    lc->serializeCursorPos(si);
-                    if (si.length() <= maxContinuationSize)
-                    {
-                        siLen = si.length() - sizeof(siLen);
-                        si.writeDirect(0, sizeof(siLen), &siLen);
-                        output->sendMetaInfo(si.toByteArray(), si.length());
-                        return;
-                    }
-                    else
-                        continuationFailed = true;
-                }
             }
-        }
-    }
-
-private:
-    bool resent;
-};
-
-// Used when we have no key 
-// Not split into variable vs fixed varieties (unlike others). We could if there was a demand
-
-class UnkeyedNormalizeRecordProcessor : public NormalizeRecordProcessor
-{
-public:
-    UnkeyedNormalizeRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskNormalizeActivity &_owner, IDirectReader *_reader) 
-        : NormalizeRecordProcessor(_cursor, _owner), reader(_reader), deserializeSource(_reader)
-    {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        unsigned totalSizeSent = 0;
-        helper->setCallback(reader->queryThorDiskCallback());
-        while (!aborted && !deserializeSource.eos())
-        {
-            prefetcher->readAhead(deserializeSource);
-            const byte *nextRec = deserializeSource.queryRow();
-            if (!cursor || !cursor->isFiltered(nextRec))
-            {
-                if (helper->first(nextRec))
-                {
-                    do
-                    {
-                        size32_t transformedSize = owner.doNormalizeTransform(output);
-                        if (transformedSize)
-                        {
-                            processed++;
-                            if (processed > rowLimit)
-                            {
-                                owner.limitExceeded(); 
-                                return;
-                            }
-                            totalSizeSent += transformedSize;
-                            if (processed == stopAfter)
-                                return;
-                        }
-                    } while (helper->next());
-                }
-            }
-            deserializeSource.finishedRow();
+            reader->finishedRow();
             if (totalSizeSent > indexReadChunkSize)
             {
                 MemoryBuffer si;
                 unsigned short siLen = 0;
                 si.append(siLen);
                 si.append(processed);
-                si.append(false);  // not using a key
-                offset_t readPos = deserializeSource.tell();
-                si.append(readPos);
+                si.append(reader->isKeyed());
+                reader->serializeCursorPos(si);
                 siLen = si.length() - sizeof(siLen);
                 si.writeDirect(0, sizeof(siLen), &siLen);
                 output->sendMetaInfo(si.toByteArray(), si.length());
@@ -2008,27 +1664,20 @@ public:
     }
 
 protected:
-    Owned<IDirectReader> reader;
-    CThorContiguousRowBuffer deserializeSource;
-    Owned<ISourceRowPrefetcher> prefetcher;
+    CRoxieDiskNormalizeActivity &owner;
+    IHThorDiskNormalizeArg *helper;
 };
 
-IInMemoryFileProcessor *createKeyedNormalizeRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskNormalizeActivity &owner, bool resent)
+IInMemoryFileProcessor *createNormalizeRecordProcessor(CRoxieDiskNormalizeActivity &owner, IDirectReader *_reader)
 {
-    return new KeyedNormalizeRecordProcessor(cursor, owner, resent);
-}
-
-IInMemoryFileProcessor *createUnkeyedNormalizeRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskNormalizeActivity &owner, IDirectReader *_reader)
-{
-    return new UnkeyedNormalizeRecordProcessor(cursor, owner, _reader);
+    return new NormalizeRecordProcessor(owner, _reader);
 }
 
 
 //================================================================================================
 
 class CRoxieDiskCountActivity;
-IInMemoryFileProcessor *createKeyedCountRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskCountActivity &owner);
-IInMemoryFileProcessor *createUnkeyedCountRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskCountActivity &owner, bool variableDisk, IDirectReader *reader);
+IInMemoryFileProcessor *createCountRecordProcessor(CRoxieDiskCountActivity &owner, IDirectReader *reader);
 
 class CRoxieDiskCountActivity : public CRoxieDiskReadBaseActivity
 {
@@ -2039,8 +1688,8 @@ protected:
 
 public:
     CRoxieDiskCountActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
-        IInMemoryIndexManager *_manager)
-        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, false)
+        IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, 1, false)
     {
         onCreate();
         helper = (IHThorDiskCountArg *) basehelper;
@@ -2055,9 +1704,7 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(isKeyed ? 
-                createKeyedCountRecordProcessor(cursor, *this) : 
-                createUnkeyedCountRecordProcessor(cursor, *this, diskSize.isVariableSize(), manager->createReader(readPos, parallelPartNo, numParallel)));
+            processor.setown(createCountRecordProcessor(*this, reader));
         }
         unsigned __int64 stopAfter = helper->getChooseNLimit();
         processor->doQuery(output, processed, (unsigned __int64) -1, stopAfter);
@@ -2074,7 +1721,7 @@ public:
 
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return new CRoxieDiskCountActivity(logctx, packet, helperFactory, this, manager);
+        return new CRoxieDiskCountActivity(logctx, packet, helperFactory, this, manager, translators);
     }
 
     virtual StringBuffer &toString(StringBuffer &s) const
@@ -2087,201 +1734,57 @@ public:
 
 //================================================================================================
 
-// RecordProcessors used by Disk Normalize activity.
-
-// Note - the classes below could be commoned up to make the code smaller, but they have been deliberately unrolled to 
-// keep to a bare minimum the number of virtual calls/variable tests per record scanned. This is very speed critical.
+// RecordProcessors used by Disk Count activity.
 
 class CountRecordProcessor : public RecordProcessor
 {
 public:
-    CountRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskCountActivity &_owner) 
-        : RecordProcessor(_cursor), owner(_owner)
+    CountRecordProcessor(CRoxieDiskCountActivity &_owner, IDirectReader *_reader)
+    : RecordProcessor(_reader), owner(_owner)
     {
         helper = _owner.helper;
+    }
+
+    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
+    {
+        unsigned outputRecordSize = owner.meta.getFixedSize();
+        void *recBuffer = output->getBuffer(outputRecordSize, false);
+        helper->setCallback(reader);
+        unsigned __int64 totalCount  = 0;
+        while (!aborted)
+        {
+            const byte *nextRec = reader->nextRow();
+            if (!nextRec)
+                break;
+            totalCount += helper->numValid(nextRec);
+            if (totalCount >= stopAfter)
+            {
+                totalCount = stopAfter;
+                break;
+            }
+            reader->finishedRow();
+        }
+        if (!aborted)
+        {
+            assert(!owner.serializer); // A count can never need serializing, surely!
+            if (outputRecordSize == 1)
+                *(byte *)recBuffer = (byte)totalCount;
+            else
+            {
+                assertex(outputRecordSize == sizeof(unsigned __int64));
+                *(unsigned __int64 *)recBuffer = totalCount;
+            }
+            output->putBuffer(recBuffer, outputRecordSize, false);
+        }
     }
 protected:
     CRoxieDiskCountActivity &owner;
     IHThorDiskCountArg *helper;
 };
 
-// Used when we have an in-memory key that matches at least some of the filter conditions
-class KeyedCountRecordProcessor : public CountRecordProcessor
+IInMemoryFileProcessor *createCountRecordProcessor(CRoxieDiskCountActivity &owner, IDirectReader *reader)
 {
-public:
-    KeyedCountRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskCountActivity &_owner) : CountRecordProcessor(_cursor, _owner)
-    {
-        helper->setCallback(cursor);
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        // doQuery needs to be as fast as possible - we are making a virtual call to it per query in order to avoid tests of loop-invariants within it
-        unsigned recordSize = owner.meta.getFixedSize();
-        void *recBuffer = output->getBuffer(recordSize, false);
-        IInMemoryIndexCursor *lc = cursor;
-        lc->reset();
-        unsigned __int64 totalCount = 0;
-        while (!aborted)
-        {
-            const void *nextCandidate = lc->nextMatch();
-            if (!nextCandidate)
-                break;
-            totalCount += helper->numValid(nextCandidate);
-            if (totalCount >= stopAfter)
-            {
-                totalCount = stopAfter;
-                break;
-            }
-        }
-
-        if (!aborted)
-        {
-            assert(!owner.serializer); // A count can never need serializing, surely!
-            if (recordSize == 1)
-                *(byte *)recBuffer = (byte)totalCount;
-            else
-            {
-                assertex(recordSize == sizeof(unsigned __int64));
-                *(unsigned __int64 *)recBuffer = totalCount;
-            }
-            output->putBuffer(recBuffer, recordSize, false);
-        }
-    }
-};
-
-IInMemoryFileProcessor *createKeyedCountRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskCountActivity &owner)
-{
-    return new KeyedCountRecordProcessor(cursor, owner);
-}
-
-// Used when there is no key, fixed records
-class UnkeyedCountRecordProcessor : public CountRecordProcessor
-{
-protected:
-    Owned<IDirectReader> reader;
-
-public:
-    UnkeyedCountRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskCountActivity &_owner, IDirectReader *_reader) 
-        : CountRecordProcessor(_cursor, _owner), reader(_reader)
-    {
-    }
-
-    // This version is used for fixed size rows only - variable size rows use more derived class which overrides
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        unsigned outputRecordSize = owner.meta.getFixedSize();
-        void *recBuffer = output->getBuffer(outputRecordSize, false);
-        helper->setCallback(reader->queryThorDiskCallback());
-        unsigned __int64 totalCount  = 0;
-
-        size32_t recordSize = owner.diskSize.getFixedSize();
-        size32_t bufferSize = getBufferSize(recordSize);
-        while (!aborted && !reader->eos())
-        {
-            size32_t gotSize;
-            const char *nextRec = (const char *) reader->peek(bufferSize, gotSize);
-            if (!gotSize)
-                break;
-            gotSize = roundDown(gotSize, recordSize);
-            if (cursor)
-            {
-                const char *endRec = nextRec + gotSize;
-                for (;;)
-                {
-                    // This loop is the inner loop for memory disk counts - so keep it efficient!
-                    if (nextRec >= endRec)
-                        break;
-                    if (!cursor->isFiltered(nextRec))
-                    {
-                        totalCount += helper->numValid(nextRec);
-                        if (totalCount >= stopAfter)
-                            break;
-                    }
-                    nextRec += recordSize;
-                }
-            }
-            else
-                totalCount += helper->numValid(gotSize, nextRec);
-            if (totalCount >= stopAfter)
-            {
-                totalCount = stopAfter;
-                break;
-            }
-            reader->skip(gotSize);
-        }
-        if (!aborted)
-        {
-            assert(!owner.serializer); // A count can never need serializing, surely!
-            if (outputRecordSize == 1)
-                *(byte *)recBuffer = (byte)totalCount;
-            else
-            {
-                assertex(outputRecordSize == sizeof(unsigned __int64));
-                *(unsigned __int64 *)recBuffer = totalCount;
-            }
-            output->putBuffer(recBuffer, outputRecordSize, false);
-        }
-    }
-};
-
-// Used when there is no key, variable records
-class UnkeyedVariableCountRecordProcessor : public UnkeyedCountRecordProcessor
-{
-public:
-    UnkeyedVariableCountRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskCountActivity &_owner, IDirectReader *_reader)
-        : UnkeyedCountRecordProcessor(_cursor, _owner, _reader), deserializeSource(reader)
-    {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
-    }
-
-    // This version is used for variable size rows 
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        unsigned outputRecordSize = owner.meta.getFixedSize();
-        void *recBuffer = output->getBuffer(outputRecordSize, false);
-        helper->setCallback(reader->queryThorDiskCallback());
-        unsigned __int64 totalCount  = 0;
-
-        while (!aborted && !deserializeSource.eos())
-        {
-            prefetcher->readAhead(deserializeSource);
-            const byte *nextRec = deserializeSource.queryRow();
-            if (!cursor || !cursor->isFiltered(nextRec))
-            {
-                totalCount += helper->numValid(nextRec);
-                if (totalCount >= stopAfter)
-                {
-                    totalCount = stopAfter;
-                    break;
-                }
-            }
-            deserializeSource.finishedRow();
-        }
-        if (!aborted)
-        {
-            assert(!owner.serializer); // A count can never need serializing, surely!
-            if (outputRecordSize == 1)
-                *(byte *)recBuffer = (byte)totalCount;
-            else
-            {
-                assertex(outputRecordSize == sizeof(unsigned __int64));
-                *(unsigned __int64 *)recBuffer = totalCount;
-            }
-            output->putBuffer(recBuffer, outputRecordSize, false);
-        }
-    }
-protected:
-    CThorContiguousRowBuffer deserializeSource;
-    Owned<ISourceRowPrefetcher> prefetcher;
-};
-
-IInMemoryFileProcessor *createUnkeyedCountRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskCountActivity &owner, bool variableDisk, IDirectReader *reader)
-{
-    if (variableDisk)
-        return new UnkeyedVariableCountRecordProcessor(cursor, owner, reader);
-    else
-        return new UnkeyedCountRecordProcessor(cursor, owner, reader);
+    return new CountRecordProcessor(owner, reader);
 }
 
 ISlaveActivityFactory *createRoxieDiskCountActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -2293,8 +1796,7 @@ ISlaveActivityFactory *createRoxieDiskCountActivityFactory(IPropertyTree &_graph
 //================================================================================================
 
 class CRoxieDiskAggregateActivity;
-IInMemoryFileProcessor *createKeyedAggregateRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskAggregateActivity &owner);
-IInMemoryFileProcessor *createUnkeyedAggregateRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskAggregateActivity &owner, bool variableDisk, IDirectReader *reader);
+IInMemoryFileProcessor *createAggregateRecordProcessor(CRoxieDiskAggregateActivity &owner, IDirectReader *_reader);
 
 class CRoxieDiskAggregateActivity : public CRoxieDiskReadBaseActivity
 {
@@ -2306,8 +1808,9 @@ protected:
 public:
     CRoxieDiskAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager,
+        ITranslatorSet *_translators,
         unsigned _parallelPartNo, unsigned _numParallel, bool _forceUnkeyed)
-        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _parallelPartNo, _numParallel, _forceUnkeyed)
+        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, _parallelPartNo, _numParallel, _forceUnkeyed)
     {
         onCreate();
         helper = (IHThorDiskAggregateArg *) basehelper;
@@ -2327,8 +1830,7 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(isKeyed ? createKeyedAggregateRecordProcessor(cursor, *this) : 
-                                       createUnkeyedAggregateRecordProcessor(cursor, *this, diskSize.isVariableSize(), manager->createReader(readPos, parallelPartNo, numParallel))); 
+            processor.setown(createAggregateRecordProcessor(*this, reader));
         }
         processor->doQuery(output, 0, 0, 0);
     }
@@ -2387,7 +1889,7 @@ public:
         else
         {
             MTIME_SECTION(queryActiveTimer(), "CParallelRoxieActivity::process");
-            atomic_inc(&diskReadStarted);
+            diskReadStarted++;
             Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
             class casyncfor: public CAsyncFor
             {
@@ -2423,7 +1925,7 @@ public:
             else
             {
                 doProcess(output);
-                atomic_inc(&diskReadCompleted);
+                diskReadCompleted++;
                 return output.getClear();
             }
         }
@@ -2438,7 +1940,7 @@ protected:
     OwnedConstRoxieRow finalRow;
 public:
     CParallelRoxieDiskAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
-        IInMemoryIndexManager *_manager, unsigned _numParallel) :
+        IInMemoryIndexManager *_manager, ITranslatorSet *_translators, unsigned _numParallel) :
         CParallelRoxieActivity(_logctx, _packet, _hFactory, _aFactory, _numParallel)
     {
         helper = (IHThorDiskAggregateArg *) basehelper;
@@ -2448,7 +1950,7 @@ public:
             // MORE - avoiding serializing to dummy would be more efficient...
             deserializer.setown(meta.createDiskDeserializer(queryContext->queryCodeContext(), basefactory->queryId()));
         }
-        CRoxieDiskAggregateActivity *part0 = new CRoxieDiskAggregateActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, numParallel, false);
+        CRoxieDiskAggregateActivity *part0 = new CRoxieDiskAggregateActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, numParallel, false);
         parts.append(*part0);
         if (part0->queryKeyed())
         {
@@ -2458,7 +1960,7 @@ public:
         else
         {
             for (unsigned i = 1; i < numParallel; i++)
-                parts.append(*new CRoxieDiskAggregateActivity(_logctx, _packet, _hFactory, _aFactory, _manager, i, numParallel, true));
+                parts.append(*new CRoxieDiskAggregateActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, i, numParallel, true));
         }
     }
 
@@ -2564,9 +2066,9 @@ public:
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
         if (parallelAggregate > 1)
-            return new CParallelRoxieDiskAggregateActivity(logctx, packet, helperFactory, this, manager, parallelAggregate);
+            return new CParallelRoxieDiskAggregateActivity(logctx, packet, helperFactory, this, manager, translators, parallelAggregate);
         else
-            return new CRoxieDiskAggregateActivity(logctx, packet, helperFactory, this, manager, 0, 1, false);
+            return new CRoxieDiskAggregateActivity(logctx, packet, helperFactory, this, manager, translators, 0, 1, false);
     }
 
     virtual StringBuffer &toString(StringBuffer &s) const
@@ -2579,166 +2081,47 @@ public:
 
 //================================================================================================
 
-// RecordProcessors used by Disk Aggregate activity.
-
-// Note - the classes below could be commoned up to make the code smaller, but they have been deliberately unrolled to 
-// keep to a bare minimum the number of virtual calls/variable tests per record scanned. This is very speed critical.
+// RecordProcessor used by Disk Aggregate activity.
 
 class AggregateRecordProcessor : public RecordProcessor
 {
 public:
-    AggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner) : RecordProcessor(_cursor), owner(_owner)
+    AggregateRecordProcessor(CRoxieDiskAggregateActivity &_owner, IDirectReader *_reader)
+    : RecordProcessor(_reader), owner(_owner)
     {
         helper = _owner.helper;
+        helper->setCallback(reader);
+    }
+
+    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
+    {
+        OptimizedRowBuilder rowBuilder(owner.rowAllocator, owner.meta, output, owner.serializer);
+        helper->clearAggregate(rowBuilder);
+        while (!aborted)
+        {
+            const byte *nextRec = reader->nextRow();
+            if (!nextRec)
+                break;
+            helper->processRow(rowBuilder, nextRec);
+            reader->finishedRow();
+        }
+        if (!aborted)
+        {
+            if (helper->processedAnyRows())
+            {
+                size32_t finalSize = owner.meta.getRecordSize(rowBuilder.getSelf());
+                rowBuilder.writeToOutput(finalSize, true);
+            }
+        }
     }
 protected:
     CRoxieDiskAggregateActivity &owner;
     IHThorDiskAggregateArg *helper;
 };
 
-// Used when we have an in-memory key that matches at least some of the filter conditions
-class KeyedAggregateRecordProcessor : public AggregateRecordProcessor
+IInMemoryFileProcessor *createAggregateRecordProcessor(CRoxieDiskAggregateActivity &_owner, IDirectReader *_reader)
 {
-public:
-    KeyedAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner) : AggregateRecordProcessor(_cursor, _owner)
-    {
-        helper->setCallback(cursor);
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        // doQuery needs to be as fast as possible - we are making a virtual call to it per query in order to avoid tests of loop-invariants within it
-        OptimizedRowBuilder rowBuilder(owner.rowAllocator, owner.meta, output, owner.serializer);
-        helper->clearAggregate(rowBuilder);
-        IInMemoryIndexCursor *lc = cursor;
-        lc->reset();
-        while (!aborted)
-        {
-            const void *nextCandidate = lc->nextMatch();
-            if (!nextCandidate)
-                break;
-            helper->processRow(rowBuilder, nextCandidate);
-        }
-        if (!aborted)
-        {
-            if (helper->processedAnyRows())
-            {
-                size32_t finalSize = owner.meta.getRecordSize(rowBuilder.getSelf());
-                rowBuilder.writeToOutput(finalSize, true);
-            }
-        }
-    }
-};
-
-IInMemoryFileProcessor *createKeyedAggregateRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskAggregateActivity &owner)
-{
-    return new KeyedAggregateRecordProcessor(cursor, owner);
-}
-
-// Used when we have no key - fixed size records
-class UnkeyedAggregateRecordProcessor : public AggregateRecordProcessor
-{
-public:
-    UnkeyedAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner, IDirectReader *_reader) 
-        : AggregateRecordProcessor(_cursor, _owner), reader(_reader)
-    {
-        helper->setCallback(reader->queryThorDiskCallback());
-    }
-
-    // Note that variable size record handler overrides this class
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        OptimizedRowBuilder rowBuilder(owner.rowAllocator, owner.meta, output, owner.serializer);
-        helper->clearAggregate(rowBuilder);
-        size32_t recordSize = owner.diskSize.getFixedSize();
-        size32_t bufferSize = getBufferSize(recordSize);
-        while (!aborted)
-        {
-            size32_t gotSize;
-            const char *firstRec = (const char *) reader->peek(bufferSize, gotSize);
-            if (!gotSize)
-                break;
-            gotSize = roundDown(gotSize, recordSize);
-            const char *nextRec = firstRec;
-            endRec = firstRec + gotSize;
-            // This loop is the inner loop for memory diskreads - so keep it efficient!
-            if (cursor) // Moved this test out of the loop below for speed!
-            {
-                while (nextRec <= endRec)
-                {
-                    if (!cursor->isFiltered(nextRec))
-                        helper->processRow(rowBuilder, nextRec);
-                    nextRec += recordSize;
-                }
-            }
-            else
-            {
-                while (nextRec <= endRec)
-                {
-                    helper->processRow(rowBuilder, nextRec);
-                    nextRec += recordSize;
-                }
-            }
-            reader->skip(gotSize);
-        }
-        if (!aborted)
-        {
-            if (helper->processedAnyRows())
-            {
-                size32_t finalSize = owner.meta.getRecordSize(rowBuilder.getSelf());
-                rowBuilder.writeToOutput(finalSize, true);
-            }
-        }
-    }
-protected:
-    Owned<IDirectReader> reader;
-
-};
-
-// Used when we have no key - variablesize records
-class UnkeyedVariableAggregateRecordProcessor : public UnkeyedAggregateRecordProcessor
-{
-public:
-    UnkeyedVariableAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner, IDirectReader *_reader) 
-        : UnkeyedAggregateRecordProcessor(_cursor, _owner, _reader), deserializeSource(_reader)
-    {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        OptimizedRowBuilder rowBuilder(owner.rowAllocator, owner.meta, output, owner.serializer);
-        helper->clearAggregate(rowBuilder);
-        while (!aborted && !deserializeSource.eos())
-        {
-            prefetcher->readAhead(deserializeSource);
-            const byte *nextRec = deserializeSource.queryRow();
-            if (!cursor || !cursor->isFiltered(nextRec))
-            {
-                helper->processRow(rowBuilder, nextRec);
-            }
-            deserializeSource.finishedRow();
-        }
-        if (!aborted)
-        {
-            if (helper->processedAnyRows())
-            {
-                size32_t finalSize = owner.meta.getRecordSize(rowBuilder.getSelf());
-                rowBuilder.writeToOutput(finalSize, true);
-            }
-        }
-    }
-protected:
-    CThorContiguousRowBuffer deserializeSource;
-    Owned<ISourceRowPrefetcher> prefetcher;
-};
-
-IInMemoryFileProcessor *createUnkeyedAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner, bool variableDisk, IDirectReader *_reader)
-{
-    if (variableDisk)
-        return new UnkeyedVariableAggregateRecordProcessor(_cursor, _owner, _reader);
-    else
-        return new UnkeyedAggregateRecordProcessor(_cursor, _owner, _reader);
+    return new AggregateRecordProcessor(_owner, _reader);
 }
 
 ISlaveActivityFactory *createRoxieDiskAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -2783,13 +2166,14 @@ protected:
 public:
     CRoxieDiskGroupAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager,
+        ITranslatorSet *_translators,
         unsigned partNo, unsigned numParts, bool _forceUnkeyed)
-        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, partNo, numParts, _forceUnkeyed),
+        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, partNo, numParts, _forceUnkeyed),
           helper((IHThorDiskGroupAggregateArg *) basehelper),
           results(*helper, *helper)
     {
         onCreate();
-        results.start(rowAllocator);
+        results.start(rowAllocator, queryContext->queryCodeContext(), basefactory->queryId());
     }
 
     virtual bool needsRowAllocator()
@@ -2806,10 +2190,7 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(isKeyed ? 
-                createKeyedGroupAggregateRecordProcessor(cursor, results, *helper) : 
-                createUnkeyedGroupAggregateRecordProcessor(cursor, results, *helper, manager->createReader(readPos, parallelPartNo, numParallel), 
-                                                           queryContext->queryCodeContext(), basefactory->queryId()));
+            processor.setown(createGroupAggregateRecordProcessor(results, *helper, reader));
         }
         processor->doQuery(output, 0, 0, 0);
         if (!aborted)
@@ -2828,19 +2209,19 @@ protected:
 
 public:
     CParallelRoxieDiskGroupAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
-        IInMemoryIndexManager *_manager, unsigned _numParallel) :
+        IInMemoryIndexManager *_manager, ITranslatorSet *_translators, unsigned _numParallel) :
         CParallelRoxieActivity(_logctx, _packet, _hFactory, _aFactory, _numParallel),
         helper((IHThorDiskGroupAggregateArg *) basehelper),
         resultAggregator(*helper, *helper)
     {
         onCreate();
-        resultAggregator.start(rowAllocator);
+        resultAggregator.start(rowAllocator, queryContext->queryCodeContext(), basefactory->queryId());
         if (meta.needsSerializeDisk())
         {
             // MORE - avoiding serializing to dummy would be more efficient...
             deserializer.setown(meta.createDiskDeserializer(queryContext->queryCodeContext(), basefactory->queryId()));
         }
-        CRoxieDiskGroupAggregateActivity *part0 = new CRoxieDiskGroupAggregateActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, numParallel, false);
+        CRoxieDiskGroupAggregateActivity *part0 = new CRoxieDiskGroupAggregateActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, numParallel, false);
         parts.append(*part0);
         if (part0->queryKeyed())
         {
@@ -2850,7 +2231,7 @@ public:
         else
         {
             for (unsigned i = 1; i < numParallel; i++)
-                parts.append(*new CRoxieDiskGroupAggregateActivity(_logctx, _packet, _hFactory, _aFactory, _manager, i, numParallel, true));
+                parts.append(*new CRoxieDiskGroupAggregateActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, i, numParallel, true));
         }
     }
 
@@ -2935,9 +2316,9 @@ public:
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
         if (parallelAggregate > 1)
-            return new CParallelRoxieDiskGroupAggregateActivity(logctx, packet, helperFactory, this, manager, parallelAggregate);
+            return new CParallelRoxieDiskGroupAggregateActivity(logctx, packet, helperFactory, this, manager, translators, parallelAggregate);
         else
-            return new CRoxieDiskGroupAggregateActivity(logctx, packet, helperFactory, this, manager, 0, 1, false);
+            return new CRoxieDiskGroupAggregateActivity(logctx, packet, helperFactory, this, manager, translators, 0, 1, false);
     }
 
     virtual StringBuffer &toString(StringBuffer &s) const
@@ -2950,139 +2331,41 @@ public:
 
 // RecordProcessors used by Disk Group Aggregate activity.
 
-// Note - the classes below could be commoned up to make the code smaller, but they have been deliberately unrolled to 
-// keep to a bare minimum the number of virtual calls/variable tests per record scanned. This is very speed critical.
-
 class GroupAggregateRecordProcessor : public RecordProcessor, implements IHThorGroupAggregateCallback
 {
 public:
     IMPLEMENT_IINTERFACE;
-    GroupAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper)
-        : RecordProcessor(_cursor),
-          results(_results),
-          helper(_helper)
+    GroupAggregateRecordProcessor(RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper, IDirectReader *_reader)
+    : RecordProcessor(_reader), results(_results), helper(_helper)
     {
     }
+
     virtual void processRow(const void * next)
     {
         results.addRow(next);
     }
+
+    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
+    {
+        helper.setCallback(reader);
+        while (!aborted)
+        {
+            const byte *nextRec = reader->nextRow();
+            if (!nextRec)
+                break;
+            helper.processRow(nextRec, this);
+            reader->finishedRow();
+        }
+    }
+
 protected:
     RowAggregator &results;
     IHThorDiskGroupAggregateArg &helper;
 };
 
-
-// Used when we have an in-memory key that matches at least some of the filter conditions
-class KeyedGroupAggregateRecordProcessor : public GroupAggregateRecordProcessor
+IInMemoryFileProcessor *createGroupAggregateRecordProcessor(RowAggregator &results, IHThorDiskGroupAggregateArg &helper, IDirectReader *reader)
 {
-public:
-    KeyedGroupAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper)
-    : GroupAggregateRecordProcessor(_cursor, _results, _helper)
-    {
-        helper.setCallback(cursor);
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        // doQuery needs to be as fast as possible - we are making a virtual call to it per query in order to avoid tests of loop-invariants within it
-        IInMemoryIndexCursor *lc = cursor;
-        lc->reset();
-        while (!aborted)
-        {
-            const void *nextCandidate = lc->nextMatch();
-            if (!nextCandidate)
-                break;
-            helper.processRow(nextCandidate, this);
-        }
-    }
-};
-
-IInMemoryFileProcessor *createKeyedGroupAggregateRecordProcessor(IInMemoryIndexCursor *cursor, RowAggregator &results, IHThorDiskGroupAggregateArg &helper)
-{
-    return new KeyedGroupAggregateRecordProcessor(cursor, results, helper);
-}
-
-// Used when we have no key, fixed size records. Variable size records use more derived class
-class UnkeyedGroupAggregateRecordProcessor : public GroupAggregateRecordProcessor
-{
-public:
-    UnkeyedGroupAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper, IDirectReader *_reader)
-    : GroupAggregateRecordProcessor(_cursor, _results, _helper), reader(_reader)
-    {
-        helper.setCallback(reader->queryThorDiskCallback());
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        size32_t recordSize = helper.queryDiskRecordSize()->getFixedSize();
-        size32_t bufferSize = getBufferSize(recordSize);
-        while (!aborted && !reader->eos())
-        {
-            size32_t gotSize;
-            const char *firstRec = (const char *) reader->peek(bufferSize, gotSize);
-            if (!gotSize)
-                break;
-            gotSize = roundDown(gotSize, recordSize);
-            const char *nextRec = firstRec;
-            endRec = firstRec + gotSize;
-            // This loop is the inner loop for memory diskreads - so keep it efficient!
-            if (cursor)
-            {
-                while (nextRec <= endRec)
-                {
-                    if (!cursor->isFiltered(nextRec))
-                        helper.processRow(nextRec, this);
-                    nextRec += recordSize;
-                }
-            }
-            else
-            {
-                helper.processRows(gotSize, firstRec, this);
-            }
-            reader->skip(gotSize);
-        }
-    }
-
-protected:
-    Owned<IDirectReader> reader;
-};
-
-// Used when we have no key, variable size records.
-class UnkeyedVariableGroupAggregateRecordProcessor : public UnkeyedGroupAggregateRecordProcessor
-{
-public:
-    UnkeyedVariableGroupAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper, IDirectReader *_reader, 
-                                                 ICodeContext *ctx, unsigned activityId)
-    : UnkeyedGroupAggregateRecordProcessor(_cursor, _results, _helper, _reader), deserializeSource(_reader)
-    {
-        prefetcher.setown(helper.queryDiskRecordSize()->createDiskPrefetcher(ctx, activityId));
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        helper.setCallback(reader->queryThorDiskCallback());
-        while (!aborted && !deserializeSource.eos())
-        {
-            // This loop is the inner loop for memory diskreads - so keep it efficient!
-            prefetcher->readAhead(deserializeSource);
-            const byte *nextRec = deserializeSource.queryRow();
-            if (!cursor || !cursor->isFiltered(nextRec))
-                helper.processRow(nextRec, this);
-            deserializeSource.finishedRow();
-        }
-    }
-protected:
-    CThorContiguousRowBuffer deserializeSource;
-    Owned<ISourceRowPrefetcher> prefetcher;
-};
-
-IInMemoryFileProcessor *createUnkeyedGroupAggregateRecordProcessor(IInMemoryIndexCursor *cursor, RowAggregator &results, IHThorDiskGroupAggregateArg &helper, IDirectReader *reader, ICodeContext *ctx, unsigned activityId)
-{
-    if (helper.queryDiskRecordSize()->isVariableSize())
-        return new UnkeyedVariableGroupAggregateRecordProcessor(cursor, results, helper, reader, ctx, activityId);
-    else
-        return new UnkeyedGroupAggregateRecordProcessor(cursor, results, helper, reader);
+    return new GroupAggregateRecordProcessor(results, helper, reader);
 }
 
 ISlaveActivityFactory *createRoxieDiskGroupAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -3095,20 +2378,19 @@ ISlaveActivityFactory *createRoxieDiskGroupAggregateActivityFactory(IPropertyTre
 
 class CRoxieKeyedActivityFactory : public CSlaveActivityFactory
 {
+    friend class CRoxieKeyedActivity;
 protected:
     Owned<IKeyArray> keyArray;
-    Owned<TranslatorArray> layoutTranslators;
-    Owned<IDefRecordMeta> activityMeta;
+    Owned<ITranslatorSet> translators;
+    unsigned projectedCrc = 0;
+    unsigned expectedCrc = 0;
+    IOutputMetaData *projectedMeta = nullptr;
+    IOutputMetaData *expectedMeta = nullptr;
 
     CRoxieKeyedActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CSlaveActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
     }
-
-public:
-    inline IKeyArray *queryKeyArray() const { return keyArray; }
-    inline TranslatorArray *queryLayoutTranslators() const { return layoutTranslators; }
-    inline IDefRecordMeta *queryActivityMeta() const { return activityMeta; }
 };
 
 class CRoxieIndexActivityFactory : public CRoxieKeyedActivityFactory
@@ -3121,14 +2403,10 @@ public:
 
     void init(IHThorIndexReadBaseArg * helper, IPropertyTree &graphNode)
     {
-        rtlDataAttr indexLayoutMeta;
-        size32_t indexLayoutSize;
-        if(!helper->getIndexLayout(indexLayoutSize, indexLayoutMeta.refdata()))
-            assertex(indexLayoutSize== 0);
-        MemoryBuffer m;
-        m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
-        activityMeta.setown(deserializeRecordMeta(m, true));
-        layoutTranslators.setown(new TranslatorArray);
+        projectedCrc = helper->getProjectedFormatCrc();
+        expectedCrc = helper->getDiskFormatCrc();
+        projectedMeta = helper->queryProjectedDiskRecordSize();
+        expectedMeta = helper->queryDiskRecordSize();
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0);
         if (!variableFileName)
         {
@@ -3136,7 +2414,10 @@ public:
             OwnedRoxieString indexName(helper->getFileName());
             datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
             if (datafile)
-                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
+            {
+                translators.setown(datafile->getTranslators(projectedCrc, projectedMeta, expectedCrc, expectedMeta, queryFactory.queryOptions().enableFieldTranslation, true));
+                keyArray.setown(datafile->getKeyArray(isOpt, queryFactory.queryChannel()));
+            }
         }
     }
 };
@@ -3146,10 +2427,11 @@ class CRoxieKeyedActivity : public CRoxieSlaveActivity
     // Common base class for all activities that deal with keys - keyed join or indexread and its allies
 protected:
     Owned<IKeyManager> tlk;
-    Linked<TranslatorArray> layoutTranslators;
+    Linked<ITranslatorSet> translators;
     Linked<IKeyArray> keyArray;
-    IDefRecordMeta *activityMeta;
+    const RtlRecord *keyRecInfo = nullptr;
     bool createSegmentMonitorsPending;
+    virtual bool hasNewSegmentMonitors() = 0;
 
     virtual void createSegmentMonitors() = 0;
     virtual void setPartNo(bool filechanged)
@@ -3173,7 +2455,7 @@ protected:
             }
             if (allKeys->numParts())
             {
-                tlk.setown(createKeyMerger(allKeys, 0, 0, &logctx));
+                tlk.setown(createKeyMerger(*keyRecInfo, allKeys, 0, &logctx, hasNewSegmentMonitors()));
                 createSegmentMonitorsPending = true;
             }
             else
@@ -3186,7 +2468,7 @@ protected:
             IKeyIndex *k = kib->queryPart(lastPartNo.fileNo);
             if (filechanged)
             {
-                tlk.setown(createLocalKeyManager(k, 0, &logctx));
+                tlk.setown(createLocalKeyManager(*keyRecInfo, k, &logctx, hasNewSegmentMonitors()));
                 createSegmentMonitorsPending = true;
             }
             else
@@ -3196,8 +2478,9 @@ protected:
 
     virtual void setVariableFileInfo()
     {
-        layoutTranslators.setown(new TranslatorArray);
-        keyArray.setown(varFileInfo->getKeyArray(activityMeta, layoutTranslators, isOpt, packet->queryHeader().channel, allowFieldTranslation));
+        const CRoxieKeyedActivityFactory &aFactory = *static_cast<const CRoxieKeyedActivityFactory *>(basefactory);
+        translators.setown(varFileInfo->getTranslators(aFactory.projectedCrc, aFactory.projectedMeta, aFactory.expectedCrc, aFactory.expectedMeta, allowFieldTranslation, true));
+        keyArray.setown(varFileInfo->getKeyArray(isOpt, packet->queryHeader().channel));
     }
 
     void noteStats(unsigned accepted, unsigned rejected)
@@ -3210,9 +2493,8 @@ protected:
 
     CRoxieKeyedActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedActivityFactory *_aFactory)
         : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory), 
-        keyArray(_aFactory->queryKeyArray()),
-        layoutTranslators(_aFactory->queryLayoutTranslators()),
-        activityMeta(_aFactory->queryActivityMeta()),
+        keyArray(_aFactory->keyArray),
+        translators(_aFactory->translators),
         createSegmentMonitorsPending(true)
     {
     }
@@ -3224,7 +2506,6 @@ class CRoxieIndexActivity : public CRoxieKeyedActivity
     // Common base class for indexread, indexcount and related activities
 
 protected:
-    const CRoxieIndexActivityFactory *factory;
     PartNoType *inputData;  // list of channels
     IHThorIndexReadBaseArg * indexHelper;
     unsigned inputCount;
@@ -3241,6 +2522,8 @@ protected:
 
     SmartStepExtra stepExtra; // just used for flags - a little unnecessary...
     const byte *steppingRow;
+
+    virtual bool hasNewSegmentMonitors() { return indexHelper->hasNewSegmentMonitors(); }
 
     bool checkLimit(unsigned __int64 limit)
     {
@@ -3277,12 +2560,12 @@ protected:
 
 public:
     CRoxieIndexActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
-        : CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory), 
-        factory(_aFactory),
+        : CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory),
         steppingOffset(_steppingOffset),
         stepExtra(SSEFreadAhead, NULL)
     {
         indexHelper = (IHThorIndexReadBaseArg *) basehelper;
+        keyRecInfo = &indexHelper->queryDiskRecordSize()->queryRecordAccessor(true);
         variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((indexHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0);
         isOpt = (indexHelper->getFlags() & TDRoptional) != 0;
         inputData = NULL;
@@ -3354,7 +2637,7 @@ public:
         if (createSegmentMonitorsPending)
         {
             createSegmentMonitorsPending = false;
-            tlk->setLayoutTranslator(layoutTranslators->item(lastPartNo.fileNo));
+            tlk->setLayoutTranslator(translators->queryTranslator(lastPartNo.fileNo));
             indexHelper->createSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
         }
@@ -3435,7 +2718,7 @@ public:
                 i++;
             }
             if (allKeys->numParts())
-                tlk.setown(::createKeyMerger(allKeys, 0, steppingOffset, &logctx));
+                tlk.setown(::createKeyMerger(*keyRecInfo, allKeys, steppingOffset, &logctx, hasNewSegmentMonitors()));
             else
                 tlk.clear();
             createSegmentMonitorsPending = true;
@@ -3450,7 +2733,7 @@ public:
 class CRoxieIndexReadActivity : public CRoxieIndexActivity, implements IIndexReadActivityInfo
 {
 protected:
-    IHThorCompoundReadExtra * readHelper;
+    IHThorIndexReadArg * readHelper;
 
 public:
     CRoxieIndexReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
@@ -3530,6 +2813,8 @@ public:
         if (steppingRow)
             rawSeek = steppingRow;
         bool continuationNeeded = false;
+        ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
+        ScopedAtomic<unsigned> postFiltered(::postFiltered);
         while (!aborted && inputsDone < inputCount)
         {
             if (!resent || !steppingOffset)     // Bit of a hack... In the resent case, we have already set up the tlk, and all keys are processed at once in the steppingOffset case (which makes checkPartChanged gives a false positive in this case)
@@ -3552,9 +2837,9 @@ public:
                             break;
                         }
 
-                        atomic_inc(&indexRecordsRead);
+                        indexRecordsRead++;
                         size32_t transformedSize;
-                        const byte * keyRow = tlk->queryKeyBuffer(callback.getFPosRef());
+                        const byte * keyRow = tlk->queryKeyBuffer();
                         int diff = 0;
                         if (steppingRow)
                         {
@@ -3580,8 +2865,12 @@ public:
                                 assertex(!steppingRow);
                                 break;
                             }
+
                             rowBuilder.ensureRow();
-                            transformedSize = readHelper->transform(rowBuilder, keyRow);
+                            transformedSize = 0;
+                            if (likely(readHelper->canMatch(keyRow)))
+                                transformedSize = readHelper->transform(rowBuilder, keyRow);
+
                             callback.finishedRow();
                             if (transformedSize)
                             {
@@ -3633,7 +2922,7 @@ public:
                                 }                           
                                 else
                                 {
-                                    atomic_inc(&postFiltered);
+                                    postFiltered++;
                                     skipped++;
                                 }
                             }
@@ -3693,9 +2982,9 @@ public:
     {
         return varFileInfo.getLink(); 
     }
-    virtual TranslatorArray *getTranslators() const 
-    { 
-        return layoutTranslators.getLink(); 
+    virtual ITranslatorSet *getTranslators() const override
+    {
+        return translators.getLink();
     }
     virtual void mergeSegmentMonitors(IIndexReadContext *irc) const 
     {
@@ -3792,6 +3081,8 @@ public:
         unsigned skipped = 0;
 
         unsigned processedBefore = processed;
+        ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
+        ScopedAtomic<unsigned> postFiltered(::postFiltered);
         bool continuationFailed = false;
         while (!aborted && inputsDone < inputCount)
         {
@@ -3813,8 +3104,8 @@ public:
                         break;
                     }
 
-                    atomic_inc(&indexRecordsRead);
-                    if (normalizeHelper->first(tlk->queryKeyBuffer(callback.getFPosRef())))
+                    indexRecordsRead++;
+                    if (normalizeHelper->first(tlk->queryKeyBuffer()))
                     {
                         do
                         {
@@ -3825,7 +3116,6 @@ public:
                                 processed++;
                                 if (processed > rowLimit)
                                 {
-                                    noteStats(processed-processedBefore, skipped);
                                     limitExceeded(false); 
                                     break;
                                 }
@@ -3853,7 +3143,7 @@ public:
                     }
                     else
                     {
-                        atomic_inc(&postFiltered);
+                        postFiltered++;
                         skipped++;
                     }
                 }
@@ -3901,8 +3191,7 @@ ISlaveActivityFactory *createRoxieIndexNormalizeActivityFactory(IPropertyTree &_
 class CRoxieIndexCountActivity : public CRoxieIndexActivity
 {
 protected:
-    IHThorCompoundCountExtra * countHelper;
-    IHThorSourceCountLimit * limitHelper;
+    IHThorIndexCountArg * countHelper;
     unsigned __int64 choosenLimit;
     unsigned __int64 rowLimit;
     unsigned __int64 keyedLimit;
@@ -3913,16 +3202,10 @@ public:
     {
         onCreate();
         countHelper = (IHThorIndexCountArg *) basehelper;
-        limitHelper = static_cast<IHThorSourceCountLimit *>(basehelper->selectInterface(TAIsourcecountlimit_1));
         assertex(!resent);
         choosenLimit = countHelper->getChooseNLimit();
-        if (limitHelper)
-        {
-            rowLimit = limitHelper->getRowLimit();
-            keyedLimit = limitHelper->getKeyedLimit();
-        }
-        else
-            rowLimit = keyedLimit = (unsigned __int64) -1;
+        rowLimit = countHelper->getRowLimit();
+        keyedLimit = countHelper->getKeyedLimit();
     }
 
     virtual StringBuffer &toString(StringBuffer &ret) const
@@ -3938,6 +3221,7 @@ public:
 
         unsigned processedBefore = processed;
         unsigned __int64 count = 0;
+        ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
         while (!aborted && inputsDone < inputCount && count < choosenLimit)
         {
             checkPartChanged(inputData[inputsDone]);
@@ -3951,8 +3235,8 @@ public:
                     while (!aborted && (count < choosenLimit) && tlk->lookup(true))
                     {
                         keyprocessed++;
-                        atomic_inc(&indexRecordsRead);
-                        count += countHelper->numValid(tlk->queryKeyBuffer(callback.getFPosRef()));
+                        indexRecordsRead++;
+                        count += countHelper->numValid(tlk->queryKeyBuffer());
                         if (count > rowLimit)
                             limitExceeded(false);
                         else if (count > keyedLimit)
@@ -4060,6 +3344,7 @@ public:
         unsigned skipped = 0;
 
         unsigned processedBefore = processed;
+        ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
         while (!aborted && inputsDone < inputCount)
         {
             checkPartChanged(inputData[inputsDone]);
@@ -4071,8 +3356,8 @@ public:
                 while (!aborted && tlk->lookup(true))
                 {
                     keyprocessed++;
-                    atomic_inc(&indexRecordsRead);
-                    aggregateHelper->processRow(rowBuilder, tlk->queryKeyBuffer(callback.getFPosRef()));
+                    indexRecordsRead++;
+                    aggregateHelper->processRow(rowBuilder, tlk->queryKeyBuffer());
                     callback.finishedRow();
                 }
                 callback.setManager(NULL);
@@ -4141,7 +3426,7 @@ public:
           results(*aggregateHelper, *aggregateHelper), kind(_kind)
     {
         onCreate();
-        results.start(rowAllocator);
+        results.start(rowAllocator, queryContext->queryCodeContext(), basefactory->queryId());
         assertex(!resent);
         groupSegCount = 0;
     }
@@ -4165,28 +3450,9 @@ public:
     {
         if (createSegmentMonitorsPending)
         {
-            unsigned groupSegSize;
-            if ((kind==TAKindexgroupcount || kind==TAKindexgroupexists)) 
-                groupSegSize = aggregateHelper->getGroupSegmentMonitorsSize();
-            else
-                groupSegSize = 0;
-            tlk->setMergeBarrier(groupSegSize);
             CRoxieIndexActivity::createSegmentMonitors();
-            if (groupSegSize)
-            {
-                // MORE - this code should be moved to somewhere common so ccdserver can share it
-                unsigned numSegs = tlk->ordinality();
-                for (unsigned segNo = 0; segNo < numSegs; segNo++)
-                {
-                    IKeySegmentMonitor *seg = tlk->item(segNo);
-                    if (seg->getOffset()+seg->getSize()==groupSegSize)
-                    {
-                        groupSegCount = segNo+1;
-                        break;
-                    }
-                }
-                assertex(groupSegCount);
-            }
+            if ((kind==TAKindexgroupcount || kind==TAKindexgroupexists))
+                groupSegCount = aggregateHelper->getGroupingMaxField();
             else
                 groupSegCount = 0;
         }
@@ -4199,6 +3465,7 @@ public:
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
 
         unsigned processedBefore = processed;
+        ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
         try
         {
             while (!aborted && inputsDone < inputCount)
@@ -4211,9 +3478,9 @@ public:
                     callback.setManager(tlk);
                     while (!aborted && tlk->lookup(true))
                     {
-                        if (groupSegCount && !layoutTranslators->item(lastPartNo.fileNo))
+                        if (groupSegCount && !translators->queryTranslator(lastPartNo.fileNo))
                         {
-                            AggregateRowBuilder &rowBuilder = results.addRow(tlk->queryKeyBuffer(callback.getFPosRef()));
+                            AggregateRowBuilder &rowBuilder = results.addRow(tlk->queryKeyBuffer());
                             callback.finishedRow();
                             if (kind == TAKindexgroupcount)
                             {
@@ -4226,8 +3493,8 @@ public:
                         else
                         {
                             keyprocessed++;
-                            atomic_inc(&indexRecordsRead);
-                            aggregateHelper->processRow(tlk->queryKeyBuffer(callback.getFPosRef()), this);
+                            indexRecordsRead++;
+                            aggregateHelper->processRow(tlk->queryKeyBuffer(), this);
                             callback.finishedRow();
                         }
                     }
@@ -4307,21 +3574,26 @@ ISlaveActivityFactory *createRoxieIndexGroupAggregateActivityFactory(IPropertyTr
 class CRoxieFetchActivityFactory : public CSlaveActivityFactory
 {
 public:
+    Owned<ITranslatorSet> translators;
     Owned<IFileIOArray> fileArray;
 
     CRoxieFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CSlaveActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
         Owned<IHThorFetchBaseArg> helper = (IHThorFetchBaseArg *) helperFactory();
-        IHThorFetchContext * fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
-        bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
+        bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
         if (!variableFileName)
         {
-            bool isOpt = (fetchContext->getFetchFlags() & FFdatafileoptional) != 0;
-            OwnedRoxieString fname(fetchContext->getFileName());
+            bool isOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
+            OwnedRoxieString fname(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fname, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
+            {
+                unsigned expectedCrc = helper->getDiskFormatCrc();
+                unsigned projectedCrc = helper->getProjectedFormatCrc();
+                translators.setown(datafile->getTranslators(projectedCrc, helper->queryProjectedDiskRecordSize(), expectedCrc, helper->queryDiskRecordSize(), getEnableFieldTranslation(), false));
                 fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
+            }
         }
     }
 
@@ -4331,39 +3603,36 @@ public:
     {
         return CSlaveActivityFactory::toString(s.append("FETCH "));
     }
-
-    inline IFileIO *getFilePart(unsigned partNo, offset_t &_base) const
-    {
-        return fileArray->getFilePart(partNo, _base);
-    }
 };
 
 class CRoxieFetchActivityBase : public CRoxieSlaveActivity
 {
 protected:
     IHThorFetchBaseArg *helper;
-    IHThorFetchContext * fetchContext;
     const CRoxieFetchActivityFactory *factory;
     Owned<IFileIO> rawFile;
     Owned<ISerialStream> rawStream;
-    CThorStreamDeserializerSource deserializeSource;
     offset_t base;
     char *inputData;
     char *inputLimit;
-    Owned<IFileIOArray> varFiles;
+    Linked<ITranslatorSet> translators;
+    Linked<IFileIOArray> files;
+    const IDynamicTransform *translator = nullptr;
     bool needsRHS;
 
     virtual size32_t doFetch(ARowBuilder & rowBuilder, offset_t pos, offset_t rawpos, void *inputData) = 0;
 
 public:
-    CRoxieFetchActivityBase(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieFetchActivityFactory *_aFactory)
-        : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory), factory(_aFactory)
+    CRoxieFetchActivityBase(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet,  HelperFactory *_hFactory,
+                            const CRoxieFetchActivityFactory *_aFactory,
+                            ITranslatorSet *_translators,
+                            IFileIOArray *_files)
+        : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory), factory(_aFactory), translators(_translators), files(_files)
     {
         helper = (IHThorFetchBaseArg *) basehelper;
-        fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
         base = 0;
-        variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
-        isOpt = (fetchContext->getFetchFlags() & FFdatafileoptional) != 0;
+        variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
+        isOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
         onCreate();
         inputData = (char *) serializedCreate.readDirect(0);
         inputLimit = inputData + (serializedCreate.length() - serializedCreate.getPos());
@@ -4372,12 +3641,15 @@ public:
 
     virtual const char *queryDynamicFileName() const
     {
-        return fetchContext->getFileName();
+        return helper->getFileName();
     }
 
     virtual void setVariableFileInfo()
     {
-        varFiles.setown(varFileInfo->getIFileIOArray(isOpt, packet->queryHeader().channel));
+        unsigned expectedCrc = helper->getDiskFormatCrc();
+        unsigned projectedCrc = helper->getProjectedFormatCrc();
+        translators.setown(varFileInfo->getTranslators(projectedCrc, helper->queryProjectedDiskRecordSize(), expectedCrc, helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), false));
+        files.setown(varFileInfo->getIFileIOArray(isOpt, packet->queryHeader().channel));
     }
 
     virtual IMessagePacker *process();
@@ -4449,32 +3721,56 @@ IMessagePacker *CRoxieFetchActivityBase::process()
 class CRoxieFetchActivity : public CRoxieFetchActivityBase
 {
     Owned<IEngineRowAllocator> diskAllocator;
-    Owned<IOutputRowDeserializer> rowDeserializer;
+    CThorContiguousRowBuffer prefetchSource;
+    Owned<ISourceRowPrefetcher> rowPrefetcher;
+
 public:
-    CRoxieFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieFetchActivityFactory *_aFactory)
-        : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory)
+    CRoxieFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory,
+                        const CRoxieFetchActivityFactory *_aFactory,
+                        ITranslatorSet *_translators,
+                        IFileIOArray *_files)
+        : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory, _translators, _files)
     {
-        IHThorFetchContext * fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
-        IOutputMetaData *diskMeta = fetchContext->queryDiskRecordSize();
+        // If we ever supported superfiles this would need to move to setPartNo, and pass proper subfile idx in
+        rowPrefetcher.setown(translators->getPrefetcher(0));
+
+        IOutputMetaData *diskMeta = helper->queryProjectedDiskRecordSize();
         diskAllocator.setown(getRowAllocator(diskMeta, basefactory->queryId()));
-        rowDeserializer.setown(diskMeta->createDiskDeserializer(queryContext->queryCodeContext(), basefactory->queryId()));
     }
 
     virtual size32_t doFetch(ARowBuilder & rowBuilder, offset_t pos, offset_t rawpos, void *inputData)
     {
-        RtlDynamicRowBuilder diskRowBuilder(diskAllocator);
-        deserializeSource.reset(pos);
-        unsigned sizeRead = rowDeserializer->deserialize(diskRowBuilder.ensureRow(), deserializeSource);
-        OwnedConstRoxieRow rawBuffer = diskRowBuilder.finalizeRowClear(sizeRead);
-        //  note the swapped parameters - left and right map to input and raw differently for JOIN vs FETCH
-        IHThorFetchArg *h = (IHThorFetchArg *) helper;
-        return h->transform(rowBuilder, rawBuffer, inputData, rawpos);
+        prefetchSource.reset(pos);
+        rowPrefetcher->readAhead(prefetchSource);
+        const byte *diskRow = prefetchSource.queryRow();
+        if (translator)
+        {
+            MemoryBuffer buf;
+            MemoryBufferBuilder aBuilder(buf, 0);
+            FetchVirtualFieldCallback fieldCallback(rawpos);
+            translator->translate(aBuilder, fieldCallback, diskRow);
+            //  note the swapped parameters - left and right map to input and raw differently for JOIN vs FETCH
+            IHThorFetchArg *h = (IHThorFetchArg *) helper;
+            return h->transform(rowBuilder, buf.toByteArray(), inputData, rawpos);
+        }
+        else
+        {
+            //  note the swapped parameters - left and right map to input and raw differently for JOIN vs FETCH
+            IHThorFetchArg *h = (IHThorFetchArg *) helper;
+            return h->transform(rowBuilder, diskRow, inputData, rawpos);
+        }
+    }
+
+    virtual void setPartNo(bool filechanged)
+    {
+        CRoxieFetchActivityBase::setPartNo(filechanged);
+        prefetchSource.setStream(rawStream);
     }
 };
 
 IRoxieSlaveActivity *CRoxieFetchActivityFactory::createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
 {
-    return new CRoxieFetchActivity(logctx, packet, helperFactory, this);
+    return new CRoxieFetchActivity(logctx, packet, helperFactory, this, translators, fileArray);
 }
 
 //------------------------------------------------------------------------------------
@@ -4483,10 +3779,15 @@ class CRoxieCSVFetchActivity : public CRoxieFetchActivityBase
 {
     CSVSplitter csvSplitter;
     size32_t maxRowSize;
+    CThorStreamDeserializerSource deserializeSource;
 
 public:
-    CRoxieCSVFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieFetchActivityFactory *_aFactory, unsigned _maxColumns, size32_t _maxRowSize)
-        : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory), maxRowSize(_maxRowSize)
+    CRoxieCSVFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory,
+                           const CRoxieFetchActivityFactory *_aFactory,
+                           ITranslatorSet *_translators,
+                           IFileIOArray *_files,
+                           unsigned _maxColumns, size32_t _maxRowSize)
+        : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory, _translators, _files), maxRowSize(_maxRowSize)
     {
         const char * quotes = NULL;
         const char * separators = NULL;
@@ -4509,6 +3810,8 @@ public:
         IHThorCsvFetchArg *h = (IHThorCsvFetchArg *) helper;
         ICsvParameters *csvInfo = h->queryCsvParameters();
         csvSplitter.init(_maxColumns, csvInfo, quotes, separators, terminators, escapes);
+        if (translator)
+            UNIMPLEMENTED;  // It's not obvious how we would support this.
     }
 
     virtual size32_t doFetch(ARowBuilder & rowBuilder, offset_t pos, offset_t rawpos, void *inputData)
@@ -4531,6 +3834,12 @@ public:
         }
         return h->transform(rowBuilder, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData(), inputData, rawpos);
     }
+
+    virtual void setPartNo(bool filechanged)
+    {
+        CRoxieFetchActivityBase::setPartNo(filechanged);
+        deserializeSource.setStream(rawStream);
+    }
 };
 
 class CRoxieXMLFetchActivity : public CRoxieFetchActivityBase, implements IXMLSelect
@@ -4539,14 +3848,21 @@ class CRoxieXMLFetchActivity : public CRoxieFetchActivityBase, implements IXMLSe
     Owned<IColumnProvider> lastMatch;
     Owned<IFileIOStream> rawStreamX;
     unsigned streamBufferSize;
+    CThorStreamDeserializerSource deserializeSource;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CRoxieFetchActivityBase)
 
-    CRoxieXMLFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieFetchActivityFactory *_aFactory, unsigned _streamBufferSize)
-        : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory),
+    CRoxieXMLFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory,
+                           const CRoxieFetchActivityFactory *_aFactory,
+                           ITranslatorSet *_translators,
+                           IFileIOArray *_files,
+                           unsigned _streamBufferSize)
+        : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory, _translators, _files),
           streamBufferSize(_streamBufferSize)
     {
+        if (translator)
+            UNIMPLEMENTED;
     }
 
     virtual size32_t doFetch(ARowBuilder & rowBuilder, offset_t pos, offset_t rawpos, void *inputData)
@@ -4555,8 +3871,8 @@ public:
         try
         {
             while(!lastMatch)
-            if(!parser->next())
-                throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %" I64F "d", pos);
+                if(!parser->next())
+                    throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %" I64F "d", pos);
             IHThorXmlFetchArg *h = (IHThorXmlFetchArg *) helper;
             unsigned thisSize = h->transform(rowBuilder, lastMatch, inputData, rawpos);
             lastMatch.clear();
@@ -4578,6 +3894,7 @@ public:
     virtual void setPartNo(bool filechanged)
     {
         CRoxieFetchActivityBase::setPartNo(filechanged);
+        deserializeSource.setStream(rawStream);
         rawStreamX.setown(createBufferedIOStream(rawFile, streamBufferSize));
         parser.setown((factory->getKind()==TAKjsonfetch) ? createJSONParse(*rawStreamX, "/", *this) : createXMLParse(*rawStreamX, "/", *this));
     }
@@ -4586,10 +3903,10 @@ public:
 
 void CRoxieFetchActivityBase::setPartNo(bool filechanged)
 {
-    rawFile.setown(variableFileName ? varFiles->getFilePart(lastPartNo.partNo, base) : factory->getFilePart(lastPartNo.partNo, base)); // MORE - superfiles
+    rawFile.setown(files->getFilePart(lastPartNo.partNo, base)); // MORE - superfiles
+    translator = translators->queryTranslator(0);                // MORE - superfiles
     assertex(rawFile != NULL);
     rawStream.setown(createFileSerialStream(rawFile, 0, -1, 0));
-    deserializeSource.setStream(rawStream);
 }
 
 class CRoxieCSVFetchActivityFactory : public CRoxieFetchActivityFactory
@@ -4613,7 +3930,7 @@ public:
 
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return new CRoxieCSVFetchActivity(logctx, packet, helperFactory, this, maxColumns, maxRowSize);
+        return new CRoxieCSVFetchActivity(logctx, packet, helperFactory, this, translators, fileArray, maxColumns, maxRowSize);
     }
 };
 
@@ -4627,7 +3944,7 @@ public:
 
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return new CRoxieXMLFetchActivity(logctx, packet, helperFactory, this, 4096);
+        return new CRoxieXMLFetchActivity(logctx, packet, helperFactory, this, translators, fileArray, 4096);
     }
 };
 
@@ -4657,22 +3974,21 @@ public:
         : CRoxieKeyedActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
         Owned<IHThorKeyedJoinArg> helper = (IHThorKeyedJoinArg *) helperFactory();
-        rtlDataAttr indexLayoutMeta;
-        size32_t indexLayoutSize;
-        if(!helper->getIndexLayout(indexLayoutSize, indexLayoutMeta.refdata()))
-            assertex(indexLayoutSize== 0);
-        MemoryBuffer m;
-        m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
-        activityMeta.setown(deserializeRecordMeta(m, true));
-        layoutTranslators.setown(new TranslatorArray);
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
+        expectedCrc = helper->getIndexFormatCrc();
+        projectedCrc = helper->getProjectedIndexFormatCrc();
+        projectedMeta = helper->queryProjectedIndexRecordSize();
+        expectedMeta = helper->queryIndexRecordSize();
         if (!variableFileName)
         {
             bool isOpt = (helper->getJoinFlags() & JFindexoptional) != 0;
             OwnedRoxieString indexFileName(helper->getIndexFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
-                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
+            {
+                translators.setown(datafile->getTranslators(projectedCrc, projectedMeta, expectedCrc, expectedMeta, queryFactory.queryOptions().enableFieldTranslation, true));
+                keyArray.setown(datafile->getKeyArray(isOpt, queryFactory.queryChannel()));
+            }
         }
     }
 
@@ -4706,6 +4022,7 @@ public:
         : factory(_aFactory), CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory)
     {
         helper = (IHThorKeyedJoinArg *) basehelper;
+        keyRecInfo = &helper->queryIndexRecordSize()->queryRecordAccessor(true);
         variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
         inputDone = 0;
         processed = 0;
@@ -4729,6 +4046,8 @@ public:
             assertex(resentInfo.remaining() == 0);
         }
     }
+
+    virtual bool hasNewSegmentMonitors() { return helper->hasNewSegmentMonitors(); }
 
     ~CRoxieKeyedJoinIndexActivity()
     {
@@ -4767,7 +4086,7 @@ public:
             rootIndex = rootIndexActivity->queryIndexReadActivity();
     
             varFileInfo.setown(rootIndex->getVarFileInfo());
-            layoutTranslators.setown(rootIndex->getTranslators());
+            translators.setown(rootIndex->getTranslators());
             keyArray.setown(rootIndex->getKeySet());
         }
     }
@@ -4790,7 +4109,7 @@ public:
         if (createSegmentMonitorsPending)
         {
             createSegmentMonitorsPending = false;
-            tlk->setLayoutTranslator(layoutTranslators->item(lastPartNo.fileNo));
+            tlk->setLayoutTranslator(translators->queryTranslator(lastPartNo.fileNo));
         }
     }
 };
@@ -4820,7 +4139,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
     unsigned joinFlags = helper->getJoinFlags();
     if (joinFlags & (JFtransformMaySkip | JFfetchMayFilter)) 
         keepLimit = 0;
-    if ((joinFlags & (JFexclude|JFleftouter)) == (JFexclude|JFleftouter) && (!(joinFlags & JFfetchMayFilter)))  // For left-only joins, all we care about is existance of a match. Return as soon as we know that there is one
+    if ((joinFlags & (JFexclude|JFleftouter)) == (JFexclude|JFleftouter) && (!(joinFlags & JFfetchMayFilter)))  // For left-only joins, all we care about is existence of a match. Return as soon as we know that there is one
         keepLimit = 1;
 
     unsigned processedBefore = processed;
@@ -4849,12 +4168,6 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
             if (rootIndex)
                 rootIndex->mergeSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
-            if (logctx.queryTraceLevel() >= 20)
-            {
-                StringBuffer out;
-                printKeyedValues(out, tlk, helper->queryIndexRecordSize());
-                logctx.CTXLOG("Using filter %s", out.str());
-            }
 
             if (!resent && (atmost != (unsigned) -1) && ((atmost > preabortKeyedJoinsThreshold) || (joinFlags & JFcountmatchabortlimit) || (keepLimit != 0)))  
             {
@@ -4875,16 +4188,19 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
             else
                 tlk->reset(resent);
             resent = false;
+            ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
+            ScopedAtomic<unsigned> postFiltered(::postFiltered);
             while (candidateCount <= atmost)
             {
                 if (tlk->lookup(true))
                 {
                     candidateCount++;
-                    atomic_inc(&indexRecordsRead);
+                    indexRecordsRead++;
                     KLBlobProviderAdapter adapter(tlk);
-                    offset_t recptr;
-                    const byte *indexRow = tlk->queryKeyBuffer(recptr);
-                    if (helper->indexReadMatch(inputRow, indexRow, recptr, &adapter))
+                    const byte *indexRow = tlk->queryKeyBuffer();
+                    size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
+                    offset_t fpos = rtlReadBigUInt8(indexRow + fposOffset);
+                    if (helper->indexReadMatch(inputRow, indexRow, &adapter))
                     {
                         processed++;
                         if (keepLimit)
@@ -4909,7 +4225,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                         {
                             const void *self = output->getBuffer(KEYEDJOIN_RECORD_SIZE(0), true);
                             KeyedJoinHeader *rec = (KeyedJoinHeader *) self;
-                            rec->fpos = recptr;
+                            rec->fpos = fpos;
                             rec->thisGroup = jg;
                             rec->partNo = lastPartNo.partNo;
                             output->putBuffer(self, KEYEDJOIN_RECORD_SIZE(0), true);
@@ -4917,8 +4233,8 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                         else
                         {
                             KLBlobProviderAdapter adapter(tlk);
-                            totalSize = helper->extractJoinFields(rowBuilder, indexRow, recptr, &adapter);
-                            rowBuilder.writeToOutput(totalSize, recptr, jg, lastPartNo.partNo);
+                            totalSize = helper->extractJoinFields(rowBuilder, indexRow, &adapter);
+                            rowBuilder.writeToOutput(totalSize, fpos, jg, lastPartNo.partNo);
                         }
                         totalSizeSent += KEYEDJOIN_RECORD_SIZE(totalSize);
                         if (totalSizeSent > indexReadChunkSize && !continuationFailed)
@@ -4948,7 +4264,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                     else
                     {
                         rejected++;
-                        atomic_inc(&postFiltered);
+                        postFiltered++;
                     }
                 }
                 else
@@ -4992,7 +4308,8 @@ ISlaveActivityFactory *createRoxieKeyedJoinIndexActivityFactory(IPropertyTree &_
 class CRoxieKeyedJoinFetchActivityFactory : public CSlaveActivityFactory
 {
 public:
-    Owned<IFileIOArray> fileArray;
+    Owned<ITranslatorSet> translators;
+    Owned<IFileIOArray> files;
 
     CRoxieKeyedJoinFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CSlaveActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
@@ -5006,7 +4323,12 @@ public:
             OwnedRoxieString fileName(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
-                fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
+            {
+                unsigned expectedCrc = helper->getDiskFormatCrc();
+                unsigned projectedCrc = helper->getProjectedFormatCrc();
+                translators.setown(datafile->getTranslators(projectedCrc, helper->queryProjectedDiskRecordSize(), expectedCrc, helper->queryDiskRecordSize(), getEnableFieldTranslation(), false));
+                files.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
+            }
         }
 
     }
@@ -5017,35 +4339,36 @@ public:
     {
         return CSlaveActivityFactory::toString(s.append("KEYEDJOIN FETCH "));
     }
-
-    IFileIO *getFilePart(unsigned partNo, offset_t &_base) const
-    {
-        return fileArray->getFilePart(partNo, _base);
-    }
 };
 
 class CRoxieKeyedJoinFetchActivity : public CRoxieSlaveActivity
 {
     IHThorKeyedJoinArg *helper;
     Owned<IFileIO> rawFile;
-    const CRoxieKeyedJoinFetchActivityFactory *factory;
     offset_t base;
     const char *inputLimit;
     const char *inputData;
-    Owned<IFileIOArray> varFiles;
+    Linked<ITranslatorSet> translators;
+    Linked<IFileIOArray> files;
     Owned<ISerialStream> rawStream;
-    CThorStreamDeserializerSource deserializeSource;
+    CThorContiguousRowBuffer prefetchSource;
+    Owned<ISourceRowPrefetcher> prefetcher;
+    const IDynamicTransform *translator = nullptr;
 
     virtual void setPartNo(bool filechanged)
     {
-        rawFile.setown(variableFileName ? varFiles->getFilePart(lastPartNo.partNo, base) : factory->getFilePart(lastPartNo.partNo, base)); // MORE - superfiles
+        rawFile.setown(files->getFilePart(lastPartNo.partNo, base)); // MORE - superfiles
+        translator = translators->queryTranslator(0);                // MORE - superfiles
         rawStream.setown(createFileSerialStream(rawFile, 0, -1, 0));
-        deserializeSource.setStream(rawStream);
+        prefetcher.setown(translators->getPrefetcher(0));
+        prefetchSource.setStream(rawStream);
     }
 
 public:
-    CRoxieKeyedJoinFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinFetchActivityFactory *_aFactory)
-        : factory(_aFactory), 
+    CRoxieKeyedJoinFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinFetchActivityFactory *_aFactory,
+                                 IFileIOArray *_files, ITranslatorSet *_translators)
+        : files(_files),
+          translators(_translators),
           CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory)
     {
         // MORE - no continuation row support?
@@ -5068,7 +4391,10 @@ public:
 
     virtual void setVariableFileInfo()
     {
-        varFiles.setown(varFileInfo->getIFileIOArray(isOpt, packet->queryHeader().channel));
+        unsigned expectedCrc = helper->getDiskFormatCrc();
+        unsigned projectedCrc = helper->getProjectedFormatCrc();
+        translators.setown(varFileInfo->getTranslators(projectedCrc, helper->queryProjectedDiskRecordSize(), expectedCrc, helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), false));
+        files.setown(varFileInfo->getIFileIOArray(isOpt, packet->queryHeader().channel));
     }
 
     virtual IMessagePacker *process();
@@ -5088,9 +4414,6 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
     unsigned skipped = 0;
     unsigned __int64 rowLimit = helper->getRowLimit();
     unsigned totalSizeSent = 0;
-    Owned<IOutputRowDeserializer> rowDeserializer = helper->queryDiskRecordSize()->createDiskDeserializer(queryContext->queryCodeContext(), basefactory->queryId());
-    Owned<IEngineRowAllocator> diskAllocator = getRowAllocator(helper->queryDiskRecordSize(), basefactory->queryId());
-    RtlDynamicRowBuilder diskRowBuilder(diskAllocator);
 
     CachedOutputMetaData joinFieldsMeta(helper->queryJoinFieldsRecordSize());
     Owned<IEngineRowAllocator> joinFieldsAllocator = getRowAllocator(joinFieldsMeta, basefactory->queryId());
@@ -5110,20 +4433,29 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
         else
             pos = rp-base;
 
-        deserializeSource.reset(pos);
-        unsigned sizeRead = rowDeserializer->deserialize(diskRowBuilder.ensureRow(), deserializeSource);
-        OwnedConstRoxieRow rawBuffer = diskRowBuilder.finalizeRowClear(sizeRead);
-
+        prefetchSource.reset(pos);
+        prefetcher->readAhead(prefetchSource);
+        const byte *rawRHS = prefetchSource.queryRow();
         const KeyedJoinHeader *headerPtr = (KeyedJoinHeader *) inputData;
+
+        MemoryBuffer buf;
+        if (translator)
+        {
+            MemoryBufferBuilder aBuilder(buf, 0);
+            FetchVirtualFieldCallback fieldCallback(headerPtr->fpos);
+            translator->translate(aBuilder, fieldCallback, rawRHS);
+            rawRHS = (const byte *) buf.toByteArray();
+        }
+
         inputData = &headerPtr->rhsdata[0];
         if (inputFields.isVariableSize())
         {
             memcpy(&inputSize, inputData, sizeof(inputSize));
             inputData += sizeof(inputSize);
         }
-        if (helper->fetchMatch(inputData, rawBuffer))
+        if (helper->fetchMatch(inputData, rawRHS))
         {
-            unsigned thisSize = helper->extractJoinFields(jfRowBuilder, rawBuffer, rp, (IBlobProvider*)NULL);
+            unsigned thisSize = helper->extractJoinFields(jfRowBuilder, rawRHS, (IBlobProvider*)NULL);
             jfRowBuilder.writeToOutput(thisSize, headerPtr->fpos, headerPtr->thisGroup, headerPtr->partNo);
             totalSizeSent += KEYEDJOIN_RECORD_SIZE(thisSize);
             processed++;
@@ -5161,7 +4493,7 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
 
 IRoxieSlaveActivity *CRoxieKeyedJoinFetchActivityFactory::createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
 {
-    return new CRoxieKeyedJoinFetchActivity(logctx, packet, helperFactory, this);
+    return new CRoxieKeyedJoinFetchActivity(logctx, packet, helperFactory, this, files, translators);
 }
 
 ISlaveActivityFactory *createRoxieKeyedJoinFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -5317,7 +4649,6 @@ protected:
     Owned<const IResolvedFile> indexfile;
     Owned<IKeyArray> keyArray;
     Owned<IFileIOArray> fileArray;
-    TranslatorArray layoutTranslators;
 
 public:
     CRoxieDummyActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, bool isLoadDataOnly)
@@ -5329,7 +4660,7 @@ public:
         try  // operations does not want any missing file errors to be fatal, or throw traps - just log it
         {
             ThorActivityKind kind = getActivityKind(_graphNode);
-            if (kind != TAKdiskwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
+            if (kind != TAKdiskwrite && kind != TAKspillwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
             {
                 const char *fileName = queryNodeFileName(_graphNode, kind);
                 const char *indexName = queryNodeIndexName(_graphNode, kind);
@@ -5338,14 +4669,16 @@ public:
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
                     indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
                     if (indexfile)
-                        keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
+                        keyArray.setown(indexfile->getKeyArray(isOpt, queryFactory.queryChannel()));
                 }
                 if (fileName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isOpt']/@value");
                     datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
                     if (datafile)
+                    {
                         fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
+                    }
                 }
             }
         }

@@ -810,6 +810,17 @@ void CThorExpandingRowArray::transferRows(rowidx_t & outNumRows, const void * * 
     stableTable = NULL;
 }
 
+void CThorExpandingRowArray::transferRows(rowidx_t start, rowidx_t num, CThorExpandingRowArray &tgt)
+{
+    if (start >= numRows)
+        return;
+    rowidx_t remaining = numRows-start;
+    rowidx_t max = remaining>num ? num : remaining;
+    tgt.appendRows(rows+start, max, true);
+    memmove(rows+start, rows+start+max, (remaining-max) * sizeof(void *));
+    numRows -= max;
+}
+
 void CThorExpandingRowArray::transferRowsCopy(const void **outRows, bool takeOwnership)
 {
     if (0 == numRows)
@@ -858,6 +869,32 @@ void CThorExpandingRowArray::removeRows(rowidx_t start, rowidx_t n)
         memmove(from, from+n, (numRows-end) * sizeof(void *));
         numRows -= n;
     }
+}
+
+bool CThorExpandingRowArray::appendRows(const void **inRows, rowidx_t num, bool takeOwnership)
+{
+    if (0 == num)
+        return true;
+    if (numRows+num >= maxRows)
+    {
+        if (!resize(numRows + num))
+            return false;
+    }
+    const void **newRows = rows+numRows;
+    memcpy(newRows, inRows, num*sizeof(void **));
+    numRows += num;
+    if (!takeOwnership)
+    {
+        const void **lastNewRow = newRows+numRows-1;
+        for (;;)
+        {
+            LinkThorRow(*newRows);
+            if (newRows == lastNewRow)
+                break;
+            newRows++;
+        }
+    }
+    return true;
 }
 
 bool CThorExpandingRowArray::appendRows(CThorExpandingRowArray &inRows, bool takeOwnership)
@@ -2511,7 +2548,7 @@ class COutputMetaWithChildRow : public CSimpleInterface, implements IOutputMetaD
         CPrefetcher(ISourceRowPrefetcher *_childPrefetcher, size32_t _extraSz) : childPrefetcher(_childPrefetcher), extraSz(_extraSz)
         {
         }
-        virtual void readAhead(IRowDeserializerSource &in)
+        virtual void readAhead(IRowPrefetcherSource &in)
         {
             in.skip(extraSz);
             byte b;
@@ -2536,7 +2573,7 @@ public:
     { 
          // ignoring xml'ing extra
         //GH: I think this is what it should do
-        childMeta->toXML(*(const byte **)(self+extraSz), out); 
+        childMeta->toXML(*(const byte **)(self+extraSz), out);
     }
     virtual unsigned getVersion() const { return OUTPUTMETACHILDROW_VERSION; }
 
@@ -2558,10 +2595,10 @@ public:
             diskDeserializer.setown(new CDeserializer(childMeta->createDiskDeserializer(ctx, activityId), childAllocator, extraSz));
         return LINK(diskDeserializer);
     }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+    virtual ISourceRowPrefetcher * createDiskPrefetcher()
     {
         if (!prefetcher)
-            prefetcher.setown(new CPrefetcher(childMeta->createDiskPrefetcher(ctx, activityId), extraSz));
+            prefetcher.setown(new CPrefetcher(childMeta->createDiskPrefetcher(), extraSz));
         return LINK(prefetcher);
     }
     virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
@@ -2586,6 +2623,10 @@ public:
     {
         return childMeta->queryChildMeta(i);
     }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const
+    {
+        throwUnexpected();  // used for internal structures only - no need to implement
+    }
 };
 
 IOutputMetaData *createOutputMetaDataWithChildRow(IEngineRowAllocator *childAllocator, size32_t extraSz)
@@ -2594,149 +2635,3 @@ IOutputMetaData *createOutputMetaDataWithChildRow(IEngineRowAllocator *childAllo
 }
 
 
-class COutputMetaWithExtra : public CSimpleInterface, implements IOutputMetaData
-{
-    Linked<IOutputMetaData> meta;
-    size32_t metaSz;
-    Owned<IOutputRowSerializer> diskSerializer;
-    Owned<IOutputRowDeserializer> diskDeserializer;
-    Owned<IOutputRowSerializer> internalSerializer;
-    Owned<IOutputRowDeserializer> internalDeserializer;
-    Owned<ISourceRowPrefetcher> prefetcher;
-    Owned<IOutputMetaData> serializedmeta;
-
-    class CSerializer : public CSimpleInterface, implements IOutputRowSerializer
-    {
-        Owned<IOutputRowSerializer> serializer;
-        size32_t metaSz;
-    public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-        CSerializer(IOutputRowSerializer *_serializer, size32_t _metaSz) : serializer(_serializer), metaSz(_metaSz)
-        {
-        }
-        virtual void serialize(IRowSerializerTarget &out, const byte *self)
-        {
-            out.put(metaSz, self);
-            serializer->serialize(out, self+metaSz);
-        }
-    };
-    //GH - This code is the same as CPrefixedRowDeserializer
-    class CDeserializer : public CSimpleInterface, implements IOutputRowDeserializer
-    {
-        Owned<IOutputRowDeserializer> deserializer;
-        size32_t metaSz;
-    public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-        CDeserializer(IOutputRowDeserializer *_deserializer, size32_t _metaSz) : deserializer(_deserializer), metaSz(_metaSz)
-        {
-        }
-        virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource &in)
-        {
-            in.read(metaSz, rowBuilder.getSelf());
-            CPrefixedRowBuilder prefixedBuilder(metaSz, rowBuilder);
-            size32_t sz = deserializer->deserialize(prefixedBuilder, in);
-            return sz+metaSz;
-        }
-    };
-
-    class CPrefetcher : public CSimpleInterface, implements ISourceRowPrefetcher
-    {
-        Owned<ISourceRowPrefetcher> childPrefetcher;
-        size32_t metaSz;
-    public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-        CPrefetcher(ISourceRowPrefetcher *_childPrefetcher, size32_t _metaSz) : childPrefetcher(_childPrefetcher), metaSz(_metaSz)
-        {
-        }
-        virtual void readAhead(IRowDeserializerSource &in)
-        {
-            in.skip(metaSz);
-            childPrefetcher->readAhead(in);
-        }
-    };
-
-public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-    COutputMetaWithExtra(IOutputMetaData *_meta, size32_t _metaSz) : meta(_meta), metaSz(_metaSz)
-    {
-    }
-    virtual size32_t getRecordSize(const void *rec) 
-    {
-        size32_t sz = meta->getRecordSize(rec?((byte *)rec)+metaSz:NULL); 
-        return sz+metaSz;
-    }
-    virtual size32_t getMinRecordSize() const 
-    { 
-        return meta->getMinRecordSize() + metaSz;
-    }
-    virtual size32_t getFixedSize() const 
-    {
-        size32_t sz = meta->getFixedSize();
-        if (!sz)
-            return 0;
-        return sz+metaSz;
-    }
-
-    virtual void toXML(const byte * self, IXmlWriter & out) { meta->toXML(self, out); }
-    virtual unsigned getVersion() const { return meta->getVersion(); }
-
-//The following can only be called if getMetaDataVersion >= 1, may seh otherwise.  Creating a different interface was too painful
-    virtual unsigned getMetaFlags() { return meta->getMetaFlags(); }
-    virtual void destruct(byte * self) { meta->destruct(self); }
-    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId)
-    {
-        if (!diskSerializer)
-            diskSerializer.setown(new CSerializer(meta->createDiskSerializer(ctx, activityId), metaSz));
-        return LINK(diskSerializer);
-    }
-    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId)
-    {
-        if (!diskDeserializer)
-            diskDeserializer.setown(new CDeserializer(meta->createDiskDeserializer(ctx, activityId), metaSz));
-        return LINK(diskDeserializer);
-    }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
-    {
-        if (!prefetcher)
-            prefetcher.setown(new CPrefetcher(meta->createDiskPrefetcher(ctx, activityId), metaSz));
-        return LINK(prefetcher);
-    }
-    virtual IOutputMetaData * querySerializedDiskMeta() 
-    { 
-        IOutputMetaData *sm = meta->querySerializedDiskMeta();
-        if (sm==meta.get())
-            return this;
-        if (!serializedmeta.get())
-            serializedmeta.setown(new COutputMetaWithExtra(sm,metaSz));
-        return serializedmeta.get();
-    } 
-    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId)
-    {
-        if (!internalSerializer)
-            internalSerializer.setown(new CSerializer(meta->createInternalSerializer(ctx, activityId), metaSz));
-        return LINK(internalSerializer);
-    }
-    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId)
-    {
-        if (!internalDeserializer)
-            internalDeserializer.setown(new CDeserializer(meta->createInternalDeserializer(ctx, activityId), metaSz));
-        return LINK(internalDeserializer);
-    }
-    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor)
-    {
-        meta->walkIndirectMembers(self, visitor);
-    }
-    virtual IOutputMetaData * queryChildMeta(unsigned i)
-    {
-        return meta->queryChildMeta(i);
-    }
-};
-
-IOutputMetaData *createOutputMetaDataWithExtra(IOutputMetaData *meta, size32_t sz)
-{
-    return new COutputMetaWithExtra(meta, sz);
-}

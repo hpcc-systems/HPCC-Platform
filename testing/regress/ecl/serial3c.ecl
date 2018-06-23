@@ -19,7 +19,7 @@
 
 import Setup.SerialTest;
 
-#option ('skipFileFormatCrcCheck', true);
+#option ('layoutTranslation', 'ecl');
 
 inDs := DATASET(SerialTest.DsFilename, SerialTest.LibraryDictRec, THOR);
 output(TABLE(inDs, { owner, cnt := COUNT(books) }));

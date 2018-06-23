@@ -37,7 +37,7 @@ extern void closedownDFS();
 // base is saved in store whenever block exhausted, so replacement coven servers can restart 
 
 // server side versioning.
-#define ServerVersion    "3.13"
+#define ServerVersion    "3.14"
 #define MinClientVersion "1.5"
 
 
@@ -657,7 +657,7 @@ public:
         return TRUE;
     }
 
-    void main() 
+    void mainloop()
     {
         ICoven &coven=queryCoven();
         CMessageHandler<CCovenServer> handler("CCovenServer",this,&CCovenServer::processMessage);
@@ -674,7 +674,7 @@ public:
             }
             catch (IException *e)
             {
-                EXCLOG(e, "main (Coven request)");
+                EXCLOG(e, "mainloop (Coven request)");
                 e->Release();
             }
         }
@@ -978,7 +978,7 @@ bool verifyCovenConnection(unsigned timeout)
 void covenMain()
 { 
     assertex(covenServer);
-    covenServer->main();
+    covenServer->mainloop();
 }
 
 void closeCoven()

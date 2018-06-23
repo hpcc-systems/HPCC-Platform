@@ -177,7 +177,7 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
                 stopThread();
             }
         }
-        void main()
+        virtual void threadmain() override
         {
             stopped = false;
             Linked<IRowWriter> writer = smartbuf->queryWriter();
@@ -785,10 +785,10 @@ public:
         IThorResult *result = graph->createResult(*this, helper->querySequence(), this, resultType);
         Owned<IRowWriter> resultWriter = result->getWriter();
         size32_t dictSize = builder.getcount();
-        byte ** dictRows = builder.queryrows();
+        const byte ** dictRows = builder.queryrows();
         for (size32_t row = 0; row < dictSize; row++)
         {
-            byte *thisRow = dictRows[row];
+            const byte *thisRow = dictRows[row];
             if (thisRow)
                 LinkThorRow(thisRow);
             resultWriter->putRow(thisRow);
@@ -1128,7 +1128,7 @@ public:
         gathered = eos = false;
         aggregated.clear();
         aggregated.setown(new RowAggregator(*helper, *helper));
-        aggregated->start(queryRowAllocator());
+        aggregated->start(queryRowAllocator(), queryCodeContext(), queryId());
     }
     CATCH_NEXTROW()
     {

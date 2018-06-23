@@ -42,6 +42,9 @@ export THORNAME=<xsl:value-of select="@name"/>
     <xsl:if test="@nodeGroup">
 export THORPRIMARY=<xsl:value-of select="@nodeGroup"/>
     </xsl:if>
+    <xsl:if test="@valgrindOptions">
+export valgrindOptions="<xsl:value-of select='@valgrindOptions'/>"
+    </xsl:if>
 export THORMASTER=<xsl:call-template name="getNetAddress">
                     <xsl:with-param name="computer" select="ThorMasterProcess/@computer"/>
                 </xsl:call-template>
@@ -55,7 +58,7 @@ export THORSLAVEPORT=<xsl:call-template name="setOrDefault">
                      </xsl:call-template>
 export localthorportinc=<xsl:call-template name="setOrDefault">
                             <xsl:with-param name="attribute" select="@localThorPortInc"/>
-                            <xsl:with-param name="default" select="'200'"/>
+                            <xsl:with-param name="default" select="'20'"/>
                         </xsl:call-template>
 export slavespernode=<xsl:call-template name="setOrDefault">
                         <xsl:with-param name="attribute" select="@slavesPerNode"/>

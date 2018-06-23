@@ -46,9 +46,10 @@ define([
     "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPLogicalFile",
+    "src/ESPUtil",
+    "src/ESPLogicalFile",
     "hpcc/DelayLoadWidget",
+    "src/Utility",
 
     "dojo/text!../templates/SFDetailsWidget.html",
 
@@ -57,7 +58,7 @@ define([
                 BorderContainer, TabContainer, ContentPane, Toolbar, ToolbarSeparator, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
                 selector,
                 _TabContainerWidget,
-                ESPUtil, ESPLogicalFile, DelayLoadWidget,
+                ESPUtil, ESPLogicalFile, DelayLoadWidget, Utility,
                 template) {
     exports.fixCircularDependency = declare("SFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -187,11 +188,11 @@ define([
                     IsCompressed: {
                         width: 25, sortable: false,
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("compressed.png", context.i18n.Compressed);
+                            node.innerHTML = Utility.getImageHTML("compressed.png", context.i18n.Compressed);
                         },
                         formatter: function (compressed) {
                             if (compressed === true) {
-                                return dojoConfig.getImageHTML("compressed.png");
+                                return Utility.getImageHTML("compressed.png");
                             }
                             return "";
                         }
@@ -199,11 +200,11 @@ define([
                     IsKeyFile: {
                         width: 25, sortable: false,
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("index.png", context.i18n.Index);
+                            node.innerHTML = Utility.getImageHTML("index.png", context.i18n.Index);
                         },
                         formatter: function (keyfile, row) {
                             if (row.ContentType === "key") {
-                                return dojoConfig.getImageHTML("index.png");
+                                return Utility.getImageHTML("index.png");
                             }
                             return "";
                         }
@@ -211,11 +212,11 @@ define([
                     isSuperfile: {
                         width: 25, sortable: false,
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("superfile.png", context.i18n.Superfile);
+                            node.innerHTML = Utility.getImageHTML("superfile.png", context.i18n.Superfile);
                         },
                         formatter: function (superfile) {
                             if (superfile === true) {
-                                return dojoConfig.getImageHTML("superfile.png");
+                                return Utility.getImageHTML("superfile.png");
                             }
                             return "";
                         }
@@ -316,6 +317,8 @@ define([
                 this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
                 domClass.remove(this.id + "StateIdImage");
                 domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
+            } else if (name === "IsCompressed") {
+                dom.byId(this.id + "CompressedImage").src = this.logicalFile.getCompressedImage();
             }
         },
 

@@ -3,9 +3,10 @@
 
 EXPORT sq(boolean multiPart) := MODULE
 
+IMPORT $;
+SHARED STRING NamePrefix := $.Files(multiPart, false).filePrefix;
+
 //MORE: This is currently hard-wired to hthor since it is a tiny dataset
-STRING prefix := IF(multiPart, 'multi', 'single');
-EXPORT NamePrefix := '~REGRESS::' + prefix + '::';
 
 EXPORT HouseRec :=
             record
@@ -18,7 +19,7 @@ unsigned2       yearBuilt := 0;
 EXPORT PersonRec :=
             record
 string          forename;
-string          surname;
+utf8            surname;
 udecimal8       dob;
 udecimal8       booklimit := 0;
 unsigned2       aage := 0;
@@ -82,6 +83,13 @@ EXPORT BookRelatedIdRec :=
             record
 BookIdRec;
 unsigned4       personid;
+            end;
+
+
+EXPORT TransBookRelatedIdRec :=
+            record
+unsigned4       personid;
+BookIdRec;
             end;
 
 
@@ -153,14 +161,21 @@ SimplePersonBookRec;
 unsigned8           filepos{virtual(fileposition)};
                 end;
 
-// Dataset definitions:
+EXPORT HouseIdVirtualRec := record
+HouseIdRec;
+unsigned8           virtfilepos{virtual(fileposition)};
+unsigned8           virtlfilepos{virtual(localfileposition)};
+string              virtfilename{virtual(LOGICALFILENAME)};
+                end;
 
+// Dataset definitions:
 
 EXPORT HousePersonBookName := NamePrefix + 'HousePersonBook';
 EXPORT PersonBookName := NamePrefix + 'PersonBook';
 EXPORT HouseName := NamePrefix + 'House';
 EXPORT PersonName := NamePrefix + 'Person';
 EXPORT BookName := NamePrefix + 'Book';
+EXPORT BookNameAuthorGrouped := BookName + 'AuthorGrouped';
 EXPORT SimplePersonBookName := NamePrefix + 'SimplePersonBook';
 
 EXPORT HousePersonBookIndexName := NamePrefix + 'HousePersonBookIndex';
@@ -176,11 +191,15 @@ EXPORT HouseDs := dataset(HouseName, HouseIdExRec, thor);
 EXPORT PersonDs := dataset(PersonName, PersonRelatedIdRec, thor);
 EXPORT BookDs := dataset(BookName, BookRelatedIdRec, thor);
 
+EXPORT BookAuthorGroupedDs := dataset(BookNameAuthorGrouped, BookRelatedIdRec, thor, __GROUPED__);
+EXPORT TransBookAuthorGroupedDs := dataset(BookNameAuthorGrouped, TransBookRelatedIdRec, thor, __GROUPED__);
+
 EXPORT HousePersonBookExDs := dataset(HousePersonBookName, HousePersonBookIdExRec, thor);
 EXPORT PersonBookExDs := dataset(PersonBookName, PersonBookRelatedIdExRec, thor);
 EXPORT HouseExDs := dataset(HouseName, HouseIdExRec, thor);
 EXPORT PersonExDs := dataset(PersonName, PersonRelatedIdExRec, thor);
 EXPORT BookExDs := dataset(BookName, BookRelatedIdExRec, thor);
+EXPORT HouseVirtualDs := dataset(HouseName, HouseIdVirtualRec, thor);
 
 EXPORT SimplePersonBookDs := dataset(SimplePersonBookName, SimplePersonBookExRec, thor);
 EXPORT SimplePersonBookIndex := index(SimplePersonBookDs, { surname, forename, aage  }, { SimplePersonBookDs }, SimplePersonBookIndexName);

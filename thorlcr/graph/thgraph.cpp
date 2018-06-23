@@ -25,6 +25,7 @@
 #include "thormisc.hpp"
 #include "thbufdef.hpp"
 #include "thmem.hpp"
+#include "rtlformat.hpp"
 
 
 PointerArray createFuncs;
@@ -177,7 +178,7 @@ public:
         len = mb.length();
         data = mb.detach();
     }
-    virtual void getLinkedResult(unsigned &countResult, byte * * & result)
+    virtual void getLinkedResult(unsigned &countResult, const byte * * & result) override
     {
         assertex(rowStreamCount==((unsigned)rowStreamCount)); // catch, just in case
         Owned<IRowStream> stream = getRowStream();
@@ -189,7 +190,7 @@ public:
             OwnedConstThorRow row = stream->nextRow();
             rowset[countResult++] = row.getClear();
         }
-        result = (byte **)_rowset.getClear();
+        result = (const byte **)_rowset.getClear();
     }
     virtual const void * getLinkedRowResult()
     {
@@ -329,6 +330,7 @@ bool isDiskInput(ThorActivityKind kind)
         case TAKindexgroupaggregate:
         case TAKindexgroupexists:
         case TAKindexgroupcount:
+        case TAKspillread:
             return true;
         default:
             return false;
@@ -657,6 +659,7 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                 case TAKcsvwrite:
                 case TAKxmlwrite:
                 case TAKjsonwrite:
+                case TAKspillwrite:
                     if (_shortCircuit) return true;
                     onCreate();
                     alreadyUpdated = checkUpdate();
@@ -835,6 +838,7 @@ bool isGlobalActivity(CGraphElementBase &container)
             unsigned flags = helper->getFlags();
             return (0 == (TDXtemporary & flags)); // global if not temporary
         }
+        case TAKspillwrite:
         case TAKspill:
             return false;
         case TAKcsvread:
@@ -851,6 +855,9 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKgraphloop:
         case TAKparallelgraphloop:
         case TAKloopdataset:
+        case TAKexternalsink:
+        case TAKexternalsource:
+        case TAKexternalprocess:
             return false;
 // dependent on local/grouped
         case TAKkeyeddistribute:
@@ -948,6 +955,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKchildgroupaggregate:
         case TAKchildthroughnormalize:
         case TAKchildnormalize:
+        case TAKspillread:
 
         case TAKindexread:
         case TAKindexnormalize:
@@ -1254,8 +1262,6 @@ void CGraphBase::reset()
         }
         dependentSubGraphs.kill();
     }
-    if (!queryOwner() || isGlobal())
-        jobChannel.queryTimeReporter().reset();
     if (!queryOwner())
         clearNodeStats();
 }
@@ -1941,6 +1947,10 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
     ForEach(*edges)
     {
         IPropertyTree &edge = edges->query();
+        //Ignore edges that represent dependencies from parent activities to child activities.
+        if (edge.getPropBool("att[@name=\"_childGraph\"]/@value", false))
+            continue;
+
         unsigned sourceOutput = edge.getPropInt("att[@name=\"_sourceIndex\"]/@value", 0);
         unsigned targetInput = edge.getPropInt("att[@name=\"_targetIndex\"]/@value", 0);
         CGraphElementBase *source = queryElement(edge.getPropInt("@source"));
@@ -2103,13 +2113,13 @@ IThorResult *CGraphBase::createGraphLoopResult(CActivityBase &activity, IThorRow
 }
 
 // IEclGraphResults
-void CGraphBase::getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+void CGraphBase::getDictionaryResult(unsigned & count, const byte * * & ret, unsigned id)
 {
     Owned<IThorResult> result = getResult(id, true); // will get collated distributed result
     result->getLinkedResult(count, ret);
 }
 
-void CGraphBase::getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+void CGraphBase::getLinkedResult(unsigned & count, const byte * * & ret, unsigned id)
 {
     Owned<IThorResult> result = getResult(id, true); // will get collated distributed result
     result->getLinkedResult(count, ret);
@@ -2299,11 +2309,11 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                 CGraphExecutorThread()
                 {
                 }
-                void init(void *startInfo)
+                virtual void init(void *startInfo) override
                 {
                     graphInfo.setown((CGraphExecutorGraphInfo *)startInfo);
                 }
-                void main()
+                virtual void threadmain() override
                 {
                     for (;;)
                     {
@@ -2335,8 +2345,8 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                         graphInfo.setown(nextGraphInfo.getClear());
                     }
                 }
-                bool canReuse() { return true; }
-                bool stop() { return true; }
+                virtual bool canReuse() const override { return true; }
+                virtual bool stop() override { return true; }
             };
             return new CGraphExecutorThread();
         }
@@ -2530,12 +2540,18 @@ class CThorContextLogger : implements IContextLogger, public CSimpleInterface
 {
     CJobBase &job;
     unsigned traceLevel;
+    StringAttr globalIdHeader;
+    StringAttr callerIdHeader;
+    StringAttr globalId;
+    StringBuffer localId;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CThorContextLogger(CJobBase &_job) : job(_job)
     {
         traceLevel = 1;
+        if (globals->hasProp("@httpGlobalIdHeader"))
+            setHttpIdHeaders(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
     }
     virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
     {
@@ -2567,6 +2583,35 @@ public:
     {
         return traceLevel;
     }
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    {
+        globalId.set(id);
+        appendLocalId(localId.clear(), ep, pid);
+    }
+    virtual const char *queryGlobalId() const
+    {
+        return globalId.get();
+    }
+    virtual const char *queryLocalId() const
+    {
+        return localId.str();
+    }
+    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    {
+        if (global && *global)
+            globalIdHeader.set(global);
+        if (caller && *caller)
+            callerIdHeader.set(caller);
+    }
+    virtual const char *queryGlobalIdHttpHeader() const
+    {
+        return globalIdHeader.str();
+    }
+    virtual const char *queryCallerIdHttpHeader() const
+    {
+        return callerIdHeader.str();
+    }
+
 };
 
 ////
@@ -2576,9 +2621,9 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
     maxDiskUsage = diskUsage = 0;
     dirty = true;
     aborted = false;
-    mpJobTag = TAG_NULL;
     globalMemoryMB = globals->getPropInt("@globalMemorySize"); // in MB
-    numChannels = globals->getPropInt("@channelsPerSlave", 1);
+    channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+    numChannels = channelsPerSlave;
     pluginMap = new SafePluginMap(&pluginCtx, true);
 
 // JCSMORE - Will pass down at job creation time...
@@ -2702,6 +2747,14 @@ void CJobBase::startJob()
         keyFileCacheLimit = (querySlaves()+1)*2;
     setKeyIndexCacheSize(keyFileCacheLimit);
     PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
+    if (getOptBool("dumpStacks")) // mainly as an example of printAllStacks() usage
+    {
+        StringBuffer output;
+        if (getAllStacks(output))
+            PrintLogDirect(output);
+        else
+            WARNLOG("Failed to capture process stacks: %s", output.str());
+    }
 }
 
 void CJobBase::endJob()
@@ -2815,7 +2868,6 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
 {
     aborted = false;
     thorAllocator.setown(job.getThorAllocator(channel));
-    timeReporter = createStdTimeReporter();
     jobComm.setown(mpServer->createCommunicator(&job.queryJobGroup()));
     myrank = job.queryJobGroup().rank(queryMyNode());
     graphExecutor.setown(new CGraphExecutor(*this));
@@ -2829,7 +2881,6 @@ CJobChannel::~CJobChannel()
     wait();
     clean();
     codeCtx.clear();
-    timeReporter->Release();
 }
 
 INode *CJobChannel::queryMyNode()
@@ -3044,9 +3095,16 @@ void CActivityBase::ActPrintLog(IException *e)
     ActPrintLog(e, "%s", "");
 }
 
-IThorRowInterfaces * CActivityBase::createRowInterfaces(IOutputMetaData * meta)
+IThorRowInterfaces * CActivityBase::createRowInterfaces(IOutputMetaData * meta, byte seq)
 {
-    return createThorRowInterfaces(queryRowManager(), meta, queryId(), queryHeapFlags(), queryCodeContext());
+    activity_id id = createCompoundActSeqId(queryId(), seq);
+    return createThorRowInterfaces(queryRowManager(), meta, id, queryHeapFlags(), queryCodeContext());
+}
+
+IThorRowInterfaces * CActivityBase::createRowInterfaces(IOutputMetaData * meta, roxiemem::RoxieHeapFlags heapFlags, byte seq)
+{
+    activity_id id = createCompoundActSeqId(queryId(), seq);
+    return createThorRowInterfaces(queryRowManager(), meta, id, heapFlags, queryCodeContext());
 }
 
 bool CActivityBase::fireException(IException *e)
@@ -3123,9 +3181,10 @@ IThorRowInterfaces *CActivityBase::getRowInterfaces()
     return createThorRowInterfaces(queryRowManager(), queryRowMetaData(), container.queryId(), queryHeapFlags(), queryCodeContext());
 }
 
-IEngineRowAllocator *CActivityBase::getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags) const
+IEngineRowAllocator *CActivityBase::getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags, byte seq) const
 {
-    return queryJobChannel().getRowAllocator(meta, queryId(), flags);
+    activity_id actId = createCompoundActSeqId(queryId(), seq);
+    return queryJobChannel().getRowAllocator(meta, actId, flags);
 }
 
 bool CActivityBase::receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)

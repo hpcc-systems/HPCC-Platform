@@ -1,0 +1,3847 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>WsSQL ESP Web Service Guide</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Introduction</title>
+
+    <para>The WsSQL Web service is an add-on service that provides an SQL
+    interface into HPCC Systems. The Web service accepts a subset of prepared
+    and standard SQL queries. This provides access to most HPCC data and
+    published queries over HTTP or HTTPS using SOAP or REST interfaces.</para>
+
+    <para>The WsSQL service maps HPCC logical files to RDBMS tables. HPCC
+    Published Queries are exposed as RDBMS Stored Procedures.</para>
+
+    <para>The WsSQL service also provides convenient methods to obtain system
+    information, metadata, and results from previously run queries.</para>
+
+    <para>This service is intended to be used in a programmatic fashion (for
+    example, via database drivers), but can also be used in an interactive
+    fashion by users who are more comfortable using SQL than ECL. This makes
+    it possible to submit ad-hoc queries without learning ECL.</para>
+
+    <para>The service exposes HPCC logical files as RDB tables.</para>
+
+    <para><itemizedlist mark="bullet">
+        <listitem>
+          <para>HPCC Logical File &lt;-&gt; RDB Table</para>
+        </listitem>
+
+        <listitem>
+          <para>HPCC Record Fields &lt;-&gt; RDB Table Columns</para>
+        </listitem>
+
+        <listitem>
+          <para>HPCC Published query &lt;-&gt; RDB Stored Procedure</para>
+        </listitem>
+
+        <listitem>
+          <para>Provides HPCC system and data RDB metadata</para>
+        </listitem>
+
+        <listitem>
+          <para>Supports subset of SQL syntax</para>
+        </listitem>
+
+        <listitem>
+          <para>Non-transactional</para>
+        </listitem>
+
+        <listitem>
+          <para>Provides means for utilizing HPCC index files for faster
+          reads.</para>
+
+          <para></para>
+        </listitem>
+      </itemizedlist></para>
+
+    <sect1>
+      <title>Supported File Types</title>
+
+      <para>The WsSQL service supports all HPCC file types except :</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>XML</para>
+          </listitem>
+
+          <listitem>
+            <para>Files with Nested Child Datasets</para>
+          </listitem>
+
+          <listitem>
+            <para>Files without record layout in its metadata.</para>
+
+            <para>The WsSQL service <emphasis role="bold">only supports files
+            which contain the record definition in the logical file's
+            metadata.</emphasis> Sprayed files do not contain this metadata.
+            This metadata exists on any file or index which is written to the
+            HPCC Distributed File System (DFS). Sprayed data files typically
+            undergo some processing and an OUTPUT of the transformed data to
+            disk before use, so this should not interfere with the service's
+            usefulness. You can use the
+            <emphasis>CreateTableAndLoad</emphasis> method to produce a usable
+            file from a sprayed file or one on a landing zone. See <link
+            linkend="CreateTableAndLoad">CreateTableAndLoad</link> for
+            details.</para>
+          </listitem>
+        </itemizedlist></para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Setup</title>
+
+    <para>The WsSQL service is included in the HPCC Platform. </para>
+
+    <sidebar>
+      <para>Prior to version 7.0, WsSQL was an add-on product and was
+      installed separately. If you have a system configured with WsSQL prior
+      to version 7.0, you should uninstall WsSQL before upgrading the
+      platform.</para>
+    </sidebar>
+
+    <sect1 id="Quick_Start" role="nobrk">
+      <title>Configuration </title>
+
+      <para>We recommend taking the time to read this manual in its entirety;
+      however, the following is a quick start summary of steps.</para>
+
+      <para></para>
+
+      <sect2>
+        <title>Configure Using Wizard</title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Once Configuration Manager is running:</para>
+            </listitem>
+
+            <listitem>
+              <para>Create a new environment using the wizard.</para>
+
+              <para>The WsSQL service is automatically added and its service
+              binding is created in the ESP Server's configuration.</para>
+            </listitem>
+
+            <listitem>
+              <para>Save the environment file.</para>
+            </listitem>
+
+            <listitem>
+              <para>Copy your environment.xml file to all servers.</para>
+
+              <para><programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Exit Configuration manager.</para>
+            </listitem>
+
+            <listitem>
+              <para>Restart the system.</para>
+            </listitem>
+
+            <listitem>
+              <para>Access the WsSQL interface in your browser (port
+              8510).</para>
+            </listitem>
+
+            <listitem>
+              <para>Run the Echo method to confirm connectivity. See
+              <citebiblioid><link
+              linkend="echotest">Echo</link></citebiblioid>.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2>
+        <title>Configure Manually</title>
+
+        <para>This method is useful when adding the WsSQL service to an
+        existing system that did not have a service configured or to add an
+        additional WsSql service.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Once Configuration Manager is running:</para>
+            </listitem>
+
+            <listitem>
+              <para>Open an environment file (*.xml) in Advanced Mode.</para>
+
+              <para>If you are adding WsSQL to an existing system, open an
+              environment file that matches the live environment.xml. It is
+              highlighted.</para>
+            </listitem>
+
+            <listitem>
+              <para>Check the Write Access box.</para>
+            </listitem>
+
+            <listitem>
+              <para>Right-click on the <emphasis
+              role="bold">Software</emphasis> portion of the tree in the left
+              panel, and select <emphasis role="bold">New ESP
+              Service</emphasis> &gt; <emphasis role="bold">ws_sql</emphasis>
+              .</para>
+
+              <para><graphic fileref="images/AddWsSQLService.jpg" /></para>
+
+              <para>This adds a definition for the service.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">ESP</emphasis> component,
+              then select the ESP Service Bindings tab.</para>
+
+              <para><graphic
+              fileref="images/WsSQLServiceBinding2.jpg" /></para>
+            </listitem>
+
+            <listitem>
+              <para>Provide the name of the service to bind and the port.
+              (Default port is 8510)</para>
+            </listitem>
+
+            <listitem>
+              <para>Save the environment file.</para>
+            </listitem>
+
+            <listitem>
+              <para>Copy your environment.xml file to all servers</para>
+
+              <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+            </listitem>
+
+            <listitem>
+              <para>Exit Configuration manager.</para>
+            </listitem>
+
+            <listitem>
+              <para>Restart the system.</para>
+            </listitem>
+
+            <listitem>
+              <para>Access the WsSQL interface in your browser:</para>
+
+              <para>Using <emphasis>http://nnn.nnn.nnn.nnn:pppp</emphasis>
+              (where nnn.nnn.nnn.nnn is your ESP Server's IP Address and pppp
+              is the WsSQL service port. The default port is 8510)</para>
+            </listitem>
+
+            <listitem>
+              <para>Run the Echo method to confirm connectivity. See
+              <citebiblioid><link
+              linkend="echotest">Echo</link></citebiblioid>.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Using HPCC Files as a data source</title>
+
+    <para>Once installed and configured, the WsSQL service will process
+    submitted SQL statements and generate dynamic ECL code. The code is
+    submitted to and executed by your HPCC Platform. The result set is
+    returned to your application.</para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Note:</term>
+
+          <listitem>
+            <para>The WsSQL service <emphasis role="bold">only supports files
+            which contain the record definition in the logical file's
+            metadata.</emphasis> Sprayed files do not contain this metadata.
+            This metadata exists on any file or index which is written to the
+            HPCC Distributed File System (DFS). Sprayed data files typically
+            undergo some processing and an OUTPUT of the transformed data to
+            disk before use, so this should not interfere with the service's
+            usefulness. You can use the
+            <emphasis>CreateTableAndLoad</emphasis> method to produce a usable
+            file from a sprayed file or one on a landing zone. See <link
+            linkend="CreateTableAndLoad">CreateTableAndLoad</link> for
+            details.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+
+    <para>In addition, you can utilize indexes on the HPCC in one of two
+    ways:</para>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Provide SQL hints to tell service to use a specific index for
+        your query.</para>
+
+        <para>For example:</para>
+
+        <programlisting>USEINDEX(TutorialPersonByZipIndex)</programlisting>
+      </listitem>
+
+      <listitem>
+        <para>Specify the related indexes in the HPCC logical file
+        description.</para>
+      </listitem>
+    </orderedlist>
+
+    <sect1 role="nobrk">
+      <title>Index Annotations</title>
+
+      <para>The WsSQL service attempts to perform index based reads whenever
+      possible. However, in order to take advantage of index reads, the target
+      HPCC files need to be annotated with the pertinent index file names.
+      This is accomplished by adding the following key/value entry on the
+      file's description using ECL Watch.</para>
+
+      <para>From a logical file's details page, enter the information in the
+      Description entry box, then press the <emphasis role="bold">Save
+      Description</emphasis> button.</para>
+
+      <para>This information is used by the service to decide if an index
+      fetch is possible for a query on the base file.</para>
+
+      <sect2>
+        <title><emphasis role="bold">On source file:</emphasis></title>
+
+        <para><emphasis role="bold">XDBC:RelIndexes=
+        [</emphasis><emphasis><emphasis
+        role="bold"><emphasis>fullLogicalFilename1</emphasis></emphasis></emphasis><emphasis
+        role="bold">;<emphasis>
+        fullLogicalFilename2</emphasis></emphasis><emphasis
+        role="bold">]</emphasis></para>
+
+        <para></para>
+
+        <para>Example:</para>
+
+        <programlisting>XDBC:RelIndexes=[tutorial::yn::peoplebyzipindex;
+                 tutorial::yn::peoplebyzipindex2;
+                 tutorial::yn::peoplebyzipindex3]</programlisting>
+
+        <para>In this example, the source file has three indexes
+        available.</para>
+
+        <para>You can add annotations using the <link
+        linkend="SetRelatedIndexes">SetRelatedIndexes</link> method.</para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title><emphasis role="bold">On the index file:</emphasis></title>
+
+        <para><emphasis
+        role="bold">XDBC:PosField=[</emphasis><emphasis>indexPositionFieldName</emphasis><emphasis
+        role="bold">]</emphasis></para>
+
+        <para></para>
+
+        <para>Example:</para>
+
+        <programlisting>XDBC:PosField=[fpos]</programlisting>
+
+        <para>The FilePosition field (fpos) can have any name, so it must be
+        specified in the metadata so the service knows which field is the
+        fileposition.</para>
+
+        <para>Simply enter the information in the description entry box, then
+        press the <emphasis role="bold">Save Description</emphasis>
+        button.</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>You should enter this information BEFORE publishing any
+              query using the data file or indexes. Published queries lock the
+              file and would prevent editing the metadata.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Methods</title>
+
+    <para>These methods are included in the WsSQL service interface:</para>
+
+    <para></para>
+
+    <itemizedlist>
+      <listitem>
+        <para><emphasis role="bold">Echo</emphasis></para>
+
+        <para>This method is provided to test end-to-end communication. The
+        Input string is echoed in response.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">GetDBSystemInfo</emphasis></para>
+
+        <para>You can use this method to gather version information from the
+        HPCC Platform.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">GetMetadata</emphasis></para>
+
+        <para>This method provides metadata you can use to create a view or
+        model of the target HPCC system as a SQL accessible DB. You can
+        request Tables, Stored Procedures, and/or Targetclusters.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">ExecuteSQL</emphasis></para>
+
+        <para>Use this method to submit standard (non-prepared) SQL queries.
+        This method accepts free-hand SQL text (see supported grammar
+        below).</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">GetRelatedIndexes</emphasis></para>
+
+        <para>This method retrieves information from a logical file's
+        description about related indexes.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">GetResults</emphasis></para>
+
+        <para>This method provides results from previously executed
+        queries.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">PrepareSQL</emphasis></para>
+
+        <para>This method provides the ability to submit a free-hand SQL
+        request for later use as a parameterized query. It compiles the query
+        and returns the Workunit ID (WUID). This WUID is later used to execute
+        the query with provided input parameters using the ExecutePreparedSQL
+        method. This is ideal for queries which are executed many times with
+        different values.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">ExecutePreparedSQL</emphasis></para>
+
+        <para>This method executes a previously created parameterized SQL
+        query. The query is referenced using a Workunit ID (WUID), which is
+        returned from the PrepareSQL method. The caller can specify sequence
+        of input parameters as key-value pairs, which are bound to the
+        precompiled query.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">CreateTableAndLoad</emphasis></para>
+
+        <para>This method reads a logical file or a file on a landing zone and
+        creates a new table and loads the data from the source file creating a
+        table (logical file) that WsSQL can use. This function is intended to
+        use when you have a logical file without metadata or to import a new
+        file into an HPCC platform.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">SetRelatedIndexes</emphasis></para>
+
+        <para>This method adds information to a logical file's description
+        that WsSQL uses as an annotation of a related index.</para>
+      </listitem>
+    </itemizedlist>
+
+    <sect1 id="echotest">
+      <title>Echo</title>
+
+      <para>This function takes an input string and "echoes" the value in its
+      result.</para>
+
+      <para>This function is intended for end-to-end connectivity testing. A
+      successful response indicates a good connection to the server hosting
+      the Ws-SQL Web service. This function is designed for connectivity
+      testing.</para>
+
+      <para>We recommend using this function as a first step of the
+      application development process.</para>
+
+      <sect2>
+        <title>Sample Input XML</title>
+
+        <para><programlisting>&lt;soap:Envelope&gt;
+ &lt;soap:Body&gt;
+  &lt;EchoRequest&gt;
+   &lt;Request&gt;<emphasis role="bluebold">StringToEcho</emphasis>&lt;/Request&gt;
+  &lt;/EchoRequest&gt;
+ &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;
+</programlisting></para>
+      </sect2>
+
+      <sect2>
+        <title>Request Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="200pt" />
+
+              <colspec colwidth="40 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Req?</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">EchoRequest</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Structure containing the request</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Request</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>String to echo in result</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2>
+        <title>Response Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">EchoResponse</programlisting></entry>
+
+                  <entry>Structure containing response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Response</programlisting></entry>
+
+                  <entry>Response</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>GetDBSystemInfo</title>
+
+      <para>This method allows you to get HPCC System version
+      information.</para>
+
+      <sect2>
+        <title>Sample Input XML</title>
+
+        <para><programlisting>&lt;soap:Envelope&gt;
+ &lt;soap:Body&gt;
+  &lt;GetDBSystemInfoRequest&gt;
+   &lt;IncludeAll&gt;<emphasis role="bluebold">1</emphasis>&lt;/IncludeAll&gt;
+  &lt;/GetDBSystemInfoRequest&gt;
+ &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;
+</programlisting></para>
+      </sect2>
+
+      <sect2>
+        <title>Request Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="200pt" />
+
+              <colspec colwidth="40 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Req?</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">GetDBSystemInfoRequest</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing the request</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  IncludeAll</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If set to 1 or true, all available information is
+                  returned</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2>
+        <title>Response Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">GetDBSystemInfoResponse</programlisting></entry>
+
+                  <entry>Structure containing response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Exceptions</programlisting></entry>
+
+                  <entry>Structure containing exceptions. See <link
+                  linkend="ExceptionStructure">Exceptions Structure</link> in
+                  Common Structures</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Name</programlisting></entry>
+
+                  <entry>Name.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  FullVersion</programlisting></entry>
+
+                  <entry>Full Version of HPCC Platform</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Major</programlisting></entry>
+
+                  <entry>Major of HPCC Platform</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Minor</programlisting></entry>
+
+                  <entry>Minor of HPCC Platform</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Point</programlisting></entry>
+
+                  <entry>Point of HPCC Platform</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Project</programlisting></entry>
+
+                  <entry>Project of HPCC Platform</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Maturity</programlisting></entry>
+
+                  <entry>Maturity of HPCC Platform</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  WsSQLFullVersion</programlisting></entry>
+
+                  <entry>Full Version of WsSQL</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  WsSQLMajor </programlisting></entry>
+
+                  <entry>Major of WsSQL</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  WsSQLMinor </programlisting></entry>
+
+                  <entry>Minor of WsSQL</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  WsSQLPoint </programlisting></entry>
+
+                  <entry>Point of WsSQL</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  WsSQLProject </programlisting></entry>
+
+                  <entry>Project of WsSQL</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  WsSQLMaturity</programlisting></entry>
+
+                  <entry>Maturity of WsSQL</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>GetDBMetaData</title>
+
+      <para>This methods allows you to query the HPCC Platform and get
+      metadata to use to create a view or model of the target HPCC system as a
+      SQL accessible DB.</para>
+
+      <para>You can request one or more of the followinfg:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Tables (Logical files in the HPCC Cluster)</para>
+        </listitem>
+
+        <listitem>
+          <para>Stored Procedures (Published Queries)</para>
+        </listitem>
+
+        <listitem>
+          <para>TargetClusters</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect2>
+        <title>Sample Input XML</title>
+
+        <para><programlisting>&lt;soap:Envelope&gt;
+ &lt;soap:Body&gt;
+  &lt;GetDBMetaDataRequest&gt;
+   &lt;IncludeTables&gt;<emphasis role="bluebold">1</emphasis>&lt;/IncludeTables&gt;
+   &lt;TableFilter/&gt;
+   &lt;IncludeStoredProcedures&gt;<emphasis role="bluebold">1</emphasis>&lt;/IncludeStoredProcedures&gt;
+   &lt;QuerySet/&gt;
+   &lt;IncludeTargetClusters&gt;<emphasis role="bluebold">1</emphasis>&lt;/IncludeTargetClusters&gt;
+   &lt;ClusterType/&gt;
+  &lt;/GetDBMetaDataRequest&gt;
+ &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</programlisting></para>
+      </sect2>
+
+      <sect2>
+        <title>Request Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="200pt" />
+
+              <colspec colwidth="40 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Req?</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">GetDBMetaDataRequest</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing the request</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  IncludeTables</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If set to 1 or true, available tables are included in
+                  response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TableFilter</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Filter for table results</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  IncludeStoredProcedures</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If set to 1 or true, available Stored Procedures are
+                  included in response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  QuerySet</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>QuerySet to use as filter for Stored procedures to
+                  return</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  IncludeTargetClusters</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If set to 1 or true, available Target Clusters are
+                  included in response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ClusterType</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Cluster type to use as filter</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Response Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">GetDBMetaDataResponse</programlisting></entry>
+
+                  <entry>Structure containing response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Exceptions</programlisting></entry>
+
+                  <entry>Structure containing exceptions. See <link
+                  linkend="ExceptionStructure">Exceptions Structure</link> in
+                  Common Structures</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TableCount</programlisting></entry>
+
+                  <entry>Count of available tables</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Tables</programlisting></entry>
+
+                  <entry>Structure containing one or more tables</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    Table</programlisting></entry>
+
+                  <entry>Structure containing one table</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Name</programlisting></entry>
+
+                  <entry>Table name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Columns</programlisting></entry>
+
+                  <entry>Structure containing one or more columns</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">        Column</programlisting></entry>
+
+                  <entry>Column</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">          Name</programlisting></entry>
+
+                  <entry>Column name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">          Type</programlisting></entry>
+
+                  <entry>Column data type (e.g., unsigned8, string3)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      ECL</programlisting></entry>
+
+                  <entry>ECL Definition for the table</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Format</programlisting></entry>
+
+                  <entry>Table format (e.g., FLAT, KEYED, etc)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      ContentType</programlisting></entry>
+
+                  <entry>Content Type</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Description</programlisting></entry>
+
+                  <entry>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      IsKeyed</programlisting></entry>
+
+                  <entry>Boolean indicator: Is this an index?</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      IsSuper</programlisting></entry>
+
+                  <entry>Boolean indicator: Is this a superfile?</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      CsvQuote</programlisting></entry>
+
+                  <entry>Quote character (only valid for CSV files)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      CsvSeparate</programlisting></entry>
+
+                  <entry>Separator character (only valid for CSV
+                  files)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      CsvTerminate</programlisting></entry>
+
+                  <entry>Record terminator character (only valid for CSV
+                  files)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Group</programlisting></entry>
+
+                  <entry>Group</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      MaxRecordSize</programlisting></entry>
+
+                  <entry>Maximum record size</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Modified</programlisting></entry>
+
+                  <entry>Date modified</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      NumParts</programlisting></entry>
+
+                  <entry>Number of file parts</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Owner</programlisting></entry>
+
+                  <entry>Owner name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  QuerySets</programlisting></entry>
+
+                  <entry>Structure containing one or more Query Sets</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    QuerySet</programlisting></entry>
+
+                  <entry>Structure containing one Query Set</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Name</programlisting></entry>
+
+                  <entry>Query Name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      QuerySetQueries</programlisting></entry>
+
+                  <entry>Structure containing one or more
+                  QuerySetQueries</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">        QuerySetQuery</programlisting></entry>
+
+                  <entry>Structure containing one QuerySetQuery</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">          Name</programlisting></entry>
+
+                  <entry>Query Name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">          Id</programlisting></entry>
+
+                  <entry>Query ID (for internal use and informational purposes
+                  only)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">          Wuid</programlisting></entry>
+
+                  <entry>Workunit ID</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">          Suspended</programlisting></entry>
+
+                  <entry>Boolean indicator: Is the query suspended?</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">          Signature</programlisting></entry>
+
+                  <entry>Query Signature</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">            InParams</programlisting></entry>
+
+                  <entry>Structure containing one or more Input
+                  parameters</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">              InParam</programlisting></entry>
+
+                  <entry>Structure containing one Input parameter</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">                Name</programlisting></entry>
+
+                  <entry>Parameter name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">                Type</programlisting></entry>
+
+                  <entry>Parameter data type (e.g., string)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">            ResultSets</programlisting></entry>
+
+                  <entry>Structure containing one or more Result Sets (Only
+                  the first result set is returned from a WsSQL service
+                  request)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">              ResultSet</programlisting></entry>
+
+                  <entry>Structure containing one Result Set</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">                Name</programlisting></entry>
+
+                  <entry>Result set name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">                OutParams</programlisting></entry>
+
+                  <entry>Structure containing one or more output
+                  parameters</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">                  OutParam</programlisting></entry>
+
+                  <entry>Structure containing one output parameter</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">                  Name</programlisting></entry>
+
+                  <entry>Parameter name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">                  Type</programlisting></entry>
+
+                  <entry>Parameter data type (e.g., string)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      QuerySetAliases</programlisting></entry>
+
+                  <entry>Structure containing one or more
+                  QuerySetAliases</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">        QuerySetAlias</programlisting></entry>
+
+                  <entry>Structure containing one QuerySetAlias</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">          Name</programlisting></entry>
+
+                  <entry>Query name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">          Id</programlisting></entry>
+
+                  <entry>Query Id</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ClusterNames</programlisting></entry>
+
+                  <entry>Structure containing one or more
+                  TargetClusters</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    ClusterName</programlisting></entry>
+
+                  <entry>Structure containing one TargetCluster</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>ExecuteSQL</title>
+
+      <para>Use this method to submit standard (non-prepared) SQL queries. The
+      <emphasis role="bold">SqlText</emphasis> input tag accepts free hand SQL
+      text (see Supported SQL grammar below).</para>
+
+      <para>If you are executing SQL using a SELECT or SELECT JOIN, you must
+      specify the <emphasis role="bold">TargetCluster</emphasis>.</para>
+
+      <para>If you are executing SQL that uses a CALL to a stored procedure,
+      you must either fully qualify the procedure name (For example:
+      Roxie.FindPeopleByZip) or specify the <emphasis
+      role="bold">TargetQuerySet</emphasis> here. Parameters must be passed in
+      order, not by name. You can retrieve the order using
+      GetDBMetaData.</para>
+
+      <para>To exclude the result schema in the result, set the <emphasis
+      role="bold">SuppressXmlSchema</emphasis> option to 1 or true.</para>
+
+      <para>For result set paging, you can limit the total query results and
+      the initial page returned (<emphasis
+      role="bold">ResultWindowStart</emphasis>, <emphasis
+      role="bold">ResultWindowCount</emphasis>).</para>
+
+      <sect2>
+        <title>Sample Input XML</title>
+
+        <para><programlisting>&lt;soap:Envelope&gt;
+  &lt;ExecuteSQLRequest&gt;
+    &lt;SqlText&gt;<emphasis role="bluebold">SELECT * from tutorial::yn::tutorialperson where lastname='JONES'</emphasis>&lt;/SqlText&gt;
+    &lt;UserName&gt;<emphasis role="bluebold">Emily</emphasis>&lt;/UserName&gt;
+<emphasis role="greenbold">&lt;!-- Use either TargetCluster or TargetQuerySet, not both --&gt;</emphasis>
+<emphasis role="greenbold">&lt;!-- If stored procedure was fully qualified, you can omit TargetQuerySet --&gt;</emphasis>
+    &lt;TargetCluster&gt;<emphasis role="bluebold">thor</emphasis>&lt;/TargetCluster&gt;
+    &lt;TargetQuerySet&gt;<emphasis role="bluebold"></emphasis>&lt;/TargetQuerySet&gt;
+    &lt;SuppressResults&gt;<emphasis role="bluebold">1</emphasis>&lt;/SuppressResults&gt;
+    &lt;SuppressXmlSchema&gt;<emphasis role="bluebold">0</emphasis>&lt;/SuppressXmlSchema&gt;
+    &lt;resultLimit&gt;<emphasis role="bluebold">100</emphasis>&lt;/resultLimit&gt;
+<emphasis role="greenbold">&lt;!-- For page loading --&gt;</emphasis>
+   &lt;ResultWindowStart&gt;<emphasis role="bluebold">0</emphasis>&lt;/ResultWindowStart&gt;
+   &lt;ResultWindowCount&gt;<emphasis role="bluebold">50</emphasis>&lt;/ResultWindowCount&gt;
+ &lt;/ExecuteSQLRequest&gt;
+&lt;/soap:Envelope&gt;
+</programlisting></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Request Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="200pt" />
+
+              <colspec colwidth="40 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Req?</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">ExecuteSQLRequest</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing the request</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  SqlText</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Free-hand SQL text (see Supported SQL grammar
+                  below)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  UserName</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>User Name to pass to HPCC. This is used as the job
+                  owner name in HPCC</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TargetCluster</programlisting></entry>
+
+                  <entry>Y *</entry>
+
+                  <entry>If you are executing prepared SQL using a SELECT or
+                  SELECT JOIN, you must specify the TargetCluster.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TargetQuerySet</programlisting></entry>
+
+                  <entry>Y *</entry>
+
+                  <entry>If you are executing prepared SQL that uses a CALL to
+                  a stored procedure, you must either fully qualify the
+                  procedure name in the prepared SQL (For example:
+                  Roxie.FindPeopleByZip) or specify the TargetCluster
+                  here.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  SuppressResults</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If set to 1 or true, query results are not included
+                  in response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  SuppressXmlSchema</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If set to 1 or true, the query result schema is not
+                  included in response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Wait</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Timeout value in milliseconds. Use -1 for no
+                  timeout</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  resultLimit</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If set, the results can contain as many records as
+                  this limit</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowStart</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>For use with page-loading, the starting record to
+                  return</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowCount</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>For use with page-loading, the number of records to
+                  include from the ResultWindowStart</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable><parameter>* One or the other is
+        required</parameter></para>
+      </sect2>
+
+      <sect2>
+        <title>Response Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">ExecuteSQLResponse</programlisting></entry>
+
+                  <entry>Structure containing response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Exceptions</programlisting></entry>
+
+                  <entry>Structure containing exceptions. See <link
+                  linkend="ExceptionStructure">Exceptions Structure</link> in
+                  Common Structures</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ParentWuId</programlisting></entry>
+
+                  <entry>The Workunit Id for the parent workunit (the one with
+                  the prepared SQL)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Result</programlisting></entry>
+
+                  <entry>The query result</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Workunit</programlisting></entry>
+
+                  <entry>Structure containing Workunit details. See <link
+                  linkend="WUStructure">Workunit Structure</link> in Common
+                  Structures</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  resultLimit</programlisting></entry>
+
+                  <entry>The submitted resultLimit</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowStart</programlisting></entry>
+
+                  <entry>The submitted ReslutWindowStart</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowCount</programlisting></entry>
+
+                  <entry>The submitted ResultWindowCount</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>GetResults</title>
+
+      <para>This method allows you to get results from previously executed
+      queries. Use the <emphasis role="bold">Wuid</emphasis> returned from
+      <emphasis role="bold">ExecuteSQL</emphasis> or <emphasis
+      role="bold">PrepareSQL</emphasis>. This method is ideal for results
+      paging.</para>
+
+      <sect2>
+        <title>Sample Input XML</title>
+
+        <para><programlisting>&lt;soap:Envelope&gt;
+ &lt;soap:Body&gt;
+  &lt;GetResultsRequest&gt;
+   &lt;WuId&gt;<emphasis role="bluebold">W20140529-161930</emphasis>&lt;/WuId&gt;
+   &lt;SuppressXmlSchema&gt;<emphasis role="bluebold">1</emphasis>&lt;/SuppressXmlSchema&gt;
+   &lt;ResultWindowStart&gt;<emphasis role="bluebold">0</emphasis>&lt;/ResultWindowStart&gt;
+   &lt;ResultWindowCount&gt;<emphasis role="bluebold">0</emphasis>&lt;/ResultWindowCount&gt;
+  &lt;/GetResultsRequest&gt;
+ &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</programlisting></para>
+      </sect2>
+
+      <sect2>
+        <title>Request Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="200pt" />
+
+              <colspec colwidth="40 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Req?</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">GetResultsRequest</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing the request</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  WuId</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Workunit Id (WUID)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  SuppressXmlSchema</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If set to 1 or true, the query result schema is not
+                  included in response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowStart</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>For use with page-loading, the starting record to
+                  return</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowCount</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>For use with page-loading, the number of records to
+                  include from the ResultWindowStart</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2>
+        <title>Response Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">GetResultsResponse</programlisting></entry>
+
+                  <entry>Structure containing response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Exceptions</programlisting></entry>
+
+                  <entry>Structure containing exceptions. See <link
+                  linkend="ExceptionStructure">Exceptions Structure</link> in
+                  Common Structures</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Result</programlisting></entry>
+
+                  <entry>The query result</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowStart</programlisting></entry>
+
+                  <entry>The submitted starting record</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowCount</programlisting></entry>
+
+                  <entry>The submitted record count</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Workunit</programlisting></entry>
+
+                  <entry>Structure containing Workunit details. See <link
+                  linkend="WUStructure">Workunit Structure</link> in Common
+                  Structures</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>PrepareSQL</title>
+
+      <para>Use this method to submit a free-hand SQL request for later use as
+      a parameterized query. This compiles the query and returns the <emphasis
+      role="bold">Wuid</emphasis>. This <emphasis role="bold">Wuid</emphasis>
+      is later used to execute the query with provided input parameters using
+      the <emphasis role="bold">ExecutePreparedSQL</emphasis> method.</para>
+
+      <para>This is ideal for queries which are executed many times with
+      different values.</para>
+
+      <para>The prepared SQL can contain any supported SQL grammar.</para>
+
+      <para>If you are executing SQL using a SELECT or SELECT JOIN, you must
+      specify the <emphasis role="bold">TargetCluster</emphasis>.</para>
+
+      <para>If you using a CALL to a stored procedure, you must either fully
+      qualify the procedure name in the SQL (For example:
+      Roxie.FindPeopleByZip) or specify the <emphasis
+      role="bold">TargetQuerySet</emphasis> here. Parameters must be passed in
+      order, not by name. You can retrieve the order using
+      GetDBMetaData.</para>
+
+      <para>Create parameters using a ? as a placeholder.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <para><programlisting>select * from tutorial::yn::tutorialperson where lastname=?</programlisting>Later
+      you would submit a request to <emphasis
+      role="bold">ExecutePreparedSQL</emphasis> providing a value to use for
+      <emphasis>lastname</emphasis> as shown in the following example:</para>
+
+      <para><programlisting>&lt;soap:Envelope &gt;
+ &lt;soap:Body&gt;
+  &lt;ExecutePreparedSQLRequest&gt;
+   &lt;WuId&gt;<emphasis role="bluebold">W20140724-135811</emphasis>&lt;/WuId&gt;
+   &lt;TargetCluster&gt;<emphasis role="bluebold">thor</emphasis>&lt;/TargetCluster&gt;
+   &lt;SuppressResults&gt;<emphasis role="bluebold">0</emphasis>&lt;/SuppressResults&gt;
+   &lt;SuppressXmlSchema&gt;<emphasis role="bluebold">1</emphasis>&lt;/SuppressXmlSchema&gt;
+   &lt;resultLimit&gt;<emphasis role="bluebold">100</emphasis>&lt;/resultLimit&gt;
+   &lt;Variables&gt;
+    &lt;NamedValue&gt;
+     &lt;Name&gt;<emphasis role="bluebold">lastname</emphasis>&lt;/Name&gt;
+     &lt;Value&gt;<emphasis role="bluebold">JONES</emphasis>&lt;/Value&gt;
+    &lt;/NamedValue&gt;
+   &lt;/Variables&gt;
+  &lt;/ExecutePreparedSQLRequest&gt;
+ &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</programlisting></para>
+
+      <sect2>
+        <title>Sample Input XML</title>
+
+        <para><programlisting>&lt;soap:Envelope &gt;
+ &lt;soap:Body&gt;
+  &lt;PrepareSQLRequest&gt;
+   &lt;SqlText&gt;<emphasis role="bluebold">select * from tutorial::yn::tutorialperson where lastname=?</emphasis>&lt;/SqlText&gt;
+<emphasis role="greenbold">&lt;!-- Use either TargetCluster or TargetQuerySet, not both --&gt;</emphasis>
+<emphasis role="greenbold">&lt;!-- If stored procedure is fully qualified, you can omit TargetQuerySet --&gt;</emphasis>
+   &lt;TargetCluster&gt;<emphasis role="bluebold">thor</emphasis>&lt;/TargetCluster&gt;
+   &lt;/PrepareSQLRequest&gt;
+ &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</programlisting></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Request Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="200pt" />
+
+              <colspec colwidth="40 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Req?</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">PrepareSQLRequest</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Structure containing request</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  SqlText</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Free-hand SQL text (see Supported SQL grammar
+                  below)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TargetCluster</programlisting></entry>
+
+                  <entry>Y *</entry>
+
+                  <entry>If you are executing prepared SQL using a SELECT or
+                  SELECT JOIN, you must specify the TargetCluster</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TargetQuerySet</programlisting></entry>
+
+                  <entry>Y *</entry>
+
+                  <entry>If you are executing prepared SQL that uses a CALL to
+                  a stored procedure, you must either fully qualify the
+                  procedure name in the prepared SQL (For example:
+                  Roxie.FindPeopleByZip) or specify the TargetCluster
+                  here</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Wait</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Timeout value in milliseconds. Use -1 for no
+                  timeout</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable><parameter>* One or the other is
+        required</parameter></para>
+      </sect2>
+
+      <sect2>
+        <title>Response Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">PrepareSQLResponse</programlisting></entry>
+
+                  <entry>Structure containing response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Exceptions</programlisting></entry>
+
+                  <entry>Structure containing exceptions. See <link
+                  linkend="ExceptionStructure">Exceptions Structure</link> in
+                  Common Structures</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Workunit</programlisting></entry>
+
+                  <entry>Structure containing Workunit details. See <link
+                  linkend="WUStructure">Workunit Structure</link> in Common
+                  Structures</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Result</programlisting></entry>
+
+                  <entry>Structure containing result (if any)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>ExecutePreparedSQL</title>
+
+      <para>This method executes a previously created parameterized SQL
+      query.</para>
+
+      <para>The target compiled query is referenced using a Workunit ID
+      (<emphasis role="bold">Wuid</emphasis>), which is returned from the
+      <emphasis role="bold">PrepareSQL</emphasis> method. The caller can
+      specify sequence of input parameters as key-value pairs, which are bound
+      to the precompiled query.</para>
+
+      <para>The prepared SQL can contain any supported SQL grammar.</para>
+
+      <para>If you are executing prepared SQL using a SELECT or SELECT JOIN,
+      you can supply a <emphasis role="bold">TargetCluster</emphasis> to
+      override the one specified when you submitted the PrepareSQL request;
+      however, it must be a cluster of the same type.</para>
+
+      <para>If you want to limit the number of results, you must use a LIMIT
+      clause in you SQL query.</para>
+
+      <para>For result set paging, you can limit the total query results and
+      the initial page returned (<emphasis
+      role="bold">ResultWindowStart</emphasis>, <emphasis
+      role="bold">ResultWindowCount</emphasis>).</para>
+
+      <sect2>
+        <title>Sample Input XML</title>
+
+        <para><programlisting>&lt;soap:Envelope&gt;
+ &lt;soap:Body&gt;
+  &lt;ExecutePreparedSQLRequest&gt;
+   &lt;WuId&gt;<emphasis role="bluebold">W20140529-161930</emphasis>&lt;/WuId&gt;
+   &lt;UserName&gt;<emphasis role="bluebold">EmilyKate</emphasis>&lt;/UserName&gt;
+<emphasis role="greenbold">&lt;!-- You can override the TargetCluster used in original PrepareSQL query, <emphasis
+                role="greenbold">--&gt;</emphasis>
+&lt;!-- but it must be of the same type --&gt;</emphasis>
+   &lt;TargetCluster&gt;<emphasis role="bluebold">Thor</emphasis>&lt;/TargetCluster&gt;
+   &lt;SuppressResults&gt;<emphasis role="bluebold">0</emphasis>&lt;/SuppressResults&gt;
+   &lt;SuppressXmlSchema&gt;<emphasis role="bluebold">1</emphasis>&lt;/SuppressXmlSchema&gt;
+   &lt;Wait&gt;<emphasis role="bluebold">-1</emphasis>&lt;/Wait&gt;
+<emphasis role="greenbold">&lt;!-- For page loading --&gt;</emphasis>
+   &lt;ResultWindowStart&gt;<emphasis role="bluebold">0</emphasis>&lt;/ResultWindowStart&gt;
+   &lt;ResultWindowCount&gt;<emphasis role="bluebold">50</emphasis>&lt;/ResultWindowCount&gt;
+<emphasis role="greenbold">&lt;!-- Paramaters using name/value pairs --&gt;</emphasis>  
+ &lt;Variables&gt;
+    &lt;NamedValue&gt;
+     &lt;Name&gt;<emphasis role="bluebold">firstname</emphasis>&lt;/Name&gt;
+     &lt;Value&gt;<emphasis role="bluebold">Jim</emphasis>&lt;/Value&gt;
+    &lt;/NamedValue&gt;
+    &lt;NamedValue&gt;
+     &lt;Name&gt;<emphasis role="bluebold">lastname</emphasis>&lt;/Name&gt;
+     &lt;Value&gt;JONES&lt;/Value&gt;
+    &lt;/NamedValue&gt;
+   &lt;/Variables&gt;
+  &lt;/ExecutePreparedSQLRequest&gt;
+ &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;
+</programlisting></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Request Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="200 pt" />
+
+              <colspec colwidth="40 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Req?</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">ExecutePreparedSQLRequest</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Structure containing the request</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  WuId</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>The Workunit ID (WUID)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  UserName</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>The username to use as the job's ownername in the
+                  HPCC platform</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TargetCluster</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>If you are executing prepared SQL using a SELECT or
+                  SELECT JOIN, you can specify the TargetCluster, but it must
+                  be the same type as the one on which it was prepared</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  SuppressResults</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If set to 1 or true, query results are not included
+                  in response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  SuppressXmlSchema</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If set to 1 or true, the query result schema is not
+                  included in response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Wait</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Timeout value in milliseconds. Use -1 for no
+                  timeout.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowStart</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>For use with page-loading, the starting record to
+                  return</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowCount</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>For use with page-loading, the number of records to
+                  include from the ResultWindowStart</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Variables</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>If your prepared SQL has parameters, supply them as
+                  name/value pairs inside this structure</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    NamedValue</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>A structure containing one Name/Value pair</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Name</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Value</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Value</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2>
+        <title>Response Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">ExecutePreparedSQLResponse</programlisting></entry>
+
+                  <entry>Structure containing response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Exceptions</programlisting></entry>
+
+                  <entry>Structure containing exceptions. See <link
+                  linkend="ExceptionStructure">Exceptions Structure</link> in
+                  Common Structures</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ParentWuId</programlisting></entry>
+
+                  <entry>The Workunit ID for the parent workunit (the one with
+                  the prepared SQL)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Result</programlisting></entry>
+
+                  <entry>The query result</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowStart</programlisting></entry>
+
+                  <entry>The submitted starting record</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ResultWindowCount</programlisting></entry>
+
+                  <entry>The submitted record count</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Workunit</programlisting></entry>
+
+                  <entry>Structure containing Workunit details. See <link
+                  linkend="WUStructure">Workunit Structure</link> in Common
+                  Structures</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="CreateTableAndLoad">
+      <title>CreateTableAndLoad</title>
+
+      <para>This method creates a table (HPCC logical file) which can
+      subsequently be accessed using WsSQL. The table is assigned the layout
+      as specified in the request ECLFields section. The table is then
+      populated with data from an existing file. The source data file can
+      either reside on the HPCC Landing Zone after being uploaded, or it can
+      already have been sprayed on to the system.</para>
+
+      <sect2>
+        <title>Sample Input XML</title>
+
+        <para><programlisting>&lt;CreateTableAndLoadRequest&gt;
+  &lt;TableName&gt;<emphasis role="bluebold">JIM::MyNewTable</emphasis>&lt;/TableName&gt;
+  &lt;TableDescription&gt;<emphasis role="bluebold">My Description of the new table</emphasis>&lt;/TableDescription&gt;
+  &lt;Overwrite&gt;1&lt;/Overwrite&gt;
+  &lt;EclFields&gt;
+    &lt;EclField&gt;
+      &lt;FieldName&gt;<emphasis role="bluebold">PersonName</emphasis>&lt;/FieldName&gt;
+      &lt;EclFieldType&gt;
+<emphasis role="greenbold">&lt;!-- Valid types are: BOOLEAN, INTEGER,</emphasis> <emphasis
+              role="greenbold">UNSIGNED, REAL, DECIMAL, STRING, --&gt; 
+&lt;!--                  QSTRING, UNICODE, DATA, VARSTRING, or VARUNICODE  --&gt;
+</emphasis>        &lt;Type&gt;<emphasis role="bluebold">STRING</emphasis>&lt;/Type&gt;
+        &lt;Locale&gt;&lt;/Locale&gt;
+        &lt;Length&gt;<emphasis role="bluebold">20</emphasis>&lt;/Length&gt;
+        &lt;Precision&gt;&lt;/Precision&gt;
+      &lt;/EclFieldType&gt;
+    &lt;/EclField&gt;
+    &lt;EclField&gt;
+      &lt;FieldName&gt;<emphasis role="bluebold">PersonID</emphasis>&lt;/FieldName&gt;
+      &lt;EclFieldType&gt;
+        &lt;Type&gt;<emphasis role="bluebold">INTEGER</emphasis>&lt;/Type&gt;
+        &lt;Locale&gt;&lt;/Locale&gt;
+        &lt;Length&gt;<emphasis role="bluebold">2</emphasis>&lt;/Length&gt;
+        &lt;Precision&gt;&lt;/Precision&gt;
+      &lt;/EclFieldType&gt;
+    &lt;/EclField&gt;
+  &lt;/EclFields&gt;
+  &lt;TargetCluster&gt;<emphasis role="bluebold">thor</emphasis>&lt;/TargetCluster&gt;
+  &lt;Owner&gt;<emphasis role="bluebold">Jimmy</emphasis>&lt;/Owner&gt;
+  &lt;DataSource&gt;
+<emphasis role="greenbold">&lt;!-- Use either SprayedFileName --&gt;</emphasis>
+    &lt;SprayedFileName&gt;<emphasis role="bluebold">Tutorial::JD::OriginalPerson</emphasis>&lt;/SprayedFileName&gt;
+<emphasis role="greenbold">&lt;!-- or full Landing Zone details, not both --&gt;</emphasis>    
+    &lt;LandingZoneIP&gt;<emphasis role="bluebold">127.0.0.1</emphasis>&lt;/LandingZoneIP&gt;
+    &lt;LandingZonePath&gt;<emphasis role="bluebold">/var/lib/HPCCSystems/mydropzone</emphasis>&lt;/LandingZonePath&gt;
+    &lt;LandingZoneFileName&gt;<emphasis role="bluebold">OriginalPerson</emphasis>&lt;/LandingZoneFileName&gt;
+  &lt;/DataSource&gt;
+  &lt;DataSourceType&gt;
+<emphasis role="greenbold">&lt;!-- Valid types are: FLAT, CSV, JSON, or XML<emphasis
+                role="greenbold"> --&gt; </emphasis></emphasis>
+    &lt;Type&gt;<emphasis role="bluebold">FLAT</emphasis>&lt;/Type&gt;
+    &lt;Params&gt;
+      &lt;Param&gt;
+        &lt;Name&gt;&lt;/Name&gt;
+        &lt;Values&gt;
+          &lt;Value&gt;&lt;/Value&gt;
+          &lt;Value&gt;&lt;/Value&gt;
+        &lt;/Values&gt;
+      &lt;/Param&gt;
+    &lt;/Params&gt;
+  &lt;/DataSourceType&gt;
+  &lt;Wait&gt;-1&lt;/Wait&gt;
+&lt;/CreateTableAndLoadRequest&gt;
+</programlisting></para>
+      </sect2>
+
+      <sect2>
+        <title>Request Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="200pt" />
+
+              <colspec colwidth="40 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Req?</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">TableName</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>The name of the table to create in the HPCC
+                  Platform's distributed file system.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TableDescription</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Your description of the file.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Overwrite</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Boolean indicator to specify whether to allow the new
+                  file to overwrite an existing file of the same name.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  EclFields</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing details for the file's record
+                  layout. This must match layout of the source data
+                  file</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    EclField</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing details for one field</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      FieldName </programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Field Name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      EclFieldType</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing Data Type details</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Type</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Field type. Valid types are: BOOLEAN, INTEGER,
+                  UNSIGNED, REAL, DECIMAL, STRING, QSTRING, UNICODE, DATA,
+                  VARSTRING, or VARUNICODE</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Locale </programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Locale</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Length</programlisting></entry>
+
+                  <entry>Y*</entry>
+
+                  <entry>Field length</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Precision</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Field precision (decimal places)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TargetCluster</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>The Target cluster where the job will run.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Owner</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Owner name for the file</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  DataSource</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing Data Source details. Either
+                  SprayedFileName or LandingZone File details must be
+                  provided, not both.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    SprayedFileName</programlisting></entry>
+
+                  <entry>Y**</entry>
+
+                  <entry>Logical filename of sprayed data file</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    LandingZoneIP</programlisting></entry>
+
+                  <entry>Y**</entry>
+
+                  <entry>IP address or hostname of the HPCC Landing
+                  Zone</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    LandingZonePath</programlisting></entry>
+
+                  <entry>Y**</entry>
+
+                  <entry>Path to the datafile on the Landing Zone</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    LandingZoneFileName</programlisting></entry>
+
+                  <entry>Y**</entry>
+
+                  <entry>Physical filename</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  DataSourceType</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Structure containing DataSource Type details.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    Type</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Valid types are: FLAT, CSV, JSON, or XML</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    Params</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Structure containing one or more type parameters that
+                  describe the DataSource. For example, CSV Terminator =
+                  \n</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Param</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Structure containing one type parameter.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">        Name</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Name</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">        Values</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Structure containing one or more values.</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">          Value</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Value</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Wait</programlisting></entry>
+
+                  <entry>N</entry>
+
+                  <entry>Timeout value in milliseconds. Use -1 for no
+                  timeout</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>* <emphasis role="bold">Field length is only required for fixed
+        width fields (FLAT files)</emphasis></para>
+
+        <para>** <emphasis role="bold">Either SprayedFileName or LandingZone
+        File details must be provided, not both</emphasis></para>
+      </sect2>
+
+      <sect2>
+        <title>Response Tag Descriptions</title>
+
+        <para>The response structure contains many tags which provide useful
+        information for development and debugging of ECL code. Most of them
+        are outside of the scope of this document. Only those that are useful
+        when using the WsSQL service are listed below.</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">CreateTableAndLoadResponse</programlisting></entry>
+
+                  <entry>Structure containing response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TableName</programlisting></entry>
+
+                  <entry>Name of the created table</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Success</programlisting></entry>
+
+                  <entry>Boolean indicator of success [1 = success]</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  EclRecordDefinition</programlisting></entry>
+
+                  <entry>Supplied record definition in ECL format</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Workunit</programlisting></entry>
+
+                  <entry>Structure containing Workunit details. See <link
+                  linkend="WUStructure">Workunit Structure</link> in Common
+                  Structures</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="SetRelatedIndexes">
+      <title>SetRelatedIndexes</title>
+
+      <para>This function adds a description to a logical file to be used as
+      an annotation indicating an index file which is related to a data file.
+      This makes it available to WsSQL for use in an indexed fetch.</para>
+
+      <para></para>
+
+      <sect2>
+        <title>Sample Input XML</title>
+
+        <para><programlisting>&lt;SetRelatedIndexesRequest&gt;
+  &lt;RelatedIndexSets&gt;
+    &lt;RelatedIndexSet&gt;
+      &lt;FileName&gt;<emphasis role="bluebold">Tutorial::JD::TutorialPerson</emphasis>&lt;/FileName&gt;
+      &lt;Indexes&gt;
+        &lt;Index&gt;<emphasis role="bluebold">Tutorial::JD::TutorialPersonByName</emphasis>&lt;/Index&gt;
+        &lt;Index&gt;<emphasis role="bluebold">Tutorial::JD::TutorialPersonByZIP</emphasis>&lt;/Index&gt;
+      &lt;/Indexes&gt;
+    &lt;/RelatedIndexSet&gt;
+  &lt;RelatedIndexSet&gt;
+&lt;/SetRelatedIndexesRequest&gt;
+</programlisting></para>
+      </sect2>
+
+      <sect2>
+        <title>Request Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="200pt" />
+
+              <colspec colwidth="40 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Req?</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">SetRelatedIndexesRequest</programlisting></entry>
+
+                  <entry></entry>
+
+                  <entry>Structure containing request</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  RelatedIndexSets</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing one or more related index
+                  sets</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    RelatedIndexSet</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing one related index set</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      FileName</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Logical filename to which the annotation is
+                  added</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Indexes</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing one or more indexes to add to
+                  annotation</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">        Index</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Index to add to annotation</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2>
+        <title>Response Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">SetRelatedIndexesResponse</programlisting></entry>
+
+                  <entry>Structure containing response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  RelatedIndexSets</programlisting></entry>
+
+                  <entry>Structure containing one or more related index
+                  sets</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    RelatedIndexSet</programlisting></entry>
+
+                  <entry>Structure containing one related index set</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      FileName</programlisting></entry>
+
+                  <entry>Logical filename to which the annotation was
+                  added</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Indexes</programlisting></entry>
+
+                  <entry>Structure containing one or more indexes added to
+                  annotation</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">        Index</programlisting></entry>
+
+                  <entry>Index added to annotation</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="GetRelatedIndexes">
+      <title>GetRelatedIndexes</title>
+
+      <para>This function retrieves information from logical file descriptions
+      about annotations indicating an index file which is related to a data
+      file.</para>
+
+      <para></para>
+
+      <sect2>
+        <title>Sample Input XML</title>
+
+        <para><programlisting>&lt;GetRelatedIndexesRequest&gt;
+  &lt;FileNames&gt;
+      &lt;FileName&gt;<emphasis role="bluebold">Tutorial::JD::TutorialPerson</emphasis>&lt;/FileName&gt;
+  &lt;/FileNames&gt;
+&lt;/SetRelatedIndexesRequest&gt;
+</programlisting></para>
+      </sect2>
+
+      <sect2>
+        <title>Request Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="200pt" />
+
+              <colspec colwidth="40 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Req?</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">SetRelatedIndexesRequest</programlisting></entry>
+
+                  <entry></entry>
+
+                  <entry>Structure containing request</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  FileNames</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Structure containing one or more related index
+                  sets</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    FileName</programlisting></entry>
+
+                  <entry>Y</entry>
+
+                  <entry>Logical filename to which the annotation is
+                  added</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2>
+        <title>Response Tag Descriptions</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200 pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">GetRelatedIndexesResponse</programlisting></entry>
+
+                  <entry>Structure containing response</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  RelatedIndexSets</programlisting></entry>
+
+                  <entry>Structure containing one or more related index
+                  sets</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    RelatedIndexSet</programlisting></entry>
+
+                  <entry>Structure containing one related index set</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      FileName</programlisting></entry>
+
+                  <entry>Logical filename to which the annotation was
+                  added</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">      Indexes</programlisting></entry>
+
+                  <entry>Structure containing one or more indexes added to
+                  annotation</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">        Index</programlisting></entry>
+
+                  <entry>Index added to annotation</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>Common Structures</title>
+
+      <para>These structures are returned in several methods.</para>
+
+      <sect2 id="ExceptionStructure">
+        <title>Exceptions Structure</title>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">Exceptions</programlisting></entry>
+
+                  <entry>Structure containing one or more exceptions</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Exception</programlisting></entry>
+
+                  <entry>Structure containing one exception</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    Code</programlisting></entry>
+
+                  <entry>Code</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    Audience</programlisting></entry>
+
+                  <entry>Audience</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    Source</programlisting></entry>
+
+                  <entry>Source component</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">    Message</programlisting></entry>
+
+                  <entry>Error message</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="WUStructure">
+        <title>Workunit Structure</title>
+
+        <para>The workunit structure contains many tags which provide useful
+        information for development and debugging of ECL code. Most of them
+        are outside of the scope of this document. Only those that are useful
+        when using the WsSQL service are listed here.</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="200pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><?dbfo bgcolor="LightCyan"?>Tag Name</entry>
+
+                  <entry><?dbfo bgcolor="LightCyan"?>Description</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">Workunit</programlisting></entry>
+
+                  <entry>Structure containing Workunit details</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Wuid</programlisting></entry>
+
+                  <entry>Workunit Id (WUID)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Owner</programlisting></entry>
+
+                  <entry>Job Owner (if any)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Cluster</programlisting></entry>
+
+                  <entry>Target Cluster</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Jobname</programlisting></entry>
+
+                  <entry>Job Name (If any)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  StateID</programlisting></entry>
+
+                  <entry>State ID</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  State</programlisting></entry>
+
+                  <entry>State (compiled, failed, etc)</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Protected</programlisting></entry>
+
+                  <entry>Boolean indicator: Is Workunit protected?</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Snapshot</programlisting></entry>
+
+                  <entry>Snapshot</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  IsPausing</programlisting></entry>
+
+                  <entry>Boolean indicator of pause state</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  ThorLCR</programlisting></entry>
+
+                  <entry>Boolean indicator</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  EventSchedule</programlisting></entry>
+
+                  <entry>Boolean indicator</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  TotalCLusterTime</programlisting></entry>
+
+                  <entry>Time taken to process on cluster</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Query</programlisting></entry>
+
+                  <entry>Query</entry>
+                </row>
+
+                <row>
+                  <entry><programlisting role="wsig">  Result</programlisting></entry>
+
+                  <entry>Structure containing result (if any)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Supported SQL Grammar</title>
+
+    <sect1 role="nobrk">
+      <title>CALL</title>
+
+      <para><emphasis role="bold">Call
+      </emphasis><emphasis>queryName</emphasis><emphasis role="bold">
+      ([</emphasis><emphasis>paramList</emphasis><emphasis
+      role="bold">])</emphasis></para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="113.65pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>queryName</entry>
+
+                <entry>The published query name or alias</entry>
+              </row>
+
+              <row>
+                <entry>paramList</entry>
+
+                <entry>The parameters exposed by the published query
+                (comma-separated)</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Call executes a published ECL query as if it were a stored
+      procedure.</para>
+
+      <para>Example:</para>
+
+      <programlisting>Call SearchPeopleByZipService ('33024')</programlisting>
+    </sect1>
+
+    <sect1>
+      <title>SELECT</title>
+
+      <para><emphasis role="bold">select [</emphasis>distinct<emphasis
+      role="bold">]</emphasis> <emphasis>colummList</emphasis> <emphasis
+      role="bold">from</emphasis> <emphasis>tableList </emphasis><emphasis>
+      </emphasis><emphasis role="bold">[</emphasis>USE
+      INDEX<emphasis>(indexFileName</emphasis> | NONE
+      <emphasis>)</emphasis><emphasis role="bold">]</emphasis></para>
+
+      <para><emphasis role="bold">[where</emphasis>
+      <emphasis>logicalExpression</emphasis><emphasis role="bold">]</emphasis>
+      <emphasis role="bold">[group by</emphasis>
+      <emphasis>columnList<superscript>1</superscript></emphasis><emphasis
+      role="bold">]</emphasis> <emphasis role="bold">[having</emphasis>
+      <emphasis>logicalExpression<superscript>2</superscript></emphasis><emphasis
+      role="bold">]</emphasis></para>
+
+      <para><emphasis role="bold">[order by</emphasis>
+      <emphasis>columnList<superscript>1</superscript> </emphasis>[asc |
+      desc]<emphasis> </emphasis>] <emphasis
+      role="bold">[LIMIT</emphasis><emphasis> limitNumber</emphasis><emphasis
+      role="bold">]</emphasis></para>
+
+      <variablelist>
+        <varlistentry>
+          <term>NOTE:</term>
+
+          <listitem>
+            <para>Identifiers can be unquoted or within double quotes, literal
+            string values must be single quoted.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="123.45pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>columnList</emphasis></entry>
+
+                <entry>columnreference1[,columnreference2,columnreference3,...,columnreference<emphasis>n</emphasis>]</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>The column(s) to return (comma-separated list). In
+                addition, these aggregate functions are supported : COUNT,
+                SUM, MIN, MAX, and AVG. These work in a similar manner as
+                their ECL counterparts</entry>
+              </row>
+
+              <row>
+                <entry>columnreference</entry>
+
+                <entry>[tablename.]columnname[ [AS] alias ]</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>distinct</emphasis></entry>
+
+                <entry>[distinct] col1, col2,...
+                col<emphasis>n</emphasis></entry>
+              </row>
+
+              <row>
+                <entry><emphasis></emphasis></entry>
+
+                <entry>The result set will only contain distinct (unique)
+                values</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>tableList</emphasis></entry>
+
+                <entry>tableref1[,tableref2,tableref3,...,tableref<emphasis>n</emphasis>]</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>One or more tables, separated by commas.</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry><emphasis role="bold">NOTE: </emphasis>A table list
+                with multiple tables creates an (one or more) implicit inner
+                join using the where clause logical expression as the join
+                condition which must contain an equality condition</entry>
+              </row>
+
+              <row>
+                <entry>tableref</entry>
+
+                <entry>tableName[ [AS] alias ]</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>The Name of the table as referenced, optionally
+                defining its alias</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>alias</emphasis></entry>
+
+                <entry>The alias used to refer to the corresponding table or
+                field reference.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>logicalExpression</emphasis></entry>
+
+                <entry>Logical expression based on standard SQL filtering
+                syntax.</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>BOOLEAN Only supports <emphasis>True</emphasis> or
+                <emphasis>False</emphasis>, do not use Y, N, 0, or 1</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry><emphasis role="bold">Valid
+                operators:</emphasis></entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>= Equal (e.g., age=33)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>&lt;&gt; Not equal (e.g., age &lt;&gt;33)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>&gt; Greater than (e.g., age &gt;55)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>&lt; Less than (e.g., age &lt; 18)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>&gt;= Greater than or equal (e.g., age &gt;=21)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>&lt;= Less than or equal (e.g., age &lt;=21)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>IN(value1,value2,...,value<emphasis>n</emphasis>) where
+                values are comma separated homogeneous types</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>NOT IN(value1,value2,...,value<emphasis>n</emphasis>)
+                where values are comma separated homogeneous types</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>LIKE <emphasis>pattern</emphasis> where the pattern
+                uses SQL LIKE operators with % and _ wildcards.</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>NOT LIKE <emphasis>pattern</emphasis> where the pattern
+                uses SQL LIKE operators with % and _ wildcards.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>limitNumber</emphasis></entry>
+
+                <entry>The number of rows to return. This overrides the
+                default configuration attribute (EclResultLimit ) but cannot
+                be set to ALL</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable><superscript>1</superscript>Aliasing not
+      supported</para>
+
+      <para><superscript>2</superscript>Can only contain references to
+      aggregate functions<superscript></superscript>if used with
+      <emphasis>having</emphasis> clause.</para>
+
+      <para>Aggregate functions can only be expressed in logicalExpressions by
+      using <emphasis>Group by</emphasis>and
+      <emphasis>having</emphasis></para>
+
+      <para>Examples:</para>
+
+      <programlisting>Select * from tableList where Sum(F1 &gt; 100) /* is NOT SUPPORTED */
+Select * from tableList Group by F1 Having Sum (F1 &gt; 100) /* IS SUPPORTED */</programlisting>
+
+      <para>Example:</para>
+
+      <programlisting>Select fname, lname, state from TutorialPerson where 
+   state='FL' OR (lname='Smith' and fname='Joe') 
+//returns data that looks like this:
+John Doe FL 
+Jim Smith FL 
+Jane Row FL
+Joe Smith CA
+
+Select fname, lname, state from TutorialPerson where state='FL' AND lname &lt;&gt; 'Smith'
+//returns data that looks like this:
+John Doe FL 
+Jane Row FL 
+
+Select fname, lname, state from TutorialPerson where state='FL' AND lname like 'Smi%'
+//returns data that looks like this:
+Jim Smith FL
+
+Select fname, lname, state from TutorialPerson where 
+   state='FL' OR (lname='Smith' and fname='Joe') AND fname NOT LIKE 'Ji%' 
+//returns data that looks like this:
+John Doe FL 
+Jane Row FL
+Joe Smith CA
+</programlisting>
+
+      <para>The interface supports SQL index hints, which gives the SQL user
+      the option to specify the most appropriate HPCC index for the current
+      SQL query. This also allows you to disable the use of an index.</para>
+
+      <para><emphasis role="bold">select
+      </emphasis><emphasis>columnList</emphasis> <emphasis role="bold"> from
+      </emphasis><emphasis>tableName </emphasis><emphasis role="bold">USE
+      INDEX(</emphasis><emphasis>hpcc::index::file::name</emphasis><emphasis
+      role="bold">) where </emphasis><emphasis>logicalExprssions
+      </emphasis></para>
+
+      <para><emphasis role="bold">USE INDEX(none) </emphasis>forces the system
+      to avoid seeking an index for the current query.</para>
+
+      <para>Example:</para>
+
+      <programlisting>Select fname, lname, zip, state from TutorialPerson 
+USEINDEX(TutorialPersonByZipIndex)where zip='33024'
+
+//returns data that looks like this:
+John Doe FL 33024
+Jim Smith FL 33024
+Jane Row FL 33024
+</programlisting>
+
+      <para>A Select query returns two dataset outputs per request. The second
+      dataset (named WsSQLCount) provides the total result count. This is
+      useful when paging results.</para>
+
+      <para>Example:</para>
+
+      <programlisting>&lt;Dataset name='WsSQLResult'&gt;
+  &lt;Row&gt;
+    &lt;yearbuilt&gt;1203&lt;/yearbuilt&gt;
+    &lt;id&gt;4&lt;/id&gt;&lt;/Row&gt;
+  &lt;Row&gt;
+    &lt;yearbuilt&gt;2003&lt;/yearbuilt&gt;
+    &lt;id&gt;5&lt;/id&gt;&lt;/Row&gt;
+&lt;/Dataset&gt;
+&lt;Dataset name='WsSQLCount'&gt;
+  &lt;Row&gt;
+    &lt;WSSQLSelectQueryResultCount&gt;2&lt;/WSSQLSelectQueryResultCount&gt;
+  &lt;/Row&gt;
+&lt;/Dataset&gt;</programlisting>
+    </sect1>
+
+    <sect1>
+      <title>SELECT JOIN</title>
+
+      <para><emphasis role="bold">select
+      </emphasis><emphasis>colummList</emphasis> <emphasis
+      role="bold">from</emphasis> <emphasis>tableName <emphasis
+      role="bold">[</emphasis></emphasis><emphasis
+      role="bold">as</emphasis><emphasis> alias<emphasis
+      role="bold">]</emphasis></emphasis><emphasis role="bold">
+      </emphasis></para>
+
+      <para><emphasis role="bold">[</emphasis>&lt;outer | inner &gt; <emphasis
+      role="bold">JOIN </emphasis><emphasis>join TableName
+      </emphasis><emphasis role="bold">[ as
+      </emphasis><emphasis>alias</emphasis><emphasis role="bold">] on
+      </emphasis><emphasis>joinCondition</emphasis><emphasis
+      role="bold">]</emphasis></para>
+
+      <para>[USE INDEX<emphasis>(</emphasis>indexFileName | NONE
+      <emphasis>)</emphasis>]</para>
+
+      <para>[<emphasis role="bold">where</emphasis>
+      <emphasis>logicalExpression] </emphasis>[<emphasis role="bold">group
+      by</emphasis> <emphasis>fieldName</emphasis>]</para>
+
+      <para>[<emphasis role="bold">order by</emphasis> <emphasis>columnNames
+      </emphasis>[asc | desc]<emphasis> </emphasis>] [<emphasis
+      role="bold">LIMIT</emphasis><emphasis> limitNumber</emphasis>]</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="123.45pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>columnList</emphasis></entry>
+
+                <entry>columnreference1[,columnreference2,columnreference3,...,columnreference<emphasis>n</emphasis>]</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>The column(s) to return (comma-separated list). In
+                addition, these aggregate functions are supported : COUNT,
+                SUM, MIN, MAX, and AVG. These work in a similar manner as
+                their ECL counterparts.</entry>
+              </row>
+
+              <row>
+                <entry>columnreference</entry>
+
+                <entry>[tablename.]columnname[ [AS] alias ]</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>distinct</emphasis></entry>
+
+                <entry>[distinct] col1, col2,...
+                col<emphasis>n</emphasis></entry>
+              </row>
+
+              <row>
+                <entry><emphasis></emphasis></entry>
+
+                <entry>The result set will only contain distinct (unique)
+                values.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>alias</emphasis></entry>
+
+                <entry>The alias used to refer to the corresponding table or
+                field reference.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">outer | inner</emphasis></entry>
+
+                <entry>The type of JOIN to use. Note: The WsSQL service
+                currently supports INNER JOIN or OUTER Joins. An OUTER JOIN is
+                converted to a FULL OUTER JOIN internally.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>joinTableName</emphasis></entry>
+
+                <entry>The JOIN file to use.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>joinCondition</emphasis></entry>
+
+                <entry>Specifies the relationship between columns in the
+                joined tables using logical expression.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>logicalExpression</emphasis></entry>
+
+                <entry>Logical expression based on standard SQL filtering
+                syntax.</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>BOOLEAN Only supports <emphasis>True</emphasis> or
+                <emphasis>False</emphasis>, do not use Y, N, 0, or 1.</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry><emphasis role="bold">Valid
+                operators:</emphasis></entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>= Equal (e.g., age=33)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>&lt;&gt; Not equal (e.g., age &lt;&gt;33)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>&gt; Greater than (e.g., age &gt;55)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>&lt; Less than (e.g., age &lt; 18)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>&gt;= Greater than or equal (e.g., age &gt;=21)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>&lt;= Less than or equal (e.g., age &lt;=21)</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>IN(value1,value2,...,value<emphasis>n</emphasis>) where
+                values are comma separated homogeneous types.</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>NOT IN(value1,value2,...,value<emphasis>n</emphasis>)
+                where values are comma separated homogeneous types.</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>LIKE <emphasis>pattern</emphasis> where the pattern
+                uses SQL LIKE operators with % and _ wildcards.</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>NOT LIKE <emphasis>pattern</emphasis> where the pattern
+                uses SQL LIKE operators with % and _ wildcards.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>limitNumber</emphasis></entry>
+
+                <entry>Optional. The number of rows to return. This overrides
+                the default configuration attribute (<emphasis
+                role="code">EclResultLimit </emphasis>) but cannot be set to
+                ALL.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para><superscript>1</superscript>Aliasing not supported</para>
+
+      <para><superscript>2</superscript>Can only contain references to
+      aggregate functions<superscript></superscript>if used with
+      <emphasis>having</emphasis> clause.</para>
+
+      <para>Aggregate functions can only be expressed in logicalExpressions by
+      using <emphasis>Group by</emphasis>and
+      <emphasis>having</emphasis></para>
+
+      <para>Examples:</para>
+
+      <programlisting>Select * from tableList where Sum(F1 &gt; 100) /* is NOT SUPPORTED */
+Select * from tableList Group by F1 Having Sum (F1 &gt; 100) /* IS SUPPORTED */</programlisting>
+
+      <para>Example:</para>
+
+      <para><programlisting>Select t1.personname, t2.address 
+       from persontable as t1 inner join addresstable as t2 
+       on (t1.personid = t2.personid AND
+           (t1.firstname = 'jim' AND
+            t1.lastname  = 'smith' )) </programlisting></para>
+
+      <para></para>
+
+      <para>The interface does not convert parameter list or column list
+      values to string literals.</para>
+
+      <para>String values should be single quote encapsulated. Field
+      identifier can be left unquoted or double quoted.</para>
+
+      <para>For example, the table <emphasis role="bold">persons</emphasis>
+      has columns lastname(String) and Zip (numeric)</para>
+
+      <para><programlisting>Select Firstname from persons where lastname = 'Jones' and zip &gt; 33445    /* works  */ 
+
+Select Firstname from persons where lastname = 'Jones' and "zip" &gt; 33445    /* also works  */ 
+
+Select Firstname from persons where lastname = Jones and zip &gt; 33445     /* doesn't work */
+
+Select Firstname from persons where lastname = 'Jones' and zip &gt; '33445'   /* doesn't work */</programlisting></para>
+
+      <para></para>
+    </sect1>
+
+    <sect1>
+      <title>CREATE / LOAD</title>
+
+      <para><emphasis role="bold">create table</emphasis> <emphasis
+      role="bold">[if not exists]</emphasis> <emphasis>newtablename</emphasis>
+      <emphasis
+      role="bold">'('(</emphasis><emphasis>fieldname</emphasis><emphasis
+      role="bold">(</emphasis><emphasis>fieldtype</emphasis><emphasis
+      role="bold">[</emphasis><emphasis>fieldlen</emphasis><emphasis
+      role="bold">[</emphasis><emphasis>,precision</emphasis><emphasis
+      role="bold">]][</emphasis><emphasis
+      role="bold">UNSIGNED</emphasis><emphasis role="bold">][,]
+      ))+')'</emphasis></para>
+
+      <para><emphasis role="bold">[comment</emphasis> 'commenttext'<emphasis
+      role="bold">]<emphasis role="bold">[;]</emphasis></emphasis></para>
+
+      <para><emphasis role="bold">load data infile</emphasis>
+      '<emphasis>sourcetablename</emphasis>' <emphasis
+      role="bold">[connection</emphasis> '<emphasis>landingzoneIP</emphasis>'
+      <emphasis role="bold">directory</emphasis>
+      '<emphasis>landingzonepath</emphasis>'<emphasis
+      role="bold">]</emphasis></para>
+
+      <para><emphasis role="bold">into table</emphasis> <emphasis>newtablename
+      </emphasis></para>
+
+      <para><emphasis role="bold">[(fields | columns) [ terminated by
+      '</emphasis><emphasis>fieldDelimiter</emphasis>'<emphasis role="bold">]
+      [ enclosed by '</emphasis><emphasis>quoteChar</emphasis><emphasis
+      role="bold">']</emphasis><emphasis role="bold"> [ escaped by
+      '</emphasis><emphasis>escapeChar</emphasis><emphasis
+      role="bold">']]]</emphasis></para>
+
+      <para><emphasis role="bold">[lines [ terminated by
+      '</emphasis><emphasis>recordDelimiter</emphasis>'<emphasis
+      role="bold">]]<emphasis role="bold">[;]</emphasis></emphasis></para>
+
+      <para>The CREATE TABLE and LOAD DATA SQL statements allow you to create
+      a file in an HPCC cluster that is accessible via WsSQL. You can populate
+      the new file from data in a logical file already on the HPCC cluster or
+      one that is on a landing zone.</para>
+
+      <para>All Create requests MUST be accompanied by a Load request. You
+      cannot create a table with the intention to load or insert data
+      later.</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="123.45pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>newtablename</emphasis></entry>
+
+                <entry>The logical filename to create on the HPCC cluster.
+                <emphasis role="bold">Note: </emphasis>Create and Load must
+                target the same file.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>commenttext</emphasis></entry>
+
+                <entry>A text comment to add to the logical file's
+                description</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>sourcetablename</emphasis></entry>
+
+                <entry>The source file from which to extract data to load into
+                the new table. This can be a logical file on an HPCC cluster
+                or a physical file on a landing zone. For a landing zone file,
+                you MUST provide a <emphasis role="bold">connection</emphasis>
+                '<emphasis>landingzoneIP</emphasis>' and a <emphasis
+                role="bold">directory</emphasis>
+                '<emphasis>landingzonepath</emphasis>' (the path to the file).
+                For a landing zone file, be sure to use matching case for the
+                filename.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>landingzoneIP</emphasis></entry>
+
+                <entry>The IP Address or hostname of the HPCC Landing
+                Zone</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>landingzonepath</emphasis></entry>
+
+                <entry>The path to the datafile on the Landing Zonebut</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>fieldDelimiter</emphasis></entry>
+
+                <entry>String value for field delimiter</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>quoteChar</emphasis></entry>
+
+                <entry>String Value for the quote character</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>escapeChar</emphasis></entry>
+
+                <entry>String Value for the escape character</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>recordDelimiter</emphasis></entry>
+
+                <entry>String value for record delimiter</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Examples:</para>
+
+      <programlisting>CREATE  TABLE newCustomerFile (id DECIMAL( 30, 5), mytint INT(9), 
+                               mydouble DOUBLE (5,3) UNSIGNED)
+COMMENT 'this file created via WsSQL and populated from file on lz';
+LOAD DATA INFILE 'CustomerData' CONNECTION '127.0.0.1' 
+                                DIRECTORY '/var/lib/HPCCSystems/mydropzone' 
+INTO TABLE newCustomerFile;
+
+CREATE  TABLE newCustomerFile2 (id DECIMAL( 30, 5), mytint INT(9), 
+                                mydouble DOUBLE (5,3) UNSIGNED)
+COMMENT 'this file created via WsSQL and populated from sprayed file';
+LOAD DATA INFILE 'thor::customerdata::customers' INTO TABLE newCustomerFile2
+
+CREATE  TABLE IF NOT EXISTS newCustomerFile3 (id DECIMAL( 30, 5), mytint INT(9), 
+                                              mydouble DOUBLE (5,3) UNSIGNED)
+COMMENT 'won't overwrite';
+LOAD DATA INFILE 'thor::customerdata::customers' INTO TABLE newCustomerFile3
+
+CREATE  TABLE newCustomerFile4CSV (id DECIMAL( 30, 5), mytint INT(9), 
+                                   mydouble DOUBLE (5,3) UNSIGNED)
+COMMENT 'Loading CSV data';
+LOAD DATA INFILE 'somecsvfile.csv'  FIELDS TERMINATED BY ',' ENCLOSED BY '"' 
+                                    LINES TERMINATED BY 'n' 
+INTO TABLE newCustomerFile4CSV
+
+</programlisting>
+    </sect1>
+
+    <sect1>
+      <title>Supported Aggregate Functions</title>
+
+      <para><emphasis
+      role="bold">COUNT</emphasis>([DISTINCT]<emphasis>columnName</emphasis>)</para>
+
+      <para><emphasis
+      role="bold">DISTINCT</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+      <para><emphasis
+      role="bold">SUM</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+      <para><emphasis
+      role="bold">MIN</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+      <para><emphasis
+      role="bold">MAX</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+      <para><emphasis
+      role="bold">AVG</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+      <para>These aggregate functions are supported. They behave as their ECL
+      counterparts. See the <emphasis role="bold">ECL Language
+      Reference</emphasis> for details.</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="200pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>COUNT</entry>
+
+                <entry>Counts the occurrences of columnName in the result,
+                always an integer.</entry>
+              </row>
+
+              <row>
+                <entry>DISTINCT</entry>
+
+                <entry>Returns only distinct values of columnName in the
+                result, output type is dependent on input type.</entry>
+              </row>
+
+              <row>
+                <entry>SUM</entry>
+
+                <entry>Returns the sum of the values of columnName in the
+                result, output type is dependent on input type.</entry>
+              </row>
+
+              <row>
+                <entry>MIN</entry>
+
+                <entry>Returns the minimum value for of columnName in the
+                result, output type is dependent on input type.</entry>
+              </row>
+
+              <row>
+                <entry>MAX</entry>
+
+                <entry>Returns the minimum value for of columnName in the
+                result, output type is dependent on input type.</entry>
+              </row>
+
+              <row>
+                <entry>AVG</entry>
+
+                <entry>Returns the average of the values of columnName in the
+                result, always a real number.</entry>
+              </row>
+
+              <row>
+                <entry>columnName</entry>
+
+                <entry>The column to aggregate.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Example:</para>
+
+      <para><programlisting>Select fname, lname, state, COUNT(zip) from TutorialPerson where zip='33024'</programlisting></para>
+
+      <sect2>
+        <title>Supported String Modifiers</title>
+
+        <para><emphasis
+        role="bold">UPPER</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+        <para><emphasis
+        role="bold">LOWER</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+        <para></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="200pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>UPPER</entry>
+
+                <entry>Returns with all lower case characters converted to
+                upper case.</entry>
+              </row>
+
+              <row>
+                <entry>LOWER</entry>
+
+                <entry>Returns with all upper case characters converted to
+                lower case.</entry>
+              </row>
+
+              <row>
+                <entry>columnName</entry>
+
+                <entry>The column to aggregate</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Special considerations</title>
+
+        <para>Since this service uses both ECL and SQL, there are a few
+        special considerations when designing the backend databases and stored
+        procedures.</para>
+
+        <sect3>
+          <title>Reserved SQL Keywords</title>
+
+          <para>Your HPCC identifiers (field names, Stored Procedure names,
+          etc) cannot use SQL reserved words such as:</para>
+
+          <programlisting>ADD ALL ANY AS ASC AT AVG BETWEEN BOOL BOOLEAN BY CALL COLUMN CONTAINS COUNT 
+DESC DISTINCT FALSE FOR FROM GROUP HAVING IN INDEX INNER IS JOIN KEY KEYS LAST 
+LEFT LIKE LIMIT LOWER MAX MIN MOD NOT NULL OFFSET ON ORDER OUT OUTER POWER SELECT 
+SUM TABLE TRUE UPPER USE WHERE XOR DIV MOD OR AND</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>Special Characters</title>
+
+          <para>Your HPCC filenames should avoid special characters other
+          than:</para>
+
+          <programlisting>( 'A'..'Z' | 'a'..'z' | '' | '$') ( 'A'..'Z' | 'a'..'z' | '' | '$' | '0'..'9' )
+File names can be prefixed with a ~ (tilde) or .:: 
+</programlisting>
+
+          <para>If a filename is not supported, it will not be returned when
+          interrogating the system using GetDBMetaData.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

@@ -87,36 +87,15 @@ interface IXmlWriter;
 interface IResultSetCursor : extends IInterface
 {
     virtual bool absolute(__int64 row) = 0;
-    virtual void afterLast() = 0;
-    virtual void beforeFirst() = 0;
-    virtual bool fetch(__int64 fileoffset) = 0;
     virtual bool first() = 0;
-    virtual bool getBoolean(int columnIndex) = 0;
-    virtual IDataVal & getBytes(IDataVal & d, int columnIndex) = 0;
-    virtual xdouble getDouble(int columnIndex) = 0;
-    virtual int getFetchSize() const = 0;
     virtual IResultSetCursor * getChildren(int columnIndex) const = 0;
     virtual bool getIsAll(int columnIndex) const = 0;
-    virtual __int64 getInt(int columnIndex) = 0;
     virtual IDataVal & getRaw(IDataVal & d, int columnIndex) = 0;
-    virtual IDataVal & getRawRow(IDataVal & d) = 0;
-    virtual IStringVal & getString(IStringVal & ret, int columnIndex) = 0;
-    virtual bool isAfterLast() const = 0;
-    virtual bool isBeforeFirst() const = 0;
-    virtual bool isFirst() const = 0;
-    virtual bool isLast() const = 0;
-    virtual bool isNull(int columnIndex) const = 0;
     virtual bool isValid() const = 0;
-    virtual bool last() = 0;
     virtual bool next() = 0;
-    virtual bool previous() = 0;
     virtual INewResultSet * queryResultSet() = 0;
-    virtual bool relative(__int64 rows) = 0;
-    virtual void serialize(IDataVal & d) = 0;
     virtual IStringVal & getDisplayText(IStringVal & ret, int columnIndex) = 0;
-    virtual IStringVal & getXml(IStringVal & ret, int columnIndex) = 0;
     virtual IStringVal & getXmlRow(IStringVal & ret) = 0;
-    virtual IStringVal & getXmlItem(IStringVal & ret) = 0;
     virtual void beginWriteXmlRows(IXmlWriter & writer) = 0;
     virtual void writeXmlRow(IXmlWriter & writer) = 0;
     virtual void endWriteXmlRows(IXmlWriter & writer) = 0;
@@ -148,9 +127,7 @@ interface IFilteredResultSet : extends IResultSetFilter
 interface INewResultSet : extends IInterface
 {
     virtual IResultSetCursor * createCursor() = 0;
-    virtual IResultSetCursor * createCursor(IDataVal & buffer) = 0;
     virtual IFilteredResultSet * createFiltered() = 0;
-    virtual IResultSetCursor * createSortedCursor(unsigned column, bool descend) = 0;
     virtual const IResultSetMetaData & getMetaData() const = 0;
     virtual __int64 getNumRows() const = 0;
     virtual bool supportsRandomSeek() const = 0;
@@ -178,11 +155,7 @@ extern FILEVIEW_API INewResultSet* createNewResultSetSeqName(IResultSetFactory &
 extern FILEVIEW_API IResultSetFactory * getResultSetFactory(const char * username, const char * password);
 extern FILEVIEW_API IResultSetFactory * getSecResultSetFactory(ISecManager *secmgr, ISecUser *secuser, const char * username, const char * password);
 
-extern FILEVIEW_API IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const char * username, const char * password);
-extern FILEVIEW_API IResultSetFactory * getSecRemoteResultSetFactory(const char * remoteServer, ISecManager &secmgr, ISecUser &secuser);
-
 //Formatting applied remotely, so it can be accessed between different operating systems...
-extern FILEVIEW_API IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const char * username, const char * password);
 extern FILEVIEW_API int findResultSetColumn(const INewResultSet * results, const char * columnName);
 
 extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start=0, unsigned count=0, const char * schemaName=NULL, const IProperties *xmlns=NULL);

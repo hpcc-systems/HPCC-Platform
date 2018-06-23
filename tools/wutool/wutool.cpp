@@ -40,37 +40,142 @@
 
 static unsigned testSize = 1000;
 
-void usage()
+void usage(const char * action = nullptr)
 {
-    printf("Usage: wutool action [WUID=xxx] [DALISERVER=ip] [CASSANDRASERVER=ip] [option=value]...\n\n"
-           "Actions supported are:\n"
-           "   list <workunits>    - List workunits\n"
-           "   dump <workunits>    - Dump xml for specified workunits\n"
-           "   delete <workunits>  - Delete workunits\n"
-           "   results <workunits> - Dump results from specified workunits\n"
-           "\n"
-           "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [DELETERESULTS=1] [INCLUDEFILES=1]\n"
-           "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
-            "\n"
-           "   orphans             - Delete orphaned information from store\n"
-           "   cleanup [days=NN]   - Delete workunits older than NN days\n"
-           "   validate [fix=1]    - Check contents of workunit repository for errors\n"
-           "   clear               - Delete entire workunit repository (requires entire=1 repository=1)\n"
-           "   initialize          - Initialize new workunit repository\n"
-           "\n"
-           "If CASSANDRASERVER is specified, you can specify some connection options including:\n"
-           "   CASSANDRA_KEYSPACE   - default is hpcc\n"
-           "   CASSANDRA_USER\n"
-           "   CASSANDRA_PASSWORD\n"
-           "   CASSANDRA_PARTITIONS - used if creating a new repository\n"
-           "   CASSANDRA_PREFIXSIZE - used if creating a new repository\n"
-           "   TRACELEVEL\n"
-           "<workunits> can be specified on commandline, or can be specified using a filter owner=XXXX. If omitted,\n"
-           "all workunits will be selected.\n"
-            );
+    if (action && strieq(action, "info"))
+    {
+        printf("Usage: wutool info <workunits> <filter>\n"
+               "The filter can include the following elements (those followed by * can be repeated):\n"
+               "  Which scopes are matched:\n"
+               "    scope[<scope-id>]*   - scope to match\n"
+               "    stype[<scope-type>]* - scope type to match\n"
+               "    id[<id>]*            - id of a scope to to match\n"
+               "      scope, stype and id cannot be specified in the same filter\n"
+               "\n"
+               "    depth[n | low..high] - range of depths to search for a match\n"
+               "    source[global|stats|graph|all]*\n"
+               "                         - which sources within the workunit to search\n"
+               "                           defaults to the optimal sources for the rest of the filter\n"
+               "    where[<statistickind> | <statistickind> (=|<|<=|>|>=) value | <statistickind>=low..high]\n"
+               "                         - filter by statistic existence or value range\n"
+               "\n"
+               "  Which scopes are include in the results:\n"
+               "    matched[true|false]  - are the matched scopes returned?\n"
+               "    nested[<depth>|all]  - what nesting of scopes within a matched scope are in the results\n"
+               "                           (defaults to '0' if matched[true] and 'all' if matched[false])\n"
+               "    includetype[<scope-type>]*\n"
+               "                         - which scope types should be included?\n"
+               "\n"
+               "  Which information about a scope is reported:\n"
+               "    properties[statistics|hints|attributes|scope|all]*\n"
+               "    statistic[<statistic-kind>|none|all]*\n"
+               "    attribute[<attribute-name>|none|all]*\n"
+               "    hint[<hint-name>]*\n"
+               "    property[<statistic-kind>|<attribute-name>|<hint-name>]*\n"
+               "                         - include property (category is deduced)\n"
+               "    measure[<measure>]   - all statistics with a particular measure\n"
+               "    version[<version>]   - minimum version to return\n"
+               );
+    }
+    else
+    {
+        printf("Usage: wutool action [DALISERVER=ip] [CASSANDRASERVER=ip] [option=value]...\n\n"
+               "Actions supported are:\n"
+               "   list <workunits>    - List workunits\n"
+               "   dump <workunits>    - Dump xml for specified workunits\n"
+               "   delete <workunits>  - Delete workunits\n"
+               "   results <workunits> - Dump results from specified workunits\n"
+               "   info <workunits> <filter>\n"
+               "                       - Display information from a workunit\n"
+               "\n"
+               "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [DELETERESULTS=1] [INCLUDEFILES=1]\n"
+               "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
+                "\n"
+               "   orphans             - Delete orphaned information from store\n"
+               "   cleanup [days=NN]   - Delete workunits older than NN days\n"
+               "   validate [fix=1]    - Check contents of workunit repository for errors\n"
+               "   clear               - Delete entire workunit repository (requires entire=1 repository=1)\n"
+               "   initialize          - Initialize new workunit repository\n"
+               "\n"
+               "   help <command>      - More help on a command\n"
+               "\n"
+               "If CASSANDRASERVER is specified, you can specify some connection options including:\n"
+               "   CASSANDRA_KEYSPACE   - default is hpcc\n"
+               "   CASSANDRA_USER\n"
+               "   CASSANDRA_PASSWORD\n"
+               "   CASSANDRA_PARTITIONS - used if creating a new repository\n"
+               "   CASSANDRA_PREFIXSIZE - used if creating a new repository\n"
+               "   TRACELEVEL\n"
+               "<workunits> can be specified on commandline, or can be specified using a filter owner=XXXX. If omitted,\n"
+               "all workunits will be selected.\n"
+                );
+    }
 }
 
-void process(IConstWorkUnit &w, IProperties *globals)
+/* Callback used to output the different scope properties as xml */
+class ScopeDumper : public IWuScopeVisitor
+{
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
+    {
+        StringBuffer xml;
+        SCMStringBuffer curCreator;
+        SCMStringBuffer curDescription;
+        SCMStringBuffer curFormattedValue;
+
+        StatisticCreatorType curCreatorType = cur.getCreatorType();
+        StatisticScopeType curScopeType = cur.getScopeType();
+        StatisticMeasure curMeasure = cur.getMeasure();
+        unsigned __int64 count = cur.getCount();
+        unsigned __int64 max = cur.getMax();
+        unsigned __int64 ts = cur.getTimestamp();
+        const char * curScope = cur.queryScope();
+        cur.getCreator(curCreator);
+        cur.getDescription(curDescription, false);
+        cur.getFormattedValue(curFormattedValue);
+
+        if (kind != StKindNone)
+            xml.append(" kind='").append(queryStatisticName(kind)).append("'");
+        xml.append(" value='").append(value).append("'");
+        xml.append(" formatted='").append(curFormattedValue).append("'");
+        if (curMeasure != SMeasureNone)
+            xml.append(" unit='").append(queryMeasureName(curMeasure)).append("'");
+        if (curCreatorType != SCTnone)
+            xml.append(" ctype='").append(queryCreatorTypeName(curCreatorType)).append("'");
+        if (curCreator.length())
+            xml.append(" creator='").append(curCreator.str()).append("'");
+        if (count != 1)
+            xml.append(" count='").append(count).append("'");
+        if (max)
+            xml.append(" max='").append(value).append("'");
+        if (ts)
+        {
+            xml.append(" ts='");
+            formatStatistic(xml, ts, SMeasureTimestampUs);
+            xml.append("'");
+        }
+        if (curDescription.length())
+            xml.append(" desc='").append(curDescription.str()).append("'");
+        printf(" <attr%s/>\n", xml.str());
+    }
+    virtual void noteAttribute(WuAttr attr, const char * value)
+    {
+        StringBuffer xml;
+        xml.appendf("<attr kind='%s' value='", queryWuAttributeName(attr));
+        encodeXML(value, xml, ENCODE_NEWLINES, (unsigned)-1, true);
+        xml.append("'/>");
+        printf(" %s\n", xml.str());
+    }
+    virtual void noteHint(const char * kind, const char * value)
+    {
+        StringBuffer xml;
+        xml.appendf("<attr kind='hint:%s' value='%s'/>", kind, value);
+        printf(" %s\n", xml.str());
+    }
+};
+
+
+static void process(IConstWorkUnit &w, IProperties *globals, const StringArray & args)
 {
     const char *action = globals->queryProp("#action");
     if (!action || stricmp(action, "list")==0)
@@ -114,15 +219,53 @@ void process(IConstWorkUnit &w, IProperties *globals)
         if (to.length()==0)
             to.append('.');
         StringAttr wuid(w.queryWuid());
-        if (QUERYINTERFACE(&w, IExtendedWUInterface)->archiveWorkUnit(to.str(), globals->getPropBool("DEL", false), true, globals->getPropBool("DELETERESULTS", false), globals->getPropBool("INCLUDEFILES", false)))
+        IExtendedWUInterface * wuInterface = QUERYINTERFACE(&w, IExtendedWUInterface);
+        if (wuInterface && wuInterface->archiveWorkUnit(to.str(), globals->getPropBool("DEL", false), true, globals->getPropBool("DELETERESULTS", false), globals->getPropBool("INCLUDEFILES", false)))
             printf("archived %s\n", wuid.str());
         else
             printf("archive of %s failed\n", wuid.str());
     }
+    else if (stricmp(action, "info")==0)
+    {
+        ScopeDumper dumper;
+        WuScopeFilter filter(args.item(0));
+
+        printf("<Workunit wuid=\"%s\">\n", w.queryWuid());
+        Owned<IConstWUScopeIterator> iter = &w.getScopeIterator(filter);
+        ForEach(*iter)
+        {
+            if (!filter.onlyIncludeScopes())
+            {
+                printf("<scope scope='%s' type='%s'>\n", iter->queryScope(), queryScopeTypeName(iter->getScopeType()));
+                iter->playProperties(dumper);
+                printf("</scope>\n");
+            }
+            else
+                printf("<scope scope='%s' type='%s'/>\n", iter->queryScope(), queryScopeTypeName(iter->getScopeType()));
+        }
+
+        printf("</Workunit>\n");
+    }
+    else
+        throwUnexpected();
 }
 
 
 Owned<IProperties> globals;
+
+bool looksLikeWuid(const char * arg)
+{
+    //Looks like a filename
+    if (strchr(arg,'.') || strchr(arg,PATHSEPCHAR))
+        return false;
+
+    if (arg[0]!='W' && arg[0]!='w')
+        return false;
+
+    if (isdigit(arg[1]) || (arg[1] == '*'))
+        return true;
+    return false;
+}
 
 int main(int argc, const char *argv[])
 {
@@ -132,19 +275,17 @@ int main(int argc, const char *argv[])
     globals.setown(createProperties("wutool.ini", true));
     const char *action = NULL;
     StringArray wuids;
-    StringArray files;
+    StringArray args;
     for (int i = 1; i < argc; i++)
     {
-        if (strchr(argv[i],'='))
-            globals->loadProp(argv[i]);
-        else if (strchr(argv[i],'.') || strchr(argv[i],PATHSEPCHAR))
-            files.append(argv[i]);
-        else if (argv[i][0]=='W' || argv[i][0]=='w')
-            wuids.append(argv[i]);
+        const char * arg = argv[i];
+        if (strchr(arg,'=') && !strchr(arg, '['))
+            globals->loadProp(arg);
+        else if (looksLikeWuid(arg))
+            wuids.append(arg);
         else if (action)
         {
-            usage();
-            _exit(4);
+            args.append(arg);
         }
         else
         {
@@ -152,9 +293,17 @@ int main(int argc, const char *argv[])
             globals->setProp("#action", argv[i]);
         }
     }
-    if (!action)
+    if (!action || !*action)
     {
-        usage();
+        usage(nullptr);
+        _exit(4);
+    }
+    if (strieq(action, "help"))
+    {
+        if (args.empty())
+            usage(nullptr);
+        else
+            usage(args.item(0));
         _exit(4);
     }
     try
@@ -233,24 +382,27 @@ int main(int argc, const char *argv[])
         }
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
 #ifdef _USE_CPPUNIT
-        if (action && (stricmp(action, "-selftest")==0))
+        if (stricmp(action, "-selftest")==0)
         {
+            StringBuffer testName;
+            if (!globals->getProp("test", testName))
+                testName.set("WuTool");
             testSize = globals->getPropInt("testSize", 100);
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
             CppUnit::TextUi::TestRunner runner;
-            CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry("WuTool");
+            CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry(testName.str());
             runner.addTest( registry.makeTest() );
             ret = runner.run( "", false );
         }
         else
 #endif
-        if (action && (stricmp(action, "validate")==0))
+        if (stricmp(action, "validate")==0)
         {
             bool fix = globals->getPropBool("fix", false);
             unsigned errors = factory->validateRepository(fix);
             printf("%u errors %s\n", errors, (fix && errors) ? "fixed" : "found");
         }
-        else if (action && (stricmp(action, "clear")==0))
+        else if (stricmp(action, "clear")==0)
         {
             if (globals->getPropBool("entire", false) && globals->getPropBool("repository", false))
             {
@@ -260,12 +412,12 @@ int main(int argc, const char *argv[])
             else
                 printf("You need to specify entire=1 and repository=1 to delete entire repository\n");
         }
-        else if (action && (stricmp(action, "initialize")==0))
+        else if (stricmp(action, "initialize")==0)
         {
             factory->createRepository();
             printf("Repository created\n");
         }
-        else if (action && (stricmp(action, "orphans")==0 || stricmp(action, "cleanup")==0))
+        else if (stricmp(action, "orphans")==0 || stricmp(action, "cleanup")==0)
         {
             factory->setTracingLevel(0);
             StringArray killWuids;
@@ -390,15 +542,15 @@ int main(int argc, const char *argv[])
                 usage();
                 exit(4);
             }
-            if (!files.length())
+            if (!args.length())
             {
                 printf("One or more workunit files must be specified\n");
                 exit(4);
             }
-            ForEachItemIn(idx, files)
+            ForEachItemIn(idx, args)
             {
                 StringBuffer base, wuid, ext;
-                splitFilename(files.item(idx), &base, &base, &wuid, &ext, true);
+                splitFilename(args.item(idx), &base, &base, &wuid, &ext, true);
                 if (streq(ext, ".xml"))
                 {
                     if (base.length()==0)
@@ -409,21 +561,46 @@ int main(int argc, const char *argv[])
                         printf("failed to restore %s\n", wuid.str());
                 }
                 else
-                    printf("Ignoring file %s - extension is not '.xml'\n", files.item(idx));
+                    printf("Ignoring file %s - extension is not '.xml'\n", args.item(idx));
             }
         }
         else if (strieq(action, "help"))
         {
             usage();
         }
-        else if (strieq(action, "list") || strieq(action, "dump") || strieq(action, "results") || strieq(action, "delete") || strieq(action, "archive"))
+        else if (strieq(action, "list") || strieq(action, "dump") || strieq(action, "results") || strieq(action, "delete") || strieq(action, "archive") || strieq(action, "info"))
         {
+            if (strieq(action, "info") && args.empty())
+                args.append("source[all],properties[all]");
+
             if (wuids.length())
             {
                 ForEachItemIn(idx, wuids)
                 {
-                    Owned<IConstWorkUnit> w = factory->openWorkUnit(wuids.item(idx));
-                    process(*w, globals);
+                    const char * wuid = wuids.item(idx);
+                    const char * star = strchr(wuid, '*');
+                    if (star)
+                    {
+                        WUSortField filters[2];
+                        MemoryBuffer filterbuf;
+                        filters[0] = WUSFwildwuid;
+                        filterbuf.append(wuid);
+                        filters[1] = WUSFterm;
+                        Owned<IConstWorkUnitIterator> iter = factory->getWorkUnitsSorted((WUSortField) (WUSFwuid), filters, filterbuf.bufferBase(), 0, INT_MAX, NULL, NULL);
+
+                        ForEach(*iter)
+                        {
+                            Owned<IConstWorkUnit> workunit = factory->openWorkUnit(iter->query().queryWuid());
+                            if (workunit)
+                                process(*workunit, globals, args);
+                        }
+                    }
+                    else
+                    {
+                        Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
+                        if (workunit)
+                            process(*workunit, globals, args);
+                    }
                 }
             }
             else
@@ -441,7 +618,7 @@ int main(int argc, const char *argv[])
                     Owned<IConstWorkUnit> w = factory->openWorkUnit(wi.queryWuid());
                     if (w)
                     {
-                        process(*w, globals);
+                        process(*w, globals, args);
                         ret = 0; // There was at least one match
                     }
                 }
@@ -460,8 +637,8 @@ int main(int argc, const char *argv[])
         E->Release();
         ret = 2;
     }
-    closeDllServer();   
-    closeEnvironment(); 
+    closeDllServer();
+    closeEnvironment();
     clientShutdownWorkUnit();
     closedownClientProcess();   // dali client closedown
     if (queryActiveTimer())
@@ -537,7 +714,7 @@ protected:
             wu->setClusterName(clusterName);
             if (i % 3)
                 wu->setJobName(jobName);
-            wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, "Total thor time", ((i+2)/2) * 1000000, 1, 0, StatsMergeReplace);
+            wu->setStatistic(SCTthor, "thor", SSTgraph, "graph1", StTimeElapsed, "Total thor time", ((i+2)/2) * 1000000, 1, 0, StatsMergeReplace);
             wu->setApplicationValue("appname", "userId", userId.str(), true);
             wu->setApplicationValue("appname2", "clusterName", clusterName.str(), true);
             wuids.append(wu->queryWuid());
@@ -595,6 +772,7 @@ protected:
                 "         eclVersion='6.0.0'"
                 "         hash='2796091347'"
                 "         state='completed'"
+                "         totalThorTime=''"
                 "         xmlns:xsi='http://www.w3.org/1999/XMLSchema-instance'>"
                 " <Debug>"
                 "  <debugquery>1</debugquery>"
@@ -789,7 +967,7 @@ protected:
                 );
         StringBuffer xml1, xml2, xml3;
         exportWorkUnitToXML(embeddedWU, xml1, false, false, false);
-        queryExtendedWU(createWu)->copyWorkUnit(embeddedWU, true);
+        queryExtendedWU(createWu)->copyWorkUnit(embeddedWU, true, true);
         createWu->setState(WUStateCompleted);
         exportWorkUnitToXML(createWu, xml2, false, false, false);
         createWu->commit();
@@ -898,9 +1076,9 @@ protected:
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         Owned<IWorkUnit> createWu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
         StringBuffer wuid(createWu->queryWuid());
-        createWu->createGraph("Graph1", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph/>"));
-        createWu->createGraph("Graph2", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph/>"));
-        createWu->createGraph("Graph3", "graphLabel", GraphTypeEcl, createPTreeFromXMLString("<graph/>"));
+        createWu->createGraph("Graph1", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph/>"), 0);
+        createWu->createGraph("Graph2", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph/>"), 1);
+        createWu->createGraph("Graph3", "graphLabel", GraphTypeEcl, createPTreeFromXMLString("<graph/>"), 2);
         createWu->setState(WUStateCompleted);
         createWu->commit();
         createWu.clear();
@@ -1020,7 +1198,7 @@ protected:
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         Owned<IWorkUnit> createWu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
         StringBuffer wuid(createWu->queryWuid());
-        createWu->createGraph("graph1", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph><node id='1'/></graph>"));
+        createWu->createGraph("graph1", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph><node id='1'/></graph>"), 1);
         createWu->setState(WUStateCompleted);
         createWu->commit();
         createWu.clear();
@@ -1050,7 +1228,7 @@ protected:
         ret = wu->getRunningGraph(s, subid);
         ASSERT(!ret);
 
-        Owned<IWUGraphStats> progress = wu->updateStats("graph1", SCThthor, queryStatisticsComponentName(), 1);
+        Owned<IWUGraphStats> progress = wu->updateStats("graph1", SCThthor, queryStatisticsComponentName(), 0, 1);
         IStatisticGatherer & stats = progress->queryStatsBuilder();
         {
             StatsSubgraphScope subgraph(stats, 1);
@@ -1785,12 +1963,12 @@ protected:
             virtual bool getResultBool(const char * name, unsigned sequence) { throwUnexpected(); }
             virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
             virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) { throwUnexpected(); }
-            virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { throwUnexpected(); }
+            virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override { throwUnexpected(); }
             virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
             virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
             virtual __int64 getResultInt(const char * name, unsigned sequence) { throwUnexpected(); }
             virtual double getResultReal(const char * name, unsigned sequence) { throwUnexpected(); }
-            virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
+            virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override { throwUnexpected(); }
             virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
             virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) { throwUnexpected(); }
             virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
@@ -1951,5 +2129,89 @@ StringArray WuTool::wuids;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( WuTool );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( WuTool, "WuTool" );
+
+class WuDetails : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(WuDetails);
+        CPPUNIT_TEST(testWuDetails);
+    CPPUNIT_TEST_SUITE_END();
+protected:
+    class AttributeScopeVisitor : public IWuScopeVisitor
+    {
+    public:
+        virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
+        {
+            StringBuffer text;
+            text.append(value);
+            noteProperty(queryStatisticName(kind), text);
+        }
+        virtual void noteAttribute(WuAttr attr, const char * value)
+        {
+            noteProperty(queryWuAttributeName(attr), value);
+        }
+        virtual void noteHint(const char * kind, const char * value)
+        {
+            noteProperty(kind, value);
+        }
+        virtual void noteProperty(const char * kind, const char * value)
+        {
+            DBGLOG("  Attr %s=%s", kind, value);
+        }
+    };
+
+    void testWuDetails(IConstWorkUnit * wu)
+    {
+        const WuScopeFilter filter{};
+        Owned<IConstWUScopeIterator> iter = &wu->getScopeIterator(filter);
+        DBGLOG("%s %s", wu->queryWuid(), wu->queryClusterName());
+        AttributeScopeVisitor visitor;
+        StringBuffer prevScope;
+        ForEach(*iter)
+        {
+            const char * scope = iter->queryScope();
+            DBGLOG("Scope: %s %s", scope, queryScopeTypeName(iter->getScopeType()));
+            //Ensure the scopes are iterated in the correct order.
+            if (!prevScope.isEmpty())
+                ASSERT(compareScopeName(prevScope.str(), scope) < 0);
+            prevScope.set(scope);
+
+            iter->playProperties(visitor);
+        }
+    }
+
+    void testWuDetails()
+    {
+        /*
+         * The following are the tests that need to be done on the filters
+         * o Source
+         * o Scope type
+         * o Set of scope types (activity, edges)
+         * o Depth
+         * o Single scope
+         * o Set of scopes
+         * o Set of ids
+         * They should all be selectable via a text filter.
+         */
+#if 0
+        WUSortField filterByJob[] = { WUSFjob, WUSFterm };
+        CCycleTimer timer;
+        Owned<IConstWorkUnitIterator> wus;
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), filterByJob, "sqfilt-multiPart(false)*\0", 0, 10000, NULL, NULL));
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wuinfo = wus->query();
+            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuinfo.queryWuid());
+            testWuDetails(wu);
+        }
+        wus.clear();
+
+        DBGLOG("wuDetails %u ms", timer.elapsedMs());
+#endif
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( WuDetails );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( WuDetails, "WuDetails" );
 
 #endif

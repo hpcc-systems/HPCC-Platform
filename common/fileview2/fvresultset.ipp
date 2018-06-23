@@ -126,7 +126,6 @@ interface IExtendedNewResultSet : extends INewResultSet
     virtual bool fetchRaw(MemoryBuffer & out, __int64 fileoffset) = 0;
     virtual bool getRow(MemoryBuffer & out, __int64 row) = 0;
     virtual bool getRawRow(MemoryBuffer & out, __int64 row) = 0;
-    virtual void serialize(MemoryBuffer & out) = 0;
     virtual bool isMappedIndexField(unsigned columnIndex) = 0;
     virtual void onOpen() = 0;
     virtual void onClose() = 0;
@@ -140,9 +139,7 @@ public:
 
 //interface IResultSet
     virtual IResultSetCursor * createCursor();
-    virtual IResultSetCursor * createCursor(IDataVal & buffer);
     virtual IFilteredResultSet * createFiltered();
-    virtual IResultSetCursor * createSortedCursor(unsigned column, bool descend);
 
 protected:
     const CResultSetMetaData & getMeta() { return static_cast<const CResultSetMetaData &>(getMetaData()); }
@@ -167,7 +164,6 @@ public:
     virtual bool fetchRaw(MemoryBuffer & out, __int64 fileoffset);
     virtual bool getRow(MemoryBuffer & out, __int64 row);
     virtual bool getRawRow(MemoryBuffer & out, __int64 row);
-    virtual void serialize(MemoryBuffer & out);
     virtual bool isMappedIndexField(unsigned columnIndex);
     virtual void onOpen() { dataSource->onOpen(); }
     virtual void onClose() { dataSource->onClose(); }
@@ -195,10 +191,8 @@ public:
 
     void addValue(unsigned lenText, const char * value);
 
-    void deserialize(MemoryBuffer & buffer);
     bool isValid(const byte * rowValue, const unsigned * offsets);
     bool optimizeFilter(IFvDataSource * dataSource);
-    void serialize(MemoryBuffer & buffer);
 
 protected:
     bool matches(const byte * rowValue, size32_t valueLen, const byte * value);
@@ -254,10 +248,6 @@ public:
     {
         return parent->getRawRow(out, row);
     }
-    virtual void serialize(MemoryBuffer & out)
-    {
-        parent->serialize(out);
-    }
     virtual bool isMappedIndexField(unsigned columnIndex)
     {
         return parent->isMappedIndexField(columnIndex);
@@ -290,7 +280,6 @@ public:
 
     virtual bool getRow(MemoryBuffer & out, __int64 row);
     virtual bool getRawRow(MemoryBuffer & out, __int64 row);
-    virtual void serialize(MemoryBuffer & out);
     virtual __int64 getNumRows() const;
 
 protected:
@@ -313,7 +302,6 @@ public:
     virtual IFilteredResultSet * createFiltered()           { UNIMPLEMENTED; }  // Would need to clone filters into new resultset
     virtual bool getRow(MemoryBuffer & out, __int64 row);
     virtual bool getRawRow(MemoryBuffer & out, __int64 row);
-    virtual void serialize(MemoryBuffer & out);
     virtual __int64 getNumRows() const;
 
 protected:
@@ -324,47 +312,24 @@ class CResultSetCursor : implements IExtendedResultSetCursor, public CInterface
 {
 public:
     CResultSetCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet);
-    CResultSetCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet, MemoryBuffer & val);
     ~CResultSetCursor();
     IMPLEMENT_IINTERFACE;
 
 //interface IResultSet, IResultSetCursor shared
     virtual bool absolute(__int64 row);
-    virtual void afterLast();
-    virtual void beforeFirst();
-    virtual bool fetch(__int64 fileoffset);
     virtual bool first();
-    virtual bool getBoolean(int columnIndex);
-    virtual IDataVal & getBytes(IDataVal &d, int columnIndex);
     virtual IResultSetCursor * getChildren(int columnIndex) const;
-    virtual xdouble getDouble(int columnIndex);
-    virtual int getFetchSize() const;
     virtual bool getIsAll(int columnIndex) const;
-    virtual __int64 getInt(int columnIndex);
     virtual IDataVal & getRaw(IDataVal &d, int columnIndex);
-    virtual IDataVal & getRawRow(IDataVal &d);
-    virtual int getType();
     virtual const IResultSetMetaData & getMetaData() const;
     virtual __int64 getNumRows() const;
-    virtual IStringVal & getString(IStringVal & ret, int columnIndex);
-    virtual bool isAfterLast() const;
-    virtual bool isBeforeFirst() const;
-    virtual bool isFirst() const;
-    virtual bool isLast() const;
-    virtual bool isNull(int columnIndex) const;
     virtual bool isValid() const;
-    virtual bool last();
     virtual bool next();
-    virtual bool previous();
     virtual INewResultSet * queryResultSet() { return resultSet; }
-    virtual bool relative(__int64 rows);
-    virtual void setFetchSize(int rows);
     virtual bool supportsRandomSeek() const;
-    virtual void serialize(IDataVal & d);
     virtual IStringVal & getDisplayText(IStringVal &ret, int columnIndex);
     virtual IStringVal & getXml(IStringVal & ret, int columnIndex);
     virtual IStringVal & getXmlRow(IStringVal &ret);
-    virtual IStringVal & getXmlItem(IStringVal & ret);
 
     virtual void beginWriteXmlRows(IXmlWriter & writer);
     virtual void writeXmlRow(IXmlWriter &writer);
@@ -375,6 +340,7 @@ public:
     virtual void noteRelatedFileChanged() {}
 
 protected:
+    bool getBoolean(int columnIndex);
     void calcFieldOffsets();
     void init(IExtendedNewResultSet * _resultSet);
     bool isMappedIndexField(unsigned columnIndex) { return resultSet->isMappedIndexField(columnIndex); }
@@ -383,8 +349,6 @@ protected:
 
     virtual __int64 getCurRow() const;
     virtual __int64 translateRow(__int64 row) const;
-    virtual void serializeType(MemoryBuffer & buffer);
-    virtual void serialize(MemoryBuffer & buffer);
 
 protected:
     const CResultSetMetaData & meta;
@@ -403,37 +367,16 @@ public:
 
 //interface IResultSet, IResultSetCursor shared
     virtual bool absolute(__int64 row);
-    virtual void afterLast();
-    virtual void beforeFirst();
-    virtual bool fetch(__int64 fileoffset);
     virtual bool first();
-    virtual bool getBoolean(int columnIndex);
-    virtual IDataVal & getBytes(IDataVal &d, int columnIndex);
     virtual IResultSetCursor * getChildren(int columnIndex) const;
-    virtual xdouble getDouble(int columnIndex);
-    virtual int getFetchSize() const;
     virtual bool getIsAll(int columnIndex) const;
-    virtual __int64 getInt(int columnIndex);
     virtual IDataVal & getRaw(IDataVal &d, int columnIndex);
-    virtual IDataVal & getRawRow(IDataVal &d);
     virtual __int64 getNumRows() const;
-    virtual IStringVal & getString(IStringVal & ret, int columnIndex);
-    virtual bool isAfterLast() const;
-    virtual bool isBeforeFirst() const;
-    virtual bool isFirst() const;
-    virtual bool isLast() const;
-    virtual bool isNull(int columnIndex) const;
     virtual bool isValid() const;
-    virtual bool last();
     virtual bool next();
-    virtual bool previous();
     virtual INewResultSet * queryResultSet();
-    virtual bool relative(__int64 rows);
-    virtual void serialize(IDataVal & d);
     virtual IStringVal & getDisplayText(IStringVal &ret, int columnIndex);
-    virtual IStringVal & getXml(IStringVal & ret, int columnIndex);
     virtual IStringVal & getXmlRow(IStringVal &ret);
-    virtual IStringVal & getXmlItem(IStringVal &ret);
     virtual void beginWriteXmlRows(IXmlWriter & writer);
     virtual void writeXmlRow(IXmlWriter &writer);
     virtual void endWriteXmlRows(IXmlWriter & writer);
@@ -457,14 +400,8 @@ public:
     inline void addDependent(IExtendedResultSetCursor & next) { dependents.append(OLINK(next)); }
 
     virtual bool absolute(__int64 row);
-    virtual void afterLast();
-    virtual void beforeFirst();
-    virtual bool fetch(__int64 fileoffset);
     virtual bool first();
-    virtual bool last();
     virtual bool next();
-    virtual bool previous();
-    virtual bool relative(__int64 rows);
     virtual void noteRelatedFileChanged();
     virtual IExtendedResultSetCursor * queryBase() { return cursor; }
 
@@ -512,31 +449,6 @@ protected:
 };
 
 //---------------------------------------------------------------------------
-
-class CResultSetSortedCursor : public CResultSetCursor
-{
-public:
-    CResultSetSortedCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet, unsigned _column, bool _desc);
-    CResultSetSortedCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet, unsigned _column, bool _desc, MemoryBuffer & buffer);
-    ~CResultSetSortedCursor();
-
-    virtual bool absolute(__int64 row);
-
-protected:
-    void buildIndex();
-    virtual __int64 getCurRow() const;
-    virtual __int64 translateRow(__int64 row) const;
-    virtual void serializeType(MemoryBuffer & buffer);
-    virtual void serialize(MemoryBuffer & buffer);
-
-protected:
-    unsigned column;
-    bool desc;
-    unsigned numEntries;
-    unsigned * elements;
-    __int64 lastRow;
-};
-
 
 class CFilteredResultSetBuilder : implements IFilteredResultSet, public CInterface
 {
@@ -588,34 +500,6 @@ public:
 protected:
     CResultSet * createResultSet(IFvDataSource * ds, bool _useXPath);
     IDistributedFile * lookupLogicalName(const char * logicalName);
-};
-
-
-class CRemoteResultSetServer  : public CInterface
-{
-public:
-    void start();
-
-protected:
-    CResultSetFactory factory;
-};
-
-
-class CRemoteResultSetFactory : public CResultSetFactoryBase
-{
-public:
-    CRemoteResultSetFactory(const char * remoteServer, const char * _username, const char * _password);
-    CRemoteResultSetFactory(const char * remoteServer, ISecManager &secmgr, ISecUser &secuser);
-
-    virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid);
-    virtual INewResultSet * createNewFileResultSet(const char * logicalFile, const char * cluster);
-    virtual INewResultSet * createNewResultSet(const char * wuid, unsigned sequence, const char * name);
-    virtual INewResultSet * createNewFileResultSet(const char * logicalFile);
-    virtual IResultSetMetaData * createResultSetMeta(IConstWUResult * wuResult);
-    virtual IResultSetMetaData * createResultSetMeta(const char * wuid, unsigned sequence, const char * name);
-
-protected:
-    SocketEndpoint serverEP;
 };
 
 

@@ -69,7 +69,7 @@
                 highTimeout="2000"
                 ignoreMissingFiles="false"
                 ignoreOrphans="true"
-                indexReadChunkSize="60000"
+                indexReadChunkSize="10"
                 initIbytiDelay="100"
                 jumboFrames="false"
                 lazyOpen="smart"
@@ -86,6 +86,8 @@
                 logQueueLen="512"
                 lowTimeout="10000"
                 maxBlockSize="10000000"
+                maxHttpConnectionRequests="10"
+                maxHttpKeepAliveWait="5000"
                 maxLocalFilesOpen="4000"
                 maxLockAttempts="5"
                 maxRemoteFilesOpen="1000"
@@ -360,6 +362,11 @@
                          resource="FileIOAccess"
                          service="ws_fileio"/>
     <AuthenticateFeature authenticate="Yes"
+                         description="Access to package map"
+                         path="PackageMapAccess"
+                         resource="PackageMapAccess"
+                         service="ws_packageprocess"/>
+    <AuthenticateFeature authenticate="Yes"
                          description="Access to permissions for file scopes"
                          path="FileScopeAccess"
                          resource="FileScopeAccess"
@@ -384,11 +391,6 @@
                          path="OthersWorkunitsAccess"
                          resource="OthersWorkunitsAccess"
                          service="ws_workunits"/>
-    <AuthenticateFeature authenticate="Yes"
-                         description="Access to ECL direct service"
-                         path="EclDirectAccess"
-                         resource="EclDirectAccess"
-                         service="ecldirect"/>
     <AuthenticateFeature authenticate="Yes"
                          description="Access to ESDL configuration service"
                          path="ESDLConfigAccess"
@@ -596,6 +598,10 @@
                          path="FileIOAccess"
                          resource="FileIOAccess"
                          service="ws_fileio"/>
+    <AuthenticateFeature description="Access to package map"
+                         path="PackageMapAccess"
+                         resource="PackageMapAccess"
+                         service="ws_packageprocess"/>
     <AuthenticateFeature description="Access to permissions for file scopes"
                          path="FileScopeAccess"
                          resource="FileScopeAccess"
@@ -616,10 +622,6 @@
                          path="OthersWorkunitsAccess"
                          resource="OthersWorkunitsAccess"
                          service="ws_workunits"/>
-    <AuthenticateFeature description="Access to ECL direct service"
-                         path="EclDirectAccess"
-                         resource="EclDirectAccess"
-                         service="ecldirect"/>
     <AuthenticateFeature description="Access to ESDL configuration service"
                          path="ESDLConfigAccess"
                          resource="ESDLConfigAccess"
@@ -711,7 +713,7 @@
                heapUseHugePages="false"
                heapUseTransparentHugePages="true"
                localThor="true"
-               localThorPortInc="200"
+               localThorPortInc="20"
                masterport="20000"
                monitorDaliFileServer="true"
                name="mythor"
@@ -887,6 +889,10 @@
                           path="FileIOAccess"
                           resource="FileIOAccess"
                           service="ws_fileio"/>
+     <AuthenticateFeature description="Access to package map"
+                          path="PackageMapAccess"
+                          resource="PackageMapAccess"
+                          service="ws_packageprocess"/>
      <AuthenticateFeature description="Access to permissions for file scopes"
                           path="FileScopeAccess"
                           resource="FileScopeAccess"
@@ -907,10 +913,6 @@
                           path="OthersWorkunitsAccess"
                           resource="OthersWorkunitsAccess"
                           service="ws_workunits"/>
-     <AuthenticateFeature description="Access to ECL direct service"
-                          path="EclDirectAccess"
-                          resource="EclDirectAccess"
-                          service="ecldirect"/>
      <AuthenticateFeature description="Access to ESDL configuration service"
                           path="ESDLConfigAccess"
                           resource="ESDLConfigAccess"
@@ -1020,29 +1022,6 @@
                    path="/"
                    required="Read"
                    resource="WsEclAccess"/>
-    </Properties>
-   </BuildSet>
-   <BuildSet deployable="no"
-             installSet="deploy_map.xml"
-             name="ecldirect"
-             path="componentfiles/ecldirect"
-             processName="EspService"
-             schema="esp_service_ecldirect.xsd">
-    <Properties bindingType="EclDirectSoapBinding"
-                defaultPort="8008"
-                defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
-                defaultSecurePort="18008"
-                plugin="ecldirect"
-                type="ecldirect">
-     <AuthenticateFeature description="Access to ECL Direct service"
-                          path="EclDirectAccess"
-                          resource="EclDirectAccess"
-                          service="ecldirect"/>
-     <Authenticate access="Read"
-                   description="Root access to ECL Direct service"
-                   path="/"
-                   required="Read"
-                   resource="EclDirectAccess"/>
     </Properties>
    </BuildSet>
    <BuildSet deployable="no"

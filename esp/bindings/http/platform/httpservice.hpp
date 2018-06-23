@@ -33,10 +33,33 @@
 #include "SOAP/Platform/soapmessage.hpp"
 
 #include "espsession.ipp"
+#include "jhash.hpp"
 
+typedef enum espAuthState_
+{
+    authUnknown,
+    authRequired,
+    authProvided,
+    authSucceeded,
+    authPending,
+    authTaskDone,
+    authFailed
+} EspAuthState;
 
+struct EspAuthRequest
+{
+    IEspContext* ctx;
+    EspHttpBinding* authBinding;
+    IProperties* requestParams;
+    StringBuffer httpPath, httpMethod, serviceName, methodName;
+    sub_service stype = sub_serv_unknown;
+    bool isSoapPost;
+};
+
+interface IRemoteConnection;
 class CEspHttpServer : implements IHttpServerService, public CInterface
 {
+    CriticalSection critDaliSession;
 protected:
     ISocket&                m_socket;
     Owned<CHttpRequest>     m_request;
@@ -46,9 +69,37 @@ protected:
 
     bool m_viewConfig;
     int m_MaxRequestEntityLength;
+    time_t lastSessionCleanUpTime = 0;
 
     int unsupported();
     EspHttpBinding* getBinding();
+    EspAuthState checkUserAuth();
+    void readAuthRequest(EspAuthRequest& req);
+    EspAuthState preCheckAuth(EspAuthRequest& authReq);
+    EspAuthState checkUserAuthPerRequest(EspAuthRequest& authReq);
+    EspAuthState checkUserAuthPerSession(EspAuthRequest& authReq);
+    EspAuthState authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL, bool unlock);
+    EspAuthState authExistingSession(EspAuthRequest& req, unsigned sessionID);
+    void logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* domainSessions, bool lock);
+    void askUserLogin(EspAuthRequest& authReq, const char* msg);
+    EspAuthState handleUserNameOnlyMode(EspAuthRequest& authReq);
+    EspAuthState handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock, const char* msg);
+    EspHttpBinding* getEspHttpBinding(EspAuthRequest& req);
+    bool isAuthRequiredForBinding(EspAuthRequest& req);
+    void authOptionalGroups(EspAuthRequest& req);
+    unsigned createHTTPSession(EspHttpBinding* authBinding, const char* userID, const char* loginURL);
+    void timeoutESPSessions(EspHttpBinding* authBinding, IPropertyTree* espSessions);
+    void addCookie(const char* cookieName, const char *cookieValue, int maxAgeSec, bool httpOnly);
+    void clearCookie(const char* cookieName);
+    unsigned readCookie(const char* cookieName);
+    const char* readCookie(const char* cookieName, StringBuffer& cookieValue);
+    void sendLockResponse(bool lock, bool error, const char* msg);
+    void sendAuthorizationMsg(EspAuthRequest& authReq);
+    void createGetSessionTimeoutResponse(StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
+    void resetSessionTimeout(EspAuthRequest& authReq, unsigned sessionID, StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
+    void sendMessage(const char* msg, const char* msgType);
+    IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -60,7 +111,6 @@ public:
     {
         return true;
     }
-    bool rootAuth(IEspContext* ctx);
 
     virtual int processRequest();
 
@@ -83,8 +133,8 @@ public:
     virtual int onUpdatePassword(CHttpRequest* request, CHttpResponse* response);
 #endif
 
-
     virtual const char * getServiceType() {return "HttpServer";};
+    bool persistentEligible();
 };
 
 

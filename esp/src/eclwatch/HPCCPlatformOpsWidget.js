@@ -22,7 +22,8 @@ define([
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPRequest",
+    "src/ESPRequest",
+    "src/ws_elk",
 
     "dojo/text!../templates/HPCCPlatformOpsWidget.html",
 
@@ -35,7 +36,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC,
                 registry,
-                _TabContainerWidget, ESPRequest,
+                _TabContainerWidget, ESPRequest, WsELK,
                 template) {
     return declare("HPCCPlatformOpsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -90,6 +91,20 @@ define([
                         src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsTopology") + "/TpServiceQuery?Type=ALLSERVICES"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
+                } else if (currSel.id === this.id + "_LogVisualization") {
+                    WsELK.GetConfigDetails({
+                        request: {}
+                    }).then(function (response) {
+                        if (lang.exists("GetConfigDetailsResponse", response)) {
+                            var elk = response.GetConfigDetailsResponse;
+                            currSel.set("content", dojo.create("iframe", {
+                                src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src="+ encodeURIComponent(elk.KibanaAddress + ":" + elk.KibanaPort + elk.KibanaEntryPointURI),
+                                style: "border: 0; width: 100%; height: 100%"
+                            }));
+                        } else {
+                            //load LogVisualizationWidget and show status there
+                        }
+                    });
                 } else if (currSel.init) {
                     currSel.init({});
                 }

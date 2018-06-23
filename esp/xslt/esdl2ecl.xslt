@@ -27,7 +27,7 @@
     <xsl:template match="text()" name="outputImports">
     <xsl:param name="import" select="."/>
         <xsl:if test="string-length($import) > 0">
-            <xsl:text disable-output-escaping="yes">import </xsl:text><xsl:value-of select="$import"/><xsl:text disable-output-escaping="yes">;
+            <xsl:text disable-output-escaping="yes">IMPORT </xsl:text><xsl:value-of select="$import"/><xsl:text disable-output-escaping="yes">;
 </xsl:text>
         </xsl:if>
     </xsl:template>
@@ -68,7 +68,7 @@
                   <xsl:call-template name="handleImports">
                     <xsl:with-param name="imports" select="$importsList"/>
                   </xsl:call-template>
-			<xsl:text disable-output-escaping="yes">export </xsl:text>
+            <xsl:text disable-output-escaping="yes">EXPORT </xsl:text>
 			<xsl:choose>
 				<xsl:when test="starts-with(@name, 'wsm_')"><xsl:value-of select="substring(@name, 5)"/></xsl:when>
 				<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
@@ -81,7 +81,7 @@
 		<xsl:apply-templates select="EsdlResponse"/>
 
 		<xsl:text disable-output-escaping="yes">
-end;
+END;
 
 </xsl:text>
           <xsl:call-template name="doNotChangeManuallyComment"/>
@@ -96,7 +96,7 @@ end;
 	</xsl:template>
 	<xsl:template match="EsdlElement[@type]">
 		<xsl:if test="not(@ecl_hide) and (@ecl_keep or not(@get_data_from))">
-			<xsl:text disable-output-escaping="yes">	</xsl:text><xsl:call-template name="output_basic_type"/><xsl:text disable-output-escaping="yes"> </xsl:text><xsl:call-template name="output_ecl_name"/><xsl:text disable-output-escaping="yes"> {</xsl:text><xsl:call-template name="output_xpath"/><xsl:if test="@ecl_max_len"><xsl:text disable-output-escaping="yes">, maxlength(</xsl:text><xsl:value-of select="@ecl_max_len"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:if><xsl:text disable-output-escaping="yes">};</xsl:text><xsl:call-template name="output_comments"/>
+           <xsl:text disable-output-escaping="yes">	</xsl:text><xsl:call-template name="output_basic_type"/><xsl:text disable-output-escaping="yes"> </xsl:text><xsl:call-template name="output_ecl_name"/><xsl:text disable-output-escaping="yes"> {</xsl:text><xsl:call-template name="output_xpath"/><xsl:if test="@ecl_max_len"><xsl:text disable-output-escaping="yes">, MAXLENGTH(</xsl:text><xsl:value-of select="@ecl_max_len"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:if><xsl:text disable-output-escaping="yes">};</xsl:text><xsl:call-template name="output_comments"/>
 <xsl:text disable-output-escaping="yes">
 </xsl:text>
 		</xsl:if>
@@ -109,8 +109,8 @@ end;
 	</xsl:template>
 	<xsl:template match="EsdlArray[@type='string']|EsdlList[@type='string']">
 		<xsl:if test="not(@ecl_hide) and (@ecl_keep or not(@get_data_from))">
-		<xsl:text disable-output-escaping="yes">	set of string </xsl:text><xsl:call-template name="output_ecl_name"/>
-		<xsl:text disable-output-escaping="yes"> {xpath('</xsl:text>
+        <xsl:text disable-output-escaping="yes">	SET OF STRING </xsl:text><xsl:call-template name="output_ecl_name"/>
+        <xsl:text disable-output-escaping="yes"> {XPATH('</xsl:text>
 		<xsl:choose>
 			<xsl:when test="name(.) ='EsdlArray'">
 				<xsl:if test="not(@flat_array)"><xsl:value-of select="@name"/></xsl:if><xsl:text disable-output-escaping="yes">/</xsl:text><xsl:call-template name="output_item_tag"/>
@@ -134,7 +134,7 @@ end;
 		<xsl:if test="not(@ecl_hide) and (@ecl_keep or not(@get_data_from))">
           <xsl:text disable-output-escaping="yes">&#9;</xsl:text>
 		  <xsl:value-of select="@ecl_type"/><xsl:text disable-output-escaping="yes"> </xsl:text><xsl:call-template name="output_ecl_name"/>
-		  <xsl:text disable-output-escaping="yes"> {xpath('</xsl:text>
+          <xsl:text disable-output-escaping="yes"> {XPATH('</xsl:text>
 		  <xsl:value-of select="@name"/>
 		  <xsl:text disable-output-escaping="yes">')};</xsl:text>
 		  <xsl:call-template name="output_comments"/>
@@ -143,8 +143,8 @@ end;
 	</xsl:template>
 	<xsl:template match="EsdlArray|EsdlList">
 		<xsl:if test="not(@ecl_hide) and (@ecl_keep or not(@get_data_from))">
-			<xsl:text disable-output-escaping="yes">	dataset(</xsl:text> <xsl:call-template name="output_ecl_array_type"/><xsl:text disable-output-escaping="yes">) </xsl:text><xsl:call-template name="output_ecl_name"/>
-            		<xsl:text disable-output-escaping="yes"> {xpath('</xsl:text>
+            <xsl:text disable-output-escaping="yes">	DATASET(</xsl:text> <xsl:call-template name="output_ecl_array_type"/><xsl:text disable-output-escaping="yes">) </xsl:text><xsl:call-template name="output_ecl_name"/>
+                    <xsl:text disable-output-escaping="yes"> {XPATH('</xsl:text>
 			<xsl:choose>
 				<xsl:when test="name(.) ='EsdlArray'">
  					<xsl:if test="not(@flat_array)"><xsl:value-of select="@name"/></xsl:if>
@@ -170,41 +170,59 @@ end;
 
 	<xsl:template match="EsdlStruct">
 		<xsl:if test="not(@ecl_hide) and (@ecl_keep or not(@get_data_from))">
-			<xsl:text disable-output-escaping="yes">export t_</xsl:text><xsl:call-template name="output_ecl_name"/><xsl:text disable-output-escaping="yes"> := record</xsl:text><xsl:if test="@RecordCode"><xsl:text disable-output-escaping="yes"> //RecordCode[</xsl:text><xsl:value-of select="@RecordCode"/><xsl:text disable-output-escaping="yes">]</xsl:text></xsl:if>
+            <xsl:text disable-output-escaping="yes">EXPORT t_</xsl:text><xsl:call-template name="output_ecl_name"/><xsl:text disable-output-escaping="yes"> := RECORD</xsl:text><xsl:if test="@RecordCode"><xsl:text disable-output-escaping="yes"> //RecordCode[</xsl:text><xsl:value-of select="@RecordCode"/><xsl:text disable-output-escaping="yes">]</xsl:text></xsl:if>
 			<xsl:if test="@base_type"><xsl:call-template name="output_ecl_base_type"/></xsl:if>
 			<xsl:if test="@max_len"><xsl:text disable-output-escaping="yes">, MAXLENGTH (</xsl:text><xsl:value-of select="@max_len"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:if>
 			<xsl:text disable-output-escaping="yes">
 </xsl:text>
 			<xsl:apply-templates select="*"/>
-			<xsl:if test="@element and not(*[@name='Content_'])">	string Content_ {xpath('')};
+            <xsl:if test="@element and not(*[@name='Content_'])">	STRING Content_ {XPATH('')};
 </xsl:if>
-			<xsl:text disable-output-escaping="yes">end;
+            <xsl:text disable-output-escaping="yes">END;
 
 </xsl:text>
 		</xsl:if>
 	</xsl:template>
 
 	<xsl:template match="EsdlRequest">
-		<xsl:text disable-output-escaping="yes">export t_</xsl:text><xsl:call-template name="output_ecl_name"/><xsl:text disable-output-escaping="yes"> := record</xsl:text>
+        <xsl:if test="not(node())">
+        <xsl:text disable-output-escaping="yes">/*Empty record generated from empty EsdlRequest
+</xsl:text>
+        </xsl:if>
+        <xsl:text disable-output-escaping="yes">EXPORT t_</xsl:text><xsl:call-template name="output_ecl_name"/><xsl:text disable-output-escaping="yes"> := RECORD</xsl:text>
 		<xsl:if test="@base_type"><xsl:call-template name="output_ecl_base_type"/></xsl:if>
 		<xsl:if test="@max_len"><xsl:text disable-output-escaping="yes">, MAXLENGTH (</xsl:text><xsl:value-of select="@max_len"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:if>
 		<xsl:text disable-output-escaping="yes">
 </xsl:text>
 		<xsl:apply-templates select="*"/>
-		<xsl:text disable-output-escaping="yes">end;
-
+        <xsl:text disable-output-escaping="yes">END;
+</xsl:text>
+        <xsl:if test="not(node())">
+        <xsl:text disable-output-escaping="yes">*/
+</xsl:text>
+        </xsl:if>
+<xsl:text disable-output-escaping="yes">
 </xsl:text>
 	</xsl:template>
 
 	<xsl:template match="EsdlResponse">
-		<xsl:text disable-output-escaping="yes">export t_</xsl:text><xsl:call-template name="output_ecl_name"/><xsl:text disable-output-escaping="yes"> := record</xsl:text>
+        <xsl:if test="not(node())">
+        <xsl:text disable-output-escaping="yes">/*Empty record generated from empty EsdlResponse
+</xsl:text>
+        </xsl:if>
+        <xsl:text disable-output-escaping="yes">EXPORT t_</xsl:text><xsl:call-template name="output_ecl_name"/><xsl:text disable-output-escaping="yes"> := RECORD</xsl:text>
 		<xsl:if test="@base_type"><xsl:call-template name="output_ecl_base_type"/></xsl:if>
 		<xsl:if test="@max_len"><xsl:text disable-output-escaping="yes">, MAXLENGTH (</xsl:text><xsl:value-of select="@max_len"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:if>
 		<xsl:text disable-output-escaping="yes">
 </xsl:text>
 		<xsl:apply-templates select="*"/>
-		<xsl:text disable-output-escaping="yes">end;
-
+        <xsl:text disable-output-escaping="yes">END;
+</xsl:text>
+        <xsl:if test="not(node())">
+        <xsl:text disable-output-escaping="yes">*/
+</xsl:text>
+        </xsl:if>
+<xsl:text disable-output-escaping="yes">
 </xsl:text>
 	</xsl:template>
 
@@ -226,17 +244,17 @@ end;
 	<xsl:param name="size" select="@max_len"/>
 	<xsl:choose>
 		<xsl:when test="@ecl_type"><xsl:value-of select="@ecl_type"/><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
-		<xsl:when test="$basic_type='int'"><xsl:text disable-output-escaping="yes">integer</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
-		<xsl:when test="$basic_type='long'"><xsl:text disable-output-escaping="yes">integer4</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
-		<xsl:when test="$basic_type='short'"><xsl:text disable-output-escaping="yes">integer2</xsl:text></xsl:when>
-		<xsl:when test="$basic_type='int64'"><xsl:text disable-output-escaping="yes">integer8</xsl:text></xsl:when>
-		<xsl:when test="$basic_type='bool'"><xsl:text disable-output-escaping="yes">boolean</xsl:text></xsl:when>
-		<xsl:when test="$basic_type='string'"><xsl:text disable-output-escaping="yes">string</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
-		<xsl:when test="$basic_type='double'"><xsl:text disable-output-escaping="yes">real8</xsl:text></xsl:when>
-		<xsl:when test="$basic_type='float'"><xsl:text disable-output-escaping="yes">real4</xsl:text></xsl:when>
-		<xsl:when test="$basic_type='base64Binary'"><xsl:text disable-output-escaping="yes">string</xsl:text></xsl:when>
+        <xsl:when test="$basic_type='int'"><xsl:text disable-output-escaping="yes">INTEGER</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
+        <xsl:when test="$basic_type='long'"><xsl:text disable-output-escaping="yes">INTEGER4</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
+        <xsl:when test="$basic_type='short'"><xsl:text disable-output-escaping="yes">INTEGER2</xsl:text></xsl:when>
+        <xsl:when test="$basic_type='int64'"><xsl:text disable-output-escaping="yes">INTEGER8</xsl:text></xsl:when>
+        <xsl:when test="$basic_type='bool'"><xsl:text disable-output-escaping="yes">BOOLEAN</xsl:text></xsl:when>
+        <xsl:when test="$basic_type='string'"><xsl:text disable-output-escaping="yes">STRING</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
+        <xsl:when test="$basic_type='double'"><xsl:text disable-output-escaping="yes">REAL8</xsl:text></xsl:when>
+        <xsl:when test="$basic_type='float'"><xsl:text disable-output-escaping="yes">REAL4</xsl:text></xsl:when>
+        <xsl:when test="$basic_type='base64Binary'"><xsl:text disable-output-escaping="yes">STRING</xsl:text></xsl:when>
 		<xsl:when test="$basic_type"><xsl:value-of select="$basic_type"/><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:when>
-		<xsl:otherwise><xsl:text disable-output-escaping="yes">string</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:otherwise>
+        <xsl:otherwise><xsl:text disable-output-escaping="yes">STRING</xsl:text><xsl:if test="not(@ecl_max_len)"><xsl:value-of select="$size"/></xsl:if></xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
 
@@ -319,11 +337,11 @@ end;
         <xsl:choose>
          <xsl:when test="name()='EsdlArray|EsdlList'">
            <xsl:text disable-output-escaping="yes"> // Real type: </xsl:text>
-           <xsl:text disable-output-escaping="yes">dataset(t_</xsl:text>
+           <xsl:text disable-output-escaping="yes">DATASET(t_</xsl:text>
            <xsl:value-of select="@type"/>
            <xsl:text disable-output-escaping="yes">) </xsl:text>
            <xsl:call-template name="output_ecl_name"/>
-           <xsl:text disable-output-escaping="yes"> {xpath('</xsl:text>
+           <xsl:text disable-output-escaping="yes"> {XPATH('</xsl:text>
            <xsl:choose>
 		<xsl:when test="name() ='EsdlArray'">
                   <xsl:if test="not(@flat_array)"><xsl:value-of select="@name"/></xsl:if>
@@ -352,7 +370,7 @@ end;
 </xsl:template>
 
 <xsl:template name="output_xpath">
-	<xsl:text disable-output-escaping="yes">xpath('</xsl:text>
+    <xsl:text disable-output-escaping="yes">XPATH('</xsl:text>
 	<xsl:choose>
 		<xsl:when test="@ecl_path"><xsl:value-of select="@ecl_path"/></xsl:when>
 		<xsl:otherwise><xsl:if test="@attribute"><xsl:value-of select="'@'"/></xsl:if> <xsl:value-of select="@name"/></xsl:otherwise>

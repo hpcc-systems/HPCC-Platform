@@ -35,11 +35,24 @@
 #include "portlist.h"
 #include "jsocket.hpp"
 #include "jencrypt.hpp"
+#include "jlzw.hpp"
 #include "jset.hpp"
 #include "jhtree.hpp"
 
 #include "remoteerr.hpp"
 #include <atomic>
+#include <string>
+#include <unordered_map>
+
+#include "rtldynfield.hpp"
+#include "rtlds_imp.hpp"
+#include "rtlread_imp.hpp"
+#include "rtlrecord.hpp"
+#include "eclhelper_dyn.hpp"
+
+#include "rtlcommon.hpp"
+#include "rtlformat.hpp"
+
 
 #define SOCKET_CACHE_MAX 500
 
@@ -52,6 +65,12 @@
 #define TREECOPYTIMEOUT   (60*60*1000)     // 1Hr (I guess could take longer for big file but at least will stagger)
 #define TREECOPYPOLLTIME  (60*1000*5)      // for tracing that delayed
 #define TREECOPYPRUNETIME (24*60*60*1000)  // 1 day
+
+static const unsigned __int64 defaultFileStreamChooseNLimit = I64C(0x7fffffffffffffff); // constant should be move to common place (see eclhelper.hpp)
+static const unsigned __int64 defaultFileStreamSkipN = 0;
+static const unsigned defaultDaFSNumRecs = 100;
+enum OutputFormat:byte { outFmt_Binary, outFmt_Xml, outFmt_Json };
+
 
 #if SIMULATE_PACKETLOSS
 
@@ -162,7 +181,7 @@ struct dummyReadWrite
 // backward compatible modes
 typedef enum { compatIFSHnone, compatIFSHread, compatIFSHwrite, compatIFSHexec, compatIFSHall} compatIFSHmode;
 
-static const char *VERSTRING= "DS V2.1"       // dont forget FILESRV_VERSION in header
+static const char *VERSTRING= "DS V2.2"       // dont forget FILESRV_VERSION in header
 #ifdef _WIN32
 "Windows ";
 #else
@@ -275,8 +294,10 @@ static byte traceFlags=0x20;
 #define TF_TRACE_CLIENT_STATS (traceFlags&0x20)
 
 
+static const unsigned RFEnoerror = 0;
 
-enum {
+enum
+{
     RFCopenIO,                                      // 0
     RFCcloseIO,
     RFCread,
@@ -323,9 +344,13 @@ enum {
     RFCsetthrottle2,
     RFCsetfileperms,
 // 2.0
-    RFCreadfilteredindex,
+    RFCreadfilteredindex,    // No longer used
     RFCreadfilteredindexcount,
     RFCreadfilteredindexblob,
+// 2.2
+    RFCStreamRead,
+    RFCStreamReadTestSocket = '{',
+    RFCmaxnormal,
     RFCmax,
     RFCunknown = 255 // 0 would have been more sensible, but can't break backward compatibility
 };
@@ -377,13 +402,20 @@ const char *RFCStrings[] =
     RFCText(RFCreadfilteredindex),
     RFCText(RFCreadfilteredcount),
     RFCText(RFCreadfilteredblob),
+    RFCText(RFCStreamRead),
     RFCText(RFCunknown),
 };
 static const char *getRFCText(RemoteFileCommandType cmd)
 {
-    if (cmd > RFCmax)
-        cmd = RFCmax;
-    return RFCStrings[cmd];
+    if (cmd==RFCStreamReadTestSocket)
+        return "RFCStreamReadTestSocket";
+    else
+    {
+        unsigned elems = sizeof(RFCStrings) / sizeof(RFCStrings[0]);
+        if (cmd >= elems)
+            cmd = RFCunknown;
+        return RFCStrings[cmd];
+    }
 }
 
 static const char *getRFSERRText(unsigned err)
@@ -466,6 +498,10 @@ static const char *getRFSERRText(unsigned err)
             return "RFSERR_MaxQueueRequests";
         case RFSERR_KeyIndexFailed:
             return "RFSERR_MaxQueueRequests";
+        case RFSERR_StreamReadFailed:
+            return "RFSERR_StreamReadFailed";
+        case RFSERR_InternalError:
+            return "Internal Error";
     }
     return "RFSERR_Unknown";
 }
@@ -600,12 +636,14 @@ inline MemoryBuffer & initSendBuffer(MemoryBuffer & buff)
     return buff;
 }
 
-inline void sendBuffer(ISocket * socket, MemoryBuffer & src)
+inline void sendBuffer(ISocket * socket, MemoryBuffer & src, bool testSocketFlag=false)
 {
     unsigned length = src.length() - sizeof(unsigned);
     byte * buffer = (byte *)src.toByteArray();
     if (TF_TRACE_FULL)
         PROGLOG("sendBuffer size %d, data = %d %d %d %d",length, (int)buffer[4],(int)buffer[5],(int)buffer[6],(int)buffer[7]);
+    if (testSocketFlag)
+        length |= 0x80000000;
     _WINCPYREV(buffer, &length, sizeof(unsigned));
     SOCKWRITE(socket)(buffer, src.length());
 }
@@ -657,10 +695,12 @@ static void flush(ISocket *socket)
     sendbuf.append((unsigned)RFCgetver);
     MemoryBuffer reply;
     size32_t totread=0;
-    try {
+    try
+    {
         sendBuffer(socket, sendbuf);
         char buf[1024];
-        for (;;) {
+        for (;;)
+        {
             Sleep(1000);    // breathe
             size32_t szread;
             SOCKREADTMS(socket)(buf, 1, sizeof(buf), szread, 1000*60);
@@ -1187,17 +1227,23 @@ protected: friend class CRemoteFileIO;
         setDafsEndpointPort(tep);
         unsigned nretries = retry?3:0;
         Owned<IJSOCK_Exception> firstexc;   // when retrying return first error if fails
-        for (;;) {
-            try {
-                if (socket) {
+        for (;;)
+        {
+            try
+            {
+                if (socket)
+                {
                     sendBuffer(socket, src);
                     receiveBuffer(socket, reply, lengthy?LENGTHY_RETRIES:NORMAL_RETRIES);
                     break;
                 }
             }
-            catch (IJSOCK_Exception *e) {
-                if (!nretries--) {
-                    if (firstexc) {
+            catch (IJSOCK_Exception *e)
+            {
+                if (!nretries--)
+                {
+                    if (firstexc)
+                    {
                         e->Release();
                         e = firstexc.getClear();
                     }
@@ -1214,14 +1260,16 @@ protected: friend class CRemoteFileIO;
                 killSocket(tep);
             }
             CriticalBlock block2(CConnectionTable::crit); // this is nested with crit
-            if (ConnectionTable) {
-
+            if (ConnectionTable)
+            {
                 socket.setown(ConnectionTable->lookup(tep));
-                if (socket) {
+                if (socket)
+                {
                     // validate existing socket by sending an 'exists' command with short time out
                     // (use exists for backward compatibility)
                     bool ok = false;
-                    try {
+                    try
+                    {
                         MemoryBuffer sendbuf;
                         initSendBuffer(sendbuf);
                         MemoryBuffer replybuf;
@@ -1276,7 +1324,8 @@ protected: friend class CRemoteFileIO;
             return;
         unsigned errCode;
         reply.read(errCode);
-        if (errCode) {
+        if (errCode)
+        {
             // old Solaris daliservix.cpp error code conversion
             if ( (errCode >= 8200) && (errCode <= 8210) )
                 errCode = mapDafilesrvixCodes(errCode);
@@ -1285,10 +1334,12 @@ protected: friend class CRemoteFileIO;
                 msg.append(filename);
             ep.getUrlStr(msg.append('[')).append("] ");
             size32_t pos = reply.getPos();
-            if (pos<reply.length()) {
+            if (pos<reply.length())
+            {
                 size32_t len = reply.length()-pos;
                 const byte *rest = reply.readDirect(len);
-                if (errCode==RFSERR_InvalidCommand) {
+                if (errCode==RFSERR_InvalidCommand)
+                {
                     const char *s = (const char *)rest;
                     const char *e = (const char *)rest+len;
                     while (*s&&(s!=e))
@@ -1297,7 +1348,8 @@ protected: friend class CRemoteFileIO;
                 }
                 else if (len&&(rest[len-1]==0))
                     msg.append((const char *)rest);
-                else {
+                else
+                {
                     msg.appendf("extra data[%d]",len);
                     for (unsigned i=0;(i<16)&&(i<len);i++)
                         msg.appendf(" %2x",(int)rest[i]);
@@ -1344,7 +1396,8 @@ protected: friend class CRemoteFileIO;
         MemoryBuffer replybuf;
         MemoryBuffer encbuf; // because aesEncrypt clears input
         sendbuf.append((RemoteFileCommandType)RFCunlock).append(sizeof(oncekey),&oncekey);
-        try {
+        try
+        {
             sendBuffer(socket, sendbuf);
             receiveBuffer(socket, replybuf, NORMAL_RETRIES, 1024);
         }
@@ -1391,7 +1444,8 @@ protected: friend class CRemoteFileIO;
         aesEncrypt(&sokey, sizeof(oncekey), tosend.toByteArray(), tosend.length(), encbuf);
         sendbuf.append(encbuf.length());
         sendbuf.append(encbuf);
-        try {
+        try
+        {
             sendBuffer(socket, sendbuf);
             receiveBuffer(socket, replybuf.clear(), NORMAL_RETRIES, 1024);
         }
@@ -1731,16 +1785,383 @@ void CEndpointCS::beforeDispose()
     table.removeExact(this);
 }
 
+class CRemoteFilteredFileIOBase : public CRemoteBase, implements IRemoteFileIO
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    // Really a stream, but life (maybe) easier elsewhere if looks like a file
+    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    CRemoteFilteredFileIOBase(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+        : CRemoteBase(ep, filename)
+    {
+        // NB: inputGrouped == outputGrouped for now, but may want output to be ungrouped
+
+        openRequest();
+        request.appendf("\"format\" : \"binary\",\n"
+            "\"node\" : {\n"
+            " \"fileName\" : \"%s\"", filename);
+        if (chooseN)
+            request.appendf(",\n \"chooseN\" : \"%" I64F "u\"", chooseN);
+        if (fieldFilters.numFilterFields())
+        {
+            request.append(",\n \"keyFilter\" : [\n  ");
+            for (unsigned idx=0; idx < fieldFilters.numFilterFields(); idx++)
+            {
+                auto &filter = fieldFilters.queryFilter(idx);
+                StringBuffer filterString;
+                filter.serialize(filterString);
+                if (idx)
+                    request.append(",\n  ");
+                request.append("\"");
+                encodeJSON(request, filterString.length(), filterString.str());
+                request.append("\"");
+            }
+            request.append("\n ]");
+        }
+        MemoryBuffer actualTypeInfo;
+        if (!dumpTypeInfo(actualTypeInfo, actual->querySerializedDiskMeta()->queryTypeInfo()))
+            throw MakeStringException(0, "Format not supported by remote read");
+        request.append(",\n \"inputBin\": \"");
+        JBASE64_Encode(actualTypeInfo.toByteArray(), actualTypeInfo.length(), request, false);
+        request.append("\"");
+        if (actual != projected)
+        {
+            MemoryBuffer projectedTypeInfo;
+            dumpTypeInfo(projectedTypeInfo, projected->querySerializedDiskMeta()->queryTypeInfo());
+            if (actualTypeInfo.length() != projectedTypeInfo.length() ||
+                memcmp(actualTypeInfo.toByteArray(), projectedTypeInfo.toByteArray(), actualTypeInfo.length()))
+            {
+                request.append(",\n \"outputBin\": \"");
+                JBASE64_Encode(projectedTypeInfo.toByteArray(), projectedTypeInfo.length(), request, false);
+                request.append("\"");
+            }
+        }
+        bufPos = 0;
+    }
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override
+    {
+        assertex(pos == bufPos);  // Must read sequentially
+        if (!bufRemaining && !eof)
+            refill();
+        if (eof)
+            return 0;
+        if (len > bufRemaining)
+            len = bufRemaining;
+        bufPos += len;
+        bufRemaining -= len;
+        memcpy(data, reply.readDirect(len), len);
+        return len;
+    }
+    virtual offset_t size() override { return -1; }
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override { throwUnexpected(); }
+    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override { throwUnexpected(); }
+    virtual void setSize(offset_t size) override { throwUnexpected(); }
+    virtual void flush() override { throwUnexpected(); }
+    virtual void close() override
+    {
+        if (handle)
+        {
+            try
+            {
+                MemoryBuffer sendBuffer;
+                initSendBuffer(sendBuffer);
+                sendBuffer.append((RemoteFileCommandType)RFCcloseIO).append(handle);
+                sendRemoteCommand(sendBuffer,false);
+            }
+            catch (IDAFS_Exception *e)
+            {
+                if ((e->errorCode()!=RFSERR_InvalidFileIOHandle)&&(e->errorCode()!=RFSERR_NullFileIOHandle))
+                    throw;
+                e->Release();
+            }
+            handle = 0;
+        }
+    }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
+    {
+        /* NB: Would need new stat. categories added for this to make sense,
+         * but this class is implemented as a IFileIO for convenience for now,
+         * it may be refactored into another form later.
+         */
+        return 0;
+    }
+// IRemoteFileIO
+    virtual void addVirtualFieldMapping(const char *fieldName, const char *fieldValue) override
+    {
+        virtualFields[fieldName] = fieldValue;
+    }
+    virtual void ensureAvailable() override
+    {
+        if (firstRequest)
+            handleFirstRequest();
+    }
+protected:
+    StringBuffer &openRequest()
+    {
+        return request.append("{\n");
+    }
+    StringBuffer &closeRequest()
+    {
+        return request.append("\n }\n");
+    }
+    void addVirtualFields()
+    {
+        request.append(", \n \"virtualFields\" : {\n");
+        bool first=true;
+        for (auto &e : virtualFields)
+        {
+            if (!first)
+                request.append(",\n");
+            request.appendf("  \"%s\" : \"%s\"", e.first.c_str(), e.second.c_str());
+            first = false;
+        }
+        request.append(" }");
+    }
+    void handleFirstRequest()
+    {
+        firstRequest = false;
+        addVirtualFields();
+        closeRequest();
+        sendRequest(0, nullptr);
+    }
+    void refill()
+    {
+        if (firstRequest)
+        {
+            handleFirstRequest();
+            return;
+        }
+        size32_t cursorLength;
+        reply.read(cursorLength);
+        if (!cursorLength)
+        {
+            eof = true;
+            return;
+        }
+        MemoryBuffer mrequest;
+        MemoryBuffer newReply;
+        initSendBuffer(mrequest);
+        mrequest.append((RemoteFileCommandType)RFCStreamRead);
+        VStringBuffer json("{ \"handle\" : %u }", handle);
+        mrequest.append(json.length(), json.str());
+        sendRemoteCommand(mrequest, newReply);
+        unsigned newHandle;
+        newReply.read(newHandle);
+        if (newHandle == handle)
+        {
+            reply.swapWith(newReply);
+            reply.read(bufRemaining);
+            eof = (bufRemaining == 0);
+        }
+        else
+        {
+            assertex(newHandle == 0);
+            sendRequest(cursorLength, reply.readDirect(cursorLength));
+        }
+    }
+    void sendRequest(unsigned cursorLen, const void *cursorData)
+    {
+        MemoryBuffer mrequest;
+        initSendBuffer(mrequest);
+        mrequest.append((RemoteFileCommandType)RFCStreamRead);
+        mrequest.append(request.length(), request.str());
+        if (cursorLen)
+        {
+            StringBuffer cursorInfo;
+            cursorInfo.append(",\"cursorBin\": \"");
+            JBASE64_Encode(cursorData, cursorLen, cursorInfo, false);
+            cursorInfo.append("\"\n");
+            mrequest.append(cursorInfo.length(), cursorInfo.str());
+        }
+        if (TF_TRACE_FULL)
+            PROGLOG("req = <%s}>", request.str());
+        mrequest.append(3, " \n}");
+        sendRemoteCommand(mrequest, reply);
+        reply.read(handle);
+        reply.read(bufRemaining);
+        eof = (bufRemaining == 0);
+    }
+    StringBuffer request;
+    MemoryBuffer reply;
+    unsigned handle = 0;
+    size32_t bufRemaining = 0;
+    unsigned bufPos = 0;
+    bool eof = false;
+
+    bool firstRequest = true;
+    std::unordered_map<std::string, std::string> virtualFields;
+};
+
+class CRemoteFilteredFileIO : public CRemoteFilteredFileIOBase
+{
+public:
+    // Really a stream, but life (maybe) easier elsewhere if looks like a file
+    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    CRemoteFilteredFileIO(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
+        : CRemoteFilteredFileIOBase(ep, filename, actual, projected, fieldFilters, chooseN)
+    {
+        // NB: inputGrouped == outputGrouped for now, but may want output to be ungrouped
+        request.appendf(",\n \"kind\" : \"diskread\",\n"
+            " \"compressed\" : \"%s\",\n"
+            " \"inputGrouped\" : \"%s\",\n"
+            " \"outputGrouped\" : \"%s\"", boolToStr(compressed), boolToStr(grouped), boolToStr(grouped));
+    }
+};
+
+class CRemoteFilteredRowStream : public CRemoteFilteredFileIO, implements IRowStream
+{
+public:
+    CRemoteFilteredRowStream(const RtlRecord &_recInfo, SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped)
+        : CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped, 0), recInfo(_recInfo)
+    {
+    }
+    virtual const byte *queryNextRow()  // NOTE - rows returned must NOT be freed
+    {
+        if (!bufRemaining && !eof)
+            refill();
+        if (eof)
+            return nullptr;
+        unsigned len = recInfo.getRecordSize(reply.readDirect(0));
+        bufPos += len;
+        bufRemaining -= len;
+        return reply.readDirect(len);
+    }
+    virtual void stop() override
+    {
+        close();
+        eof = true;
+    }
+protected:
+    const RtlRecord &recInfo;
+};
+
+extern IRemoteFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
+{
+    try
+    {
+        return new CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped, chooseN);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, nullptr);
+        e->Release();
+    }
+    return nullptr;
+}
+
+class CRemoteFilteredKeyIO : public CRemoteFilteredFileIOBase
+{
+public:
+    // Really a stream, but life (maybe) easier elsewhere if looks like a file
+    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    CRemoteFilteredKeyIO(SocketEndpoint &ep, const char *filename, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+        : CRemoteFilteredFileIOBase(ep, filename, actual, projected, fieldFilters, chooseN)
+    {
+        request.appendf(",\n \"kind\" : \"indexread\"");
+        request.appendf(",\n \"crc\" : \"%u\"", crc);
+    }
+};
+
+class CRemoteFilteredKeyCountIO : public CRemoteFilteredFileIOBase
+{
+public:
+    // Really a stream, but life (maybe) easier elsewhere if looks like a file
+    // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
+    CRemoteFilteredKeyCountIO(SocketEndpoint &ep, const char *filename, unsigned crc, IOutputMetaData *actual, const RowFilter &fieldFilters, unsigned __int64 rowLimit)
+        : CRemoteFilteredFileIOBase(ep, filename, actual, actual, fieldFilters, rowLimit)
+    {
+        request.appendf(",\n \"kind\" : \"indexcount\"");
+        request.appendf(",\n \"crc\" : \"%u\"", crc);
+    }
+};
+
+class CRemoteKey : public CSimpleInterfaceOf<IIndexLookup>
+{
+    Owned<IRemoteFileIO> iRemoteFileIO;
+    offset_t pos = 0;
+    Owned<ISourceRowPrefetcher> prefetcher;
+    CThorContiguousRowBuffer prefetchBuffer;
+    Owned<ISerialStream> strm;
+    bool pending = false;
+    SocketEndpoint ep;
+    StringAttr filename;
+    unsigned crc;
+    Linked<IOutputMetaData> actual, projected;
+    RowFilter fieldFilters;
+
+public:
+    CRemoteKey(SocketEndpoint &_ep, const char *_filename, unsigned _crc, IOutputMetaData *_actual, IOutputMetaData *_projected, const RowFilter &_fieldFilters, unsigned __int64 rowLimit)
+        : ep(_ep), filename(_filename), crc(_crc), actual(_actual), projected(_projected)
+    {
+        for (unsigned f=0; f<_fieldFilters.numFilterFields(); f++)
+            fieldFilters.addFilter(OLINK(_fieldFilters.queryFilter(f)));
+        iRemoteFileIO.setown(new CRemoteFilteredKeyIO(ep, filename, crc, actual, projected, fieldFilters, rowLimit));
+        if (!iRemoteFileIO)
+            throw MakeStringException(0, "Unable to open remote key part: '%s'", filename.get());
+        strm.setown(createFileSerialStream(iRemoteFileIO));
+        prefetcher.setown(projected->createDiskPrefetcher());
+        assertex(prefetcher);
+        prefetchBuffer.setStream(strm);
+    }
+// IIndexLookup
+    virtual void ensureAvailable() override
+    {
+        iRemoteFileIO->ensureAvailable(); // will throw an exception if fails
+    }
+    virtual unsigned __int64 getCount() override
+    {
+        return checkCount(0);
+    }
+    virtual unsigned __int64 checkCount(unsigned __int64 limit) override
+    {
+        Owned<IFileIO> iFileIO = new CRemoteFilteredKeyCountIO(ep, filename, crc, actual, fieldFilters, limit);
+        unsigned __int64 result;
+        iFileIO->read(0, sizeof(result), &result);
+        return result;
+    }
+    virtual const void *nextKey() override
+    {
+        if (pending)
+            prefetchBuffer.finishedRow();
+        if (prefetchBuffer.eos())
+            return nullptr;
+        prefetcher->readAhead(prefetchBuffer);
+        pending = true;
+        return prefetchBuffer.queryRow();
+    }
+    virtual unsigned querySeeks() const override { return 0; } // not sure how best to handle these, perhaps should log/record somewhere on server-side
+    virtual unsigned queryScans() const override { return 0; }
+    virtual unsigned querySkips() const override { return 0; }
+};
+
+
+extern IIndexLookup *createRemoteFilteredKey(SocketEndpoint &ep, const char * filename, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+{
+    try
+    {
+        return new CRemoteKey(ep, filename, crc, actual, projected, fieldFilters, chooseN);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, nullptr);
+        e->Release();
+    }
+    return nullptr;
+}
+
+
 class CRemoteFile : public CRemoteBase, implements IFile
 {
     StringAttr remotefilename;
     unsigned flags;
+    bool isShareSet;
 public:
     IMPLEMENT_IINTERFACE
     CRemoteFile(const SocketEndpoint &_ep, const char * _filename)
         : CRemoteBase(_ep, _filename)
     {
         flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
+        isShareSet = false;
         if (filename.length()>2 && isPathSepChar(filename[0]) && isShareChar(filename[2]))
         {
             VStringBuffer winDriveFilename("%c:%s", filename[1], filename+3);
@@ -1792,19 +2213,22 @@ public:
         initSendBuffer(sendBuffer);
         MemoryBuffer replyBuffer;
         sendBuffer.append((RemoteFileCommandType)RFCsettime).append(filename);
-        if (createTime) {
+        if (createTime)
+        {
             sendBuffer.append((bool)true);
             createTime->serialize(sendBuffer);
         }
         else
             sendBuffer.append((bool)false);
-        if (modifiedTime) {
+        if (modifiedTime)
+        {
             sendBuffer.append((bool)true);
             modifiedTime->serialize(sendBuffer);
         }
         else
             sendBuffer.append((bool)false);
-        if (accessedTime) {
+        if (accessedTime)
+        {
             sendBuffer.append((bool)true);
             accessedTime->serialize(sendBuffer);
         }
@@ -1936,7 +2360,8 @@ public:
         splitDirTail(filename,path);
         StringBuffer newdir;
         const char *newtail = splitDirTail(newname,newdir);
-        if (strcmp(newdir.str(),path.str())==0) {
+        if (strcmp(newdir.str(),path.str())==0)
+        {
             path.append(newtail);
             newname = path;
             sendBuffer.append((RemoteFileCommandType)RFCrename);    // use rename if we can (supported on older dafilesrv)
@@ -1971,9 +2396,12 @@ public:
         catch (IDAFS_Exception *e)
         {
             if (e->errorCode() == RFSERR_InvalidCommand)
+            {
                 WARNLOG("umask setFilePermissions (0%o) not supported on remote server", fPerms);
+                e->Release();
+            }
             else
-                throw e;
+                throw;
         }
 
     }
@@ -2055,7 +2483,8 @@ public:
 
         Owned<CEndpointCS> crit = dirCSTable->getCrit(ep); // NB dirCSTable doesn't own, last reference will remove from table
         CriticalBlock block(*crit);
-        for (;;) {
+        for (;;)
+        {
             MemoryBuffer sendBuffer;
             initSendBuffer(sendBuffer);
             MemoryBuffer replyBuffer;
@@ -2063,7 +2492,7 @@ public:
             sendRemoteCommand(sendBuffer, replyBuffer);
             if (ret->appendBuf(replyBuffer))
                 break;
-            stream = 2; // NB: will never get here if streaming was (if stream==0 above)
+            stream = 2; // NB: will never get here if streaming was off (if stream==0 above)
         }
         return ret;
     }
@@ -2092,7 +2521,8 @@ public:
         sendRemoteCommand(sendBuffer, replyBuffer);
         byte status;
         replyBuffer.read(status);
-        if (status==1) {
+        if (status==1)
+        {
             CRemoteDirectoryIterator *iter = new CRemoteDirectoryIterator(ep, filename);
             iter->appendBuf(replyBuffer);
             return iter;
@@ -2182,11 +2612,17 @@ public:
     {
         flags &= ~(IFSHfull|IFSHread);
         flags |= (unsigned)(shmode&(IFSHfull|IFSHread));
+        isShareSet = true;
     }
 
     unsigned short getShareMode()
     {
         return (unsigned short)(flags&0xffff);
+    }
+
+    bool getIsShareSet()
+    {
+        return isShareSet;
     }
 
     void remoteExtractBlobElements(const char * prefix, ExtractedBlobArray & extracted)
@@ -2217,7 +2653,8 @@ public:
         sendRemoteCommand(sendBuffer, replyBuffer);
         unsigned status;
         replyBuffer.read(status);
-        if (progress) {
+        if (progress)
+        {
             offset_t sizeDone;
             offset_t totalSize;
             replyBuffer.read(sizeDone).read(totalSize);
@@ -2345,14 +2782,17 @@ public:
 
     void close()
     {
-        if (handle) {
-            try {
+        if (handle)
+        {
+            try
+            {
                 MemoryBuffer sendBuffer;
                 initSendBuffer(sendBuffer);
                 sendBuffer.append((RemoteFileCommandType)RFCcloseIO).append(handle);
                 parent->sendRemoteCommand(sendBuffer,false);
             }
-            catch (IDAFS_Exception *e) {
+            catch (IDAFS_Exception *e)
+            {
                 if ((e->errorCode()!=RFSERR_InvalidFileIOHandle)&&(e->errorCode()!=RFSERR_NullFileIOHandle))
                     throw;
                 e->Release();
@@ -2372,20 +2812,23 @@ public:
         // then also send sMode, cFlags
         unsigned short sMode = parent->getShareMode();
         unsigned short cFlags = parent->getCreateFlags();
-        switch ((compatIFSHmode)_compatmode)
+        if (!(parent->getIsShareSet()))
         {
-            case compatIFSHnone:
-                sMode = IFSHnone;
-                break;
-            case compatIFSHread:
-                sMode = IFSHread;
-                break;
-            case compatIFSHwrite:
-                sMode = IFSHfull;
-                break;
-            case compatIFSHall:
-                sMode = IFSHfull;
-                break;
+            switch ((compatIFSHmode)_compatmode)
+            {
+                case compatIFSHnone:
+                    sMode = IFSHnone;
+                    break;
+                case compatIFSHread:
+                    sMode = IFSHread;
+                    break;
+                case compatIFSHwrite:
+                    sMode = IFSHfull;
+                    break;
+                case compatIFSHall:
+                    sMode = IFSHfull;
+                    break;
+            }
         }
         sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags).append(sMode).append(cFlags);
         parent->sendRemoteCommand(sendBuffer, replyBuffer);
@@ -2413,9 +2856,8 @@ public:
     {
         StringBuffer s;
         PROGLOG("Attempting reopen of %s on %s",parent->queryLocalName(),parent->queryEp().getUrlStr(s).str());
-        if (open(mode,compatmode,extraFlags)) {
+        if (open(mode,compatmode,extraFlags))
             return true;
-        }
         return false;
 
     }
@@ -2491,23 +2933,28 @@ public:
     const void *doRead(offset_t pos, size32_t len, MemoryBuffer &replyBuffer, size32_t &got, void *dstbuf)
     {
         unsigned tries=0;
-        for (;;) {
-            try {
+        for (;;)
+        {
+            try
+            {
                 MemoryBuffer sendBuffer;
                 initSendBuffer(sendBuffer);
                 replyBuffer.clear();
                 sendBuffer.append((RemoteFileCommandType)RFCread).append(handle).append(pos).append(len);
                 parent->sendRemoteCommand(sendBuffer, replyBuffer,false);
-                // kludge dafilesrv versions <= 1.5e don't return error correctly
-                if (replyBuffer.length()>len+sizeof(size32_t)+sizeof(unsigned)) {
+                // kludge dafilesrv versions <= 1.5e don't return error correctly 
+                if (replyBuffer.length()>len+sizeof(size32_t)+sizeof(unsigned))
+                {
                     size32_t save = replyBuffer.getPos();
                     replyBuffer.reset(len+sizeof(size32_t)+sizeof(unsigned));
                     unsigned errCode;
                     replyBuffer.read(errCode);
-                    if (errCode) {
+                    if (errCode)
+                    {
                         StringBuffer msg;
                         parent->ep.getUrlStr(msg.append('[')).append("] ");
-                        if (replyBuffer.getPos()<replyBuffer.length()) {
+                        if (replyBuffer.getPos()<replyBuffer.length())
+                        {
                             StringAttr s;
                             replyBuffer.read(s);
                             msg.append(s);
@@ -2520,13 +2967,15 @@ public:
                         replyBuffer.reset(save);
                 }
                 replyBuffer.read(got);
-                if ((got>replyBuffer.remaining())||(got>len)) {
+                if ((got>replyBuffer.remaining())||(got>len))
+                {
                     PROGLOG("Read beyond buffer %d,%d,%d",got,replyBuffer.remaining(),len);
                     throw createDafsException(RFSERR_ReadFailed, "Read beyond buffer");
                 }
                 return replyBuffer.readDirect(got);
             }
-            catch (IJSOCK_Exception *e) {
+            catch (IJSOCK_Exception *e)
+            {
                 EXCLOG(e,"CRemoteFileIO::read");
                 if (++tries > 3)
                 {
@@ -2549,14 +2998,15 @@ public:
     }
 
 
-
     size32_t write(offset_t pos, size32_t len, const void * data)
     {
         unsigned tries=0;
         size32_t ret = 0;
         CCycleTimer timer;
-        for (;;) {
-            try {
+        for (;;)
+        {
+            try
+            {
                 MemoryBuffer replyBuffer;
                 MemoryBuffer sendBuffer;
                 initSendBuffer(sendBuffer);
@@ -2565,7 +3015,8 @@ public:
                 replyBuffer.read(ret);
                 break;
             }
-            catch (IJSOCK_Exception *e) {
+            catch (IJSOCK_Exception *e)
+            {
                 EXCLOG(e,"CRemoteFileIO::write");
                 if (++tries > 3)
                 {
@@ -2584,7 +3035,7 @@ public:
             }
         }
 
-         if (tries)
+        if (tries)
             ioRetries.fetch_add(tries);
 
         ioWriteCycles.fetch_add(timer.elapsedCycles());
@@ -2644,6 +3095,9 @@ void clientDisconnectRemoteIoOnExit(IFileIO *fileio,bool set)
 
 IFileIO * CRemoteFile::openShared(IFOmode mode,IFSHmode shmode,IFEflags extraFlags)
 {
+    // 0x0, 0x8, 0x10 and 0x20 are only share modes supported in this assert
+    // currently only 0x0 (IFSHnone), 0x8 (IFSHread) and 0x10 (IFSHfull) are used so this could be 0xffffffe7
+    // note: IFSHfull also includes read sharing (ie write|read)
     assertex(((unsigned)shmode&0xffffffc7)==0);
     compatIFSHmode compatmode;
     unsigned fileflags = (flags>>16) &  (S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH|S_IWOTH|S_IXOTH);
@@ -2911,12 +3365,14 @@ unsigned getRemoteVersion(ISocket *origSock, StringBuffer &ver)
     sendbuf.append((RemoteFileCommandType)RFCgetver);
     sendbuf.append((unsigned)RFCgetver);
     MemoryBuffer reply;
-    try {
+    try
+    {
         sendBuffer(socket, sendbuf);
         receiveBuffer(socket, reply, 1 ,4096);
         unsigned errCode;
         reply.read(errCode);
-        if (errCode==RFSERR_InvalidCommand) {
+        if (errCode==RFSERR_InvalidCommand)
+        {
             ver.append("DS V1.0");
             return 10;
         }
@@ -2927,7 +3383,8 @@ unsigned getRemoteVersion(ISocket *origSock, StringBuffer &ver)
         else
             ret = errCode-0x10000;
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         EXCLOG(e);
         ::Release(e);
         return 0;
@@ -2940,404 +3397,6 @@ unsigned getRemoteVersion(ISocket *origSock, StringBuffer &ver)
 
 /////////////////////////
 
-class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
-{
-    StringAttr filename;
-    Linked<IDelayedFile> delayedFile;
-    SegMonitorList segs;
-    size32_t rowDataRemaining = 0;
-    MemoryBuffer rowDataBuffer;
-    MemoryBuffer keyCursorMb;        // used for continuation
-    unsigned __int64 totalGot = 0;
-    size32_t keySize = 0;
-    size32_t currentSize = 0;
-    offset_t currentFpos = 0;
-    const byte *currentRow = nullptr;
-    bool first = true;
-    unsigned __int64 chooseNLimit = 0;
-    ConstPointerArray activeBlobs;
-    unsigned crc = 0;
-    mutable bool hasRemoteSupport = false; // must check 1st
-    mutable Owned<IKeyManager> directKM; // failover manager if remote key support is unavailable
-
-    CRemoteFileIO *prepKeySend(MemoryBuffer &sendBuffer, RemoteFileCommandType cmd, bool segmentMonitors)
-    {
-        Owned<IFileIO> iFileIO = delayedFile->getFileIO();
-        if (!iFileIO)
-            throw MakeStringException(0, "CRemoteKeyManager: Failed to open key file: %s", filename.get());
-        Linked<CRemoteFileIO> remoteIO = QUERYINTERFACE(iFileIO.get(), CRemoteFileIO);
-        assertex(remoteIO);
-        initSendBuffer(sendBuffer);
-        sendBuffer.append(cmd).append(remoteIO->getHandle()).append(filename).append(keySize);
-        if (segmentMonitors)
-            segs.serialize(sendBuffer);
-        return remoteIO.getClear();
-    }
-    bool remoteSupport() const
-    {
-        if (hasRemoteSupport)
-            return true;
-        else if (directKM)
-            return false;
-        Owned<IFileIO> iFileIO = delayedFile->getFileIO();
-        if (!iFileIO)
-            throw MakeStringException(0, "CRemoteKeyManager: Failed to open key file: %s", filename.get());
-        Linked<CRemoteFileIO> remoteIO = QUERYINTERFACE(iFileIO.get(), CRemoteFileIO);
-        bool useRemote = nullptr != remoteIO.get();
-        if (useRemote)
-        {
-            StringBuffer verString;
-            unsigned ver = getRemoteVersion(*remoteIO, verString);
-            if (ver < MIN_KEYFILTSUPPORT_VERSION)
-                useRemote = false;
-        }
-        if (useRemote)
-        {
-            PROGLOG("Using remote key manager for file: %s", filename.get());
-            hasRemoteSupport = true;
-        }
-        else
-        {
-            Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, false, false);
-            directKM.setown(createLocalKeyManager(keyIndex, keySize, nullptr));
-            return false;
-        }
-        return true;
-    }
-    unsigned __int64 _checkCount(unsigned __int64 limit)
-    {
-        MemoryBuffer sendBuffer;
-        Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindexcount, true);
-        sendBuffer.append(limit);
-        MemoryBuffer replyBuffer;
-        remoteIO->sendRemoteCommand(sendBuffer, replyBuffer);
-        unsigned __int64 count;
-        replyBuffer.read(count);
-        return count;
-    }
-public:
-    CRemoteKeyManager(const char *_filename, unsigned _keySize, unsigned _crc, IDelayedFile *_delayedFile) : filename(_filename), keySize(_keySize), crc(_crc), delayedFile(_delayedFile)
-    {
-    }
-    ~CRemoteKeyManager()
-    {
-        releaseBlobs();
-    }
-// IKeyManager impl.
-    virtual void reset(bool crappyHack = false) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->reset(crappyHack);
-            return;
-        }
-        rowDataBuffer.clear();
-        rowDataRemaining = 0;
-        keyCursorMb.clear();
-        currentSize = 0;
-        currentFpos = 0;
-        currentRow = nullptr;
-        first = true;
-        totalGot = 0;
-    }
-    virtual void releaseSegmentMonitors() override
-    {
-        if (!remoteSupport())
-        {
-            directKM->releaseSegmentMonitors();
-            return;
-        }
-        segs.reset();
-    }
-    virtual const byte *queryKeyBuffer(offset_t & fpos) override
-    {
-        if (!remoteSupport())
-            return directKM->queryKeyBuffer(fpos);;
-        fpos = currentFpos;
-        return currentRow;
-    }
-    virtual offset_t queryFpos() override
-    {
-        if (!remoteSupport())
-            return directKM->queryFpos();
-        return currentFpos;
-    }
-    virtual unsigned queryRecordSize() override
-    {
-        if (!remoteSupport())
-            return directKM->queryRecordSize();
-        return currentSize;
-    }
-    virtual bool lookup(bool exact) override
-    {
-        if (!remoteSupport())
-            return directKM->lookup(exact);
-        while (true)
-        {
-            if (rowDataRemaining)
-            {
-                rowDataBuffer.read(currentFpos);
-                rowDataBuffer.read(currentSize);
-                currentRow = rowDataBuffer.readDirect(currentSize);
-                rowDataRemaining -= sizeof(currentFpos) + sizeof(currentSize) + currentSize;
-                return true;
-            }
-            else
-            {
-                if (!first && (0 == keyCursorMb.length())) // No keyCursor implies there is nothing more to fetch
-                    return false;
-                unsigned maxRecs = 0;
-                if (chooseNLimit)
-                {
-                    if (totalGot == chooseNLimit)
-                        break;
-                    unsigned __int64 max = chooseNLimit-totalGot;
-                    if (max > UINT_MAX)
-                        maxRecs = UINT_MAX;
-                    else
-                        maxRecs = (unsigned)max;
-                }
-                MemoryBuffer sendBuffer;
-                Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindex, true);
-                sendBuffer.append(first).append(maxRecs);
-                if (first)
-                    first = false;
-                else
-                {
-                    dbgassertex(keyCursorMb.length());
-                    sendBuffer.append(keyCursorMb);
-                }
-                rowDataBuffer.clear();
-                remoteIO->sendRemoteCommand(sendBuffer, rowDataBuffer);
-                unsigned recsGot;
-                rowDataBuffer.read(recsGot);
-                if (0 == recsGot)
-                {
-                    keyCursorMb.clear(); // signals no more data if called again.
-                    break; // end
-                }
-                totalGot += recsGot;
-                rowDataBuffer.read(rowDataRemaining);
-                unsigned pos = rowDataBuffer.getPos(); // start of row data
-                const void *rowData = rowDataBuffer.readDirect(rowDataRemaining);
-                size32_t keyCursorSz;
-                rowDataBuffer.read(keyCursorSz);
-                keyCursorMb.clear();
-                if (keyCursorSz)
-                    keyCursorMb.append(keyCursorSz, rowDataBuffer.readDirect(keyCursorSz));
-                rowDataBuffer.reset(pos); // reposition to start of row data
-            }
-        }
-        return false;
-    }
-    virtual unsigned __int64 getCount() override
-    {
-        if (!remoteSupport())
-            return directKM->getCount();
-        return _checkCount((unsigned __int64)-1);
-    }
-    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount) override
-    {
-        if (!remoteSupport())
-            return directKM->getCurrentRangeCount(groupSegCount);
-        UNIMPLEMENTED;
-    }
-    virtual bool nextRange(unsigned groupSegCount) override
-    {
-        if (!remoteSupport())
-            return directKM->nextRange(groupSegCount);
-        UNIMPLEMENTED;
-    }
-    virtual void setKey(IKeyIndexBase * _key) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->setKey(_key);
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-    virtual void setChooseNLimit(unsigned __int64 _chooseNLimit) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->setChooseNLimit(_chooseNLimit);
-            return;
-        }
-        chooseNLimit = _chooseNLimit;
-    }
-    virtual unsigned __int64 checkCount(unsigned __int64 limit) override
-    {
-        if (!remoteSupport())
-            directKM->checkCount(limit);
-        return _checkCount(limit);
-    }
-    virtual void serializeCursorPos(MemoryBuffer &mb) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->serializeCursorPos(mb);
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-    virtual void deserializeCursorPos(MemoryBuffer &mb) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->deserializeCursorPos(mb);
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-    virtual unsigned querySeeks() const override
-    {
-        if (!remoteSupport())
-            return directKM->querySeeks();
-        return 0;
-    }
-    virtual unsigned queryScans() const override
-    {
-        if (!remoteSupport())
-            return directKM->queryScans();
-        return 0;
-    }
-    virtual unsigned querySkips() const override
-    {
-        if (!remoteSupport())
-            return directKM->querySkips();
-        return 0;
-    }
-    virtual unsigned queryNullSkips() const override
-    {
-        if (!remoteSupport())
-            return directKM->queryNullSkips();
-        return 0;
-    }
-    virtual const byte *loadBlob(unsigned __int64 blobId, size32_t &blobSize) override
-    {
-        if (!remoteSupport())
-            return directKM->loadBlob(blobId, blobSize);
-        MemoryBuffer sendBuffer;
-        Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindexblob, false);
-        sendBuffer.append(blobId);
-        MemoryBuffer replyBuffer;
-        remoteIO->sendRemoteCommand(sendBuffer, replyBuffer);
-        replyBuffer.read(blobSize);
-        const byte *blobData = replyBuffer.readDirect(blobSize);
-        activeBlobs.append(replyBuffer.detach()); // NB: don't need to retain size, but keep sz+data to avoid copy
-        return blobData;
-    }
-    virtual void releaseBlobs() override
-    {
-        if (!remoteSupport())
-            return directKM->releaseBlobs();
-        ForEachItemIn(idx, activeBlobs)
-        {
-            free((void *) activeBlobs.item(idx));
-        }
-        activeBlobs.kill();
-    }
-    virtual void resetCounts() override
-    {
-        if (!remoteSupport())
-        {
-            directKM->resetCounts();
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-
-    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->setLayoutTranslator(trans);
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->setSegmentMonitors(segmentMonitors);
-            return;
-        }
-        segs.swapWith(segmentMonitors);
-    }
-    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->deserializeSegmentMonitors(mb);
-            return;
-        }
-        segs.deserialize(mb);
-    }
-    virtual void finishSegmentMonitors() override
-    {
-        if (!remoteSupport())
-        {
-            directKM->finishSegmentMonitors();
-            return;
-        }
-    }
-    virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) override
-    {
-        if (!remoteSupport())
-            return directKM->lookupSkip(seek, seekGEOffset, seeklen);
-        UNIMPLEMENTED;
-    }
-    virtual void append(IKeySegmentMonitor *segment) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->append(segment);
-            return;
-        }
-        segs.append(segment);
-    }
-    virtual unsigned ordinality() const override
-    {
-        if (!remoteSupport())
-            return directKM->ordinality();
-        return segs.ordinality();
-    }
-    virtual IKeySegmentMonitor *item(unsigned idx) const override
-    {
-        if (!remoteSupport())
-            return directKM->item(idx);
-        return segs.item(idx);
-    }
-    virtual void setMergeBarrier(unsigned offset) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->setMergeBarrier(offset);
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-};
-
-IKeyManager *createRemoteKeyManager(const char *filename, unsigned keySize, unsigned crc, IDelayedFile *delayedFile)
-{
-    return new CRemoteKeyManager(filename, keySize, crc, delayedFile);
-}
-
-IKeyManager *createKeyManager(const char *filename, unsigned keySize, unsigned crc, IDelayedFile *delayedFile, bool allowRemote, bool forceRemote)
-{
-    RemoteFilename rfn;
-    rfn.setRemotePath(filename);
-    if (forceRemote || (allowRemote && !rfn.isLocal()))
-        return createRemoteKeyManager(filename, keySize, crc, delayedFile);
-    else
-    {
-        Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, false, false);
-        return createLocalKeyManager(keyIndex, keySize, nullptr);
-    }
-}
 
 //////////////
 
@@ -3352,18 +3411,21 @@ extern unsigned stopRemoteServer(ISocket * socket)
     sendbuf.append((unsigned)RFCstop);
     MemoryBuffer replybuf;
     unsigned errCode = RFSERR_InvalidCommand;
-    try {
+    try
+    {
         sendBuffer(socket, sendbuf);
         receiveBuffer(socket, replybuf, NORMAL_RETRIES, 1024);
         replybuf.read(errCode);
     }
-    catch (IJSOCK_Exception *e) {
-        if ((e->errorCode()!=JSOCKERR_broken_pipe)&&(e->errorCode()!=JSOCKERR_graceful_close))
+    catch (IJSOCK_Exception *e)
+    {
+        if ((e->errorCode()!=JSOCKERR_broken_pipe)&&(e->errorCode()!=JSOCKERR_graceful_close)) 
             EXCLOG(e);
         else
             errCode = 0;
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         EXCLOG(e);
         ::Release(e);
     }
@@ -3372,7 +3434,8 @@ extern unsigned stopRemoteServer(ISocket * socket)
 
 int setDafsTrace(ISocket * socket,byte flags)
 {
-    if (!socket) {
+    if (!socket)
+    {
         byte ret = traceFlags;
         traceFlags = flags;
         return ret;
@@ -3381,14 +3444,16 @@ int setDafsTrace(ISocket * socket,byte flags)
     initSendBuffer(sendbuf);
     sendbuf.append((RemoteFileCommandType)RFCsettrace).append(flags);
     MemoryBuffer replybuf;
-    try {
+    try
+    {
         sendBuffer(socket, sendbuf);
         receiveBuffer(socket, replybuf, NORMAL_RETRIES, 1024);
         int retcode;
         replybuf.read(retcode);
         return retcode;
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         EXCLOG(e);
         ::Release(e);
     }
@@ -3403,7 +3468,8 @@ int setDafsThrottleLimit(ISocket * socket, ThrottleClass throttleClass, unsigned
     sendbuf.append((RemoteFileCommandType)RFCsetthrottle2).append((unsigned)throttleClass).append(throttleLimit);
     sendbuf.append(throttleDelayMs).append(throttleCPULimit).append(queueLimit);
     MemoryBuffer replybuf;
-    try {
+    try
+    {
         sendBuffer(socket, sendbuf);
         receiveBuffer(socket, replybuf, NORMAL_RETRIES, 1024);
         int retcode;
@@ -3412,7 +3478,8 @@ int setDafsThrottleLimit(ISocket * socket, ThrottleClass throttleClass, unsigned
             replybuf.read(*errMsg);
         return retcode;
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         EXCLOG(e);
         ::Release(e);
     }
@@ -3421,7 +3488,8 @@ int setDafsThrottleLimit(ISocket * socket, ThrottleClass throttleClass, unsigned
 
 int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr)
 {
-    if (!socket) {
+    if (!socket)
+    {
         retstr.append(VERSTRING);
         return 0;
     }
@@ -3429,19 +3497,22 @@ int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr)
     initSendBuffer(sendbuf);
     sendbuf.append((RemoteFileCommandType)RFCgetinfo).append(level);
     MemoryBuffer replybuf;
-    try {
+    try
+    {
         sendBuffer(socket, sendbuf);
         receiveBuffer(socket, replybuf, 1);
         int retcode;
         replybuf.read(retcode);
-        if (retcode==0) {
+        if (retcode==0)
+        {
             StringAttr s;
             replybuf.read(s);
             retstr.append(s);
         }
         return retcode;
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         EXCLOG(e);
         ::Release(e);
     }
@@ -3697,39 +3768,13 @@ inline void appendErr(MemoryBuffer &reply, unsigned e)
 {
     reply.append(e).append(getRFSERRText(e));
 }
-inline void appendErr2(MemoryBuffer &reply, unsigned e, unsigned v)
-{
-    StringBuffer msg;
-    msg.append(getRFSERRText(e)).append(':').append(v);
-    reply.append(e).append(msg.str());
-}
-inline void appendErr3(MemoryBuffer &reply, unsigned e, int code, const char *errMsg)
-{
-    StringBuffer msg;
-    msg.appendf("ERROR: %s(%d) '%s'", getRFSERRText(e), code, errMsg?errMsg:"");
-    reply.append(e);
-    reply.append(msg.str());
-}
-inline void appendCmdErr(MemoryBuffer &reply, RemoteFileCommandType e, int code, const char *errMsg)
-{
-    StringBuffer msg;
-    msg.appendf("ERROR: %s(%d) '%s'", getRFCText(e), code, errMsg?errMsg:"");
-    // RFCOpenIO needs remapping to non-zero for client to know its an error
-    // perhaps we should use code here instead of e ?
-    unsigned err = e;
-    if (e == RFCopenIO)
-        err = RFSERR_OpenFailed;
-    reply.append(err);
-    reply.append(msg.str());
-}
 
-
-
-#define MAPCOMMAND(c,p) case c: { ret = this->p(msg, reply) ; break; }
-#define MAPCOMMANDCLIENT(c,p,client) case c: { ret = this->p(msg, reply, client); break; }
-#define MAPCOMMANDCLIENTTHROTTLE(c,p,client,throttler) case c: { ret = this->p(msg, reply, client, throttler); break; }
-#define MAPCOMMANDSTATS(c,p,stats) case c: { ret = this->p(msg, reply, stats); break; }
-#define MAPCOMMANDCLIENTSTATS(c,p,client,stats) case c: { ret = this->p(msg, reply, client, stats); break; }
+#define MAPCOMMAND(c,p) case c: { this->p(msg, reply) ; break; }
+#define MAPCOMMANDCLIENT(c,p,client) case c: { this->p(msg, reply, client); break; }
+#define MAPCOMMANDCLIENTTESTSOCKET(c,p,client) case c: { testSocketFlag = true; this->p(msg, reply, client); break; }
+#define MAPCOMMANDCLIENTTHROTTLE(c,p,client,throttler) case c: { this->p(msg, reply, client, throttler); break; }
+#define MAPCOMMANDSTATS(c,p,stats) case c: { this->p(msg, reply, stats); break; }
+#define MAPCOMMANDCLIENTSTATS(c,p,client,stats) case c: { this->p(msg, reply, client, stats); break; }
 
 static unsigned ClientCount = 0;
 static unsigned MaxClientCount = 0;
@@ -3864,16 +3909,530 @@ public:
     }
 };
 
+interface IRemoteActivity : extends IInterface
+{
+    virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &sz) = 0;
+    virtual unsigned __int64 queryProcessed() const = 0;
+    virtual IOutputMetaData *queryOutputMeta() const = 0;
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const = 0;
+    virtual void serializeCursor(MemoryBuffer &tgt) const = 0;
+    virtual void restoreCursor(MemoryBuffer &src) = 0;
+    virtual bool isGrouped() const = 0;
+};
+
 enum OpenFileFlag { of_null=0x0, of_key=0x01 };
 struct OpenFileInfo
 {
     OpenFileInfo() { }
     OpenFileInfo(int _handle, IFileIO *_fileIO, StringAttrItem *_filename) : handle(_handle), fileIO(_fileIO), filename(_filename) { }
+    OpenFileInfo(int _handle, IRemoteActivity *_activity, StringAttrItem *_filename, OutputFormat _format)
+        : handle(_handle), activity(_activity), filename(_filename), format(_format) { }
     Linked<IFileIO> fileIO;
+    Linked<IRemoteActivity> activity;
     Linked<StringAttrItem> filename; // for debug
     int handle = 0;
     unsigned flags = 0;
+    OutputFormat format = outFmt_Xml;
 };
+
+
+
+static IOutputMetaData *getTypeInfoOutputMetaData(IPropertyTree &actNode, const char *typePropName, bool grouped)
+{
+    IPropertyTree *json = actNode.queryPropTree(typePropName);
+    if (json)
+        return createTypeInfoOutputMetaData(*json, grouped, nullptr);
+    else
+    {
+        StringBuffer binTypePropName(typePropName);
+        const char *jsonBin = actNode.queryProp(binTypePropName.append("Bin"));
+        if (!jsonBin)
+            return nullptr;
+        MemoryBuffer mb;
+        JBASE64_Decode(jsonBin, mb);
+        return createTypeInfoOutputMetaData(mb, grouped, nullptr);
+    }
+}
+
+class CRemoteDiskBaseActivity : public CSimpleInterfaceOf<IRemoteActivity>, implements IVirtualFieldCallback
+{
+protected:
+    StringAttr fileName; // physical filename
+    Linked<IOutputMetaData> inMeta, outMeta;
+    unsigned __int64 processed = 0;
+    Owned<const IDynamicTransform> translator;
+    bool outputGrouped = false;
+    bool opened = false;
+    bool eofSeen = false;
+    const RtlRecord *record = nullptr;
+    RowFilter filters;
+    // virtual field values
+    StringAttr logicalFilename;
+
+    void initCommon(IPropertyTree &config)
+    {
+        fileName.set(config.queryProp("fileName"));
+
+        record = &inMeta->queryRecordAccessor(true);
+        translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
+        Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
+        ForEach(*filterIter)
+            filters.addFilter(*record, filterIter->query().queryProp(nullptr));
+        logicalFilename.set(config.queryProp("virtualFields/logicalFilename"));
+    }
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IRemoteActivity>)
+
+    CRemoteDiskBaseActivity()
+    {
+    }
+// IRemoteActivity impl.
+    virtual unsigned __int64 queryProcessed() const override
+    {
+        return processed;
+    }
+    virtual IOutputMetaData *queryOutputMeta() const override
+    {
+        return outMeta;
+    }
+    virtual bool isGrouped() const override
+    {
+        return outputGrouped;
+    }
+    virtual void serializeCursor(MemoryBuffer &tgt) const override
+    {
+        throwUnexpected();
+    }
+    virtual void restoreCursor(MemoryBuffer &src) override
+    {
+        throwUnexpected();
+    }
+//interface IVirtualFieldCallback
+    virtual const char * queryLogicalFilename(const void * row) override
+    {
+        return logicalFilename.str();
+    }
+    virtual unsigned __int64 getFilePosition(const void * row) override
+    {
+        throwUnexpected();
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row) override
+    {
+        throwUnexpected();
+    }
+};
+
+class CRemoteDiskReadActivity : public CRemoteDiskBaseActivity
+{
+    typedef CRemoteDiskBaseActivity PARENT;
+
+    CThorContiguousRowBuffer prefetchBuffer;
+    Owned<ISourceRowPrefetcher> prefetcher;
+    Owned<ISerialStream> inputStream;
+    Owned<IFileIO> iFileIO;
+    unsigned __int64 chooseN = 0;
+    unsigned __int64 startPos = 0;
+    bool compressed = false;
+    bool inputGrouped = false;
+    bool cursorDirty = false;
+    mutable bool eogPending = false;
+    mutable bool someInGroup = false;
+    RtlDynRow *filterRow = nullptr;
+    // virtual field values
+    unsigned partNum = 0;
+    offset_t baseFpos = 0;
+
+    void checkOpen()
+    {
+        if (opened)
+        {
+            if (!cursorDirty)
+                return;
+            if (prefetchBuffer.tell() != startPos)
+            {
+                inputStream->reset(startPos);
+                prefetchBuffer.clearStream();
+                prefetchBuffer.setStream(inputStream);
+            }
+            eofSeen = false;
+            cursorDirty = false;
+            return;
+        }
+
+        OwnedIFile iFile = createIFile(fileName);
+        iFileIO.setown(createCompressedFileReader(iFile));
+        if (iFileIO)
+        {
+            if (!compressed)
+            {
+                WARNLOG("meta info did not mark file '%s' as compressed, but detected file as compressed", fileName.get());
+                compressed = true;
+            }
+        }
+        else
+        {
+            iFileIO.setown(iFile->open(IFOread));
+            if (!iFileIO)
+                throw MakeStringException(1, "Failed to open: '%s'", fileName.get());
+            if (compressed)
+            {
+                WARNLOG("meta info marked file '%s' as compressed, but detected file as uncompressed", fileName.get());
+                compressed = false;
+            }
+        }
+        inputStream.setown(createFileSerialStream(iFileIO, startPos));
+        prefetchBuffer.setStream(inputStream);
+        prefetcher.setown(inMeta->createDiskPrefetcher());
+
+        opened = true;
+        eofSeen = false;
+    }
+    void close()
+    {
+        iFileIO.clear();
+        opened = false;
+        eofSeen = true;
+    }
+    inline bool fieldFilterMatch(const void * buffer)
+    {
+        if (filters.numFilterFields())
+        {
+            filterRow->setRow(buffer, 0);
+            return filters.matches(*filterRow);
+        }
+        else
+            return true;
+    }
+public:
+    CRemoteDiskReadActivity(IPropertyTree &config) : prefetchBuffer(nullptr)
+    {
+        compressed = config.getPropBool("compressed");
+        inputGrouped = config.getPropBool("inputGrouped", false);
+        outputGrouped = config.getPropBool("outputGrouped", false);
+        chooseN = config.getPropInt64("chooseN", defaultFileStreamChooseNLimit);
+        if (!inputGrouped && outputGrouped)
+            outputGrouped = false; // perhaps should fire error
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", inputGrouped));
+        outMeta.setown(getTypeInfoOutputMetaData(config, "output", outputGrouped));
+        if (!outMeta)
+            outMeta.set(inMeta);
+
+        partNum = config.getPropInt("virtualFields/partNum");
+        baseFpos = (offset_t)config.getPropInt64("virtualFields/baseFpos");
+
+        initCommon(config);
+        if (config.hasProp("keyFilter"))
+            filterRow = new RtlDynRow(*record);
+    }
+    ~CRemoteDiskReadActivity()
+    {
+        delete filterRow;
+    }
+// IRemoteActivity impl.
+    virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
+    {
+        if (eogPending || eofSeen)
+        {
+            eogPending = false;
+            someInGroup = false;
+            return nullptr;
+        }
+        checkOpen();
+        while (!eofSeen && (processed < chooseN))
+        {
+            while (!prefetchBuffer.eos())
+            {
+                prefetcher->readAhead(prefetchBuffer);
+                bool eog = false;
+                if (inputGrouped)
+                    prefetchBuffer.read(sizeof(eog), &eog);
+                const byte *next = prefetchBuffer.queryRow();
+                size32_t rowSz; // use local var instead of reference param for efficiency
+                if (fieldFilterMatch(next))
+                    rowSz = translator->translate(outBuilder, *this, next);
+                else
+                    rowSz = 0;
+                prefetchBuffer.finishedRow();
+                const void *ret = outBuilder.getSelf();
+                outBuilder.finishRow(rowSz);
+
+                if (rowSz)
+                {
+                    processed++;
+                    eogPending = eog;
+                    someInGroup = true;
+                    retSz = rowSz;
+                    return ret;
+                }
+                else if (eog)
+                {
+                    eogPending = false;
+                    if (someInGroup)
+                    {
+                        someInGroup = false;
+                        return nullptr;
+                    }
+                }
+            }
+            eofSeen = true;
+        }
+        close();
+        retSz = 0;
+        return nullptr;
+    }
+    virtual void serializeCursor(MemoryBuffer &tgt) const override
+    {
+        tgt.append(prefetchBuffer.tell());
+        tgt.append(processed);
+        tgt.append(someInGroup);
+        tgt.append(eogPending);
+    }
+    virtual void restoreCursor(MemoryBuffer &src) override
+    {
+        cursorDirty = true;
+        src.read(startPos);
+        src.read(processed);
+        src.read(someInGroup);
+        src.read(eogPending);
+    }
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return out.appendf("diskread[%s]", fileName.get());
+    }
+    virtual bool isGrouped() const override
+    {
+        return outputGrouped;
+    }
+//interface IVirtualFieldCallback
+    virtual unsigned __int64 getFilePosition(const void * row) override
+    {
+        return prefetchBuffer.tell() + baseFpos;
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row) override
+    {
+        return makeLocalFposOffset(partNum, prefetchBuffer.tell());
+    }
+};
+
+
+IRemoteActivity *createRemoteDiskRead(IPropertyTree &actNode)
+{
+    return new CRemoteDiskReadActivity(actNode);
+}
+
+class CRemoteIndexBaseActivity : public CRemoteDiskBaseActivity
+{
+    typedef CRemoteDiskBaseActivity PARENT;
+
+protected:
+    bool isTlk = false;
+    bool allowPreload = false;
+    unsigned fileCrc = 0;
+    Owned<IKeyIndex> keyIndex;
+    Owned<IKeyManager> keyManager;
+
+    void checkOpen()
+    {
+        if (opened)
+            return;
+        Owned<IFile> indexFile = createIFile(fileName);
+        CDateTime modTime;
+        indexFile->getTime(nullptr, &modTime, nullptr);
+        time_t modTimeTT = modTime.getSimple();
+        CRC32 crc32(fileCrc);
+        crc32.tally(sizeof(time_t), &modTimeTT);
+        unsigned crc = crc32.get();
+
+        keyIndex.setown(createKeyIndex(fileName, crc, isTlk, allowPreload));
+        keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true));
+        filters.createSegmentMonitors(keyManager);
+        keyManager->finishSegmentMonitors();
+        keyManager->reset();
+
+        opened = true;
+    }
+    void close()
+    {
+        keyManager.clear();
+        keyIndex.clear();
+        opened = false;
+        eofSeen = true;
+    }
+public:
+    CRemoteIndexBaseActivity(IPropertyTree &config)
+    {
+        isTlk = config.getPropBool("isTlk");
+        allowPreload = config.getPropBool("allowPreload");
+        fileCrc = config.getPropInt("crc");
+    }
+};
+
+class CRemoteIndexReadActivity : public CRemoteIndexBaseActivity
+{
+    typedef CRemoteIndexBaseActivity PARENT;
+
+    unsigned __int64 chooseN = 0;
+public:
+    CRemoteIndexReadActivity(IPropertyTree &config) : PARENT(config)
+    {
+        chooseN = config.getPropInt64("chooseN", defaultFileStreamChooseNLimit);
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
+        outMeta.setown(getTypeInfoOutputMetaData(config, "output", false));
+        if (!outMeta)
+            outMeta.set(inMeta);
+
+        initCommon(config);
+    }
+// IRemoteActivity impl.
+    virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
+    {
+        if (eofSeen)
+            return nullptr;
+        checkOpen();
+        if (!eofSeen)
+        {
+            if (processed < chooseN)
+            {
+                while (keyManager->lookup(true))
+                {
+                    const byte *keyRow = keyManager->queryKeyBuffer();
+                    retSz = translator->translate(outBuilder, *this, keyRow);
+                    if (retSz)
+                    {
+                        const void *ret = outBuilder.getSelf();
+                        outBuilder.finishRow(retSz);
+                        ++processed;
+                        return ret;
+                    }
+                }
+                retSz = 0;
+            }
+            eofSeen = true;
+        }
+        close();
+        return nullptr;
+    }
+    virtual void serializeCursor(MemoryBuffer &tgt) const override
+    {
+        keyManager->serializeCursorPos(tgt);
+        tgt.append(processed);
+
+/* JCSMORE (see HPCC-19640), serialize seek/scan data to client
+        tgt.append(keyManager->querySeeks());
+        tgt.append(keyManager->queryScans());
+*/
+    }
+    virtual void restoreCursor(MemoryBuffer &src) override
+    {
+        checkOpen();
+        eofSeen = false;
+        keyManager->deserializeCursorPos(src);
+        src.read(processed);
+    }
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return out.appendf("indexread[%s]", fileName.get());
+    }
+};
+
+
+IRemoteActivity *createRemoteIndexRead(IPropertyTree &actNode)
+{
+    return new CRemoteIndexReadActivity(actNode);
+}
+
+
+class CRemoteIndexCountActivity : public CRemoteIndexBaseActivity
+{
+    typedef CRemoteIndexBaseActivity PARENT;
+
+    unsigned __int64 rowLimit = 0;
+
+public:
+    CRemoteIndexCountActivity(IPropertyTree &config) : PARENT(config)
+    {
+        rowLimit = config.getPropInt64("chooseN");
+
+        // create helper
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
+        outMeta.set(inMeta);
+        initCommon(config);
+    }
+// IRemoteActivity impl.
+    virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
+    {
+        if (eofSeen)
+            return nullptr;
+        checkOpen();
+        unsigned __int64 count = 0;
+        if (!eofSeen)
+        {
+            if (rowLimit)
+                count = keyManager->checkCount(rowLimit);
+            else
+                count = keyManager->getCount();
+        }
+        void *tgt = outBuilder.ensureCapacity(sizeof(count), "count");
+        const void *ret = outBuilder.getSelf();
+        memcpy(tgt, &count, sizeof(count));
+        outBuilder.finishRow(sizeof(count));
+        close();
+        return ret;
+    }
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return out.appendf("indexcount[%s]", fileName.get());
+    }
+};
+
+
+IRemoteActivity *createRemoteIndexCount(IPropertyTree &actNode)
+{
+    return new CRemoteIndexCountActivity(actNode);
+}
+
+IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
+{
+    const char *kindStr = actNode.queryProp("kind");
+
+    ThorActivityKind kind = TAKnone;
+    if (strieq("diskread", kindStr))
+        kind = TAKdiskread;
+    else if (strieq("indexread", kindStr))
+        kind = TAKindexread;
+    else if (strieq("indexcount", kindStr))
+        kind = TAKindexcount;
+    Owned<IRemoteActivity> activity;
+    switch (kind)
+    {
+        case TAKdiskread:
+        {
+            activity.setown(createRemoteDiskRead(actNode));
+            break;
+        }
+        case TAKindexread:
+        {
+            activity.setown(createRemoteIndexRead(actNode));
+            break;
+        }
+        case TAKindexcount:
+        {
+            activity.setown(createRemoteIndexCount(actNode));
+            break;
+        }
+        default:
+            throwUnexpected(); // for now
+
+    }
+    return activity.getClear();
+}
+
+IRemoteActivity *createOutputActivity(IPropertyTree &requestTree)
+{
+    IPropertyTree *actNode = requestTree.queryPropTree("node");
+    assertex(actNode);
+    return createRemoteActivity(*actNode);
+}
 
 #define MAX_KEYDATA_SZ 0x10000
 
@@ -4074,10 +4633,8 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
              */
             MemoryBuffer reply;
             initSendBuffer(reply);
-            StringBuffer s;
-            e->errorMessage(s);
-            appendCmdErr(reply, cmd, e->errorCode(), s.str());
-            parent->appendError(cmd, this, cmd, reply);
+            unsigned err = (cmd == RFCopenIO) ? RFSERR_OpenFailed : 0;
+            parent->formatException(reply, e, cmd, false, err, this);
             sendBuffer(socket, reply);
             return false;
         }
@@ -4085,8 +4642,8 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         void processCommand(RemoteFileCommandType cmd, MemoryBuffer &msg, CThrottler *throttler)
         {
             MemoryBuffer reply;
-            parent->processCommand(cmd, msg, initSendBuffer(reply), this, throttler);
-            sendBuffer(socket, reply);
+            bool testSocketFlag = parent->processCommand(cmd, msg, initSendBuffer(reply), this, throttler);
+            sendBuffer(socket, reply, testSocketFlag);
         }
 
         bool immediateCommand() // returns false if socket closed or failure
@@ -4560,10 +5117,8 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         unsigned pos = reply.length();
         while (keyManager->lookup(true))
         {
-            unsigned size = keyManager->queryRecordSize();
-            offset_t fpos;
-            const byte *result = keyManager->queryKeyBuffer(fpos);
-            reply.append(fpos);
+            unsigned size = keyManager->queryRowSize();
+            const byte *result = keyManager->queryKeyBuffer();
             reply.append(size);
             reply.append(size, result);
             ++numRecs;
@@ -4582,46 +5137,6 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         return numRecs;
     }
 
-    IKeyManager *prepKey(int handle, const char *keyname, unsigned keySize, SegMonitorList *segs)
-    {
-        OpenFileInfo fileInfo;
-        if (!lookupFileIOHandle(handle, fileInfo, of_key))
-        {
-            VStringBuffer errStr("Error opening key file : %s", keyname);
-            throw createDafsException(RFSERR_InvalidFileIOHandle, errStr.str());
-        }
-        Owned<IKeyIndex> index = createKeyIndex(keyname, 0, *fileInfo.fileIO, false, false);
-        if (!index)
-        {
-            VStringBuffer errStr("Error opening key file : %s", keyname);
-            throw createDafsException(RFSERR_KeyIndexFailed, errStr.str());
-        }
-        Owned<IKeyManager> keyManager = createLocalKeyManager(index, keySize, nullptr);
-        if (segs)
-        {
-            keyManager->setSegmentMonitors(*segs);
-            keyManager->finishSegmentMonitors();
-        }
-        keyManager->reset();
-        return keyManager.getLink();
-    }
-
-    IKeyManager *prepKey(MemoryBuffer &mb, bool segmentMonitors)
-    {
-        int handle;
-        StringBuffer keyName;
-        size32_t keySize;
-        mb.read(handle).read(keyName).read(keySize);
-        if (segmentMonitors)
-        {
-            SegMonitorList segs;
-            segs.deserialize(mb);
-            return prepKey(handle, keyName, keySize, &segs);
-        }
-        else
-            return prepKey(handle, keyName, keySize, nullptr);
-    }
-
     class cCommandProcessor: public CInterface, implements IPooledThread
     {
         Owned<CRemoteClientHandler> client;
@@ -4637,14 +5152,14 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             MemoryBuffer msg;
         };
 
-        void init(void *_params)
+        virtual void init(void *_params) override
         {
             cCommandProcessorParams &params = *(cCommandProcessorParams *)_params;
             client.setown(params.client);
             msg.swapWith(params.msg);
         }
 
-        void main()
+        virtual void threadmain() override
         {
             // idea is that initially we process commands inline then pass over to select handler
             try
@@ -4654,7 +5169,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             catch (IException *e)
             {
                 // suppress some errors
-                EXCLOG(e,"cCommandProcessor::main");
+                EXCLOG(e,"cCommandProcessor::threadmain");
                 e->Release();
             }
             try
@@ -4664,15 +5179,15 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             catch (IException *e)
             {
                 // suppress some more errors clearing client
-                EXCLOG(e,"cCommandProcessor::main(2)");
+                EXCLOG(e,"cCommandProcessor::threadmain(2)");
                 e->Release();
             }
         }
-        bool stop()
+        virtual bool stop() override
         {
             return true;
         }
-        bool canReuse()
+        virtual bool canReuse() const override
         {
             return false; // want to free owned socket
         }
@@ -4810,14 +5325,10 @@ public:
         return false;
     }
 
-    bool checkFileIOHandle(MemoryBuffer &reply, int handle, IFileIO *&fileio, bool del=false)
+    void checkFileIOHandle(MemoryBuffer &reply, int handle, IFileIO *&fileio, bool del=false)
     {
         if (!checkFileIOHandle(handle, fileio, del))
-        {
-            appendErr(reply, RFSERR_InvalidFileIOHandle);
-            return false;
-        }
-        return true;
+            throw createDafsException(RFSERR_InvalidFileIOHandle, nullptr);
     }
 
     void onCloseSocket(CRemoteClientHandler *client, int which)
@@ -4907,7 +5418,8 @@ public:
             PROGLOG("before open file '%s',  (%d,%d,%d,%d,0%o)",name->text.get(),(int)mode,(int)share,extraFlags,sMode,cFlags);
         Owned<IFileIO> fileio = file->open((IFOmode)mode,extraFlags);
         int handle;
-        if (fileio) {
+        if (fileio)
+        {
             CriticalBlock block(sect);
             handle = getNextHandle();
             client.previdx = client.openFiles.ordinality();
@@ -4927,23 +5439,21 @@ public:
         int handle;
         msg.read(handle);
         IFileIO *fileio;
-        if (!checkFileIOHandle(reply, handle, fileio, true))
-            return false;
+        checkFileIOHandle(reply, handle, fileio, true);
         if (TF_TRACE)
             PROGLOG("close file,  handle = %d",handle);
         reply.append(RFEnoerror);
         return true;
     }
 
-    bool cmdRead(MemoryBuffer & msg, MemoryBuffer & reply, CClientStats &stats)
+    void cmdRead(MemoryBuffer & msg, MemoryBuffer & reply, CClientStats &stats)
     {
         int handle;
         __int64 pos;
         size32_t len;
         msg.read(handle).read(pos).read(len);
         IFileIO *fileio;
-        if (!checkFileIOHandle(reply, handle, fileio))
-            return false;
+        checkFileIOHandle(reply, handle, fileio);
 
         //arrange it so we read directly into the reply buffer...
         unsigned posOfErr = reply.length();
@@ -4952,103 +5462,29 @@ public:
         unsigned posOfLength = reply.length();
         if (TF_TRACE_PRE_IO)
             PROGLOG("before read file,  handle = %d, toread = %d",handle,len);
-        void * data;
-        {
-            reply.reserve(sizeof(numRead));
-            data = reply.reserve(len);
-        }
-        try {
-            numRead = fileio->read(pos,len,data);
-        }
-        catch (IException *e)
-        {
-            reply.setWritePos(posOfErr);
-            StringBuffer s;
-            e->errorMessage(s);
-            appendErr3(reply, RFSERR_ReadFailed, e->errorCode(), s.str());
-            e->Release();
-            return false;
-        }
+        reply.reserve(sizeof(numRead));
+        void *data = reply.reserve(len);
+        numRead = fileio->read(pos,len,data);
         stats.addRead(len);
         if (TF_TRACE)
             PROGLOG("read file,  handle = %d, pos = %" I64F "d, toread = %d, read = %d",handle,pos,len,numRead);
-        {
-            reply.setLength(posOfLength + sizeof(numRead) + numRead);
-            reply.writeEndianDirect(posOfLength,sizeof(numRead),&numRead);
-        }
-        return true;
+        reply.setLength(posOfLength + sizeof(numRead) + numRead);
+        reply.writeEndianDirect(posOfLength,sizeof(numRead),&numRead);
     }
 
-    bool cmdReadFilteredIndex(MemoryBuffer & msg, MemoryBuffer & reply, CClientStats &stats)
-    {
-        Owned<IKeyManager> keyManager = prepKey(msg, true);
-        bool first;
-        unsigned maxRecs;
-        msg.read(first).read(maxRecs);
-        if (!first)
-            keyManager->deserializeCursorPos(msg);
-
-        reply.append((unsigned)RFEnoerror);
-        DelayedMarker<unsigned> numReturned(reply);
-        bool maxHit;
-        unsigned numRecs = readKeyData(keyManager, maxRecs, reply, maxHit);
-        numReturned.write(numRecs);
-
-        DelayedSizeMarker keyCursorSzMarker(reply);
-        if (maxHit) // if maximum hit, either supplied maxRecs limit, or buffer limit, return cursor
-            keyManager->serializeCursorPos(reply);
-        keyCursorSzMarker.write();
-        return true;
-    }
-
-    bool cmdReadFilteredIndexCount(MemoryBuffer & msg, MemoryBuffer & reply, CClientStats &stats)
-    {
-        Owned<IKeyManager> keyManager = prepKey(msg, true);
-
-        unsigned __int64 limit;
-        msg.read(limit);
-        unsigned __int64 count;
-        if (((unsigned __int64)-1) != limit)
-            count = keyManager->checkCount(limit);
-        else
-            count = keyManager->getCount();
-        reply.append((unsigned)RFEnoerror);
-        reply.append(count);
-        return true;
-    }
-
-    bool cmdReadFilteredIndexBlob(MemoryBuffer & msg, MemoryBuffer & reply, CClientStats &stats)
-    {
-        Owned<IKeyManager> keyManager = prepKey(msg, false);
-        unsigned __int64 blobId;
-        msg.read(blobId);
-
-        size32_t blobSize;
-        const byte *blobData = keyManager->loadBlob(blobId, blobSize);
-
-        reply.append((unsigned)RFEnoerror);
-        reply.append(blobSize);
-        reply.append(blobSize, blobData);
-
-        keyManager->releaseBlobs();
-        return true;
-    }
-
-    bool cmdSize(MemoryBuffer & msg, MemoryBuffer & reply)
+    void cmdSize(MemoryBuffer & msg, MemoryBuffer & reply)
     {
         int handle;
         msg.read(handle);
         IFileIO *fileio;
-        if (!checkFileIOHandle(reply, handle, fileio))
-            return false;
+        checkFileIOHandle(reply, handle, fileio);
         __int64 size = fileio->size();
         reply.append((unsigned)RFEnoerror).append(size);
         if (TF_TRACE)
             PROGLOG("size file,  handle = %d, size = %" I64F "d",handle,size);
-        return true;
     }
 
-    bool cmdSetSize(MemoryBuffer & msg, MemoryBuffer & reply)
+    void cmdSetSize(MemoryBuffer & msg, MemoryBuffer & reply)
     {
         int handle;
         offset_t size;
@@ -5056,24 +5492,19 @@ public:
         IFileIO *fileio;
         if (TF_TRACE)
             PROGLOG("set size file,  handle = %d, size = %" I64F "d",handle,size);
-        if (!checkFileIOHandle(reply, handle, fileio))
-            return false;
+        checkFileIOHandle(reply, handle, fileio);
         fileio->setSize(size);
         reply.append((unsigned)RFEnoerror);
-        return true;
     }
 
-
-    bool cmdWrite(MemoryBuffer & msg, MemoryBuffer & reply, CClientStats &stats)
+    void cmdWrite(MemoryBuffer & msg, MemoryBuffer & reply, CClientStats &stats)
     {
         int handle;
         __int64 pos;
         size32_t len;
         msg.read(handle).read(pos).read(len);
         IFileIO *fileio;
-        if (!checkFileIOHandle(reply, handle, fileio))
-            return false;
-
+        checkFileIOHandle(reply, handle, fileio);
         const byte *data = (const byte *)msg.readDirect(len);
         if (TF_TRACE_PRE_IO)
             PROGLOG("before write file,  handle = %d, towrite = %d",handle,len);
@@ -5082,10 +5513,9 @@ public:
         if (TF_TRACE)
             PROGLOG("write file,  handle = %d, towrite = %d, written = %d",handle,len,numWritten);
         reply.append((unsigned)RFEnoerror).append(numWritten);
-        return true;
     }
 
-    bool cmdExists(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    void cmdExists(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5095,11 +5525,9 @@ public:
         Owned<IFile> file=createIFile(name);
         bool e = file->exists();
         reply.append((unsigned)RFEnoerror).append(e);
-        return true;
     }
 
-
-    bool cmdRemove(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
+    void cmdRemove(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5109,10 +5537,9 @@ public:
         Owned<IFile> file=createIFile(name);
         bool e = file->remove();
         reply.append((unsigned)RFEnoerror).append(e);
-        return true;
     }
 
-    bool cmdGetVer(MemoryBuffer & msg, MemoryBuffer & reply)
+    void cmdGetVer(MemoryBuffer & msg, MemoryBuffer & reply)
     {
         if (TF_TRACE)
             PROGLOG("getVer");
@@ -5121,10 +5548,9 @@ public:
         else
             reply.append((unsigned)FILESRV_VERSION+0x10000);
         reply.append(VERSTRING);
-        return true;
     }
 
-    bool cmdRename(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
+    void cmdRename(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr fromname;
@@ -5136,10 +5562,9 @@ public:
         Owned<IFile> file=createIFile(fromname);
         file->rename(toname);
         reply.append((unsigned)RFEnoerror);
-        return true;
     }
 
-    bool cmdMove(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
+    void cmdMove(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr fromname;
@@ -5151,10 +5576,9 @@ public:
         Owned<IFile> file=createIFile(fromname);
         file->move(toname);
         reply.append((unsigned)RFEnoerror);
-        return true;
     }
 
-    bool cmdCopy(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    void cmdCopy(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr fromname;
@@ -5165,10 +5589,9 @@ public:
             PROGLOG("copy,  '%s' to '%s'",fromname.get(),toname.get());
         copyFile(toname, fromname);
         reply.append((unsigned)RFEnoerror);
-        return true;
     }
 
-    bool cmdAppend(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client, CClientStats &stats)
+    void cmdAppend(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client, CClientStats &stats)
     {
         IMPERSONATE_USER(client);
         int handle;
@@ -5177,8 +5600,7 @@ public:
         StringAttr srcname;
         msg.read(handle).read(srcname).read(pos).read(len);
         IFileIO *fileio;
-        if (!checkFileIOHandle(reply, handle, fileio))
-            return false;
+        checkFileIOHandle(reply, handle, fileio);
 
         Owned<IFile> file = createIFile(srcname.get());
         __int64 written = fileio->appendFile(file,pos,len);
@@ -5186,10 +5608,9 @@ public:
         if (TF_TRACE)
             PROGLOG("append file,  handle = %d, file=%s, pos = %" I64F "d len = %" I64F "d written = %" I64F "d",handle,srcname.get(),pos,len,written);
         reply.append((unsigned)RFEnoerror).append(written);
-        return true;
     }
 
-    bool cmdIsFile(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdIsFile(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5199,10 +5620,9 @@ public:
         Owned<IFile> file=createIFile(name);
         unsigned ret = (unsigned)file->isFile();
         reply.append((unsigned)RFEnoerror).append(ret);
-        return true;
     }
 
-    bool cmdIsDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdIsDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5212,10 +5632,9 @@ public:
         Owned<IFile> file=createIFile(name);
         unsigned ret = (unsigned)file->isDirectory();
         reply.append((unsigned)RFEnoerror).append(ret);
-        return true;
     }
 
-    bool cmdIsReadOnly(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdIsReadOnly(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5225,10 +5644,9 @@ public:
         Owned<IFile> file=createIFile(name);
         unsigned ret = (unsigned)file->isReadOnly();
         reply.append((unsigned)RFEnoerror).append(ret);
-        return true;
     }
 
-    bool cmdSetReadOnly(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdSetReadOnly(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5240,10 +5658,9 @@ public:
         Owned<IFile> file=createIFile(name);
         file->setReadOnly(set);
         reply.append((unsigned)RFEnoerror);
-        return true;
     }
 
-    bool cmdSetFilePerms(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdSetFilePerms(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5254,10 +5671,9 @@ public:
         Owned<IFile> file=createIFile(name);
         file->setFilePermissions(fPerms);
         reply.append((unsigned)RFEnoerror);
-        return true;
     }
 
-    bool cmdGetTime(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdGetTime(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5270,15 +5686,15 @@ public:
         CDateTime accessedTime;
         bool ret = file->getTime(&createTime,&modifiedTime,&accessedTime);
         reply.append((unsigned)RFEnoerror).append(ret);
-        if (ret) {
+        if (ret)
+        {
             createTime.serialize(reply);
             modifiedTime.serialize(reply);
             accessedTime.serialize(reply);
         }
-        return true;
     }
 
-    bool cmdSetTime(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdSetTime(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5305,10 +5721,9 @@ public:
 
         bool ret = file->setTime(creategot?&createTime:NULL,modifiedgot?&modifiedTime:NULL,accessedgot?&accessedTime:NULL);
         reply.append((unsigned)RFEnoerror).append(ret);
-        return true;
     }
 
-    bool cmdCreateDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdCreateDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5318,10 +5733,9 @@ public:
         Owned<IFile> dir=createIFile(name);
         bool ret = dir->createDirectory();
         reply.append((unsigned)RFEnoerror).append(ret);
-        return true;
     }
 
-    bool cmdGetDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdGetDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5363,7 +5777,6 @@ public:
                 b = 0;
                 reply.append(b);
             }
-            return true;
         }
         else
         {
@@ -5379,10 +5792,7 @@ public:
                     client.opendir.set(iter);
             }
             if (!iter)
-            {
-                reply.append((unsigned)RFSERR_GetDirFailed);
-                return false;
-            }
+                throw createDafsException(RFSERR_GetDirFailed, nullptr);
             reply.append((unsigned)RFEnoerror);
             if (CRemoteDirectoryIterator::serialize(reply,iter,stream?0x100000:0,stream<2))
             {
@@ -5395,10 +5805,9 @@ public:
                 reply.append(cont);
             }
         }
-        return true;
     }
 
-    bool cmdMonitorDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdMonitorDir(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5412,7 +5821,8 @@ public:
         byte isprev;
         msg.read(isprev);
         Owned<IDirectoryIterator> prev;
-        if (isprev==1) {
+        if (isprev==1)
+        {
             SocketEndpoint ep;
             CRemoteDirectoryIterator *di = new CRemoteDirectoryIterator(ep,name);
             di->appendBuf(msg);
@@ -5427,10 +5837,9 @@ public:
         reply.append(state);
         if (state==1)
             CRemoteDirectoryIterator::serializeDiff(reply,iter);
-        return true;
     }
 
-    bool cmdCopySection(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdCopySection(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr uuid;
@@ -5445,7 +5854,6 @@ public:
         msg.read(uuid).read(fromFile).read(toFile).read(toOfs).read(fromOfs).read(size).read(timeout);
         AsyncCommandStatus status = asyncCommandManager.copySection(uuid,fromFile,toFile,toOfs,fromOfs,size,sizeDone,totalSize,timeout);
         reply.append((unsigned)RFEnoerror).append((unsigned)status).append(sizeDone).append(totalSize);
-        return true;
     }
 
     static void treeCopyFile(RemoteFilename &srcfn, RemoteFilename &dstfn, const char *net, const char *mask, IpAddress &ip, bool usetmp, CThrottler *throttler, CFflags copyFlags=CFnone)
@@ -5589,7 +5997,7 @@ public:
             PROGLOG("TREECOPY(done,fallback) %s to %s",srcfile->queryFilename(),dstfile->queryFilename());
     }
 
-    bool cmdTreeCopy(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CThrottler *throttler, bool usetmp=false)
+    void cmdTreeCopy(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CThrottler *throttler, bool usetmp=false)
     {
         IMPERSONATE_USER(client);
         RemoteFilename src;
@@ -5604,16 +6012,14 @@ public:
         unsigned status = 0;
         reply.append((unsigned)RFEnoerror).append((unsigned)status);
         ip.ipserialize(reply);
-        return true;
     }
 
-    bool cmdTreeCopyTmp(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CThrottler *throttler)
+    void cmdTreeCopyTmp(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CThrottler *throttler)
     {
-        return cmdTreeCopy(msg, reply, client, throttler, true);
+        cmdTreeCopy(msg, reply, client, throttler, true);
     }
 
-
-    bool cmdGetCRC(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdGetCRC(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr name;
@@ -5623,10 +6029,9 @@ public:
         Owned<IFile> file=createIFile(name);
         unsigned ret = file->getCRC();
         reply.append((unsigned)RFEnoerror).append(ret);
-        return true;
     }
 
-    bool cmdStop(MemoryBuffer &msg, MemoryBuffer &reply)
+    void cmdStop(MemoryBuffer &msg, MemoryBuffer &reply)
     {
         PROGLOG("Abort request received");
         stopping = true;
@@ -5635,10 +6040,9 @@ public:
         if (securesock)
             securesock->cancel_accept();
         reply.append((unsigned)RFEnoerror);
-        return false;
     }
 
-    bool cmdExec(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdExec(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         StringAttr cmdLine;
         msg.read(cmdLine);
@@ -5648,43 +6052,40 @@ public:
         size32_t outSz = errMsg.length()+1; // reply with null terminated string
         // reply with error code -1
         reply.append((unsigned)-1).append((unsigned)0).append(outSz).append(outSz, errMsg.str());
-        return true;
     }
 
-    bool cmdSetTrace(MemoryBuffer &msg, MemoryBuffer &reply)
+    void cmdSetTrace(MemoryBuffer &msg, MemoryBuffer &reply)
     {
         byte flags;
         msg.read(flags);
         int retcode=-1;
-        if (flags!=255) {   // escape
+        if (flags!=255)   // escape
+        {
             retcode = traceFlags;
             traceFlags = flags;
         }
         reply.append(retcode);
-        return true;
     }
 
-    bool cmdGetInfo(MemoryBuffer &msg, MemoryBuffer &reply)
+    void cmdGetInfo(MemoryBuffer &msg, MemoryBuffer &reply)
     {
         unsigned level=1;
         if (msg.remaining() >= sizeof(unsigned))
             msg.read(level);
         StringBuffer retstr;
         getInfo(retstr, level);
-        reply.append(0).append(retstr.str());
-        return true;
+        reply.append(RFEnoerror).append(retstr.str());
     }
 
-    bool cmdFirewall(MemoryBuffer &msg, MemoryBuffer &reply)
+    void cmdFirewall(MemoryBuffer &msg, MemoryBuffer &reply)
     {
         // TBD
         StringBuffer retstr;
         getInfo(retstr);
-        reply.append(0).append(retstr.str());
-        return true;
+        reply.append(RFEnoerror).append(retstr.str());
     }
 
-    bool cmdExtractBlobElements(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdExtractBlobElements(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
         IMPERSONATE_USER(client);
         StringAttr prefix;
@@ -5698,21 +6099,9 @@ public:
         reply.append((unsigned)RFEnoerror).append(n);
         for (unsigned i=0;i<n;i++)
             extracted.item(i).serialize(reply);
-        return true;
     }
 
-    bool cmdRedeploy(MemoryBuffer &msg, MemoryBuffer &reply)
-    {
-        return false; // TBD
-    }
-
-    bool cmdUnknown(MemoryBuffer & msg, MemoryBuffer & reply,RemoteFileCommandType cmd)
-    {
-        appendErr2(reply, RFSERR_InvalidCommand, cmd);
-        return false;
-    }
-
-    bool cmdUnlock(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
+    void cmdUnlock(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
     {
         // this is an attempt to authenticate when we haven't got authentication turned on
         if (TF_TRACE_CLIENT_STATS)
@@ -5720,12 +6109,284 @@ public:
             StringBuffer s(client.queryPeerName());
             PROGLOG("Connect from %s",s.str());
         }
-        appendErr2(reply, RFSERR_InvalidCommand, RFCunlock);
-        return false;
+        throw createDafsException(RFSERR_InvalidCommand, nullptr);
+    }
+
+    void cmdStreamReadCommon(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    {
+        size32_t jsonSz = msg.remaining();
+        Owned<IPropertyTree> requestTree = createPTreeFromJSONString(jsonSz, (const char *)msg.readDirect(jsonSz));
+
+        /* Example JSON request:
+         * {
+         *  "format" : "xml",
+         *  "handle" : "1234",
+         *  "node" : {
+         *   "kind" : "diskread",
+         *   "fileName": "examplefilename",
+         *   "keyFilter" : "f1='1    '",
+         *   "chooseN" : 5,
+         *   "compressed" : "false"
+         *   "input" : {
+         *    "f1" : "string5",
+         *    "f2" : "string5"
+         *   },
+         *   "output" : {
+         *    "f2" : "string",
+         *    "f1" : "real"
+         *   }
+         *  }
+         * }
+         * OR
+         * {
+         *  "format" : "xml",
+         *  "handle" : "1234",
+         *  "node" : {
+         *   "kind" : "indexread",
+         *   "fileName": "examplefilename",
+         *   "keyLilter" : "f1='1    '",
+         *   "rowLimit" : 5,
+         *   "input" : {
+         *    "f1" : "string5",
+         *    "f2" : "string5"
+         *   },
+         *   "output" : {
+         *    "f2" : "string",
+         *    "f1" : "real"
+         *   }
+         *  }
+         * }
+         * OR
+         * {
+         *  "format" : "xml",
+         *  "node" : {
+         *   "kind" : "indexcount",
+         *   "fileName": "examplefilename",
+         *   "keyFilter" : "f1='1    '",
+         *   "rowLimit" : 5
+         *   "input" : {
+         *    "f1" : "string5",
+         *    "f2" : "string5"
+         *   },
+         *  }
+         * }
+         *
+         */
+
+        int cursorHandle = requestTree->getPropInt("handle");
+        OutputFormat outputFormat = outFmt_Xml;
+
+        Owned<IRemoteActivity> outputActivity;
+        OpenFileInfo fileInfo;
+        if (!cursorHandle)
+        {
+            const char *outputFmtStr = requestTree->queryProp("format");
+            if (nullptr == outputFmtStr)
+                outputFormat = outFmt_Xml; // default
+            else if (strieq("xml", outputFmtStr))
+                outputFormat = outFmt_Xml;
+            else if (strieq("json", outputFmtStr))
+                outputFormat = outFmt_Json;
+            else if (strieq("binary", outputFmtStr))
+                outputFormat = outFmt_Binary;
+            else
+                throw MakeStringException(0, "Unrecognised output format: %s", outputFmtStr);
+            // In future this may be passed the request and build a chain of activities and return sink.
+            outputActivity.setown(createOutputActivity(*requestTree));
+
+            StringBuffer requestStr("jsonrequest:");
+            outputActivity->getInfoStr(requestStr);
+            Owned<StringAttrItem> name = new StringAttrItem(requestStr);
+
+            CriticalBlock block(sect);
+            cursorHandle = getNextHandle();
+            client.previdx = client.openFiles.ordinality();
+            client.openFiles.append(OpenFileInfo(cursorHandle, outputActivity, name, outputFormat));
+        }
+        else if (!lookupFileIOHandle(cursorHandle, fileInfo))
+            cursorHandle = 0; // challenge response ..
+        else // known handle, continuation
+        {
+            outputActivity.set(fileInfo.activity);
+            outputFormat = fileInfo.format;
+        }
+
+        if (outputActivity && requestTree->hasProp("cursorBin")) // use handle if one provided
+        {
+            MemoryBuffer cursorMb;
+            cursorMb.setEndian(__BIG_ENDIAN);
+            JBASE64_Decode(requestTree->queryProp("cursorBin"), cursorMb);
+            outputActivity->restoreCursor(cursorMb);
+        }
+
+        Owned<IXmlWriterExt> responseWriter; // for xml or json response
+        if (outFmt_Binary == outputFormat)
+            reply.append(cursorHandle);
+        else // outFmt_Xml || outFmt_Json
+        {
+            responseWriter.setown(createIXmlWriterExt(0, 0, nullptr, outFmt_Xml == outputFormat ? WTStandard : WTJSON));
+            responseWriter->outputBeginNested("Response", true);
+            responseWriter->outputUInt(cursorHandle, sizeof(cursorHandle), "handle");
+        }
+        if (cursorHandle)
+        {
+            IOutputMetaData *out = outputActivity->queryOutputMeta();
+            bool grouped = outputActivity->isGrouped();
+            bool eoi=false;
+
+            MemoryBuffer resultBuffer;
+            MemoryBufferBuilder outBuilder(resultBuffer, out->getMinRecordSize());
+            if (outFmt_Binary == outputFormat)
+            {
+                DelayedSizeMarker dataLenMarker(reply); // data length
+                outBuilder.setBuffer(reply); // write direct to reply buffer for efficiency
+
+                if (grouped)
+                {
+                    bool pastFirstRow = outputActivity->queryProcessed()>0;
+                    for (unsigned i=0; i<defaultDaFSNumRecs; i++)
+                    {
+                        size32_t eogPos = 0;
+                        if (pastFirstRow)
+                        {
+                            /* this is for last row output, which might have been returned in the previous request
+                             * The eog marker may change as a result of the next row (see writeDirect() call below);
+                             */
+                            eogPos = reply.length();
+                            reply.append(false);
+                        }
+                        size32_t rowSz;
+                        const void *row = outputActivity->nextRow(outBuilder, rowSz);
+                        if (!row)
+                        {
+                            if (!pastFirstRow)
+                            {
+                                eoi = true;
+                                break;
+                            }
+                            else
+                            {
+                                bool eog = true;
+                                reply.writeDirect(eogPos, sizeof(eog), &eog);
+                                row = outputActivity->nextRow(outBuilder, rowSz);
+                                if (!row)
+                                {
+                                    eoi = true;
+                                    break;
+                                }
+                            }
+                        }
+                        pastFirstRow = true;
+                    }
+                }
+                else
+                {
+                    for (unsigned i=0; i<defaultDaFSNumRecs; i++)
+                    {
+                        size32_t rowSz;
+                        const void *row = outputActivity->nextRow(outBuilder, rowSz);
+                        if (!row)
+                        {
+                            eoi = true;
+                            break;
+                        }
+                    }
+                }
+                dataLenMarker.write();
+                DelayedSizeMarker cursorLenMarker(reply); // cursor length
+                if (!eoi)
+                    outputActivity->serializeCursor(reply);
+                cursorLenMarker.write();
+            }
+            else
+            {
+                if (grouped)
+                {
+                    bool pastFirstRow = outputActivity->queryProcessed()>0;
+                    for (unsigned __int64 i=0; i<defaultDaFSNumRecs; i++)
+                    {
+                        size32_t rowSz;
+                        const void *row = outputActivity->nextRow(outBuilder, rowSz);
+                        if (!row)
+                        {
+                            if (!pastFirstRow)
+                            {
+                                eoi = true;
+                                break;
+                            }
+                            else
+                            {
+                                responseWriter->outputBeginNested("Eog", false);
+                                responseWriter->outputEndNested("Eog");
+                                row = outputActivity->nextRow(outBuilder, rowSz);
+                                if (!row)
+                                {
+                                    eoi = true;
+                                    break;
+                                }
+                            }
+                        }
+                        responseWriter->outputBeginNested("Row", true);
+                        out->toXML((const byte *)row, *responseWriter);
+                        responseWriter->outputEndNested("Row");
+                        resultBuffer.clear();
+                        pastFirstRow = true;
+                    }
+                }
+                else
+                {
+                    for (unsigned __int64 i=0; i<defaultDaFSNumRecs; i++)
+                    {
+                        size32_t rowSz;
+                        const void *row = outputActivity->nextRow(outBuilder, rowSz);
+                        if (!row)
+                        {
+                            eoi = true;
+                            break;
+                        }
+                        responseWriter->outputBeginNested("Row", true);
+                        out->toXML((const byte *)row, *responseWriter);
+                        responseWriter->outputEndNested("Row");
+                        resultBuffer.clear();
+                    }
+                }
+                if (!eoi)
+                {
+                    MemoryBuffer cursorMb;
+                    cursorMb.setEndian(__BIG_ENDIAN);
+                    outputActivity->serializeCursor(cursorMb);
+                    StringBuffer cursorBinStr;
+                    JBASE64_Encode(cursorMb.toByteArray(), cursorMb.length(), cursorBinStr);
+                    responseWriter->outputString(cursorBinStr.length(), cursorBinStr.str(), "cursorBin");
+                }
+            }
+        }
+        if (outFmt_Binary != outputFormat)
+        {
+            responseWriter->outputEndNested("Response");
+            PROGLOG("Response: %s", responseWriter->str());
+            reply.append(responseWriter->length(), responseWriter->str());
+        }
+    }
+
+    void cmdStreamReadTestSocket(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    {
+        reply.append('J');
+        /* testsocket is not actually passing in a command, and is interpreting '{' as the cmd to get here.
+         * so rewind so it can be read/parsed as JSON by cmdStreamRead
+         */
+        msg.reset(msg.getPos()-sizeof(RemoteFileCommandType));
+        cmdStreamReadCommon(msg, reply, client);
+    }
+
+    void cmdStreamReadStd(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    {
+        reply.append(RFEnoerror);
+        cmdStreamReadCommon(msg, reply, client);
     }
 
     // legacy version
-    bool cmdSetThrottle(MemoryBuffer & msg, MemoryBuffer & reply)
+    void cmdSetThrottle(MemoryBuffer & msg, MemoryBuffer & reply)
     {
         unsigned limit, delayMs, cpuThreshold;
         msg.read(limit);
@@ -5733,10 +6394,9 @@ public:
         msg.read(cpuThreshold);
         stdCmdThrottler.configure(limit, delayMs, cpuThreshold, (unsigned)-1);
         reply.append((unsigned)RFEnoerror);
-        return true;
     }
 
-    bool cmdSetThrottle2(MemoryBuffer & msg, MemoryBuffer & reply)
+    void cmdSetThrottle2(MemoryBuffer & msg, MemoryBuffer & reply)
     {
         unsigned throttleClass, limit, delayMs, cpuThreshold, queueLimit;
         msg.read(throttleClass);
@@ -5746,42 +6406,49 @@ public:
         msg.read(queueLimit);
         setThrottle((ThrottleClass)throttleClass, limit, delayMs, cpuThreshold, queueLimit);
         reply.append((unsigned)RFEnoerror);
-        return true;
     }
 
-    void appendError(RemoteFileCommandType cmd, CRemoteClientHandler *client, unsigned ret, MemoryBuffer &reply)
+    void formatException(MemoryBuffer &reply, IException *e, RemoteFileCommandType cmd, bool testSocketFlag, unsigned _dfsErrorCode, CRemoteClientHandler *client)
     {
-        if (reply.length()>=sizeof(unsigned)*2)
+        unsigned dfsErrorCode = _dfsErrorCode;
+        if (!dfsErrorCode)
         {
-            reply.reset();
-            unsigned z;
-            unsigned e;
-            reply.read(z).read(e);
-            StringBuffer err("ERR(");
-            err.append(e).append(") ");
-            if (client)
+            if (e)
+                dfsErrorCode = (QUERYINTERFACE(e, IDAFS_Exception)) ? e->errorCode() : RFSERR_InternalError;
+            else
+                dfsErrorCode = RFSERR_InternalError;
+        }
+        VStringBuffer errMsg("ERROR: cmd=%s, error=%s", getRFCText(cmd), getRFSERRText(dfsErrorCode));
+        if (e)
+        {
+            errMsg.appendf(" (%u, ", e->errorCode());
+            unsigned len = errMsg.length();
+            e->errorMessage(errMsg);
+            if (len == errMsg.length())
+                errMsg.setLength(len-2); // strip off ", " if no message in exception
+            errMsg.append(")");
+        }
+        if (testSocketFlag)
+            reply.append('-');
+        else
+            reply.append(dfsErrorCode);
+        reply.append(errMsg.str());
+
+        if (client && cmd!=RFCunlock)
+        {
+            const char *peer = client->queryPeerName();
+            if (peer)
             {
-                const char *peer = client->queryPeerName();
-                if (peer)
-                    err.append(peer);
+                VStringBuffer err("%s. Client: %s", errMsg.str(), peer);
+                PROGLOG("%s", err.str());
             }
-            if (e&&(reply.getPos()<reply.length()))
-            {
-                StringAttr es;
-                reply.read(es);
-                err.append(" : ").append(es);
-            }
-            reply.reset();
-            if (cmd!=RFCunlock)
-                PROGLOG("%s",err.str());    // supress authentication logging
-            if (client)
-                client->logPrevHandle();
+            client->logPrevHandle();
         }
     }
 
     void throttleCommand(RemoteFileCommandType cmd, MemoryBuffer &msg, CRemoteClientHandler *client)
     {
-        switch(cmd)
+        switch (cmd)
         {
             case RFCexec:
             case RFCgetcrc:
@@ -5822,6 +6489,8 @@ public:
             case RFCgetinfo:
             case RFCfirewall:
             case RFCunlock:
+            case RFCStreamRead:
+            case RFCStreamReadTestSocket:
                 stdCmdThrottler.addCommand(cmd, msg, client);
                 return;
             // NB: The following commands are still bound by the the thread pool
@@ -5839,16 +6508,14 @@ public:
     bool processCommand(RemoteFileCommandType cmd, MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler *client, CThrottler *throttler)
     {
         Owned<CClientStats> stats = clientStatsTable.getClientReference(cmd, client->queryPeerName());
-        bool ret = true;
+        bool testSocketFlag = false;
+        unsigned posOfErr = reply.length();
         try
         {
             switch(cmd)
             {
                 MAPCOMMANDSTATS(RFCread, cmdRead, *stats);
                 MAPCOMMANDSTATS(RFCwrite, cmdWrite, *stats);
-                MAPCOMMANDSTATS(RFCreadfilteredindex, cmdReadFilteredIndex, *stats);
-                MAPCOMMANDSTATS(RFCreadfilteredindexcount, cmdReadFilteredIndexCount, *stats);
-                MAPCOMMANDSTATS(RFCreadfilteredindexblob, cmdReadFilteredIndexBlob, *stats);
                 MAPCOMMANDCLIENTSTATS(RFCappend, cmdAppend, *client, *stats);
                 MAPCOMMAND(RFCcloseIO, cmdCloseFileIO);
                 MAPCOMMANDCLIENT(RFCopenIO, cmdOpenFileIO, *client);
@@ -5870,7 +6537,6 @@ public:
                 MAPCOMMAND(RFCstop, cmdStop);
                 MAPCOMMANDCLIENT(RFCexec, cmdExec, *client);
                 MAPCOMMANDCLIENT(RFCextractblobelements, cmdExtractBlobElements, *client);
-                MAPCOMMAND(RFCredeploy, cmdRedeploy); // only Windows
                 MAPCOMMANDCLIENT(RFCgetcrc, cmdGetCRC, *client);
                 MAPCOMMANDCLIENT(RFCmove, cmdMove, *client);
                 MAPCOMMANDCLIENT(RFCcopy, cmdCopy, *client);
@@ -5879,27 +6545,24 @@ public:
                 MAPCOMMAND(RFCgetinfo, cmdGetInfo);
                 MAPCOMMAND(RFCfirewall, cmdFirewall);
                 MAPCOMMANDCLIENT(RFCunlock, cmdUnlock, *client);
+                MAPCOMMANDCLIENTTESTSOCKET(RFCStreamReadTestSocket, cmdStreamReadTestSocket, *client);
+                MAPCOMMANDCLIENT(RFCStreamRead, cmdStreamReadStd, *client);
                 MAPCOMMANDCLIENT(RFCcopysection, cmdCopySection, *client);
                 MAPCOMMANDCLIENTTHROTTLE(RFCtreecopy, cmdTreeCopy, *client, &slowCmdThrottler);
                 MAPCOMMANDCLIENTTHROTTLE(RFCtreecopytmp, cmdTreeCopyTmp, *client, &slowCmdThrottler);
                 MAPCOMMAND(RFCsetthrottle, cmdSetThrottle); // legacy version
                 MAPCOMMAND(RFCsetthrottle2, cmdSetThrottle2);
             default:
-                ret = cmdUnknown(msg,reply,cmd);
+                formatException(reply, nullptr, cmd, false, RFSERR_InvalidCommand, client);
                 break;
             }
         }
         catch (IException *e)
         {
-            ret = false;
-            StringBuffer s;
-            e->errorMessage(s);
-            appendCmdErr(reply, cmd, e->errorCode(), s.str());
-            e->Release();
+            reply.setWritePos(posOfErr);
+            formatException(reply, e, cmd, testSocketFlag, 0, client);
         }
-        if (!ret) // append error string
-            appendError(cmd, client, cmd, reply);
-        return ret;
+        return testSocketFlag;
     }
 
     IPooledThread *createCommandProcessor()
@@ -6141,8 +6804,8 @@ public:
         if (cmd != RFCgetver)
             cmd = RFCinvalid;
         MemoryBuffer reply;
-        processCommand(cmd, msg, initSendBuffer(reply), NULL, NULL);
-        sendBuffer(socket, reply);
+        bool testSocketFlag = processCommand(cmd, msg, initSendBuffer(reply), NULL, NULL);
+        sendBuffer(socket, reply, testSocketFlag);
     }
 
     bool checkAuthentication(ISocket *socket, IAuthenticatedUser *&ret)
@@ -6159,7 +6822,8 @@ public:
         if (reqbuf.remaining()<sizeof(RemoteFileCommandType))
             return false;
         reqbuf.read(typ);
-        if (typ!=RFCunlock) {
+        if (typ!=RFCunlock)
+        {
             processUnauthenticatedCommand(typ,socket,reqbuf);
             return false;
         }
@@ -6174,30 +6838,35 @@ public:
         mergeOnce(oncekey,sizeof(ipdata),&ipdata); // this is clients key
         OnceKey mykey;
         genOnce(mykey);
-        reply.append((unsigned)0); // errcode
+        reply.append(RFEnoerror); // errcode
         aesEncrypt(&oncekey,sizeof(oncekey),&mykey,sizeof(oncekey),encbuf);
         reply.append(encbuf.length()).append(encbuf);
         sendBuffer(socket, reply); // send my oncekey
         reqbuf.clear();
         receiveBuffer(socket, reqbuf, 1);
-        if (reqbuf.remaining()>sizeof(RemoteFileCommandType)+sizeof(size32_t)) {
+        if (reqbuf.remaining()>sizeof(RemoteFileCommandType)+sizeof(size32_t))
+        {
             reqbuf.read(typ);
-            if (typ==RFCunlockreply) {
+            if (typ==RFCunlockreply)
+            {
                 size32_t bs;
                 reqbuf.read(bs);
-                if (bs<=reqbuf.remaining()) {
+                if (bs<=reqbuf.remaining())
+                {
                     MemoryBuffer userbuf;
                     aesDecrypt(&mykey,sizeof(mykey),reqbuf.readDirect(bs),bs,userbuf);
                     byte n;
                     userbuf.read(n);
-                    if (n>=2) {
+                    if (n>=2)
+                    {
                         StringAttr user;
                         StringAttr password;
                         userbuf.read(user).read(password);
                         Owned<IAuthenticatedUser> iau = createAuthenticatedUser();
-                        if (iau->login(user,password)) {
+                        if (iau->login(user,password))
+                        {
                             initSendBuffer(reply.clear());
-                            reply.append((unsigned)0);
+                            reply.append(RFEnoerror);
                             sendBuffer(socket, reply); // send OK
                             ret = iau;
                             return true;
@@ -6217,18 +6886,23 @@ public:
         cCommandProcessor::cCommandProcessorParams params;
         IAuthenticatedUser *user=NULL;
         bool authenticated = false;
-        try {
+        try
+        {
             if (checkAuthentication(sock,user))
                 authenticated = true;
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             e->Release();
         }
-        if (!authenticated) {
-            try {
+        if (!authenticated)
+        {
+            try
+            {
                 sock->Release();
             }
-            catch (IException *e) {
+            catch (IException *e)
+            {
                 e->Release();
             }
             return;
@@ -6419,9 +7093,9 @@ static StringBuffer basePath;
 static Owned<CSimpleInterface> serverThread;
 
 
-class RemoteFileTest : public CppUnit::TestFixture
+class RemoteFileSlowTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(RemoteFileTest);
+    CPPUNIT_TEST_SUITE(RemoteFileSlowTest);
         CPPUNIT_TEST(testRemoteFilename);
         CPPUNIT_TEST(testStartServer);
         CPPUNIT_TEST(testBasicFunctionality);
@@ -6524,7 +7198,7 @@ protected:
                 threaded.join();
             }
         // IThreaded
-            virtual void main()
+            virtual void threadmain() override
             {
                 DAFSConnectCfg sslCfg = SSLNone;
                 server->run(sslCfg, socket, nullptr);
@@ -6727,7 +7401,7 @@ protected:
                 threaded.join();
             }
             // IThreaded impl.
-            virtual void main()
+            virtual void threadmain() override
             {
                 MilliSleep(1000); // give monitorDirectory a chance to be monitoring
 
@@ -6775,8 +7449,8 @@ protected:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( RemoteFileTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RemoteFileTest, "RemoteFileTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( RemoteFileSlowTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RemoteFileSlowTest, "RemoteFileSlowTests" );
 
 
 #endif // _USE_CPPUNIT

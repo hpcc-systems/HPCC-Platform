@@ -28,13 +28,14 @@ define([
 
     "dijit/registry",
 
-    "hpcc/WsTopology",
-    "hpcc/WsWorkunits",
-    "hpcc/FileSpray",
-    "hpcc/ws_access",
-    "hpcc/WsESDLConfig",
-    "hpcc/WsPackageMaps",
-    "hpcc/Utility"
+    "src/WsTopology",
+    "src/WsWorkunits",
+    "src/FileSpray",
+    "src/ws_access",
+    "src/WsESDLConfig",
+    "src/WsPackageMaps",
+    "src/Utility"
+
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory, on,
     registry,
     WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps, Utility) {
@@ -163,10 +164,14 @@ define([
             var context = this;
             WsPackageMaps.GetPackageMapSelectOptions({
                 request: {
-                    includeTargets: true
+                    IncludeTargets: true
                 }
             }).then(function (response) {
                 if (lang.exists("GetPackageMapSelectOptionsResponse.Targets.TargetData", response)) {
+                    context.options.push({
+                        label: "ANY",
+                        value: ""
+                    });
                     var targetData = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
                     for (var i = 0; i < targetData.length; ++i) {
                         context.options.push({
@@ -183,12 +188,20 @@ define([
             var context = this;
             WsPackageMaps.GetPackageMapSelectOptions({
                 request: {
-                    IncludeProcesses: true
+                    IncludeProcesses: true,
+                    IncludeProcessFilters: true
                 }
             }).then(function (response) {
                 if (lang.exists("GetPackageMapSelectOptionsResponse.ProcessFilters.Item", response)) {
+                    context.options.push({
+                        label: "ANY",
+                        value: ""
+                    });
                     var targetData = response.GetPackageMapSelectOptionsResponse.ProcessFilters.Item;
                     for (var i = 0; i < targetData.length; ++i) {
+                        if (targetData[i] === "*") {
+                            targetData[i] = "*"
+                        }
                         context.options.push({
                             label: targetData[i],
                             value: targetData[i]
@@ -509,14 +522,14 @@ define([
 
         loadECLSamples: function () {
             var sampleStore = new ItemFileReadStore({
-                url: dojoConfig.getURL("ecl/ECLPlaygroundSamples.json")
+                url: Utility.getURL("ecl/ECLPlaygroundSamples.json")
             });
             this.setStore(sampleStore);
             var context = this;
             this.on("change", function (evt) {
                 var filename = this.get("value");
                 xhr.get({
-                    url: dojoConfig.getURL("ecl/" + filename),
+                    url: Utility.getURL("ecl/" + filename),
                     handleAs: "text",
                     load: function (eclText) {
                         context.onNewSelection(eclText);

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AdjustTimeTZ">
+  <!--This is a template for STD library method mod files-->
+
+  <title>AdjustTimeTZ</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.AdjustTimeTZ<indexterm>
+      <primary>STD.Date.TimeZone.AdjustTimeTZ</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.AdjustTimeTZ</primary>
+    </indexterm><indexterm>
+      <primary>AdjustTimeTZ</primary>
+    </indexterm>(</emphasis> <emphasis>time,fromTimeZoneAbbrev,
+  toTimeZoneAbbrev, </emphasis> [<emphasis>fromLocation</emphasis>, ]
+  [<emphasis>toLocation</emphasis> ]<emphasis role="bold"> )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>time</emphasis></entry>
+
+          <entry>REQUIRED. The time value (in Time_t format) to
+          adjust.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fromTimeZoneAbbrev</emphasis></entry>
+
+          <entry>REQUIRED. The time zone abbreviation that the
+          <emphasis>time</emphasis> value is assumed to be within; must be a
+          non-empty uppercase string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toTimeZoneAbbrev</emphasis></entry>
+
+          <entry>REQUIRED. The time zone abbreviation designated as the ending
+          point; must be a non-empty uppercase string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fromLocation</emphasis></entry>
+
+          <entry>OPTIONAL. The name of the location that goes along with
+          fromTimeZoneAbbrev; if a location is not provided or is an empty
+          string, the first record matching fromTimeZoneAbbrev is
+          used.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toLocation</emphasis></entry>
+
+          <entry>OPTIONAL. The name of the location that goes along with
+          toTimeZoneAbbrev; if a location is not provided or is an empty
+          string, the first record matching toTimeZoneAbbrev is used.</entry>
+        </row>
+
+        <row>
+          <entry>Returns:</entry>
+
+          <entry>The given time value (in <link
+          linkend="Time_Data_Types">Time_t</link> format) adjusted by the
+          difference between the two given time zones; if either time zone
+          cannot be found then the original time value is returned
+          unchanged.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">STD.Date.TimeZone.AdjustTimeTZ</emphasis>
+  function adjusts a given Time_t time value for another time zone. Both the
+  given time and the destination time zone are designated by a required time
+  zone abbreviation and an optional location name.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.Date.TimeZone.AdjustTimeTZ(205246,'CST','IST','NORTH AMERICA','');</programlisting>
+
+  <para>See Also: <link linkend="AdjustTimeTZ">SecondsBetweenTZ</link></para>
+</sect1>

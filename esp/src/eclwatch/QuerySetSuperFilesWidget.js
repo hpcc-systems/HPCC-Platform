@@ -27,11 +27,12 @@ define([
 
     "hpcc/GridDetailsWidget",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPQuery"
+    "src/ESPUtil",
+    "src/ESPQuery",
+    "hpcc/SFDetailsWidget"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, QueryResults,
                 tree, selector,
-                GridDetailsWidget, DelayLoadWidget, ESPUtil, ESPQuery) {
+                GridDetailsWidget, DelayLoadWidget, ESPUtil, ESPQuery, SFDetailsWidget) {
     return declare("QuerySetSuperFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         query: null,

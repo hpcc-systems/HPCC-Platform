@@ -31,7 +31,33 @@ if grep "\\#includedir /etc/sudoers.d" /etc/sudoers > /dev/null 2>&1; then
   cat > /etc/sudoers.d/${USER_NAME}  <<- EOF
 Cmnd_Alias HPCC_DAFILESRV = /etc/init.d/dafilesrv
 Cmnd_Alias HPCC_HPCCINIT = /etc/init.d/hpcc-init
-${USER_NAME} ALL = NOPASSWD: HPCC_DAFILESRV, HPCC_HPCCINIT
+Cmnd_Alias HPCC_SYSD_HPCCSYSTEMS_PLATFORM_START = /bin/systemctl start hpccsystems-platform.target
+Cmnd_Alias HPCC_SYSD_HPCCSYSTEMS_PLATFORM_STOP = /bin/systemctl stop hpccsystems-platform.target
+Cmnd_Alias HPCC_SYSD_THOR_START = /bin/systemctl start thor*
+Cmnd_Alias HPCC_SYSD_THOR_STOP = /bin/systemctl stop thor*
+Cmnd_Alias HPCC_SYSD_THORSLAVE_START = /bin/systemctl start thorslave*
+Cmnd_Alias HPCC_SYSD_THORSLAVE_STOP = /bin/systemctl stop thorslave*
+Cmnd_Alias HPCC_SYSD_ESP_START = /bin/systemctl start esp*
+Cmnd_Alias HPCC_SYSD_ESP_STOP = /bin/systemctl stop esp*
+Cmnd_Alias HPCC_SYSD_DAFILESRV_START = /bin/systemctl start dafilesrv*
+Cmnd_Alias HPCC_SYSD_DAFILESRV_STOP = /bin/systemctl stop dafilesrv*
+Cmnd_Alias HPCC_SYSD_DALI_START = /bin/systemctl start dali*
+Cmnd_Alias HPCC_SYSD_DALI_STOP = /bin/systemctl stop dali*
+Cmnd_Alias HPCC_SYSD_ROXIE_START = /bin/systemctl start roxie*
+Cmnd_Alias HPCC_SYSD_ROXIE_STOP = /bin/systemctl stop roxie*
+Cmnd_Alias HPCC_SYSD_DFUSERVER_START = /bin/systemctl start dfuserver*
+Cmnd_Alias HPCC_SYSD_DFUSERVER_STOP = /bin/systemctl stop dfuserver*
+Cmnd_Alias HPCC_SYSD_ECLAGENT_START = /bin/systemctl start eclagent*
+Cmnd_Alias HPCC_SYSD_ECLAGENT_STOP = /bin/systemctl stop eclagent*
+Cmnd_Alias HPCC_SYSD_ECLCCSERVER_START = /bin/systemctl start eclccserver*
+Cmnd_Alias HPCC_SYSD_ECLCCSERVER_STOP = /bin/systemctl stop eclccserver*
+Cmnd_Alias HPCC_SYSD_ECLSCHEDULER_START = /bin/systemctl start eclscheduler*
+Cmnd_Alias HPCC_SYSD_ECLSCHEDULER_STOP = /bin/systemctl stop eclscheduler*
+Cmnd_Alias HPCC_SYSD_SASHA_START = /bin/systemctl start sasha*
+Cmnd_Alias HPCC_SYSD_SASHA_STOP = /bin/systemctl stop sasha*
+Cmnd_Alias HPCC_SYSD_BACKUPNODE_START = /bin/systemctl start backupnode*
+Cmnd_Alias HPCC_SYSD_BACKUPNODE_STOP = /bin/systemctl stop backupnode*
+${USER_NAME} ALL = NOPASSWD: HPCC_DAFILESRV, HPCC_HPCCINIT, HPCC_SYSD_HPCCSYSTEMS_PLATFORM_START, HPCC_SYSD_HPCCSYSTEMS_PLATFORM_STOP, HPCC_SYSD_THORSLAVE_START, HPCC_SYSD_THORSLAVE_STOP, HPCC_SYSD_THOR_START, HPCC_SYSD_THOR_STOP, HPCC_SYSD_ESP_START, HPCC_SYSD_ESP_STOP, HPCC_SYSD_DAFILESRV_START, HPCC_SYSD_DAFILESRV_STOP, HPCC_SYSD_DALI_START, HPCC_SYSD_DALI_STOP, HPCC_SYSD_ROXIE_START, HPCC_SYSD_ROXIE_STOP, HPCC_SYSD_DFUSERVER_START, HPCC_SYSD_DFUSERVER_STOP, HPCC_SYSD_ECLAGENT_START, HPCC_SYSD_ECLAGENT_STOP, HPCC_SYSD_ECLCCSERVER_START, HPCC_SYSD_ECLCCSERVER_STOP, HPCC_SYSD_ECLSCHEDULER_START, HPCC_SYSD_ECLSCHEDULER_STOP, HPCC_SYSD_SASHA_START, HPCC_SYSD_SASHA_STOP, HPCC_SYSD_BACKUPNODE_START, HPCC_SYSD_BACKUPNODE_STOP
 Defaults:${USER_NAME} !requiretty
 EOF
   chmod 0440 /etc/sudoers.d/${USER_NAME}
@@ -39,7 +65,33 @@ else
   alter_file /etc/sudoers "^Cmnd_Alias HPCC_|^${USER_NAME} ALL =|^Defaults\:${USER_NAME} !requiretty" <<-%EOF
 Cmnd_Alias HPCC_DAFILESRV = /etc/init.d/dafilesrv
 Cmnd_Alias HPCC_HPCCINIT = /etc/init.d/hpcc-init
-${USER_NAME} ALL = NOPASSWD: HPCC_DAFILESRV, HPCC_HPCCINIT
+Cmnd_Alias HPCC_SYSD_HPCCSYSTEMS_PLATFORM_START = /bin/systemctl start hpccsystems-platform.target
+Cmnd_Alias HPCC_SYSD_HPCCSYSTEMS_PLATFORM_STOP = /bin/systemctl stop hpccsystems-platform.target
+Cmnd_Alias HPCC_SYSD_THOR_START = /bin/systemctl start thor*
+Cmnd_Alias HPCC_SYSD_THOR_STOP = /bin/systemctl stop thor*
+Cmnd_Alias HPCC_SYSD_THORSLAVE_START = /bin/systemctl start thorslave*
+Cmnd_Alias HPCC_SYSD_THORSLAVE_STOP = /bin/systemctl stop thorslave*
+Cmnd_Alias HPCC_SYSD_ESP_START = /bin/systemctl start esp*
+Cmnd_Alias HPCC_SYSD_ESP_STOP = /bin/systemctl stop esp*
+Cmnd_Alias HPCC_SYSD_DAFILESRV_START = /bin/systemctl start dafilesrv*
+Cmnd_Alias HPCC_SYSD_DAFILESRV_STOP = /bin/systemctl stop dafilesrv*
+Cmnd_Alias HPCC_SYSD_DALI_START = /bin/systemctl start dali*
+Cmnd_Alias HPCC_SYSD_DALI_STOP = /bin/systemctl stop dali*
+Cmnd_Alias HPCC_SYSD_ROXIE_START = /bin/systemctl start roxie*
+Cmnd_Alias HPCC_SYSD_ROXIE_STOP = /bin/systemctl stop roxie*
+Cmnd_Alias HPCC_SYSD_DFUSERVER_START = /bin/systemctl start dfuserver*
+Cmnd_Alias HPCC_SYSD_DFUSERVER_STOP = /bin/systemctl stop dfuserver*
+Cmnd_Alias HPCC_SYSD_ECLAGENT_START = /bin/systemctl start eclagent*
+Cmnd_Alias HPCC_SYSD_ECLAGENT_STOP = /bin/systemctl stop eclagent*
+Cmnd_Alias HPCC_SYSD_ECLCCSERVER_START = /bin/systemctl start eclccserver*
+Cmnd_Alias HPCC_SYSD_ECLCCSERVER_STOP = /bin/systemctl stop eclccserver*
+Cmnd_Alias HPCC_SYSD_ECLSCHEDULER_START = /bin/systemctl start eclscheduler*
+Cmnd_Alias HPCC_SYSD_ECLSCHEDULER_STOP = /bin/systemctl stop eclscheduler*
+Cmnd_Alias HPCC_SYSD_SASHA_START = /bin/systemctl start sasha*
+Cmnd_Alias HPCC_SYSD_SASHA_STOP = /bin/systemctl stop sasha*
+Cmnd_Alias HPCC_SYSD_BACKUPNODE_START = /bin/systemctl start backupnode*
+Cmnd_Alias HPCC_SYSD_BACKUPNODE_STOP = /bin/systemctl stop backupnode*
+${USER_NAME} ALL = NOPASSWD: HPCC_DAFILESRV, HPCC_HPCCINIT, HPCC_SYSD_HPCCSYSTEMS_PLATFORM_START, HPCC_SYSD_HPCCSYSTEMS_PLATFORM_STOP, HPCC_SYSD_THORSLAVE_START, HPCC_SYSD_THORSLAVE_STOP, HPCC_SYSD_THOR_START, HPCC_SYSD_THOR_STOP, HPCC_SYSD_ESP_START, HPCC_SYSD_ESP_STOP, HPCC_SYSD_DAFILESRV_START, HPCC_SYSD_DAFILESRV_STOP, HPCC_SYSD_DALI_START, HPCC_SYSD_DALI_STOP, HPCC_SYSD_ROXIE_START, HPCC_SYSD_ROXIE_STOP, HPCC_SYSD_DFUSERVER_START, HPCC_SYSD_DFUSERVER_STOP, HPCC_SYSD_ECLAGENT_START, HPCC_SYSD_ECLAGENT_STOP, HPCC_SYSD_ECLCCSERVER_START, HPCC_SYSD_ECLCCSERVER_STOP, HPCC_SYSD_ECLSCHEDULER_START, HPCC_SYSD_ECLSCHEDULER_STOP, HPCC_SYSD_SASHA_START, HPCC_SYSD_SASHA_STOP, HPCC_SYSD_BACKUPNODE_START, HPCC_SYSD_BACKUPNODE_STOP
 Defaults:${USER_NAME} !requiretty
 %EOF
 fi
@@ -56,3 +108,4 @@ ${USER_NAME} hard rtprio 4
 ${USER_NAME} soft memlock unlimited
 ${USER_NAME} hard memlock unlimited
 %EOF
+

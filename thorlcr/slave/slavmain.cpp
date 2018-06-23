@@ -17,12 +17,16 @@
 
 #include <platform.h>
 
+#include <type_traits>
+#include <unordered_map>
+
 #include "jlib.hpp"
 #include "jexcept.hpp"
 #include "jthread.hpp"
 #include "jprop.hpp"
 #include "jiter.ipp"
 #include "jlzw.hpp"
+#include "jflz.hpp"
 
 #include "jhtree.hpp"
 #include "mpcomm.hpp"
@@ -45,6 +49,9 @@
 #include "slave.ipp"
 #include "thcompressutil.hpp"
 #include "dalienv.hpp"
+#include "eclhelper_dyn.hpp"
+#include "rtlcommon.hpp"
+#include "../activities/keyedjoin/thkeyedjoincommon.hpp"
 
 //---------------------------------------------------------------------------
 
@@ -92,6 +99,1419 @@ void disableThorSlaveAsDaliClient()
     PROGLOG("Slave deactivated as a Dali client");
 #endif
 }
+
+class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, implements IExceptionHandler
+{
+    const unsigned defaultMaxCachedKJManagers = 1000;
+    const unsigned defaultKeyLookupMaxProcessThreads = 16;
+
+    unsigned uniqueId = 0;
+    CThreadedPersistent threaded;
+    mptag_t keyLookupMpTag = TAG_NULL;
+    bool aborted = false;
+    unsigned numCached = 0;
+    CJobBase *currentJob = nullptr;
+    unsigned maxCachedKJManagers = defaultMaxCachedKJManagers;
+    unsigned keyLookupMaxProcessThreads = defaultKeyLookupMaxProcessThreads;
+
+    class CLookupKey
+    {
+    protected:
+        unsigned hashv;
+
+        void calcHash()
+        {
+            unsigned h = hashvalue(id, crc);
+            hashv = hashc((const unsigned char *)&id, sizeof(unsigned), h);
+        }
+    public:
+        activity_id id;
+        StringAttr fname;
+        unsigned crc;
+
+        CLookupKey(MemoryBuffer &mb)
+        {
+            mb.read(id);
+            mb.read(fname);
+            mb.read(crc);
+            calcHash();
+        }
+        CLookupKey(const CLookupKey &other)
+        {
+            id = other.id;
+            fname.set(other.fname);
+            crc = other.crc;
+            hashv = other.hashv;
+        }
+        unsigned queryHash() const { return hashv; }
+        const char *queryFilename() const { return fname; }
+        bool operator==(CLookupKey const &other) const
+        {
+            return (id == other.id) && (crc == other.crc) && strsame(fname, other.fname);
+        }
+        const char *getTracing(StringBuffer &tracing) const
+        {
+            return tracing.append(fname);
+        }
+    };
+    struct FetchKey
+    {
+        activity_id id;
+        unsigned partNo;
+        unsigned slave;
+        FetchKey(MemoryBuffer &mb, unsigned _slave) : slave(_slave)
+        {
+            mb.read(id);
+            mb.read(partNo);
+        }
+
+        bool operator==(FetchKey const &other) const { return id==other.id && partNo==other.partNo && slave==other.slave; }
+        const char *getTracing(StringBuffer &tracing) const
+        {
+            return tracing.appendf("actId=%u, partNo=%u, slave=%u", id, partNo, slave);
+        }
+    };
+    class CActivityContext : public CInterface
+    {
+        CKJService &service;
+        activity_id id;
+        Owned<IHThorKeyedJoinArg> helper;
+        Owned<IOutputRowDeserializer> lookupInputDeserializer;
+        Owned<IOutputRowSerializer> joinFieldsSerializer;
+        Owned<IEngineRowAllocator> lookupInputAllocator, joinFieldsAllocator;
+
+        Owned<IEngineRowAllocator> fetchInputAllocator;
+        Owned<IEngineRowAllocator> fetchOutputAllocator;
+        Owned<IOutputRowDeserializer> fetchInputDeserializer;
+        Owned<IOutputRowSerializer> fetchOutputSerializer;
+
+        Owned<IEngineRowAllocator> fetchDiskAllocator;
+        Owned<IOutputRowDeserializer> fetchDiskDeserializer;
+
+        ICodeContext *codeCtx;
+
+        CriticalSection crit;
+        StringArray fetchFilenames;
+        IPointerArrayOf<IFileIO> openFetchFiles;
+        size32_t fetchInMinSz = 0;
+        bool encrypted = false;
+        bool compressed = false;
+        bool messageCompression = false;
+    public:
+        CActivityContext(CKJService &_service, activity_id _id, IHThorKeyedJoinArg *_helper, ICodeContext *_codeCtx)
+            : service(_service), id(_id), helper(_helper), codeCtx(_codeCtx)
+        {
+            Owned<IOutputMetaData> lookupInputMeta = new CPrefixedOutputMeta(sizeof(KeyLookupHeader), helper->queryIndexReadInputRecordSize());
+            lookupInputDeserializer.setown(lookupInputMeta->createDiskDeserializer(codeCtx, id));
+            lookupInputAllocator.setown(codeCtx->getRowAllocatorEx(lookupInputMeta,id, (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
+            joinFieldsAllocator.setown(codeCtx->getRowAllocatorEx(helper->queryJoinFieldsRecordSize(), id, roxiemem::RHFnone));
+            joinFieldsSerializer.setown(helper->queryJoinFieldsRecordSize()->createDiskSerializer(codeCtx, id));
+
+            if (helper->diskAccessRequired())
+            {
+                Owned<IOutputMetaData> fetchInputMeta = new CPrefixedOutputMeta(sizeof(FetchRequestHeader), helper->queryFetchInputRecordSize());
+                fetchInputAllocator.setown(codeCtx->getRowAllocatorEx(fetchInputMeta, id, (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
+                fetchInputDeserializer.setown(fetchInputMeta->createDiskDeserializer(codeCtx, id));
+
+                Owned<IOutputMetaData> fetchOutputMeta = createOutputMetaDataWithChildRow(joinFieldsAllocator, sizeof(FetchReplyHeader));
+                fetchOutputAllocator.setown(codeCtx->getRowAllocatorEx(fetchOutputMeta, id, (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
+                fetchOutputSerializer.setown(fetchOutputMeta->createDiskSerializer(codeCtx, id));
+
+                fetchDiskAllocator.setown(codeCtx->getRowAllocatorEx(helper->queryDiskRecordSize(), id, (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
+                fetchDiskDeserializer.setown(helper->queryDiskRecordSize()->createDiskDeserializer(codeCtx, id));
+                fetchInMinSz = helper->queryFetchInputRecordSize()->getMinRecordSize();
+            }
+        }
+        ~CActivityContext()
+        {
+            // should already be removed by last Key or Fetch context
+            service.removeActivityContext(this);
+        }
+        activity_id queryId() const { return id; }
+        const void *queryFindParam() const { return &id; } // for SimpleHashTableOf
+
+        IEngineRowAllocator *queryLookupInputAllocator() const { return lookupInputAllocator; }
+        IOutputRowDeserializer *queryLookupInputDeserializer() const { return lookupInputDeserializer; }
+        IEngineRowAllocator *queryJoinFieldsAllocator() const { return joinFieldsAllocator; }
+        IOutputRowSerializer *queryJoinFieldsSerializer() const { return joinFieldsSerializer; }
+
+        IEngineRowAllocator *queryFetchInputAllocator() const { return fetchInputAllocator; }
+        IOutputRowDeserializer *queryFetchInputDeserializer() const { return fetchInputDeserializer; }
+        IEngineRowAllocator *queryFetchOutputAllocator() const { return fetchOutputAllocator; }
+        IOutputRowSerializer *queryFetchOutputSerializer() const { return fetchOutputSerializer; }
+
+        IEngineRowAllocator *queryFetchDiskAllocator() const { return fetchDiskAllocator; }
+        IOutputRowDeserializer *queryFetchDiskDeserializer() const { return fetchDiskDeserializer; }
+
+        inline IHThorKeyedJoinArg *queryHelper() const { return helper; }
+
+        void addFetchFile(byte _flags, unsigned _partNo, const char *_fname)
+        {
+            CriticalBlock b(crit);
+            if (_partNo<fetchFilenames.ordinality() && !isEmptyString(fetchFilenames.item(_partNo)))
+                return;
+            while (_partNo>=fetchFilenames.ordinality())
+                fetchFilenames.append("");
+            fetchFilenames.replace(_fname, _partNo);
+            compressed = _flags & kjf_compressed;
+            encrypted = _flags & kjf_encrypted;
+        }
+        void setMessageCompression(bool _messageCompression) { messageCompression = _messageCompression; }
+        inline bool useMessageCompression() const { return messageCompression; }
+        IFileIO *getFetchFileIO(unsigned part)
+        {
+            CriticalBlock b(crit);
+            if (part>=openFetchFiles.ordinality())
+            {
+                do
+                {
+                    openFetchFiles.append(nullptr);
+                }
+                while (part>=openFetchFiles.ordinality());
+            }
+            else
+            {
+                IFileIO *fileIO = openFetchFiles.item(part);
+                if (fileIO)
+                    return LINK(fileIO);
+            }
+            const char *fname = fetchFilenames.item(part);
+            Owned<IFile> iFile = createIFile(fname);
+
+            unsigned encryptedKeyLen;
+            void *encryptedKey;
+            helper->getFileEncryptKey(encryptedKeyLen,encryptedKey);
+            Owned<IExpander> eexp;
+            if (0 != encryptedKeyLen)
+            {
+                if (encrypted)
+                    eexp.setown(createAESExpander256(encryptedKeyLen, encryptedKey));
+                memset(encryptedKey, 0, encryptedKeyLen);
+                free(encryptedKey);
+            }
+            IFileIO *fileIO;
+            if (nullptr != eexp.get())
+                fileIO = createCompressedFileReader(iFile, eexp);
+            else if (compressed)
+                fileIO = createCompressedFileReader(iFile);
+            else
+                fileIO = iFile->open(IFOread);
+            if (!fileIO)
+                throw MakeStringException(0, "Failed to open fetch file part %u: %s", part, fname);
+            openFetchFiles.replace(fileIO, part);
+            return LINK(fileIO);
+        }
+        size32_t queryFetchInMinSize() const { return fetchInMinSz; }
+    };
+    class CContext : public CInterface
+    {
+    protected:
+        CKJService &service;
+        Linked<CActivityContext> activityCtx;
+        RecordTranslationMode translationMode = RecordTranslationMode::None;
+        Owned<IOutputMetaData> publishedFormat, projectedFormat, expectedFormat;
+        unsigned publishedFormatCrc = 0, expectedFormatCrc = 0;
+        Owned<const IDynamicTransform> translator;
+        Owned<ISourceRowPrefetcher> prefetcher;
+    public:
+        CContext(CKJService &_service, CActivityContext *_activityCtx) : service(_service), activityCtx(_activityCtx)
+        {
+        }
+        virtual void beforeDispose() override
+        {
+            service.freeActivityContext(activityCtx.getClear());
+        }
+        CActivityContext *queryActivityCtx() const { return activityCtx; }
+        void setTranslation(RecordTranslationMode _translationMode, IOutputMetaData *_publishedFormat, unsigned _publishedFormatCrc, IOutputMetaData *_projectedFormat)
+        {
+            dbgassertex(expectedFormatCrc); // translation mode wouldn't have been set unless available
+            translationMode = _translationMode;
+            publishedFormat.set(_publishedFormat);
+            publishedFormatCrc = _publishedFormatCrc;
+            projectedFormat.set(_projectedFormat);
+        }
+        const IDynamicTransform *queryTranslator(const char *tracing)
+        {
+            if (RecordTranslationMode::None == translationMode)
+            {
+                //Check if the file requires translation, but translation is disabled
+                if (publishedFormatCrc && expectedFormatCrc && (publishedFormatCrc != expectedFormatCrc))
+                    throwTranslationError(publishedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true), tracing);
+                return nullptr;
+            }
+            else if (!translator)
+            {
+                if (RecordTranslationMode::AlwaysDisk == translationMode)
+                    translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), publishedFormat->queryRecordAccessor(true)));
+                else if (RecordTranslationMode::AlwaysECL == translationMode)
+                    translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
+                else if (publishedFormatCrc && publishedFormatCrc != expectedFormatCrc)
+                {
+                    if (!projectedFormat)
+                        throw MakeStringException(0, "Record layout mismatch for: %s", tracing);
+                    translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), publishedFormat->queryRecordAccessor(true)));
+                    if (!translator->canTranslate())
+                        throw MakeStringException(0, "Untranslatable record layout mismatch detected for: %s", tracing);
+                }
+                dbgassertex(translator->canTranslate());
+            }
+            return translator;
+        }
+        ISourceRowPrefetcher *queryPrefetcher()
+        {
+            if (!prefetcher)
+            {
+                if (translator)
+                    prefetcher.setown(publishedFormat->createDiskPrefetcher());
+                else
+                    prefetcher.setown(expectedFormat->createDiskPrefetcher());
+            }
+            return prefetcher;
+        }
+        RecordTranslationMode queryTranslationMode() const { return translationMode; }
+        IOutputMetaData *queryPublishedMeta() const { return publishedFormat; }
+        unsigned queryPublishedMetaCrc() const { return publishedFormatCrc; }
+        IOutputMetaData *queryProjectedMeta() const { return projectedFormat; }
+    };
+    class CKeyLookupContext : public CContext
+    {
+        CLookupKey key;
+        Owned<IKeyIndex> keyIndex;
+    public:
+        CKeyLookupContext(CKJService &_service, CActivityContext *_activityCtx, const CLookupKey &_key)
+            : CContext(_service, _activityCtx), key(_key)
+        {
+            keyIndex.setown(createKeyIndex(key.fname, key.crc, false, false));
+            expectedFormat.set(activityCtx->queryHelper()->queryIndexRecordSize());
+            expectedFormatCrc = activityCtx->queryHelper()->getIndexFormatCrc();
+        }
+        unsigned queryHash() const { return key.queryHash(); }
+        const CLookupKey &queryKey() const { return key; }
+
+        inline const char *queryFileName() const { return key.fname; }
+        IEngineRowAllocator *queryLookupInputAllocator() const { return activityCtx->queryLookupInputAllocator(); }
+        IOutputRowDeserializer *queryLookupInputDeserializer() const { return activityCtx->queryLookupInputDeserializer(); }
+        IEngineRowAllocator *queryJoinFieldsAllocator() const { return activityCtx->queryJoinFieldsAllocator(); }
+        IOutputRowSerializer *queryJoinFieldsSerializer() const { return activityCtx->queryJoinFieldsSerializer(); }
+
+        IEngineRowAllocator *queryFetchInputAllocator() const { return activityCtx->queryFetchInputAllocator(); }
+        IOutputRowDeserializer *queryFetchInputDeserializer() const { return activityCtx->queryFetchInputDeserializer(); }
+        IEngineRowAllocator *queryFetchOutputAllocator() const { return activityCtx->queryFetchOutputAllocator(); }
+        IOutputRowSerializer *queryFetchOutputSerializer() const { return activityCtx->queryFetchOutputSerializer(); }
+
+        IEngineRowAllocator *queryFetchDiskAllocator() const { return activityCtx->queryFetchDiskAllocator(); }
+        IOutputRowDeserializer *queryFetchDiskDeserializer() const { return activityCtx->queryFetchDiskDeserializer(); }
+
+        IKeyManager *createKeyManager()
+        {
+            return createLocalKeyManager(queryHelper()->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, queryHelper()->hasNewSegmentMonitors());
+        }
+        inline IHThorKeyedJoinArg *queryHelper() const { return activityCtx->queryHelper(); }
+    };
+    class CFetchContext : public CContext
+    {
+        FetchKey key;
+        unsigned handle = 0;
+        Owned<const IDynamicTransform> translator;
+        Owned<ISourceRowPrefetcher> prefetcher;
+        Owned<ISerialStream> ioStream;
+        CThorContiguousRowBuffer prefetchSource;
+        bool initialized = false;
+
+    public:
+        CFetchContext(CKJService &_service, CActivityContext *_activityCtx, const FetchKey &_key) : CContext(_service, _activityCtx), key(_key)
+        {
+            handle = service.getUniqId();
+            expectedFormat.set(activityCtx->queryHelper()->queryDiskRecordSize());
+            expectedFormatCrc = activityCtx->queryHelper()->getDiskFormatCrc();
+        }
+        const void *queryFindParam() const { return &key; } // for SimpleHashTableOf
+        unsigned queryHandle() const { return handle; }
+        const FetchKey &queryKey() const { return key; }
+        CThorContiguousRowBuffer &queryPrefetchSource()
+        {
+            if (!initialized)
+            {
+                initialized = true;
+                Owned<IFileIO> iFileIO = activityCtx->getFetchFileIO(key.partNo);
+                ioStream.setown(createFileSerialStream(iFileIO, 0, (offset_t)-1, 0));
+                prefetchSource.setStream(ioStream);
+            }
+            return prefetchSource;
+        }
+    };
+    class CKMContainer : public CInterface
+    {
+        CKJService &service;
+        Linked<CKeyLookupContext> ctx;
+        Owned<IKeyManager> keyManager;
+        unsigned handle = 0;
+    public:
+        CKMContainer(CKJService &_service, CKeyLookupContext *_ctx)
+            : service(_service), ctx(_ctx)
+        {
+            keyManager.setown(ctx->createKeyManager());
+            StringBuffer tracing;
+            const IDynamicTransform *translator = ctx->queryTranslator(ctx->queryKey().getTracing(tracing));
+            if (translator)
+                keyManager->setLayoutTranslator(translator);
+            handle = service.getUniqId();
+        }
+        ~CKMContainer()
+        {
+            service.freeLookupContext(ctx.getClear());
+        }
+        CKeyLookupContext &queryCtx() const { return *ctx; }
+        IKeyManager *queryKeyManager() const { return keyManager; }
+        unsigned queryHandle() const { return handle; }
+        const void *queryFindParam() const { return &handle; } // for SimpleHashTableOf
+    };
+    class CKMKeyEntry : public CInterface
+    {
+        CLookupKey key;
+        CIArrayOf<CKMContainer> kmcs;
+    public:
+        CKMKeyEntry(const CLookupKey &_key) : key(_key)
+        {
+        }
+        inline CKMContainer *pop()
+        {
+            return &kmcs.popGet();
+        }
+        inline void push(CKMContainer *kmc)
+        {
+            kmcs.append(*kmc);
+        }
+        inline unsigned count() { return kmcs.ordinality(); }
+        bool remove(CKMContainer *kmc)
+        {
+            return kmcs.zap(*kmc);
+        }
+        unsigned queryHash() const { return key.queryHash(); }
+        const CLookupKey &queryKey() const { return key; }
+    };
+    class CLookupRequest : public CSimpleInterface
+    {
+    protected:
+        Linked<CActivityContext> activityCtx;
+        IHThorKeyedJoinArg *helper;
+        std::vector<const void *> rows;
+        rank_t sender;
+        mptag_t replyTag;
+        bool replyAttempt = false;
+        IEngineRowAllocator *allocator = nullptr;
+        IOutputRowDeserializer *deserializer = nullptr;
+    public:
+        CLookupRequest(CActivityContext *_activityCtx, rank_t _sender, mptag_t _replyTag)
+            : activityCtx(_activityCtx), sender(_sender), replyTag(_replyTag)
+        {
+            helper = activityCtx->queryHelper();
+        }
+        ~CLookupRequest()
+        {
+            for (auto &r : rows)
+                ReleaseThorRow(r);
+        }
+        inline void addRow(const void *row)
+        {
+            rows.push_back(row);
+        }
+        inline const void *getRowClear(unsigned r)
+        {
+            const void *row = rows[r];
+            rows[r] = nullptr;
+            return row;
+        }
+        inline unsigned getRowCount() const { return rows.size(); }
+        inline CActivityContext &queryCtx() const { return *activityCtx; }
+        void deserialize(size32_t sz, const void *_requestData)
+        {
+            MemoryBuffer requestData;
+            if (activityCtx->useMessageCompression())
+                fastLZDecompressToBuffer(requestData, _requestData);
+            else
+                requestData.setBuffer(sz, (void *)_requestData, false);
+            unsigned count;
+            requestData.read(count);
+            size32_t rowDataSz = requestData.remaining();
+            CThorStreamDeserializerSource d(rowDataSz, requestData.readDirect(rowDataSz));
+            for (unsigned r=0; r<count; r++)
+            {
+                assertex(!d.eos());
+                RtlDynamicRowBuilder rowBuilder(allocator);
+                size32_t sz = deserializer->deserialize(rowBuilder, d);
+                addRow(rowBuilder.finalizeRowClear(sz));
+            }
+        }
+        void reply(CMessageBuffer &msg)
+        {
+            replyAttempt = true;
+            if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
+                throw MakeStringException(0, "Failed to reply to lookup request");
+        }
+        void replyError(IException *e)
+        {
+            EXCLOG(e, "CLookupRequest");
+            if (replyAttempt)
+                return;
+            byte errorCode = 1;
+            CMessageBuffer msg;
+            msg.append(errorCode);
+            serializeException(e, msg);
+            if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
+                throw MakeStringException(0, "Failed to reply to lookup request");
+        }
+        virtual void process(bool &abortSoon) = 0;
+    };
+    class CLookupResult
+    {
+    protected:
+        CActivityContext &activityCtx;
+        std::vector<const void *> rows;
+        IOutputRowSerializer *serializer = nullptr;
+
+        void clearRows()
+        {
+            for (auto &r : rows)
+                ReleaseThorRow(r);
+            rows.clear();
+        }
+    public:
+        CLookupResult(CActivityContext &_activityCtx) : activityCtx(_activityCtx)
+        {
+        }
+        ~CLookupResult()
+        {
+            clearRows();
+        }
+        void serializeRows(MemoryBuffer &mb) const
+        {
+            if (rows.size()) // will be 0 if fetch needed
+            {
+                DelayedSizeMarker sizeMark(mb);
+                CMemoryRowSerializer s(mb);
+                for (auto &row : rows)
+                    serializer->serialize(s, (const byte *)row);
+                sizeMark.write();
+            }
+        }
+    };
+    class CKeyLookupResult : public CLookupResult
+    {
+        typedef CLookupResult PARENT;
+
+        std::vector<unsigned __int64> fposs;
+        GroupFlags groupFlag = gf_null;
+    public:
+        CKeyLookupResult(CActivityContext &_activityCtx) : PARENT(_activityCtx)
+        {
+            serializer = activityCtx.queryJoinFieldsSerializer();
+        }
+        void addRow(const void *row, offset_t fpos)
+        {
+            if (row)
+                rows.push_back(row);
+            fposs.push_back(fpos);
+        }
+        void clear()
+        {
+            groupFlag = gf_null;
+            clearRows();
+            fposs.clear();
+        }
+        inline unsigned getCount() const { return fposs.size(); }
+        inline GroupFlags queryFlag() const { return groupFlag; }
+        void setFlag(GroupFlags gf)
+        {
+            clear();
+            groupFlag = gf;
+        }
+        void serialize(MemoryBuffer &mb) const
+        {
+            mb.append(groupFlag);
+            if (gf_null != groupFlag)
+                return;
+            unsigned candidates = fposs.size();
+            mb.append(candidates);
+            if (candidates)
+            {
+                serializeRows(mb);
+                // JCSMORE - even in half-keyed join case, fpos' may be used by transform (would be good to have tip from codegen to say if used or not)
+                mb.append(candidates * sizeof(unsigned __int64), &fposs[0]);
+            }
+        }
+    };
+    class CKeyLookupRequest : public CLookupRequest
+    {
+        CKJService &service;
+        Linked<CKMContainer> kmc;
+
+        rowcount_t abortLimit = 0;
+        rowcount_t atMost = 0;
+        bool fetchRequired = false;
+        IEngineRowAllocator *joinFieldsAllocator = nullptr;
+
+        template <class HeaderStruct>
+        void getHeaderFromRow(const void *row, HeaderStruct &header)
+        {
+            memcpy(&header, row, sizeof(HeaderStruct));
+        }
+        void processRow(const void *row, IKeyManager *keyManager, CKeyLookupResult &reply)
+        {
+            KeyLookupHeader lookupKeyHeader;
+            getHeaderFromRow(row, lookupKeyHeader);
+            const void *keyedFieldsRow = (byte *)row + sizeof(KeyLookupHeader);
+
+            helper->createSegmentMonitors(keyManager, keyedFieldsRow);
+            keyManager->finishSegmentMonitors();
+            keyManager->reset();
+
+            unsigned candidates = 0;
+            // NB: keepLimit is not on hard matches and can only be applied later, since other filtering (e.g. in transform) may keep below keepLimit
+            while (keyManager->lookup(true))
+            {
+                ++candidates;
+                if (candidates > abortLimit)
+                {
+                    reply.setFlag(gf_limitabort);
+                    break;
+                }
+                else if (candidates > atMost) // atMost - filter out group if > max hard matches
+                {
+                    reply.setFlag(gf_limitatmost);
+                    break;
+                }
+                KLBlobProviderAdapter adapter(keyManager);
+                byte const * keyRow = keyManager->queryKeyBuffer();
+                size_t fposOffset = keyManager->queryRowSize() - sizeof(offset_t);
+                offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);
+                if (helper->indexReadMatch(keyedFieldsRow, keyRow,  &adapter))
+                {
+                    if (fetchRequired)
+                        reply.addRow(nullptr, fpos);
+                    else
+                    {
+                        RtlDynamicRowBuilder joinFieldsRowBuilder(joinFieldsAllocator);
+                        size32_t sz = helper->extractJoinFields(joinFieldsRowBuilder, keyRow, &adapter);
+                        /* NB: Each row lookup could in theory == lots of keyed results. If needed to break into smaller replies
+                         * Would have to create/keep a keyManager per sender, in those circumstances.
+                         * As it stands, each lookup will be processed and all rows (below limits) will be returned, but I think that's okay.
+                         * There are other reasons why might want a keyManager per sender, e.g. for concurrency.
+                         */
+                        reply.addRow(joinFieldsRowBuilder.finalizeRowClear(sz), fpos);
+                    }
+                }
+            }
+            keyManager->releaseSegmentMonitors();
+        }
+        const unsigned DEFAULT_KEYLOOKUP_MAXREPLYSZ = 0x100000;
+    public:
+        CKeyLookupRequest(CKJService &_service, CKeyLookupContext *_ctx, CKMContainer *_kmc, rank_t _sender, mptag_t _replyTag)
+            : CLookupRequest(_ctx->queryActivityCtx(), _sender, _replyTag), kmc(_kmc), service(_service)
+        {
+            allocator = activityCtx->queryLookupInputAllocator();
+            deserializer = activityCtx->queryLookupInputDeserializer();
+            joinFieldsAllocator = activityCtx->queryJoinFieldsAllocator();
+
+            atMost = helper->getJoinLimit();
+            if (atMost == 0)
+                atMost = (unsigned)-1;
+            abortLimit = helper->getMatchAbortLimit();
+            if (abortLimit == 0)
+                abortLimit = (unsigned)-1;
+            if (abortLimit < atMost)
+                atMost = abortLimit;
+            fetchRequired = helper->diskAccessRequired();
+        }
+        virtual void process(bool &abortSoon) override
+        {
+            Owned<IException> exception;
+            try
+            {
+                CKeyLookupResult lookupResult(*activityCtx); // reply for 1 request row
+
+                byte errorCode = 0;
+                CMessageBuffer replyMsg;
+                replyMsg.append(errorCode);
+                unsigned startPos = replyMsg.length();
+                MemoryBuffer tmpMB;
+                MemoryBuffer &replyMb = activityCtx->useMessageCompression() ? tmpMB : replyMsg;
+
+                replyMb.append(kmc->queryHandle()); // NB: not resent if multiple packets, see below
+                DelayedMarker<unsigned> countMarker(replyMb);
+                unsigned rowCount = getRowCount();
+                unsigned rowNum = 0;
+                unsigned rowStart = 0;
+                while (!abortSoon)
+                {
+                    OwnedConstThorRow row = getRowClear(rowNum++);
+                    processRow(row, kmc->queryKeyManager(), lookupResult);
+                    lookupResult.serialize(replyMb);
+                    bool last = rowNum == rowCount;
+                    if (last || (replyMb.length() >= DEFAULT_KEYLOOKUP_MAXREPLYSZ))
+                    {
+                        countMarker.write(rowNum-rowStart);
+                        if (activityCtx->useMessageCompression())
+                        {
+                            fastLZCompressToBuffer(replyMsg, tmpMB.length(), tmpMB.toByteArray());
+                            tmpMB.clear();
+                        }
+                        reply(replyMsg);
+                        if (last)
+                            break;
+                        replyMsg.setLength(startPos);
+                        countMarker.restart();
+                        // NB: handle not resent, 1st packet was { errorCode, handle, key-row-count, key-row-data.. }, subsequent packets are { errorCode, key-row-count, key-row-data.. }
+                        rowStart = rowNum;
+                    }
+                    lookupResult.clear();
+                }
+                service.addToKeyManagerCache(kmc.getClear());
+            }
+            catch (IException *e)
+            {
+                exception.setown(e);
+            }
+            if (exception)
+                replyError(exception);
+        }
+    };
+    class CFetchLookupResult : public CLookupResult
+    {
+        typedef CLookupResult PARENT;
+
+        unsigned accepted = 0;
+        unsigned rejected = 0;
+    public:
+        CFetchLookupResult(CActivityContext &_activityCtx) : PARENT(_activityCtx)
+        {
+            serializer = activityCtx.queryFetchOutputSerializer();
+        }
+        inline void incAccepted() { ++accepted; }
+        inline void incRejected() { ++rejected; }
+        void addRow(const void *row)
+        {
+            rows.push_back(row);
+        }
+        void clear()
+        {
+            clearRows();
+        }
+        void serialize(MemoryBuffer &mb) const
+        {
+            unsigned numRows = rows.size();
+            mb.append(numRows);
+            if (numRows)
+                serializeRows(mb);
+            mb.append(accepted);
+            mb.append(rejected);
+        }
+    };
+    class CFetchLookupRequest : public CLookupRequest
+    {
+        CFetchContext *fetchContext = nullptr;
+        const unsigned defaultMaxFetchLookupReplySz = 0x100000;
+        const IDynamicTransform *translator = nullptr;
+        ISourceRowPrefetcher *prefetcher = nullptr;
+        CThorContiguousRowBuffer &prefetchSource;
+
+        void processRow(const void *row, CFetchLookupResult &reply)
+        {
+            FetchRequestHeader &requestHeader = *(FetchRequestHeader *)row;
+
+            const void *fetchKey = nullptr;
+            if (0 != activityCtx->queryFetchInMinSize())
+                fetchKey = (const byte *)row + sizeof(FetchRequestHeader);
+
+            prefetchSource.reset(requestHeader.fpos);
+            prefetcher->readAhead(prefetchSource);
+            const byte *diskFetchRow = prefetchSource.queryRow();
+
+            RtlDynamicRowBuilder fetchReplyBuilder(activityCtx->queryFetchOutputAllocator());
+            FetchReplyHeader &replyHeader = *(FetchReplyHeader *)fetchReplyBuilder.getUnfinalized();
+            replyHeader.sequence = requestHeader.sequence;
+            const void * &childRow = *(const void **)((byte *)fetchReplyBuilder.getUnfinalized() + sizeof(FetchReplyHeader));
+
+            MemoryBuffer diskFetchRowMb;
+            if (translator)
+            {
+                MemoryBufferBuilder aBuilder(diskFetchRowMb, 0);
+                LocalVirtualFieldCallback fieldCallback("<MORE>", requestHeader.fpos, 0);
+                translator->translate(aBuilder, fieldCallback, diskFetchRow);
+                diskFetchRow = reinterpret_cast<const byte *>(diskFetchRowMb.toByteArray());
+            }
+            size32_t fetchReplySz = sizeof(FetchReplyHeader);
+            if (helper->fetchMatch(fetchKey, diskFetchRow))
+            {
+                replyHeader.sequence |= FetchReplyHeader::fetchMatchedMask;
+
+                RtlDynamicRowBuilder joinFieldsRow(activityCtx->queryJoinFieldsAllocator());
+                size32_t joinFieldsSz = helper->extractJoinFields(joinFieldsRow, diskFetchRow, (IBlobProvider*)nullptr); // JCSMORE is it right that passing NULL IBlobProvider here??
+                fetchReplySz += joinFieldsSz;
+                childRow = joinFieldsRow.finalizeRowClear(joinFieldsSz);
+                reply.incAccepted();
+            }
+            else
+            {
+                childRow = nullptr;
+                reply.incRejected();
+            }
+            reply.addRow(fetchReplyBuilder.finalizeRowClear(fetchReplySz));
+        }
+    public:
+        CFetchLookupRequest(CFetchContext *_fetchContext, rank_t _sender, mptag_t _replyTag)
+            : CLookupRequest(_fetchContext->queryActivityCtx(), _sender, _replyTag),
+              fetchContext(_fetchContext), prefetchSource(fetchContext->queryPrefetchSource())
+        {
+            allocator = activityCtx->queryFetchInputAllocator();
+            deserializer = activityCtx->queryFetchInputDeserializer();
+            StringBuffer tracing;
+            translator = fetchContext->queryTranslator(fetchContext->queryKey().getTracing(tracing));
+            prefetcher = fetchContext->queryPrefetcher();
+        }
+        virtual void process(bool &abortSoon) override
+        {
+            Owned<IException> exception;
+            try
+            {
+                CFetchLookupResult fetchLookupResult(*activityCtx);
+
+                byte errorCode = 0;
+                CMessageBuffer replyMsg;
+                replyMsg.append(errorCode);
+                unsigned startPos = replyMsg.length();
+                MemoryBuffer tmpMB;
+                MemoryBuffer &replyMb = activityCtx->useMessageCompression() ? tmpMB : replyMsg;
+
+                replyMb.append(fetchContext->queryHandle()); // NB: not resent if multiple packets, see below
+                unsigned rowCount = getRowCount();
+                unsigned rowNum = 0;
+
+                // JCSMORE sorting batch of requests by fpos could reduce seeking...
+                while (!abortSoon)
+                {
+                    OwnedConstThorRow row = getRowClear(rowNum++);
+                    processRow(row, fetchLookupResult);
+                    bool last = rowNum == rowCount;
+                    if (last || (replyMb.length() >= defaultMaxFetchLookupReplySz))
+                    {
+                        fetchLookupResult.serialize(replyMb);
+                        if (activityCtx->useMessageCompression())
+                        {
+                            fastLZCompressToBuffer(replyMsg, tmpMB.length(), tmpMB.toByteArray());
+                            tmpMB.clear();
+                        }
+                        reply(replyMsg);
+                        if (last)
+                            break;
+                        replyMsg.setLength(startPos);
+                        // NB: handle not resent, 1st packet was { errorCode, handle, fetch-row-count, fetch-row-data.. }, subsequent packets are { errorCode, fetch-row-count, fetch-row-data.. }
+                        fetchLookupResult.clear();
+                    }
+                }
+            }
+            catch (IException *e)
+            {
+                exception.setown(e);
+            }
+            if (exception)
+                replyError(exception);
+        }
+    };
+    template <class ET>
+    class CLookupHT : public SuperHashTableOf<ET, CLookupKey>
+    {
+        typedef SuperHashTableOf<ET, CLookupKey> PARENT;
+    public:
+        CLookupHT() : PARENT() { }
+        ~CLookupHT() { PARENT::_releaseAll(); }
+
+        inline ET *find(const CLookupKey &fp) const                                   \
+        {
+            return PARENT::find(&fp);
+        }
+        virtual void onAdd(void * et __attribute__((unused))) override { }
+        virtual void onRemove(void * et __attribute__((unused))) override { }
+        virtual unsigned getHashFromElement(const void *_et) const
+        {
+            const ET *et = static_cast<const ET *>(_et);
+            return et->queryHash();
+        }
+        virtual unsigned getHashFromFindParam(const void *_fp) const override
+        {
+            const CLookupKey *fp = static_cast<const CLookupKey *>(_fp);
+            return fp->queryHash();
+        }
+        virtual const void *getFindParam(const void *_et) const override
+        {
+            const ET *et = static_cast<const ET *>(_et);
+            return &et->queryKey();
+        }
+        virtual bool matchesFindParam(const void *_et, const void *_fp, unsigned fphash __attribute__((unused))) const override
+        {
+            const ET *et = static_cast<const ET *>(_et);
+            const CLookupKey *fp = static_cast<const CLookupKey *>(_fp);
+            return et->queryKey() == *fp;
+        }
+    };
+    template <class ET>
+    class CLookupHTOwned : public CLookupHT<ET>
+    {
+        typedef CLookupHT<ET> PARENT;
+    public:
+        CLookupHTOwned() : PARENT() { }
+        ~CLookupHTOwned() { PARENT::_releaseAll(); }
+        virtual void onRemove(void *_et) override
+        {
+            ET *et = static_cast<ET *>(_et);
+            et->Release();
+        }
+    };
+    typedef CLookupHT<CKeyLookupContext> CKeyLookupContextHT;
+    typedef CLookupHTOwned<CKMKeyEntry> CKMContextHT;
+
+    class CRemoteLookupProcessor : public CSimpleInterfaceOf<IPooledThread>
+    {
+        CKJService &service;
+        Owned<CLookupRequest> lookupRequest;
+        bool abortSoon = false;
+
+    public:
+        CRemoteLookupProcessor(CKJService &_service) : service(_service)
+        {
+        }
+    // IPooledThread impl.
+        virtual void init(void *param) override
+        {
+            abortSoon = false;
+            lookupRequest.set((CLookupRequest *)param);
+        }
+        virtual bool stop() override
+        {
+            abortSoon = true; return true;
+        }
+        virtual bool canReuse() const override { return true; }
+        virtual void threadmain() override
+        {
+            Owned<CLookupRequest> request = lookupRequest.getClear();
+            request->process(abortSoon);
+        }
+    };
+    class CProcessorFactory : public CSimpleInterfaceOf<IThreadFactory>
+    {
+        CKJService &service;
+    public:
+        CProcessorFactory(CKJService &_service) : service(_service)
+        {
+        }
+    // IThreadFactory
+        virtual IPooledThread *createNew() override
+        {
+            return service.createProcessor();
+        }
+    };
+    SimpleHashTableOf<CActivityContext, unsigned> activityContextsHT;
+    CKeyLookupContextHT keyLookupContextsHT; // non-owning HT of CLookupContexts
+    CKMContextHT cachedKMs; // NB: HT by {actId, fname, crc} links IKeyManager's within containers
+    OwningSimpleHashTableOf<CKMContainer, unsigned> cachedKMsByHandle; // HT by { handle }, links IKeyManager's within containers.
+    OwningSimpleHashTableOf<CFetchContext, FetchKey> fetchContextsHT;
+    std::unordered_map<unsigned, CFetchContext *> fetchContextsByHandleHT;
+    CICopyArrayOf<CKMContainer> cachedKMsMRU;
+    CriticalSection kMCrit, lCCrit;
+    Owned<IThreadPool> processorPool;
+
+    CActivityContext *createActivityContext(CJobBase &job, activity_id id)
+    {
+        VStringBuffer helperName("fAc%u", (unsigned)id);
+        EclHelperFactory helperFactory = (EclHelperFactory) job.queryDllEntry().getEntry(helperName.str());
+        if (!helperFactory)
+            throw makeOsExceptionV(GetLastError(), "Failed to load helper factory method: %s (dll handle = %p)", helperName.str(), job.queryDllEntry().getInstance());
+
+        ICodeContext &codeCtx = job.queryJobChannel(0).querySharedMemCodeContext();
+        Owned<IHThorKeyedJoinArg> helper = static_cast<IHThorKeyedJoinArg *>(helperFactory());
+        return new CActivityContext(*this, id, helper.getClear(), &codeCtx);
+    }
+    CActivityContext *ensureActivityContext(CJobBase &job, activity_id id)
+    {
+        CriticalBlock b(lCCrit);
+        CActivityContext *activityCtx = activityContextsHT.find(id);
+        if (activityCtx)
+            return LINK(activityCtx);
+        activityCtx = createActivityContext(job, id);
+        activityContextsHT.replace(*activityCtx); // NB: does not link/take ownership
+        return activityCtx;
+    }
+    CKeyLookupContext *createLookupContext(CActivityContext *activityCtx, const CLookupKey &key)
+    {
+        return new CKeyLookupContext(*this, activityCtx, key);
+    }
+    CKeyLookupContext *ensureKeyLookupContext(CJobBase &job, const CLookupKey &key, bool *created=nullptr)
+    {
+        CriticalBlock b(lCCrit);
+        CKeyLookupContext *keyLookupContext = keyLookupContextsHT.find(key);
+        if (keyLookupContext)
+        {
+            if (created)
+                *created = false;
+            return LINK(keyLookupContext);
+        }
+        if (created)
+            *created = true;
+        activity_id id = key.id; // JCSMORE annoying, needed because IMPLEMENT_SUPERHASHTABLEOF_REF_FIND doesn't define const (should look at)
+        Linked<CActivityContext> activityCtx = activityContextsHT.find(id);
+        if (!activityCtx)
+        {
+            activityCtx.setown(createActivityContext(job, key.id));
+            activityContextsHT.replace(*activityCtx); // NB: does not link/take ownership
+        }
+        keyLookupContext = createLookupContext(activityCtx, key);
+        keyLookupContextsHT.replace(*keyLookupContext); // NB: does not link/take ownership
+        return keyLookupContext;
+    }
+    void removeActivityContext(CActivityContext *activityContext)
+    {
+        CriticalBlock b(lCCrit);
+        activityContextsHT.removeExact(activityContext);
+    }
+    void freeActivityContext(CActivityContext *_activityContext)
+    {
+        Owned<CActivityContext> activityContext = _activityContext;
+        if (!activityContext->IsShared())
+        {
+            CriticalBlock b(lCCrit);
+            activityContextsHT.removeExact(activityContext);
+        }
+    }
+    void freeLookupContext(CKeyLookupContext *_lookupContext)
+    {
+        CriticalBlock b(lCCrit);
+        Owned<CKeyLookupContext> keyLookupContext = _lookupContext;
+        if (!keyLookupContext->IsShared())
+            keyLookupContextsHT.removeExact(keyLookupContext);
+    }
+    CFetchContext *ensureFetchContext(CJobBase &job, FetchKey &key)
+    {
+        CriticalBlock b(lCCrit);
+        CFetchContext *fetchContext = fetchContextsHT.find(key);
+        if (fetchContext)
+            return LINK(fetchContext);
+        activity_id id = key.id; // JCSMORE annoying, needed because IMPLEMENT_SUPERHASHTABLEOF_REF_FIND doesn't define const (should look at)
+        Linked<CActivityContext> activityCtx = activityContextsHT.find(id);
+        if (!activityCtx)
+        {
+            activityCtx.setown(createActivityContext(job, id));
+            activityContextsHT.replace(*activityCtx); // NB: does not link/take ownership
+        }
+        fetchContext = new CFetchContext(*this, activityCtx, key);
+        fetchContextsHT.replace(*fetchContext);
+        fetchContextsByHandleHT.insert({fetchContext->queryHandle(), fetchContext});
+        return LINK(fetchContext);
+    }
+    CFetchContext *getFetchContext(unsigned handle)
+    {
+        CriticalBlock b(lCCrit);
+        auto it = fetchContextsByHandleHT.find(handle);
+        if (it == fetchContextsByHandleHT.end())
+            return nullptr;
+        return LINK(it->second);
+    }
+    bool removeFetchContext(unsigned handle)
+    {
+        CriticalBlock b(lCCrit);
+        auto it = fetchContextsByHandleHT.find(handle);
+        if (it == fetchContextsByHandleHT.end())
+            return false;
+        CFetchContext *fetchContext = it->second;
+        it = fetchContextsByHandleHT.erase(it);
+        verifyex(fetchContextsHT.removeExact(fetchContext));
+        return true;
+    }
+    CKMContainer *getKeyManager(unsigned handle)
+    {
+        CriticalBlock b(kMCrit);
+        Linked<CKMContainer> kmc = cachedKMsByHandle.find(handle);
+        if (kmc)
+        {
+            verifyex(cachedKMsByHandle.removeExact(kmc));
+            CKMKeyEntry *kme = cachedKMs.find(kmc->queryCtx().queryKey());
+            assertex(kme);
+            verifyex(kme->remove(kmc));
+            if (0 == kme->count())
+                verifyex(cachedKMs.removeExact(kme));
+            verifyex(cachedKMsMRU.zap(*kmc));
+            --numCached;
+        }
+        return kmc.getClear();
+    }
+    CKMContainer *getCachedKeyManager(const CLookupKey &key)
+    {
+        CriticalBlock b(kMCrit);
+        CKMKeyEntry *kme = cachedKMs.find(key);
+        if (!kme)
+            return nullptr;
+        CKMContainer *kmc = kme->pop();
+        if (0 == kme->count())
+            verifyex(cachedKMs.removeExact(kme));
+        verifyex(cachedKMsByHandle.removeExact(kmc));
+        verifyex(cachedKMsMRU.zap(*kmc));
+        --numCached;
+        return kmc;
+    }
+    CKMContainer *ensureKeyManager(CKeyLookupContext *keyLookupContext)
+    {
+        CKMContainer *kmc = getCachedKeyManager(keyLookupContext->queryKey());
+        if (!kmc)
+        {
+            // NB: container links keyLookupContext, and will remove it from keyLookupContextsHT when last reference.
+            // The container creates new IKeyManager and unique handle
+            kmc = new CKMContainer(*this, keyLookupContext);
+        }
+        return kmc;
+    }
+    bool removeKeyManager(unsigned handle)
+    {
+        Owned<CKMContainer> kmc = getKeyManager(handle);
+        if (!kmc)
+            return false;
+        return true;
+    }
+    unsigned getUniqId()
+    {
+        ++uniqueId;
+        return uniqueId;
+    }
+    void clearAll()
+    {
+        if (cachedKMsMRU.ordinality())
+            WARNLOG("KJService: clearing %u key manager context(s), that were not closed cleanly", cachedKMsMRU.ordinality());
+        cachedKMsMRU.kill();
+        cachedKMsByHandle.kill();
+        cachedKMs.kill();
+        activityContextsHT.kill();
+        keyLookupContextsHT.kill();
+        fetchContextsHT.kill();
+        currentJob = nullptr;
+        numCached = 0;
+    }
+    void setupProcessorPool()
+    {
+        Owned<CProcessorFactory> factory = new CProcessorFactory(*this);
+        processorPool.setown(createThreadPool("KJService processor pool", factory, this, keyLookupMaxProcessThreads, 10000));
+        processorPool->setStartDelayTracing(60000);
+    }
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IKJService>);
+
+    CKJService(mptag_t _mpTag) : threaded("CKJService", this), keyLookupMpTag(_mpTag)
+    {
+        setupProcessorPool();
+    }
+    ~CKJService()
+    {
+        stop();
+    }
+    void addToKeyManagerCache(CKMContainer *kmc)
+    {
+        CriticalBlock b(kMCrit);
+        if (numCached == maxCachedKJManagers)
+        {
+            CKMContainer &oldest = cachedKMsMRU.item(0);
+            verifyex(removeKeyManager(oldest.queryHandle())); // also removes from cachedKMsMRU
+        }
+        CKMKeyEntry *kme = cachedKMs.find(kmc->queryCtx().queryKey());
+        if (!kme)
+        {
+            kme = new CKMKeyEntry(kmc->queryCtx().queryKey());
+            cachedKMs.replace(*kme);
+        }
+        kme->push(kmc); // JCSMORE cap. to some max #
+        cachedKMsByHandle.replace(*LINK(kmc));
+        cachedKMsMRU.append(*kmc);
+        ++numCached;
+    }
+    void abort()
+    {
+        if (aborted)
+            return;
+        aborted = true;
+        queryNodeComm().cancel(RANK_ALL, keyLookupMpTag);
+        processorPool->stopAll(true);
+        processorPool->joinAll(true);
+        threaded.join();
+        clearAll();
+    }
+    void processKeyLookupRequest(CMessageBuffer &msg, CKMContainer *kmc, rank_t sender, mptag_t replyTag)
+    {
+        CKeyLookupContext *keyLookupContext = &kmc->queryCtx();
+        Owned<CKeyLookupRequest> lookupRequest = new CKeyLookupRequest(*this, keyLookupContext, kmc, sender, replyTag);
+
+        size32_t requestSz;
+        msg.read(requestSz);
+        lookupRequest->deserialize(requestSz, msg.readDirect(requestSz));
+        msg.clear();
+        // NB: kmc is added to cache at end of request handling
+        processorPool->start(lookupRequest);
+    }
+    IPooledThread *createProcessor()
+    {
+        return new CRemoteLookupProcessor(*this);
+    }
+// IThreaded
+    virtual void threadmain() override
+    {
+        while (!aborted)
+        {
+            rank_t sender = RANK_NULL;
+            CMessageBuffer msg;
+            mptag_t replyTag = TAG_NULL;
+            byte errorCode = 0;
+            bool replyAttempt = false;
+            try
+            {
+                if (!queryNodeComm().recv(msg, RANK_ALL, keyLookupMpTag, &sender))
+                    break;
+                if (!msg.length())
+                    break;
+                assertex(currentJob);
+                KJServiceCmds cmd;
+                msg.read((byte &)cmd);
+                msg.read((unsigned &)replyTag);
+                switch (cmd)
+                {
+                    case kjs_keyopen:
+                    {
+                        CLookupKey key(msg);
+
+                        bool created;
+                        Owned<CKeyLookupContext> keyLookupContext = ensureKeyLookupContext(*currentJob, key, &created); // ensure entry in keyLookupContextsHT, will be removed by last CKMContainer
+                        bool messageCompression;
+                        msg.read(messageCompression);
+                        keyLookupContext->queryActivityCtx()->setMessageCompression(messageCompression);
+                        RecordTranslationMode translationMode;
+                        msg.read(reinterpret_cast<std::underlying_type<RecordTranslationMode>::type &> (translationMode));
+                        if (RecordTranslationMode::None != translationMode)
+                        {
+                            unsigned publishedFormatCrc;
+                            msg.read(publishedFormatCrc);
+                            Owned<IOutputMetaData> publishedFormat = createTypeInfoOutputMetaData(msg, false, nullptr);
+                            Owned<IOutputMetaData> projectedFormat;
+                            bool projected;
+                            msg.read(projected);
+                            if (projected)
+                                projectedFormat.setown(createTypeInfoOutputMetaData(msg, false, nullptr));
+                            else
+                                projectedFormat.set(publishedFormat);
+                            if (created) // translation for the key context will already have been setup and do not want to free existing
+                                keyLookupContext->setTranslation(translationMode, publishedFormat, publishedFormatCrc, projectedFormat);
+                        }
+                        Owned<CKMContainer> kmc = ensureKeyManager(keyLookupContext); // owns keyLookupContext
+                        processKeyLookupRequest(msg, kmc, sender, replyTag);
+                        break;
+                    }
+                    case kjs_keyread:
+                    {
+                        CLookupKey key(msg);
+                        unsigned handle;
+                        msg.read(handle);
+                        dbgassertex(handle);
+
+                        Owned<CKMContainer> kmc = getKeyManager(handle);
+                        if (!kmc) // if closed, alternative is to send just handle and send challenge response if unknown
+                        {
+                            Owned<CKeyLookupContext> keyLookupContext = ensureKeyLookupContext(*currentJob, key);
+                            kmc.setown(ensureKeyManager(keyLookupContext));
+                        }
+                        processKeyLookupRequest(msg, kmc, sender, replyTag);
+                        break;
+                    }
+                    case kjs_keyclose:
+                    {
+                        unsigned handle;
+                        msg.read(handle);
+                        bool res = removeKeyManager(handle);
+                        msg.clear();
+                        msg.append(errorCode);
+                        msg.append(res);
+                        replyAttempt = true;
+                        if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
+                            throw MakeStringException(0, "kjs_close: Failed to reply to lookup request");
+                        msg.clear();
+                        break;
+                    }
+                    case kjs_fetchopen:
+                    {
+                        FetchKey key(msg, (unsigned)sender); // key by {actid, partNo, sender}, to keep each context (from each slave) alive.
+                        Owned<CFetchContext> fetchContext = ensureFetchContext(*currentJob, key);
+                        CActivityContext *activityCtx = fetchContext->queryActivityCtx();
+
+                        /* NB: clients will send it on their first request, but might already have from others
+                         * If have it already, ignore/skip it.
+                         * Alternative is to not send it by default on 1st request and send challenge response.
+                         */
+                        byte flags;
+                        msg.read(flags); // compress/encrypted;
+                        StringAttr fname;
+                        msg.read(fname);
+                        // NB: will be ignored if it already has it
+                        activityCtx->addFetchFile(flags, key.partNo, fname);
+
+                        bool messageCompression;
+                        msg.read(messageCompression);
+                        activityCtx->setMessageCompression(messageCompression);
+
+                        RecordTranslationMode translationMode;
+                        msg.read(reinterpret_cast<std::underlying_type<RecordTranslationMode>::type &> (translationMode));
+                        if (RecordTranslationMode::None != translationMode)
+                        {
+                            unsigned publishedFormatCrc;
+                            msg.read(publishedFormatCrc);
+                            Owned<IOutputMetaData> publishedFormat = createTypeInfoOutputMetaData(msg, false, nullptr);
+                            Owned<IOutputMetaData> projectedFormat;
+                            bool projected;
+                            msg.read(projected);
+                            if (projected)
+                                projectedFormat.setown(createTypeInfoOutputMetaData(msg, false, nullptr));
+                            else
+                                projectedFormat.set(publishedFormat);
+
+                            IHThorKeyedJoinArg *helper = activityCtx->queryHelper();
+                            fetchContext->setTranslation(translationMode, publishedFormat, publishedFormatCrc, projectedFormat);
+                        }
+
+                        Owned<CFetchLookupRequest> lookupRequest = new CFetchLookupRequest(fetchContext, sender, replyTag);
+
+                        size32_t requestSz;
+                        msg.read(requestSz);
+                        lookupRequest->deserialize(requestSz, msg.readDirect(requestSz));
+
+                        msg.clear();
+                        // NB: kmc is added to cache at end of request handling
+                        processorPool->start(lookupRequest);
+                        break;
+                    }
+                    case kjs_fetchread:
+                    {
+                        unsigned handle;
+                        msg.read(handle);
+                        dbgassertex(handle);
+
+                        Owned<CFetchContext> fetchContext = getFetchContext(handle);
+                        CActivityContext *activityCtx = fetchContext->queryActivityCtx();
+                        Owned<CFetchLookupRequest> lookupRequest = new CFetchLookupRequest(fetchContext, sender, replyTag);
+
+                        size32_t requestSz;
+                        msg.read(requestSz);
+                        lookupRequest->deserialize(requestSz, msg.readDirect(requestSz));
+
+                        msg.clear();
+                        // NB: kmc is added to cache at end of request handling
+                        processorPool->start(lookupRequest);
+                        break;
+                    }
+                    case kjs_fetchclose:
+                    {
+                        unsigned handle;
+                        msg.read(handle);
+                        bool res = removeFetchContext(handle);
+                        msg.clear();
+                        msg.append(errorCode);
+                        msg.append(res);
+                        replyAttempt = true;
+                        if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
+                            throw MakeStringException(0, "kjs_fetchclose: Failed to reply to lookup request");
+                        msg.clear();
+                        break;
+                    }
+                }
+            }
+            catch (IException *e)
+            {
+                if (replyAttempt)
+                    EXCLOG(e, "CKJService: failed to send reply");
+                else if (TAG_NULL == replyTag)
+                {
+                    StringBuffer msg("CKJService: Exception without reply tag. Received from slave: ");
+                    if (RANK_NULL==sender)
+                        msg.append("<unknown>");
+                    else
+                        msg.append(sender-1);
+                    EXCLOG(e, msg.str());
+                    msg.clear();
+                }
+                else
+                {
+                    msg.clear();
+                    errorCode = 1;
+                    msg.append(errorCode);
+                    serializeException(e, msg);
+                }
+                e->Release();
+            }
+            if (!replyAttempt && msg.length())
+            {
+                if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
+                {
+                    ERRLOG("CKJService: Failed to send error response");
+                    break;
+                }
+            }
+        }
+    }
+// IKJService
+    virtual void setCurrentJob(CJobBase &job)
+    {
+        /* NB: For now the service contexts are tied to activities/helpers from a particular job,
+         * but since there's only 1 job running a time that is okay
+         * Once there's a dynamic implementation of the helper this won't be necessary
+         */
+        currentJob = &job;
+        maxCachedKJManagers = job.getOptUInt("keyedJoinMaxKJMs", defaultMaxCachedKJManagers);
+        unsigned newKeyLookupMaxProcessThreads = job.getOptUInt("keyedJoinMaxProcessors", defaultKeyLookupMaxProcessThreads);
+        if (newKeyLookupMaxProcessThreads != keyLookupMaxProcessThreads)
+        {
+            keyLookupMaxProcessThreads = newKeyLookupMaxProcessThreads;
+            setupProcessorPool();
+        }
+    }
+    virtual void reset() override
+    {
+        DBGLOG("KJService reset()");
+        processorPool->stopAll(true);
+        processorPool->joinAll(false);
+        clearAll();
+        DBGLOG("KJService reset() done");
+    }
+    virtual void start() override
+    {
+        aborted = false;
+        threaded.start();
+    }
+    virtual void stop() override
+    {
+        if (aborted)
+            return;
+        PROGLOG("KJService stop()");
+        queryNodeComm().cancel(RANK_ALL, keyLookupMpTag);
+        processorPool->stopAll(true);
+        processorPool->joinAll(true);
+        while (!threaded.join(60000))
+            PROGLOG("Receiver waiting on remote handlers to signal completion");
+        if (aborted)
+            return;
+        aborted = true;
+        clearAll();
+    }
+// IExceptionHandler impl.
+    virtual bool fireException(IException *e) override
+    {
+        // exceptions should always be handled by processor
+        EXCLOG(e, nullptr);
+        e->Release();
+        return true;
+    }
+};
+
+
 
 class CJobListener : public CSimpleInterface
 {
@@ -162,7 +1582,7 @@ public:
     {
         stopped = true;
         channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
-        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
         mpServers.append(* getMPServer());
         bool reconnect = globals->getPropBool("@MPChannelReconnect");
         for (unsigned sc=1; sc<channelsPerSlave; sc++)
@@ -185,7 +1605,7 @@ public:
     {
         queryNodeComm().cancel(0, masterSlaveMpTag);
     }
-    virtual void main()
+    virtual void slaveMain()
     {
         rank_t slaveProc = queryNodeGroup().rank()-1;
         unsigned totSlaveProcs = queryNodeClusterWidth();
@@ -220,7 +1640,7 @@ public:
                 ~CVerifyThread() { join(); }
                 void start() { threaded.start(); }
                 void join() { threaded.join(); }
-                virtual void main()
+                virtual void threadmain() override
                 {
                     Owned<ICommunicator> comm = jobListener.mpServers.item(channel).createCommunicator(&queryClusterGroup());
                     PROGLOG("verifying mp connection to rest of slaves (from channel=%d)", channel);
@@ -266,9 +1686,7 @@ public:
                         MemoryBuffer mb;
                         decompressToBuffer(mb, msg);
                         msg.swapWith(mb);
-                        mptag_t mptag, slaveMsgTag;
-                        deserializeMPtag(msg, mptag);
-                        queryNodeComm().flush(mptag);
+                        mptag_t slaveMsgTag;
                         deserializeMPtag(msg, slaveMsgTag);
                         queryNodeComm().flush(slaveMsgTag);
                         StringBuffer soPath, soPathTail;
@@ -363,7 +1781,7 @@ public:
 
                         Owned<IPropertyTree> deps = createPTree(msg);
 
-                        Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, querySo, mptag, slaveMsgTag);
+                        Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, querySo, slaveMsgTag);
                         job->setXGMML(deps);
                         for (unsigned sc=0; sc<channelsPerSlave; sc++)
                             job->addChannel(&mpServers.item(sc));
@@ -764,25 +2182,33 @@ class CThorResourceSlave : public CThorResourceBase
     Owned<IThorFileCache> fileCache;
     Owned<IBackup> backupHandler;
     Owned<IFileInProgressHandler> fipHandler;
-
+    Owned<IKJService> kjService;
 public:
     CThorResourceSlave()
     {
         backupHandler.setown(createBackupHandler());
         fileCache.setown(createFileCache(globals->getPropInt("@fileCacheLimit", 1800)));
         fipHandler.setown(new CFileInProgressHandler());
+        kjService.setown(new CKJService(kjServiceMpTag));
+        kjService->start();
     }
     ~CThorResourceSlave()
     {
+        kjService.clear();
         fileCache.clear();
         backupHandler.clear();
         fipHandler.clear();
     }
+    virtual void beforeDispose() override
+    {
+        kjService->stop();
+    }
 
 // IThorResource
-    virtual IThorFileCache &queryFileCache() { return *fileCache.get(); }
-    virtual IBackup &queryBackup() { return *backupHandler.get(); }
-    virtual IFileInProgressHandler &queryFileInProgressHandler() { return *fipHandler.get(); }
+    virtual IThorFileCache &queryFileCache() override { return *fileCache.get(); }
+    virtual IBackup &queryBackup() override { return *backupHandler.get(); }
+    virtual IFileInProgressHandler &queryFileInProgressHandler() override { return *fipHandler.get(); }
+    virtual IKJService &queryKeyedJoinService() override { return *kjService.get(); }
 };
 
 void slaveMain(bool &jobListenerStopped)
@@ -829,7 +2255,7 @@ void slaveMain(bool &jobListenerStopped)
 
 #endif
 
-    jobListener.main();
+    jobListener.slaveMain();
 }
 
 void abortSlave()

@@ -1,0 +1,15 @@
+[Unit]
+Description=%i
+After=network.target remote-fs.target @dependencies@
+
+[Service]
+Type=simple
+User=@RUNTIME_USER@
+Group=@RUNTIME_GROUP@
+PermissionsStartOnly=true
+PIDFile=@PID_PATH@/%i.pid
+EnvironmentFile=@RUNTIME_PATH@/thorslaves/%i.cfg
+ExecStart=@EXEC_PATH@/@processName@ @processArgs@
+
+[Install]
+DefaultInstance=my@component@

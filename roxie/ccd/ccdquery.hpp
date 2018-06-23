@@ -26,30 +26,12 @@
 #include "jhtree.hpp"
 #include "jisem.hpp"
 #include "dllserver.hpp"
-#include "layouttrans.hpp"
 #include "thorcommon.hpp"
 #include "ccddali.hpp"
 #include "thorcommon.ipp"
 #include "roxierow.hpp"
 #include "package.h"
 #include "enginecontext.hpp"
-
-class TranslatorArray : public CInterface
-{
-    IPointerArrayOf<IRecordLayoutTranslator> a;
-public:
-    inline IRecordLayoutTranslator *item(unsigned idx) const { return a.item(idx); }
-    inline void append(IRecordLayoutTranslator * item) { a.append(item); }
-    bool needsTranslation() const
-    {
-        ForEachItemIn(idx, a)
-        {
-            if (a.item(idx) != NULL)
-                return true;
-        }
-        return false;
-    }
-};
 
 interface IQueryFactory;
 
@@ -67,6 +49,7 @@ interface IActivityGraph : extends IInterface
     virtual IRoxieServerChildGraph * queryLoopGraph() = 0;
     virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) = 0;
     virtual const char *queryName() const = 0;
+    virtual void updateFactoryStatistics() const = 0;
 };
 
 interface IRoxiePackage;
@@ -116,8 +99,7 @@ public:
 
     bool checkingHeap;
     bool disableLocalOptimizations;
-    IRecordLayoutTranslator::Mode enableFieldTranslation;
-    bool skipFileFormatCrcCheck;
+    RecordTranslationMode enableFieldTranslation;
     bool stripWhitespaceFromStoredDataset;
     bool timeActivities;
     bool allSortsMaySpill;
@@ -130,7 +112,7 @@ private:
     static void updateFromWorkUnit(int &value, IConstWorkUnit &wu, const char *name);
     static void updateFromWorkUnit(unsigned &value, IConstWorkUnit &wu, const char *name);
     static void updateFromWorkUnit(bool &value, IConstWorkUnit &wu, const char *name);
-    static void updateFromWorkUnit(IRecordLayoutTranslator::Mode &value, IConstWorkUnit &wu, const char *name);
+    static void updateFromWorkUnit(RecordTranslationMode &value, IConstWorkUnit &wu, const char *name);
     static void updateFromContextM(memsize_t &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL); // Needs different name to ensure works in 32-bit where memsize_t and unsigned are same type
     static void updateFromContext(int &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL);
     static void updateFromContext(unsigned &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL);
@@ -235,6 +217,7 @@ protected:
     ActivityArrayArray childQueries;
     UnsignedArray childQueryIndexes;
     CachedOutputMetaData meta;
+    mutable CriticalSection statsCrit;
     mutable CRuntimeStatisticCollection mystats;
     // MORE: Could be CRuntimeSummaryStatisticCollection to include derived stats, but stats are currently converted
     // to IPropertyTrees.  Would need to serialize/deserialize and then merge/derived so that they merged properly
@@ -257,6 +240,7 @@ public:
 
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
+        CriticalBlock b(statsCrit);
         mystats.merge(from);
     }
 
@@ -284,6 +268,10 @@ public:
         // Default is no additional information
     }
 
+    RecordTranslationMode getEnableFieldTranslation() const
+    {
+        return queryFactory.queryOptions().enableFieldTranslation;
+    }
 };
 
 extern void addXrefFileInfo(IPropertyTree &reply, const IResolvedFile *dataFile);
@@ -300,7 +288,6 @@ extern const IQueryDll *createQueryDll(const char *dllName);
 extern const IQueryDll *createExeQueryDll(const char *exeName);
 extern const IQueryDll *createWuQueryDll(IConstWorkUnit *wu);
 
-extern IRecordLayoutTranslator *createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta, IRecordLayoutTranslator::Mode _mode);
 extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
 extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned _channelNo, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel);

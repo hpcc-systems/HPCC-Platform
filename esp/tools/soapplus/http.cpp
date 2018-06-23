@@ -44,6 +44,36 @@ void createDirectories(const char* outdir, const char* url, bool bClient, bool b
 
 const char* sepstr = "\n---------------\n";
 
+class CSocketChecker : implements IInterface, public CInterface
+{
+private:
+    Owned<ISocket> m_socket;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CSocketChecker(ISocket* sock)
+    {
+        m_socket.set(sock);
+    }
+
+    //0: normal (timeout or data available)
+    //1: socket closed
+    //<0: error
+    int waitAndCheck(int waitmillisecs)
+    {
+        if(!m_socket || !m_socket->check_connection())
+            return -1;
+        int ret = m_socket->wait_read(waitmillisecs);
+        if(ret <= 0)
+            return ret;
+        if(m_socket->avail_read() == 0)
+            return 1;
+        else
+            return 0;
+    }
+};
+
 HttpStat::HttpStat()
 {
     threads = 1;
@@ -892,7 +922,7 @@ public:
                         int delay = 0;
                         if(delaymin < delaymax)
                         {
-                            delay = delaymin + (rand() % (delaymax - delaymin));
+                            delay = delaymin + (fastRand() % (delaymax - delaymin));
                         }
                         else
                         {
@@ -1318,7 +1348,6 @@ StringBuffer& HttpClient::generateGetRequest(StringBuffer& request)
     request.append("Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, application/vnd.ms-excel, application/vnd.ms-powerpoint, application/msword, application/x-shockwave-flash, */*\r\n");
     request.append("Accept-Language: en-us\r\n");
     request.append("User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)\r\n");
-    request.append("Connection: close\r\n");
     request.append("Host: ").append(m_host.str());
     if(m_port != 80)
         request.appendf(":%d", m_port);
@@ -1346,7 +1375,6 @@ StringBuffer& HttpClient::insertSoapHeaders(StringBuffer& request)
     headers.append("Content-Type: text/xml\r\n");
     headers.append("User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)\r\n");
     headers.appendf("Content-Length: %d\r\n", request.length());
-    headers.append("Connection: close\r\n");
     headers.append("Host: ").append(m_host.str());
     if(m_port != 80)
         headers.appendf(":%d", m_port);
@@ -1536,7 +1564,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
             request.append(c);
         seq++;
     }
-    
+
     if(seq < req.length())
         request.append(req.length() - seq, req.str() + seq);
 
@@ -1546,8 +1574,6 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
     // Write the input to a file to keep the record.
     if(request_output)
         request_output->write(0, request.length(), request.str());
-
-    unsigned start1 = msTick();
 
     SocketEndpoint ep;
     ep.set(m_host.str(), m_port);
@@ -1584,73 +1610,108 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
         return -1;
     }
 
-    if(http_tracelevel >= 5)
-        fprintf(m_logfile, ">>sending out request. Request length=%d\n", request.length());
-
-    if(http_tracelevel >= 10)
-        fprintf(m_logfile, "%s%s%s\n", sepstr, request.str(), sepstr);
-
-    socket->write(request.str(), request.length());
-                
-    StringBuffer buf;
-    StringBuffer* bufptr;
-    if(outputbuf)
-        bufptr = outputbuf;
-    else
-        bufptr = &buf;
-    Owned<IByteOutputStream> ostream = createOutputStream(*bufptr);
-    bool isRoxie;
-    int resplen = Http::receiveData(socket.get(), ostream.get(), true, isRoxie, NULL, full_output, content_output);
-    if(http_tracelevel >= 5)
-        fprintf(m_logfile, ">>received response. Response length: %d.\n", resplen);
-    if(http_tracelevel >= 10)
-        fprintf(m_logfile, "%s\n", bufptr->str());
-
-    socket->shutdown();
-    socket->close();
-
-    unsigned end1 = msTick();
-
-    int duration = end1 - start1;
-
-    if(http_tracelevel >= 5)
-        fprintf(m_logfile, "Time taken to send request and receive response: %d milli-seconds\n", duration);
-
-    if(stat)
+    bool isPersist = m_globals->getPropBool("isPersist", false);
+    int numReq = 1;
+    int pausemillisecs = 0;
+    if(isPersist)
     {
-        stat->duration += duration;
-        stat->totaltime += duration;
-        stat->numrequests += 1;
-        if(duration > stat->slowest)
-            stat->slowest = duration;
-        if(duration < stat->fastest)
-            stat->fastest = duration;
-        stat->totalreqlen += request.length();
-        stat->totalresplen += resplen;
+        if(m_globals->hasProp("persistrequests"))
+            numReq = atoi(m_globals->queryProp("persistrequests"));
+        if(m_globals->hasProp("persistpause"))
+            pausemillisecs = atof(m_globals->queryProp("persistpause"))*1000;
+        DBGLOG("Is persist, %d %d", numReq, pausemillisecs);
     }
+    else
+        DBGLOG("Is not persist");
 
-    if(m_doValidation)
+    for(int iter=0; iter<numReq; iter++)
     {
-        int ret = validate(*bufptr);
-        if(http_tracelevel > 0 && m_doValidation == 1)
+        unsigned start1 = msTick();
+
+        if(http_tracelevel >= 5)
+            fprintf(m_logfile, ">>sending out request. Request length=%d\n", request.length());
+
+        if(http_tracelevel >= 10)
+            fprintf(m_logfile, "%s%s%s\n", sepstr, request.str(), sepstr);
+
+        socket->write(request.str(), request.length());
+
+        StringBuffer buf;
+        StringBuffer* bufptr;
+        if(outputbuf)
+            bufptr = outputbuf;
+        else
+            bufptr = &buf;
+        Owned<IByteOutputStream> ostream = createOutputStream(*bufptr);
+        bool isRoxie;
+        __int64 resplen = Http::receiveData(socket.get(), ostream.get(), true, isRoxie, NULL, full_output, content_output);
+        if(http_tracelevel >= 5)
+            fprintf(m_logfile, ">>received response. Response length: %" I64F "d.\n", resplen);
+        if(http_tracelevel >= 10)
+            fprintf(m_logfile, "%s\n", bufptr->str());
+
+
+        if(!isPersist || iter >= numReq - 1)
         {
-            if(ret == 0)
+            socket->shutdown();
+            socket->close();
+        }
+
+        unsigned end1 = msTick();
+
+        int duration = end1 - start1;
+
+        if(http_tracelevel >= 5)
+            fprintf(m_logfile, "Time taken to send request and receive response: %d milli-seconds\n", duration);
+
+        if(stat)
+        {
+            stat->duration += duration;
+            stat->totaltime += duration;
+            stat->numrequests += 1;
+            if(duration > stat->slowest)
+                stat->slowest = duration;
+            if(duration < stat->fastest)
+                stat->fastest = duration;
+            stat->totalreqlen += request.length();
+            stat->totalresplen += resplen;
+        }
+
+        if(m_doValidation)
+        {
+            int ret = validate(*bufptr);
+            if(http_tracelevel > 0 && m_doValidation == 1)
             {
-                fprintf(m_logfile, "\n%sSuccessfully validated the response against the xsd%s\n", sepstr, sepstr);
+                if(ret == 0)
+                {
+                    fprintf(m_logfile, "\n%sSuccessfully validated the response against the xsd%s\n", sepstr, sepstr);
+                }
+                else
+                {
+                    fprintf(m_logfile, "Error: Validation against the xsd failed.\n");
+                }
             }
-            else
+        }
+
+        if(http_tracelevel >= 5)
+            fprintf(m_logfile, "%s", sepstr);
+        if(isPersist && iter < numReq - 1)
+        {
+            Owned<CSocketChecker> checker = new CSocketChecker(socket.get());
+            int ret = checker->waitAndCheck(pausemillisecs);
+            if(ret != 0)
             {
-                fprintf(m_logfile, "Error: Validation against the xsd failed.\n");
+                if(ret > 0)
+                    fprintf(m_logfile, "\n>>Persistent connection closed by the other end.\n");
+                else
+                    fprintf(m_logfile, "\n>>Persistent connection got error.\n");
+                break;
             }
         }
     }
 
-    if(http_tracelevel >= 5)
-        fprintf(m_logfile, "%s", sepstr);
-
     return 0;
 }
-
 
 SimpleServer::SimpleServer(IProperties* globals, int port, const char* inputpath, const char* outputdir, bool writeToFiles, int iterations)
 {
@@ -1666,6 +1727,7 @@ SimpleServer::SimpleServer(IProperties* globals, int port, const char* inputpath
     m_logfile = stdout;
     m_iterations = iterations;
     m_headerlen = 0;
+    m_isPersist = m_globals->getPropBool("isPersist", false);
 }
 
 int SimpleServer::start()
@@ -1727,13 +1789,37 @@ int SimpleServer::start()
         if(m_iterations != -1 && seq >= m_iterations)
             break;
 
-        Owned<ISocket> client = socket->accept();
+        Owned<ISocket> client;
+        if(!m_isPersist || m_persistentSocket.get() == nullptr)
+        {
+            client.setown(socket->accept());
+            if(m_isPersist)
+                m_persistentSocket.set(client.get());
+        }
+        else
+        {
+            Owned<CSocketChecker> checker = new CSocketChecker(m_persistentSocket.get());
+            int ret = checker->waitAndCheck(WAIT_FOREVER);
+            if(ret == 0)
+                client.set(m_persistentSocket.get());
+            else
+            {
+                if(ret > 0)
+                    fprintf(m_logfile, "\n>>Persistent connection closed by the other end, accepting new connection...\n");
+                else
+                    fprintf(m_logfile, "\n>>Persistent connection got error, accepting new connection...\n");
+                m_persistentSocket->shutdown();
+                m_persistentSocket->close();
+                client.setown(socket->accept());
+                m_persistentSocket.set(client.get());
+            }
+        }
 
         char peername[256];
         int port = client->peer_name(peername, 256);
 
         if(http_tracelevel >= 5)
-            fprintf(m_logfile, "\n>>receivd request from %s:%d\n", peername, port);
+            fprintf(m_logfile, "\n>>received request from %s:%d\n", peername, port);
 
         StringBuffer requestbuf;
         StringBuffer reqFileName;
@@ -1947,7 +2033,11 @@ int SimpleServer::start()
         if(server_infile.get() != NULL && server_infile->isDirectory())
             m_response.clear();
 
-        client->close();
+        if(!m_isPersist)
+        {
+            client->shutdown();
+            client->close();
+        }
         seq++;
     }
 

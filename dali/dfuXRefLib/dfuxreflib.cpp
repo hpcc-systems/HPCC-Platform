@@ -2732,30 +2732,171 @@ IPropertyTree * runXRefCluster(const char *cluster,IXRefNode *nodeToUpdate)
 }
 
 
-IPropertyTree * RunProcess(unsigned nclusters,const char **clusters,unsigned numdirs,const char **dirbaselist,unsigned flags,IXRefProgressCallback *_msgcallback,unsigned numthreads)
+IPropertyTree * RunProcess(XRefCmd cmd, unsigned nclusters,const char **clusters,unsigned numArgs,const char **args,unsigned flags,IXRefProgressCallback *_msgcallback,unsigned numthreads)
 {
     //Provide a wrapper for the command line
-    if (flags & PMupdateeclwatch) {
-        if (nclusters==1) {
-            const char *cluster = *clusters;
-            CXRefNodeManager nodemanager;
-            Owned<IPropertyTree> tree = runXRef(nclusters,clusters,NULL,numthreads);
-            if (tree) {
-                Owned<IXRefNode> xRefNode = nodemanager.getXRefNode(cluster);
-                if (!xRefNode.get())
-                    xRefNode.setown( nodemanager.CreateXRefNode(cluster));
-                xRefNode->setCluster(cluster);
-                xRefNode->BuildXRefData(*tree.get(),cluster);
-                xRefNode->commit();
+    switch (cmd)
+    {
+        case xrefUpdate:
+        {
+            if (flags & PMupdateeclwatch)
+            {
+                if (nclusters==1)
+                {
+                    const char *cluster = *clusters;
+                    CXRefNodeManager nodemanager;
+                    Owned<IPropertyTree> tree = runXRef(nclusters,clusters,NULL,numthreads);
+                    if (tree)
+                    {
+                        Owned<IXRefNode> xRefNode = nodemanager.getXRefNode(cluster);
+                        if (!xRefNode.get())
+                            xRefNode.setown( nodemanager.CreateXRefNode(cluster));
+                        xRefNode->setCluster(cluster);
+                        xRefNode->BuildXRefData(*tree.get(),cluster);
+                        xRefNode->commit();
+                    }
+                }
+                else
+                {
+                    // do clusters 1 at time
+                    for (unsigned i = 0; i<nclusters; i++)
+                        RunProcess(cmd,1,clusters+i,numArgs,args,flags,_msgcallback,numthreads);
+                }
             }
+            break;
         }
-        else {
-            // do clusters 1 at time
-            for (unsigned i = 0; i<nclusters; i++)
-                RunProcess(1,clusters+i,numdirs,dirbaselist,flags,_msgcallback,numthreads);
+        case xrefScan:
+        {
+            CXRefManager xrefmanager;
+            return xrefmanager.process(nclusters,clusters,numArgs,args,flags,_msgcallback,numthreads);
         }
-        return NULL;
+        case xrefListFound:
+        case xrefAttachFound:
+        {
+            if (1 == nclusters)
+            {
+                const char *match = "*"; // default
+                if (numArgs)
+                    match = args[0];
+                const char *cluster = clusters[0];
+                Owned<IXRefNodeManager> XRefNodeManager = CreateXRefNodeFactory();
+                Owned<IConstXRefNode> xRefNode = XRefNodeManager->getXRefNode(cluster);
+                if (!xRefNode)
+                    WARNLOG("Cannot find XREF info for cluster: %s", cluster);
+                else
+                {
+                    StringBuffer partMask;
+                    if (streq("*", match))
+                        partMask.append(match);
+                    else
+                    {
+                        partMask.append(xRefNode->queryRootDir());
+                        addPathSepChar(partMask);
+                        const char *s = match;
+                        do
+                        {
+                            const char *next = strstr(s, "::");
+                            if (!next)
+                            {
+                                partMask.append(s);
+                                break;
+                            }
+                            else
+                                partMask.append(next-s, s).append('/');
+                            s = next+2;
+                        }
+                        while (true);
+                        partMask.append(".*");
+                    }
+                    Owned<IXRefFilesNode> foundFiles = xRefNode->getFoundFiles();
+                    Owned<IPropertyTreeIterator> iter = foundFiles->getMatchingFiles(partMask, "Partmask");
+                    unsigned processed = 0;
+                    StringArray matched;
+                    ForEach(*iter)
+                    {
+                        IPropertyTree &file = iter->query();
+                        const char *partMask = file.queryProp("Partmask");
+                        switch (cmd)
+                        {
+                            case xrefListFound:
+                            {
+                                CDfsLogicalFileName lfn;
+                                if (!lfn.setFromMask(partMask, xRefNode->queryRootDir()))
+                                {
+                                    fprintf(stderr, "Error processing partMask=%s, could not deduce logical filename\n", partMask);
+                                    continue;
+                                }
+                                const char *logicalName = lfn.get();
+                                unsigned __int64 size = file.getPropInt64("Size");
+                                const char *modified = file.queryProp("Modified");
+                                unsigned numParts = file.getPropInt("Numparts");
+                                if (!processed)
+                                {
+                                    PROGLOG("Name,Size,Modified,NumParts");
+                                    PROGLOG("===========================");
+                                }
+                                PROGLOG("%s,%" I64F "u,%s,%u", logicalName, size, modified, numParts);
+                                ++processed;
+                                break;
+                            }
+                            case xrefAttachFound:
+                            {
+                                matched.append(partMask);
+                                break;
+                            }
+                            default:
+                                throwUnexpected();
+                        }
+                    }
+                    switch (cmd)
+                    {
+                        case xrefListFound:
+                        {
+                            PROGLOG("%u files found", processed);
+                            break;
+                        }
+                        case xrefAttachFound:
+                        {
+                            iter.clear();
+                            PROGLOG("%u found files matched", matched.ordinality());
+                            ForEachItemIn(f, matched)
+                            {
+                                const char *partMask = matched.item(f);
+                                CDfsLogicalFileName lfn;
+                                if (!lfn.setFromMask(partMask, xRefNode->queryRootDir()))
+                                {
+                                    fprintf(stderr, "Error processing partMask=%s, could not deduce logical filename\n", partMask);
+                                    continue;
+                                }
+                                const char *logicalName = lfn.get();
+                                StringBuffer errStr;
+                                if (foundFiles->AttachPhysical(partMask, nullptr, cluster, errStr))
+                                {
+                                    PROGLOG("File '%s' attached", lfn.get());
+                                    processed++;
+                                }
+                                else
+                                    fprintf(stderr, "%s\n", errStr.str());
+                            }
+
+                            PROGLOG("%u files re-attached. Committing xref meta data changes..", processed);
+                            if (processed>0)
+                                foundFiles->Commit();
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                // do clusters 1 at time
+                for (unsigned i = 0; i<nclusters; i++)
+                    RunProcess(cmd,1,clusters+i,numArgs,args,flags,_msgcallback,numthreads);
+            }
+            break;
+        }
     }
-    CXRefManager xrefmanager;
-    return xrefmanager.process(nclusters,clusters,numdirs,dirbaselist,flags,_msgcallback,numthreads);
+    return nullptr;
 }

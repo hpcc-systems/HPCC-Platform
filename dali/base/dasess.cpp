@@ -33,6 +33,7 @@
 #include "daldap.hpp"
 #include "seclib.hpp"
 #include "dasess.hpp"
+#include "digisign.hpp"
 
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
@@ -515,7 +516,7 @@ public:
                     }
 #ifdef _DEBUG
                     StringBuffer eps;
-                    PROGLOG("Connection to %s authorized",mb.getSender().getUrlStr(eps).str());
+                    PROGLOG("Connection to %s at %s authorized",queryRoleName((DaliClientRole)role),mb.getSender().getUrlStr(eps).str());
 #endif
                 }
                 
@@ -588,8 +589,6 @@ public:
                 StringAttr key;
                 StringAttr obj;
                 Owned<IUserDescriptor> udesc=createUserDescriptor();
-                StringAttr username;
-                StringAttr passwordenc;
                 mb.read(key).read(obj);
                 udesc->deserialize(mb);
 #ifdef NULL_DALIUSER_STACKTRACE
@@ -604,6 +603,7 @@ public:
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
+                udesc->deserializeExtra(mb);//deserialize user signature if present
                 int err = 0;
                 SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,&err);
                 mb.clear().append((int)perms);
@@ -894,6 +894,8 @@ public:
             securitydisabled = true;
             return SecAccess_Unavailable;
         }
+        if (!udesc)
+            return SecAccess_Unknown;
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
         mb.append(key).append(obj);
@@ -910,6 +912,7 @@ public:
 #endif
         udesc->serialize(mb);
         mb.append(auditflags);
+        udesc->serializeExtra(mb);//serialize user signature if Dali version >= 3.14
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return SecAccess_None;
         SecAccessFlags perms = SecAccess_Unavailable;
@@ -2008,8 +2011,14 @@ class CUserDescriptor: implements IUserDescriptor, public CInterface
 {
     StringAttr username;
     StringAttr passwordenc;
+    unsigned sessionToken = 0;//ESP session token
+    StringBuffer signature;//user's digital Signature
+    IDigitalSignatureManager * pDSM = nullptr;
 public:
     IMPLEMENT_IINTERFACE;
+    CUserDescriptor()
+    {
+    }
     StringBuffer &getUserName(StringBuffer &buf)
     {
         return buf.append(username);
@@ -2019,6 +2028,14 @@ public:
         decrypt(buf,passwordenc);
         return buf;
     }
+    unsigned querySessionToken()
+    {
+        return sessionToken;
+    }
+    const char *querySignature()
+    {
+        return signature.str();
+    }
     virtual void set(const char *name,const char *password)
     {
         username.set(name);
@@ -2026,18 +2043,49 @@ public:
         encrypt(buf,password);
         passwordenc.set(buf.str());
     }
+    void set(const char *_name, const char *_password, unsigned _sessionToken, const char *_signature)
+    {
+        set(_name, _password);
+        sessionToken = _sessionToken;
+        signature.clear().append(_signature);
+    }
     virtual void clear()
     {
         username.clear();
         passwordenc.clear();
+        sessionToken = 0;
+        signature.clear();
     }
     void serialize(MemoryBuffer &mb)
     {
         mb.append(username).append(passwordenc);
     }
+    void serializeExtra(MemoryBuffer &mb)
+    {
+        if (queryDaliServerVersion().compare("3.14") >= 0)
+        {
+            if (signature.isEmpty())
+            {
+                if (pDSM == nullptr)
+                    pDSM = createDigitalSignatureManagerInstanceFromEnv();
+                if (pDSM && pDSM->isDigiSignerConfigured())
+                    pDSM->digiSign(username, signature);//Set user's digital signature
+            }
+            mb.append(signature);
+        }
+    }
     void deserialize(MemoryBuffer &mb)
     {
         mb.read(username).read(passwordenc);
+    }
+    void deserializeExtra(MemoryBuffer &mb)
+    {
+        signature.clear();
+        if (queryDaliServerVersion().compare("3.14") >= 0)
+        {
+            if (mb.remaining() > 0)
+                mb.read(signature);
+        }
     }
 };
 

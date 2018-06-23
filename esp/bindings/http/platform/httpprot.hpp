@@ -47,18 +47,18 @@ private:
     int m_MaxRequestEntityLength;
     bool m_is_ssl;
     ISecureSocketContext* m_ssctx;
-
+    IPersistentHandler* m_persistentHandler = nullptr;
 public:
     IMPLEMENT_IINTERFACE;
 
     virtual ~CPooledHttpThread();
-    virtual void init(void *param);
-    virtual void main();
-    virtual bool stop()
+    virtual void init(void *param) override;
+    virtual void threadmain() override;
+    virtual bool stop() override
     {
         return true;
     }
-    virtual bool canReuse() { return true; }
+    virtual bool canReuse() const override { return true; }
 
     virtual void setMaxRequestEntityLength(int len) {m_MaxRequestEntityLength = len;}
     virtual int getMaxRequestEntityLength() { return m_MaxRequestEntityLength; }
@@ -87,9 +87,9 @@ private:
     CHttpThread(ISocket *sock, bool viewConfig);
     bool m_is_ssl;
     ISecureSocketContext* m_ssctx;
-
+    IPersistentHandler* m_persistentHandler = nullptr;
 public:
-    CHttpThread(ISocket *sock, CEspApplicationPort* apport, bool viewConfig, bool isSSL = false, ISecureSocketContext* ssctx = NULL);
+    CHttpThread(ISocket *sock, CEspApplicationPort* apport, bool viewConfig, bool isSSL = false, ISecureSocketContext* ssctx = NULL, IPersistentHandler* persistentHandler = NULL);
     
     virtual ~CHttpThread();
     virtual bool onRequest();
@@ -97,7 +97,6 @@ public:
     virtual void setMaxRequestEntityLength(int len) {m_MaxRequestEntityLength = len;}
     virtual int getMaxRequestEntityLength() { return m_MaxRequestEntityLength; }
 };
-
 
 class esp_http_decl CHttpProtocol : public CEspProtocol
 {
@@ -120,7 +119,7 @@ public:
 
     virtual void init(IPropertyTree * cfg, const char * process, const char * protocol);
 
-    virtual bool notifySelected(ISocket *sock,unsigned selected);
+    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler) override;
 //IEspProtocol
     virtual const char * getProtocolName();
 };
@@ -142,7 +141,7 @@ public:
 
     virtual void init(IPropertyTree * cfg, const char * process, const char * protocol);
 
-    virtual bool notifySelected(ISocket *sock,unsigned selected);
+    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler) override;
 //IEspProtocol
     virtual const char * getProtocolName();
 };

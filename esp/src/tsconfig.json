@@ -1,0 +1,27 @@
+{
+    "compilerOptions": {
+        "outDir": "./lib",
+        "target": "es5",
+        "module": "amd",
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "noImplicitAny": false,
+        "noEmitOnError": false,
+        "noUnusedLocals": true,
+        "strictNullChecks": false,
+        "importHelpers": true,
+        "experimentalDecorators": true,
+        "allowJs": true,
+        "skipLibCheck": true,
+        "lib": [
+            "dom",
+            "es5",
+            "es2015.promise"
+        ],
+        "typeRoots": [],
+        "types": []
+    },
+    "include": [
+        "src/**/*"
+    ]
+}

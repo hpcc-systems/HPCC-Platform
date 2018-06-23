@@ -28,6 +28,8 @@ set (   SRCS
         esdl_binding.cpp
         esdl_svc_engine_plugin.cpp
         esdl_svc_engine.cpp
+        esdl_store.cpp
+        esdl_monitor.cpp
     )
 
 include_directories (
@@ -62,7 +64,7 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
     )
 
-ADD_DEFINITIONS( -D_USRDLL )
+ADD_DEFINITIONS( -D_USRDLL -DESDL_ENGINE_EXPORTS )
 
 HPCC_ADD_LIBRARY( esdl_svc_engine SHARED ${SRCS} )
 install ( TARGETS esdl_svc_engine RUNTIME DESTINATION bin LIBRARY DESTINATION lib )

@@ -14,8 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-
-# Component: esphttp 
+# Component: esphttp
 
 #####################################################
 # Description:
@@ -23,60 +22,74 @@
 #    Cmake Input File for esphttp
 #####################################################
 
+project(esphttp)
 
-project( esphttp ) 
-
-set (    SRCS 
-         ../../bindings/bindutil.cpp 
-         ../../bindings/http/client/httpclient.cpp 
-         ../../bindings/http/platform/htmlpage.cpp 
-         ../../bindings/http/platform/httpbinding.cpp 
-         ../../bindings/http/platform/httpprot.cpp 
-         ../../bindings/http/platform/httpsecurecontext.cpp
-         ../../bindings/http/platform/httpservice.cpp 
-         ../../bindings/http/platform/httptransport.cpp 
-         ../../bindings/http/platform/mime.cpp 
-         ../../bindings/http/platform/msgbuilder.cpp 
-         ../../bindings/SOAP/client/soapclient.cpp 
-         ../../bindings/SOAP/Platform/soapbind.cpp 
-         ../../bindings/SOAP/Platform/soapmessage.cpp 
-         ../../bindings/SOAP/Platform/soapservice.cpp 
-         ../../bindings/SOAP/Platform/soapparam.cpp
-         ../../platform/espcontext.cpp 
-         ../../platform/espprotocol.cpp 
-         ../../platform/espthread.cpp 
-         ../../platform/sechandler.cpp 
-         ../../platform/txsummary.cpp
-         mapinfo.cpp 
-         plugin.cpp 
+set(SRCS
+    ../../bindings/bindutil.cpp
+    ../../bindings/http/client/httpclient.cpp
+    ../../bindings/http/platform/htmlpage.cpp
+    ../../bindings/http/platform/httpbinding.cpp
+    ../../bindings/http/platform/httpprot.cpp
+    ../../bindings/http/platform/httpsecurecontext.cpp
+    ../../bindings/http/platform/httpservice.cpp
+    ../../bindings/http/platform/httptransport.cpp
+    ../../bindings/http/platform/mime.cpp
+    ../../bindings/http/platform/msgbuilder.cpp
+    ../../bindings/SOAP/client/soapclient.cpp
+    ../../bindings/SOAP/Platform/soapbind.cpp
+    ../../bindings/SOAP/Platform/soapmessage.cpp
+    ../../bindings/SOAP/Platform/soapservice.cpp
+    ../../bindings/SOAP/Platform/soapparam.cpp
+    ../../platform/espcontext.cpp
+    ../../platform/espprotocol.cpp
+    ../../platform/espthread.cpp
+    ../../platform/espcache.cpp
+    ../../platform/sechandler.cpp
+    ../../platform/txsummary.cpp
+    ../../platform/persistent.cpp
+    mapinfo.cpp
+    plugin.cpp
     )
 
-include_directories ( 
-         ./../../../system/include 
-         ./../../../system/security/shared
-         ./../../../system/security/securesocket 
-         ./../../bindings 
-         ./../../bindings/SOAP/xpp 
-         ./../../../system/xmllib 
-         ./../../../system/jlib 
-         ./../../platform 
-         ./../../services/common
-         ./../../../system/security/shared 
-         ./../../../system/security/LdapSecurity
+include_directories(
+    ./../../../system/include
+    ./../../../system/security/shared
+    ./../../../system/security/securesocket
+    ./../../bindings
+    ./../../bindings/SOAP/xpp
+    ./../../../system/xmllib
+    ./../../../system/jlib
+    ./../../platform
+    ./../../services/common
+    ./../../../system/security/shared
+    ./../../../system/security/LdapSecurity
+    ./../../../system/mp 
+    ./../../../dali/base
     )
 
-ADD_DEFINITIONS( -DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN )
+add_definitions(-DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN)
 
-HPCC_ADD_LIBRARY( esphttp SHARED ${SRCS} )
-add_dependencies (esphttp  espscm )
-install ( TARGETS esphttp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( esphttp 
-         ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
-         jlib
-         xmllib 
+HPCC_ADD_LIBRARY(esphttp SHARED ${SRCS})
+add_dependencies(esphttp  espscm)
+install(TARGETS esphttp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR})
+target_link_libraries(
+    esphttp
+    ${XALAN_LIBRARIES}
+    ${XERCES_LIBRARIES}
+    jlib
+    xmllib
     )
-IF (USE_OPENLDAP)
-target_link_libraries ( esphttp LdapSecurity )
-ENDIF(USE_OPENLDAP)
 
+if(LIBMEMCACHED_FOUND)
+    if(MEMCACHED_USE_EXTERNAL_LIBRARY)
+        target_link_libraries(esphttp libmemcached libmemcachedutil)
+        add_dependencies(esphttp generate-libmemcached)
+        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs\")")
+    else()
+        target_link_libraries(esphttp ${LIBMEMCACHED_LIBRARIES})
+    endif()
+endif()
 
+if(USE_OPENLDAP)
+    target_link_libraries(esphttp LdapSecurity)
+endif(USE_OPENLDAP)

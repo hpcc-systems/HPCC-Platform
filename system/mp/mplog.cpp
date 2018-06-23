@@ -84,8 +84,17 @@ CLogMsgLinkToChild::CLogMsgLinkToChild(MPLogId _cid, MPLogId _pid, INode * _chil
 
 CLogMsgLinkToChild::~CLogMsgLinkToChild()
 {
-    if(connected) disconnect();
-    receiverThread->stop();
+    try
+    {
+        if(connected)
+            disconnect();
+        receiverThread->stop();
+    }
+    catch (IException * e)
+    {
+        //Likely that the logging is closing down, so silently discard any exceptions
+        e->Release();
+    }
 }
 
 void CLogMsgLinkToChild::sendFilter(ILogMsgFilter * filter) const
@@ -341,6 +350,22 @@ void LogMsgFilterReceiverThread::stop()
 }
 
 // LinkToParentLogMsgHandler
+
+LinkToParentLogMsgHandler::~LinkToParentLogMsgHandler()
+{
+    try
+    {
+        if(connected)
+            disconnect();
+        receiverThread->stop();
+    }
+    catch (IException * e)
+    {
+        //Likely that the logging is closing down, so silently discard any exceptions
+        e->Release();
+    }
+}
+
 
 void LinkToParentLogMsgHandler::handleMessage(const LogMsg & msg) const
 {

@@ -103,17 +103,34 @@ IHqlExpression * ensureType(IHqlExpression * expr, ITypeInfo * type)
     return expr;
 }
 
+static bool isVerySimpleLength(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_variable:
+    case no_constant:
+    case no_select:
+        return true;
+    }
+    return false;
+}
 bool isSimpleLength(IHqlExpression * expr)
 {
     switch (expr->getOperator())
     {
     case no_variable:
     case no_constant:
+    case no_select:
         return true;
     case no_add:
-        if ((expr->queryChild(0)->getOperator() == no_variable) &&
+        if (isVerySimpleLength(expr->queryChild(0)) &&
             (expr->queryChild(1)->getOperator() == no_constant))
             return true;
+        break;
+    case no_sub:
+        if (isVerySimpleLength(expr->queryChild(0)))
+            if (isSimpleLength(expr->queryChild(1)))
+                    return true;
         break;
     }
     return false;
@@ -132,6 +149,17 @@ void ensureSimpleLength(HqlCppTranslator & translator, BuildCtx & ctx, CHqlBound
 }
 
 //---------------------------------------------------------------------------
+
+static IHqlExpression * createSizeExpression(IHqlExpression * varSize, unsigned fixedSize)
+{
+    if (!varSize)
+        return getSizetConstant(fixedSize);
+
+    OwnedHqlExpr total = ensureType(LINK(varSize), sizetType);
+    if (fixedSize)
+        return adjustValue(total, (int)fixedSize);
+    return total.getClear();
+}
 
 void SizeStruct::add(const SizeStruct & other)
 {
@@ -171,15 +199,12 @@ void SizeStruct::buildSizeExpr(HqlCppTranslator & translator, BuildCtx & ctx, Bo
 
 void SizeStruct::forceToTemp(node_operator op, IHqlExpression * selector)
 {
-    if (isWorthCommoning())
-    {
-        varSize.setown(createValue(op, LINK(sizetType), LINK(selector)));
-        fixedSize = 0;
-    }
+    varSize.setown(createValue(op, LINK(sizetType), LINK(selector)));
+    fixedSize = 0;
 }
 
 
-IHqlExpression * SizeStruct::getSizeExpr(BoundRow * row)
+IHqlExpression * SizeStruct::getSizeExpr(BoundRow * row) const
 {
 #if 0
     IHqlExpression * bound = row->queryDataset();
@@ -187,23 +212,26 @@ IHqlExpression * SizeStruct::getSizeExpr(BoundRow * row)
         return createTranslated(bound->queryChild(1));
 #endif
 
-    assertex(self != NULL);
-    OwnedHqlExpr mapped = normalizeAdditions(varSize);
-    OwnedHqlExpr total = row->bindToRow(mapped, self);
-    if (!total)
-        return getSizetConstant(fixedSize);
-
-    total.setown(ensureType(LINK(total), sizetType));
-    if (fixedSize)
-        return adjustValue(total, (int)fixedSize);
-    return total.getClear();
+    OwnedHqlExpr total;
+    if (row)
+    {
+        assertex(self != NULL);
+        OwnedHqlExpr mapped = normalizeAdditions(varSize);
+        total.setown(row->bindToRow(mapped, self));
+    }
+    else
+        total.set(varSize);
+    return createSizeExpression(total, fixedSize);
 }
 
 
 bool SizeStruct::isWorthCommoning() const
 {
-    if (varSize && varSize->getOperator() == no_add && varSize->queryChild(0)->getOperator() == no_add)
-        return true;
+    if (varSize && varSize->getOperator() == no_add)
+    {
+        if (varSize->queryChild(0)->getOperator() == no_add)
+            return true;
+    }
     return false;
 }
 
@@ -219,6 +247,7 @@ CMemberInfo::CMemberInfo(CContainerInfo * _container, CMemberInfo * _prior, IHql
         column.setown(createRow(no_null, LINK(column)));
     hasVarOffset = false;
     isOffsetCached = false;
+    seq = 0;
 }
 
 void CMemberInfo::addVariableSize(size32_t varMinSize, SizeStruct & size)
@@ -262,6 +291,13 @@ void CMemberInfo::calcCachedSize(const SizeStruct & offset, SizeStruct & sizeSel
 }
 
 
+void CMemberInfo::getOffsets(SizeStruct & offset, SizeStruct & accessorOffset) const
+{
+    offset.set(cachedOffset);
+    accessorOffset.set(cachedAccessorOffset);
+}
+
+
 bool CMemberInfo::checkCompatibleIfBlock(HqlExprCopyArray & conditions)
 {
     return false;
@@ -302,13 +338,31 @@ void CContainerInfo::calcAllCachedOffsets()
         SizeStruct offset(self);
         SizeStruct size(self);
         calcCachedOffsets(offset, size);
+
+        if (usesAccessClass())
+        {
+            SizeStruct finalAccessorOffset(self);
+            OwnedHqlExpr sizeSelf = createValue(no_sizeof, LINK(sizetType), getRelativeSelf());
+            if (bindOffsetsFromClass(finalAccessorOffset, false))
+            {
+                StringBuffer name;
+                name.append("off[").append(nextSeq()).append("]");
+                OwnedHqlExpr newOffset = createVariable(name, LINK(sizetType));
+                finalAccessorOffset.set(0, newOffset);
+            }
+            accessorSize.set(finalAccessorOffset);
+            cachedSize.set(0, sizeSelf);
+
+            SizeStruct tempOffset;
+            bindSizesFromOffsets(tempOffset, cachedSize);
+        }
     }
 }
 
 void CContainerInfo::calcCachedChildrenOffsets(const SizeStruct & startOffset, SizeStruct & sizeSelf)
 {
     //Optimize one special case of ifblocks.
-    //Sometimes you have a header with some fields, followed by a set of mutually exlusive ifblocks.
+    //Sometimes you have a header with some fields, followed by a set of mutually exclusive ifblocks.
     //Spot any trailing mutually exclusive ifblocks and don't update
     HqlExprCopyArray conditions;
     unsigned maxOffsetUpdate = children.ordinality();
@@ -361,6 +415,70 @@ void CContainerInfo::calcCachedSize(const SizeStruct & offset, SizeStruct & size
         sizeSelf.set(cachedSize);
     else
         addVariableSize(cachedSize.getMinimumSize(), sizeSelf);
+}
+
+bool CMemberInfo::bindOffsetsFromClass(SizeStruct & accessorOffset, bool prevVariableSize)
+{
+    if (prevVariableSize)
+    {
+        seq = container->nextSeq();
+        StringBuffer name;
+        name.append("off[").append(seq).append("]");
+        OwnedHqlExpr newOffset = createVariable(name, LINK(sizetType));
+        cachedAccessorOffset.set(0, newOffset);
+    }
+    else
+        cachedAccessorOffset.set(accessorOffset);
+
+    if (!cachedAccessorOffset.isFixedSize())
+    {
+        Owned<IHqlExpression> child = createSelectorExpr();
+        cachedOffset.forceToTemp(no_offsetof, child);
+    }
+    else
+        assertex(!cachedOffset.queryVarSize() || cachedOffset.queryVarSize()->getOperator() != no_add);
+
+    accessorOffset.set(cachedAccessorOffset);
+    accessorOffset.addFixed(cachedSize.getFixedSize());
+    return !cachedSize.isFixedSize();
+}
+
+bool CContainerInfo::bindOffsetsFromClass(SizeStruct & accessorOffset, bool prevVariableSize)
+{
+    //MORE: ifblocks need further work if the offsets are not recalculated for trailing ifblocks
+    ForEachItemIn(idx, children)
+    {
+        CMemberInfo & cur = children.item(idx);
+        bool thisVariableSize = cur.bindOffsetsFromClass(accessorOffset, prevVariableSize);
+        if (idx == 0)
+            cur.getOffsets(cachedOffset, cachedAccessorOffset);
+
+        prevVariableSize = thisVariableSize;
+    }
+
+    return prevVariableSize;
+}
+
+void CMemberInfo::bindSizesFromOffsets(SizeStruct & thisOffset, const SizeStruct & nextOffset)
+{
+    if (!cachedSize.isFixedSize())
+    {
+        assertex(nextOffset.queryVarSize()->getOperator() != no_add);
+        OwnedHqlExpr sub = createValue(no_sub, LINK(sizetType), nextOffset.getSizeExpr(NULL), cachedOffset.getSizeExpr(NULL));
+        cachedSize.set(0, sub);
+    }
+    thisOffset.set(cachedOffset);
+}
+
+void CContainerInfo::bindSizesFromOffsets(SizeStruct & thisOffset, const SizeStruct & nextOffset)
+{
+    SizeStruct curOffset(nextOffset);
+    ForEachItemInRev(idx, children)
+    {
+        CMemberInfo & cur = children.item(idx);
+        cur.bindSizesFromOffsets(curOffset, curOffset);
+    }
+    CMemberInfo::bindSizesFromOffsets(thisOffset, nextOffset);
 }
 
 unsigned CContainerInfo::getTotalFixedSize()
@@ -475,10 +593,24 @@ void CMemberInfo::buildConditionFilter(HqlCppTranslator & translator, BuildCtx &
 
 void CMemberInfo::buildOffset(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound)
 {
-    SizeStruct totalSize;
-    gatherOffset(totalSize, selector->queryExpr());     //this
+    if (!cachedAccessorOffset.isEmpty())
+    {
+        OwnedHqlExpr value;
+        if (cachedAccessorOffset.queryVarSize())
+        {
+            IHqlExpression * accessor = selector->queryRootRow()->ensureAccessor(translator, ctx);
+            assertex(accessor);
+            value.setown(createValue(no_select, LINK(sizetType), LINK(accessor), LINK(cachedAccessorOffset.queryVarSize())));
+        }
+        bound.expr.setown(createSizeExpression(value, cachedAccessorOffset.getFixedSize()));
+    }
+    else
+    {
+        SizeStruct totalSize;
+        gatherOffset(totalSize, selector->queryExpr());     //this
 
-    totalSize.buildSizeExpr(translator, ctx, selector->queryRootRow(), bound);
+        totalSize.buildSizeExpr(translator, ctx, selector->queryRootRow(), bound);
+    }
 }
 
 void callDeserializeGetN(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper, IHqlExpression * boundSize, IHqlExpression * address)
@@ -847,6 +979,11 @@ bool CMemberInfo::hasFixedOffset()
     return !hasVarOffset;
 }
 
+bool CMemberInfo::isPayloadField() const
+{
+    return isPayload;
+}
+
 bool CMemberInfo::isConditional()
 { 
     if (container)
@@ -878,7 +1015,11 @@ bool CMemberInfo::requiresTemp()
 void CMemberInfo::setOffset(bool _hasVarOffset)
 {
     hasVarOffset = _hasVarOffset;
+}
 
+void CMemberInfo::setPayload(bool _isPayload)
+{
+    isPayload = _isPayload;
 }
 
 AColumnInfo * CMemberInfo::lookupColumn(IHqlExpression * search)
@@ -954,8 +1095,18 @@ void CContainerInfo::buildSizeOf(HqlCppTranslator & translator, BuildCtx & ctx, 
 {
     if (!isOffsetCached)
         calcAllCachedOffsets();
-
-    cachedSize.buildSizeExpr(translator, ctx, selector->queryRootRow(), bound);
+    if (container && !usesAccessClass())
+        usesAccessClass();
+    if (!container && usesAccessClass())
+    {
+        IHqlExpression * accessor = selector->queryRootRow()->ensureAccessor(translator, ctx);
+        assertex(accessor);
+        if (accessorSize.queryVarSize())
+            bound.expr.setown(createValue(no_select, LINK(sizetType), LINK(accessor), LINK(accessorSize.queryVarSize())));
+        bound.expr.setown(createSizeExpression(bound.expr, accessorSize.getFixedSize()));
+    }
+    else
+        cachedSize.buildSizeExpr(translator, ctx, selector->queryRootRow(), bound);
 }
 
 
@@ -1089,6 +1240,13 @@ void CContainerInfo::getContainerXPath(StringBuffer & out)
     }
 }
 
+unsigned CContainerInfo::nextSeq()
+{
+    if (container)
+        return container->nextSeq();
+    return ++seq;
+}
+
 
 bool CContainerInfo::isConditional()
 {
@@ -1108,6 +1266,7 @@ void CContainerInfo::registerChild(CMemberInfo * child)
 CRecordInfo::CRecordInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column) :
     CContainerInfo(_container, _prior, _column)
 {
+    useAccessClass = false;
 }
 
 void CRecordInfo::buildAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target)     
@@ -1226,31 +1385,12 @@ void CIfBlockInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx,
     CContainerInfo::buildSerialize(translator, condctx, selector, helper, serializeForm);
 }
 
-bool CIfBlockInfo::prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state)
-{
-    gatherSelectExprs(state.requiredValues, condition);
-    return CContainerInfo::prepareReadAhead(translator, state);
-}
-
 bool CIfBlockInfo::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state)
 {
-    try
-    {
-        OwnedHqlExpr mappedCondition = quickFullReplaceExpressions(condition, state.requiredValues, state.mappedValues);
-        //Early check to see if all the values have been mapped, rather than relying on exception processing.
-        if (!containsSelector(mappedCondition, queryRootSelf()))
-        {
-            BuildCtx condctx(ctx);
-            translator.buildFilter(condctx, mappedCondition);
-            return CContainerInfo::buildReadAhead(translator, condctx, state);
-        }
-    }
-    catch (IException * e)
-    {
-        //yuk yuk yuk!!  Could't resolve the test condition for very unusual reason, e.g., based on a variable length string.
-        e->Release();
-    }
-    return false;
+    OwnedHqlExpr mappedCondition = state.selector->queryRootRow()->bindToRow(condition, queryRootSelf());
+    BuildCtx condctx(ctx);
+    translator.buildFilter(condctx, mappedCondition);
+    return CContainerInfo::buildReadAhead(translator, condctx, state);
 }
 
 void CIfBlockInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value)
@@ -1997,6 +2137,7 @@ void CSpecialVStringColumnInfo::setColumn(HqlCppTranslator & translator, BuildCt
         args.append(*LINK(length));
         args.append(*translator.getElementPointer(bound.expr));
         translator.callProcedure(ctx, str2VStrId, args);
+        associateSizeOf(ctx, selector, LINK(targetSize), 0);
     }
 }
 
@@ -2026,6 +2167,7 @@ IHqlExpression * CAlienColumnInfo::doBuildSizeOfUnbound(HqlCppTranslator & trans
 
     BoundRow * cursor = selector->queryRootRow();
     IHqlExpression * lengthAttr = alien->queryLengthFunction();
+
     if (!lengthAttr->isFunctionDefinition())
     {
         OwnedHqlExpr absoluteLength = replaceSelector(lengthAttr, querySelfReference(), self);
@@ -2069,14 +2211,13 @@ void CAlienColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx 
     doBuildDeserialize(translator, ctx, selector, helper, boundSize.expr);
 }
 
-bool CAlienColumnInfo::prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state)
-{
-    return false;  // too complicated to do safetly.  It really needs a rethink...
-}
-
 bool CAlienColumnInfo::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state)
 {
-    throwUnexpected();
+    OwnedHqlExpr skipSize = doBuildSizeOfUnbound(translator, ctx, state.selector, state.helper);
+    CHqlBoundExpr boundSize;
+    translator.buildExpr(ctx, skipSize, boundSize);
+    callDeserializerSkipInputTranslatedSize(translator, ctx, state.helper, boundSize.expr);
+    return true;
 }
 
 void CAlienColumnInfo::gatherSize(SizeStruct & target)
@@ -2914,7 +3055,8 @@ void CXmlColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IR
 
 inline int doAlign(unsigned value, unsigned align) { return (value + align-1) & ~(align-1); }
 
-ColumnToOffsetMap::ColumnToOffsetMap(IHqlExpression * _record, unsigned _packing, unsigned _maxRecordSize, bool _translateVirtuals) : root(NULL, NULL, _record) 
+ColumnToOffsetMap::ColumnToOffsetMap(IHqlExpression * _key, IHqlExpression * _record, unsigned _id, unsigned _packing, unsigned _maxRecordSize, bool _translateVirtuals, bool _useAccessClass)
+: root(NULL, NULL, _record), key(_key), id(_id)
 { 
     record = _record;
     prior = NULL;
@@ -2927,11 +3069,16 @@ ColumnToOffsetMap::ColumnToOffsetMap(IHqlExpression * _record, unsigned _packing
     cachedDefaultMaxSizeUsed = false;
     cachedMaxSize = UNKNOWN_LENGTH;
     root.setOffset(false);
+    if (_useAccessClass)
+        root.setUseAccessClass();
 }
 
 void ColumnToOffsetMap::init(RecordOffsetMap & map)
 {
-    expandRecord(record, &root, map);
+    IHqlExpression * payloadAttr = record->queryAttribute(_payload_Atom);
+    if (payloadAttr)
+        payloadCount = (unsigned)getIntValue(payloadAttr->queryChild(0));
+    expandRecord(record, &root, map, payloadCount);
 }
 
 
@@ -2942,7 +3089,7 @@ void ColumnToOffsetMap::completeActiveBitfields()
     packer.reset();
 }
 
-CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map)
+CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload)
 {
     CMemberInfo * created = NULL;
     switch (column->getOperator())
@@ -2955,13 +3102,13 @@ CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpre
         break;
     case no_record:
         completeActiveBitfields();
-        return expandRecord(column, container, map);
+        return expandRecord(column, container, map, 0);
     case no_ifblock:
         {
             completeActiveBitfields();
             CIfBlockInfo * next = new CIfBlockInfo(container, prior, column);
             next->setOffset(!fixedSizeRecord);
-            expandRecord(column->queryChild(1), next, map);
+            expandRecord(column->queryChild(1), next, map, 0);
             created = next;
             containsIfBlock = true;
         }
@@ -2974,7 +3121,7 @@ CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpre
             if (translateVirtuals && column->hasAttribute(virtualAtom) && (column->queryType()->getSize() != UNKNOWN_LENGTH))
                 created = new CVirtualColumnInfo(container, prior, column);
             else
-                created = createColumn(container, column, map);
+                created = createColumn(container, column, map, isPayload);
             break;
         }
     }
@@ -2991,11 +3138,11 @@ CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpre
 }
 
 
-bool ColumnToOffsetMap::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper)
+bool ColumnToOffsetMap::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper)
 {
     //prepare() allows Ifblock and a count/size on a dataset to tag the fields they depend on which need to be read.
     //The fallback (implemented in base class) is to call deserialize on a temporary row instead.  Ugly, but better than failing.
-    ReadAheadState state(helper);
+    ReadAheadState state(selector, helper);
     if (queryRootColumn()->prepareReadAhead(translator, state))
     {
         state.addDummyMappings();
@@ -3005,7 +3152,37 @@ bool ColumnToOffsetMap::buildReadAhead(HqlCppTranslator & translator, BuildCtx &
 }
 
 
-CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map)
+void ColumnToOffsetMap::buildAccessor(StringBuffer & accessorName, HqlCppTranslator & translator, BuildCtx & declarectx, IHqlExpression * selector)
+{
+    StringBuffer typeName;
+    translator.buildRtlType(typeName, record->queryType());
+
+    BuildCtx ctx(declarectx);
+    ctx.setNextPriority(TypeInfoPrio);
+    ctx.addGroup();
+
+    StringBuffer s;
+    s.clear().append("RtlRecord rec").append(queryId()).append("(").append(typeName).append(",true);");
+    ctx.addQuoted(s);
+
+    if (translator.queryOptions().spanMultipleCpp)
+    {
+        ctx.set(mainprototypesAtom);
+        ctx.addQuoted(s.clear().append("extern RtlRecord rec").append(queryId()).append(";"));
+    }
+
+    BuildCtx classctx(ctx);
+    unsigned numVarOffsets = getVarSizeFieldCount(record, true);
+    accessorName.append("access").append(queryId());
+    s.clear().append("struct ").append(accessorName).append(" : public RtlStaticRow<").append(numVarOffsets).append(">");
+    classctx.addQuotedCompound(s.str(), ";");
+
+    s.clear().append(accessorName).append("(const void * _row) : RtlStaticRow<").append(numVarOffsets).append(">(rec").append(queryId()).append(", _row) {}");
+    classctx.addQuoted(s.str());
+}
+
+
+CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload)
 {
     ITypeInfo * type = column->queryType();
     ITypeInfo * promoted = type->queryPromotedType();
@@ -3053,7 +3230,7 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
             else
             {
                 CRecordInfo * next = new CRecordInfo(container, prior, column);
-                expandRecord(column->queryRecord(), next, map);
+                expandRecord(column->queryRecord(), next, map, 0);
                 created = next;
             }
             break;
@@ -3131,7 +3308,10 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
         }
     }
     if (created)
+    {
         created->setOffset(isFixedOffset);
+        created->setPayload(isPayload);
+    }
     return created;
 }
 
@@ -3174,16 +3354,32 @@ bool ColumnToOffsetMap::isMaxSizeSpecified()
     return !cachedDefaultMaxSizeUsed;
 }
 
-CMemberInfo * ColumnToOffsetMap::expandRecord(IHqlExpression * record, CContainerInfo * container, RecordOffsetMap & map)
+CMemberInfo * ColumnToOffsetMap::expandRecord(IHqlExpression * record, CContainerInfo * container, RecordOffsetMap & map, unsigned payloadFields)
 {
     assertex(record->getOperator() == no_record);
     unsigned max = record->numChildren();
     unsigned idx;
+    unsigned firstPayloadField = max;
     bool fixedSize = true;
     prior = NULL;
+    if (payloadFields)
+    {
+        unsigned payloadSeen = 0;
+        while (firstPayloadField)
+        {
+            firstPayloadField--;
+            IHqlExpression *child = record->queryChild(firstPayloadField);
+            if (!child->isAttribute())
+            {
+                payloadSeen++;
+                if (payloadSeen == payloadFields)
+                    break;
+            }
+        }
+    }
     for (idx = 0; idx < max; idx++)
     {
-        CMemberInfo * created = addColumn(container, record->queryChild(idx), map);
+        CMemberInfo * created = addColumn(container, record->queryChild(idx), map, idx >= firstPayloadField);
         if (created)
         {
             if (!created->isFixedSize())
@@ -3196,14 +3392,14 @@ CMemberInfo * ColumnToOffsetMap::expandRecord(IHqlExpression * record, CContaine
 }
 
 
-DynamicColumnToOffsetMap::DynamicColumnToOffsetMap(unsigned _maxRecordSize) : ColumnToOffsetMap(queryNullRecord(), 0, _maxRecordSize, false)
+DynamicColumnToOffsetMap::DynamicColumnToOffsetMap(unsigned _maxRecordSize) : ColumnToOffsetMap(NULL, queryNullRecord(), 0, 0, _maxRecordSize, false, false)
 {
     root.setDynamic();
 }
 
 void DynamicColumnToOffsetMap::addColumn(IHqlExpression * column, RecordOffsetMap & map)
 {
-    CMemberInfo * created = ColumnToOffsetMap::addColumn(&root, column, map);
+    CMemberInfo * created = ColumnToOffsetMap::addColumn(&root, column, map, false);
     if (created)
     {
         if (!created->isFixedSize())
@@ -3263,12 +3459,13 @@ bool canReadFromCsv(IHqlExpression * record)
 }
 
 
-CsvColumnToOffsetMap::CsvColumnToOffsetMap(IHqlExpression * _record, unsigned _maxRecordSize, bool _translateVirtuals, IAtom * _encoding) : ColumnToOffsetMap(_record, 1, _maxRecordSize, _translateVirtuals)
+CsvColumnToOffsetMap::CsvColumnToOffsetMap(IHqlExpression * _record, unsigned _maxRecordSize, bool _translateVirtuals, IAtom * _encoding)
+: ColumnToOffsetMap(NULL, _record, 0, 1, _maxRecordSize, _translateVirtuals, false)
 {
     encoding = _encoding;
 }
 
-CMemberInfo * CsvColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map)
+CMemberInfo * CsvColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload)
 {
     CMemberInfo * created = NULL;
 
@@ -3278,7 +3475,7 @@ CMemberInfo * CsvColumnToOffsetMap::createColumn(CContainerInfo * container, IHq
     case type_row:
         {
             Owned<CRecordInfo> next = new CRecordInfo(container, prior, column);
-            expandRecord(column->queryRecord(), next, map);
+            expandRecord(column->queryRecord(), next, map, 0);
             created = next.getClear();
             break;
         }
@@ -3296,11 +3493,12 @@ CMemberInfo * CsvColumnToOffsetMap::createColumn(CContainerInfo * container, IHq
 
 //---------------------------------------------------------------------------
 
-XmlColumnToOffsetMap::XmlColumnToOffsetMap(IHqlExpression * _record, unsigned _maxRecordSize, bool _translateVirtuals) : ColumnToOffsetMap(_record, 1, _maxRecordSize, _translateVirtuals)
+XmlColumnToOffsetMap::XmlColumnToOffsetMap(IHqlExpression * _record, unsigned _maxRecordSize, bool _translateVirtuals)
+: ColumnToOffsetMap(NULL, _record, 0, 1, _maxRecordSize, _translateVirtuals, false)
 {
 }
 
-CMemberInfo * XmlColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map)
+CMemberInfo * XmlColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload)
 {
     CMemberInfo * created = NULL;
     ITypeInfo * type = column->queryType();
@@ -3309,7 +3507,7 @@ CMemberInfo * XmlColumnToOffsetMap::createColumn(CContainerInfo * container, IHq
     case type_row:
         {
             CRecordInfo * next = new CRecordInfo(container, prior, column);
-            expandRecord(column->queryRecord(), next, map);
+            expandRecord(column->queryRecord(), next, map, 0);
             created = next;
             break;
         }
@@ -3334,13 +3532,33 @@ BoundRow::BoundRow(const BoundRow & other, IHqlExpression * _newBound) : HqlExpr
     assertex(bound->queryType()->getTypeCode() != type_void);
     resultAlias = false;
     inherited = other.inherited;
+    assertex(!other.accessor); // not currently supported in child queries.
+    accessor.set(other.accessor);
+    accessorStmt = other.accessorStmt;
 }
 
-BoundRow::BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, ColumnToOffsetMap * _columnMap) : HqlExprAssociation(_dataset)
+BoundRow::BoundRow(const BoundRow & other, ColumnToOffsetMap * rawMap, IHqlExpression * _newBound) : HqlExprAssociation(other.represents)
+{
+    dataset.set(other.dataset);
+    bound.set(_newBound ? _newBound : other.bound.get());
+    columnMap = LINK(rawMap);
+    conditional = other.conditional;
+    side = other.side;
+    kind = other.kind;
+    assertex(bound->queryType()->getTypeCode() != type_void);
+    resultAlias = false;
+    inherited = other.inherited;
+    assertex(!rawMap->usesAccessor());
+}
+
+
+BoundRow::BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, IHqlExpression * _accessor, ColumnToOffsetMap * _columnMap) : HqlExprAssociation(_dataset)
 {
     assertex(_columnMap);
     dataset.set(_dataset);
     bound.set(_bound);
+    accessor.set(_accessor);
+    assertex(!accessor);
     columnMap = LINK(_columnMap);
     conditional = false;
     side = no_none;
@@ -3348,14 +3566,16 @@ BoundRow::BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, ColumnToO
     assertex(bound->queryType()->getTypeCode() != type_void);
     resultAlias = false;
     inherited = false;
+    assertex(!accessor == !columnMap->usesAccessor());
 }
 
 
-BoundRow::BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, ColumnToOffsetMap * _columnMap, node_operator _side, IHqlExpression * selSeq) : HqlExprAssociation(NULL)
+BoundRow::BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, IHqlExpression * _accessor, ColumnToOffsetMap * _columnMap, node_operator _side, IHqlExpression * selSeq) : HqlExprAssociation(NULL)
 {
     assertex(_columnMap);
     dataset.set(_dataset);
     bound.set(_bound);
+    accessor.set(_accessor);
     columnMap = LINK(_columnMap);
     conditional = false;
     kind = AssocCursor;
@@ -3372,28 +3592,7 @@ BoundRow::BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, ColumnToO
     assertex(bound->queryType()->getTypeCode() != type_void);
     resultAlias = false;
     inherited = false;
-}
-
-BoundRow::BoundRow(BoundRow * _row, IHqlExpression * _dataset, node_operator _side, IHqlExpression * selSeq) : HqlExprAssociation(NULL)
-{
-    dataset.set(_dataset);
-    bound.set(_row->bound);
-    columnMap = LINK(_row->columnMap);
-    conditional = false;
-    kind = AssocCursor;
-    side = _side;
-    if (side == no_none)
-        represents.set(_dataset->queryNormalizedSelector());
-    else if ((side != no_self) || selSeq)
-        represents.setown(createSelector(side, dataset, selSeq));
-    else
-    {
-        OwnedHqlExpr uid = createUniqueSelectorSequence();
-        represents.setown(createSelector(no_self, dataset, uid));
-    }
-    assertex(bound->queryType()->getTypeCode() != type_void);
-    resultAlias = false;
-    inherited = false;
+//    assertex(!columnMap->usesAccessor());
 }
 
 BoundRow::~BoundRow()
@@ -3436,6 +3635,24 @@ IHqlExpression * BoundRow::queryBuilderEnsureMarker()
     return builderEnsureMarker;
 }
 
+void BoundRow::prepareAccessor(HqlCppTranslator & translator, BuildCtx & ctx)
+{
+    translator.buildRowAccessor(columnMap);
+    StringBuffer className;
+    className.append("access").append(columnMap->queryId());
+    accessor.setown(createVariable(makeConstantModifier(makeClassType(className))));
+
+    OwnedHqlExpr rowPointer = getPointer(bound);
+    accessorStmt = ctx.addDeclare(accessor, rowPointer);
+    accessorStmt->setIncluded(false);
+}
+
+IHqlExpression * BoundRow::ensureAccessor(HqlCppTranslator & translator, BuildCtx & ctx)
+{
+    accessorStmt->setIncluded(true);
+    return accessor;
+}
+
 AColumnInfo * BoundRow::queryRootColumn()   
 { 
     return columnMap->queryRootColumn(); 
@@ -3448,7 +3665,7 @@ unsigned BoundRow::getMaxSize()
 
 //---------------------------------------------------------------------------
 
-NonLocalIndirectRow::NonLocalIndirectRow(const BoundRow & other, IHqlExpression * _newBound, SerializationRow * _serialization) : BoundRow(other, _newBound)
+NonLocalIndirectRow::NonLocalIndirectRow(const BoundRow & other, ColumnToOffsetMap * rawMap, SerializationRow * _serialization) : BoundRow(other, rawMap, nullptr)
 {
     serialization = _serialization;
 }
@@ -3461,7 +3678,7 @@ IHqlExpression * NonLocalIndirectRow::getMappedSelector(BuildCtx & ctx, IReferen
 //---------------------------------------------------------------------------
 
 
-SerializationRow::SerializationRow(HqlCppTranslator & _translator, IHqlExpression * _dataset, IHqlExpression * _bound, DynamicColumnToOffsetMap * _columnMap, ActivityInstance * _activity) : BoundRow(_dataset, _bound, _columnMap, no_none, NULL), translator(_translator)
+SerializationRow::SerializationRow(HqlCppTranslator & _translator, IHqlExpression * _dataset, IHqlExpression * _bound, DynamicColumnToOffsetMap * _columnMap, ActivityInstance * _activity) : BoundRow(_dataset, _bound, NULL, _columnMap, no_none, NULL), translator(_translator)
 {
     serializedMap = _columnMap;
     extractBuilder = NULL;

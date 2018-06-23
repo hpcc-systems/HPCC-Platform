@@ -2070,9 +2070,12 @@ CHqlMetaProperty * querySimpleDatasetMeta(IHqlExpression * expr)
     case no_funcdef:
         return queryMetaProperty(expr->queryChild(0));
     case no_compound:
-    case no_select:
     case no_mapto:
         return queryMetaProperty(expr->queryChild(1));
+    case no_select:
+        if (!isGrouped(expr))
+            return queryMetaProperty(expr->queryChild(1));
+        return nullptr;
     case no_delayedselect:
     case no_libraryselect:
     case no_unboundselect:
@@ -2186,10 +2189,18 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
         extractMeta(meta, dataset);
         break;
     case no_compound:
-    case no_select:
     case no_mapto:
         extractMeta(meta, expr->queryChild(1));
         break;
+    case no_select:
+    {
+        extractMeta(meta, expr->queryChild(1));
+        bool isNew;
+        IHqlExpression * root = querySelectorDataset(expr, isNew);
+        if (isNew && isGrouped(root))
+            meta.grouping.set(queryUnknownSortlist());
+        break;
+    }
     case no_delayedselect:
     case no_libraryselect:
     case no_unboundselect:
@@ -3384,9 +3395,19 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
     case no_preservemeta:
     case no_keyeddistribute:
     case no_subsort:
-    case no_select:
         type.setown(dataset->getType());
         break;
+    case no_select:
+    {
+        IHqlExpression * root = &parms.item(0);
+        bool isNew = hasAttribute(newAtom, parms);
+        if (root->isDatarow() && (root->getOperator() == no_select))
+            root = querySelectorDataset(root, isNew);
+        type.setown(dataset->getType());
+        if (isNew && isGrouped(root))
+            type.setown(makeGroupedTableType(type.getClear()));
+        break;
+    }
     case no_distribute:
     case no_distributed:
     case no_unordered:

@@ -33,4 +33,3 @@ else
 fi
 
 alter_file /etc/security/limits.conf "^${USER_NAME}" < /dev/null
-

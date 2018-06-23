@@ -57,36 +57,6 @@ private:
 
 //--------------------------------------------------------------------------------------------------------------------
 
-interface IMemoryBlock
-{
-public:
-    virtual const byte * get() const = 0;
-    virtual byte * getMem() const = 0;
-    virtual byte * ensure(size32_t len) = 0;
-};
-
-class jlib_decl CMemoryBlock : public IMemoryBlock
-{
-public:
-    virtual const byte * get() const
-    {
-        return reinterpret_cast<const byte *>(memory.get());
-    }
-    virtual byte * getMem() const
-    {
-        return reinterpret_cast<byte *>(memory.mem());
-    }
-    virtual byte * ensure(size32_t len)
-    {
-        return reinterpret_cast<byte *>(memory.ensure(len));
-    }
-
-protected:
-    MemoryAttr memory;
-};
-
-//--------------------------------------------------------------------------------------------------------------------
-
 template <class CLASS> class OwnedMalloc
 {
 public:
@@ -197,7 +167,6 @@ public:
     inline bool     needSwapEndian() { return swapEndian; }
     int             setEndian(int endian);          // pass __[BIG|LITTLE]_ENDIAN
     bool            setSwapEndian(bool swap);
-    inline const char * toByteArray() const { return curLen ? buffer : NULL; }
     void            swapWith(MemoryBuffer & other);
 
     inline size32_t capacity() { return (maxLen - curLen); }
@@ -219,6 +188,8 @@ public:
     inline void     Release() const                         { delete this; }    // for consistency even though not link counted
 
     inline void *   bufferBase() const { return buffer; }
+    inline const char * toByteArray() const { return curLen ? buffer : nullptr; }
+    inline const byte * bytes() const { return curLen ? (const byte *)buffer : nullptr; }
 
 
 protected:
@@ -251,7 +222,7 @@ private:
 
 // Utility class, to back patch a scalar into current position
 template <class CLASS>
-class jlib_decl DelayedMarker
+class DelayedMarker
 {
 protected:
     MemoryBuffer &mb;
@@ -274,7 +245,7 @@ public:
 };
 
 // Utility class, to back patch a size into current position
-class jlib_decl DelayedSizeMarker : private DelayedMarker<size32_t>
+class DelayedSizeMarker : private DelayedMarker<size32_t>
 {
     typedef DelayedMarker<size32_t> PARENT;
 public:

@@ -17,11 +17,6 @@
 
 #include "platform.h"
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 #include "jlib.hpp"
 #include "jstream.hpp"
 #include "jmisc.hpp"
@@ -36,11 +31,6 @@
 #include "rtlbcd.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
-
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
 
 //#define DATA_STRING_COMPATIBLE
 #define HASHFIELD(p) hashcode = hashc((unsigned char *) &p, sizeof(p), hashcode)
@@ -1915,6 +1905,17 @@ static ITypeInfo * commonUpType(CHashedTypeInfo * candidate)
     return match;
 }
 
+extern DEFTYPE_API ITypeInfo *makeFilePosType(ITypeInfo *basetype)
+{
+    assertex(basetype);
+    return commonUpType(new CFilePosTypeInfo(basetype));
+}
+
+extern DEFTYPE_API ITypeInfo *makeKeyedType(ITypeInfo *basetype)
+{
+    assertex(basetype);
+    return commonUpType(new CKeyedTypeInfo(basetype));
+}
 
 extern DEFTYPE_API ITypeInfo *makeDecimalType(unsigned digits, unsigned prec, bool isSigned)
 {
@@ -1995,6 +1996,12 @@ ITypeInfo * makePointerType(ITypeInfo * basetype)
 ITypeInfo * makeConstantModifier(ITypeInfo * basetype)
 {
     return makeModifier(basetype, typemod_const, NULL);
+}
+
+/* In basetype: linked. Return: linked */
+ITypeInfo * makeNonConstantModifier(ITypeInfo * basetype)
+{
+    return makeModifier(basetype, typemod_nonconst, NULL);
 }
 
 /* In basetype: linked. Return: linked */
@@ -2184,6 +2191,17 @@ bool isIntegralType(ITypeInfo * type)
     case type_int:
     case type_swapint:
     case type_packedint:
+        return true;
+    }
+    return false;
+}
+
+bool isSimpleIntegralType(ITypeInfo * type)
+{
+    switch (type->getTypeCode())
+    {
+    case type_int:
+    case type_swapint:
         return true;
     }
     return false;

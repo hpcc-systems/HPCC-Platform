@@ -23,6 +23,10 @@
 IMPORT * FROM lib_redis;
 IMPORT Std;
 
+// If some reason this port address should change, don't forget to do same 
+// change in the relevant section (Result 3) in key/rediserrortest.xml file
+STRING emptyPort := '6378';
+
 STRING server := '--SERVER=127.0.0.1:6379';
 STRING password := 'foobared';
 
@@ -75,7 +79,7 @@ SEQUENTIAL(
     OUTPUT(CATCH(ds2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
     );
 
-myRedis5 := RedisServer('--SERVER=127.0.0.1:9999');
+myRedis5 := RedisServer('--SERVER=127.0.0.1:'+ emptyPort);
 ds3 := DATASET(NOFOLD(1), TRANSFORM({STRING value}, SELF.value := myRedis5.GetString('connectTest' + (STRING)COUNTER, database)));
 SEQUENTIAL(
     myRedis.FlushDB(database);

@@ -32,7 +32,8 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ws_access",
+    "src/Clippy",
+    "src/ws_access",
     "hpcc/DelayLoadWidget",
 
     "dojo/text!../templates/UserDetailsWidget.html",
@@ -51,7 +52,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domForm,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                _TabContainerWidget, WsAccess, DelayLoadWidget,
+                _TabContainerWidget, Clippy, WsAccess, DelayLoadWidget,
                 template) {
     return declare("UserDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -76,6 +77,8 @@ define([
             this.permissionsWidget = registry.byId(this.id + "_UserPermissions");
             this.activePermissionsWidget = registry.byId(this.id + "_ActivePermissions");
             this.userForm = registry.byId(this.id + "UserForm");
+
+            Clippy.attach(this.id + "ClippyButton");
         },
 
         //  Hitched actions  ---
@@ -139,15 +142,15 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
 
-            if (currSel.id == this.memberOfWidget.id) {
+            if (currSel.id === this.memberOfWidget.id) {
                 this.memberOfWidget.init({
                     username: this.user
                 });
-            } else if (currSel.id == this.permissionsWidget.id) {
+            } else if (currSel.id === this.permissionsWidget.id) {
                 this.permissionsWidget.init({
                     username: this.user
                 });
-            } else if (currSel.id == this.activePermissionsWidget.id) {
+            } else if (currSel.id === this.activePermissionsWidget.id) {
                 this.activePermissionsWidget.init({
                     IsGroup: false,
                     IncludeGroup: true,

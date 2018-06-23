@@ -99,6 +99,15 @@ IPropertyTree *readOldIni()
 
 int main(int argc, const char *argv[])
 {
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
     InitModuleObjects();
     EnableSEHtoExceptionMapping();
 
@@ -236,6 +245,8 @@ int main(int argc, const char *argv[])
             serverstatus->commitProperties();
 
             writeSentinelFile(sentinelFile);
+
+            enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
             engine->joinListeners();
             if (replserver.get())

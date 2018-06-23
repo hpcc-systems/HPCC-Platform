@@ -31,8 +31,9 @@
 #include "roxie.hpp"
 #include "roxiedebug.ipp"
 #include "eclrtl.hpp"
+#include "rtlformat.hpp"
+#include "rtldynfield.hpp"
 #include "workunit.hpp"
-#include "layouttrans.hpp"
 
 #ifdef CCD_EXPORTS
 #define CCD_API DECL_EXPORT
@@ -56,11 +57,6 @@ void addEndpoint(unsigned channel, const IpAddress &slaveIp, unsigned port);
 void openMulticastSocket();
 void joinMulticastChannel(unsigned channel);
 
-extern unsigned channels[MAX_CLUSTER_SIZE];     // list of all channel numbers for this node
-extern unsigned channelCount;                   // number of channels this node is doing
-extern unsigned subChannels[MAX_CLUSTER_SIZE];  // maps channel numbers to subChannels for this node
-extern unsigned numSlaves[MAX_CLUSTER_SIZE];    // number of slaves listening on this channel
-extern unsigned replicationLevel[MAX_CLUSTER_SIZE];  // Which copy of the data this channel uses on this slave
 
 extern unsigned myNodeIndex;
 #define OUTOFBAND_SEQUENCE    0x8000        // indicates an out-of-band reply
@@ -75,7 +71,7 @@ extern unsigned myNodeIndex;
 #define ROXIE_PRIORITY_MASK (ROXIE_SLA_PRIORITY | ROXIE_HIGH_PRIORITY | ROXIE_LOW_PRIORITY)
 #else
 #define ROXIE_PRIORITY_MASK (ROXIE_HIGH_PRIORITY | ROXIE_LOW_PRIORITY )
-#endif  
+#endif
 
 #define ROXIE_ACTIVITY_FETCH 0x20000000    // or'ed into activityId for fetch part of full keyed join activities
 
@@ -121,7 +117,7 @@ class RemoteActivityId
 {
 public:
     hash64_t queryHash;
-    unsigned activityId; 
+    unsigned activityId;
 
     inline bool isHighPriority() const { return (activityId & ROXIE_PRIORITY_MASK) == ROXIE_HIGH_PRIORITY; }
     inline bool isSLAPriority() const { return (activityId & ROXIE_PRIORITY_MASK) == ROXIE_SLA_PRIORITY; }
@@ -150,50 +146,29 @@ public:
     unsigned packetlength;
     unsigned short retries;         // how many retries on this query, the high bits are used as flags, see above
     unsigned short overflowSequence;// Used if more than one packet-worth of data from server - eg keyed join. We don't mind if we wrap...
-    unsigned short continueSequence;// Used if more than one chunk-worth of data from slave. We don't mind if we wrap 
+    unsigned short continueSequence;// Used if more than one chunk-worth of data from slave. We don't mind if we wrap
     unsigned short channel;         // multicast family to send on
     unsigned activityId;            // identifies the helper factory to be used (activityId in graph)
     hash64_t queryHash;             // identifies the query
 
     ruid_t uid;                     // unique id
-    unsigned serverIdx;             // final result (server) destination 
+    unsigned serverIdx;             // final result (server) destination
 #ifdef TIME_PACKETS
     unsigned tick;
 #endif
 
-    inline RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence)
-    {
-        packetlength = sizeof(RoxiePacketHeader);
-#ifdef TIME_PACKETS
-        tick = 0;
-#endif
-        init(_remoteId, _uid, _channel, _overflowSequence);
-    }
+    RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
+    RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _activityId);
 
-    RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _activityId)
-    {
-        // Used to create the header to send a callback to originating server or an IBYTI to a buddy
-        activityId = _activityId;
-        uid = source.uid;
-        queryHash = source.queryHash;
-        serverIdx = source.serverIdx;
-        channel = source.channel;
-        overflowSequence = source.overflowSequence;
-        continueSequence = source.continueSequence;
-        if (_activityId >= ROXIE_ACTIVITY_SPECIAL_FIRST && _activityId <= ROXIE_ACTIVITY_SPECIAL_LAST)
-            overflowSequence |= OUTOFBAND_SEQUENCE; // Need to make sure it is not treated as dup of actual reply in the udp layer
-        retries = getSubChannelMask(channel) | (source.retries & ~ROXIE_RETRIES_MASK);
-#ifdef TIME_PACKETS
-        tick = source.tick;
-#endif
-        packetlength = sizeof(RoxiePacketHeader);
-    }
-
-    static unsigned getSubChannelMask(unsigned channel)
-    {
-        unsigned subChannel = subChannels[channel] - 1;
-        return SUBCHANNEL_MASK << (SUBCHANNEL_BITS * subChannel);
-    }
+    static unsigned getSubChannelMask(unsigned channel);
+    unsigned priorityHash() const;
+    bool matchPacket(const RoxiePacketHeader &oh) const;
+    void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
+    StringBuffer &toString(StringBuffer &ret) const;
+    bool allChannelsFailed();
+    bool retry();
+    void setException();
+    unsigned thisChannelRetries();
 
     unsigned getRespondingSubChannel() const // NOTE - 0 based
     {
@@ -207,71 +182,6 @@ public:
         return (((unsigned) overflowSequence) << 16) | (unsigned) continueSequence;
     }
 
-    inline unsigned priorityHash() const
-    {
-        // Used to determine which slave to act as primary and which as secondary for a given packet (thus spreading the load)
-        // It's important that we do NOT include channel (since that would result in different values for the different slaves responding to a broadcast)
-        // We also don't include continueSequence since we'd prefer continuations to go the same way as original
-        unsigned hash = hashc((const unsigned char *) &serverIdx, sizeof(serverIdx), 0);
-        hash = hashc((const unsigned char *) &uid, sizeof(uid), hash);
-        hash += overflowSequence; // MORE - is this better than hashing?
-        if (traceLevel > 9)
-        {
-            StringBuffer s;
-            DBGLOG("Calculating hash: %s hash was %d", toString(s).str(), hash);
-        }
-        return hash;
-    }
-
-    inline bool matchPacket(const RoxiePacketHeader &oh) const
-    {
-        // used when matching up a kill packet against a pending one...
-        // DO NOT compare activityId - they are not supposed to match, since 0 in activityid identifies ibyti!
-        return 
-            oh.uid==uid && 
-            (oh.overflowSequence & ~OUTOFBAND_SEQUENCE) == (overflowSequence & ~OUTOFBAND_SEQUENCE) && 
-            oh.continueSequence == continueSequence && 
-            oh.serverIdx==serverIdx && 
-            oh.channel==channel;
-    }
-
-    void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence)
-    {
-        retries = 0;
-        activityId = _remoteId.activityId;
-        queryHash = _remoteId.queryHash;
-        uid = _uid;
-        serverIdx = myNodeIndex;
-        channel = _channel;
-        overflowSequence = _overflowSequence;
-        continueSequence = 0;
-    }
-
-    StringBuffer &toString(StringBuffer &ret) const;
-
-    bool allChannelsFailed() 
-    {
-        unsigned mask = (1 << (numSlaves[channel] * SUBCHANNEL_BITS)) - 1;
-        return (retries & mask) == mask;
-    }
-
-    bool retry()
-    {
-        bool worthRetrying = false;
-        unsigned mask = SUBCHANNEL_MASK;
-        for (unsigned subChannel = 0; subChannel < numSlaves[channel]; subChannel++)
-        {
-            unsigned subRetries = (retries & mask) >> (subChannel * SUBCHANNEL_BITS);
-            if (subRetries != SUBCHANNEL_MASK)
-                subRetries++;
-            if (subRetries != SUBCHANNEL_MASK)
-                worthRetrying = true;
-            retries = (retries & ~mask) | (subRetries << (subChannel * SUBCHANNEL_BITS));
-            mask <<= SUBCHANNEL_BITS;
-        }
-        return worthRetrying;
-    }
-
     inline void noteAlive(unsigned mask)
     {
         retries = (retries & ~mask);
@@ -280,19 +190,6 @@ public:
     inline void noteException(unsigned mask)
     {
         retries = (retries | mask);
-    }
-
-    inline void setException()
-    {
-        unsigned subChannel = subChannels[channel] - 1;
-        retries |= SUBCHANNEL_MASK << (SUBCHANNEL_BITS * subChannel);
-    }
-
-    unsigned thisChannelRetries()
-    {
-        unsigned shift = SUBCHANNEL_BITS * (subChannels[channel] - 1);
-        unsigned mask = SUBCHANNEL_MASK << shift;
-        return (retries & mask) >> shift;
     }
 };
 
@@ -332,6 +229,7 @@ extern IPropertyTree *topology;
 extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
 
+extern bool alwaysTrustFormatCrcs;
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
 extern bool logFullQueries;
@@ -371,7 +269,7 @@ extern bool useHardLink;
 extern unsigned maxFileAge[2];
 extern unsigned minFilesOpen[2];
 extern unsigned maxFilesOpen[2];
-extern unsigned restarts;
+extern RelaxedAtomic<unsigned> restarts;
 extern bool checkCompleted;
 extern bool prestartSlaveThreads;
 extern unsigned preabortKeyedJoinsThreshold;
@@ -431,7 +329,7 @@ struct PartNoType
 extern unsigned statsExpiryTime;
 extern time_t startupTime;
 extern unsigned miscDebugTraceLevel;
-extern IRecordLayoutTranslator::Mode fieldTranslationEnabled;
+extern RecordTranslationMode fieldTranslationEnabled;
 
 extern unsigned defaultParallelJoinPreload;
 extern unsigned defaultConcatPreload;
@@ -444,6 +342,7 @@ extern unsigned defaultForceNumStrands;
 extern unsigned defaultHeapFlags;
 
 extern bool defaultCheckingHeap;
+extern bool defaultDisableLocalOptimizations;
 
 extern unsigned slaveQueryReleaseDelaySeconds;
 extern unsigned coresPerQuery;
@@ -495,7 +394,7 @@ class LogItem : public CInterface
     unsigned channel;
 
 public:
-    LogItem(TracingCategory _category, const char *_prefix, unsigned _time, unsigned _channel, const char *_text) 
+    LogItem(TracingCategory _category, const char *_prefix, unsigned _time, unsigned _channel, const char *_text)
         : category(_category), prefix(_prefix), time(_time), channel(_channel), text(_text)
     {
     }
@@ -576,6 +475,10 @@ public: // Not very clean but I don't care
     mutable bool aborted;
     mutable CIArrayOf<LogItem> log;
 private:
+    StringAttr globalIdHeader = "HPCC-Global-Id";
+    StringAttr callerIdHeader = "HPCC-Caller-Id";
+    StringAttr globalId;
+    StringBuffer localId;
     ContextLogger(const ContextLogger &);  // Disable copy constructor
 public:
     IMPLEMENT_IINTERFACE;
@@ -588,6 +491,8 @@ public:
         start = msTick();
         channel = 0;
         aborted = false;
+        if ( topology && topology->hasProp("@httpGlobalIdHeader"))
+            setHttpIdHeaders(topology->queryProp("@httpGlobalIdHeader"), topology->queryProp("@httpCallerIdHeader"));
     }
 
     void outputXML(IXmlStreamFlusher &out)
@@ -693,9 +598,9 @@ public:
         CriticalBlock block(statsCrit);
         stats.merge(from);
     }
-    virtual const CRuntimeStatisticCollection &queryStats() const
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
-        return stats;
+        merged.merge(stats);
     }
 
     virtual unsigned queryTraceLevel() const
@@ -705,6 +610,34 @@ public:
     void reset()
     {
         stats.reset();
+    }
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    {
+        globalId.set(id);
+        appendLocalId(localId.clear(), ep, pid);
+    }
+    virtual const char *queryGlobalId() const
+    {
+        return globalId.get();
+    }
+    virtual const char *queryLocalId() const
+    {
+        return localId.str();
+    }
+    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    {
+        if (global && *global)
+            globalIdHeader.set(global);
+        if (caller && *caller)
+            callerIdHeader.set(caller);
+    }
+    virtual const char *queryGlobalIdHttpHeader() const
+    {
+        return globalIdHeader.str();
+    }
+    virtual const char *queryCallerIdHttpHeader() const
+    {
+        return callerIdHeader.str();
     }
 };
 
@@ -720,7 +653,7 @@ public:
     }
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
     {
-        return ret.append(id);  
+        return ret.append(id);
     }
     void set(const char *_id)
     {
@@ -745,9 +678,9 @@ public:
     void putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const;
     void flush();
     inline bool queryDebuggerActive() const { return debuggerActive; }
-    inline const CRuntimeStatisticCollection &queryStats() const
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
-        return stats;
+        merged.merge(stats);
     }
     inline const char *queryWuid()
     {

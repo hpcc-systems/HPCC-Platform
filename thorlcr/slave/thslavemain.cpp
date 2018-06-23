@@ -159,6 +159,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
 #endif
         }
         msg.read((unsigned &)masterSlaveMpTag);
+        msg.read((unsigned &)kjServiceMpTag);
         msg.clear();
         msg.setReplyTag(MPTAG_THORREGISTRATION);
         if (!queryNodeComm().reply(msg))
@@ -380,6 +381,8 @@ int main( int argc, char *argv[]  )
             IDaFileSrvHook *daFileSrvHook = queryDaFileSrvHook();
             if (daFileSrvHook) // probably always installed
                 daFileSrvHook->addFilters(globals->queryPropTree("NAS"), &slfEp);
+
+            enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
             StringBuffer thorPath;
             globals->getProp("@thorPath", thorPath);

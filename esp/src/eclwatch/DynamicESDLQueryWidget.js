@@ -29,10 +29,10 @@ define([
     "dgrid/extensions/ColumnHider",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsTopology",
-    "hpcc/WsESDLConfig",
+    "src/WsTopology",
+    "src/WsESDLConfig",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
+    "src/ESPUtil",
     "hpcc/DynamicESDLDetailsWidget",
     "hpcc/DynamicESDLDefinitionQueryWidget",
     "hpcc/TargetSelectWidget"
@@ -130,7 +130,8 @@ define([
             var context = this;
             WsESDLConfig.ListDESDLEspBindings({
                 request: {
-                    IncludeESDLBindingInfo: true
+                    IncludeESDLBindingInfo: true,
+                    ver_: "1.3"
                 }
             }).then(function (response) {
                 var results = [];
@@ -169,7 +170,7 @@ define([
                     results.push(newRow);
                 });
 
-                context.store.setData(results);
+                context.store.setData(results, context.i18n.ConfigureService);
                 context.grid.set("query", {__hpcc_parentName: null });
             });
         }

@@ -26,7 +26,6 @@
 #include "ccdcontext.hpp"
 
 #include "thorplugin.hpp"
-#include "layouttrans.hpp"
 
 void ActivityArray::append(IActivityFactory &cur)
 {
@@ -294,9 +293,8 @@ QueryOptions::QueryOptions()
     heapFlags = defaultHeapFlags;
 
     checkingHeap = defaultCheckingHeap;
-    disableLocalOptimizations = false;  // No global default for this
+    disableLocalOptimizations = defaultDisableLocalOptimizations;
     enableFieldTranslation = fieldTranslationEnabled;
-    skipFileFormatCrcCheck = false;
     stripWhitespaceFromStoredDataset = ((ptr_ignoreWhiteSpace & defaultXmlReadFlags) != 0);
     timeActivities = defaultTimeActivities;
     traceEnabled = defaultTraceEnabled;
@@ -327,7 +325,6 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     checkingHeap = other.checkingHeap;
     disableLocalOptimizations = other.disableLocalOptimizations;
     enableFieldTranslation = other.enableFieldTranslation;
-    skipFileFormatCrcCheck = other.skipFileFormatCrcCheck;
     stripWhitespaceFromStoredDataset = other.stripWhitespaceFromStoredDataset;
     timeActivities = other.timeActivities;
     traceEnabled = other.traceEnabled;
@@ -367,8 +364,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
 
     updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
     updateFromWorkUnit(disableLocalOptimizations, wu, "disableLocalOptimizations");
-    updateFromWorkUnit(enableFieldTranslation, wu, "layoutTranslationEnabled");  // Name is different for compatibility reasons
-    updateFromWorkUnit(skipFileFormatCrcCheck, wu, "skipFileFormatCrcCheck");
+    updateFromWorkUnit(enableFieldTranslation, wu, "layoutTranslation");  // Name is different for compatibility reasons
     updateFromWorkUnit(stripWhitespaceFromStoredDataset, wu, "stripWhitespaceFromStoredDataset");
     updateFromWorkUnit(timeActivities, wu, "timeActivities");
     updateFromWorkUnit(traceEnabled, wu, "traceEnabled");
@@ -397,19 +393,12 @@ void QueryOptions::updateFromWorkUnit(bool &value, IConstWorkUnit &wu, const cha
     value = wu.getDebugValueBool(name, value);
 }
 
-void QueryOptions::updateFromWorkUnit(IRecordLayoutTranslator::Mode &value, IConstWorkUnit &wu, const char *name)
+void QueryOptions::updateFromWorkUnit(RecordTranslationMode &value, IConstWorkUnit &wu, const char *name)
 {
     SCMStringBuffer val;
     wu.getDebugValue(name, val);
     if (val.length())
-    {
-        if (strieq(val.str(), "payload"))
-            value = IRecordLayoutTranslator::TranslatePayload;
-        else if (strToBool(val.str()))
-            value = IRecordLayoutTranslator::TranslateAll;
-        else
-            value = IRecordLayoutTranslator::NoTranslation;
-    }
+        value = getTranslationMode(val.str());
 }
 
 void QueryOptions::setFromContext(const IPropertyTree *ctx)
@@ -434,7 +423,6 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
         // Note: disableLocalOptimizations is not permitted at context level (too late)
         // Note: enableFieldTranslation is not permitted at context level (generally too late anyway)
-        updateFromContext(skipFileFormatCrcCheck, ctx, "_SkipFileFormatCrcCheck", "@skipFileFormatCrcCheck");
         updateFromContext(stripWhitespaceFromStoredDataset, ctx, "_StripWhitespaceFromStoredDataset", "@stripWhitespaceFromStoredDataset");
         updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
         updateFromContext(traceEnabled, ctx, "@traceEnabled", "_TraceEnabled");
@@ -601,6 +589,7 @@ protected:
             else
                 return createRoxieServerDiskReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
         }
+        case TAKspillread:
         case TAKmemoryspillread:
             return createRoxieServerSpillReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKdisknormalize:
@@ -621,6 +610,7 @@ protected:
         case TAKxmlwrite:
         case TAKjsonwrite:
         case TAKmemoryspillwrite:
+        case TAKspillwrite:
             return createRoxieServerDiskWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
         case TAKindexwrite:
             return createRoxieServerIndexWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
@@ -839,7 +829,7 @@ protected:
             {
                 LibraryCallFactoryExtra extra;
                 extra.maxOutputs = node.getPropInt("att[@name=\"_maxOutputs\"]/@value", 0);
-                extra.graphid = node.getPropInt("att[@name=\"_graphid\"]/@value", 0);
+                extra.graphid = node.getPropInt("att[@name=\"_libraryGraphId\"]/@value", 0);
                 extra.libraryName.set(node.queryProp("att[@name=\"libname\"]/@value"));
                 extra.interfaceHash = node.getPropInt("att[@name=\"_interfaceHash\"]/@value", 0);
                 extra.embedded = node.getPropBool("att[@name=\"embedded\"]/@value", false) ;
@@ -868,6 +858,10 @@ protected:
             return createRoxieServerWhenActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
         case TAKdistribution:
             return createRoxieServerDistributionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+        case TAKexternalprocess:
+        case TAKexternalsink:
+        case TAKexternalsource:
+            return createRoxieServerExternalActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
 
         // These are not required in Roxie for the time being - code generator should trap them
         case TAKchilddataset:
@@ -990,6 +984,10 @@ protected:
             ForEach(*edges)
             {
                 IPropertyTree &edge = edges->query();
+                //Ignore edges that represent dependencies from parent activities to child activities.
+                if (edge.getPropInt("att[@name=\"_childGraph\"]/@value", 0))
+                    continue;
+
                 unsigned sourceActivity = edge.getPropInt("@source", 0);
                 unsigned targetActivity = edge.getPropInt("@target", 0);
                 unsigned source = activities->findActivityIndex(sourceActivity);
@@ -1053,6 +1051,7 @@ protected:
         ForEach(*dependencies)
         {
             IPropertyTree &edge = dependencies->query();
+            //Ignore edges that represent dependencies from parent activities to child activities.
             if (!edge.getPropInt("att[@name=\"_childGraph\"]/@value", 0))
             {
                 unsigned sourceIdx = edge.getPropInt("att[@name=\"_sourceIndex\"]/@value", 0);
@@ -1144,7 +1143,7 @@ public:
                             {
                                 IPropertyTree &node = nodes->query();
                                 ThorActivityKind kind = getActivityKind(node);
-                                if (kind != TAKdiskwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
+                                if (kind != TAKdiskwrite && kind != TAKspillwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
                                 {
                                     const char *fileName = queryNodeFileName(node, kind);
                                     const char *indexName = queryNodeIndexName(node, kind);
@@ -1848,7 +1847,7 @@ class CSlaveQueryFactory : public CQueryFactory
                     break;
                 case TAKremotegraph:
                     {
-                        unsigned graphId = node.getPropInt("att[@name=\"_graphid\"]/@value", 0);
+                        unsigned graphId = node.getPropInt("att[@name=\"_remoteSubGraph\"]/@value", 0);
                         newAct = createRoxieRemoteActivityFactory(node, subgraphId, *this, helperFactory, graphId);
                         break;
                     }
@@ -1981,26 +1980,4 @@ extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned
     if (!dll)
         return NULL;
     return createSlaveQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
-}
-
-IRecordLayoutTranslator * createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta, IRecordLayoutTranslator::Mode mode)
-{
-    try
-    {
-        return ::createRecordLayoutTranslator(diskMeta, activityMeta, mode);
-    }
-    catch (IException *E)
-    {
-        StringBuffer q, d;
-        getRecordMetaAsString(q, activityMeta);
-        getRecordMetaAsString(d, diskMeta);
-        DBGLOG("Activity: %s", q.str());
-        DBGLOG("Disk: %s", d.str());
-        StringBuffer m;
-        m.appendf("In index %s:", logicalName);
-        E->errorMessage(m);
-        E->Release();
-        DBGLOG("%s", m.str());
-        throw MakeStringException(ROXIE_RCD_LAYOUT_TRANSLATOR, "%s", m.str());
-    }
 }

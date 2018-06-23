@@ -36,13 +36,17 @@ define([
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
+    "src/Clippy",
+
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPRequest",
+    "src/ESPWorkunit",
+    "src/ESPRequest",
     "hpcc/TargetSelectWidget",
     "hpcc/DelayLoadWidget",
     "hpcc/InfoGridWidget",
-    "hpcc/WsWorkunits",
+    "src/WsWorkunits",
+
+    "@hpcc-js/eclwatch",
 
     "dojo/text!../templates/WUDetailsWidget.html",
 
@@ -69,7 +73,9 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domForm, domAttr, iframe, domClass, query, Memory, Observable,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+                Clippy,
                 _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, DelayLoadWidget, InfoGridWidget, WsWorkunits,
+                hpccEclWatch,
                 template) {
     return declare("WUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -132,6 +138,12 @@ define([
 
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
             this.zapDialog = registry.byId(this.id + "ZapDialog");
+
+            Clippy.attach(this.id + "ClippyButton");
+
+            this.wuStatus = new hpccEclWatch.WUStatus()
+                .baseUrl("")
+            ;
         },
 
         startup: function (args) {
@@ -267,9 +279,15 @@ define([
                 });
                 this.wu.refresh();
             }
+            
             this.infoGridWidget.init(params);
             this.checkIfClustersAllowed();
             this.checkThorLogStatus();
+            this.wuStatus
+                .target(this.id + "WUStatus")
+                .wuid(params.Wuid)
+                .lazyRender()
+                ;
         },
 
         initTab: function () {
@@ -277,55 +295,55 @@ define([
                 return
             }
             var currSel = this.getSelectedChild();
-            if (currSel.id == this.widget._Variables.id && !this.widget._Variables.__hpcc_initalized) {
+            if (currSel.id === this.widget._Variables.id && !this.widget._Variables.__hpcc_initalized) {
                 this.widget._Variables.init({
                     Wuid: this.wu.Wuid
                 });
-            } else if (currSel.id == this.widget._Workflows.id && !this.widget._Workflows.__hpcc_initalized) {
+            } else if (currSel.id === this.widget._Workflows.id && !this.widget._Workflows.__hpcc_initalized) {
                 this.widget._Workflows.init({
                     Wuid: this.wu.Wuid
                 });
-            } else if (currSel.id == this.resultsWidget.id && !this.resultsWidgetLoaded) {
+            } else if (currSel.id === this.resultsWidget.id && !this.resultsWidgetLoaded) {
                 this.resultsWidgetLoaded = true;
                 this.resultsWidget.init({
                     Wuid: this.wu.Wuid
                 });
-            } else if (currSel.id == this.filesWidget.id && !this.filesWidgetLoaded) {
+            } else if (currSel.id === this.filesWidget.id && !this.filesWidgetLoaded) {
                 this.filesWidgetLoaded = true;
                 this.filesWidget.init({
                     Wuid: this.wu.Wuid,
                     SourceFiles: true
                 });
-            } else if (currSel.id == this.timersWidget.id && !this.timersWidgetLoaded) {
+            } else if (currSel.id === this.timersWidget.id && !this.timersWidgetLoaded) {
                 this.timersWidgetLoaded = true;
                 this.timersWidget.init({
                     Wuid: this.wu.Wuid
                 });
-            } else if (currSel.id == this.graphsWidget.id && !this.graphsWidgetLoaded) {
+            } else if (currSel.id === this.graphsWidget.id && !this.graphsWidgetLoaded) {
                 this.graphsWidgetLoaded = true;
                 this.graphsWidget.init({
                     Wuid: this.wu.Wuid
                 });
-            } else if (currSel.id == this.widget._Queries.id && !this.widget._Queries.__hpcc_initalized) {
+            } else if (currSel.id === this.widget._Queries.id && !this.widget._Queries.__hpcc_initalized) {
                 this.widget._Queries.init({
                     Wuid: this.wu.Wuid
                 });
-            } else if (currSel.id == this.widget._Resources.id && !this.resourcesWidgetLoaded) {
+            } else if (currSel.id === this.widget._Resources.id && !this.resourcesWidgetLoaded) {
                 this.resourcesWidgetLoaded = true;
                 this.widget._Resources.init({
                     Wuid: this.wu.Wuid
                 });
-            } else if (currSel.id == this.logsWidget.id && !this.logsWidgetLoaded) {
+            } else if (currSel.id === this.logsWidget.id && !this.logsWidgetLoaded) {
                 this.logsWidgetLoaded = true;
                 this.logsWidget.init({
                     Wuid: this.wu.Wuid
                 });
-            } else if (currSel.id == this.eclWidget.id && !this.eclWidgetLoaded) {
+            } else if (currSel.id === this.eclWidget.id && !this.eclWidgetLoaded) {
                 this.eclWidgetLoaded = true;
                 this.eclWidget.init({
                     Wuid: this.wu.Wuid
                 });
-            } else if (currSel.id == this.xmlWidget.id && !this.xmlWidgetLoaded) {
+            } else if (currSel.id === this.xmlWidget.id && !this.xmlWidgetLoaded) {
                 this.xmlWidgetLoaded = true;
                 this.xmlWidget.init({
                     Wuid: this.wu.Wuid
@@ -340,7 +358,7 @@ define([
             var text = ""
             for (var key in obj) {
                 text += "<tr><td>" + key + ":</td>";
-                if (typeof obj[key] == "object") {
+                if (typeof obj[key] === "object") {
                     text += "[<br/>";
                     for (var i = 0; i < obj[key].length; ++i) {
                         text += this.objectToText(obj[key][i]);

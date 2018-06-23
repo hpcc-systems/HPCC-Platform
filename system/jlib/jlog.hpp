@@ -1012,9 +1012,19 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
     virtual unsigned queryTraceLevel() const = 0;
+
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) = 0;
+    virtual void setHttpIdHeaders(const char *global, const char *caller) = 0;
+    virtual const char *queryGlobalId() const = 0;
+    virtual const char *queryLocalId() const = 0;
+    virtual const char *queryGlobalIdHttpHeader() const = 0;
+    virtual const char *queryCallerIdHttpHeader() const = 0;
 };
 
+extern jlib_decl StringBuffer &appendLocalId(StringBuffer &s, const SocketEndpoint &ep, unsigned pid);
+
 extern jlib_decl const IContextLogger &queryDummyContextLogger();
+extern jlib_decl IContextLogger &updateDummyContextLogger();
 
 //---------------------------------------------------------------------------
 

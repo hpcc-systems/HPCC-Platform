@@ -38,9 +38,12 @@ if(NOT TARGET lz4)
   add_subdirectory(../lz4_sm ${CMAKE_BINARY_DIR}/system/lz4_sm)
 endif(NOT TARGET lz4)
 
+if(NOT TARGET libbase58)
+  add_subdirectory(../libbase58 ${CMAKE_BINARY_DIR}/system/libbase58)
+endif(NOT TARGET libbase58)
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor -Wno-varargs")
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor")
 endif()
 
 set (    SRCS 
@@ -180,6 +183,7 @@ include_directories (
          ../../system/include 
          ../../system/lzma
          ../../system/lz4_sm/lz4/lib
+         ../../system/libbase58
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
@@ -191,6 +195,7 @@ HPCC_ADD_LIBRARY( jlib SHARED ${SRCS} ${INCLUDES} )
 target_link_libraries ( jlib
         lzma
         lz4
+        libbase58
        )
 
 if ( ${HAVE_LIBDL} )

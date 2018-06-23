@@ -111,7 +111,7 @@ interface IFinalRoxieInput : extends IInputBase
 
     inline void stopall()
     {
-        for (int i = 0; i < numConcreteOutputs(); i++)
+        for (unsigned i = 0; i < numConcreteOutputs(); i++)
             queryConcreteOutputStream(i)->stop();
     }
 };
@@ -124,7 +124,7 @@ interface IIndexReadActivityInfo
 {
     virtual IKeyArray *getKeySet() const = 0;
     virtual const IResolvedFile *getVarFileInfo() const = 0;
-    virtual TranslatorArray *getTranslators() const = 0;
+    virtual ITranslatorSet *getTranslators() const = 0;
 
     virtual void mergeSegmentMonitors(IIndexReadContext *irc) const = 0;
     virtual IRoxieServerActivity *queryActivity() = 0;
@@ -191,6 +191,7 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void mergeStats(MemoryBuffer &stats) = 0;
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
     virtual IEngineRowAllocator * createRowAllocator(IOutputMetaData * metadata) = 0;
+    virtual void updateFactoryStatistics() const = 0;
 };
 
 interface IRoxieServerActivityFactory : extends IActivityFactory
@@ -212,16 +213,14 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual IHThorArg &getHelper() const = 0;
     virtual IRoxieServerActivity *createFunction(IHThorArg &helper, IProbeManager *_probeManager) const = 0;
     virtual void noteProcessed(unsigned idx, unsigned processed) const = 0;
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const ActivityTimeAccumulator &totalCycles, cycle_t localCycles) const = 0;
     virtual void onCreateChildQueries(IRoxieSlaveContext *ctx, IHThorArg *colocalArg, IArrayOf<IActivityGraph> &childGraphs, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx, unsigned numParallel) const = 0;
     virtual void noteStarted() const = 0;
     virtual void noteStarted(unsigned idx) const = 0;
     virtual void noteDependent(unsigned target) = 0;
     virtual IActivityGraph * createChildGraph(IRoxieSlaveContext * ctx, IHThorArg *colocalArg, unsigned childId, IRoxieServerActivity *parentActivity, IProbeManager * _probeManager, const IRoxieContextLogger &_logctx) const = 0;
-    virtual unsigned __int64 queryLocalCycles() const = 0;
+    virtual unsigned __int64 queryLocalTimeNs() const = 0;
     virtual bool isGraphInvariant() const = 0;
     virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
-    virtual IDefRecordMeta *queryActivityMeta() const = 0;
     virtual unsigned numInputs() const = 0;
     virtual const StatisticsMapping &queryStatsMapping() const = 0;
     virtual bool isInputOrdered(bool consumerOrdered, unsigned idx) const = 0;
@@ -229,7 +228,7 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
 };
 interface IGraphResult : public IInterface
 {
-    virtual void getLinkedResult(unsigned & countResult, byte * * & result) = 0;
+    virtual void getLinkedResult(unsigned & countResult, const byte * * & result) = 0;
     virtual IEngineRowStream * createIterator() = 0;
     virtual const void * getLinkedRowResult() = 0;
 };
@@ -267,6 +266,7 @@ interface IRoxieServerChildGraph : public IInterface
     virtual CGraphIterationInfo * selectGraphLoopOutput() = 0;
     virtual void gatherIterationUsage(IRoxieServerLoopResultProcessor & processor) = 0;
     virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor) = 0;
+    virtual void updateFactoryStatistics() const = 0;
 };
 
 interface IQueryFactory;
@@ -279,24 +279,18 @@ extern void setStartRuid(unsigned restarts);
 class CIndexTransformCallback : implements IThorIndexCallback, public CInterface
 {
 public:
-    CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; filepos = 0; };
-    IMPLEMENT_IINTERFACE
+    CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; };
+    IMPLEMENT_IINTERFACE_O
 
 //IThorIndexCallback
-    virtual unsigned __int64 getFilePosition(const void * row)
-    {
-        return filepos;
-    }
-    virtual byte * lookupBlob(unsigned __int64 id) 
+    virtual byte * lookupBlob(unsigned __int64 id) override
     { 
         size32_t dummy; 
         cleanupRequired = true;
         return (byte *) keyManager->loadBlob(id, dummy); 
     }
 
-
 public:
-    inline offset_t & getFPosRef()                              { return filepos; }
     inline void setManager(IKeyManager * _manager)
     {
         finishedRow();
@@ -313,7 +307,6 @@ public:
 
 protected:
     IKeyManager * keyManager;
-    offset_t filepos;
     bool cleanupRequired;
 };
 
@@ -444,6 +437,7 @@ extern IRoxieServerActivityFactory *createRoxieServerWhenActionActivityFactory(u
 extern IRoxieServerActivityFactory *createRoxieServerDistributionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot);
 extern IRoxieServerActivityFactory *createRoxieServerPullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode);
 extern IRoxieServerActivityFactory *createRoxieServerTraceActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode);
+extern IRoxieServerActivityFactory *createRoxieServerExternalActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot);
 
 extern void throwRemoteException(IMessageUnpackCursor *extra);
 

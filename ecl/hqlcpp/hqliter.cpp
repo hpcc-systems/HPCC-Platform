@@ -215,7 +215,7 @@ void CompoundIteratorBuilder::bindParentCursors(BuildCtx & ctx, CursorArray & cu
         BoundRow & cur = cursors.item(i);
         //Very similar to code in the extract builder
         OwnedHqlExpr colocalBound = addMemberSelector(cur.queryBound(), colocal);
-        ctx.associateOwn(*cur.clone(colocalBound));
+        translator.bindTableCursor(ctx, cur.queryDataset(), colocalBound, cur.querySide(), cur.querySelSeq());
     }
 }
 
@@ -251,9 +251,9 @@ void CompoundIteratorBuilder::createSingleLevelIterator(StringBuffer & iterName,
     createSingleIterator(iterName, cur, cursors);
 
     translator.getUniqueId(cursorName.append("row"));
-    OwnedHqlExpr row = createVariable(cursorName, makeRowReferenceType(cur));
+    OwnedHqlExpr row = createVariable(cursorName, makeConstantModifier(makeRowReferenceType(cur)));
     declarectx.addDeclare(row);
-    cursors.append(*translator.createTableCursor(cur, row, no_none, NULL));
+    cursors.append(*translator.createTableCursor(cur, row, false, no_none, NULL));
 }
 
 void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHqlExpression * expr, CursorArray & cursors)
@@ -263,71 +263,66 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
 
     //MORE: Nested class/...
     BuildCtx classctx(nestedctx);
-    translator.beginNestedClass(classctx, iterName, "IRtlDatasetSimpleCursor", NULL, NULL);
+    IHqlStmt * classStmt = translator.beginNestedClass(classctx, iterName, "IRtlDatasetSimpleCursor", NULL, NULL);
     translator.queryEvalContext(classctx)->ensureHelpersExist();
 
     if (isArrayRowset(expr->queryType()))
     {
-        classctx.addQuotedLiteral("byte * * end;");
-        classctx.addQuotedLiteral("byte * * cur;");
+        classctx.addQuotedLiteral("const byte * * end;");
+        classctx.addQuotedLiteral("const byte * * cur;");
     }
     else
     {
-        classctx.addQuotedLiteral("byte * end;");
-        classctx.addQuotedLiteral("byte * cur;");
+        classctx.addQuotedLiteral("const byte * end;");
+        classctx.addQuotedLiteral("const byte * cur;");
     }
 
     IHqlExpression * root = queryRoot(expr);
     if (expr->queryBody() == root)
     {
-        BuildCtx firstctx(classctx);
-        firstctx.addQuotedCompoundLiteral("virtual const byte * first()");
-        createRawFirstFunc(firstctx, expr, cursors);
+        MemberFunction firstfunc(translator, classctx, "virtual const byte * first() override");
+        createRawFirstFunc(firstfunc.ctx, expr, cursors);
 
-        BuildCtx nextctx(classctx);
-        nextctx.addQuotedCompoundLiteral("virtual const byte * next()");
-        createRawNextFunc(nextctx, expr, cursors);
+        MemberFunction nextfunc(translator, classctx, "virtual const byte * next() override");
+        createRawNextFunc(nextfunc.ctx, expr, cursors);
     }
     else
     {
-        BuildCtx rawfirstctx(classctx);
-        rawfirstctx.addQuotedCompoundLiteral("inline const byte * rawFirst()");
-        createRawFirstFunc(rawfirstctx, root, cursors);
+        MemberFunction rawfirstfunc(translator, classctx, "inline const byte * rawFirst()");
+        createRawFirstFunc(rawfirstfunc.ctx, root, cursors);
 
-        BuildCtx rawnextctx(classctx);
-        rawnextctx.addQuotedCompoundLiteral("virtual const byte * rawNext()");
-        createRawNextFunc(rawnextctx, root, cursors);
+        MemberFunction rawnextfunc(translator, classctx, "inline const byte * rawNext()");
+        createRawNextFunc(rawnextfunc.ctx, root, cursors);
 
         OwnedHqlExpr failValue = createTranslatedOwned(createValue(no_nullptr, makeVoidType()));
         TransformSequenceBuilder checkValidBuilder(translator, failValue);
-        BuildCtx checkctx(classctx);
-        checkctx.addQuotedCompoundLiteral("inline const byte * checkValid()");
-        bindParentCursors(checkctx, cursors);
+        MemberFunction checkfunc(translator, classctx, "inline const byte * checkValid()");
+        bindParentCursors(checkfunc.ctx, cursors);
         if (isArrayRowset(expr->queryType()))
-            translator.bindTableCursor(checkctx, root, "(*cur)");
+            translator.bindTableCursor(checkfunc.ctx, root, "(*cur)");
         else
-            translator.bindTableCursor(checkctx, root, "cur");
-        checkValidBuilder.buildSequence(checkctx, &classctx, expr);
-        BoundRow * match = translator.resolveSelectorDataset(checkctx, expr);
+            translator.bindTableCursor(checkfunc.ctx, root, "cur");
+        checkValidBuilder.buildSequence(checkfunc.ctx, &classctx, expr);
+        BoundRow * match = translator.resolveSelectorDataset(checkfunc.ctx, expr);
         assertex(match);
         OwnedHqlExpr row = getPointer(match->queryBound());
-        checkctx.addReturn(row);
+        checkfunc.ctx.addReturn(row);
 
         BuildCtx firstctx(classctx);
-        firstctx.addQuotedCompoundLiteral("virtual const byte * first()");
+        firstctx.addQuotedFunction("virtual const byte * first() override");
         firstctx.addQuotedLiteral("if (!rawFirst()) return NULL;");
         firstctx.addQuotedCompoundLiteral("for (;;)");
         firstctx.addQuotedLiteral("const byte * valid = checkValid(); if (valid) return valid;");
         firstctx.addQuotedLiteral("if (!rawNext()) return NULL;");
 
         BuildCtx nextctx(classctx);
-        nextctx.addQuotedCompoundLiteral("virtual const byte * next()");
+        nextctx.addQuotedFunction("virtual const byte * next() override");
         nextctx.addQuotedCompoundLiteral("for (;;)");
         nextctx.addQuotedLiteral("if (!rawNext()) return NULL;");
         nextctx.addQuotedLiteral("const byte * valid = checkValid(); if (valid) return valid;");
     }
 
-    translator.endNestedClass();
+    translator.endNestedClass(classStmt);
 }
 
 void CompoundIteratorBuilder::createRawFirstFunc(BuildCtx & ctx, IHqlExpression * expr, CursorArray & cursors)

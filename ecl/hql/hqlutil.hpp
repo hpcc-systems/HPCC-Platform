@@ -90,6 +90,7 @@ extern HQL_API bool hasActiveTopDataset(IHqlExpression * expr);
 
 extern HQL_API unsigned getFieldCount(IHqlExpression * expr);
 extern HQL_API unsigned getFlatFieldCount(IHqlExpression * expr);
+extern HQL_API unsigned getVarSizeFieldCount(IHqlExpression * expr, bool expandRows);
 extern HQL_API unsigned isEmptyRecord(IHqlExpression * record);
 extern HQL_API unsigned isSimpleRecord(IHqlExpression * record);
 extern HQL_API void getSimpleFields(HqlExprArray &out, IHqlExpression *record);
@@ -110,9 +111,10 @@ extern HQL_API IHqlExpression * querySequence(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryResultName(IHqlExpression * expr);
 extern HQL_API int getResultSequenceValue(IHqlExpression * expr);
 extern HQL_API unsigned countTotalFields(IHqlExpression * record, bool includeVirtual);
+extern HQL_API unsigned getFieldNumber(IHqlExpression * ds, IHqlExpression * selector);
 extern HQL_API bool transformContainsSkip(IHqlExpression * transform);
 extern HQL_API bool transformListContainsSkip(IHqlExpression * transforms);
-extern HQL_API bool recordContainsNestedRecord(IHqlExpression * record);
+extern HQL_API bool recordContainsNestedRow(IHqlExpression * record);
 extern HQL_API IHqlExpression * queryStripCasts(IHqlExpression * expr);
 extern HQL_API bool remainingChildrenMatch(IHqlExpression * left, IHqlExpression * right, unsigned first);
 
@@ -197,6 +199,7 @@ extern HQL_API IHqlExpression * removeLocalAttribute(IHqlExpression * expr);
 extern HQL_API IHqlExpression * removeAttribute(IHqlExpression * expr, IAtom * attr);
 extern HQL_API IHqlExpression * removeOperand(IHqlExpression * expr, IHqlExpression * operand);
 extern HQL_API IHqlExpression * removeChildOp(IHqlExpression * expr, node_operator op);
+extern HQL_API IHqlExpression * removeChild(IHqlExpression * expr, unsigned child);
 extern HQL_API IHqlExpression * appendAttribute(IHqlExpression * expr, IAtom * attr);
 extern HQL_API IHqlExpression * appendOwnedOperand(IHqlExpression * expr, IHqlExpression * ownedOperand);
 extern HQL_API IHqlExpression * replaceOwnedAttribute(IHqlExpression * expr, IHqlExpression * ownedAttribute);
@@ -226,6 +229,7 @@ extern HQL_API void gatherGraphReferences(HqlExprCopyArray & graphs, IHqlExpress
  */
 extern HQL_API void getVirtualFields(HqlExprArray & virtuals, IHqlExpression * record);
 extern HQL_API bool containsVirtualFields(IHqlExpression * record);
+extern HQL_API bool containsVirtualField(IHqlExpression * record, IAtom * kind);
 extern HQL_API IHqlExpression * removeVirtualFields(IHqlExpression * record);
 extern HQL_API void unwindTransform(HqlExprCopyArray & exprs, IHqlExpression * transform);
 extern HQL_API bool isConstantTransform(IHqlExpression * transform);
@@ -249,7 +253,9 @@ extern HQL_API bool isTimed(IHqlExpression * expr);
 
 inline bool isInternalEmbedAttr(IAtom *name)
 {
-    return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom || name == importAtom || name==foldAtom || name==timeAtom || name==prebindAtom;
+    return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom || 
+           name == importAtom || name==foldAtom || name==timeAtom || name==prebindAtom ||
+           name == activityAtom || name == localAtom || name == parallelAtom;
 }
 
 
@@ -306,6 +312,7 @@ public:
     bool compareAllRows;
     bool compareAllFields;
     bool isLocal;
+    bool keepBest;
     OwnedHqlExpr numToKeep;
     HqlExprArray conds;
     HqlExprArray equalities;
@@ -376,6 +383,7 @@ extern HQL_API bool isUngroup(IHqlExpression * expr);
 extern HQL_API bool containsExpression(IHqlExpression * expr, IHqlExpression * search);
 extern HQL_API bool containsOperator(IHqlExpression * expr, node_operator search);
 extern HQL_API bool containsIfBlock(IHqlExpression * record);
+extern HQL_API bool canCreateRtlTypeInfo(IHqlExpression * record); // Can we generate completely valid rtltypeinfo?
 extern HQL_API IHqlExpression * removeAnnotations(IHqlExpression * expr, IHqlExpression * search);
 
 class HQL_API DependencyGatherer
@@ -520,6 +528,7 @@ extern HQL_API IHqlExpression * extractCppBodyAttrs(unsigned len, const char * v
 extern HQL_API unsigned cleanupEmbeddedCpp(unsigned len, char * buffer);
 extern HQL_API bool isNullList(IHqlExpression * expr);
 
+extern HQL_API IHqlExpression *notePayloadFields(IHqlExpression *record, unsigned payloadCount);
 extern HQL_API IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record);
 extern HQL_API IHqlExpression *getDictionarySearchRecord(IHqlExpression *record);
 extern HQL_API IHqlExpression * createSelectMapRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values);
@@ -677,6 +686,10 @@ inline IHqlExpression * queryDefaultValue(IHqlExpression * expr, unsigned idx)
     return (ret && (ret->getOperator() != no_omitted)) ? ret : NULL;
 }
 
+extern HQL_API IHqlExpression * getHozedBias(ITypeInfo * type);
+extern HQL_API ITypeInfo * getHozedKeyType(IHqlExpression * expr);
+extern HQL_API IHqlExpression * getHozedKeyValue(IHqlExpression * _value);
+
 extern HQL_API bool hasNonNullRecord(ITypeInfo * type);
 
 //Mangle the names to make it slightly trickier for someone disassembling the system, 
@@ -731,6 +744,7 @@ extern HQL_API IHqlExpression * normalizeAnyDatasetAliases(IHqlExpression * expr
 extern HQL_API IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * name, IHqlScope * rScope);
 extern HQL_API IPropertyTree * queryArchiveAttribute(IPropertyTree * module, const char * name);
 extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, const char * name);
+extern HQL_API IPropertyTree * queryArchiveEntry(IPropertyTree * archive, const char * name);
 
 extern HQL_API IError * annotateExceptionWithLocation(IException * e, IHqlExpression * location);
 extern HQL_API IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext & ctx, bool reportError);
@@ -740,6 +754,35 @@ extern HQL_API bool userPreventsSort(IHqlExpression * noSortAttr, node_operator 
 extern HQL_API IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField);
 extern HQL_API IHqlExpression * queryTransformAssignValue(IHqlExpression * transform, IHqlExpression * searchField);
 extern HQL_API IHqlExpression * convertSetToExpression(bool isAll, size32_t len, const void * ptr, ITypeInfo * setType);
+
+struct FieldTypeInfoStruct;
+interface IRtlFieldTypeDeserializer;
+struct RtlTypeInfo;
+
+/*
+ * Check whether an xpath contains any non-scalar elements (and is this unsuitable for use when generating ECL)
+ *
+ * @param  xpath The xpath to check
+ * @return True if non-scalar elements are present.
+ */
+extern HQL_API bool checkXpathIsNonScalar(const char *xpath);
+
+/*
+ * Fill in field type information for specified type, for creation of runtime type information from compiler structures
+ *
+ * @param out  Filled in with resulting information
+ * @param type Compiler type
+ */
+extern HQL_API void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type);
+
+/*
+ * Build a runtime type information structure from a compile-time type descriptor
+ *
+ * @param  deserializer Deserializer object used to create and own the resulting types
+ * @param  type         Compiler type information structure
+ * @return              Run-time type information structure, owned by supplied deserializer
+ */
+extern HQL_API const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeInfo *type);
 
 extern HQL_API bool isCommonSubstringRange(IHqlExpression * expr);
 extern HQL_API bool isFileOutput(IHqlExpression * expr);

@@ -289,7 +289,7 @@ int main(int argc, char** argv)
   {
     validateIPS(ipAddrs.str());
 
-    for (int nIdx = 0; nIdx < arrAssignIPRanges.length(); nIdx++)
+    for (unsigned nIdx = 0; nIdx < arrAssignIPRanges.length(); nIdx++)
     {
       validateIPS(arrAssignIPRanges.item(nIdx));
     }
@@ -346,7 +346,7 @@ int main(int argc, char** argv)
 
         if (arrXPaths.length() > 0)
         {
-            int nCount = 0;
+            unsigned nCount = 0;
 
             while (nCount < arrXPaths.length())
             {
@@ -373,7 +373,7 @@ int main(int argc, char** argv)
       env.appendf("<" XML_HEADER ">\n<!-- Generated with envgen on ip %s -->\n", thisip.str());
       env.append(envXml);
       
-      Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+      Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
       Owned<IConstEnvironment>  constEnv = factory->loadLocalEnvironment(env);
       validateEnv(constEnv);
 

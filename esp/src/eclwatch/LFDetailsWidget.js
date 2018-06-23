@@ -43,10 +43,11 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/TargetComboBoxWidget",
-    "hpcc/ESPLogicalFile",
-    "hpcc/ESPDFUWorkunit",
+    "src/Clippy",
+    "src/ESPLogicalFile",
+    "src/ESPDFUWorkunit",
     "hpcc/FileBelongsToWidget",
-    "hpcc/FileSpray",
+    "src/FileSpray",
     "hpcc/FileHistoryWidget",
 
     "dojo/text!../templates/LFDetailsWidget.html",
@@ -55,13 +56,14 @@ define([
     "dijit/TooltipDialog",
     "dijit/form/ValidationTextBox",
     "dijit/form/CheckBox",
+    "dijit/form/NumberTextBox",
     "dijit/Fieldset",
 
     "hpcc/TableContainer"
 
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget, FileSpray, FileHistoryWidget,
+                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget, FileSpray, FileHistoryWidget,
                 template) {
     exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -115,6 +117,7 @@ define([
             var context = this;
             var origOnOpen = this.desprayTooltiopDialog.onOpen;
             this.desprayTooltiopDialog.onOpen = function () {
+                var targetRow;
                 if (!context.desprayTargetSelect.initalized) {
                     context.desprayTargetSelect.init({
                         DropZones: true,
@@ -156,6 +159,8 @@ define([
             }
             this.desprayTargetPath = registry.byId(this.id + "DesprayTargetPath");
             this.fileBelongsToWidget = registry.byId(this.id + "_FileBelongs");
+
+            Clippy.attach(this.id + "ClippyButton");
         },
 
         //  Hitched actions  ---
@@ -275,57 +280,57 @@ define([
         initTab: function() {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.summaryWidget.id) {
-                } else if (currSel.id == this.contentWidget.id) {
+                if (currSel.id === this.summaryWidget.id) {
+                } else if (currSel.id === this.contentWidget.id) {
                     this.contentWidget.init({
                         NodeGroup: this.logicalFile.NodeGroup,
                         LogicalName: this.logicalFile.Name
                     });
-                } else if (currSel.id == this.sourceWidget.id) {
+                } else if (currSel.id === this.sourceWidget.id) {
                     this.sourceWidget.init({
                         ECL: this.logicalFile.Ecl
                     });
-                } else if (currSel.id == this.defWidget.id) {
+                } else if (currSel.id === this.defWidget.id) {
                     var context = this;
                     this.logicalFile.fetchDEF(function (response) {
                         context.defWidget.init({
                             ECL: response
                         });
                     });
-                } else if (currSel.id == this.xmlWidget.id) {
+                } else if (currSel.id === this.xmlWidget.id) {
                     var context = this;
                     this.logicalFile.fetchXML(function (response) {
                         context.xmlWidget.init({
                             ECL: response
                         });
                     });
-                } else if (currSel.id == this.filePartsWidget.id) {
+                } else if (currSel.id === this.filePartsWidget.id) {
                     this.filePartsWidget.init({
                         fileParts: lang.exists("logicalFile.DFUFileParts.DFUPart", this) ? this.logicalFile.DFUFileParts.DFUPart : []
                     });
-                } else if (currSel.id == this.widget._Queries.id && !this.widget._Queries.__hpcc_initalized) {
+                } else if (currSel.id === this.widget._Queries.id && !this.widget._Queries.__hpcc_initalized) {
                     this.widget._Queries.init({
                         LogicalName: this.logicalFile.Name
                     });
-                } else if (currSel.id == this.widget._Graphs.id && !this.widget._Graphs.__hpcc_initalized) {
+                } else if (currSel.id === this.widget._Graphs.id && !this.widget._Graphs.__hpcc_initalized) {
                     this.widget._Graphs.init({
                         NodeGroup: this.logicalFile.NodeGroup,
                         LogicalName: this.logicalFile.Name
                     });
-                } else if (this.workunitWidget && currSel.id == this.workunitWidget.id) {
+                } else if (this.workunitWidget && currSel.id === this.workunitWidget.id) {
                     this.workunitWidget.init({
                         Wuid: this.logicalFile.Wuid
                     });
-                } else if (this.dfuWorkunitWidget && currSel.id == this.dfuWorkunitWidget.id) {
+                } else if (this.dfuWorkunitWidget && currSel.id === this.dfuWorkunitWidget.id) {
                     this.dfuWorkunitWidget.init({
                         Wuid: this.logicalFile.Wuid
                     });
-                } else if (currSel.id == this.fileBelongsToWidget.id) {
+                } else if (currSel.id === this.fileBelongsToWidget.id) {
                     this.fileBelongsToWidget.init({
                         NodeGroup: this.logicalFile.NodeGroup,
                         Name: this.logicalFile.Name
                     });
-                 } else if (currSel.id == this.fileHistoryWidget.id) {
+                 } else if (currSel.id === this.fileHistoryWidget.id) {
                     this.fileHistoryWidget.init({
                         Name: this.logicalFile.Name
                     });
@@ -380,6 +385,8 @@ define([
                 this.updateInput("CopyTargetName", oldValue, newValue);
             } else if (name === "IsProtected") {
                 dom.byId(this.id + "ProtectedImage").src = this.logicalFile.getProtectedImage();
+            } else if (name === "IsCompressed") {
+                dom.byId(this.id + "CompressedImage").src = this.logicalFile.getCompressedImage();
             } else if (name === "Ecl" && newValue) {
                 this.setDisabled(this.id + "_Source", false);
                 this.setDisabled(this.id + "_DEF", false);
@@ -405,7 +412,9 @@ define([
                 this.queriesWidget.set("iconClass", "dijitInline dijitIcon dijitTabButtonIcon iconFind");
             } else if (name === "DFUFilePartsOnClusters") {
                 // Currently only checking first cluster may add loop through clusters and add a tab at a later date
-                this.updateInput("DFUFilePartsOnClusters", oldValue, newValue.DFUFilePartsOnCluster[0].Replicate);
+                if (lang.exists("DFUFilePartsOnCluster", newValue) && newValue.DFUFilePartsOnCluster.length) {
+                    this.updateInput("DFUFilePartsOnClusters", oldValue, newValue.DFUFilePartsOnCluster[0].Replicate);
+                }
             } else if (name === "RecordSize" && newValue === "0") {
                 this.updateInput("RecordSize", oldValue, this.i18n.NoPublishedSize);
             }

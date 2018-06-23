@@ -103,6 +103,13 @@ enum ACT_TYPE
     GROUP_ACT = 1
 };
 
+enum ACCOUNT_TYPE_REQ
+{
+    REQ_ANY_ACT = -1,
+    REQ_USER_ACT = 0,
+    REQ_GROUP_ACT = 1
+};
+
 enum UserField
 {
     UFUserID = 0,
@@ -141,9 +148,23 @@ enum ResourceField
     RFnumeric = 1024
 };
 
+enum ResourcePermissionField
+{
+    RPFName = 0,
+    RPFType = 1,
+    RPFAllow = 2,
+    RPFDeny = 3,
+    RPFterm = 4,
+    RPFreverse = 256,
+    RPFnocase = 512,
+    RPFnumeric = 1024
+};
+
+
 extern LDAPSECURITY_API  const char* getUserFieldNames(UserField feild);
 extern LDAPSECURITY_API  const char* getGroupFieldNames(GroupField feild);
 extern LDAPSECURITY_API  const char* getResourceFieldNames(ResourceField feild);
+extern LDAPSECURITY_API  const char* getResourcePermissionFieldNames(ResourcePermissionField feild);
 
 typedef IIteratorOf<IPropertyTree> ISecItemIterator;
 
@@ -270,6 +291,10 @@ interface ILdapClient : extends IInterface
     virtual ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char * basedn, const char* resourceName, unsigned extraNameFilter,
         ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned *total, __int64 *cachehint) = 0;
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions) = 0;
+    virtual IPropertyTreeIterator* getResourcePermissionIterator(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN,
+        const char* rtype, const char* prefix) = 0;
+    virtual ISecItemIterator* getResourcePermissionsSorted(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN, const char* rtype, const char* prefix,
+        ResourcePermissionField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) = 0;
     virtual bool changePermission(CPermissionAction& action) = 0;
     virtual void changeUserGroup(const char* action, const char* username, const char* groupname, const char * groupDN=nullptr) = 0;
     virtual bool deleteUser(ISecUser* user) = 0;

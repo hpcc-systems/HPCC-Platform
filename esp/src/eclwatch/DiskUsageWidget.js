@@ -24,8 +24,9 @@ define([
 
     "dgrid/selector",
 
-    "hpcc/WsDfu",
-    "hpcc/ESPUtil",
+    "hpcc/_Widget",
+    "src/WsDfu",
+    "src/ESPUtil",
     "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/DiskUsageWidget.html",
@@ -44,7 +45,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, on,
                 registry,
                 selector,
-                WsDfu, ESPUtil, FilterDropDownWidget,
+                _Widget, WsDfu, ESPUtil, FilterDropDownWidget,
                 template) {
     return declare("DiskUsageWidget", [_Widget, ESPUtil.FormHelper], {
         templateString: template,

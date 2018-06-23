@@ -34,11 +34,11 @@ define([
     "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ws_access",
-    "hpcc/ws_account",
-    "hpcc/ESPBase",
-    "hpcc/ESPUtil",
-    "hpcc/ESPRequest",
+    "src/ws_access",
+    "src/ws_account",
+    "src/ESPBase",
+    "src/ESPUtil",
+    "src/ESPRequest",
     "hpcc/UserDetailsWidget",
     "hpcc/GroupDetailsWidget",
     "hpcc/FilterDropDownWidget",
@@ -266,7 +266,7 @@ define([
                 }
                 groupnames += "groupnames_i" + idx + "=" + item.name;
             }, this);
-            var base = new ESPBase();
+            var base = new ESPBase.default();
             window.open(base.getBaseURL("ws_access") + "/UserAccountExport?" + groupnames);
         },
 
@@ -322,7 +322,7 @@ define([
             var selection = this.usersGrid.getSelected();
             var list = this.arrayToList(selection, "username");
             if (confirm(this.i18n.DeleteSelectedUsers + "\n" + list)) {
-                request = {
+                var request = {
                     ActionType: "delete"
                 };
                 arrayUtil.forEach(selection, function (item, idx) {
@@ -346,7 +346,7 @@ define([
                 }
                 usernames += "usernames_i" + idx + "=" + item.username;
             }, this);
-            var base = new ESPBase();
+            var base = new ESPBase.default();
             window.open(base.getBaseURL("ws_access") + "/UserAccountExport?" + usernames);
         },
 

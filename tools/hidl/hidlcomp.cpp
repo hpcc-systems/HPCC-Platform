@@ -22,7 +22,6 @@
 #include "hidl_utils.hpp"
 #include "hidlcomp.h"
 
-//#undef new
 #include <map>
 #include <set>
 #include <string>
@@ -3130,7 +3129,7 @@ void EspMessageInfo::write_esp_ipp()
     outs("\tStringBuffer m_methodName;\n");
     outs("\tStringBuffer m_msgName;\n");
     
-    outs("\n\tlong m_reqId = 0;\n");
+    outs("\n\tlong soap_reqid = 0;\n");
     outs("\tMutex m_mutex;\n");
     outs("public:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n");
@@ -3227,8 +3226,8 @@ void EspMessageInfo::write_esp_ipp()
 
     outs("\tvoid setMethod(const char * method){m_methodName.set(method);}\n");
     outs("\tconst char * getMethod(){return m_methodName.str();}\n\n");
-    outs("\tvoid setReqId(unsigned val){m_reqId=val;}\n");
-    outs("\tunsigned getReqId(){return m_reqId;}\n\n");
+    outs("\tvoid setReqId(unsigned val){soap_reqid=val;}\n");
+    outs("\tunsigned getReqId(){return soap_reqid;}\n\n");
     
     outs("\tvoid lock(){m_mutex.lock();}\n");
     outs("\tvoid unlock(){m_mutex.unlock();}\n\n");
@@ -3272,7 +3271,6 @@ void EspMessageInfo::write_esp_ipp()
     
     outs("\n");
     write_esp_methods(espaxm_both, true, false);
-    
     outs("};\n\n");
 }
 
@@ -5532,6 +5530,7 @@ void EspServInfo::write_esp_binding_ipp()
     outf("\tC%sSoapBinding(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL, http_soap_log_level level=hsl_none);\n", name_);
 
     outs("\tvirtual void init_strings();\n");
+    outs("\tvirtual unsigned getCacheMethodCount(){return m_cacheMethodCount;}\n");
 
     //method ==> processRequest
     outs("\tvirtual int processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response);\n");
@@ -5622,6 +5621,7 @@ void EspServInfo::write_esp_binding_ipp()
     else
         outs("\tvoid setXslProcessor(IInterface *xslp){}\n");
 
+    outs("\tunsigned m_cacheMethodCount = 0;\n");
     outs("};\n\n");
 }
 
@@ -5653,7 +5653,8 @@ void EspServInfo::write_esp_binding()
 
     outf("\nvoid C%sSoapBinding::init_strings()\n", name_);
     outs("{\n");
-    
+
+    bool cacheDefined = false;
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
     {
         StrBuffer val;
@@ -5667,7 +5668,31 @@ void EspServInfo::write_esp_binding()
             StrBuffer tmp; 
             outf("\taddMethodHelp(\"%s\", \"%s\");\n", mthi->getName(), printfEncode(val.str(), tmp).str());
         }
+        int cacheGlobal = mthi->getMetaInt("cache_global", 0);
+        int cacheSeconds = mthi->getMetaInt("cache_seconds", -1);
+        if (cacheSeconds > -1) {
+            cacheDefined = true;
+            if (cacheGlobal > 0)
+                outf("\tsetCacheTimeout(\"%s\", %d, 1);\n", mthi->getName(), cacheSeconds);
+            else
+                outf("\tsetCacheTimeout(\"%s\", %d, 0);\n", mthi->getName(), cacheSeconds);
+            outs("\tm_cacheMethodCount++;\n");
+
+            StrBuffer methodCacheGroupID;
+            mthi->getMetaStringValue(methodCacheGroupID,"cache_group");
+            if (methodCacheGroupID.length() > 0)
+                outf("\tsetCacheGroupID(\"%s\", \"%s\");\n", mthi->getName(), methodCacheGroupID.str());
+        }
     }
+    StrBuffer serviceCacheGroupID;
+    if (cacheDefined)
+    {
+        getMetaStringValue(serviceCacheGroupID,"cache_group");
+        if (serviceCacheGroupID.length() == 0)
+            serviceCacheGroupID.set(name_);
+        outf("\tsetCacheGroupID(nullptr, \"%s\");\n", serviceCacheGroupID.str());
+    }
+
     outs("}\n");
     
     outf("\nint C%sSoapBinding::processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response)\n", name_);
@@ -5727,6 +5752,14 @@ void EspServInfo::write_esp_binding()
 
         writeAccessMap(servicefeatureurl.str(),name_, 2);
 
+        StrBuffer clearCacheGroupIDs;
+        if (mthi->hasMetaTag("clear_cache_group"))
+        {
+            StrBuffer cCGIDs;
+            mthi->getMetaStringValue(cCGIDs,"clear_cache_group");
+            if (cacheDefined || (cCGIDs.length() != 0))
+                clearCacheGroupIDs.set((cCGIDs.length() != 0) ? cCGIDs.str() : serviceCacheGroupID.str());
+        }
         //begin try block
         if (bHandleExceptions)
         {
@@ -5747,6 +5780,8 @@ void EspServInfo::write_esp_binding()
                 outf("\t\t\tif( accessmap.ordinality() > 0 )\n\t\t\t\tonFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
 
             outf("\t\t\tiserv->on%s(context, *esp_request, *esp_response);\n", mthi->getName());
+            if (clearCacheGroupIDs.length() > 0)
+                outf("\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
 
             outs("\t\t}\n");
             
@@ -5765,6 +5800,8 @@ void EspServInfo::write_esp_binding()
             if (servicefeatureurl.length() != 0)
                 outf("\t\tif( accessmap.ordinality() > 0 )\n\t\t\tonFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
             outf("\t\tiserv->on%s(*rpc_call->queryContext(), *esp_request, *esp_response);\n", mthi->getName());
+            if (clearCacheGroupIDs.length() > 0)
+                outf("\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
             outs("\t\tresponse->set_status(SOAP_OK);\n");
         }
 
@@ -5795,13 +5832,6 @@ void EspServInfo::write_esp_binding()
     }
     outs("\tDBGLOG(\"Client version: %g\", context.getClientVersion());\n");
 
-    // kept for backward compatible
-    EspStructInfo *sti=NULL;
-    for (sti=structs;sti!=NULL;sti=sti->next)
-    {
-        outf("\tC%s::getXsdDefinition(context, request, content, added);\n", sti->getName());
-    }
-    
     indentReset(1);
     outf(1, "bool fullservice = (!Utils::strcasecmp(service, \"%s\"));\n", name_);
     indentOuts("bool allMethods = (method==NULL || *method==0);\n");
@@ -5868,7 +5898,7 @@ void EspServInfo::write_esp_binding()
     }
     outs("\treturn 0;\n");
     outs("}\n");
-    
+
     //method ==> getQualifiedNames
     outf("\nint C%sSoapBinding::getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods)\n", name_);
     outs("{\n");
@@ -6145,6 +6175,15 @@ void EspServInfo::write_esp_binding()
             bClientXslt=(respXsl!=NULL);
         }
 
+        StrBuffer clearCacheGroupIDs;
+        if (mthi->hasMetaTag("clear_cache_group"))
+        {
+            StrBuffer cCGIDs;
+            mthi->getMetaStringValue(cCGIDs,"clear_cache_group");
+            if (cacheDefined || (cCGIDs.length() != 0))
+                clearCacheGroupIDs.set((cCGIDs.length() != 0) ? cCGIDs.str() : serviceCacheGroupID.str());
+        }
+
         bool bHandleExceptions =  0 != mthi->getMetaInt("exceptions_inline", 0) || mthi->getMetaInt("http_exceptions_inline", 0);
         if (!bHandleExceptions)
             bHandleExceptions = 0 != getMetaInt("exceptions_inline", 0) || getMetaInt("http_exceptions_inline", 0);
@@ -6171,7 +6210,6 @@ void EspServInfo::write_esp_binding()
             }
 
             writeAccessMap(servicefeatureurl.str(),name_, 3);
-
             if (bHandleExceptions)
             {
                 outf("\t\t\tsource.setf(\"%s::%%s()\", method);\n", name_);
@@ -6183,9 +6221,12 @@ void EspServInfo::write_esp_binding()
 
                 if (servicefeatureurl.length() != 0)
                     outf("\t\t\t\tif(accessmap.ordinality()>0)\n\t\t\t\t\tonFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
+
                 if (mthi->getMetaInt("do_not_log",0))
                     outf("\t\t\t\tcontext.queryRequestParameters()->setProp(\"do_not_log\",1);\n");
                 outf("\t\t\t\tiserv->on%s(context, *esp_request.get(), *resp);\n", mthi->getName());
+                if (clearCacheGroupIDs.length() > 0)
+                    outf("\t\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
                 outs("\t\t\t}\n");
                 
                 write_catch_blocks(mthi, ct_httpresp, 3);
@@ -6195,6 +6236,8 @@ void EspServInfo::write_esp_binding()
                 if (servicefeatureurl.length() != 0)
                     outf("\t\t\tif(accessmap.ordinality()>0)\n\t\t\t\tonFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
                 outf("\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *resp);\n", mthi->getName());
+                if (clearCacheGroupIDs.length() > 0)
+                    outf("\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
             }
 
             outs("\t\t}\n");
@@ -6217,6 +6260,8 @@ void EspServInfo::write_esp_binding()
                 outs("\t\t\ttry\n");
                 outs("\t\t\t{\n");
                 outf("\t\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *esp_response.get());\n", mthi->getName());
+                if (clearCacheGroupIDs.length() > 0)
+                    outf("\t\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
                 outs("\t\t\t}\n");
                 
                 write_catch_blocks(mthi, ct_httpresp,3);
@@ -6224,6 +6269,8 @@ void EspServInfo::write_esp_binding()
             else
             {
                 outf("\t\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *esp_response.get());\n", mthi->getName());
+                if (clearCacheGroupIDs.length() > 0)
+                    outf("\t\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
             }
 
             outs("\t\t\tif (canRedirect(*request) && esp_response->getRedirectUrl() && *esp_response->getRedirectUrl())\n");
@@ -6380,25 +6427,41 @@ void EspServInfo::write_esp_service_ipp()
     outs("public:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n\n");
     outf("\tC%s(){}\n\tvirtual ~C%s(){}\n", name_, name_);
-    
+
     outs("\tvirtual void init(IPropertyTree *cfg, const char *process, const char *service)\n\t{\n\t}\n");
     outs("\tvirtual bool init(const char * service, const char * type, IPropertyTree * cfg, const char * process)\n\t{\n\t\treturn true;\n\t}\n");
     outs("\tvirtual void setContainer(IEspContainer *c)\n\t{\n\t\tm_container = c;\n\t}\n");
     outs("\tvirtual IEspContainer *queryContainer()\n\t{\n\t\treturn m_container;\n\t}\n");
-    
+
     outf("\tvirtual const char* getServiceType(){return \"%s\";}\n\n", name_);
-    
+
+    outf("\tvirtual bool unsubscribeServiceFromDali(){return false;}\n\n");
+    outf("\tvirtual bool subscribeServiceToDali(){return false;}\n\n");
+    outf("\tvirtual bool detachServiceFromDali(){return false;}\n\n");
+    outf("\tvirtual bool attachServiceToDali(){return false;}\n\n");
+
+    outf("\tvirtual bool canDetachFromDali(){return false;}\n\n");
+
     EspMethodInfo *mthi;
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
     {
         bool stubbed = (findMetaTag(mthi->tags,"stubbed")!=NULL);
-
-        outf(1, "%sbool on%s(IEspContext &context, IEsp%s &req, IEsp%s &resp)\n", (stubbed) ? "" : "//", mthi->getName(), mthi->getReq(), mthi->getResp());
-        outf(1, "%s{\n", (stubbed) ? "" : "//");
-        outf(2, "%sreturn false;\n", (stubbed) ? "" : "//");
-        outf(1, "%s}\n", (stubbed) ? "" : "//");
+        if (streq(mthi->getName(), "Ping")) //We'll implement the onPing automatically for all ESP Services.
+        {
+            outf(1, "bool on%s(IEspContext &context, IEsp%s &req, IEsp%s &resp)\n",  mthi->getName(), mthi->getReq(), mthi->getResp());
+            outs(1, "{\n");
+            outs(2, "return true;\n");
+            outs(1, "}\n");
+        }
+        else
+        {
+            outf(1, "%sbool on%s(IEspContext &context, IEsp%s &req, IEsp%s &resp)\n", (stubbed) ? "" : "//", mthi->getName(), mthi->getReq(), mthi->getResp());
+            outf(1, "%s{\n", (stubbed) ? "" : "//");
+            outf(2, "%sreturn false;\n", (stubbed) ? "" : "//");
+            outf(1, "%s}\n", (stubbed) ? "" : "//");
+        }
     }
-    
+
     outs("};\n\n");
 }
 
@@ -6413,33 +6476,35 @@ void EspServInfo::write_esp_client_ipp()
     outf("class CClient%s : public CInterface,\n", name_);
     outf("\timplements IClient%s\n", name_);
     outs("{\nprotected:\n");
-    outs("\tStringBuffer m_proxy;\n");
-    outs("\tStringBuffer m_url;\n");
+    outs("\tStringBuffer soap_proxy;\n");
+    outs("\tStringBuffer soap_url;\n");
     //dom
     
-    outs("\tStringBuffer m_userid;\n");
-    outs("\tStringBuffer m_password;\n");
-    outs("\tStringBuffer m_realm;\n");
-    outs("\tStringBuffer m_action;\n");
-    outs("\tlong m_reqId = 0;\n");
+
+    outs("\tStringBuffer soap_userid;\n");
+    outs("\tStringBuffer soap_password;\n");
+    outs("\tStringBuffer soap_realm;\n");
+    outs("\tStringBuffer soap_action;\n");
+    outs("\tlong soap_reqid = 0;\n");
+
 
     outs("\npublic:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n\n");
 
     outf("\tCClient%s()\n\t{\n", name_);
-    outs("\t\tm_reqId=0;\n\t");
-    outf("\t\tm_action.append(\"%s\");\n\t", name_);
+    outs("\t\tsoap_reqid=0;\n\t");
+    outf("\t\tsoap_action.append(\"%s\");\n\t", name_);
     const char *ver = getMetaString("default_client_version", NULL);
     if (ver && *ver)
-        outf("\t\tm_action.append(\"?ver_=\").append(%s);\n\t", ver);
+        outf("\t\tsoap_action.append(\"?ver_=\").append(%s);\n\t", ver);
     outf("}\n\tvirtual ~CClient%s(){}\n", name_);
 
-    outs("\tvirtual void setProxyAddress(const char *address)\n\t{\n\t\tm_proxy.set(address);\n\t}\n");
-    outs("\tvirtual void addServiceUrl(const char *url)\n\t{\n\t\tm_url.set(url);\n\t}\n");
+    outs("\tvirtual void setProxyAddress(const char *address)\n\t{\n\t\tsoap_proxy.set(address);\n\t}\n");
+    outs("\tvirtual void addServiceUrl(const char *url)\n\t{\n\t\tsoap_url.set(url);\n\t}\n");
     outs("\tvirtual void removeServiceUrl(const char *url)\n\t{\n\t}\n");
     //domsetUsernameToken
-    outs("\tvirtual void setUsernameToken(const char *userid,const char *password,const char *realm)\n\t{\n\t\tm_userid.set(userid);\n\t\tm_password.set(password);\n\t\tm_realm.set(realm);\n\t}\n");
-    outs("\tvirtual void setSoapAction(const char *action)\n\t{\n\t\tm_action.set(action);\n\t}\n");
+    outs("\tvirtual void setUsernameToken(const char *userid,const char *password,const char *realm)\n\t{\n\t\t soap_userid.set(userid);\n\t\t soap_password.set(password);\n\t\t soap_realm.set(realm);\n\t}\n");
+    outs("\tvirtual void setAction(const char *action)\n\t{\n\t\tsoap_action.set(action);\n\t}\n");
     
     EspMethodInfo *mthi;
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
@@ -6480,8 +6545,8 @@ void EspServInfo::write_esp_client()
         outf("\n//------ method %s ---------\n", mthi->getName());
         outf("\nIClient%s * CClient%s::create%sRequest()\n", mthi->getReq(), name_, mthi->getName());
         outf("{\n\tC%s* request = new C%s(\"%s\");\n", mthi->getReq(), mthi->getReq(), name_);
-        outs("\trequest->setProxyAddress(m_proxy.str());\n");
-        outs("\trequest->setUrl(m_url.str());\n");
+        outs("\trequest->setProxyAddress(soap_proxy.str());\n");
+        outs("\trequest->setUrl(soap_url.str());\n");
         if (useMethodName)
             outf("\trequest->setMsgName(\"%s\");\n", mthi->getName());
         
@@ -6489,31 +6554,31 @@ void EspServInfo::write_esp_client()
         
         outf("\nIClient%s * CClient%s::%s(IClient%s *request)\n", mthi->getResp(), name_, mthi->getName(), mthi->getReq());
         outs("{\n");
-        outs("\tif(m_url.length()== 0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
+        outs("\tif(soap_url.length()== 0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
         outf("\tC%s* esprequest = static_cast<C%s*>(request);\n", mthi->getReq(), mthi->getReq());
         outf("\tC%s* espresponse = new C%s(\"%s\");\n\n", mthi->getResp(), mthi->getResp(), name_);
-        outs("\tespresponse->setReqId(m_reqId++);\n");
+        outs("\tespresponse->setReqId(soap_reqid++);\n");
         //dom
-        outs("\tesprequest->setUserId(m_userid.str());\n");
-        outs("\tesprequest->setPassword(m_password.str());\n");
-        outs("\tesprequest->setRealm(m_realm.str());\n");
-        outs("\tconst char *soapaction=(m_action.length()) ? m_action.str() : NULL;\n");
-        outs("\tesprequest->post(m_proxy.str(), m_url.str(), *espresponse, soapaction);\n");
+        outs("\tesprequest->soap_setUserId( soap_userid.str());\n");
+        outs("\tesprequest->soap_setPassword(soap_password.str());\n");
+        outs("\tesprequest->soap_setRealm(soap_realm.str());\n");
+        outs("\tconst char *soapaction=(soap_action.length()) ? soap_action.str() : NULL;\n");
+        outs("\tesprequest->post(soap_proxy.str(), soap_url.str(), *espresponse, soapaction);\n");
         outs("\treturn espresponse;\n");
         outs("}\n");
         
         outf("\nvoid CClient%s::async_%s(IClient%s *request, IClient%sEvents *events,IInterface* state)\n", name_, mthi->getName(), mthi->getReq(), name_);
         outs("{\n");
-        outs("\tif(m_url.length()==0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
+        outs("\tif(soap_url.length()==0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
         outf("\tC%s* esprequest = static_cast<C%s*>(request);\n", mthi->getReq(), mthi->getReq());
         outf("\tesprequest->setMethod(\"%s\");\n", mthi->getName());
-        outs("\tesprequest->setReqId(m_reqId++);\n");
+        outs("\tesprequest->setReqId(soap_reqid++);\n");
         outs("\tesprequest->setEventSink(events);\n");
         outs("\tesprequest->setState(state);\n");
 
-        outs("\tesprequest->setUserId(m_userid.str());\n");
-        outs("\tesprequest->setPassword(m_password.str());\n");
-        outs("\tesprequest->setRealm(m_realm.str());\n");
+        outs("\tesprequest->soap_setUserId( soap_userid.str());\n");
+        outs("\tesprequest->soap_setPassword( soap_password.str());\n");
+        outs("\tesprequest->soap_setRealm( soap_realm.str());\n");
 
         outs("#ifdef USE_CLIENT_THREAD\n");
         outs("\tesprequest->setThunkHandle(GetThunkingHandle());\n");
@@ -6735,7 +6800,7 @@ void EspServInfo::write_client_interface()
     outs("\tvirtual void addServiceUrl(const char *url)=0;\n");
     outs("\tvirtual void removeServiceUrl(const char *url)=0;\n");
     outs("\tvirtual void setUsernameToken(const char *userName,const char *passWord,const char *realm)=0;\n");
-    outs("\tvirtual void setSoapAction(const char *action)=0;\n");
+    outs("\tvirtual void setAction(const char *action)=0;\n");
     
     EspMethodInfo *mthi;
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)

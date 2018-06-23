@@ -115,7 +115,6 @@ class Logger(object):
                 msg = self.format(record)
                 stream = self.stream
                 isBuffer = hasattr(record, 'filebuffer')
-                toSort = hasattr(record,  'filesort')
                 taskId = 0
                 if hasattr(record, 'taskId'):
                     taskId = getattr(record,  'taskId')
@@ -155,6 +154,7 @@ class Logger(object):
             except (KeyboardInterrupt, SystemExit):
                 raise
             except Exception as ex:
+                self.handleError(str(ex))
                 self.handleError(record)
 
     def addHandler(self, fd, level='info'):

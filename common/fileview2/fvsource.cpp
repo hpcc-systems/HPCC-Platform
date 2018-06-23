@@ -458,6 +458,11 @@ unsigned DataSourceMetaData::numColumns() const
     return fields.ordinality() - numFieldsToIgnore;
 }
 
+void DataSourceMetaData::patchIndexFileposition()
+{
+    fields.tos().type.setown(makeSwapIntType(8, false));
+}
+
 ITypeInfo * DataSourceMetaData::queryType(unsigned column) const
 {
     return fields.item(column).type;

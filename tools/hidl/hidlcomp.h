@@ -982,6 +982,11 @@ public:
         response_ =strdup(name);
     }
 
+    bool hasMetaTag(const char *tag)
+    {
+        return findMetaTag(tags,tag)!=NULL;
+    }
+
     const char *getMetaString(const char *tag, const char *def_val)
     {
         return ::getMetaString(tags, tag, def_val);
@@ -1149,7 +1154,6 @@ public:
         methods=NULL;
         mounts=NULL;
         tags=NULL;
-        structs=NULL;
         next=NULL;
         needsXslt = false;
     }
@@ -1161,7 +1165,6 @@ public:
         if (base_)
             free(base_);
         
-        delete structs;
         delete methods;
         delete mounts;
         delete tags;
@@ -1216,7 +1219,6 @@ public:
     void write_catch_blocks(EspMethodInfo* mthi, catch_type ct, int indents);
     void write_clarion_include_interface();
 
-    EspStructInfo  *structs;
     EspMethodInfo   *methods;
     EspMountInfo    *mounts;
     MetaTagInfo     *tags;

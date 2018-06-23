@@ -28,7 +28,8 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/PackageSourceWidget",
     "hpcc/PackageMapPartsWidget",
-    "hpcc/WsPackageMaps",
+    "src/Clippy",
+    "src/WsPackageMaps",
 
     "dojo/text!../templates/PackageMapDetailsWidget.html",
 
@@ -39,11 +40,12 @@ define([
     "dijit/form/Button",
     "dijit/Toolbar"
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, topic, registry,
-    _TabContainerWidget, DelayLoadWidget, PackageSourceWidget, PackageMapPartsWidget, WsPackageMaps, template) {
+    _TabContainerWidget, DelayLoadWidget, PackageSourceWidget, PackageMapPartsWidget, Clippy, WsPackageMaps, template) {
     return declare("PackageMapDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapDetailsWidget",
         i18n: nlsHPCC,
+
         borderContainer: null,
         tabContainer: null,
         validateWidget: null,
@@ -73,21 +75,21 @@ define([
 
             var context = this;
             this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if (nval.id == context.id + "Validate" && !context.validateWidgetLoaded) {
+                if (nval.id === context.id + "Validate" && !context.validateWidgetLoaded) {
                     context.validateWidgetLoaded = true;
                     context.validateWidget.init({
                         target: context.target,
                         process: context.process,
                         packageMap: context.packageMap
                     });
-                } else if (nval.id == context.id + "XML" && !context.xmlWidgetLoaded) {
+                } else if (nval.id === context.id + "XML" && !context.xmlWidgetLoaded) {
                     context.xmlWidgetLoaded = true;
                     context.xmlWidget.init({
                         target: context.target,
                         process: context.process,
                         packageMap: context.packageMap
                     });
-                } else if (nval.id == context.id + "Parts" && !context.partsWidgetLoaded) {
+                } else if (nval.id === context.id + "Parts" && !context.partsWidgetLoaded) {
                     context.partsWidgetLoaded = true;
                     context.partsWidget.init({
                         target: context.target,
@@ -96,6 +98,7 @@ define([
                     });
                 }
             });
+            Clippy.attach(this.id + "ClippyButton");
         },
 
         startup: function (args) {
@@ -121,7 +124,7 @@ define([
             this.process = params.process;
             this.active = params.active;
             if (params.packageMap) {
-                registry.byId(this.id + "Summary").set("title", params.packageMap);
+                registry.byId(this.id + "_Summary").set("title", params.packageMap);
                 domAttr.set(this.id + "PMID", "innerHTML", params.packageMap);
                 domAttr.set(this.id + "Target", "value", params.target);
                 domAttr.set(this.id + "Process", "value", params.process);

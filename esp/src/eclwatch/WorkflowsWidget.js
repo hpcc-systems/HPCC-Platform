@@ -26,9 +26,9 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPWorkunit",
+    "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil"
+    "src/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
                 OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry,
@@ -67,7 +67,7 @@ define([
                     Count: {
                         label: this.i18n.Count, width: 180,
                         formatter: function (count) {
-                            if (count == -1) {
+                            if (count === -1) {
                                 return 0;
                             }
                             return count;
@@ -76,7 +76,7 @@ define([
                     CountRemaining: {
                         label: this.i18n.Remaining, width: 180,
                         formatter: function (countRemaining) {
-                            if (countRemaining == -1) {
+                            if (countRemaining === -1) {
                                 return 0;
                             }
                             return countRemaining;

@@ -43,6 +43,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_HELP "--help"
 #define ECLARG_HELP "help"
 
+#define ECLOPT_OUTPUT "--output"
+#define ECLOPT_OUTPUT_S "-O"
+
 #define ECLOPT_SERVER "--server"
 #define ECLOPT_SERVER_S "-s"
 #define ECLOPT_SERVER_INI "eclWatchIP"
@@ -56,6 +59,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PORT_ENV "ECL_WATCH_PORT"
 #define ECLOPT_PORT_DEFAULT "8010"
 
+#define ECLOPT_WAIT_CONNECT "--wait-connect"
+#define ECLOPT_WAIT_READ "--wait-read"
+
 #define ECLOPT_USERNAME "--username"
 #define ECLOPT_USERNAME_S "-u"
 #define ECLOPT_USERNAME_INI "eclUserName"
@@ -67,6 +73,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PASSWORD_ENV "ECL_PASSWORD"
 
 #define ECLOPT_NORELOAD "--no-reload"
+#define ECLOPT_NOPUBLISH "--no-publish"
 #define ECLOPT_OVERWRITE "--overwrite"
 #define ECLOPT_REPLACE "--replace"
 #define ECLOPT_OVERWRITE_S "-O"
@@ -77,6 +84,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_ALLOW_FOREIGN "--allow-foreign"
 
 #define ECLOPT_ACTIVE "--active"
+#define ECLOPT_ACTIVE_ONLY "--active-only"
 #define ECLOPT_ALL "--all"
 #define ECLOPT_INACTIVE "--inactive"
 #define ECLOPT_NO_ACTIVATE "--no-activate"
@@ -107,6 +115,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_UPDATE_CLONE_FROM "--update-clone-from"
 #define ECLOPT_DONT_APPEND_CLUSTER "--dont-append-cluster"
 #define ECLOPT_PART_NAME "--part-name"
+#define ECLOPT_PROTECT "--protect"
+#define ECLOPT_USE_EXISTING "--use-existing"
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format
@@ -153,12 +163,16 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PMID "--pmid"
 #define ECLOPT_PMID_S "-pm"
 #define ECLOPT_QUERYID "--queryid"
+#define ECLOPT_QUERIES "--queries"
 
 #define ECLOPT_DALIIP "--daliip"
 #define ECLOPT_PROCESS "--process"
 #define ECLOPT_PROCESS_S "-p"
 #define ECLOPT_SOURCE_PROCESS "--source-process"
 
+#define ECLOPT_PATH "--path"
+#define ECLOPT_INC_THOR_SLAVE_LOGS "--inc-thor-slave-logs"
+#define ECLOPT_PROBLEM_DESC "--description"
 
 
 #define ECLOPT_LIB_PATH_S "-L"
@@ -177,9 +191,6 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_VERBOSE_S "-v"
 
 const char *queryEclccPath(bool optVerbose);
-
-bool isValidMemoryValue(const char *value);
-bool isValidPriorityValue(const char *value);
 
 bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
 bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
@@ -249,6 +260,8 @@ public:
                 "   --port=<port>          ECL services port\n"
                 "   -u, --username=<name>  Username for accessing ecl services\n"
                 "   -pw, --password=<pw>   Password for accessing ecl services\n"
+                "   --wait-connect=<Ms>    Timeout while connecting to server (in milliseconds)\n"
+                "   --wait-read=<Sec>      Timeout while reading from socket (in seconds)\n"
               );
     }
 public:
@@ -256,6 +269,8 @@ public:
     StringAttr optPort;
     StringAttr optUsername;
     StringAttr optPassword;
+    unsigned optWaitConnectMs = 0;
+    unsigned optWaitReadSec = 0;
     bool optVerbose;
     bool optSSL;
     bool usesESP;
@@ -350,6 +365,7 @@ public:
     StringAttr optQuery;
 };
 
+void outputExceptionEx(IException &e);
 int outputMultiExceptionsEx(const IMultiException &me);
 bool checkMultiExceptionsQueryNotFound(const IMultiException &me);
 bool outputQueryFileCopyErrors(IArrayOf<IConstLogicalFileError> &errors);
@@ -384,5 +400,15 @@ template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const 
 
 #define createCmdClient(SN, cmd) intClient<IClient##SN>(create##SN##Client(), cmd, #SN, NULL);
 #define createCmdClientExt(SN, cmd, urlTail) intClient<IClient##SN>(create##SN##Client(), cmd, #SN, urlTail);
+
+inline void setCmdRequestTimeouts(IEspClientRpcSettings &rpc, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec)
+{
+    if (waitMs==(unsigned)-1)
+        waitMs=0;
+    if (waitConnectMs || waitMs)
+        rpc.setConnectTimeOutMs(waitConnectMs ? waitConnectMs : waitMs);
+    if (waitReadSec || waitMs)
+        rpc.setReadTimeOutSecs(waitReadSec ? waitReadSec : (waitMs / 1000));
+}
 
 #endif

@@ -46,14 +46,14 @@ define([
     'dgrid/editor',
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPRequest",
-    "hpcc/ESPUtil",
+    "src/ESPWorkunit",
+    "src/ESPRequest",
+    "src/ESPUtil",
     "hpcc/TargetSelectWidget",
     "hpcc/ECLSourceWidget",
-    "hpcc/WsTopology",
+    "src/WsTopology",
     "hpcc/GridDetailsWidget",
-    "hpcc/WsESDLConfig",
+    "src/WsESDLConfig",
     "hpcc/DynamicESDLMethodWidget",
 
     "dojo/text!../templates/DynamicESDLDetailsWidget.html",
@@ -124,7 +124,7 @@ define([
                 },
                 label: context.i18n.AddBinding
             }).placeAt(this.refreshButton.domNode, "after");
-            tmpSplitter = new ToolbarSeparator().placeAt(this.addBindingButton.domNode, "before");
+            var tmpSplitter = new ToolbarSeparator().placeAt(this.addBindingButton.domNode, "before");
             this.deleteBindingButton = new Button({
                 id: this.id + "DeleteBinding",
                 disabled: true,
@@ -132,7 +132,8 @@ define([
                     if (confirm(context.i18n.YouAreAboutToDeleteBinding)) {
                         WsESDLConfig.DeleteESDLBinding({
                         request: {
-                            Id:  context.params.__hpcc_parentName + "." + context.params.Name
+                            Id:  context.params.__hpcc_parentName + "." + context.params.Name,
+                            ver_: "1.3"
                         }
                         }).then(function (response) {
                             if (lang.exists("DeleteESDLRegistryEntryResponse.status.Code", response)) {
@@ -163,7 +164,8 @@ define([
                     WsESDLConfig.GetESDLDefinition({
                         request: {
                             Id: context.definitionDropDown.get("value"),
-                            ReportMethodsAvailable: true
+                            ReportMethodsAvailable: true,
+                            ver_: "1.3"
                         }
                     }).then(function (response) {
                         if (response.GetESDLDefinitionResponse.status.Code === 0) {
@@ -174,7 +176,8 @@ define([
                                     EsdlDefinitionID: response.GetESDLDefinitionResponse.Id,
                                     Overwrite: true,
                                     EsdlServiceName: response.GetESDLDefinitionResponse.ESDLServices.Name,
-                                    Config: "<Methods><Method name='" + response.GetESDLDefinitionResponse.Methods.Method[0].Name + "'/></Methods>"
+                                    Config: "<Methods><Method name='" + response.GetESDLDefinitionResponse.Methods.Method[0].Name + "'/></Methods>",
+                                    ver_: "1.3"
                                 }
                             }).then(function (publishresponse) {
                                 if (lang.exists("PublishESDLBindingResponse.status.Code", publishresponse)) {
@@ -268,7 +271,7 @@ define([
         initTab: function () {
             var context = this;
             var currSel = this.getSelectedChild();
-            if (currSel.id == this.widget._Summary.id && !this.widget._Summary.__hpcc_initalized) {
+            if (currSel.id === this.widget._Summary.id && !this.widget._Summary.__hpcc_initalized) {
                 this.widget._Summary.__hpcc_initalized = true;
                 var table = domConstruct.create("table", {id: this.id + "serviceInformation"});
                 if (this.params.__hpcc_parentName) {
@@ -294,7 +297,7 @@ define([
                     }
                     this.details.setContent(table);
                 }
-            } else if (currSel.id == this.widget._Binding.id && !this.widget._Binding.__hpcc_initalized) {
+            } else if (currSel.id === this.widget._Binding.id && !this.widget._Binding.__hpcc_initalized) {
                 this.widget._Binding.__hpcc_initalized = true;
 
                 var xml = context.formatXml(context.params.__binding_info.Definition.Interface)

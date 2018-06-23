@@ -131,8 +131,10 @@ public:
             throw MakeActivityException(this, 0, "KeyedDistribute: Failed to find key: %s", scoped.str());
         if (0 == file->numParts())
             throw MakeActivityException(this, 0, "KeyedDistribute: Can't distribute based on an empty key: %s", scoped.str());
+        if (!isFileKey(file))
+            throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", indexFileName.get());
 
-        checkFormatCrc(this, file, helper->getFormatCrc(), true);
+        checkFormatCrc(this, file, helper->getFormatCrc(), nullptr, helper->getFormatCrc(), nullptr, true);
         Owned<IFileDescriptor> fileDesc = file->getFileDescriptor();
         Owned<IPartDescriptor> tlkDesc = fileDesc->getPart(fileDesc->numParts()-1);
         if (!tlkDesc->queryProperties().hasProp("@kind") || 0 != stricmp("topLevelKey", tlkDesc->queryProperties().queryProp("@kind")))

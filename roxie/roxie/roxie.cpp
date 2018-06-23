@@ -25,20 +25,22 @@ static void roxie_server_usage()
 
     // Not documenting use of internal options: selftest, restarts, enableSysLog and host
     printf("\nService:\n");
-    printf("\t--topology=[XML-file]\t: Reads Roxie topology (default RoxieTopology.xml)\n");
-    printf("\t--port=[integer]\t\t: Network port (default 9876)\n");
-    printf("\nOne-off query:\n");
-    printf("\t--loadWorkunit=[so|dll]\t: Load and execute shared library\n");
-    printf("\t-[xml|csv|raw]\t\t: Output format (default ascii)\n");
+    printf("  --daemon|-d <instanceName>: Run daemon as instance\n");
+    printf("  --topology=[XML-file]     : Reads Roxie topology (default RoxieTopology.xml)\n");
+    printf("  --port=[integer]          : Network port (default 9876)\n");
+    printf("One-off query:\n");
+    printf("  --loadWorkunit=[so|dll]   : Load and execute shared library\n");
+    printf("  --[xml|csv|raw]           : Output format (default ascii)\n");
     printf("\n");
 
     // If changing these, please change ccdmain.cpp's roxie_common_usage() as well
     printf("Generic:\n");
-    printf("\t--daliServers=[host1,...]\t: List of Dali servers to use\n");
-    printf("\t--tracelevel=[integer]\t: Amount of information to dump on logs\n");
-    printf("\t--stdlog=[boolean]\t: Standard log format (based on tracelevel)\n");
-    printf("\t--logfile\t: Outputs to logfile, rather than stdout\n");
-    printf("\t--help|-h\t: This message\n");
+    printf("  --daliServers=[host1,...] : List of Dali servers to use\n");
+    printf("  --tracelevel=[integer]    : Amount of information to dump on logs\n");
+    printf("  --stdlog=[boolean]        : Standard log format (based on tracelevel)\n");
+    printf("  --logfile=[filename]      : Outputs to logfile, rather than stdout\n");
+    printf("  --topology=[filename]     : Load configuration from named xml file (default RoxieTopology.xml)\n");
+    printf("  --help|-h                 : This message\n");
     printf("\n");
 }
 

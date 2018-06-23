@@ -202,8 +202,10 @@ const char * CDiskPartHandlerBase::queryLogicalFilename(const void * row)
 
 //////////////////////////////////////////////
 
-CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
+CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_container, IHThorArg *_helper) : CSlaveActivity(_container)
 {
+    if (_helper)
+        baseHelper.set(_helper);
     helper = (IHThorDiskReadBaseArg *)queryHelper();
     reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
     crcCheckCompressed = getOptBool(THOROPT_READCOMPRESSED_CRC, false);
@@ -280,11 +282,11 @@ void CDiskReadSlaveActivityBase::kill()
     CSlaveActivity::kill();
 }
 
-IThorRowInterfaces * CDiskReadSlaveActivityBase::queryDiskRowInterfaces()
+IThorRowInterfaces * CDiskReadSlaveActivityBase::queryProjectedDiskRowInterfaces()
 {
-    if (!diskRowIf) 
-        diskRowIf.setown(createRowInterfaces(helper->queryDiskRecordSize()));
-    return diskRowIf;
+    if (!projectedDiskRowIf)
+        projectedDiskRowIf.setown(createRowInterfaces(helper->queryProjectedDiskRecordSize()));
+    return projectedDiskRowIf;
 }
 
 void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
@@ -336,7 +338,7 @@ void CDiskWriteSlaveActivityBase::open()
      */
     size32_t diskRowMinSz = 0;
     IOutputMetaData *diskRowMeta = diskHelperBase->queryDiskRecordSize()->querySerializedDiskMeta();
-    if (diskRowMeta->isFixedSize() && (TAKdiskwrite == container.getKind()))
+    if (diskRowMeta->isFixedSize() && ((TAKdiskwrite == container.getKind()) || (TAKspillwrite == container.getKind())))
     {
         diskRowMinSz = diskRowMeta->getMinRecordSize();
         if (grouped)

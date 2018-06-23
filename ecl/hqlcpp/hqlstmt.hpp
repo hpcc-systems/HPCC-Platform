@@ -122,11 +122,11 @@ public:
     IHqlStmt *                  addQuoted(const char * text);
     IHqlStmt *                  addQuotedLiteral(const char * text); // must only be used for constant C++ strings - avoids a memory clone
     IHqlStmt *                  addQuotedF(const char * text, ...) __attribute__((format(printf, 2, 3)));
-    IHqlStmt *                  addQuotedCompound(const char * text, const char * extra = NULL);
+    IHqlStmt *                  addQuotedCompound(const char * text, const char * extra);
     IHqlStmt *                  addQuotedCompoundLiteral(const char * text, const char * extra = NULL);
     IHqlStmt *                  addQuotedCompoundOpt(const char * text, const char * extra = NULL);
+    IHqlStmt *                  addQuotedFunction(const char * text, bool dynamicText = false); // Eventually all calls should be replaced with MemberFunction objects
     IHqlStmt *                  addQuoted(StringBuffer & text)              { return addQuoted(text.str()); }
-    IHqlStmt *                  addQuotedCompound(StringBuffer & text, const char * extra = NULL){ return addQuotedCompound(text.str(), extra); }
     IHqlStmt *                  addSwitch(IHqlExpression * condition);
     IHqlStmt *                  addThrow(IHqlExpression * thrown);
     IHqlStmt *                  addTry();
@@ -161,7 +161,7 @@ public:
     void                        set(BuildCtx & _owner);
 
 public:
-    enum { ConPrio = 1, EarlyPrio =3000, NormalPrio = 5000, LatePrio = 7000, DesPrio = 9999, OutermostScopePrio };
+    enum { ConPrio = 1, NormalPrio = 5000, DesPrio = 9999, OutermostScopePrio };
 
 protected:
     HqlStmt *                   appendCompound(HqlCompoundStmt * next);

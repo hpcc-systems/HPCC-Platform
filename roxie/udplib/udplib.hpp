@@ -110,7 +110,7 @@ extern UDPLIB_API const IpAddress &getNodeAddress(unsigned index);
 extern UDPLIB_API unsigned addRoxieNode(const char *ipString);
 extern UDPLIB_API unsigned getNumNodes();
 
-extern UDPLIB_API atomic_t unwantedDiscarded;
+extern UDPLIB_API RelaxedAtomic<unsigned> unwantedDiscarded;
 
 extern UDPLIB_API unsigned udpTraceLevel;
 extern UDPLIB_API unsigned udpTraceCategories;
@@ -131,7 +131,6 @@ extern UDPLIB_API unsigned udpRetryBusySenders;
 extern UDPLIB_API unsigned udpInlineCollationPacketLimit;
 extern UDPLIB_API bool udpInlineCollation;
 extern UDPLIB_API bool udpSnifferEnabled;
-extern UDPLIB_API bool udpSendCompletedInData;
 extern UDPLIB_API unsigned udpSnifferReadThreadPriority;
 extern UDPLIB_API unsigned udpSnifferSendThreadPriority;
 

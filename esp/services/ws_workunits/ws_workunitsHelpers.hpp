@@ -128,6 +128,7 @@ private:
 #define WUINFO_IncludeECL               0x4000
 #define WUINFO_IncludeHelpers           0x8000
 #define WUINFO_IncludeAllowedClusters   0x10000
+#define WUINFO_IncludeTotalClusterTime  0x20000
 #define WUINFO_All                      0xFFFFFFFF
 
 class WsWuInfo
@@ -135,6 +136,7 @@ class WsWuInfo
     IEspWUArchiveFile* readArchiveFileAttr(IPropertyTree& fileTree, const char* path);
     IEspWUArchiveModule* readArchiveModuleAttr(IPropertyTree& moduleTree, const char* path);
     void readArchiveFiles(IPropertyTree* archiveTree, const char* path, IArrayOf<IEspWUArchiveFile>& files);
+    void outputALine(size32_t len, const char* content, MemoryBuffer& outputBuf, IFileIOStream* outIOS);
 public:
     WsWuInfo(IEspContext &ctx, IConstWorkUnit *cw_) :
       context(ctx), cw(cw_)
@@ -185,19 +187,21 @@ public:
     void getEclSchemaFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpression * expr, bool isConditional);
     bool getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem>& schemas);
     void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned long flags);
-    void getStats(StatisticsFilter& filter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics);
+    void getStats(const WuScopeFilter & filter, const StatisticsFilter& statsFilter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics);
 
-    void getWorkunitEclAgentLog(const char* eclAgentInstance, const char* agentPid, MemoryBuffer& buf);
-    void getWorkunitThorLog(const char *processName, MemoryBuffer& buf);
-    void getWorkunitThorSlaveLog(const char *groupName, const char *ipAddress, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload);
+    void getWorkunitEclAgentLog(const char* eclAgentInstance, const char* agentPid, MemoryBuffer& buf, const char* outFile);
+    void getWorkunitThorLog(const char *processName, MemoryBuffer& buf, const char* outFile);
+    void getWorkunitThorSlaveLog(const char *groupName, const char *ipAddress, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, const char* outIOS, bool forDownload);
     void getWorkunitResTxt(MemoryBuffer& buf);
-    void getWorkunitArchiveQuery(MemoryBuffer& buf);
+    void getWorkunitArchiveQuery(IStringVal& str);
+    void getWorkunitArchiveQuery(StringBuffer& str);
+    void getWorkunitArchiveQuery(MemoryBuffer& mb);
     void getWorkunitDll(StringBuffer &name, MemoryBuffer& buf);
     void getWorkunitXml(const char* plainText, MemoryBuffer& buf);
-    void getWorkunitQueryShortText(MemoryBuffer& buf);
+    void getWorkunitQueryShortText(MemoryBuffer& buf, const char* outFile);
     void getWorkunitAssociatedXml(const char* name, const char* IPAddress, const char* plainText, const char* description,
-        bool forDownload, bool addXMLDeclaration, MemoryBuffer& buf);
-    void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload);
+        bool forDownload, bool addXMLDeclaration, MemoryBuffer& buf, const char* outFile);
+    void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload, const char* outFile);
     void getEventScheduleFlag(IEspECLWorkunit &info);
     unsigned getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info, unsigned long flags, unsigned& helpersCount);
     IDistributedFile* getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent);
@@ -208,13 +212,10 @@ public:
     void setWUAbortTime(IEspECLWorkunit &info, unsigned __int64 abortTS);
     IConstWUQuery* getEmbeddedQuery();
 
-protected:
     void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
+protected:
     unsigned getTotalThorTime();
-    unsigned getLegacyTotalThorTime();
     bool hasSubGraphTimings();
-    bool legacyHasSubGraphTimings();
-    void legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingData);
 
 public:
     IEspContext &context;
@@ -461,11 +462,14 @@ class WUSchedule : public Thread
     bool stopping;
     Semaphore semSchedule;
     IEspContainer* m_container;
+    bool detached;
 
 public:
     WUSchedule()
     {
         stopping = false;
+        detached = false;
+        m_container = nullptr;
     }
     ~WUSchedule()
     {
@@ -478,6 +482,17 @@ public:
     virtual void setContainer(IEspContainer * container)
     {
         m_container = container;
+        if (m_container)
+            setDetachedState(!m_container->isAttachedToDali());
+    }
+
+    void setDetachedState(bool detached_)
+    {
+        if (detached != detached_)
+        {
+            detached = detached_;
+            semSchedule.signal();
+        }
     }
 };
 
@@ -561,6 +576,49 @@ public:
         Owned<IWUQuery> query=get()->updateQuery();
         query->setQueryMainDefinition(s);
     }
+};
+
+struct CWsWuZAPInfoReq
+{
+    StringBuffer wuid, espIP, thorIP, problemDesc, whatChanged, whereSlow, includeThorSlaveLog, zapFileName, password;
+};
+
+class CWsWuFileHelper
+{
+    IPropertyTree* directories;
+
+    void cleanFolder(IFile *folder, bool removeFolder);
+    int zipAFolder(const char *folder, const char *passwordReq, const char *zipFileNameWithPath);
+    int zipAFolder(const char *folder, bool gzip, const char *zipFileNameWithPath);
+    void setZAPFile(const char *zipFileNameReq, const char *zipFileNamePrefix, StringBuffer &zipFileName,
+        StringBuffer &zipFileNameWithPath);
+    void writeToFile(const char *fileName, size32_t contentLength, const void *content);
+    void writeToFileIOStream(const char *folder, const char *file, MemoryBuffer &mb);
+    void readWUFile(const char *wuid, const char *zipFolder, WsWuInfo &winfo, IConstWUFileOption &item,
+        StringBuffer &fileName, StringBuffer &fileMimeType);
+    IFile *createWorkingFolder(IEspContext &context, const char *wuid, const char *namePrefix,
+        StringBuffer &namePrefixStr, StringBuffer &folderName);
+
+    void createZAPInfoFile(const char *espIP, const char *thorIP, const char *problemDesc,
+        const char *whatChanged, const char *timing, Owned<IConstWorkUnit> &cwu, const char *pathNameStr);
+    void createZAPWUXMLFile(WsWuInfo &winfo, const char *pathNameStr);
+    void createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit> &cwu, const char *pathNameStr);
+    void createZAPWUGraphProgressFile(const char *wuid, const char *pathNameStr);
+    void createProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char *process, const char *path);
+    void createThorSlaveLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char *path);
+    void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, SCMStringBuffer &value);
+    void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, const char *value);
+public:
+    CWsWuFileHelper(IPropertyTree *_directories) : directories(_directories) {};
+
+    void createWUZAPFile(IEspContext &context, Owned<IConstWorkUnit> &cwu, CWsWuZAPInfoReq &request,
+        StringBuffer &zipFileName, StringBuffer &zipFileNameWithPath);
+    IFileIOStream* createWUZAPFileIOStream(IEspContext &context, Owned<IConstWorkUnit> &cwu, CWsWuZAPInfoReq &request);
+
+    IFileIOStream* createWUFileIOStream(IEspContext &context, const char *wuid, IArrayOf<IConstWUFileOption> &wuFileOptions,
+        CWUFileDownloadOption &downloadOptions, StringBuffer &contentType);
+
+    IFileIOStream* createIOStreamWithFileName(const char *fileNameWithPath, IFOmode mode);
 };
 }
 #endif

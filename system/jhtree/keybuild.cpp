@@ -16,6 +16,8 @@
 ############################################################################## */
 
 #include "keybuild.hpp"
+#include "eclhelper.hpp"
+#include "bloom.hpp"
 #include "jmisc.hpp"
 
 struct CRC32HTE
@@ -335,24 +337,42 @@ class CKeyBuilder : public CKeyBuilderBase, implements IKeyBuilder
 private:
     CWriteNode *activeNode;
     CBlobWriteNode *activeBlobNode;
+    unsigned __int64 duplicateCount;
+    __uint64 partitionFieldMask = 0;
+    IArrayOf<IBloomBuilder> bloomBuilders;
+    IArrayOf<IRowHasher> rowHashers;
+    bool enforceOrder = true;
+    bool isTLK = false;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence)
-        : CKeyBuilderBase(_out, flags, rawSize, nodeSize, keyedSize, startSequence)
+    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence,  IHThorIndexWriteArg *_helper, bool _enforceOrder, bool _isTLK)
+        : CKeyBuilderBase(_out, flags, rawSize, nodeSize, keyedSize, startSequence),
+          enforceOrder(_enforceOrder),
+          isTLK(_isTLK)
     {
         doCrc = true;
         activeNode = NULL;
         activeBlobNode = NULL;
+        duplicateCount = 0;
+        if (_helper)
+        {
+            partitionFieldMask = _helper->getPartitionFieldMask();
+            auto bloomInfo =_helper->queryBloomInfo();
+            if (bloomInfo)
+            {
+                const RtlRecord &recinfo = _helper->queryDiskRecordSize()->queryRecordAccessor(true);
+                while (*bloomInfo)
+                {
+                    bloomBuilders.append(*createBloomBuilder(*bloomInfo[0]));
+                    rowHashers.append(*createRowHasher(recinfo, bloomInfo[0]->getBloomFields()));
+                    bloomInfo++;
+                }
+            }
+        }
     }
-
 public:
-    void finish(unsigned *fileCrc)
-    {
-        finish(NULL, fileCrc);
-    }
-
     void finish(IPropertyTree * metadata, unsigned * fileCrc)
     {
         if (NULL != activeNode)
@@ -374,6 +394,16 @@ public:
             toXML(metadata, metaXML);
             writeMetadata(metaXML.str(), metaXML.length());
         }
+        ForEachItemIn(idx, bloomBuilders)
+        {
+            IBloomBuilder &bloomBuilder = bloomBuilders.item(idx);
+            if (bloomBuilder.valid())
+            {
+                Owned<const BloomFilter> filter = bloomBuilder.build();
+                writeBloomFilter(*filter, rowHashers.item(idx).queryFields());
+            }
+        }
+        keyHdr->getHdrStruct()->partitionFieldMask = partitionFieldMask;
         CRC32 headerCrc;
         writeFileHeader(false, &headerCrc);
 
@@ -406,6 +436,27 @@ public:
         {
             activeNode = new CWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
+        }
+        else if (enforceOrder) // NB: order is indeterminate when build a TLK for a LOCAL index. duplicateCount is not calculated in this case.
+        {
+            int cmp = memcmp(keyData,activeNode->getLastKeyValue(),keyedSize);
+            if (cmp<0)
+                throw MakeStringException(JHTREE_KEY_NOT_SORTED, "Unable to build index - dataset not sorted in key order");
+            if (cmp==0)
+                ++duplicateCount;
+        }
+        if (!isTLK)
+        {
+            ForEachItemInRev(idx, bloomBuilders)
+            {
+                IBloomBuilder &bloomBuilder = bloomBuilders.item(idx);
+                IRowHasher &hasher = rowHashers.item(idx);
+                if (!bloomBuilder.add(hasher.hash((const byte *) keyData)))
+                {
+                    bloomBuilders.remove(idx);
+                    rowHashers.remove(idx);
+                }
+            }
         }
         if (!activeNode->add(pos, keyData, recsize, sequence))
         {
@@ -459,6 +510,8 @@ public:
         return head;
     }
 
+    unsigned __int64 getDuplicateCount() { return duplicateCount; };
+
 protected:
     void writeMetadata(char const * data, size32_t size)
     {
@@ -478,15 +531,49 @@ protected:
                 prevNode->setRightSib(node->getFpos());
                 writeNode(prevNode);
             }
-            prevNode.setown(node.getLink());
+            prevNode.setown(node.getClear());
+        }
+        writeNode(prevNode);
+    }
+
+    void writeBloomFilter(const BloomFilter &filter, __uint64 fields)
+    {
+        size32_t size = filter.queryTableSize();
+        if (!size)
+            return;
+        auto prevBloom = keyHdr->getHdrStruct()->bloomHead;
+        keyHdr->getHdrStruct()->bloomHead = nextPos;
+        Owned<CBloomFilterWriteNode> prevNode;
+        Owned<CBloomFilterWriteNode> node(new CBloomFilterWriteNode(nextPos, keyHdr));
+        // Table info is serialized into first page. Note that we assume that it fits (would need to have a crazy-small page size for that to not be true)
+        node->put8(prevBloom);
+        node->put4(filter.queryNumHashes());
+        node->put8(fields);
+        node->put4(size);
+        const byte *data = filter.queryTable();
+        while (size)
+        {
+            nextPos += keyHdr->getNodeSize();
+            size32_t written = node->set(data, size);
+            assertex(written);
+            if(prevNode)
+            {
+                node->setLeftSib(prevNode->getFpos());
+                prevNode->setRightSib(node->getFpos());
+                writeNode(prevNode);
+            }
+            prevNode.setown(node.getClear());
+            if (!size)
+                break;
+            node.setown(new CBloomFilterWriteNode(nextPos, keyHdr));
         }
         writeNode(prevNode);
     }
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence)
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, bool enforceOrder, bool isTLK)
 {
-    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence);
+    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, helper, enforceOrder, isTLK);
 }
 
 

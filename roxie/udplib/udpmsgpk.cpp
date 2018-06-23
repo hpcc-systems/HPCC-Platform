@@ -21,7 +21,6 @@
 #endif
 
 #include "platform.h"
-#undef new
 #include <string>
 #include <map>
 #include <queue>
@@ -37,11 +36,7 @@
 using roxiemem::DataBuffer;
 using roxiemem::IRowManager;
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
-atomic_t unwantedDiscarded;
+RelaxedAtomic<unsigned> unwantedDiscarded;
 
 // PackageSequencer ====================================================================================
 //
@@ -430,7 +425,7 @@ public:
     {
         if (checkTraceLevel(TRACE_MSGPACK, 2))
             DBGLOG("UdpCollator: CMessageResult - Roxie server discarded a packet");
-        atomic_inc(&unwantedDiscarded);
+        unwantedDiscarded++;
     }
 
 };

@@ -158,6 +158,9 @@ protected:
 		if (0 == user.length())
 			throw MakeStringException(-1, "htpasswd User name is NULL");
 
+        if (sec_user.credentials().getSessionToken() != 0)//Already authenticated it token
+		    return true;
+
 		CriticalBlock block(crit);
 		if (!apr_initialized)
 			initAPR();
@@ -224,6 +227,10 @@ protected:
         return SecAccess_Full;//grant full access to authenticated users
     }
 
+    bool logoutUser(ISecUser & user) override
+    {
+        return true;
+    }
 private:
 
 	void initAPR()

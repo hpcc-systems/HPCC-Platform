@@ -29,27 +29,16 @@ project(cassandraembed)
 # until then, we build the required libraries from source
 # Build libuv, required by the cassandra driver but not available on all distros
 if(USE_CASSANDRA)
-  if(APPLE)
-    add_custom_command(
-      OUTPUT ${PROJECT_BINARY_DIR}/libuv.dylib
-      COMMAND make builddir_name=${PROJECT_BINARY_DIR}
-      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/libuv)
-    add_custom_target(
-      libuv ALL
-      DEPENDS ${PROJECT_BINARY_DIR}/libuv.dylib)
-    set(LIBUV_LIBRARY ${PROJECT_BINARY_DIR}/libuv.dylib)
-  else()
-    add_custom_command(
-      OUTPUT ${PROJECT_BINARY_DIR}/libuv.so
-      COMMAND make builddir_name=${PROJECT_BINARY_DIR}
-      COMMAND mv ${PROJECT_BINARY_DIR}/libuv.so ${PROJECT_BINARY_DIR}/libuv.so.0.10
-      COMMAND ln -s ${PROJECT_BINARY_DIR}/libuv.so.0.10 ${PROJECT_BINARY_DIR}/libuv.so
-      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/libuv)
-    add_custom_target(
-      libuv ALL
-      DEPENDS ${PROJECT_BINARY_DIR}/libuv.so)
-    set(LIBUV_LIBRARY ${PROJECT_BINARY_DIR}/libuv.so)
-  endif()
+  add_custom_command(
+    OUTPUT ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX}
+    COMMAND sh ${PROJECT_SOURCE_DIR}/libuv/autogen.sh
+    COMMAND ${PROJECT_SOURCE_DIR}/libuv/configure
+    COMMAND make
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+  add_custom_target(
+    libuv ALL
+    DEPENDS ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX})
+  set(LIBUV_LIBRARY ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX})
   set(LIBUV_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/libuv/include/)
 
   # Build the Cassandra cpp driver, only presently available as source
@@ -65,15 +54,15 @@ if(USE_CASSANDRA)
   option(CASS_INSTALL_PKG_CONFIG "Install pkg-config files" OFF)
   set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS FALSE)
   set(_SAVE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  if(NOT WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-nonliteral") # Work around cassandra build error
-    if (CMAKE_COMPILER_IS_GNUCXX)
-        if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
-          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=0 -Wno-maybe-uninitialized") # Work around cassandra build error
-        endif ()
-    endif ()
+  if (CMAKE_COMPILER_IS_GNUCXX)
+  # From time to time need to add flags in here to disable warnings, if a new compiler picks up something new.
+  # e.g.
+  # if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
+  #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=0)
+  # endif ()
   endif()
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cpp-driver/cmake/modules/")
+  set(CASS_ROOT_DIR "${PROJECT_SOURCE_DIR}/cpp-driver")
   add_subdirectory(cpp-driver ${PROJECT_BINARY_DIR}/cassandra)
   add_dependencies(cassandra libuv)
   set(CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
@@ -81,12 +70,12 @@ if(USE_CASSANDRA)
   install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/cassandra\")")
   if(APPLE)
     install(
-      FILES ${PROJECT_BINARY_DIR}/libuv.dylib
+      FILES ${LIBUV_LIBRARY} ${PROJECT_BINARY_DIR}/libuv/.libs/libuv.1${CMAKE_SHARED_LIBRARY_SUFFIX}
       DESTINATION ${LIB_DIR}
       COMPONENT Runtime)
   else()
     install(
-      FILES ${PROJECT_BINARY_DIR}/libuv.so.0.10
+      FILES ${LIBUV_LIBRARY} ${LIBUV_LIBRARY}.1 ${LIBUV_LIBRARY}.1.0.0
       DESTINATION ${LIB_DIR}
       PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
       COMPONENT Runtime)

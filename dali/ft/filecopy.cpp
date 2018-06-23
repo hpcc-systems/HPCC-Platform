@@ -565,7 +565,7 @@ int FileSizeThread::run()
 //----------------------------------------------------------------------------
 
 FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * _recoveryConnection, const char *_wuid)
-  : wuid(_wuid)
+  : wuid(_wuid), fileSprayerAbortChecker(*this)
 {
     totalSize = 0;
     replicate = false;
@@ -924,21 +924,17 @@ void FileSprayer::beforeTransfer()
     throttleNicSpeed = options->getPropInt(ANthrottle, 0);
     if (throttleNicSpeed == 0 && !usePullOperation() && targets.ordinality() == 1 && sources.ordinality() > 1)
     {
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        if (factory) {
-            Owned<IConstEnvironment> env = factory->openEnvironment();
-            if (env) {
-                StringBuffer ipText;
-                targets.item(0).filename.queryIP().getIpText(ipText);
-                Owned<IConstMachineInfo> machine = env->getMachineByAddress(ipText.str());
-                if (machine)
-                {
-                    if (machine->getOS() == MachineOsW2K)
-                    {
-                        throttleNicSpeed = machine->getNicSpeedMbitSec();
-                        LOG(MCdebugInfo, job, "Throttle target speed to %dMbit/sec", throttleNicSpeed);
-                    }
-                }
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        StringBuffer ipText;
+        targets.item(0).filename.queryIP().getIpText(ipText);
+        Owned<IConstMachineInfo> machine = env->getMachineByAddress(ipText.str());
+        if (machine)
+        {
+            if (machine->getOS() == MachineOsW2K)
+            {
+                throttleNicSpeed = machine->getNicSpeedMbitSec();
+                LOG(MCdebugInfo, job, "Throttle target speed to %dMbit/sec", throttleNicSpeed);
             }
         }
     }
@@ -1191,6 +1187,7 @@ void FileSprayer::calculateSprayPartition()
     ForEachItemIn(idx, sources)
     {
         IFormatPartitioner * partitioner = createPartitioner(idx, calcOutput, numParts);
+        partitioner->setAbort(&fileSprayerAbortChecker);
         partitioners.append(*partitioner);
     }
 
@@ -3260,6 +3257,12 @@ void FileSprayer::updateTargetProperties()
                 splitAndCollectFileInfo(newRecord, remoteFile, false);
             }
             curHistory->addPropTree("Origin",newRecord.getClear());
+        }
+
+        int expireDays = options->getPropInt("@expireDays");
+        if (expireDays != -1)
+        {
+            curProps.setPropInt("@expireDays", expireDays);
         }
     }
     if (error)

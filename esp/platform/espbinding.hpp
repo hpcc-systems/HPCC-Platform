@@ -107,6 +107,7 @@ public:
     virtual bool qualifyServiceName(IEspContext & context, const char * servname, const char * methname, StringBuffer & servQName, StringBuffer * methQName){return false;}
     virtual IRpcRequestBinding *createReqBinding(IEspContext &context, IHttpMessage *request, const char *service, const char *method){return NULL;}
     virtual bool isDynamicBinding() const { return false; }
+    virtual bool isBound() const { return false; }
 };
 
 #endif

@@ -44,8 +44,6 @@ public:
 class CEsdlSvcEngineSoapBindingEx : public EsdlBindingImpl
 {
 public:
-
-public:
     IMPLEMENT_IINTERFACE;
 
     CEsdlSvcEngineSoapBindingEx();

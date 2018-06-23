@@ -15,7 +15,6 @@
 ################################################################################
 
 FOREACH ( iFILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_ecldirect.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl_onchange.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl.xsl
@@ -25,6 +24,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_DynamicESDL.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wslogging.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/logging_agent.xsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wssql.xsl
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/configxml/@temp COMPONENT Runtime )
 ENDFOREACH ( iFILES )

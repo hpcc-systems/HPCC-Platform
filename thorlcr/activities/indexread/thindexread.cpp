@@ -160,15 +160,15 @@ protected:
                 if (!keyIndex)
                     throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", index->queryLogicalName());
 
-                unsigned fixedSize = indexBaseHelper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // used only if fixed
-                Owned <IKeyManager> tlk = createLocalKeyManager(keyIndex, fixedSize, NULL);
+                Owned <IKeyManager> tlk = createLocalKeyManager(indexBaseHelper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, indexBaseHelper->hasNewSegmentMonitors());
                 indexBaseHelper->createSegmentMonitors(tlk);
                 tlk->finishSegmentMonitors();
                 tlk->reset();
                 while (tlk->lookup(false))
                 {
-                    if (tlk->queryFpos())
-                        performPartLookup.replace(true, (aindex_t)(super?super->numSubFiles(true)*(tlk->queryFpos()-1)+superSubIndex:tlk->queryFpos()-1));
+                    offset_t node = extractFpos(tlk);
+                    if (node)
+                        performPartLookup.replace(true, (aindex_t)(super?super->numSubFiles(true)*(node-1)+superSubIndex:node-1));
                 }
             }
             if (!super||!iter->next())
@@ -204,6 +204,9 @@ public:
         Owned<IDistributedFile> index = queryThorFileManager().lookup(container.queryJob(), helperFileName, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true);
         if (index)
         {
+            if (!isFileKey(index))
+                throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", helperFileName.get());
+
             localKey = index->queryAttributes().getPropBool("@local");
 
             if (container.queryLocalData() && !localKey)
@@ -219,7 +222,8 @@ public:
                 if (sub && 1 == sub->numParts())
                     nofilter = true;
             }
-            checkFormatCrc(this, index, indexBaseHelper->getFormatCrc(), true);
+            //MORE: Change index getFormatCrc once we support projected rows for indexes.
+            checkFormatCrc(this, index, indexBaseHelper->getDiskFormatCrc(), indexBaseHelper->queryDiskRecordSize(), indexBaseHelper->getProjectedFormatCrc(), indexBaseHelper->queryProjectedDiskRecordSize(), true);
             if ((container.queryLocalOrGrouped() || indexBaseHelper->canMatchAny()) && index->numParts())
             {
                 fileDesc.setown(getConfiguredFileDescriptor(*index));

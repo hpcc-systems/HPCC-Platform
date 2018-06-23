@@ -22,8 +22,8 @@ define([
 
     "hpcc/GridDetailsWidget",
 
-    "hpcc/ESPUtil",
-    "hpcc/WsWorkunits"
+    "src/ESPUtil",
+    "src/WsWorkunits"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
                 GridDetailsWidget, ESPUtil, WsWorkunits) {

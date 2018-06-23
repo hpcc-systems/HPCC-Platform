@@ -26,19 +26,27 @@
 project( eclrtl ) 
 
 set (    SRCS 
+         eclhelper_base.cpp
+         eclhelper_dyn.cpp
          eclrtl.cpp 
          eclregex.cpp
          rtlbcd.cpp 
          rtldistr.cpp 
          rtlds.cpp 
+         rtldynfield.cpp 
          rtlint.cpp 
          rtlkey.cpp 
+         rtlnewkey.cpp
+         rtlnktest.cpp
          rtlqstr.cpp 
          rtlrank.cpp 
          rtlfield.cpp 
          rtlread.cpp 
+         rtlrecord.cpp
          rtltype.cpp 
          rtlxml.cpp
+         rtlcommon.cpp
+         rtlformat.cpp
          
          eclinclude4.hpp
          eclrtl.hpp
@@ -47,10 +55,12 @@ set (    SRCS
          rtldistr.hpp
          rtlds_imp.hpp
          rtlembed.hpp
-         rtlfield_imp.hpp
+         rtlfield.hpp
          rtlkey2.hpp
          rtlkey.hpp
+         rtlnewkey.hpp
          rtlread_imp.hpp
+         rtlrecord.hpp
          rtlsize.hpp
          rtltype.hpp
          rtlbcdtest.cpp 
@@ -59,6 +69,7 @@ set (    SRCS
 include_directories ( 
          ./../../rtl/include 
          ./../../rtl/nbcd 
+         ./../../rtl/eclrtl 
          ./../../system/include 
          ./../../system/jlib 
          ./../../roxie/roxiemem
@@ -107,8 +118,9 @@ if (NOT PLUGIN)
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlbcd.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtldistr.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlds_imp.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/rtlfield_imp.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rtlfield.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlkey.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rtlrecord.hpp
   )
     install ( FILES ${iFILES} DESTINATION componentfiles/cl/include COMPONENT Runtime )
   ENDFOREACH ( iFILES )

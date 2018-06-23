@@ -22,8 +22,8 @@ import platform
 import logging
 import os
 import subprocess
-import urllib2
-import base64
+import sys
+import traceback
 
 from ..common.error import Error
 from ..common.shell import Shell
@@ -49,8 +49,7 @@ def checkXParam(string):
         if ('=' in param) or ('None' == param):
             value = param
         else:
-            #logging.error("%s. Missing or wrong argument '%s' after -X parameter!\nIt should be 'name=val[,name2=val2..]'\n5000\n" % (1,  param))
-            value="5000"
+            raise Error("5000",  err="But got argument:'%s'" % (param) )
     else:
         msg = "Missing argument of -X parameter!"
         raise argparse.ArgumentTypeError(msg)
@@ -92,6 +91,19 @@ def setConfig(config):
 
 def getConfig():
     return gConfig
+
+def getEclRunArgs(test,  cluster):
+    retString=''
+    test.setJobname("")
+    retString += "ecl run -fpickBestEngine=false --target=%s --cluster=%s --port=%s " % (cluster, cluster, gConfig.espSocket)
+    retString += "--exception-level=warning --noroot --name=\"%s\" " % (test.getJobname())
+    retString += "%s " % (" ".join(test.getFParameters()))
+    retString += "%s " % (" ".join(test.getDParameters()))
+    retString += "%s " % (" ".join(test.getStoredInputParameters()))
+    args = []
+    addCommonEclArgs(args)
+    retString += "%s " % (" ".join(args))
+    return retString
 
 def addCommonEclArgs(args):
     args.append('--server=' + gConfig.espIp)
@@ -142,61 +154,35 @@ def abortWorkunit(wuid):
     state=shell.command(cmd, *defaults)(*args)
     return state
 
-def createZAP(wuid,  taskId):
+def createZAP(wuid,  taskId,  reason=''):
     retVal = 'Error in create ZAP'
-    if gConfig.useSsl.lower() == 'true':
-        retVal = 'Currently ZAP file generation not supported with SSL connection.'
-        return retVal
+    zapFilePath = os.path.join(os.path.expanduser(gConfig.regressionDir), gConfig.zapDir)
+    shell = Shell()
+    cmd = 'ecl'
+    defaults=[]
+    args = []
+    args.append('zapgen')
+    args.append(wuid)
+    args.append('--path=' + zapFilePath)
+    if reason != '':
+        args.append('--description=' + reason)
+    else:
+        args.append('--description="Failed in OBT"')
 
-    # http://localhost:8010/WsWorkunits/WUCreateZAPInfo?Wuid=<wuid>&ProblemDescription=<problem_description>&IncludeThorSlaveLog="on"
-    host = "http://" + gConfig.espIp + ":" + gConfig.espSocket + "/WsWorkunits/WUCreateZAPInfo?Wuid="+wuid+"&ProblemDescription=\"Failed+in+OBT\"&IncludeThorSlaveLog=on"
-    logging.debug("%3d. createZAP(%s, host :'%s')",  taskId,  wuid, host)
+    args.append('--inc-thor-slave-logs')
+    addCommonEclArgs(args)
 
-    state = 'OK'
     try:
-        # Add authentication by default it works w/wo LDAP
-        request = urllib2.Request(host)
-        base64string = base64.encodestring('%s:%s' % (gConfig.username, gConfig.password)).replace('\n', '')
-        request.add_header("Authorization", "Basic %s" % base64string)
-        response_stream = urllib2.urlopen(request)
-
-        respHeaders=str(response_stream.info()).replace('\r','').split('\n')
-        response = response_stream.read()
-        logging.debug("%3d. createZAP(%s) -> headers: '%s', response: '%s'\n",  taskId,  wuid, respHeaders,  response)
-
-        zapFilename = ''
-        for headerIndex in range(len(respHeaders)):
-            if respHeaders[headerIndex].startswith('Content-disposition'):
-                items = respHeaders[headerIndex].split(';')
-                if len(items) == 2 and ('filename=' in items[1]):
-                    zapFilename = items[1].replace('filename=', '')
-
-        if zapFilename == '':
-            retVal = response
-            logging.debug("%3d. No zap file name in the response!",  taskId)
+        state=shell.command(cmd, *defaults)(*args)
+        logging.debug("%3d. createZAP(state:%s)",  taskId, str(state))
+        if state[1] != '':
+            retVal = state[1]
         else:
-            zapFilename = os.path.join(os.path.expanduser(gConfig.regressionDir), gConfig.zapDir)+'/'+ zapFilename
-            logging.debug("%3d. zap file name:'%s'",  taskId,  zapFilename)
-            zapFile = open(zapFilename, "w");
-            zapFile.write(response)
-            zapFile.close()
-            retVal = zapFilename + " created."
-
-    except KeyError as ke:
-        state = "Key error:"+ke.str()
-
-    except urllib2.HTTPError as ex:
-        state = "HTTP Error: "+ str(ex.reason)
-        state += '\n' + ex.headers
-
-    except urllib2.URLError as ex:
-        state = "URL Error: "+ str(ex.reason)
-
+            retVal = state[0]
     except Exception as ex:
-        state = "Unable to query "+ str(ex.reason)
-
-    finally:
+        state = "Unable to query "+ str(ex)
         logging.debug("%3d. %s in createZAP(%s)",  taskId,  state,  wuid)
+        retVal += " (" + str(ex). replace('\n',' ') + ")"
 
     return retVal
 
@@ -313,3 +299,31 @@ def checkHpccStatus():
 
     finally:
         pass
+
+def isSudoer():
+    retVal = False
+    if 'linux' in sys.platform :
+        myProc = subprocess.Popen(["timeout -k 2 2 sudo id && echo Access granted || echo Access denied"], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (myStdout,  myStderr) = myProc.communicate()
+        result = "returncode:" + str(myProc.returncode) + ", stdout:\n'" + myStdout + "', stderr:\n'" + myStderr + "'."
+        logging.debug("%3d. isSudoer() result is: '%s'",  -1, result)
+        if 'Access denied' not in myStdout:
+            retVal = True
+
+    return retVal
+
+def clearOSCache():
+    if 'linux' in sys.platform :
+        if isSudoer():
+            myProc = subprocess.Popen(["free; sudo -S sync; echo 3 | sudo tee /proc/sys/vm/drop_caches; free"], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (myStdout,  myStderr) = myProc.communicate()
+            result = "returncode:" + str(myProc.returncode) + ", stdout:\n'" + myStdout + "', stderr:\n'" + myStderr + "'."
+            logging.debug("%3d. clearOSCache() result is: '%s'",  -1, result)
+        else:
+            err = Error("7000")
+            logging.error("%s. clearOSCache error:%s" % (-1,  err))
+            logging.critical(traceback.format_exc())
+            raise Error(err)
+    else:
+        logging.debug("%3d. clearOSCache() not supported on %s.",  -1, sys.platform)
+    pass

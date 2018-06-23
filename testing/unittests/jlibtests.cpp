@@ -307,7 +307,7 @@ protected:
             else if (cppunitException)
                 throw cppunitException;
         }
-        virtual void main()
+        virtual void threadmain() override
         {
             try
             {
@@ -499,6 +499,11 @@ protected:
                 extraFlags = IFEnocache;
             ifileio = ifile->open(IFOcreate, extraFlags);
 
+#if 0 // for testing default and explicitly set share mode to Windows dafilesrv
+            if (server != NULL)
+                ifile->setShareMode((IFSHmode)IFSHread);
+#endif
+
             try
             {
                 ifile->setFilePermissions(0666);
@@ -509,6 +514,8 @@ protected:
             }
 
             unsigned iter = nr / 40;
+            if (iter < 1)
+                iter = 1;
 
             __int64 pos = 0;
             for (unsigned i=0;i<nr;i++)
@@ -1170,5 +1177,408 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(JlibWildMatchTiming);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibWildMatchTiming, "JlibWildMatchTiming");
+
+
+const EnumMapping mapping[] = {
+        { 1, "one" },
+        { 3, "three" },
+        { 5, "five" },
+        {0, nullptr }
+};
+const char * strings[] = { "zero", "one", "two", "three", "four", nullptr };
+class JlibMapping : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(JlibMapping);
+        CPPUNIT_TEST(testEnum);
+        CPPUNIT_TEST(testMatch);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testEnum()
+    {
+        CPPUNIT_ASSERT(streq("one", getEnumText(1, mapping)));
+        CPPUNIT_ASSERT(streq("three", getEnumText(3, mapping)));
+        CPPUNIT_ASSERT(streq("five", getEnumText(5, mapping)));
+        CPPUNIT_ASSERT(streq("two", getEnumText(2, mapping, "two")));
+        CPPUNIT_ASSERT(!getEnumText(2, mapping, nullptr));
+        CPPUNIT_ASSERT_EQUAL(1, getEnum("one", mapping));
+        CPPUNIT_ASSERT_EQUAL(3, getEnum("three", mapping));
+        CPPUNIT_ASSERT_EQUAL(5, getEnum("five", mapping));
+        CPPUNIT_ASSERT_EQUAL(99, getEnum("seven", mapping, 99));
+    }
+    void testMatch()
+    {
+        CPPUNIT_ASSERT_EQUAL(0U, matchString("zero", strings));
+        CPPUNIT_ASSERT_EQUAL(1U, matchString("one", strings));
+        CPPUNIT_ASSERT_EQUAL(4U, matchString("four", strings));
+        CPPUNIT_ASSERT_EQUAL(UINT_MAX, matchString("ten", strings));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(JlibMapping);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibMapping, "JlibMapping");
+
+
+class JlibIPTTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(JlibIPTTest);
+        CPPUNIT_TEST(test);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void test()
+    {
+        Owned<IPropertyTree> testTree = createPTreeFromXMLString(
+                "<cpptest attr1='attrval1' attr2='attrval2'>"
+                " <sub1 subattr1='sav1'>sub1val</sub1>"
+                " <sub2 subattr2='sav2'>sub2val</sub2>"
+                " <subX subattr3='sav3'>subXval</subX>"
+                " <item a='1' b='2' c='3' d='4'/>"
+                " <item a='2'/>"
+                " <item a='3'/>"
+                " <array>"
+                "  <valX>x</valX>"
+                "  <valX>x</valX>"
+                "  <valY>y</valY>"
+                "  <valY>y</valY>"
+                "  <valZ>z</valZ>"
+                " </array>"
+                " <binprop bin='1' xsi:type='SOAP-ENC:base64'>CwAAAA==</binprop>"
+                "cpptestval"
+                "</cpptest>");
+        MemoryBuffer mb;
+        mb.reserveTruncate(4*1024+1); // Must be > PTREE_COMPRESS_THRESHOLD (see top of jptree.cpp)
+
+        testTree->addProp("binprop/subbinprop", "nonbinval1");
+        testTree->addPropBin("binprop/subbinprop", mb.length(), mb.toByteArray());
+        testTree->addProp("binprop/subbinprop", "nonbinval2");
+        testTree->addPropBin("binprop/subbinprop", mb.length(), mb.toByteArray());
+
+        // test some sets in prep. for 'get' tests
+        CPPUNIT_ASSERT(testTree->renameProp("subX", "subY"));
+        IPropertyTree *subY = testTree->queryPropTree("subY");
+        CPPUNIT_ASSERT(testTree->renameTree(subY, "sub3"));
+
+        IPropertyTree *subtest = testTree->setPropTree("subtest");
+        subtest = testTree->addPropTree("subtest", createPTree());
+        CPPUNIT_ASSERT(subtest != nullptr);
+        subtest = testTree->queryPropTree("subtest[2]");
+        CPPUNIT_ASSERT(subtest != nullptr);
+        subtest->setProp("str", "str1");
+        subtest->addProp("str", "str2");
+        subtest->appendProp("str[2]", "-more");
+
+        subtest->setPropBool("bool", true);
+        subtest->addPropBool("bool", false);
+
+        subtest->setPropInt("int", 1);
+        subtest->addPropInt("int", 2);
+
+        subtest->setPropInt64("int64", 1);
+        subtest->addPropInt64("int64", 2);
+
+        mb.clear().append("binstr1");
+        subtest->setPropBin("bin", mb.length(), mb.toByteArray());
+        mb.clear().append("binstr2");
+        subtest->addPropBin("bin", mb.length(), mb.toByteArray());
+        mb.clear().append("-more");
+        subtest->appendPropBin("bin[1]", mb.length(), mb.toByteArray());
+
+
+        // position insertion.
+        testTree->addProp("newprop", "v1");
+        testTree->addProp("newprop", "v2");
+        testTree->addProp("newprop[2]", "v3");
+        CPPUNIT_ASSERT(streq("v3", testTree->queryProp("newprop[2]")));
+
+        CPPUNIT_ASSERT(testTree->hasProp("sub1"));
+        CPPUNIT_ASSERT(testTree->hasProp("sub1/@subattr1"));
+        CPPUNIT_ASSERT(testTree->hasProp("sub2/@subattr2"));
+        CPPUNIT_ASSERT(testTree->hasProp("@attr1"));
+        CPPUNIT_ASSERT(!testTree->isBinary("@attr1"));
+        CPPUNIT_ASSERT(!testTree->isBinary("sub1"));
+        CPPUNIT_ASSERT(testTree->isBinary("binprop"));
+        CPPUNIT_ASSERT(!testTree->isCompressed("binprop"));
+        CPPUNIT_ASSERT(!testTree->isBinary("binprop/subbinprop[1]"));
+        CPPUNIT_ASSERT(testTree->isBinary("binprop/subbinprop[2]"));
+        CPPUNIT_ASSERT(!testTree->isCompressed("binprop/subbinprop[3]"));
+        CPPUNIT_ASSERT(testTree->isCompressed("binprop/subbinprop[4]"));
+
+        // testing if subX was renamed correctly
+        CPPUNIT_ASSERT(!testTree->hasProp("subX"));
+        CPPUNIT_ASSERT(!testTree->hasProp("subY"));
+        CPPUNIT_ASSERT(testTree->hasProp("sub3"));
+
+        StringBuffer astr;
+        CPPUNIT_ASSERT(testTree->getProp("sub1", astr));
+        CPPUNIT_ASSERT(streq("sub1val", astr.str()));
+        CPPUNIT_ASSERT(streq("sub2val", testTree->queryProp("sub2")));
+
+        subtest = testTree->queryPropTree("subtest[2]");
+        CPPUNIT_ASSERT(subtest != nullptr);
+
+        CPPUNIT_ASSERT(subtest->getPropBool("bool[1]"));
+        CPPUNIT_ASSERT(!subtest->getPropBool("bool[2]"));
+
+        CPPUNIT_ASSERT(1 == subtest->getPropInt("int[1]"));
+        CPPUNIT_ASSERT(2 == subtest->getPropInt("int[2]"));
+
+        CPPUNIT_ASSERT(1 == subtest->getPropInt64("int64[1]"));
+        CPPUNIT_ASSERT(2 == subtest->getPropInt64("int64[2]"));
+
+        subtest->getPropBin("bin[1]", mb.clear());
+        const char *ptr = (const char *)mb.toByteArray();
+        CPPUNIT_ASSERT(streq("binstr1", ptr)); // NB: null terminator was added at set time.
+        CPPUNIT_ASSERT(streq("-more", ptr+strlen("binstr1")+1)); // NB: null terminator was added at set time.
+        subtest->getPropBin("bin[2]", mb.clear());
+        CPPUNIT_ASSERT(streq("binstr2", mb.toByteArray())); // NB: null terminator was added at set time.
+
+        CPPUNIT_ASSERT(testTree->hasProp("subtest/bin[2]"));
+        CPPUNIT_ASSERT(testTree->removeProp("subtest/bin[2]"));
+        CPPUNIT_ASSERT(!testTree->hasProp("subtest/bin[2]"));
+
+        CPPUNIT_ASSERT(testTree->hasProp("subtest"));
+        CPPUNIT_ASSERT(testTree->removeTree(subtest)); // this is subtest[2]
+        subtest = testTree->queryPropTree("subtest"); // now just 1
+        CPPUNIT_ASSERT(testTree->removeTree(subtest));
+        CPPUNIT_ASSERT(!testTree->hasProp("subtest"));
+
+        IPropertyTree *item3 = testTree->queryPropTree("item[@a='3']");
+        CPPUNIT_ASSERT(nullptr != item3);
+        CPPUNIT_ASSERT(2 == testTree->queryChildIndex(item3));
+
+        CPPUNIT_ASSERT(streq("item", item3->queryName()));
+
+        Owned<IPropertyTreeIterator> iter = testTree->getElements("item");
+        unsigned a=1;
+        ForEach(*iter)
+        {
+            CPPUNIT_ASSERT(a == iter->query().getPropInt("@a"));
+            ++a;
+        }
+
+        Owned<IAttributeIterator> attrIter = testTree->queryPropTree("item[1]")->getAttributes();
+        CPPUNIT_ASSERT(4 == attrIter->count());
+        unsigned i = 0;
+        ForEach(*attrIter)
+        {
+            const char *name = attrIter->queryName();
+            const char *val = attrIter->queryValue();
+            CPPUNIT_ASSERT('a'+i == *(name+1));
+            CPPUNIT_ASSERT('1'+i == *val);
+            ++i;
+        }
+
+        IPropertyTree *array = testTree->queryPropTree("array");
+        CPPUNIT_ASSERT(array != nullptr);
+        CPPUNIT_ASSERT(array->hasChildren());
+        CPPUNIT_ASSERT(3 == array->numUniq());
+        CPPUNIT_ASSERT(5 == array->numChildren());
+
+        CPPUNIT_ASSERT(!testTree->isCaseInsensitive());
+        CPPUNIT_ASSERT(3 == testTree->getCount("sub*"));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(JlibIPTTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
+
+
+
+#include "jdebug.hpp"
+#include "jmutex.hpp"
+
+
+class AtomicTimingTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(AtomicTimingTest);
+        CPPUNIT_TEST(runAllTests);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+
+    class CasCounter
+    {
+    public:
+        CasCounter() = default;
+        CasCounter(unsigned __int64 _value) : value{_value} {}
+
+        operator unsigned __int64() { return value; }
+        unsigned __int64 operator = (unsigned __int64 _value)
+        {
+            value = _value;
+            return _value;
+        }
+
+        unsigned __int64 operator ++(int)
+        {
+            unsigned __int64 expected = value.load();
+            while (!value.compare_exchange_weak(expected, expected + 1))
+            {
+            }
+            return expected+1;
+        }
+
+        std::atomic<unsigned __int64> value = { 0 };
+    };
+
+    template <typename LOCK, typename BLOCK, typename COUNTER, unsigned NUMVALUES, unsigned NUMLOCKS>
+    class LockTester
+    {
+    public:
+        LockTester()
+        {
+            value1 = 0;
+        }
+
+        class LockTestThread : public Thread
+        {
+        public:
+            LockTestThread(Semaphore & _startSem, Semaphore & _endSem, LOCK & _lock1, COUNTER & _value1, LOCK & _lock2, COUNTER * _extraValues, unsigned _numIterations)
+                : startSem(_startSem), endSem(_endSem),
+                  lock1(_lock1), value1(_value1),
+                  lock2(_lock2), extraValues(_extraValues),
+                  numIterations(_numIterations)
+            {
+            }
+
+            virtual void execute()
+            {
+                {
+                    BLOCK block(lock1);
+                    value1++;
+                    if (NUMVALUES >= 2)
+                        extraValues[1]++;
+                    if (NUMVALUES >= 3)
+                        extraValues[2]++;
+                    if (NUMVALUES >= 4)
+                        extraValues[3]++;
+                    if (NUMVALUES >= 5)
+                        extraValues[4]++;
+                }
+                if (NUMLOCKS == 2)
+                {
+                    BLOCK block(lock2);
+                    extraValues[1]++;
+                }
+            }
+
+            virtual int run()
+            {
+                startSem.wait();
+                for (unsigned i = 0; i < numIterations; i++)
+                    execute();
+                endSem.signal();
+                return 0;
+            }
+
+        protected:
+            Semaphore & startSem;
+            Semaphore & endSem;
+            LOCK & lock1;
+            LOCK & lock2;
+            COUNTER & value1;
+            COUNTER * extraValues;
+            const unsigned numIterations;
+        };
+
+        unsigned __int64 run(const char * title, unsigned numThreads, unsigned numIterations)
+        {
+            value1 = 0;
+            for (unsigned ix = 1; ix < NUMVALUES; ix++)
+                extraValues[ix] = 0;
+            for (unsigned i = 0; i < numThreads; i++)
+            {
+                LockTestThread * next = new LockTestThread(startSem, endSem, lock, value1, lock, extraValues, numIterations);
+                threads.append(*next);
+                next->start();
+            }
+
+            cycle_t startCycles = get_cycles_now();
+            startSem.signal(numThreads);
+            for (unsigned i2 = 0; i2 < numThreads; i2++)
+                endSem.wait();
+            cycle_t endCycles = get_cycles_now();
+            unsigned __int64 expected = (unsigned __int64)numIterations * numThreads;
+            unsigned __int64 averageTime = cycle_to_nanosec(endCycles - startCycles) / (numIterations * numThreads);
+            printf("%s@%u/%u threads(%u) %" I64F "uns/iteration lost(%" I64F "d)\n", title, NUMVALUES, NUMLOCKS, numThreads, averageTime, expected - value1);
+            for (unsigned i3 = 0; i3 < numThreads; i3++)
+                threads.item(i3).join();
+            return averageTime;
+        }
+
+    protected:
+        CIArrayOf<LockTestThread> threads;
+        Semaphore startSem;
+        Semaphore endSem;
+        LOCK lock;
+        COUNTER value1;
+        COUNTER extraValues[NUMVALUES];
+    };
+
+    #define DO_TEST(LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS)   \
+    { \
+        const char * title = #LOCK "," #COUNTER;\
+        LockTester<LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS> tester;\
+        uncontendedTimes.append(tester.run(title, 1, numIterations));\
+        minorTimes.append(tester.run(title, 2, numIterations));\
+        typicalTimes.append(tester.run(title, numCores / 2, numIterations));\
+        tester.run(title, numCores, numIterations);\
+        tester.run(title, numCores + 1, numIterations);\
+        contendedTimes.append(tester.run(title, numCores * 2, numIterations));\
+    }
+
+    class Null
+    {};
+
+    const unsigned numIterations = 1000000;
+    const unsigned numCores = getAffinityCpus();
+    void runAllTests()
+    {
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 1);
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 2, 1);
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 5, 1);
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 2);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 1);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 2, 1);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 5, 1);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 2);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 1);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 2, 1);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 5, 1);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 2);
+        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, 1, 1);
+        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, 5, 1);
+        DO_TEST(Null, Null, CasCounter, 1, 1);
+        DO_TEST(Null, Null, CasCounter, 5, 1);
+        DO_TEST(Null, Null, unsigned __int64, 1, 1);
+        DO_TEST(Null, Null, unsigned __int64, 2, 1);
+        DO_TEST(Null, Null, unsigned __int64, 5, 1);
+
+        printf("Summary\n");
+        summariseTimings("Uncontended", uncontendedTimes);
+        summariseTimings("Minor", minorTimes);
+        summariseTimings("Typical", typicalTimes);
+        summariseTimings("Over", contendedTimes);
+    }
+
+    void summariseTimings(const char * option, UInt64Array & times)
+    {
+        printf("%11s 1x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u)   "
+                    "5x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u)\n", option,
+                    times.item(0), times.item(4), times.item(8), times.item(12), times.item(14),
+                    times.item(2), times.item(6), times.item(10), times.item(13), times.item(15));
+    }
+
+private:
+    UInt64Array uncontendedTimes;
+    UInt64Array minorTimes;
+    UInt64Array typicalTimes;
+    UInt64Array contendedTimes;
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingTest, "AtomicTimingTest");
+
 
 #endif // _USE_CPPUNIT

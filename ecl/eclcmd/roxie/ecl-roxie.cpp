@@ -188,9 +188,11 @@ public:
     {
         Owned<IClientWsSMC> client = createCmdClient(WsSMC, *this);
         Owned<IClientRoxieControlCmdRequest> req = client->createRoxieControlCmdRequest();
+        setCmdRequestTimeouts(req->rpc(), optMsToWait, optWaitConnectMs, optWaitReadSec);
+
         req->setWait(optMsToWait);
         req->setProcessCluster(optProcess);
-        req->setCommand(attach ? CRoxieControlCmd_ATTACH : CRoxieControlCmd_DETACH);
+        req->setCommand(attach ? CRoxieControlCmdType_ATTACH : CRoxieControlCmdType_DETACH);
 
         Owned<IClientRoxieControlCmdResponse> resp = client->RoxieControlCmd(req);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -296,14 +298,16 @@ public:
     {
         Owned<IClientWsSMC> client = createCmdClient(WsSMC, *this);
         Owned<IClientRoxieControlCmdRequest> req = client->createRoxieControlCmdRequest();
+        setCmdRequestTimeouts(req->rpc(), optMsToWait, optWaitConnectMs, optWaitReadSec);
+
         req->setWait(optMsToWait);
         req->setProcessCluster(optProcess);
         if (!reload)
-            req->setCommand(CRoxieControlCmd_STATE);
+            req->setCommand(CRoxieControlCmdType_STATE);
         else if (optRetry)
-            req->setCommand(CRoxieControlCmd_RELOAD_RETRY);
+            req->setCommand(CRoxieControlCmdType_RELOAD_RETRY);
         else
-            req->setCommand(CRoxieControlCmd_RELOAD);
+            req->setCommand(CRoxieControlCmdType_RELOAD);
 
         Owned<IClientRoxieControlCmdResponse> resp = client->RoxieControlCmd(req);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -424,6 +428,8 @@ public:
     {
         Owned<IClientWsDFUXRef> client = createCmdClientExt(WsDFUXRef, *this, "?ver_=1.29");
         Owned<IClientDFUXRefUnusedFilesRequest> req = client->createDFUXRefUnusedFilesRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         req->setProcessCluster(optProcess);
         req->setCheckPackageMaps(optCheckPackageMaps);
 

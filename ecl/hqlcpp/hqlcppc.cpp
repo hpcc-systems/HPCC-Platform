@@ -39,6 +39,8 @@ IHqlExpression * convertAddressToValue(IHqlExpression * address, ITypeInfo * col
 
     Owned<ITypeInfo> pointerType = makePointerType(LINK(columnType));
     assertex(address->getOperator() == no_externalcall || pointerType == address->queryType());
+    if (columnType->getTypeCode()==type_table)
+        pointerType.setown(makePointerType(makeConstantModifier(LINK(columnType))));
     IHqlExpression * temp = createValue(no_implicitcast, LINK(pointerType), LINK(address));
     return createValue(no_deref, LINK(columnType), temp);
 }

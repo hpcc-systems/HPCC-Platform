@@ -23,6 +23,7 @@
 
 #include "rtlkey.hpp"
 #include "jhtree.hpp"
+#include "rmtfile.hpp"
 
 #include "thorstep.ipp"
 
@@ -48,6 +49,8 @@ protected:
     Owned<IEngineRowAllocator> allocator;
     Owned<IOutputRowDeserializer> deserializer;
     Owned<IOutputRowSerializer> serializer;
+    rowcount_t choosenLimit = 0;
+    rowcount_t remoteLimit = RCMAX;
     bool localKey = false;
     size32_t seekGEOffset = 0;
     __int64 lastSeeks = 0, lastScans = 0;
@@ -56,35 +59,36 @@ protected:
     unsigned __int64 *statsArr = nullptr;
     size32_t fixedDiskRecordSize = 0;
     rowcount_t progress = 0;
-    unsigned currentKM = 0;
     bool eoi = false;
     IArrayOf<IKeyManager> keyManagers;
+
     IKeyManager *currentManager = nullptr;
+    unsigned currentPart = 0;
+    Owned<IIndexLookup> currentInput;
+    bool localMerge = false;
+
     Owned<IKeyManager> keyMergerManager;
     Owned<IKeyIndexSet> keyIndexSet;
-    bool keyMergerInUse = false;
+    IConstPointerArrayOf<ITranslator> translators;
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
     {
     protected:
-        IKeyManager *keyManager;
-        offset_t filepos;
+        CIndexReadSlaveBase &activity;
+        IKeyManager *keyManager = nullptr;
     public:
-        TransformCallback() { keyManager = NULL; };
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface)
+        TransformCallback(CIndexReadSlaveBase &_activity) : activity(_activity) { };
+        IMPLEMENT_IINTERFACE_O_USING(CSimpleInterface)
 
     //IThorIndexCallback
-        virtual unsigned __int64 getFilePosition(const void *row)
-        {
-            return filepos;
-        }
-        virtual byte *lookupBlob(unsigned __int64 id) 
+        virtual byte *lookupBlob(unsigned __int64 id) override
         { 
             size32_t dummy;
+            if (!keyManager)
+                throw MakeActivityException(&activity, 0, "Callback attempting to read blob with no key manager - index being read remotely?");
             return (byte *) keyManager->loadBlob(id, dummy); 
         }
-        offset_t & getFPosRef() { return filepos; }
-        void setManager(IKeyManager *_keyManager)
+        void prepareManager(IKeyManager *_keyManager)
         {
             finishedRow();
             keyManager = _keyManager;
@@ -94,35 +98,217 @@ protected:
             if (keyManager)
                 keyManager->releaseBlobs(); 
         }
-        void clearManager()
+        void resetManager()
         {
             keyManager = NULL;
         }
     } callback;
 
-    virtual bool keyed() { return false; }
-    virtual void setManager(IKeyManager *manager)
+    // return a ITranslator based on published format in part and expected/format
+    ITranslator *getTranslators(IPartDescriptor &partDesc)
     {
-        clearManager();
-        currentManager = manager;
-        callback.setManager(manager);
-        resetLastStats();
-        helper->createSegmentMonitors(currentManager);
-        currentManager->finishSegmentMonitors();
-        currentManager->reset();
-        keyMergerInUse = (manager == keyMergerManager);
+        unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
+        IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
+        IPropertyTree const &props = partDesc.queryOwner().queryProperties();
+        Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
+        unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
+        RecordTranslationMode translationMode = getTranslationMode(*this);
+        unsigned expectedFormatCrc = helper->getDiskFormatCrc();
+        IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();
+
+        Owned<ITranslator> ret = ::getTranslators("rowstream", expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode);
+        if (!ret)
+            return nullptr;
+        if (!ret->queryTranslator().canTranslate())
+            throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s", logicalFilename.get());
+        if (ret->queryTranslator().keyedTranslated())
+            throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - keyed fields do not match", logicalFilename.get());
+        return ret.getClear();
     }
-    void clearManager()
+public:
+    IIndexLookup *getNextInput(IKeyManager *&keyManager, unsigned &partNum, bool useMerger)
+    {
+        keyManager = nullptr;
+        if (useMerger && keyMergerManager)
+        {
+            if (0 == partNum)
+                keyManager = keyMergerManager;
+        }
+        else if (keyManagers.isItem(partNum))
+            keyManager = &keyManagers.item(partNum);
+        else if (partNum >= partDescs.ordinality())
+            return nullptr;
+        else
+        {
+            if (localMerge) // NB: keyManagers[0] will be filled below
+            {
+                if (partNum > 0)
+                    return nullptr;
+            }
+            RecordTranslationMode translationMode = getTranslationMode(*this);
+            unsigned expectedFormatCrc = helper->getDiskFormatCrc();
+            IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();
+            unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
+            IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
+
+            unsigned p = partNum;
+            while (p<partDescs.ordinality()) // will process all parts if localMerge
+            {
+                IPartDescriptor &part = partDescs.item(p++);
+
+                Owned<ITranslator> translator = getTranslators(part);
+                IOutputMetaData *actualFormat = translator ? &translator->queryActualFormat() : expectedFormat;
+                bool canSerializeTypeInfo = actualFormat->queryTypeInfo()->canSerialize() && projectedFormat->queryTypeInfo()->canSerialize();
+                bool usesBlobs = 0 != (helper->getFlags() & TIRusesblob);
+
+                unsigned crc=0;
+                part.getCrc(crc);
+                if (canSerializeTypeInfo && !usesBlobs && !localMerge)
+                {
+                    for (unsigned copy=0; copy<part.numCopies(); copy++)
+                    {
+                        RemoteFilename rfn;
+                        part.getFilename(copy, rfn);
+                        StringBuffer path;
+                        rfn.getPath(path);
+
+                        StringBuffer lPath;
+                        if (isRemoteReadCandidate(*this, rfn, lPath))
+                        {
+                            // Open a stream from remote file, having passed actual, expected, projected, and filters to it
+                            SocketEndpoint ep(rfn.queryEndpoint());
+                            setDafsEndpointPort(ep);
+
+                            IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
+                            struct CIndexReadContext : implements IIndexReadContext
+                            {
+                                IConstArrayOf<IFieldFilter> &fieldFilters;
+                                CIndexReadContext(IConstArrayOf<IFieldFilter> &_fieldFilters) : fieldFilters(_fieldFilters)
+                                {
+                                }
+                                virtual void append(IKeySegmentMonitor *segment) override { throwUnexpected(); }
+                                virtual void append(FFoption option, const IFieldFilter * filter) override
+                                {
+                                    fieldFilters.append(*filter);
+                                }
+                            } context(fieldFilters);
+                            helper->createSegmentMonitors(&context);
+
+                            RowFilter actualFilter;
+                            Owned<const IKeyTranslator> keyedTranslator = createKeyTranslator(actualFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true));
+                            if (keyedTranslator && keyedTranslator->needsTranslate())
+                                keyedTranslator->translate(actualFilter, fieldFilters);
+                            else
+                                actualFilter.appendFilters(fieldFilters);
+
+                            Owned<IIndexLookup> indexLookup = createRemoteFilteredKey(ep, lPath, crc, actualFormat, projectedFormat, actualFilter, remoteLimit);
+                            if (indexLookup)
+                            {
+                                try
+                                {
+                                    indexLookup->ensureAvailable();
+                                }
+                                catch (IException *e)
+                                {
+                                    EXCLOG(e, nullptr);
+                                    e->Release();
+                                    continue; // try next copy and ultimately failover to local when no more copies
+                                }
+                                ActPrintLog("[part=%d]: reading remote dafilesrv index '%s' (logical file = %s)", partNum, path.str(), logicalFilename.get());
+                                partNum = p;
+                                return indexLookup.getClear();
+                            }
+                        }
+                    }
+                }
+
+                // local key handling
+
+                Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, part);
+
+                RemoteFilename rfn;
+                part.getFilename(0, rfn);
+                StringBuffer path;
+                rfn.getPath(path); // NB: use for tracing only, IDelayedFile uses IPartDescriptor and any copy
+
+                Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lfile, false, false);
+                Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr, helper->hasNewSegmentMonitors());
+                if (localMerge)
+                {
+                    if (!keyIndexSet)
+                    {
+                        keyIndexSet.setown(createKeyIndexSet());
+                        Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), part, translationMode, expectedFormatCrc, expectedFormat, projectedFormatCrc, projectedFormat);
+                        translators.append(translator.getClear());
+                    }
+                    keyIndexSet->addIndex(keyIndex.getClear());
+                    keyManagers.append(*klManager.getLink());
+                    keyManager = klManager;
+                }
+                else
+                {
+                    Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), part, translationMode, expectedFormatCrc, expectedFormat, projectedFormatCrc, projectedFormat);
+                    if (translator)
+                        klManager->setLayoutTranslator(&translator->queryTranslator());
+                    translators.append(translator.getClear());
+                    keyManagers.append(*klManager.getLink());
+                    keyManager = klManager;
+                    partNum = p;
+                    return createIndexLookup(keyManager);
+                }
+            }
+            keyMergerManager.setown(createKeyMerger(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, nullptr, helper->hasNewSegmentMonitors()));
+            const ITranslator *translator = translators.item(0);
+            if (translator)
+                keyMergerManager->setLayoutTranslator(&translator->queryTranslator());
+            if (useMerger)
+                keyManager = keyMergerManager;
+            else
+                keyManager = &keyManagers.item(partNum);
+        }
+        if (keyManager)
+        {
+            ++partNum;
+            return createIndexLookup(keyManager);
+        }
+        else
+            return nullptr;
+    }
+    void configureNextInput()
     {
         if (currentManager)
         {
-            callback.clearManager();
-            if (keyMergerInUse)
-                keyMergerManager->reset(); // JCSMORE - not entirely sure why necessary, if not done, resetPending is false. Should releaseSegmentMonitors() handle?
-            currentManager->releaseSegmentMonitors();
+            resetManager(currentManager);
             currentManager = nullptr;
-            keyMergerInUse = false;
         }
+        IKeyManager *keyManager = nullptr;
+        currentInput.setown(getNextInput(keyManager, currentPart, true));
+        if (keyManager) // local
+        {
+            prepareManager(keyManager);
+            currentManager = keyManager;
+        }
+    }
+    virtual bool keyed() { return false; }
+    virtual void prepareManager(IKeyManager *manager)
+    {
+        if (currentManager == manager)
+            return;
+        resetManager(manager);
+        callback.prepareManager(manager);
+        resetLastStats();
+        helper->createSegmentMonitors(manager);
+        manager->finishSegmentMonitors();
+        manager->reset();
+    }
+    void resetManager(IKeyManager *manager)
+    {
+        callback.resetManager();
+        if (localMerge)
+            keyMergerManager->reset(); // JCSMORE - not entirely sure why necessary, if not done, resetPending is false. Should releaseSegmentMonitors() handle?
+        manager->releaseSegmentMonitors();
+        if (currentManager == manager)
+            currentManager = nullptr;
     }
     const void *createKeyedLimitOnFailRow()
     {
@@ -136,24 +322,19 @@ protected:
     {
         if (eoi)
             return nullptr;
+        dbgassertex(currentInput);
         const void *ret = nullptr;
-        dbgassertex(currentManager);
-        for (;;)
+        while (true)
         {
-            if (currentManager->lookup(true))
-            {
-                noteStats(currentManager->querySeeks(), currentManager->queryScans());
-                ret = (const void *)currentManager->queryKeyBuffer(callback.getFPosRef());
-            }
-            if (ret || keyMergerManager)
+            ret = currentInput->nextKey();
+            noteStats(currentInput->querySeeks(), currentInput->queryScans());
+            if (ret)
                 break;
-            ++currentKM;
-            if (currentKM >= keyManagers.ordinality())
+            configureNextInput();
+            if (!currentInput)
                 break;
-            else
-                setManager(&keyManagers.item(currentKM));
         }
-        if (NULL == ret || keyed())
+        if (nullptr == ret || keyed())
         {
             eoi = true;
             return nullptr;
@@ -162,10 +343,10 @@ protected:
     }
 public:
     CIndexReadSlaveBase(CGraphElementBase *container) 
-        : CSlaveActivity(container)
+        : CSlaveActivity(container), callback(*this)
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
-        limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(helper->selectInterface(TAIsourcelimittransformextra_1));
+        limitTransformExtra = nullptr;
         fixedDiskRecordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // 0 if variable and unused
         reInit = 0 != (helper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
@@ -175,19 +356,29 @@ public:
             return 0;
         // Note - don't use merger's count - it doesn't work
         unsigned __int64 count = 0;
-        for (unsigned p=0; p<partDescs.ordinality(); p++)
+        IKeyManager *_currentManager = currentManager;
+        unsigned p = 0;
+        while (true)
         {
-            IKeyManager &keyManager = keyManagers.item(p);
-            setManager(&keyManager);
+            IKeyManager *keyManager = nullptr;
+            Owned<IIndexLookup> indexInput = getNextInput(keyManager, p, false);
+            if (!indexInput)
+                break;
+            if (keyManager)
+                prepareManager(keyManager);
             if (hard) // checkCount checks hard key count only.
-                count += keyManager.checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
+                count += indexInput->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
             else
-                count += keyManager.getCount();
-            noteStats(keyManager.querySeeks(), keyManager.queryScans());
-            if (count > keyedLimit)
+                count += indexInput->getCount();
+            noteStats(indexInput->querySeeks(), indexInput->queryScans());
+            bool limitHit = count > keyedLimit;
+            if (keyManager)
+                resetManager(keyManager);
+            if (limitHit)
                 break;
         }
-        clearManager();
+        if (_currentManager)
+            prepareManager(_currentManager);
         return (rowcount_t)count;
     }
     rowcount_t sendGetCount(rowcount_t count)
@@ -229,59 +420,35 @@ public:
         _statsArr.append(0);
         statsArr = _statsArr.getArray();
         lastSeeks = lastScans = 0;
-        ForEachItemIn(p, partDescs)
-        {
-            IPartDescriptor &part = partDescs.item(p);
-            RemoteFilename rfn;
-            part.getFilename(0, rfn);
-            StringBuffer filePath;
-            rfn.getPath(filePath);
-
-            Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, part);
-            Owned<IKeyManager> klManager;
-
-            unsigned crc=0;
-            part.getCrc(crc);
-
-            if ((localKey && partDescs.ordinality()>1) || seekGEOffset) // for now at least, no remote key support if stepping or merging
-            {
-                Owned<IKeyIndex> keyIndex = createKeyIndex(filePath, crc, *lfile, false, false);
-                klManager.setown(createLocalKeyManager(keyIndex, fixedDiskRecordSize, nullptr));
-                if (!keyIndexSet)
-                    keyIndexSet.setown(createKeyIndexSet());
-                keyIndexSet->addIndex(keyIndex.getClear());
-            }
-            else
-            {
-                bool allowRemote = getOptBool("remoteKeyFilteringEnabled");
-                bool forceRemote = allowRemote ? getOptBool("forceDafilesrv") : false; // can only force remote, if forceDafilesrv and remoteKeyFilteringEnabled are enabled.
-                klManager.setown(createKeyManager(filePath, fixedDiskRecordSize, crc, lfile, allowRemote, forceRemote));
-            }
-            keyManagers.append(*klManager.getClear());
-        }
+        localMerge = (localKey && partDescs.ordinality()>1) || seekGEOffset;
     }
     // IThorDataLink
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
-
-        eoi = false;
-        if (partDescs.ordinality())
+        if (!eoi)
         {
-            if (keyMergerManager)
-                setManager(keyMergerManager);
-            else
-                setManager(&keyManagers.item(0));
+            if (0 == partDescs.ordinality())
+            {
+                eoi = true;
+                return;
+            }
+            currentPart = 0;
+            eoi = false;
+            configureNextInput();
         }
-        else
-            eoi = true;
     }
     virtual void reset() override
     {
         PARENT::reset();
-        currentKM = 0;
-        clearManager();
+        eoi = false;
+        currentPart = 0;
+        if (currentManager)
+        {
+            resetManager(currentManager);
+            currentManager = nullptr;
+        }
     }
     void serializeStats(MemoryBuffer &mb)
     {
@@ -297,9 +464,9 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
     typedef CIndexReadSlaveBase PARENT;
 
     IHThorIndexReadArg *helper;
-    rowcount_t rowLimit = RCMAX, stopAfter = 0;
+    rowcount_t rowLimit = RCMAX;
     bool keyedLimitSkips = false, first = false, needTransform = false, optimizeSteppedPostFilter = false, steppingEnabled = false;
-    rowcount_t keyedLimit = RCMAX, helperKeyedLimit = RCMAX;
+    rowcount_t keyedLimit = RCMAX;
     rowcount_t keyedLimitCount = RCMAX;
     unsigned keyedProcessed = 0;
     ISteppingMeta *rawMeta;
@@ -318,33 +485,39 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
             const void *r = nextKey();
             if (!r)
                 break;
-            if (needTransform)
+            if (likely(helper->canMatch(r)))
             {
-                size32_t sz = helper->transform(ret, r);
-                if (sz)
+                if (needTransform)
                 {
-                    callback.finishedRow();
+                    size32_t sz = helper->transform(ret, r);
+                    if (sz)
+                    {
+                        callback.finishedRow();
+                        return ret.finalizeRowClear(sz);
+                    }
+                }
+                else
+                {
+                    callback.finishedRow(); // since filter might have accessed a blob
+                    size32_t sz = queryRowMetaData()->getRecordSize(r);
+                    memcpy(ret.ensureCapacity(sz, NULL), r, sz);
                     return ret.finalizeRowClear(sz);
                 }
             }
             else
-            {
-                size32_t sz = queryRowMetaData()->getRecordSize(r);
-                memcpy(ret.ensureCapacity(sz, NULL), r, sz);
-                return ret.finalizeRowClear(sz);
-            }
+                callback.finishedRow(); // since filter might have accessed a blob
         }
         return nullptr;
     }
-    virtual void setManager(IKeyManager *manager) override
+    virtual void prepareManager(IKeyManager *manager) override
     {
-        PARENT::setManager(manager);
-        if (stopAfter && !helper->transformMayFilter())
-            manager->setChooseNLimit(stopAfter);
+        PARENT::prepareManager(manager);
+        if (choosenLimit && !helper->transformMayFilter())
+            manager->setChooseNLimit(choosenLimit);
     }
     const void *nextKeyGE(const void *seek, unsigned numFields)
     {
-        assertex(keyMergerManager.get());
+        assertex(localMerge);
         const byte *rawSeek = (const byte *)seek + seekGEOffset;
         unsigned seekSize = seekSizes.item(numFields-1);
         if (projectedMeta)
@@ -358,7 +531,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
         if (!currentManager->lookupSkip(rawSeek, seekGEOffset, seekSize))
             return NULL;
         noteStats(currentManager->querySeeks(), currentManager->queryScans());
-        const byte *row = currentManager->queryKeyBuffer(callback.getFPosRef());
+        const byte *row = currentManager->queryKeyBuffer();
 #ifdef _DEBUG
         if (memcmp(row + seekGEOffset, rawSeek, seekSize) < 0)
             assertex("smart seek failure");
@@ -383,37 +556,43 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
             if (seek && memcmp((byte *)r + seekGEOffset, seek, seekSize) < 0)
                 assertex(!"smart seek failure");
 #endif
-            if (needTransform)
+            if (likely(helper->canMatch(r)))
             {
-                size32_t sz = helper->transform(ret, r);
-                if (sz)
+                if (needTransform)
                 {
-                    callback.finishedRow();
-                    return ret.finalizeRowClear(sz);
-                }
-                else
-                {
-                    if (optimizeSteppedPostFilter && stepExtra.returnMismatches())
+                    size32_t sz = helper->transform(ret, r);
+                    if (sz)
                     {
-                        if (memcmp(ret.getSelf() + seekGEOffset, seek, seekSize) != 0)
+                        callback.finishedRow();
+                        return ret.finalizeRowClear(sz);
+                    }
+                    else
+                    {
+                        if (optimizeSteppedPostFilter && stepExtra.returnMismatches())
                         {
-                            size32_t sz = helper->unfilteredTransform(ret, r);
-                            if (sz)
+                            if (memcmp(ret.getSelf() + seekGEOffset, seek, seekSize) != 0)
                             {
-                                wasCompleteMatch = false;
-                                callback.finishedRow();
-                                return ret.finalizeRowClear(sz);
+                                size32_t sz = helper->unfilteredTransform(ret, r);
+                                if (sz)
+                                {
+                                    wasCompleteMatch = false;
+                                    callback.finishedRow();
+                                    return ret.finalizeRowClear(sz);
+                                }
                             }
                         }
                     }
                 }
+                else
+                {
+                    callback.finishedRow(); // since filter might have accessed a blob
+                    size32_t sz = queryRowMetaData()->getRecordSize(r);
+                    memcpy(ret.ensureCapacity(sz, NULL), r, sz);
+                    return ret.finalizeRowClear(sz);
+                }
             }
             else
-            {
-                size32_t sz = queryRowMetaData()->getRecordSize(r);
-                memcpy(ret.ensureCapacity(sz, NULL), r, sz);
-                return ret.finalizeRowClear(sz);
-            }
+                callback.finishedRow(); // since filter might have accessed a blob
         }
         return nullptr;
     }
@@ -434,7 +613,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
                 eoi = true;
                 if (container.queryLocalOrGrouped() || firstNode())
                 {
-                    if (0 == (TIRkeyedlimitskips & helper->getFlags()))
+                    if (!keyedLimitSkips)
                     {
                         if (0 != (TIRkeyedlimitcreates & helper->getFlags()))
                             ret.setown(createKeyedLimitOnFailRow());
@@ -458,9 +637,10 @@ public:
     CIndexReadSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
         helper = (IHThorIndexReadArg *)queryContainer().queryHelper();
+        limitTransformExtra = helper;
         rawMeta = helper->queryRawSteppingMeta();
         projectedMeta = helper->queryProjectedSteppingMeta();
-        steppedExtra = static_cast<IHThorSteppedSourceExtra *>(helper->selectInterface(TAIsteppedsourceextra_1));
+        steppedExtra = helper->querySteppingExtra();
         optimizeSteppedPostFilter = (helper->getFlags() & TIRunfilteredtransform) != 0;
         steppingEnabled = 0 != container.queryJob().getWorkUnitValueInt("steppingEnabled", 0);
         if (rawMeta)
@@ -503,54 +683,47 @@ public:
             else
                 steppingMeta.init(rawMeta, hasPostFilter);
         }
-        if (keyIndexSet)
-            keyMergerManager.setown(createKeyMerger(keyIndexSet, fixedDiskRecordSize, seekGEOffset, NULL));
     }
 
 // IThorDataLink
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
-
-        PARENT::start();
+        choosenLimit = (rowcount_t)helper->getChooseNLimit();
 
         needTransform = helper->needTransform();
-        helperKeyedLimit = (rowcount_t)helper->getKeyedLimit();
+        keyedLimit = (rowcount_t)helper->getKeyedLimit();
         rowLimit = (rowcount_t)helper->getRowLimit(); // MORE - if no filtering going on could keyspan to get count
         if (0 != (TIRlimitskips & helper->getFlags()))
             rowLimit = RCMAX;
         if (!helper->canMatchAny())
-            helperKeyedLimit = keyedLimit = RCMAX; // disable
+            keyedLimit = RCMAX; // disable
         else if (keyedLimit != RCMAX)
         {
             if (TIRkeyedlimitskips & helper->getFlags())
                 keyedLimitSkips = true;
         }
-
         first = true;
-        keyedLimit = helperKeyedLimit;
         keyedLimitCount = RCMAX;
         keyedProcessed = 0;
         if (steppedExtra)
             steppingMeta.setExtra(steppedExtra);
 
-        if (currentManager)
+        // NB: setup remoteLimit before base start() call which if parts remote, will use remoteLimit
+        if (choosenLimit)
         {
-            if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))
-            {
-                IKeyManager *_currentManager = currentManager;
-                keyedLimitCount = getCount(keyedLimit, true);
-                setManager(_currentManager);
-            }
+            remoteLimit = choosenLimit;
+            if (!helper->transformMayFilter() && (RCMAX != keyedLimit) && (keyedLimit+1 < remoteLimit))
+                remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
         }
-        else if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))
-        {
-            eoi = false;
-            keyedLimitCount = 0;
-        }
-        else
-            eoi = true;
+
+        if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))
+            keyedLimitCount = getCount(keyedLimit, true);
+
+        PARENT::start();
+
+        if (eoi && RCMAX != keyedLimitCount && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
+            eoi = false; // because a non skipping limit needs to be triggered by checkLimit in nextRow(), which will either fire an exception or generate a row
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
@@ -566,10 +739,14 @@ public:
         if (RCMAX != keyedLimit)
         {
             keyedLimitCount = sendGetCount(keyedProcessed);
-            if (keyedLimitCount > keyedLimit)
+            if (keyedLimitCount > keyedLimit && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
                 helper->onKeyedLimitExceeded(); // should throw exception
         }
-        clearManager();
+        if (currentManager)
+        {
+            resetManager(currentManager);
+            currentManager = nullptr;
+        }
         PARENT::stop();
     }
     CATCH_NEXTROW()
@@ -712,19 +889,31 @@ public:
             gathered = true;
             try
             {
-                ForEachItemIn(p, partDescs)
+                IKeyManager *_currentManager = currentManager;
+                unsigned p = 0;
+                while (true)
                 {
-                    IKeyManager &keyManager = keyManagers.item(p);
-                    setManager(&keyManager);
-                    while (keyManager.lookup(true))
+                    IKeyManager *keyManager = nullptr;
+                    Owned<IIndexLookup> indexInput = getNextInput(keyManager, p, false);
+                    if (!indexInput)
+                        break;
+                    if (keyManager)
+                        prepareManager(keyManager);
+                    while (true)
                     {
+                        const void *key = indexInput->nextKey();
+                        if (!key)
+                            break;
                         ++progress;
-                        noteStats(keyManager.querySeeks(), keyManager.queryScans());
-                        helper->processRow(keyManager.queryKeyBuffer(callback.getFPosRef()), this);
+                        noteStats(indexInput->querySeeks(), indexInput->queryScans());
+                        helper->processRow(key, this);
                         callback.finishedRow();
                     }
-                    clearManager();
+                    if (keyManager)
+                        resetManager(keyManager);
                 }
+                if (_currentManager)
+                    prepareManager(_currentManager);
                 ActPrintLog("INDEXGROUPAGGREGATE: Local aggregate table contains %d entries", localAggTable->elementCount());
                 if (!container.queryLocal() && container.queryJob().querySlaves()>1)
                 {
@@ -770,7 +959,6 @@ class CIndexCountSlaveActivity : public CIndexReadSlaveBase
     typedef CIndexReadSlaveBase PARENT;
 
     IHThorIndexCountArg *helper;
-    rowcount_t choosenLimit = 0;
     rowcount_t preknownTotalCount = 0;
     bool totalCountKnown = false;
     bool done = false;
@@ -781,9 +969,9 @@ public:
         helper = static_cast <IHThorIndexCountArg *> (container.queryHelper());
         appendOutputLinked(this);
     }
-    virtual void setManager(IKeyManager *manager) override
+    virtual void prepareManager(IKeyManager *manager) override
     {
-        PARENT::setManager(manager);
+        PARENT::prepareManager(manager);
         if (choosenLimit && !helper->hasFilter())
             manager->setChooseNLimit(choosenLimit);
     }
@@ -800,13 +988,18 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         choosenLimit = (rowcount_t)helper->getChooseNLimit();
-        PARENT::start();
         if (!helper->canMatchAny())
         {
             totalCountKnown = true;
             preknownTotalCount = 0;
         }
+        else
+        {
+            if (choosenLimit)
+                remoteLimit = choosenLimit;
+        }
         done = false;
+        PARENT::start();
     }
 
 // IRowStream
@@ -827,26 +1020,36 @@ public:
         {
             if (helper->hasFilter())
             {
-                ForEachItemIn(p, partDescs)
+                IKeyManager *_currentManager = currentManager;
+                unsigned p = 0;
+                while (true)
                 {
-                    IKeyManager &keyManager = keyManagers.item(p);
-                    setManager(&keyManager);
-                    for (;;)
+                    IKeyManager *keyManager = nullptr;
+                    Owned<IIndexLookup> indexInput = getNextInput(keyManager, p, false);
+                    if (!indexInput)
+                        break;
+                    if (keyManager)
+                        prepareManager(keyManager);
+                    while (true)
                     {
-                        bool l = keyManager.lookup(true);
-                        noteStats(keyManager.querySeeks(), keyManager.queryScans());
-                        if (!l)
+                        const void *key = indexInput->nextKey();
+                        noteStats(indexInput->querySeeks(), indexInput->queryScans());
+                        if (!key)
                             break;
                         ++progress;
-                        totalCount += helper->numValid(keyManager.queryKeyBuffer(callback.getFPosRef()));
-                        callback.finishedRow();
+                        totalCount += helper->numValid(key);
+                        if (keyManager)
+                            callback.finishedRow();
                         if ((totalCount > choosenLimit))
                             break;
                     }
-                    clearManager();
+                    if (keyManager)
+                        resetManager(keyManager);
                     if ((totalCount > choosenLimit))
                         break;
                 }
+                if (_currentManager)
+                    prepareManager(_currentManager);
             }
             else
                 totalCount = getCount(choosenLimit, false);
@@ -900,7 +1103,7 @@ class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase
 
     bool expanding = false;
     IHThorIndexNormalizeArg *helper;
-    rowcount_t keyedLimit = RCMAX, rowLimit = RCMAX, stopAfter = 0, keyedProcessed = 0, keyedLimitCount = RCMAX;
+    rowcount_t keyedLimit = RCMAX, rowLimit = RCMAX, keyedProcessed = 0, keyedLimitCount = RCMAX;
 
     const void * createNextRow()
     {
@@ -921,6 +1124,7 @@ public:
     CIndexNormalizeSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
         helper = (IHThorIndexNormalizeArg *)container.queryHelper();
+        limitTransformExtra = helper;
         appendOutputLinked(this);
     }
 
@@ -949,17 +1153,25 @@ public:
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
-        PARENT::start();
+        choosenLimit = (rowcount_t)helper->getChooseNLimit();
         keyedLimit = (rowcount_t)helper->getKeyedLimit();
         rowLimit = (rowcount_t)helper->getRowLimit();
         if (helper->getFlags() & TIRlimitskips)
             rowLimit = RCMAX;
+        if (choosenLimit)
+        {
+            remoteLimit = choosenLimit;
+            if (keyedLimit && (keyedLimit < remoteLimit))
+                remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
+        }
+
         expanding = false;
         keyedProcessed = 0;
         keyedLimitCount = RCMAX;
         if (keyedLimit != RCMAX && (helper->getFlags() & TIRcountkeyedlimit) != 0)
             keyedLimitCount = getCount(keyedLimit, true);
+
+        PARENT::start();
     }
 
 // IRowStream
@@ -980,7 +1192,7 @@ public:
             return nullptr;
 
         rowcount_t c = getDataLinkCount();
-        if ((stopAfter && c==stopAfter)) // NB: only slave limiter, global performed in chained choosen activity
+        if ((choosenLimit && c==choosenLimit)) // NB: only slave limiter, global performed in chained choosen activity
             return nullptr;
 
         if (RCMAX != keyedLimitCount)

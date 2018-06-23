@@ -22,19 +22,83 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/topic",
+    "dojo/request/xhr",
+    "dojo/cookie",
+    "dojo/on",
+
+    "dijit/Dialog",
+    "dijit/form/Button",
+
+    "src/ESPUtil",
+    "src/Utility",
+    "hpcc/LockDialogWidget",
 
     "dojox/html/entities",
-    "dojox/widget/Toaster"
-], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic,
+    "dojox/widget/Toaster",
+
+    "css!hpcc/css/ecl.css",
+    "css!dojo-themes/flat/flat.css",
+    "css!hpcc/css/hpcc.css"
+
+], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic, xhr, cookie, on,
+            Dialog, Button,
+            ESPUtil, Utility, LockDialogWidget,
             entities, Toaster) {
 
-    var initUi = function () {
-        var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)));
+    var IDLE_TIMEOUT = cookie("ESPSessionTimeoutSeconds") * 1000;
+    var SESSION_RESET_FREQ = 30 * 1000;
+    var idleWatcher;
+    var monitorLockClick;
+    var _prevReset = Date.now();
+    var sessionIsActive = cookie("ESPSessionTimeoutSeconds");
+
+    function _resetESPTime(evt) {
+        if (Date.now() - _prevReset > SESSION_RESET_FREQ) {
+            _prevReset = Date.now();
+            xhr("esp/reset_session_timeout", {
+                method: "post"
+            }).then(function (data) {
+            });
+        }
+    }
+
+    function _onLogout(evt) {
+        xhr("esp/logout", {
+            method: "post"
+        }).then(function (data) {
+            if (data) {
+                document.cookie = "ESPSessionID" + location.port + " = '' "; "expires=Thu, 01 Jan 1970 00:00:00 GMT"; // or -1
+                window.location.reload();
+            }
+        });
+    }
+
+    function startLoading(targetNode) {
+        domStyle.set(dom.byId("loadingOverlay"), "display", "block");
+        domStyle.set(dom.byId("loadingOverlay"), "opacity", "255");
+    }
+
+    function stopLoading() {
+        fx.fadeOut({
+            node: dom.byId("loadingOverlay"),
+            onEnd: function (node) {
+                domStyle.set(node, "display", "none");
+            }
+        }).play();
+    }
+
+    function initUnlockListener() {
+        var unlock = dom.byId("unlock");
+        on(unlock, "click", function (event) {
+            monitorLockClick.unlocked();
+        });
+    }
+
+    function initUI() {
+        var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
         var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
 
-        require([
-                "hpcc/" + hpccWidget
-        ], function (WidgetClass) {
+            Utility.resolve(hpccWidget, function (WidgetClass) {
                 var webParams = {
                     id: "stub",
                     "class": "hpccApp"
@@ -49,7 +113,7 @@ define([
                         readOnly: params.ReadOnly
                     });
                 }
-                var widget = WidgetClass.fixCircularDependency ? new WidgetClass.fixCircularDependency(webParams) : new WidgetClass(webParams);
+                var widget = new WidgetClass(webParams);
 
                 var myToaster = new Toaster({
                     id: 'hpcc_toaster',
@@ -93,30 +157,61 @@ define([
                 }
 
                 document.title = widget.getTitle ? widget.getTitle() : params.Widget;
+
+                if (sessionIsActive) {
+                    if (!cookie("ECLWatchUser")) {
+                        cookie("ECLWatchUser", "true");
+                    }
+
+                    var lock = dom.byId("Lock");
+                    idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
+                    monitorLockClick = new ESPUtil.MonitorLockClick();
+                   if (lock){
+                        on(lock, "click", function (event) {
+                            monitorLockClick.locked();
+                        });
+                    }
+                    monitorLockClick.on("unlocked", function (){
+                        idleWatcher.start();
+                    });
+                    monitorLockClick.on("locked", function () {
+                        idleWatcher.stop();
+                        initUnlockListener();
+                    });
+                    idleWatcher.on("active", function () {
+                        _resetESPTime();
+                    });
+                    idleWatcher.on("idle", function () {
+                        idleWatcher.stop();
+                        var LockDialog = new LockDialogWidget({});
+                        LockDialog.show();
+                    });
+                    idleWatcher.start();
+                    monitorLockClick.unlocked();
+                } else if (cookie("ECLWatchUser")) {
+                    window.location.replace(dojoConfig.urlInfo.basePath + "/Login.html");
+                }
                 stopLoading();
             }
         );
-    },
+    }
 
-    startLoading = function (targetNode) {
-        domStyle.set(dom.byId("loadingOverlay"), "display", "block");
-        domStyle.set(dom.byId("loadingOverlay"), "opacity", "255");
-    },
+    function parseUrl() {
+        var baseHost = (typeof debugConfig !== "undefined") ? "http://" + debugConfig.IP + ":" + debugConfig.Port : "";
+        var hashNodes = location.hash.split("#");
+        var searchNodes = location.search.split("?");
 
-    stopLoading = function () {
-        fx.fadeOut({
-            node: dom.byId("loadingOverlay"),
-            onEnd: function (node) {
-                domStyle.set(node, "display", "none");
-            }
-        }).play();
-    };
+        dojoConfig.urlInfo = {
+            baseHost: baseHost,
+            pathname: location.pathname,
+            hash: hashNodes.length >= 2 ? hashNodes[1] : "",
+            resourcePath: baseHost + "/esp/files/eclwatch",
+            basePath: baseHost + "/esp/files"
+        };
+    }
 
-    return {
-        init: function () {
-            ready(function () {
-                initUi();
-            });
-        }
-    };
+    ready(function () {
+        parseUrl();
+        initUI();
+    });
 });

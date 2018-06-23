@@ -1452,23 +1452,50 @@ void printStackReport(__int64 startIP)
 
 //---------------------------------------------------------------------------------------------------------------------
 
+bool getAllStacks(StringBuffer &output)
+{
+#ifdef __linux__
+    const char *exePath = queryCurrentProcessPath();
+    if (!exePath)
+    {
+        output.append("Unable to capture stacks");
+        return false;
+    }
+    VStringBuffer cmd("gdb --batch -n -ex 'thread apply all bt' %s %u", exePath, GetCurrentProcessId());
+    Owned<IPipeProcess> pipe = createPipeProcess();
+    if (pipe->run("get stacks", cmd, nullptr, false, true, false))
+    {
+        Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+        readSimpleStream(output, *pipeReader);
+    }
+    int retcode = pipe->wait();
+    return 0 == retcode;
+#else
+    return false; // unsupported
+#endif
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class jlib_decl CError : public CInterfaceOf<IError>
 {
 public:
-    CError(WarnErrorCategory _category,ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position, unsigned _activity);
+    CError(WarnErrorCategory _category,ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position, unsigned _activity, const char * _scope);
 
-    virtual int             errorCode() const { return no; }
-    virtual StringBuffer &  errorMessage(StringBuffer & ret) const { return ret.append(msg); }
-    virtual MessageAudience errorAudience() const { return MSGAUD_user; }
-    virtual const char* getFilename() const { return filename; }
-    virtual WarnErrorCategory getCategory() const { return category; }
-    virtual int getLine() const { return lineno; }
-    virtual int getColumn() const { return column; }
-    virtual int getPosition() const { return position; }
-    virtual StringBuffer& toString(StringBuffer&) const;
-    virtual ErrorSeverity getSeverity() const { return severity; }
-    virtual IError * cloneSetSeverity(ErrorSeverity _severity) const;
-    virtual unsigned getActivity() const { return activity; }
+    virtual int             errorCode() const override { return no; }
+    virtual StringBuffer &  errorMessage(StringBuffer & ret) const override { return ret.append(msg); }
+    virtual MessageAudience errorAudience() const override { return MSGAUD_user; }
+    virtual const char* getFilename() const override { return filename; }
+    virtual WarnErrorCategory getCategory() const override { return category; }
+    virtual int getLine() const override { return lineno; }
+    virtual int getColumn() const override { return column; }
+    virtual int getPosition() const override { return position; }
+    virtual StringBuffer& toString(StringBuffer&) const override;
+    virtual ErrorSeverity getSeverity() const override { return severity; }
+    virtual IError * cloneSetSeverity(ErrorSeverity _severity) const override;
+    virtual unsigned getActivity() const override { return activity; }
+    virtual const char * queryScope() const override { return scope; }
+    virtual IPropertyTree * toTree() const override;
 
 protected:
     ErrorSeverity severity;
@@ -1476,14 +1503,15 @@ protected:
     int no;
     StringAttr msg;
     StringAttr filename;
+    StringAttr scope;
     int lineno;
     int column;
     int position;
     unsigned activity;
 };
 
-CError::CError(WarnErrorCategory _category, ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position, unsigned _activity)
-    : severity(_severity), category(_category), msg(_msg), filename(_filename), activity(_activity)
+CError::CError(WarnErrorCategory _category, ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position, unsigned _activity, const char * _scope)
+    : severity(_severity), category(_category), msg(_msg), filename(_filename), scope(_scope), activity(_activity)
 {
     no = _no;
     lineno = _lineno;
@@ -1504,19 +1532,93 @@ StringBuffer& CError::toString(StringBuffer& buf) const
     return buf;
 }
 
+IPropertyTree * CError::toTree() const
+{
+    Owned<IPropertyTree> xml = createPTree("exception", ipt_fast);
+    xml->setPropInt("@severity", severity);
+    xml->setPropInt("@category", category);
+    xml->setPropInt("@code", no);
+    xml->setProp("@msg", msg);
+    xml->setProp("@filename", filename);
+    xml->setProp("@scope", scope);
+    if (lineno)
+        xml->setPropInt("@line", lineno);
+    if (column)
+        xml->setPropInt("@column", column);
+    if (position)
+        xml->setPropInt("@pos", position);
+    if (activity)
+        xml->setPropInt("@activity", activity);
+    return xml.getClear();
+}
+
 IError * CError::cloneSetSeverity(ErrorSeverity newSeverity) const
 {
     return new CError(category, newSeverity,
                          errorCode(), msg, filename,
-                         getLine(), getColumn(), getPosition(), getActivity());
+                         getLine(), getColumn(), getPosition(), getActivity(), queryScope());
 }
 
-IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char * filename, int lineno, int column, int pos, unsigned activity)
+ErrorSeverity queryDefaultSeverity(WarnErrorCategory category)
 {
-    return new CError(category,severity,errNo,msg,filename,lineno,column,pos, activity);
+    if (category == CategoryError)
+        return SeverityFatal;
+    if (category == CategoryInformation)
+        return SeverityInformation;
+    if (category == CategoryMistake)
+        return SeverityError;
+    return SeverityWarning;
 }
 
-IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, unsigned activity)
+
+IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char * filename, int lineno, int column, int pos, unsigned activity, const char * scope)
 {
-    return new CError(category,severity,errNo,msg,nullptr, 0, 0, 0, activity);
+    return new CError(category,severity,errNo,msg,filename,lineno,column,pos, activity, scope);
 }
+
+IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, unsigned activity, const char * scope)
+{
+    return new CError(category,severity,errNo,msg,nullptr, 0, 0, 0, activity, scope);
+}
+
+IError *createError(IPropertyTree * tree)
+{
+    return new CError((WarnErrorCategory)tree->getPropInt("@category"),
+                      (ErrorSeverity)tree->getPropInt("@severity"),
+                      tree->getPropInt("@code"),
+                      tree->queryProp("@msg"),
+                      tree->queryProp("@filename"),
+                      tree->getPropInt("@line"),
+                      tree->getPropInt("@column"),
+                      tree->getPropInt("@pos"),
+                      tree->getPropInt("@activity"),
+                      tree->queryProp("@scope"));
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+void IErrorReceiver::ThrowStringException(int code,const char *format, ...) const
+{
+    va_list args;
+    va_start(args, format);
+    IException *ret = MakeStringExceptionVA(code, format, args);
+    va_end(args);
+    throw ret;
+}
+
+
+void IErrorReceiver::reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int position)
+{
+    Owned<IError> err = createError(errNo,msg,filename,lineno,column,position);
+    report(err);
+}
+
+void IErrorReceiver::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int position)
+{
+    ErrorSeverity severity = queryDefaultSeverity(category);
+    Owned<IError> warn = createError(category, severity,warnNo,msg,filename,lineno,column,position);
+    report(warn);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+

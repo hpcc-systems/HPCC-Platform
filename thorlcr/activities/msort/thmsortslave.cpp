@@ -53,8 +53,7 @@ class MSortSlaveActivity : public CSlaveActivity
 
     bool isUnstable()
     {
-        IHThorAlgorithm * algo = helper?(static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1))):NULL;
-        return (algo&&algo->getAlgorithmFlags()&TAFunstable);
+        return (helper&&helper->getAlgorithmFlags()&TAFunstable);
     }
 
 public:

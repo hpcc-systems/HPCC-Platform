@@ -25,6 +25,7 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 #include "jmisc.hpp"
+#include "rmtfile.hpp"
 #include "dalienv.hpp"
 
 #ifdef _MSC_VER
@@ -309,7 +310,7 @@ void sighandler(int signum, siginfo_t *info, void *extra)
 
 int initDaemon()
 {
-    int ret = make_daemon(true);
+    int ret = daemon(1,0);
     if (ret)
         return ret;
     struct sigaction act;
@@ -332,6 +333,14 @@ int initDaemon()
 int main(int argc,char **argv) 
 {
     InitModuleObjects();
+
+    /* The dafilesrv hook is installed via the MODULE_INIT process
+     * but it is not wanted in dafilesrv itself, so remove it now.
+    */
+    IDaFileSrvHook *remoteHook = queryDaFileSrvHook();
+    if (remoteHook)
+        removeIFileCreateHook(remoteHook);
+
     EnableSEHtoExceptionMapping();
 #ifndef __64BIT__
     // Restrict stack sizes on 32-bit systems
@@ -731,6 +740,7 @@ int main(int argc,char **argv)
         lf->beginLogging();
     }
 
+    write_pidfile(instanceName.str());
     PROGLOG("Dafilesrv starting - Build %s", BUILD_TAG);
     PROGLOG("Parallel request limit = %d, throttleDelayMs = %d, throttleCPULimit = %d", parallelRequestLimit, throttleDelayMs, throttleCPULimit);
 

@@ -4102,24 +4102,40 @@ IFile * createIFile(const char * filename)
     IFile *ret = createContainedIFileByHook(filename);
     if (ret)
         return ret;
+
+    RemoteFilename rfn;
+    rfn.setRemotePath(filename);
+
+    if (rfn.isNull())
+        throw MakeStringException(-1, "CreateIFile cannot resolve %s", filename);
+
+    ret = createIFileByHook(rfn);           // use daliservix in preference
+    if (ret)
+        return ret;
+
+    // NB: This is forcing OS path access if not a url beginning '//' or '\\'
     bool linremote=(memcmp(filename,"//",2)==0);
     if (!linremote&&(memcmp(filename,"\\\\",2)!=0)) // see if remote looking
         return new CFile(filename);
-    RemoteFilename rfn;
-    rfn.setRemotePath(filename);
-    if (rfn.isNull())
-        throw MakeStringException(-1, "CreateIFile cannot resolve %s", filename);
-    if (rfn.isLocal()) { // ignore dafilesrv request if local and standard port
+
+    if (rfn.isLocal())
+    {
         StringBuffer tmplocal;
-        return new CFile(rfn.getLocalPath(tmplocal).str());
+        rfn.getLocalPath(tmplocal);
+        return new CFile(tmplocal);
     }
+
+    /* NB: to get here, no hook has returned a result and the file is non-local and prefixed with // or \\ */
 #ifdef _WIN32
+    /* NB: this windows specific code below should really be refactored into the standard
+     * hook mechanism. And any path translation should be left/done on the remote side
+     * once it gets to dafilersv.
+     */
     StringBuffer tmplocal;
-    if (linremote||(rfn.queryEndpoint().port!=0)) {
-        ret = createIFileByHook(rfn);           // use daliservix in preference
-        if (ret) 
-            return ret;             
-        while (*filename) {                             // no daliservix so swap '/' for '\' and hope for best
+    if (linremote||(rfn.queryEndpoint().port!=0))
+    {
+        while (*filename)                             // no daliservix so swap '/' for '\' and hope for best
+        {
             if (*filename=='/')
                 tmplocal.append('\\');
             else
@@ -4127,21 +4143,22 @@ IFile * createIFile(const char * filename)
             filename++;
         }
         filename =tmplocal.str();
-    }   
+    }
     return new CWindowsRemoteFile(filename);
 #else
 #ifdef USE_SAMBA
-    if(strncmp(filename, "smb://", 6) == 0)
-        return new CSambaRemoteFile(filename);
-    if(memcmp(filename, "//", 2) == 0) {
+    if (memcmp(filename, "//", 2) == 0)
+    {
         StringBuffer smbfile("smb:");
         smbfile.append(filename);
         return new CSambaRemoteFile(smbfile.str());
     }
-    if(memcmp(filename, "\\\\", 2) == 0) {
+    if (memcmp(filename, "\\\\", 2) == 0)
+    {
         StringBuffer smbfile("smb:");
         int i = 0;
-        while(filename[i]) {
+        while(filename[i])
+        {
             if(filename[i] == '\\')
                 smbfile.append('/');
             else
@@ -4153,16 +4170,10 @@ IFile * createIFile(const char * filename)
 #else
     if (memcmp(filename,"smb://",6)==0)  // don't support samba - try remote
         return createIFile(filename+4);
-    ret = createIFileByHook(rfn);
-    if (!ret) 
-        throw MakeStringException(-1, "CreateIFile::cannot attach to %s. (remote.so not linked?)", filename);
-    return ret;
 #endif
-    return new CFile(filename);
-
+    throw MakeStringException(-1, "createIFile: cannot attach to %s", filename);
 #endif
 }
-
 
 
 IFileIOStream * createIOStream(IFileIO * file)
@@ -5157,6 +5168,15 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
     }
     out.append(rPath);
 #else
+    StringBuffer expanded;
+    //Expand ~ on the front of a filename - useful for paths not passed on the command line
+    //Note, it does not support the ~user/ version of the syntax
+    if ((*relpath == '~') && isPathSepChar(relpath[1]))
+    {
+        getHomeDir(expanded);
+        expanded.append(relpath+1);
+        relpath = expanded.str();
+    }
     char rPath[PATH_MAX];
     if (mustExist)
     {
@@ -5761,7 +5781,7 @@ public:
         eoinput = (_len==0);
     }
 
-    void reset(offset_t _offset, offset_t _len)
+    virtual void reset(offset_t _offset, offset_t _len) override
     {
         bufpos = 0;
         bufmax = 0;
@@ -5773,12 +5793,12 @@ public:
         eoinput = (_len==0);
     }
 
-    const void *peek(size32_t sz,size32_t &got)
+    virtual const void *peek(size32_t sz,size32_t &got) override
     {
         return dopeek(sz, got);
     }
 
-    void get(size32_t len, void * ptr)
+    virtual void get(size32_t len, void * ptr) override
     {
         size32_t cpy = bufmax-bufpos;
         if (cpy>len)
@@ -5792,7 +5812,7 @@ public:
         return getreadnext(len, (byte *)ptr+cpy);
     }
 
-    bool eos()
+    virtual bool eos() override
     {
         if (bufmax-bufpos)
             return false;
@@ -5800,7 +5820,7 @@ public:
         return dopeek(1,rd)==NULL;
     }
 
-    void skip(size32_t len)
+    virtual void skip(size32_t len) override
     {
         size32_t left = bufmax-bufpos;
         if (left>=len) {
@@ -5840,7 +5860,7 @@ public:
         throw MakeStringException(-1,"CFileSerialStream::skip read past end of stream");
     }
 
-    offset_t tell()
+    virtual offset_t tell() const override
     {
         return bufbase+bufpos;
     }
@@ -6004,7 +6024,7 @@ public:
         eoinput = false;
     }
 
-    void reset(offset_t _ofs, offset_t _len)
+    virtual void reset(offset_t _ofs, offset_t _len) override
     {
         offset_t fs = mmfile->fileSize();
         if ((_len!=(offset_t)-1)&&(fs>_len))
@@ -6012,6 +6032,7 @@ public:
         mmsize = (memsize_t)fs;
         mmofs = (memsize_t)((_ofs<fs)?_ofs:fs);
         mmsize = (memsize_t)fs;
+        eoinput = false;
     }
 
     CMemoryMappedSerialStream(const void *buf, memsize_t len, IFileSerialStreamCallback *_tally)
@@ -6023,7 +6044,7 @@ public:
         eoinput = false;
     }
 
-    const void *peek(size32_t sz,size32_t &got)
+    virtual const void *peek(size32_t sz,size32_t &got) override
     {
         memsize_t left = mmsize-mmofs;
         if (sz>left)
@@ -6035,7 +6056,7 @@ public:
         return mmbase+mmofs;
     }
 
-    void get(size32_t len, void * ptr)
+    virtual void get(size32_t len, void * ptr) override
     {
         memsize_t left = mmsize-mmofs;
         if (len>left) {
@@ -6049,12 +6070,12 @@ public:
         mmofs += len;
     }
 
-    bool eos()
+    virtual bool eos() override
     {
         return (mmsize<=mmofs);
     }
 
-    void skip(size32_t len)
+    virtual void skip(size32_t len) override
     {
         memsize_t left = mmsize-mmofs;
         if (len>left)
@@ -6064,16 +6085,11 @@ public:
         mmofs += len;
     }
 
-    offset_t tell()
+    virtual offset_t tell() const override
     {
         return mmofs;
     }
 
-    virtual void reset(offset_t _offset)
-    {
-        mmofs = (memsize_t)((_offset<mmsize)?_offset:mmsize);
-        eoinput = false;
-    }
 };
 
 ISerialStream *createFileSerialStream(IMemoryMappedFile *mmfile, offset_t ofs, offset_t flen, IFileSerialStreamCallback *callback)
@@ -6098,13 +6114,13 @@ public:
     {
     }
 
-    virtual const void *peek(size32_t sz,size32_t &got)
+    virtual const void *peek(size32_t sz,size32_t &got) override
     {
         got = buffer.remaining();
         return buffer.readDirect(0);
     }
 
-    virtual void get(size32_t len, void * ptr)
+    virtual void get(size32_t len, void * ptr) override
     {
         if (len>buffer.remaining()) {
             ERRLOG("CMemoryBufferSerialStream::get read past end of stream.4(%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
@@ -6116,12 +6132,12 @@ public:
         memcpy(ptr,data,len);
     }
 
-    virtual bool eos()
+    virtual bool eos() override
     {
         return buffer.remaining() == 0;
     }
 
-    virtual void skip(size32_t len)
+    virtual void skip(size32_t len) override
     {
         if (len>buffer.remaining())
             throw MakeStringException(-1,"CMemoryBufferSerialStream::skip read past end of stream (%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
@@ -6131,12 +6147,12 @@ public:
             tally->process(buffer.getPos()-len,len,data);
     }
 
-    virtual offset_t tell()
+    virtual offset_t tell() const override
     {
         return buffer.getPos();
     }
 
-    virtual void reset(offset_t _offset,offset_t _len)
+    virtual void reset(offset_t _offset,offset_t _len) override
     {
         size32_t ofs = (size32_t)_offset;
         assertex(ofs==_offset);
@@ -6748,3 +6764,94 @@ void removeFileTraceIfFail(const char * filename)
     if (remove(filename) != 0)
         DBGLOG("Could not remove file '%s'", filename);
 }
+
+timestamp_type getTimeStamp(IFile * file)
+{
+    CDateTime modified;
+    file->getTime(nullptr, &modified, nullptr);
+    return modified.getTimeStamp();
+}
+
+class CSortedDirectoryIterator : public CSimpleInterfaceOf<IDirectoryIterator>
+{
+    CIArrayOf<CDirectoryEntry> sortedFiles;
+    CDirectoryEntry *curDirectoryEntry = nullptr;
+    unsigned        sortedFileCount = 0;
+    unsigned        sortedFileIndex = 0;
+    Owned<IFile>    cur;
+    bool            curIsDir = false;
+
+public:
+    CSortedDirectoryIterator(IDirectoryIterator &itr, SortDirectoryMode mode, bool rev, bool includedirs)
+    {
+        sortDirectory(sortedFiles, itr, mode, rev, includedirs);
+        sortedFileCount = sortedFiles.length();
+    }
+
+    //IIteratorOf
+    virtual bool first() override
+    {
+        sortedFileIndex = 0;
+        return next();
+    }
+    virtual bool next() override
+    {
+        if (sortedFileIndex >= sortedFileCount)
+        {
+            cur.clear();
+            curDirectoryEntry = nullptr;
+            return false;
+        }
+
+        curDirectoryEntry = &sortedFiles.item(sortedFileIndex);
+        cur.setown(createIFile(curDirectoryEntry->file->queryFilename()));
+        curIsDir = curDirectoryEntry->isdir;
+        sortedFileIndex++;
+        return true;
+    }
+    virtual bool isValid() override { return cur != nullptr; }
+    virtual IFile &query() override { return *cur; }
+
+    //IDirectoryIterator
+    virtual bool isDir() override { return curIsDir; }
+    virtual StringBuffer &getName(StringBuffer &buf) override
+    {
+        if (curDirectoryEntry)
+            return buf.set(curDirectoryEntry->name.get());
+        return buf;
+    }
+
+    virtual __int64 getFileSize() override
+    {
+        return curDirectoryEntry ? curDirectoryEntry->size : -1;
+    }
+
+    virtual bool getModifiedTime(CDateTime &ret) override
+    {
+        if (!curDirectoryEntry)
+            return false;
+        ret = curDirectoryEntry->modifiedTime;
+        return true;
+    }
+};
+
+IDirectoryIterator *getSortedDirectoryIterator(IFile *directory, SortDirectoryMode mode, bool rev, const char *mask, bool sub, bool includedirs)
+{
+    if (!directory || !directory->isDirectory())
+        throw MakeStringException(-1, "Invalid IFile input in getSortedDirectoryIterator()");
+
+    Owned<IDirectoryIterator> files = directory->directoryFiles(mask, sub, includedirs);
+    if (SD_nosort == mode)
+        return files;
+    return new CSortedDirectoryIterator(*files, mode, rev, includedirs);
+}
+
+IDirectoryIterator *getSortedDirectoryIterator(const char *dirName, SortDirectoryMode mode, bool rev, const char *mask, bool sub, bool includedirs)
+{
+    if (isEmptyString(dirName))
+        throw MakeStringException(-1, "Invalid dirName input in getSortedDirectoryIterator()");
+
+    Owned<IFile> dir = createIFile(dirName); 
+    return getSortedDirectoryIterator(dir, mode, rev, mask, sub, includedirs);
+}
+

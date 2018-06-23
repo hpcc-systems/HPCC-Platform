@@ -241,6 +241,7 @@
 #define ERR_STRING_ILLDELIMITER     2196  /* " is illegal string delimiter: use ' instead */
 #define ERR_IFBLOCK_EMPTYDEF        2197  /* Empty ifblock definition */
 #define ERR_CONCRETE_RECORD         2198  /* Requires a real record definition */
+#define ERR_STRING_DOUBLE_QUOTE     2199  /* '' is not an escaped quote character: use \' instead */
 
 /* hash commands */
 #define ERR_TMPLT_EOFINFOR          2200 /* EOF encountered inside #FOR */
@@ -433,6 +434,8 @@
 #define ERR_PROBABILITY_RANGE       2400
 #define ERR_EMBEDPROJECT_INVALID    2401
 #define ERR_ASSOCIATED_SIDEEFFECT   2402
+#define ERR_INVALID_PROBABILITY     2403
+#define ERR_DEFAULT_VIRTUAL_CLASH   2404
 
 #define ERR_CPP_COMPILE_ERROR       2999
 
@@ -499,6 +502,10 @@
 #define HQLWRN_DFSlookupTypeMismatch            3147
 #define HQLWRN_NoFieldsMatch                    3148
 #define HQLWRN_DFSdenied                        3149
+#define HQLERR_NonConstantRange                 3150
+#define HQLERR_ExprTooComplexForValueSet        3151
+#define HQLERR_CacheMissingOriginal             3152
+#define HQLERR_CacheMissingEntry                3153
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
@@ -542,9 +549,32 @@
 #define HQLWRN_DFSlookupFailure_Text            "Error in DFS file resolution"
 #define HQLERR_DFSlookupFailure_Text            "Failed to resolve record information in DFS for file %s"
 #define HQLERR_DFSlookupIncompatible_Text       "Resolved record information is not compatible file %s"
+#define HQLERR_NonConstantRange_Text            "Non constant substrings not supported"
+#define HQLERR_ExprTooComplexForValueSet_Text   "Cannot create a value set for expression %s"
+#define HQLERR_CacheMissingOriginal_Text        "Cannot find original for cache entry '%s'"
+#define HQLERR_CacheMissingEntry_Text           "Cannot process cache entry '%s'"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */
+
+//Migrated from hqlcpp - error numbers staying the same
+
+#define HQLERR_SubstringOutOfRange              4021
+#define HQLERR_WildNotReferenceIndex            4090
+#define HQLERR_LookupNotActiveDataset           4096
+#define HQLERR_KeyedJoinTooComplex              4097
+#define HQLERR_KeyAccessNeedCast                4098
+#define HQLERR_KeyAccessNoKeyField              4099
+#define HQLERR_OrMultipleKeyfields              4129
+
+#define HQLERR_SubstringOutOfRange_Text         "Substring index %d is outside the field range"
+#define HQLERR_WildNotReferenceIndex_Text       "WILD() does not reference fields in key %s"
+#define HQLERR_LookupNotActiveDataset_Text      "Attempting to lookup field %s in a dataset which has no active element"
+#define HQLERR_KeyedJoinTooComplex_Text         "Key condition (%s) is too complex, it cannot be done with the key."
+#define HQLERR_KeyAccessNeedCast_Text           "Key condition (%s) requires casts on comparison of field '%s'"
+#define HQLERR_KeyAccessNoKeyField_Text         "Key condition (%s) does not have any comparisons against key fields"
+#define HQLERR_OrMultipleKeyfields_Text         "Cannot OR together conditions on multiple key fields (%s)"
+
 
 /////////////////////////////////////////////////////////////////////////////
 /* Code Generation errors - defined in hqlcerrors.hpp */

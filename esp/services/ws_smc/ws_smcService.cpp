@@ -239,10 +239,8 @@ bool CActivityInfo::isCachedActivityInfoValid(unsigned timeOutSeconds)
 
 void CActivityInfo::createActivityInfo(IEspContext& context)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
 
     CConstWUClusterInfoArray clusters;
     Owned<IPropertyTree> envRoot= &env->getPTree();
@@ -422,7 +420,7 @@ void CActivityInfo::readActiveWUsAndQueuedWUs(IEspContext& context, IPropertyTre
     readRunningWUsAndJobQueueforOtherStatusServers(context, serverStatusRoot);
     //TODO: add queued WUs for ECLCCServer/ECLServer here. Right now, they are under target clusters.
 
-    getDFUServersAndWUs(envRoot, serverStatusRoot);
+    getDFUServersAndWUs(context, envRoot, serverStatusRoot);
     getDFURecoveryJobs();
 }
 
@@ -699,7 +697,7 @@ void CActivityInfo::readRunningWUsAndJobQueueforOtherStatusServers(IEspContext& 
         if (!found || !*found)
         {
             uniqueServers.setValue(instanceName, true);
-            getServerJobQueue(queueName, instanceName, serverName, node, port);
+            getServerJobQueue(context, queueName, instanceName, serverName, node, port);
 
             //Now, we found a new server. we need to add queued jobs from the queues the server is monitoring.
             StringArray qList;
@@ -716,7 +714,7 @@ void CActivityInfo::readRunningWUsAndJobQueueforOtherStatusServers(IEspContext& 
     return;
 }
 
-void CActivityInfo::getDFUServersAndWUs(IPropertyTree* envRoot, IPropertyTree* serverStatusRoot)
+void CActivityInfo::getDFUServersAndWUs(IEspContext& context, IPropertyTree* envRoot, IPropertyTree* serverStatusRoot)
 {
     if (!envRoot)
         return;
@@ -738,7 +736,7 @@ void CActivityInfo::getDFUServersAndWUs(IPropertyTree* envRoot, IPropertyTree* s
             StringArray wuidList;
             const char *queueName = queues.item(q);
             readDFUWUDetails(queueName, serverName, wuidList, readDFUWUIDs(serverStatusRoot, queueName, wuidList));
-            getServerJobQueue(queueName, serverName, STATUS_SERVER_DFUSERVER, NULL, 0);
+            getServerJobQueue(context, queueName, serverName, STATUS_SERVER_DFUSERVER, NULL, 0);
         }
     }
 }
@@ -859,14 +857,22 @@ void CActivityInfo::getDFURecoveryJobs()
     }
 }
 
-void CActivityInfo::getServerJobQueue(const char* queueName, const char* serverName,
+void CActivityInfo::getServerJobQueue(IEspContext &context, const char* queueName, const char* serverName,
     const char* serverType, const char* networkAddress, unsigned port)
 {
     if (!queueName || !*queueName || !serverName || !*serverName || !serverType || !*serverType)
         return;
 
+    double version = context.getClientVersion();
     Owned<IEspServerJobQueue> jobQueue = createServerJobQueue("", "");
-    jobQueue->setQueueName(queueName);
+    if (version < 1.20)
+        jobQueue->setQueueName(queueName);
+    else
+    {
+        StringArray queueNames;
+        queueNames.appendListUniq(queueName, ",");
+        jobQueue->setQueueNames(queueNames);
+    }
     jobQueue->setServerName(serverName);
     jobQueue->setServerType(serverType);
     if (networkAddress && *networkAddress)
@@ -1847,7 +1853,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
 
         double version = context.getClientVersion();
 
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = factory->openEnvironment();
 
         //The resource files will be downloaded from the same box of ESP (not dali)
@@ -2125,15 +2131,15 @@ inline const char *controlCmdMessage(int cmd)
 {
     switch (cmd)
     {
-    case CRoxieControlCmd_ATTACH:
+    case CRoxieControlCmdType_ATTACH:
         return "<control:unlockDali/>";
-    case CRoxieControlCmd_DETACH:
+    case CRoxieControlCmdType_DETACH:
         return "<control:lockDali/>";
-    case CRoxieControlCmd_RELOAD:
+    case CRoxieControlCmdType_RELOAD:
         return "<control:reload/>";
-    case CRoxieControlCmd_RELOAD_RETRY:
+    case CRoxieControlCmdType_RELOAD_RETRY:
         return "<control:reload forceRetry='1' />";
-    case CRoxieControlCmd_STATE:
+    case CRoxieControlCmdType_STATE:
         return "<control:state/>";
     default:
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Unknown Roxie Control Command.");

@@ -274,9 +274,15 @@ void CSlaveActivity::start()
 
 void CSlaveActivity::startAllInputs()
 {
+    ActivityTimer s(totalCycles, timeActivities);
     ForEachItemIn(i, inputs)
     {
-        startInput(i);
+        try { startInput(i); }
+        catch (CATCHALL)
+        {
+            ActPrintLog("External(%" ACTPF "d): Error staring input %d", container.queryId(), i);
+            throw;
+        }
     }
 }
 
@@ -811,7 +817,6 @@ void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
 
 bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *parentExtract)
 {
-    bool ret = true;
     unsigned needActInit = 0;
     unsigned uninitialized = 0;
     Owned<IThorActivityIterator> iter = getConnectedIterator();
@@ -892,6 +897,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             msg.read(len);
         }
     }
+    Owned<IException> exception;
     if (len)
     {
         try
@@ -906,8 +912,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             actInitRtnData.clear();
             actInitRtnData.append(true);
             serializeThorException(e, actInitRtnData);
-            e->Release();
-            ret = false;
+            exception.setown(e);
         }
     }
     if (syncInitData() || needActInit)
@@ -915,6 +920,8 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
         if (!queryJobChannel().queryJobComm().send(actInitRtnData, 0, replyTag, LONGTIMEOUT))
             throw MakeStringException(0, "Timeout sending init data back to master");
     }
+    if (exception)
+        throw exception.getClear();
     // initialize any for which no data was sent
     ForEach(*iter)
     {
@@ -929,7 +936,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             assertex(0 == out.length());
         }
     }
-    return ret;
+    return true;
 }
 
 bool CSlaveGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
@@ -1191,7 +1198,6 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
                     jobS->queryProgressHandler()->stopGraph(*this, &doneInfoMb);
             }
             doneInfoMb.append(job.queryMaxDiskUsage());
-            queryJobChannel().queryTimeReporter().serialize(doneInfoMb);
         }
         catch (IException *)
         {
@@ -1405,8 +1411,8 @@ public:
         return superfiletransaction.get();
     }
     virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { throwUnexpected(); }
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override { throwUnexpected(); }
+    virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override { throwUnexpected(); }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort)
     {
         DBGLOG("%s", text);
@@ -1482,7 +1488,7 @@ public:
 };
 
 #define SLAVEGRAPHPOOLLIMIT 10
-CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, const char *graphName, ILoadedDllEntry *_querySo, mptag_t _mpJobTag, mptag_t _slavemptag) : CJobBase(_querySo, graphName), watchdog(_watchdog)
+CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, const char *graphName, ILoadedDllEntry *_querySo, mptag_t _slavemptag) : CJobBase(_querySo, graphName), watchdog(_watchdog)
 {
     workUnitInfo.set(_workUnitInfo);
     workUnitInfo->getProp("token", token);
@@ -1492,8 +1498,27 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 
     init();
 
+    if (workUnitInfo->hasProp("Debug/globalid"))
+    {
+        const char *globalId = workUnitInfo->queryProp("Debug/globalid");
+        if (globalId && *globalId)
+        {
+            SocketEndpoint thorEp;
+            thorEp.setLocalHost(getMachinePortBase());
+            logctx->setGlobalId(globalId, thorEp, 0);
+
+            VStringBuffer msg("GlobalId: %s", globalId);
+            const char *callerId = workUnitInfo->queryProp("debug/callerid");
+            if (callerId && *callerId)
+                msg.append(", CallerId: ").append(callerId);
+            const char *localId = logctx->queryLocalId();
+            if (localId && *localId)
+                msg.append(", LocalId: ").append(localId);
+            logctx->CTXLOG("%s", msg.str());
+        }
+    }
+
     oldNodeCacheMem = 0;
-    mpJobTag = _mpJobTag;
     slavemptag = _slavemptag;
 
     IPropertyTree *plugins = workUnitInfo->queryPropTree("plugins");
@@ -1554,6 +1579,13 @@ void CJobSlave::startJob()
             throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %u MB(s) of available disk space, specified minimum for this job: %u MB(s)", ep.getUrlStr(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
         }
     }
+    queryThor().queryKeyedJoinService().setCurrentJob(*this);
+}
+
+void CJobSlave::endJob()
+{
+    queryThor().queryKeyedJoinService().reset();
+    PARENT::endJob();
 }
 
 void CJobSlave::reportGraphEnd(graph_id gid)

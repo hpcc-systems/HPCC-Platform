@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="session-management" role="nobrk">
+  <title>Session Management</title>
+
+  <para>The 7.0 release of HPCC Platform introduces the new ESP Session
+  Management security feature. This functions like many banking applications,
+  where after a configurable period of inactivity you are warned with a "You
+  are about to be locked out" pop-up. If no action further is taken, the
+  session is then locked and you would need to enter your credentials to
+  unlock and resume. A session remains active while there is regular user
+  interaction. After a period of inactivity, you are alerted that your session
+  is about to be locked. Sessions are stored in cookies and are shared across
+  tabs and instances of each browser. Activity in any instance will extend the
+  entire session duration. Additionally, a Logout menu option allows you to
+  close your session when you are finished.</para>
+
+  <sect2 id="faq">
+    <title>FAQ</title>
+
+    <orderedlist>
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Why did we implement this
+        feature?</para>
+
+        <para><emphasis role="strong">A</emphasis>: The main motive is to
+        tighten security. Browsers and the IDE left open after hours and over
+        the weekend are a security risk. Additionally, this reduces
+        unnecessary load on ESP since it will not auto refresh inactive
+        ECLWatch sessions.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: How long will an inactive
+        session last?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Your administrator can
+        configure this using Configuration Manager. The default setting is two
+        hours of inactivity.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Does Auto Refresh of
+        active workunits and graphs extend your ESP session?</para>
+
+        <para><emphasis role="strong">A</emphasis>: No, only user actions such
+        as typing or mouse clicks extend a session.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will I have to login to
+        ECLWatch?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Yes, just as you currently
+        do.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will I have to login to
+        the ECL IDE?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Yes, but you already
+        should be. No perceptible changes here only behind the scenes where
+        you are being authenticated.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will I have to login to
+        Configuration Manager?</para>
+
+        <para><emphasis role="strong">A</emphasis>: No.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: What credentials should I
+        use to login with?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Use your assigned
+        credentials.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Can I log out of ECL
+        Watch?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Yes, there is a link to
+        logout available. You are able to log off, and if you do not your
+        session locks after a configurable period of inactivity.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will my sessions get
+        logged off due to inactivity?</para>
+
+        <para><emphasis role="strong">A</emphasis>: No. After a configurable
+        period of inactivity your session locks. You then need to unlock to
+        resume your session.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para><emphasis role="strong">Q</emphasis>: How long until my password
+        expires?</para>
+
+        <para><emphasis role="strong">A</emphasis>: This depends on your
+        system policies and the configured security manager.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will I be able to log in
+        as a different user?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Yes, with our new login
+        screen, you can input previously used IDs or enter a different one.
+        You can have as many user sessions active at any time as permitted by
+        your system's resources.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Can I log in concurrently
+        with different credentials?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Yes, using different tabs
+        in a single browser, multiple instances of the same browser, or
+        multiple instances of different browsers.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Is there an option to stay
+        logged in indefinitely and/or not time out from inactivity?</para>
+
+        <para><emphasis role="strong">A</emphasis>: No.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will I lose data if I get
+        automatically logged out?</para>
+
+        <para><emphasis role="strong">A</emphasis>: No. You do not get logged
+        out. Your session will get locked. Anything typed into any fields
+        (such as a search box) that has not been submitted or entered could
+        potentially be lost. However, since the session is only locked, it is
+        unlikely that any data will be lost.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will my queued and
+        scheduled workunits run when I am locked out?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Yes, the session only
+        applies to ESP/ECL IDE and ESP/ECLWatch communications.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will HPCC command line
+        utilities be affected?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Possibly. If you have
+        configured AuthPerSessionOnly then command line utilities will not
+        work. If AuthPerSessionOnly is not enabled then command line utilities
+        will not be effected.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Does auto refresh in
+        ECLWatch reset the session expiration timer?</para>
+
+        <para><emphasis role="strong">A</emphasis>: No. Only active
+        interactions like mouse clicks and pressing keys extend the timeout.
+        Note that scrolling does not extend the expiration timer.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: If I am logged in to the
+        same account using multiple tabs in a browser, or multiple instances
+        of the same browser, can I get locked out of one but not the
+        others?</para>
+
+        <para><emphasis role="strong">A</emphasis>: No, activity is tracked by
+        your credentials. Activity in one tab or instance extends the session
+        for all.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: If I am logged in to the
+        same account using different browsers (e.g., Firefox and Chrome), do
+        they share the same session timeout?</para>
+
+        <para><emphasis role="strong">A</emphasis>: No. Since each browser has
+        its own cookie store, activity in one does not extend to the
+        other.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Can I automatically return
+        to the ECLWatch screen where I was when automatically locked
+        out?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Yes. The intent is to lock
+        your session and not completely log you out. Unlocking your session
+        should return you to the same point when your session locked.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will I be able to change
+        an expired password?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Yes. You are redirected to
+        a page where you can reset your password.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will access to ECLWatch
+        require SSL/TLS and HTTPS?</para>
+
+        <para><emphasis role="strong">A</emphasis>: These secure protocols are
+        already available for your HPCC Administrator to configure. Though not
+        required for session management, hopefully they are currently
+        enabled.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Will my programmatic SOAP
+        calls utilizing ESP have any impact?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Maybe. If you have
+        configured AuthPerSessionOnly then SOAP calls will not work. If your
+        system is not configured that way, then programmatic SOAP calls
+        continue to operate as they do now.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: When will I see the
+        Session Management changes?</para>
+
+        <para><emphasis role="strong">A</emphasis>: You can configure your
+        system to use Session Management as part of HPCC Version 7.0.</para>
+      </listitem>
+    </orderedlist>
+  </sect2>
+</sect1>

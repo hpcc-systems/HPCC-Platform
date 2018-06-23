@@ -660,6 +660,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,httpcall);
     EXPAND_CASE(no,getenv);
     EXPAND_CASE(no,json);
+    EXPAND_CASE(no,matched_injoin);
     }
 
     return "<unknown>";
@@ -675,7 +676,10 @@ const char * getTypeIRText(type_t type)
     EXPAND_CASE(type,decimal);
     EXPAND_CASE(type,string);
     EXPAND_CASE(type,date);
+    EXPAND_CASE(type,biasedswapint);
+    EXPAND_CASE(type,swapfilepos);
     EXPAND_CASE(type,bitfield);
+    EXPAND_CASE(type,keyedint);
     EXPAND_CASE(type,char);
     EXPAND_CASE(type,enumerated);
     EXPAND_CASE(type,record);
@@ -692,6 +696,7 @@ const char * getTypeIRText(type_t type)
     EXPAND_CASE(type,void);
     EXPAND_CASE(type,alien);
     case type_swapint: return "swap";
+    EXPAND_CASE(type,filepos);
     EXPAND_CASE(type,none);
     EXPAND_CASE(type,packedint);
     EXPAND_CASE(type,qstring);
@@ -712,12 +717,6 @@ const char * getTypeIRText(type_t type)
     EXPAND_CASE(type,sortlist);
     EXPAND_CASE(type,dictionary);
     EXPAND_CASE(type,alias);
-
-    case type_unused2:
-    case type_unused3:
-    case type_unused4:
-    case type_unused5:
-        return "unused";
     }
     return "<unknown>";
 }
@@ -1422,6 +1421,12 @@ protected:
         case type_any:
             line.append(irText);
             return;
+        case type_packedint:
+            if (!info.isSigned)
+                line.append("u");
+            line.append(irText);
+            return;
+        case type_filepos:
         case type_int:
         case type_swapint:
             {
@@ -1439,7 +1444,6 @@ protected:
                 line.append(info.length);
             return;
         case type_decimal:
-        case type_packedint:
         case type_bitfield:
         case type_enumerated:
             return;
@@ -1521,6 +1525,7 @@ protected:
             break;
         case type_int:
         case type_swapint:
+        case type_packedint:
             {
                 if (true)//info.isSigned)
                     line.append((__int64)info.intValue);
@@ -1534,7 +1539,6 @@ protected:
                 break;
             }
         case type_decimal:
-        case type_packedint:
         case type_string:
         case type_bitfield:
         case type_enumerated:
@@ -1861,9 +1865,11 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_event:
         case type_null:
         case type_void:
+        case type_filepos:
         case type_sortlist:
         case type_any:
             break;
+        case type_keyedint:
         case type_int:
         case type_swapint:
         case type_real:
@@ -2063,13 +2069,13 @@ id_t ExpressionIRPlayer::doProcessConstant(IHqlExpression * expr)
         break;
     case type_int:
     case type_swapint:
+    case type_packedint:
         info.intValue = value->getIntValue();
         break;
     case type_real:
         info.realValue = value->getRealValue();
         break;
     case type_decimal:
-    case type_packedint:
     case type_string:
     case type_bitfield:
     case type_enumerated:
@@ -2275,6 +2281,25 @@ extern HQL_API void getIRText(StringArray & target, unsigned options, IHqlExpres
     StringArrayIRBuilder output(target, options);
     ExpressionIRPlayer reader(&output);
     reader.play(expr);
+}
+
+extern HQL_API void getIRText(StringBuffer & target, unsigned options, unsigned n, ...)
+{
+    StringBufferIRBuilder output(target, options);
+    ExpressionIRPlayer reader(&output);
+    va_list args;
+    va_start(args, n);
+    for (unsigned i=0; i < n;i++)
+    {
+        IInterface * next = va_arg(args, IInterface *);
+        IHqlExpression * expr = dynamic_cast<IHqlExpression *>(next);
+        ITypeInfo * type = dynamic_cast<ITypeInfo *>(next);
+        if (expr)
+            reader.play(expr);
+        else if (type)
+            reader.play(type);
+    }
+    va_end(args);
 }
 
 static StringBuffer staticDebuggingStringBuffer;

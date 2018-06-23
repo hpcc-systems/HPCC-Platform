@@ -20,40 +20,57 @@
 #include "rtlkey.hpp"
 #include "eclhelper.hpp"
 #include "jfile.hpp"
+#include "rtlcommon.hpp"
+#include "rtlnewkey.hpp"
 
 interface IFileIOArray;
+interface ITranslatorSet;
+
 typedef IArrayOf<IKeySegmentMonitor> SegMonitorArray;
 
-interface IDirectReader : public ISerialStream
+/**
+ * IDirectStreamReader is used by CSV/XML readers. They bypass the record translation of the associated
+ * IDirectReader (this remains TBD at this point)
+ *
+ */
+interface IDirectStreamReader : extends ISerialStream, extends ISimpleReadStream
 {
-    virtual IThorDiskCallback *queryThorDiskCallback() = 0;
-    virtual ISimpleReadStream *querySimpleStream() = 0;
-    virtual unsigned queryFilePart() const = 0;
-    virtual unsigned __int64 makeFilePositionLocal(offset_t pos) = 0;
+    virtual unsigned queryFilePart() const = 0; // used by CSV
+    virtual unsigned __int64 makeFilePositionLocal(offset_t pos) = 0; // used by XML
 };
 
-interface IInMemoryIndexCursor : public IThorDiskCallback, public IIndexReadContext
+/**
+ * IDirectReader is used by Roxie disk activities when the whole file needs to be scanned.
+ * There are in-memory and on-disk implementations, and ones that use indexes to seek directly to
+ * matching rows. Translated rows are returned.
+ *
+ */
+interface IDirectReader : extends IThorDiskCallback
 {
-    virtual void reset() = 0;
-    virtual bool selectKey() = 0;
-    virtual const void *nextMatch() = 0;
-    virtual bool isFiltered(const void *row) = 0;
+    virtual IDirectStreamReader *queryDirectStreamReader() = 0;
+    virtual const byte *nextRow() = 0;
+    virtual void finishedRow() = 0;
     virtual void serializeCursorPos(MemoryBuffer &mb) const = 0;
-    virtual void deserializeCursorPos(MemoryBuffer &mb) = 0;
+    virtual bool isKeyed() const = 0;
+};
+
+class ScoredRowFilter : public RowFilter
+{
+public:
+    unsigned scoreKey(const UnsignedArray &sortFields) const;
+    unsigned getMaxScore() const;
 };
 
 interface IInMemoryIndexManager : extends IInterface
 {
-    virtual void load(IFileIOArray *, IRecordSize *, bool preload, int numKeys) = 0;
+    virtual void load(IFileIOArray *, IOutputMetaData *preloadLayout, bool preload) = 0;
     virtual bool IsShared() const = 0;
-    virtual IInMemoryIndexCursor *createCursor() = 0;
-    virtual IDirectReader *createReader(offset_t readPos, unsigned partNo, unsigned numParts) = 0;
-    virtual void getTrackedInfo(const char *id, StringBuffer &xml) = 0;
+    virtual IDirectReader *selectKey(ScoredRowFilter &filter, const ITranslatorSet *translators, IRoxieContextLogger &logctx) const = 0;
+    virtual IDirectReader *selectKey(MemoryBuffer &sig, ScoredRowFilter &filter, const ITranslatorSet *translators) const = 0;
+    virtual IDirectReader *createReader(const RowFilter &postFilter, bool _grouped, offset_t readPos, unsigned partNo, unsigned numParts, const ITranslatorSet *translators) const = 0;
     virtual void setKeyInfo(IPropertyTree &indexInfo) = 0;
 };
 
-extern IInMemoryIndexManager *createInMemoryIndexManager(bool isOpt, const char *fileName);
-extern void reportInMemoryIndexStatistics(StringBuffer &reply, const char *filename, unsigned count);
-extern IInMemoryIndexManager *getEmptyIndexManager();
+extern IInMemoryIndexManager *createInMemoryIndexManager(const RtlRecord &recInfo, bool isOpt, const char *fileName);
 
 #endif

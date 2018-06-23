@@ -22,12 +22,12 @@
 #include "jqueue.tpp"
 #include "dasess.hpp"
 #include "thorxmlwrite.hpp"
-#include "layouttrans.hpp"
 #include "thorstep.ipp"
 #include "roxiedebug.hpp"
+#include "thorcommon.hpp"
+#include "rtldynfield.hpp"
 
 #define MAX_FETCH_LOOKAHEAD 1000
-#define IGNORE_FORMAT_CRC_MISMATCH_WHEN_NO_METADATA
 
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;
@@ -82,51 +82,6 @@ void enterSingletonSuperfiles(Shared<IDistributedFile> & file)
     }
 }
 
-bool rltEnabled(IConstWorkUnit const * wu)
-{
-    if(wu->hasDebugValue("layoutTranslationEnabled"))
-        return wu->getDebugValueBool("layoutTranslationEnabled", false);
-    else
-        return wu->getDebugValueBool("hthorLayoutTranslationEnabled", false);
-}
-
-IRecordLayoutTranslator * getRecordLayoutTranslator(IDefRecordMeta const * activityMeta, size32_t activityMetaSize, void const * activityMetaBuff, IDistributedFile * df, IRecordLayoutTranslatorCache * cache, IRecordLayoutTranslator::Mode mode)
-{
-    IPropertyTree const & props = df->queryAttributes();
-    MemoryBuffer diskMetaBuff;
-    if(!props.getPropBin("_record_layout", diskMetaBuff))
-#ifdef IGNORE_FORMAT_CRC_MISMATCH_WHEN_NO_METADATA
-    {
-        WARNLOG("On reading index %s, formatCRC mismatch ignored because file had no record layout metadata and so assumed old", df->queryLogicalName());
-        return NULL;
-    }
-#else
-        throw MakeStringException(0, "Unable to recover from record layout mismatch for index %s: no record layout metadata in file", df->queryLogicalName());
-#endif
-
-    try
-    {
-        if(cache)
-            return cache->get(mode, diskMetaBuff.length(), diskMetaBuff.bufferBase(), activityMetaSize, activityMetaBuff, activityMeta);
-        else
-            return createRecordLayoutTranslator(diskMetaBuff.length(), diskMetaBuff.bufferBase(), activityMetaSize, activityMetaBuff, mode);
-    }
-    catch (IException *E)
-    {
-        StringBuffer m;
-        m.appendf("In index %s: ", df->queryLogicalName());
-        E->errorMessage(m);
-        E->Release();
-        Owned<IDefRecordMeta> diskMeta = deserializeRecordMeta(diskMetaBuff, true);
-        StringBuffer diskMetaDesc;
-        getRecordMetaAsString(diskMetaDesc, diskMeta);
-        StringBuffer activityMetaDesc;
-        getRecordMetaAsString(activityMetaDesc, activityMeta);
-        ERRLOG("RecordLayoutTranslator error: %s\nDisk meta: %s\nActivity meta: %s", m.str(), diskMetaDesc.str(), activityMetaDesc.str());
-        throw MakeStringExceptionDirect(0, m.str());
-    }
-}
-
 static void setProgress(IPropertyTree &node, const char *name, const char *value)
 {
     StringBuffer attr("@");
@@ -144,22 +99,16 @@ class TransformCallback : public CInterface, implements IThorIndexCallback
 {
 public:
     TransformCallback() { keyManager = NULL; };
-    IMPLEMENT_IINTERFACE
+    IMPLEMENT_IINTERFACE_O
 
 //IThorIndexCallback
-    virtual unsigned __int64 getFilePosition(const void * row)
-    {
-        return filepos;
-    }
-    virtual byte * lookupBlob(unsigned __int64 id) 
+    virtual byte * lookupBlob(unsigned __int64 id) override
     { 
         size32_t dummy; 
         return (byte *) keyManager->loadBlob(id, dummy); 
     }
 
-
 public:
-    offset_t & getFPosRef()                                 { return filepos; }
     void setManager(IKeyManager * _manager)
     {
         finishedRow();
@@ -174,7 +123,6 @@ public:
 
 protected:
     IKeyManager * keyManager;
-    offset_t filepos;
 };
 
 //-------------------------------------------------------------------------------------------------------------
@@ -314,9 +262,9 @@ protected:
     IKeyIndex * doPreopenLimitPart(unsigned __int64 & count, unsigned __int64 limit, unsigned part);
     const void * createKeyedLimitOnFailRow();
     void getLayoutTranslators();
-    IRecordLayoutTranslator * getLayoutTranslator(IDistributedFile * f);
+    const IDynamicTransform * getLayoutTranslator(IDistributedFile * f);
     void verifyIndex(IKeyIndex * idx);
-    void initManager(IKeyManager *manager);
+    void initManager(IKeyManager *manager, bool isTlk);
     bool firstPart();
     virtual bool nextPart();
     virtual void initPart();
@@ -337,7 +285,6 @@ protected:
     size32_t keySize;
     void * activityRecordMetaBuff;
     size32_t activityRecordMetaSize;
-    Owned<IDefRecordMeta> activityRecordMeta;
 
 // current part
     Owned<IDistributedFilePart> curPart;
@@ -370,8 +317,9 @@ protected:
     bool localSortKey;
 
 //for layout translation
-    Owned<IRecordLayoutTranslator> layoutTrans;
-    IPointerArrayOf<IRecordLayoutTranslator> layoutTransArray;
+    Owned<const IDynamicTransform> layoutTrans;
+    IConstPointerArrayOf<IDynamicTransform> layoutTransArray;
+    IPointerArrayOf<IOutputMetaData> actualLayouts;
     bool gotLayoutTrans;
 };
 
@@ -404,7 +352,7 @@ CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, 
     seeks = 0;
     scans = 0;
     helper.setCallback(&callback);
-    limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(helper.selectInterface(TAIsourcelimittransformextra_1));
+    limitTransformExtra = nullptr;
     gotLayoutTrans = false;
 }
 
@@ -463,6 +411,7 @@ bool CHThorIndexReadActivityBase::doPreopenLimitFile(unsigned __int64 & count, u
     {
         if(localSortKey)
         {
+            // MORE - partition support goes here
             Owned<IKeyIndex> tlk = openKeyFile(df->queryPart(num));
             verifyIndex(tlk);
             for(unsigned idx = 0; idx < num; ++idx)
@@ -476,11 +425,11 @@ bool CHThorIndexReadActivityBase::doPreopenLimitFile(unsigned __int64 & count, u
         {
             Owned<IKeyIndex> tlk = openKeyFile(df->queryPart(num));
             verifyIndex(tlk);
-            Owned<IKeyManager> tlman = createLocalKeyManager(tlk, keySize, NULL);
-            initManager(tlman);
+            Owned<IKeyManager> tlman = createLocalKeyManager(eclKeySize.queryRecordAccessor(true), tlk, NULL, helper.hasNewSegmentMonitors());
+            initManager(tlman, true);
             while(tlman->lookup(false) && (count<=limit))
             {
-                unsigned slavePart = (unsigned)tlman->queryFpos();
+                unsigned slavePart = (unsigned)extractFpos(tlman);
                 if (slavePart)
                 {
                     keyIndexCache->addIndex(doPreopenLimitPart(count, limit, slavePart-1));
@@ -512,8 +461,8 @@ IKeyIndex * CHThorIndexReadActivityBase::doPreopenLimitPart(unsigned __int64 & r
         verifyIndex(kidx);
     if (limit != (unsigned) -1)
     {
-        Owned<IKeyManager> kman = createLocalKeyManager(kidx, keySize, NULL);
-        initManager(kman);
+        Owned<IKeyManager> kman = createLocalKeyManager(eclKeySize.queryRecordAccessor(true), kidx, NULL, helper.hasNewSegmentMonitors());
+        initManager(kman, false);
         result += kman->checkCount(limit-result);
     }
     return kidx.getClear();
@@ -602,9 +551,9 @@ bool CHThorIndexReadActivityBase::nextPart()
 }
 
 
-void CHThorIndexReadActivityBase::initManager(IKeyManager *manager)
+void CHThorIndexReadActivityBase::initManager(IKeyManager *manager, bool isTlk)
 {
-    if(layoutTrans)
+    if(layoutTrans && !isTlk)
         manager->setLayoutTranslator(layoutTrans);
     helper.createSegmentMonitors(manager);
     manager->finishSegmentMonitors();
@@ -613,8 +562,9 @@ void CHThorIndexReadActivityBase::initManager(IKeyManager *manager)
 
 void CHThorIndexReadActivityBase::initPart()                                    
 { 
-    klManager.setown(createLocalKeyManager(keyIndex, keySize, NULL));
-    initManager(klManager);     
+    assertex(!keyIndex->isTopLevelKey());
+    klManager.setown(createLocalKeyManager(eclKeySize.queryRecordAccessor(true), keyIndex, NULL, helper.hasNewSegmentMonitors()));
+    initManager(klManager, false);
     callback.setManager(klManager);
 }
 
@@ -643,8 +593,8 @@ bool CHThorIndexReadActivityBase::firstMultiPart()
     if(!tlk)
         openTlk();
     verifyIndex(tlk);
-    tlManager.setown(createLocalKeyManager(tlk, keySize, NULL));
-    initManager(tlManager);
+    tlManager.setown(createLocalKeyManager(eclKeySize.queryRecordAccessor(true), tlk, NULL, helper.hasNewSegmentMonitors()));
+    initManager(tlManager, true);
     nextPartNumber = 0;
     return nextMultiPart();
 }
@@ -656,6 +606,7 @@ bool CHThorIndexReadActivityBase::nextMultiPart()
     {
         if (localSortKey)
         {
+            // MORE - partition key support should go here?
             if (nextPartNumber<(df->numParts()-1))
                 return setCurrentPart(nextPartNumber++);
         }
@@ -663,8 +614,9 @@ bool CHThorIndexReadActivityBase::nextMultiPart()
         {
             while (tlManager->lookup(false))
             {
-                if (tlManager->queryFpos())
-                    return setCurrentPart((unsigned)tlManager->queryFpos()-1);
+                offset_t node = extractFpos(tlManager);
+                if (node)
+                    return setCurrentPart((unsigned)node-1);
             }
         }
     }
@@ -720,44 +672,54 @@ void CHThorIndexReadActivityBase::getLayoutTranslators()
     }
 }
 
-IRecordLayoutTranslator * CHThorIndexReadActivityBase::getLayoutTranslator(IDistributedFile * f)
+const IDynamicTransform * CHThorIndexReadActivityBase::getLayoutTranslator(IDistributedFile * f)
 {
-    if(agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
+    if(agent.getLayoutTranslationMode() == RecordTranslationMode::AlwaysECL)
         return NULL;
 
-    if(!rltEnabled(agent.queryWorkUnit()))
+    if(agent.getLayoutTranslationMode() == RecordTranslationMode::None)
     {
-        verifyFormatCrc(helper.getFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, true);
+        verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, true);
         return NULL;
     }
 
-    if(verifyFormatCrc(helper.getFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false))
+    if(verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false))
         return NULL;
-        
-    if(!activityRecordMeta)
-    {
-        if(!helper.getIndexLayout(activityRecordMetaSize, activityRecordMetaBuff))
-            throw MakeStringException(0, "Unable to recover from record layout mismatch for index %s: no record layout metadata in activity", f->queryLogicalName());
-        MemoryBuffer buff;
-        buff.setBuffer(activityRecordMetaSize, activityRecordMetaBuff, false);
-        activityRecordMeta.setown(deserializeRecordMeta(buff, true));
-    }
 
-    return getRecordLayoutTranslator(activityRecordMeta, activityRecordMetaSize, activityRecordMetaBuff, f, agent.queryRecordLayoutTranslatorCache(), IRecordLayoutTranslator::TranslateAll);
+    IPropertyTree &props = f->queryAttributes();
+    Owned<IOutputMetaData> actualFormat = getDaliLayoutInfo(props);
+    if (actualFormat)
+    {
+        actualLayouts.append(actualFormat.getLink());  // ensure adequate lifespan
+        Owned<const IDynamicTransform> payloadTranslator =  createRecordTranslator(helper.queryProjectedDiskRecordSize()->queryRecordAccessor(true), actualFormat->queryRecordAccessor(true));
+        if (!payloadTranslator->canTranslate())
+            throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s", f->queryLogicalName());
+        if (payloadTranslator->keyedTranslated())
+            throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - keyed fields do not match", f->queryLogicalName());
+        return payloadTranslator.getClear();
+    }
+    throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - key layout information not found", f->queryLogicalName());
 }
 
 void CHThorIndexReadActivityBase::verifyIndex(IKeyIndex * idx)
 {
     if(superIterator)
         layoutTrans.set(layoutTransArray.item(superIndex));
-    keySize = idx->keySize();
     if (eclKeySize.isFixedSize())
     {
         if(layoutTrans)
-            layoutTrans->checkSizes(df->queryLogicalName(), eclKeySize.getFixedSize(), keySize);
+        {
+            if (!layoutTrans->canTranslate())
+                throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s", df->queryLogicalName());
+        }
         else
-            if (keySize != eclKeySize.getFixedSize())
-                throw MakeStringException(0, "Key size mismatch reading index %s: index indicates size %u, ECL indicates size %u", df->queryLogicalName(), keySize, eclKeySize.getFixedSize());
+        {
+            keySize = idx->keySize();
+            //The index rows always have the filepositions appended, but the ecl may not include a field
+            unsigned fileposSize = idx->hasSpecialFileposition() && !hasTrailingFileposition(eclKeySize.queryTypeInfo()) ? sizeof(offset_t) : 0;
+            if (keySize != eclKeySize.getFixedSize() + fileposSize)
+                throw MakeStringException(0, "Key size mismatch reading index %s: index indicates size %u, ECL indicates size %u", df->queryLogicalName(), keySize, eclKeySize.getFixedSize() + fileposSize);
+        }
     }
 }
 
@@ -803,7 +765,8 @@ protected:
 CHThorIndexReadActivity::CHThorIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &_arg, ThorActivityKind _kind, IDistributedFile * _df) 
     : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _df), helper(_arg)
 {
-    steppedExtra = static_cast<IHThorSteppedSourceExtra *>(helper.selectInterface(TAIsteppedsourceextra_1));
+    limitTransformExtra = &helper;
+    steppedExtra = helper.querySteppingExtra();
     needTransform = helper.needTransform();
     keyedLimit = (unsigned __int64)-1;
     rowLimit = (unsigned __int64)-1;
@@ -871,9 +834,9 @@ bool CHThorIndexReadActivity::nextPart()
 {
     if(keyIndexCache && (seekGEOffset || localSortKey))
     {
-        klManager.setown(createKeyMerger(keyIndexCache, keySize, seekGEOffset, NULL));
+        klManager.setown(createKeyMerger(eclKeySize.queryRecordAccessor(true), keyIndexCache, seekGEOffset, NULL, helper.hasNewSegmentMonitors()));
         keyIndexCache.clear();
-        initManager(klManager);
+        initManager(klManager, false);
         callback.setManager(klManager);
         return true;
     }
@@ -918,55 +881,64 @@ const void *CHThorIndexReadActivity::nextRow()
             keyedProcessed++;
             if ((keyedLimit != (unsigned __int64) -1) && keyedProcessed > keyedLimit)
                 helper.onKeyedLimitExceeded();
-            byte const * keyRow = klManager->queryKeyBuffer(callback.getFPosRef());
-            if (needTransform)
+            byte const * keyRow = klManager->queryKeyBuffer();
+            if (likely(helper.canMatch(keyRow)))
             {
-                try
+                if (needTransform)
                 {
-                    size32_t recSize;
-                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    recSize = helper.transform(rowBuilder, keyRow);
-                    callback.finishedRow();
-                    if (recSize)
+                    try
                     {
-                        processed++;
-                        if ((processed-initialProcessed) > rowLimit)
+                        size32_t recSize;
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        recSize = helper.transform(rowBuilder, keyRow);
+                        callback.finishedRow();
+                        if (recSize)
                         {
-                            helper.onLimitExceeded();
-                            if ( agent.queryCodeContext()->queryDebugContext())
-                                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                            processed++;
+                            if ((processed-initialProcessed) > rowLimit)
+                            {
+                                helper.onLimitExceeded();
+                                if ( agent.queryCodeContext()->queryDebugContext())
+                                    agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                            }
+                            return rowBuilder.finalizeRowClear(recSize);
                         }
-                        return rowBuilder.finalizeRowClear(recSize);
+                        else
+                        {
+                            postFiltered++;
+                        }
                     }
-                    else
+                    catch(IException * e)
                     {
-                        postFiltered++;
+                        throw makeWrappedException(e);
                     }
                 }
-                catch(IException * e)
+                else
                 {
-                    throw makeWrappedException(e);
+                    callback.finishedRow(); // since filter might have accessed a blob
+                    processed++;
+                    if ((processed-initialProcessed) > rowLimit)
+                    {
+                        helper.onLimitExceeded();
+                        if ( agent.queryCodeContext()->queryDebugContext())
+                            agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                    }
+                    try
+                    {
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        size32_t finalSize = cloneRow(rowBuilder, keyRow, outputMeta);
+                        return rowBuilder.finalizeRowClear(finalSize);
+                    }
+                    catch(IException * e)
+                    {
+                        throw makeWrappedException(e);
+                    }
                 }
             }
             else
             {
-                processed++;
-                if ((processed-initialProcessed) > rowLimit)
-                {
-                    helper.onLimitExceeded();
-                    if ( agent.queryCodeContext()->queryDebugContext())
-                        agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
-                }
-                try
-                {
-                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    size32_t finalSize = cloneRow(rowBuilder, keyRow, outputMeta);
-                    return rowBuilder.finalizeRowClear(finalSize);
-                }
-                catch(IException * e)
-                {
-                    throw makeWrappedException(e);
-                }
+                callback.finishedRow(); // since filter might have accessed a blob
+                postFiltered++;
             }
         }
         else if (!nextPart())
@@ -999,7 +971,7 @@ const void *CHThorIndexReadActivity::nextRowGE(const void * seek, unsigned numFi
 
         if (klManager->lookupSkip(rawSeek, seekGEOffset, seekSize))
         {
-            const byte * row = klManager->queryKeyBuffer(callback.getFPosRef());
+            const byte * row = klManager->queryKeyBuffer();
 #ifdef _DEBUG
             if (memcmp(row + seekGEOffset, rawSeek, seekSize) < 0)
                 assertex("smart seek failure");
@@ -1008,54 +980,63 @@ const void *CHThorIndexReadActivity::nextRowGE(const void * seek, unsigned numFi
             keyedProcessed++;
             if ((keyedLimit != (unsigned __int64) -1) && keyedProcessed > keyedLimit)
                 helper.onKeyedLimitExceeded();
-            if (needTransform)
+            if (likely(helper.canMatch(row)))
             {
-                try
+                if (needTransform)
                 {
-                    size32_t recSize;
-                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    recSize = helper.transform(rowBuilder, row);
-                    callback.finishedRow();
-                    if (recSize)
+                    try
                     {
-                        processed++;
-                        if ((processed-initialProcessed) > rowLimit)
+                        size32_t recSize;
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        recSize = helper.transform(rowBuilder, row);
+                        callback.finishedRow();
+                        if (recSize)
                         {
-                            helper.onLimitExceeded();
-                            if ( agent.queryCodeContext()->queryDebugContext())
-                                agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                            processed++;
+                            if ((processed-initialProcessed) > rowLimit)
+                            {
+                                helper.onLimitExceeded();
+                                if ( agent.queryCodeContext()->queryDebugContext())
+                                    agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                            }
+                            return rowBuilder.finalizeRowClear(recSize);
                         }
-                        return rowBuilder.finalizeRowClear(recSize);
+                        else
+                        {
+                            postFiltered++;
+                        }
                     }
-                    else
+                    catch(IException * e)
                     {
-                        postFiltered++;
+                        throw makeWrappedException(e);
                     }
                 }
-                catch(IException * e)
+                else
                 {
-                    throw makeWrappedException(e);
+                    callback.finishedRow(); // since filter might have accessed a blob
+                    processed++;
+                    if ((processed-initialProcessed) > rowLimit)
+                    {
+                        helper.onLimitExceeded();
+                        if ( agent.queryCodeContext()->queryDebugContext())
+                            agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
+                    }
+                    try
+                    {
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        size32_t finalSize = cloneRow(rowBuilder, row, outputMeta);
+                        return rowBuilder.finalizeRowClear(finalSize);
+                    }
+                    catch(IException * e)
+                    {
+                        throw makeWrappedException(e);
+                    }
                 }
             }
             else
             {
-                processed++;
-                if ((processed-initialProcessed) > rowLimit)
-                {
-                    helper.onLimitExceeded();
-                    if ( agent.queryCodeContext()->queryDebugContext())
-                        agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
-                }
-                try
-                {
-                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    size32_t finalSize = cloneRow(rowBuilder, row, outputMeta);
-                    return rowBuilder.finalizeRowClear(finalSize);
-                }
-                catch(IException * e)
-                {
-                    throw makeWrappedException(e);
-                }
+                callback.finishedRow(); // since filter might have accessed a blob
+                postFiltered++;
             }
         }
         else if (!nextPart())
@@ -1071,11 +1052,24 @@ IInputSteppingMeta * CHThorIndexReadActivity::querySteppingMeta()
     return NULL;
 }
 
+
+ILocalOrDistributedFile *resolveLFNIndex(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool noteRead=true, bool write=false)
+{
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, noteRead, write);
+    if (!ldFile)
+        return nullptr;
+    IDistributedFile *dFile = ldFile->queryDistributedFile();
+    if (dFile && !isFileKey(dFile))
+        throw MakeStringException(0, "Attempting to read flat file as an index: %s", logicalName);
+    return ldFile.getClear();
+}
+
+
 extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &arg, ThorActivityKind _kind)
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(arg.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = _agent.resolveLFN(lfn, "IndexRead", 0 != (arg.getFlags() & TIRoptional));
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexRead", 0 != (arg.getFlags() & TIRoptional));
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
     {
@@ -1122,6 +1116,7 @@ protected:
 
 CHThorIndexNormalizeActivity::CHThorIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &_arg, ThorActivityKind _kind, IDistributedFile * _df) : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _df), helper(_arg), outBuilder(NULL)
 {
+    limitTransformExtra = &helper;
     keyedLimit = (unsigned __int64)-1;
     skipLimitReached = false;
     keyedProcessed = 0;
@@ -1213,7 +1208,7 @@ const void *CHThorIndexNormalizeActivity::nextRow()
             }
 
             agent.reportProgress(NULL);
-            expanding = helper.first(klManager->queryKeyBuffer(callback.getFPosRef()));
+            expanding = helper.first(klManager->queryKeyBuffer());
             if (expanding)
             {
                 const void * ret = createNextRow();
@@ -1257,7 +1252,7 @@ extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_ag
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(arg.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = _agent.resolveLFN(lfn, "IndexNormalize", 0 != (arg.getFlags() & TIRoptional),true,true);
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexNormalize", 0 != (arg.getFlags() & TIRoptional),true,true);
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
     {
@@ -1349,7 +1344,7 @@ void CHThorIndexAggregateActivity::gather()
         agent.reportProgress(NULL);
         try
         {
-            helper.processRow(outBuilder, klManager->queryKeyBuffer(callback.getFPosRef()));
+            helper.processRow(outBuilder, klManager->queryKeyBuffer());
         }
         catch(IException * e)
         {
@@ -1375,7 +1370,7 @@ extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_ag
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(arg.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = _agent.resolveLFN(lfn, "IndexAggregate", 0 != (arg.getFlags() & TIRoptional));
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexAggregate", 0 != (arg.getFlags() & TIRoptional));
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
     {
@@ -1442,7 +1437,7 @@ const void *CHThorIndexCountActivity::nextRow()
                     agent.reportProgress(NULL);
                     if (!klManager->lookup(true))
                         break;
-                    totalCount += helper.numValid(klManager->queryKeyBuffer(callback.getFPosRef()));
+                    totalCount += helper.numValid(klManager->queryKeyBuffer());
                     callback.finishedRow();
                     if ((totalCount > choosenLimit))
                         break;
@@ -1481,7 +1476,7 @@ extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent,
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(arg.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = _agent.resolveLFN(lfn, "IndexCount", 0 != (arg.getFlags() & TIRoptional));
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexCount", 0 != (arg.getFlags() & TIRoptional));
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
     {
@@ -1535,7 +1530,7 @@ void CHThorIndexGroupAggregateActivity::ready()
     eof = false;
     gathered = false;
     aggregated.reset();
-    aggregated.start(rowAllocator);
+    aggregated.start(rowAllocator, agent.queryCodeContext(), activityId);
 }
 
 void CHThorIndexGroupAggregateActivity::processRow(const void * next)
@@ -1560,7 +1555,7 @@ void CHThorIndexGroupAggregateActivity::gather()
         agent.reportProgress(NULL);
         try
         {
-            helper.processRow(klManager->queryKeyBuffer(callback.getFPosRef()), this);
+            helper.processRow(klManager->queryKeyBuffer(), this);
         }
         catch(IException * e)
         {
@@ -1593,7 +1588,7 @@ extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(arg.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = _agent.resolveLFN(lfn, "IndexGroupAggregate", 0 != (arg.getFlags() & TIRoptional));
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexGroupAggregate", 0 != (arg.getFlags() & TIRoptional));
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
     {
@@ -1624,8 +1619,8 @@ public:
     PartHandlerThread() : owner(0)
     {
     }
-    virtual void init(void * _owner) { owner = (OWNER *)_owner; }
-    virtual void main()
+    virtual void init(void * _owner) override { owner = (OWNER *)_owner; }
+    virtual void threadmain() override
     {
         try
         {
@@ -1644,13 +1639,13 @@ public:
         }
     }
 
-    virtual bool stop()
+    virtual bool stop() override
     {
         owner->stopThread();
         return true;
     }
 
-    virtual bool canReuse() { return true; }
+    virtual bool canReuse() const override { return true; }
 private:
     OWNER * owner;
 };
@@ -1779,14 +1774,14 @@ protected:
     unsigned activityId;
     CachedOutputMetaData const & outputMeta;
     IEngineRowAllocator * rowAllocator;
-    IOutputRowDeserializer * rowDeserializer;
+    ISourceRowPrefetcher * prefetcher;
 public:
-    FetchPartHandlerBase(offset_t _base, offset_t _size, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta, IOutputRowDeserializer * _rowDeserializer, IEngineRowAllocator *_rowAllocator) 
+    FetchPartHandlerBase(offset_t _base, offset_t _size, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta, ISourceRowPrefetcher * _prefetcher, IEngineRowAllocator *_rowAllocator)
         : blockcompressed(_blockcompressed), 
           encryptionkey(_encryptionkey), 
           activityId(_activityId), 
           outputMeta(_outputMeta),
-          rowDeserializer(_rowDeserializer), 
+          prefetcher(_prefetcher),
           rowAllocator(_rowAllocator)
     {
         base = _base;
@@ -1870,8 +1865,8 @@ public:
 class SimpleFetchPartHandlerBase : public FetchPartHandlerBase, public ThreadedPartHandler<FetchRequest>
 {
 public:
-    SimpleFetchPartHandlerBase(IDistributedFilePart *_part, offset_t _base, offset_t _size, IThreadedExceptionHandler *_handler, IThreadPool * _threadPool, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta, IOutputRowDeserializer * _rowDeserializer, IEngineRowAllocator *_rowAllocator) 
-        : FetchPartHandlerBase(_base, _size, _blockcompressed, _encryptionkey, _activityId, _outputMeta, _rowDeserializer, _rowAllocator), 
+    SimpleFetchPartHandlerBase(IDistributedFilePart *_part, offset_t _base, offset_t _size, IThreadedExceptionHandler *_handler, IThreadPool * _threadPool, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta, ISourceRowPrefetcher * _prefetcher, IEngineRowAllocator *_rowAllocator)
+        : FetchPartHandlerBase(_base, _size, _blockcompressed, _encryptionkey, _activityId, _outputMeta, _prefetcher, _rowAllocator),
           ThreadedPartHandler<FetchRequest>(_part, _handler, _threadPool)
     {
     }
@@ -1894,8 +1889,8 @@ private:
 class FlatFetchPartHandler : public SimpleFetchPartHandlerBase
 {
 public:
-    FlatFetchPartHandler(IFlatFetchHandlerCallback & _owner, IDistributedFilePart * _part, offset_t _base, offset_t _size, IThreadedExceptionHandler *_handler, IThreadPool * _threadPool, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta, IOutputRowDeserializer * _rowDeserializer, IEngineRowAllocator *_rowAllocator)
-        : SimpleFetchPartHandlerBase(_part, _base, _size, _handler, _threadPool, _blockcompressed, _encryptionkey, _activityId, _outputMeta, _rowDeserializer, _rowAllocator), 
+    FlatFetchPartHandler(IFlatFetchHandlerCallback & _owner, IDistributedFilePart * _part, offset_t _base, offset_t _size, IThreadedExceptionHandler *_handler, IThreadPool * _threadPool, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta, ISourceRowPrefetcher * _prefetcher, IEngineRowAllocator *_rowAllocator)
+        : SimpleFetchPartHandlerBase(_part, _base, _size, _handler, _threadPool, _blockcompressed, _encryptionkey, _activityId, _outputMeta, _prefetcher, _rowAllocator),
           owner(_owner)
     {
     }
@@ -1974,7 +1969,7 @@ template <class PARTHANDLER>
 class IFetchHandlerFactory
 {
 public:
-    virtual PARTHANDLER * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, IOutputRowDeserializer * rowDeserializer, IEngineRowAllocator *rowAllocator) = 0;
+    virtual PARTHANDLER * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, ISourceRowPrefetcher * prefetcher, IEngineRowAllocator *rowAllocator) = 0;
 };
 
 template <class PARTHANDLER, class LEFTPTR, class REQUEST>
@@ -1983,7 +1978,7 @@ class DistributedFileFetchHandler : public DistributedFileFetchHandlerBase
 public:
     typedef DistributedFileFetchHandler<PARTHANDLER, LEFTPTR, REQUEST> SELF;
 
-    DistributedFileFetchHandler(IDistributedFile * f, IFetchHandlerFactory<PARTHANDLER> & factory, MemoryAttr &encryptionkey, IOutputRowDeserializer * rowDeserializer, IEngineRowAllocator *rowAllocator) : file(f)
+    DistributedFileFetchHandler(IDistributedFile * f, IFetchHandlerFactory<PARTHANDLER> & factory, MemoryAttr &encryptionkey, ISourceRowPrefetcher * prefetcher, IEngineRowAllocator *rowAllocator) : file(f)
     {
         numParts = f->numParts();
         parts = new PARTHANDLER *[numParts];
@@ -1995,7 +1990,7 @@ public:
         {
             IDistributedFilePart *part = f->getPart(idx);
             offset_t size = getPartSize(part);
-            parts[idx] = factory.createFetchPartHandler(part, base, size, this, blockcompressed, encryptionkey, rowDeserializer, rowAllocator);
+            parts[idx] = factory.createFetchPartHandler(part, base, size, this, blockcompressed, encryptionkey, prefetcher, rowAllocator);
             base += size;
         }
         exception = NULL;
@@ -2206,7 +2201,7 @@ public:
         OwnedRoxieString lfn(fetch.getFileName());
         if (lfn.get())
         {
-            Owned <ILocalOrDistributedFile> ldFile = agent.resolveLFN(lfn, "Fetch", 0 != (fetch.getFetchFlags() & FFdatafileoptional));
+            Owned<ILocalOrDistributedFile> ldFile = resolveLFNFlat(agent, lfn, "Fetch", 0 != (fetch.getFetchFlags() & FFdatafileoptional));
             IDistributedFile * dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
             if(dFile)
             {
@@ -2258,7 +2253,7 @@ public:
         fetch.getFileEncryptKey(kl,k);
         MemoryAttr encryptionkey;
         encryptionkey.setOwn(kl,k);
-        parts.setown(new DistributedFileFetchHandler<SimpleFetchPartHandlerBase, const void *, FetchRequest>(f, *this, encryptionkey, rowDeserializer, rowAllocator));
+        parts.setown(new DistributedFileFetchHandler<SimpleFetchPartHandlerBase, const void *, FetchRequest>(f, *this, encryptionkey, prefetcher, rowAllocator));
     }
 
     virtual void stopParts()
@@ -2358,7 +2353,9 @@ public:
         dequeuedSeq = 0;
     }
 protected:
-    Owned<IOutputRowDeserializer> rowDeserializer;
+    Owned<ISourceRowPrefetcher> prefetcher;
+    Owned<IOutputMetaData> actualDiskMeta;
+    Owned<const IDynamicTransform> translator;
 private:
     PartHandlerThreadFactory<FetchRequest> threadFactory;   
     Owned<DistributedFileFetchHandler<SimpleFetchPartHandlerBase, const void *, FetchRequest> > parts;
@@ -2382,20 +2379,32 @@ public:
     {
         CHThorFetchActivityBase::ready();
         rowLimit = helper.getRowLimit();
-        rowDeserializer.setown(helper.queryDiskRecordSize()->createDiskDeserializer(agent.queryCodeContext(), activityId));
-        diskAllocator.setown(agent.queryCodeContext()->getRowAllocator(helper.queryDiskRecordSize(), activityId));
+    }
+
+    virtual void initParts(IDistributedFile * f) override
+    {
+        CHThorFetchActivityBase::initParts(f);
+        prefetcher.setown(actualDiskMeta->createDiskPrefetcher());
     }
 
     virtual bool needsAllocator() const { return true; }
 
     virtual void processFetch(FetchRequest const * fetch, offset_t pos, ISerialStream *rawStream)
     {
-        CThorStreamDeserializerSource deserializeSource;
-        deserializeSource.setStream(rawStream);
-        deserializeSource.reset(pos);
-        RtlDynamicRowBuilder rowBuilder(diskAllocator);
-        unsigned sizeRead = rowDeserializer->deserialize(rowBuilder.ensureRow(), deserializeSource);
-        OwnedConstRoxieRow rawBuffer(rowBuilder.finalizeRowClear(sizeRead));
+        CThorContiguousRowBuffer prefetchSource;
+        prefetchSource.setStream(rawStream);
+        prefetchSource.reset(pos);
+        prefetcher->readAhead(prefetchSource);
+        const byte *rawBuffer = prefetchSource.queryRow();
+
+        MemoryBuffer buf;
+        if (translator)
+        {
+            MemoryBufferBuilder aBuilder(buf, 0);
+            FetchVirtualFieldCallback fieldCallback(fetch->pos);
+            translator->translate(aBuilder, fieldCallback, rawBuffer);
+            rawBuffer = reinterpret_cast<const byte *>(buf.toByteArray());
+        }
 
         CriticalBlock procedure(transformCrit);
         size32_t thisSize;
@@ -2423,22 +2432,50 @@ public:
         helper.onLimitExceeded();
     }
 
-    virtual SimpleFetchPartHandlerBase * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, IOutputRowDeserializer * rowDeserializer, IEngineRowAllocator *rowAllocator)
+    virtual SimpleFetchPartHandlerBase * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, ISourceRowPrefetcher * prefetcher, IEngineRowAllocator *rowAllocator)
     {
-        return new FlatFetchPartHandler(*this, part, base, size, handler, threadPool, blockcompressed, encryptionkey, activityId, outputMeta, rowDeserializer, rowAllocator);
+        return new FlatFetchPartHandler(*this, part, base, size, handler, threadPool, blockcompressed, encryptionkey, activityId, outputMeta, prefetcher, rowAllocator);
     }
 
 protected:
     virtual void verifyFetchFormatCrc(IDistributedFile * f)
     {
-        if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
+        actualDiskMeta.set(helper.queryDiskRecordSize());
+        translator.clear();
+        if (agent.getLayoutTranslationMode()==RecordTranslationMode::None)
+        {
             ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), f, false, true);
+        }
+        else
+        {
+            bool crcMatched = ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), f, false, false);  // MORE - fetch requires all to match.
+            if (!crcMatched)
+            {
+                IPropertyTree &props = f->queryAttributes();
+                actualDiskMeta.setown(getDaliLayoutInfo(props));
+                if (actualDiskMeta)
+                {
+                    translator.setown(createRecordTranslator(helper.queryProjectedDiskRecordSize()->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
+                    if (translator->canTranslate())
+                    {
+                        if (agent.getLayoutTranslationMode()==RecordTranslationMode::None)
+                            throw MakeStringException(0, "Translatable file layout mismatch reading file %s but translation disabled", f->queryLogicalName());
+#ifdef _DEBUG
+                        translator->describe();
+#endif
+                    }
+                    else
+                        throw MakeStringException(0, "Untranslatable file layout mismatch reading file %s", f->queryLogicalName());
+                }
+                else
+                    throw MakeStringException(0, "Untranslatable file layout mismatch reading file %s - key layout information not found", f->queryLogicalName());
+            }
+        }
     }
 
 protected:
     CriticalSection transformCrit;
     IHThorFetchArg & helper;
-    Owned<IEngineRowAllocator> diskAllocator;
 };
 
 extern HTHOR_API IHThorActivity *createFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFetchArg &arg, ThorActivityKind _kind)
@@ -2464,7 +2501,7 @@ public:
         ICsvParameters * csvInfo = _arg.queryCsvParameters();
 
         OwnedRoxieString lfn(fetch.getFileName());
-        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(lfn, "CsvFetch", 0 != (_arg.getFetchFlags() & FFdatafileoptional));
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFNFlat(agent, lfn, "CsvFetch", 0 != (_arg.getFetchFlags() & FFdatafileoptional));
         IDistributedFile * dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
         const char * quotes = NULL;
         const char * separators = NULL;
@@ -2501,28 +2538,15 @@ public:
     {
         rawStream->reset(pos);
         CriticalBlock procedure(transformCrit);
-        size32_t rowSize = 4096; // MORE - make configurable
         size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
-        for (;;)
-        {
-            size32_t avail;
-            const void *peek = rawStream->peek(rowSize, avail);
-            if (csvSplitter.splitLine(avail, (const byte *)peek) < rowSize || avail < rowSize)
-                break;
-            if (rowSize == maxRowSize)
-                throw MakeStringException(0, "Row too big");
-            if (rowSize >= maxRowSize/2)
-                rowSize = maxRowSize;
-            else
-                rowSize += rowSize;
-        }
-
-        size32_t thisSize;
+        unsigned thisLineLength = csvSplitter.splitLine(rawStream, maxRowSize);
+        if (!thisLineLength)
+            return;
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            thisSize = helper.transform(rowBuilder, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData(), fetch->left, fetch->pos);
-            if(thisSize)
+            size32_t thisSize = helper.transform(rowBuilder, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData(), fetch->left, fetch->pos);
+            if (thisSize)
             {
                 setRow(rowBuilder.finalizeRowClear(thisSize), fetch->seq);
             }
@@ -2541,7 +2565,6 @@ public:
     {
         CHThorFetchActivityBase::ready();
         rowLimit = helper.getRowLimit();
-        rowDeserializer.setown(helper.queryDiskRecordSize()->createDiskDeserializer(agent.queryCodeContext(), activityId));
     }
 
     virtual void onLimitExceeded()
@@ -2549,9 +2572,9 @@ public:
         helper.onLimitExceeded();
     }
 
-    virtual SimpleFetchPartHandlerBase * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, IOutputRowDeserializer * rowDeserializer, IEngineRowAllocator *rowAllocator)
+    virtual SimpleFetchPartHandlerBase * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, ISourceRowPrefetcher * prefetcher, IEngineRowAllocator *rowAllocator)
     {
-        return new FlatFetchPartHandler(*this, part, base, size, handler, threadPool, blockcompressed, encryptionkey, activityId, outputMeta, rowDeserializer, rowAllocator);
+        return new FlatFetchPartHandler(*this, part, base, size, handler, threadPool, blockcompressed, encryptionkey, activityId, outputMeta, prefetcher, rowAllocator);
     }
 
 protected:
@@ -2689,7 +2712,7 @@ public:
         helper.onLimitExceeded();
     }
 
-    virtual SimpleFetchPartHandlerBase * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, IOutputRowDeserializer * rowDeserializer, IEngineRowAllocator *rowAllocator)
+    virtual SimpleFetchPartHandlerBase * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, ISourceRowPrefetcher * prefetcher, IEngineRowAllocator *rowAllocator)
     {
         return new XmlFetchPartHandler(*this, part, base, size, handler, 4096, threadPool, blockcompressed, encryptionkey, activityId, outputMeta, kind==TAKjsonfetch); //MORE: need to put correct stream buffer size here, when Gavin provides it
     }
@@ -2721,20 +2744,18 @@ public:
             ReleaseRoxieRow(rows.item(idx));
     }
 
-    void addRightMatch(void * right, offset_t fpos);
+    void addRightMatch(void * right);
     offset_t addRightPending();
-    void setPendingRightMatch(offset_t seq, void * right, offset_t fpos);
+    void setPendingRightMatch(offset_t seq, void * right);
     void incRightMatchCount();
 
     unsigned count() const { return rows.ordinality(); }
     CJoinGroup * queryJoinGroup() const { return jg; }
     void * queryRow(unsigned idx) const { return rows.item(idx); }
-    offset_t queryOffset(unsigned idx) const { return offsets.item(idx); }
 
 private:
     CJoinGroup * jg;
     PointerArray rows;
-    Int64Array offsets;
 };
 
 interface IJoinProcessor
@@ -2745,8 +2766,10 @@ interface IJoinProcessor
     virtual bool addMatch(MatchSet * ms, IKeyManager * manager) = 0;
     virtual void onComplete(CJoinGroup * jg) = 0;
     virtual bool leftCanMatch(const void *_left) = 0;
-    virtual IRecordLayoutTranslator * getLayoutTranslator(IDistributedFile * f) = 0;
-    virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, IRecordLayoutTranslator * trans) = 0;
+    virtual const IDynamicTransform * getLayoutTranslator(IDistributedFile * f) = 0;
+    virtual const RtlRecord &queryIndexRecord() = 0;
+    virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, const IDynamicTransform * trans) = 0;
+    virtual bool hasNewSegmentMonitors() = 0;
 };
 
 class CJoinGroup : implements IInterface, public CInterface
@@ -2757,7 +2780,6 @@ public:
     public:
         // Single threaded by now
         void const * queryRow() const { return owner.matchsets.item(ms).queryRow(idx); }
-        offset_t queryOffset() const { return owner.matchsets.item(ms).queryOffset(idx); }
         bool start()
         {
             idx = 0;
@@ -2892,12 +2914,11 @@ protected:
     unsigned candidates;
 };
 
-void MatchSet::addRightMatch(void * right, offset_t fpos)
+void MatchSet::addRightMatch(void * right)
 {
     assertex(!jg->complete());
     CriticalBlock b(jg->crit);
     rows.append(right);
-    offsets.append(fpos);
     jg->matchcount++;
 }
 
@@ -2907,16 +2928,14 @@ offset_t MatchSet::addRightPending()
     CriticalBlock b(jg->crit);
     offset_t seq = rows.ordinality();
     rows.append(NULL);
-    offsets.append(0);
     return seq;
 }
 
-void MatchSet::setPendingRightMatch(offset_t seq, void * right, offset_t fpos)
+void MatchSet::setPendingRightMatch(offset_t seq, void * right)
 {
     assertex(!jg->complete());
     CriticalBlock b(jg->crit);
     rows.replace(right, (aindex_t)seq);
-    offsets.replace(fpos, (aindex_t)seq);
     jg->matchcount++;
 }
 
@@ -3037,7 +3056,7 @@ class DistributedKeyLookupHandler : public CInterface, implements IThreadedExcep
 {
     bool opened;
     IArrayOf<IKeyManager> managers;
-    Owned<IRecordLayoutTranslator> trans;
+    Owned<const IDynamicTransform> trans;
     UnsignedArray keyNumParts;
 
     IArrayOf<KeyedLookupPartHandler> parts;
@@ -3109,7 +3128,7 @@ public:
                 owner.readyManager(&manager, row);
                 while(manager.lookup(false))
                 {
-                    unsigned recptr = (unsigned)manager.queryFpos();
+                    unsigned recptr = (unsigned)extractFpos(&manager);
                     if (recptr)
                     {
                         jg->notePending();
@@ -3137,9 +3156,7 @@ public:
             //Owned<IRecordLayoutTranslator> 
             trans.setown(owner.getLayoutTranslator(&f));
             owner.verifyIndex(&f, index, trans);
-            Owned<IKeyManager> manager = createLocalKeyManager(index, index->keySize(), NULL);
-            if(trans)
-                manager->setLayoutTranslator(trans);
+            Owned<IKeyManager> manager = createLocalKeyManager(owner.queryIndexRecord(), index, NULL, owner.hasNewSegmentMonitors());
             managers.append(*manager.getLink());
         }
         opened = true;
@@ -3165,7 +3182,7 @@ public:
             exception = E;
     }
 
-    IRecordLayoutTranslator * queryRecordLayoutTranslator() const { return trans; }
+    const IDynamicTransform * queryRecordLayoutTranslator() const { return trans; }
 };
 
 KeyedLookupPartHandler::KeyedLookupPartHandler(IJoinProcessor &_owner, IDistributedFilePart *_part, DistributedKeyLookupHandler * _tlk, unsigned _subno, IThreadPool * _threadPool, IAgentContext &_agent)
@@ -3178,9 +3195,9 @@ void KeyedLookupPartHandler::openPart()
     if(manager)
         return;
     Owned<IKeyIndex> index = openKeyFile(*part);
-    manager.setown(createLocalKeyManager(index, index->keySize(), NULL));
-    IRecordLayoutTranslator * trans = tlk->queryRecordLayoutTranslator();
-    if(trans)
+    manager.setown(createLocalKeyManager(owner.queryIndexRecord(), index, NULL, owner.hasNewSegmentMonitors()));
+    const IDynamicTransform * trans = tlk->queryRecordLayoutTranslator();
+    if(trans && !index->isTopLevelKey())
         manager->setLayoutTranslator(trans);
 }
 
@@ -3252,13 +3269,13 @@ public:
         ForEachItemIn(idx, keyFiles)
         {
             IDistributedFile & f = keyFiles.item(idx);
-            Owned<IRecordLayoutTranslator> trans = owner.getLayoutTranslator(&f);
+            Owned<const IDynamicTransform> trans = owner.getLayoutTranslator(&f);
             Owned<IKeyManager> manager;
             if(f.numParts() == 1)
             {
                 Owned<IKeyIndex> index = openKeyFile(f.queryPart(0));
                 owner.verifyIndex(&f, index, trans);
-                manager.setown(createLocalKeyManager(index, index->keySize(), NULL));
+                manager.setown(createLocalKeyManager(owner.queryIndexRecord(), index, NULL, owner.hasNewSegmentMonitors()));
             }
             else
             {
@@ -3271,7 +3288,7 @@ public:
                     parts->addIndex(index.getLink());
                 }
                 owner.verifyIndex(&f, index, trans);
-                manager.setown(createKeyMerger(parts, index->keySize(), 0, NULL));
+                manager.setown(createKeyMerger(owner.queryIndexRecord(), parts, 0, nullptr, owner.hasNewSegmentMonitors()));
             }
             if(trans)
                 manager->setLayoutTranslator(trans);
@@ -3306,8 +3323,8 @@ public:
 class KeyedJoinFetchPartHandler : public FetchPartHandlerBase, public ThreadedPartHandler<KeyedJoinFetchRequest>
 {
 public:
-    KeyedJoinFetchPartHandler(IKeyedJoinFetchHandlerCallback & _owner, IDistributedFilePart *_part, offset_t _base, offset_t _size, IThreadedExceptionHandler *_handler, IThreadPool * _threadPool, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta, IOutputRowDeserializer * _rowDeserializer, IEngineRowAllocator *_rowAllocator)
-        : FetchPartHandlerBase(_base, _size, _blockcompressed, _encryptionkey, _activityId, _outputMeta, _rowDeserializer, _rowAllocator),
+    KeyedJoinFetchPartHandler(IKeyedJoinFetchHandlerCallback & _owner, IDistributedFilePart *_part, offset_t _base, offset_t _size, IThreadedExceptionHandler *_handler, IThreadPool * _threadPool, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta, ISourceRowPrefetcher * _prefetcher, IEngineRowAllocator *_rowAllocator)
+        : FetchPartHandlerBase(_base, _size, _blockcompressed, _encryptionkey, _activityId, _outputMeta, _prefetcher, _rowAllocator),
           ThreadedPartHandler<KeyedJoinFetchRequest>(_part, _handler, _threadPool),
           owner(_owner)
     {
@@ -3374,12 +3391,13 @@ class CHThorKeyedJoinActivity  : public CHThorThreadedActivityBase, implements I
     IDistributedFile * dFile;
     IDistributedSuperFile * super;
     CachedOutputMetaData eclKeySize;
-    Owned<IOutputRowDeserializer> rowDeserializer;
-    Owned<IEngineRowAllocator> diskAllocator;
-
+    Owned<ISourceRowPrefetcher> prefetcher;
+    IPointerArrayOf<IOutputMetaData> actualLayouts;  // all the index layouts are saved in here to ensure their lifetime is adequate
+    Owned<IOutputMetaData> actualDiskMeta;           // only one disk layout is permitted
+    Owned<const IDynamicTransform> translator;
 public:
     CHThorKeyedJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorKeyedJoinArg &_arg, ThorActivityKind _kind)
-        : CHThorThreadedActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _arg.queryDiskRecordSize()), helper(_arg), activityRecordMetaBuff(NULL)
+        : CHThorThreadedActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _arg.queryDiskRecordSize()), helper(_arg)
     {
         atomic_set(&prefiltered, 0);
         atomic_set(&postfiltered, 0);
@@ -3393,10 +3411,11 @@ public:
     {
         clearQueue();
         waitForThreads();
-        rtlFree(activityRecordMetaBuff);
     }
 
     virtual bool needsAllocator() const { return true; }
+
+    virtual bool hasNewSegmentMonitors() { return helper.hasNewSegmentMonitors(); }
 
     virtual void ready()        
     { 
@@ -3427,11 +3446,6 @@ public:
                 defaultRight.setown(rowBuilder.finalizeRowClear(thisSize));
             }
         }
-        if (needsDiskRead)
-        {
-            rowDeserializer.setown(helper.queryDiskRecordSize()->createDiskDeserializer(agent.queryCodeContext(), activityId));
-            diskAllocator.setown(agent.queryCodeContext()->getRowAllocator(helper.queryDiskRecordSize(), activityId));
-        }
     }
 
     virtual void stop()
@@ -3456,7 +3470,8 @@ public:
         if (needsDiskRead)
         {
             inputRowAllocator.setown(agent.queryCodeContext()->getRowAllocator(helper.queryDiskRecordSize(), activityId));
-            parts.setown(new DistributedFileFetchHandler<KeyedJoinFetchPartHandler, MatchSet *, KeyedJoinFetchRequest>(f, *this, encryptionkey, rowDeserializer, inputRowAllocator));
+            parts.setown(new DistributedFileFetchHandler<KeyedJoinFetchPartHandler, MatchSet *, KeyedJoinFetchRequest>(f, *this, encryptionkey, prefetcher, inputRowAllocator));
+            prefetcher.setown(actualDiskMeta->createDiskPrefetcher());
         }
     }
 
@@ -3548,20 +3563,27 @@ public:
         stopThread();
     }
 
-    virtual KeyedJoinFetchPartHandler * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, IOutputRowDeserializer * rowDeserializer, IEngineRowAllocator *rowAllocator)
+    virtual KeyedJoinFetchPartHandler * createFetchPartHandler(IDistributedFilePart * part, offset_t base, offset_t size, IThreadedExceptionHandler * handler, bool blockcompressed, MemoryAttr &encryptionkey, ISourceRowPrefetcher * prefetcher, IEngineRowAllocator *rowAllocator)
     {
-        return new KeyedJoinFetchPartHandler(*this, part, base, size, handler, threadPool, blockcompressed, encryptionkey, activityId, outputMeta, rowDeserializer, rowAllocator);
+        return new KeyedJoinFetchPartHandler(*this, part, base, size, handler, threadPool, blockcompressed, encryptionkey, activityId, outputMeta, prefetcher, rowAllocator);
     }
 
     virtual void processFetch(KeyedJoinFetchRequest const * fetch, offset_t pos, ISerialStream *rawStream)
     {
-        CThorStreamDeserializerSource deserializeSource;
-        deserializeSource.setStream(rawStream);
-        deserializeSource.reset(pos);
-        RtlDynamicRowBuilder rowBuilder(diskAllocator);
-        unsigned sizeRead = rowDeserializer->deserialize(rowBuilder.ensureRow(), deserializeSource);
-        OwnedConstRoxieRow row = rowBuilder.finalizeRowClear(sizeRead);
+        CThorContiguousRowBuffer prefetchSource;
+        prefetchSource.setStream(rawStream);
+        prefetchSource.reset(pos);
+        prefetcher->readAhead(prefetchSource);
+        const byte *row = prefetchSource.queryRow();
 
+        MemoryBuffer buf;
+        if (translator)
+        {
+            MemoryBufferBuilder aBuilder(buf, 0);
+            FetchVirtualFieldCallback fieldCallback(pos);
+            translator->translate(aBuilder, fieldCallback, row);
+            row = reinterpret_cast<const byte *>(buf.toByteArray());
+        }
         if(match(fetch->ms, row))
         {
             if(exclude)
@@ -3571,9 +3593,9 @@ public:
             else
             {
                 RtlDynamicRowBuilder extractBuilder(queryRightRowAllocator()); 
-                size32_t size = helper.extractJoinFields(extractBuilder, row, fetch->pos, NULL);
+                size32_t size = helper.extractJoinFields(extractBuilder, row, NULL);
                 void * ret = (void *) extractBuilder.finalizeRowClear(size);
-                fetch->ms->setPendingRightMatch(fetch->seq, ret, fetch->pos);
+                fetch->ms->setPendingRightMatch(fetch->seq, ret);
             }
         }
         fetch->ms->queryJoinGroup()->noteEnd();
@@ -3780,7 +3802,7 @@ public:
                                 RtlDynamicRowBuilder rowBuilder(rowAllocator);
                                 void const * row = jg->matches.queryRow();
                                 if(!row) continue;
-                                offset_t fpos = jg->matches.queryOffset();
+                                offset_t fpos = 0;
                                 size32_t transformedSize;
                                 transformedSize = helper.transform(rowBuilder, left, row, fpos, ++counter);
                                 if (transformedSize)
@@ -3819,7 +3841,7 @@ public:
                             void const * row = jg->matches.queryRow();
                             if(!row) continue;
                             ++count;
-                            offset_t fpos = jg->matches.queryOffset();
+                            offset_t fpos = 0;
                             size32_t transformedSize;
                             try
                             {
@@ -3909,7 +3931,7 @@ public:
     virtual void start()
     {
         OwnedRoxieString lfn(helper.getIndexFileName());
-        ldFile.setown(agent.resolveLFN(lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional)));
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional));
         dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
         if (dFile)
         {
@@ -3972,15 +3994,16 @@ public:
             return true;
         }
         KLBlobProviderAdapter adapter(manager);
-        offset_t recptr;
-        byte const * rhs = manager->queryKeyBuffer(recptr);
-        if(indexReadMatch(jg->queryLeft(), rhs, recptr, &adapter))
+        byte const * rhs = manager->queryKeyBuffer();
+        if(indexReadMatch(jg->queryLeft(), rhs, &adapter))
         {
             if(needsDiskRead)
             {
+                size_t fposOffset = manager->queryRowSize() - sizeof(offset_t);
+                offset_t fpos = rtlReadBigUInt8(rhs + fposOffset);
                 jg->notePending();
                 offset_t seq = ms->addRightPending();
-                parts->addRow(ms, recptr, seq);
+                parts->addRow(ms, fpos, seq);
             }
             else
             {
@@ -3989,9 +4012,9 @@ public:
                 else
                 {
                     RtlDynamicRowBuilder rowBuilder(queryRightRowAllocator()); 
-                    size32_t size = helper.extractJoinFields(rowBuilder, rhs, recptr, &adapter);
+                    size32_t size = helper.extractJoinFields(rowBuilder, rhs, &adapter);
                     void * ret = (void *)rowBuilder.finalizeRowClear(size);
-                    ms->addRightMatch(ret, recptr);
+                    ms->addRightMatch(ret);
                 }
             }
         }
@@ -4002,10 +4025,10 @@ public:
         return false;
     }
 
-    bool indexReadMatch(const void * indexRow, const void * inputRow, unsigned __int64 keyedFpos, IBlobProvider * blobs)
+    bool indexReadMatch(const void * indexRow, const void * inputRow, IBlobProvider * blobs)
     {
         CriticalBlock proc(imatchCrit);
-        return helper.indexReadMatch(indexRow, inputRow, keyedFpos, blobs);
+        return helper.indexReadMatch(indexRow, inputRow, blobs);
     }
 
     IEngineRowAllocator * queryRightRowAllocator()
@@ -4032,18 +4055,14 @@ public:
     }
 
 protected:
-    void * activityRecordMetaBuff;
-    size32_t activityRecordMetaSize;
-    Owned<IDefRecordMeta> activityRecordMeta;
-
-    virtual IRecordLayoutTranslator * getLayoutTranslator(IDistributedFile * f)
+    virtual const IDynamicTransform * getLayoutTranslator(IDistributedFile * f) override
     {
-        if(agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
+        if(agent.getLayoutTranslationMode() == RecordTranslationMode::AlwaysECL)
         {
             return NULL;
         }
 
-        if(!rltEnabled(agent.queryWorkUnit()))
+        if(agent.getLayoutTranslationMode() == RecordTranslationMode::None)
         {
             verifyFormatCrc(helper.getIndexFormatCrc(), f, super ? super->queryLogicalName() : NULL, true, true);
             return NULL;
@@ -4054,34 +4073,74 @@ protected:
             return NULL;
         }
 
-        if(!activityRecordMeta)
+        IPropertyTree &props = f->queryAttributes();
+        Owned<IOutputMetaData> actualFormat = getDaliLayoutInfo(props);
+        if (actualFormat)
         {
-            if(!helper.getIndexLayout(activityRecordMetaSize, activityRecordMetaBuff))
-                throw MakeStringException(0, "Unable to recover from record layout mismatch for index %s: no record layout metadata in activity", f->queryLogicalName());
-            MemoryBuffer buff;
-            buff.setBuffer(activityRecordMetaSize, activityRecordMetaBuff, false);
-            activityRecordMeta.setown(deserializeRecordMeta(buff, true));
+            actualLayouts.append(actualFormat.getLink());  // ensure adequate lifespan
+            Owned<const IDynamicTransform> payloadTranslator =  createRecordTranslator(helper.queryProjectedIndexRecordSize()->queryRecordAccessor(true), actualFormat->queryRecordAccessor(true));
+            if (!payloadTranslator->canTranslate())
+                throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s", f->queryLogicalName());
+            if (payloadTranslator->keyedTranslated())
+                throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - keyed fields do not match", f->queryLogicalName());
+            return payloadTranslator.getClear();
         }
-
-        return getRecordLayoutTranslator(activityRecordMeta, activityRecordMetaSize, activityRecordMetaBuff, f, agent.queryRecordLayoutTranslatorCache(), IRecordLayoutTranslator::TranslateAll);
+        throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - key layout information not found", f->queryLogicalName());
     }
 
-    virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, IRecordLayoutTranslator * trans)
+    virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, const IDynamicTransform * trans)
     {
         if (eclKeySize.isFixedSize())
         {
             if(trans)
-                trans->checkSizes(f->queryLogicalName(), eclKeySize.getFixedSize(), idx->keySize());
+            {
+                if (!trans->canTranslate())
+                    throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s", f->queryLogicalName());
+            }
             else
-                if(idx->keySize() != eclKeySize.getFixedSize())
-                    throw MakeStringException(1002, "Key size mismatch on key %s: key file indicates record size should be %u, but ECL declaration was %u", f->queryLogicalName(), idx->keySize(), eclKeySize.getFixedSize());
+            {
+                unsigned fileposSize = idx->hasSpecialFileposition() && !hasTrailingFileposition(eclKeySize.queryTypeInfo()) ? sizeof(offset_t) : 0;
+                if(idx->keySize() != eclKeySize.getFixedSize() + fileposSize)
+                    throw MakeStringException(1002, "Key size mismatch on key %s: key file indicates record size should be %u, but ECL declaration was %u", f->queryLogicalName(), idx->keySize(), eclKeySize.getFixedSize() + fileposSize);
+            }
         }
     }
 
     virtual void verifyFetchFormatCrc(IDistributedFile * f)
     {
-        if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
+        actualDiskMeta.set(helper.queryDiskRecordSize());
+        translator.clear();
+        if (agent.getLayoutTranslationMode()==RecordTranslationMode::None)
+        {
             ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), f, false, true);
+        }
+        else
+        {
+            bool crcMatched = ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), f, false, false);  // MORE - fetch requires all to match.
+            if (!crcMatched)
+            {
+                IPropertyTree &props = f->queryAttributes();
+                actualDiskMeta.setown(getDaliLayoutInfo(props));
+                if (actualDiskMeta)
+                {
+                    translator.setown(createRecordTranslator(helper.queryProjectedDiskRecordSize()->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
+                    if (translator->canTranslate())
+                    {
+                        if (agent.getLayoutTranslationMode()==RecordTranslationMode::None)
+                            throw MakeStringException(0, "Translatable file layout mismatch reading file %s but translation disabled", f->queryLogicalName());
+                    }
+                    else
+                        throw MakeStringException(0, "Untranslatable file layout mismatch reading file %s", f->queryLogicalName());
+                }
+                else
+                    throw MakeStringException(0, "Untranslatable file layout mismatch reading file %s - key layout information not found", f->queryLogicalName());
+            }
+        }
+    }
+
+    virtual const RtlRecord &queryIndexRecord()
+    {
+        return eclKeySize.queryRecordAccessor(true);
     }
 
     virtual void fail(char const * msg)

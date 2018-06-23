@@ -235,6 +235,21 @@ else
     log_success_msg
 fi
 
+if [ ! -d ${homePath}/certificate ]; then
+    mkdir -p ${homePath}/certificate
+fi
+
+if [ ! -e ${homePath}/certificate/certificate.pem ]; then
+    openssl req -newkey rsa:2048 -keyout ${homePath}/certificate/key.pem -x509 \
+        -days 365 -out ${homePath}/certificate/certificate.pem -passin \
+        pass:hpccsystems-platform -passout pass:hpccsystems-platform -batch 1>/dev/null 2>&1
+    printf "Self Signed Certificate installed for user %-12s ..." "$user"
+    log_success_msg
+else
+    printf "Self Signed Certificate already installed for user %-12s ..." "$user"
+    log_success_msg
+fi
+
 # Added code to change environment.conf file user home directory location for key generation
 if [ "$homeBase" != "$home" ]; then
     sed -e "s;^[[:space:]]*home[[:space:]]*=.*$;home=$homeBase;" ${CONFIG_DIR}/${ENV_CONF_FILE} > temp.conf
@@ -282,20 +297,7 @@ chown root:$group ${configs}
 chown -R $user:$group ${configs}/*
 chmod 775 ${configs}
 
-# Add systemd support
-distrib_check
-if [ "${DISTRIB_NAME}" = "ubuntu" ] &&
-   [ ${DISTRIB_MAJOR_VERSION} -ge 15 ]; then
-
-   dpkg -S /sbin/init | grep -q systemd
-   if [ $? -eq 0 ]; then
-      cp ${INSTALL_DIR}/etc/init.d/hpcc-init.service /lib/systemd/system/
-      cp ${INSTALL_DIR}/etc/init.d/hpcc-init@.service /lib/systemd/system/
-      cp ${INSTALL_DIR}/etc/init.d/dafilesrv.service /lib/systemd/system/
-      cp ${INSTALL_DIR}/etc/init.d/dafilesrv@.service /lib/systemd/system/
-      systemctl daemon-reload
-   fi
-fi
+which systemctl 1>/dev/null 2>&1 && systemctl daemon-reload
 
 createRuntime
 [ -e  ${LOG_DIR}/hpcc-init.debug ] && chown ${user}:${user} ${LOG_DIR}/hpcc-init.debug

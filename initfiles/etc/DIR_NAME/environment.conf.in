@@ -13,6 +13,7 @@ log=${LOG_PATH}
 user=${RUNTIME_USER}
 group=${RUNTIME_GROUP}
 #umask=022
+#nice=0
 home=${HOME_DIR}
 environment=${ENV_XML_FILE}
 sourcedir=${CONFIG_SOURCE_PATH}
@@ -29,16 +30,24 @@ mpEnd=7500
 mpSoMaxConn=128
 mpTraceLevel=0
 # enable SSL for dafilesrv remote file access (SSLNone/false | SSLOnly/true | SSLFirst | UnsecureFirst)
+# Enabling requires setting the HPCCPassPhrase, HPCCCertFile, and HPCCPrivateKeyFile values
 #dfsUseSSL=SSLNone
-# note: if passphrase specified it must be encrypted
-#dfsSSLPassPhrase=
-#dfsSSLCertFile=/certfilepath/certfile
-#dfsSSLPrivateKeyFile=/keyfilepath/keyfile
+
+#Specify location of HPCC PKI public/private key files
+# note: if HPCCPassPhrase specified it must be encrypted
+#HPCCPassPhrase=
+#HPCCCertificateFile=/home/hpcc/.ssh/cert.cer
+#HPCCPublicKeyFile=/home/hpcc/.ssh/id_rsa.pub
+#HPCCPrivateKeyFile=/home/hpcc/.ssh/id_rsa
 
 jvmoptions=-XX:-UsePerfData
 #Options to enable remote debugging of Java service or application
 #jvmoptions=-XX:-UsePerfData -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=2000
 #JNI_PATH=/absolute/path/to/alternative/libjvm.so
+
+# Python plugins can call python cleanup code on exit, but this seems to cause lockups in some Tensorflow examples
+# In most cases, skipping the cleanup is harmless and avoids these lockups
+skipPythonCleanup=true
 
 # Although HPCC platform includes plugins for both Python2 and Python3, only one may be safely enabled at a time
 # as the Python libraries export the same symbols for both versions. Enabling both may lead to unpredicatable results
@@ -54,3 +63,5 @@ additionalPlugins=python2
 # To en-/disable Drop Zone restriction.
 # Default is enabled (true).
 useDropZoneRestriction=true
+# If set, will force matching local file paths to become remote reads, e.g:
+#forceRemotePattern=/var/lib/HPCCSystems/hpcc-data/eclagent/*

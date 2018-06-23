@@ -461,37 +461,31 @@ class CDFUengine: public CInterface, implements IDFUengine
         if ((isDotDotString != nullptr) || (isDotString != nullptr))
             throwError3(DFTERR_InvalidFilePath, pfilePath, dotDotString, dotString);
 
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        if (factory)
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        StringBuffer netaddress;
+        filename.queryIP().getIpText(netaddress);
+
+        Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByAddressPath(netaddress.str(), pfilePath);
+        if (!dropZone)
         {
-            Owned<IConstEnvironment> env = factory->openEnvironment();
-            if (env)
-            {
-                StringBuffer netaddress;
-                filename.queryIP().getIpText(netaddress);
-
-                Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByAddressPath(netaddress.str(), pfilePath);
-                if (!dropZone)
-                {
-                    if (env->isDropZoneRestrictionEnabled())
-                        throwError2(DFTERR_NoMatchingDropzonePath, netaddress.str(), pfilePath);
-                    else
-                        LOG(MCdebugInfo, unknownJob, "No matching drop zone path on '%s' to file path: '%s'", netaddress.str(), pfilePath);
-                }
-#ifdef _DEBUG
-                else
-                {
-                    SCMStringBuffer dropZoneName;
-                    dropZone->getName(dropZoneName);
-
-                    LOG(MCdebugInfo, unknownJob, "Drop zone path '%s' is %svisible in ECLWatch."
-                            , dropZoneName.str()
-                            , (dropZone->isECLWatchVisible() ? "" : "not ")
-                            );
-                }
-#endif
-            }
+            if (env->isDropZoneRestrictionEnabled())
+                throwError2(DFTERR_NoMatchingDropzonePath, netaddress.str(), pfilePath);
+            else
+                LOG(MCdebugInfo, unknownJob, "No matching drop zone path on '%s' to file path: '%s'", netaddress.str(), pfilePath);
         }
+#ifdef _DEBUG
+        else
+        {
+            SCMStringBuffer dropZoneName;
+            dropZone->getName(dropZoneName);
+
+            LOG(MCdebugInfo, unknownJob, "Drop zone path '%s' is %svisible in ECLWatch."
+                , dropZoneName.str()
+                , (dropZone->isECLWatchVisible() ? "" : "not ")
+                );
+        }
+#endif
     }
 
     // Prepare DropZone check for file(s)
@@ -663,6 +657,8 @@ public:
 
     bool performMonitor(IDFUWorkUnit *wu,IDFUmonitor *monitor,IConstDFUfileSpec *source, bool raiseexception, StringAttrArray *eventstriggered, StringAttrArray *eventsfile, IUserDescriptor *user)
     {
+
+
         bool sub = monitor->getSub();
         StringBuffer lfn;
         source->getLogicalName(lfn);
@@ -1067,7 +1063,7 @@ public:
                 : running(_running)
             {
                 if (atomic_dec_and_test(&running)) {
-                    Owned<IEnvironmentFactory> envf = getEnvironmentFactory();
+                    Owned<IEnvironmentFactory> envf = getEnvironmentFactory(false);
                     Owned<IConstEnvironment> env = envf->openEnvironment();
                     env->clearCache();
                 }
@@ -1303,6 +1299,8 @@ public:
 
                         if (options->getRecordStructurePresent())
                             opttree->setPropBool("@recordStructurePresent", true);
+
+                        opttree->setPropInt("@expireDays", options->getExpireDays());
 
                         opttree->setPropBool("@quotedTerminator", options->getQuotedTerminator());
                         Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey,options->getSuppressNonKeyRepeats()&&!iskey);

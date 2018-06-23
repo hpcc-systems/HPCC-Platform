@@ -26,7 +26,7 @@ version := #IFDEFINED(root.version, 1);
 
 //--- end of version configuration ---
 
-#option ('layoutTranslationEnabled', true);
+#option ('layoutTranslation', true);
 #onwarning (4515, ignore);
 #onwarning (4522, ignore);
 #onwarning (4523, ignore);
@@ -35,18 +35,17 @@ version := #IFDEFINED(root.version, 1);
 import $.setup;
 Files := setup.Files(multiPart, useLocal, false);
 
-//nothorlcr
-
 #IF (version=1)
-DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname,__filepos},Files.DG_FetchIndex1Name);
-DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Fname,Lname,__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname,__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname,__filepos},Files.DG_FetchIndex1Name);
 #ELIF (version=2)
-DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname},{state, STRING100 blobfield {blob}:= fname, STRING tfn := TRIM(Fname), __filepos},Files.DG_FetchIndex1Name);
-DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Fname,Lname},{ STRING100 blobfield {blob}:= fname, __filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname},{state, STRING100 blobfield {blob}:= fname, STRING tfn := TRIM(Fname), __filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname},{ STRING100 blobfield {blob}:= fname, __filepos},Files.DG_FetchIndex1Name);
 #ELSE
-DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname},{state ,__filepos},Files.DG_FetchIndex1Name);
-DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Fname,Lname},{__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname},{state ,__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname},{__filepos},Files.DG_FetchIndex1Name);
 #END
+DG_FetchIndex1Alt3 := INDEX(Files.DG_FetchFile,{Lname,Fname},{varstring state := '', string2 newstate := 'UK', string newfield { default('new')}},Files.DG_FetchIndex1Name); // Note - the := 'UK' would only take effect at index build time, it does not set a default for the field when reading
 
 ds := DATASET([{'Anderson'}, {'Doe'}], {STRING25 Lname});
 
@@ -54,10 +53,13 @@ SEQUENTIAL(
     OUTPUT(SORT(Files.DG_FetchIndex1(Lname = 'Smith'), record), {Fname, Lname}),
     OUTPUT(SORT(DG_FetchIndex1Alt1(Lname = 'Smith'), record), {Fname, Lname}),
     OUTPUT(SORT(DG_FetchIndex1Alt2(Lname = 'Smith'), record), {Fname, Lname}),
+    OUTPUT(SORT(DG_FetchIndex1Alt3(Lname = 'Smith'), record), {Fname, Lname, state, newstate, newfield}),
     OUTPUT(SORT(Files.DG_FetchIndex1((Lname = 'Smith') AND (Fname >= 'Z')), record), {Fname, Lname}),
     OUTPUT(SORT(DG_FetchIndex1Alt1((Lname = 'Smith') AND (Fname >= 'Z')), record), {Fname, Lname}),
     OUTPUT(SORT(DG_FetchIndex1Alt2((Lname = 'Smith') AND (Fname >= 'Z')), record), {Fname, Lname}),
+    OUTPUT(SORT(DG_FetchIndex1Alt3(Lname = 'Smith' AND (Fname >= 'Z')), record), {Fname, Lname, state, newstate, newfield}),
     OUTPUT(SORT(JOIN(ds, Files.DG_FetchIndex1, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname}),
     OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt1, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname}),
-    OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt2, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname})
+    OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt2, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname}),
+    OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt3, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname, state, newstate, newfield})
 );

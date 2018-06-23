@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "xslprocessor.hpp" 
+#include "xslprocessor.hpp"
 //  ===========================================================================
 
 EspInclude(common);
@@ -36,6 +36,13 @@ ESPenum ECLWUActions : string
     SetToFailed("SetToFailed"),
 };
 
+ESPenum EclDefinitionActions : string
+{
+    SyntaxCheck("SyntaxCheck"),
+    Deploy("Deploy"),
+    Publish("Publish"),
+};
+
 ESPStruct [nil_remove] ECLException
 {
     string Source;
@@ -46,6 +53,8 @@ ESPStruct [nil_remove] ECLException
     int LineNo;
     int Column;
     [min_ver("1.63")] int Activity;
+    [min_ver("1.69")] string Scope;
+    [min_ver("1.69")] int Priority;
 };
 //  ===========================================================================
 ESPStruct [nil_remove] ECLSchemaItem
@@ -124,6 +133,8 @@ ESPStruct [nil_remove] ECLTimer
     int count;
     [min_ver("1.20")] string GraphName;
     [min_ver("1.20")] int SubGraphId;
+    [min_ver("1.72")] int64 Timestamp;
+    [min_ver("1.72")] string When;
 };
 
 //  ===========================================================================
@@ -149,6 +160,27 @@ ESPStruct [nil_remove] ECLQuery
     string ThorLog;
     [min_ver("1.35")] string QueryMainDefinition;
 };
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] QuerySummaryStats
+{
+    string Endpoint;
+    string Status;
+    string StartTime;
+    string EndTime;
+    int CountTotal;
+    int CountFailed;
+    int AverageSlavesReplyLen;
+    int64 AverageBytesOut;
+    int64 SizeAvgPeakMemory;
+    int64 TimeAvgTotalExecuteMinutes;
+    int64 TimeMinTotalExecuteMinutes;
+    int64 TimeMaxTotalExecuteMinutes;
+    int64 Percentile97;
+    bool Percentile97Estimate;
+};
+
 //  ===========================================================================
 
 ESPStruct [nil_remove] DebugValue
@@ -230,12 +262,12 @@ ESPStruct [nil_remove] ECLWorkunit
     int PriorityLevel;
     string Scope;
     string Snapshot;
-    int    ResultLimit; 
+    int    ResultLimit;
     [min_ver("1.01")] bool Archived;
     [min_ver("1.30")] bool IsPausing(false);
     [min_ver("1.30")] bool ThorLCR(false);
     [min_ver("1.01")] int EventSchedule;
-    [min_ver("1.02")] bool HaveSubGraphTimings;
+    [min_ver("1.02"), depr_ver("1.71")] bool HaveSubGraphTimings;
     [min_ver("1.28"), depr_ver("1.53")] string TotalThorTime;
     [min_ver("1.53")] string TotalClusterTime;
     [min_ver("1.59")] string AbortBy;
@@ -353,6 +385,41 @@ ESPStruct [nil_remove] ResubmittedWU
     string ParentWUID;
 };
 
+ESPenum WUFileType : string
+{
+    XML("XML"),
+    CPP("cpp"),
+    DLL("dll"),
+    Res("res"),
+    WUECL("WUECL"),
+    ThorLog("ThorLog"),
+    ThorSlaveLog("ThorSlaveLog"),
+    EclAgentLog("EclAgentLog"),
+    ArchiveQuery("ArchiveQuery"),
+};
+
+ESPStruct WUFileOption
+{
+    ESPenum WUFileType FileType;
+    string Name; //CPP, ThorLog, and EclAgentLog: required; XML: optional
+    string IPAddress; //CPP/XML: required; ThorSlaveLog: required for legacy WU
+    string Description; //CPP/XML: required
+    string Process; //EclAgentLog and ThorSlaveLog: optional
+    string LogDate; //ThorSlaveLog: required
+    string ClusterGroup; //ThorSlaveLog: not required for legacy WU
+    string PlainText; //XML: optional
+    int SlaveNumber(1); //ThorSlaveLog: optional
+    int64 SizeLimit(0);
+};
+
+ESPenum WUFileDownloadOption : int
+{
+    OriginalText(0, "OriginalText"),
+    Attachment(1,   "Attachment"),
+    ZIP(2,          "ZIP"),
+    GZIP(3,         "GZIP")
+};
+
 ESPrequest [nil_remove] WUCreateRequest
 {
 };
@@ -400,14 +467,16 @@ ESPrequest [nil_remove] WUQueryRequest
     [depr_ver("1.57")] string ApplicationKey;
     [depr_ver("1.57")] string ApplicationData;
     [min_ver("1.57")] ESParray<ESPstruct ApplicationValue> ApplicationValues;
+    [min_ver("1.72")] string BeforeWU;
+    [min_ver("1.72")] string AfterWU;
 
-    string After;
-    string Before;
+    [depr_ver("1.02")] string After; //Not used since 1.02
+    [depr_ver("1.02")] string Before; //Not used since 1.02
     int Count;
     [min_ver("1.03")] int64 PageSize(0);
     [min_ver("1.03")] int64 PageStartFrom(0);
     [min_ver("1.03")] int64 PageEndAt;
-    [min_ver("1.26")] int LastNDays;
+    [min_ver("1.26"), depr_ver("1.72")] int LastNDays;
 
     string Sortby;
     bool Descending(false);
@@ -442,14 +511,14 @@ ESPresponse [nil_remove, exceptions_inline] WUQueryResponse
     bool First(true);
     [min_ver("1.03")] int64 PageStartFrom(-1);
     [min_ver("1.03")] int64 PageEndAt;
-    [min_ver("1.26")] int LastNDays;
+    [min_ver("1.26"), depr_ver("1.72")] int LastNDays;
 
     string Sortby;
     bool Descending(false);
     string BasicQuery;
     string Filters;
     [min_ver("1.41")] int64 CacheHint;
-    
+
     ESParray<ESPstruct ECLWorkunit> Workunits;
 };
 
@@ -462,6 +531,8 @@ ESPrequest [nil_remove] WULightWeightQueryRequest
     string JobName;
     string StartDate;
     string EndDate;
+    [min_ver("1.72")] string BeforeWU;
+    [min_ver("1.72")] string AfterWU;
     string State;
 
     ESParray<ESPstruct ApplicationValue> ApplicationValues;
@@ -541,12 +612,12 @@ ESPrequest [nil_remove] WUActionRequest
     string EndDate;
     string ECL;
     string Jobname;
-    string Test; 
+    string Test;
     string CurrentPage("");
     [min_ver("1.03")] string PageSize("");
     string Sortby;
     bool Descending(false);
-    //[min_ver("1.01")] string SashaNetAddress;  
+    //[min_ver("1.01")] string SashaNetAddress;
     [min_ver("1.01")] string EventServer("");
     [min_ver("1.01")] string EventName("");
     //[min_ver("1.01")] string EventText("");
@@ -581,7 +652,7 @@ ESPresponse [exceptions_inline] WUProtectResponse
     ESParray<ESPstruct WUActionResult> ActionResults;
 };
 
-ESPrequest WUResubmitRequest 
+ESPrequest WUResubmitRequest
 {
     ESParray<string> Wuids;
     [max_ver("1.30")] bool Recompile;
@@ -593,6 +664,62 @@ ESPrequest WUResubmitRequest
 ESPresponse [exceptions_inline] WUResubmitResponse
 {
     [min_ver("1.40")] ESParray<ESPstruct ResubmittedWU, WU> WUs;
+};
+
+ESPenum WUQueryActivationMode : int
+{
+    NoActivate(0, "Do not activate query"),
+    Activate(1, "Activate query"),
+    ActivateSuspendPrevious(2, "Activate query, suspend previous"),
+    ActivateDeletePrevious(3, "Activate query, delete previous")
+};
+
+ESPrequest [nil_remove] WURecreateQueryRequest
+{
+    string Target;
+    string QueryId;
+    ESParray<ESPstruct NamedValue> DebugValues;
+    string DestTarget;
+    bool Republish(0);
+    ESPEnum WUQueryActivationMode Activate;
+    bool NoReload(0);
+
+    string MemoryLimit;
+    nonNegativeInteger TimeLimit(0);
+    nonNegativeInteger WarnTimeLimit(0);
+    string Priority;
+    string Comment;
+
+    string RemoteDali;
+    bool DontCopyFiles(false);
+    string SourceProcess;
+    bool AllowForeignFiles(false);
+    bool UpdateDfs(false);
+    bool UpdateSuperFiles(false); //update content of superfiles if changed
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
+
+    int Wait(-1);
+};
+
+ESPresponse [exceptions_inline, nil_remove] WURecreateQueryResponse
+{
+    string Wuid;
+    string QuerySet;
+    string QueryName;
+    string QueryId;
+
+    string MemoryLimit;
+    nonNegativeInteger TimeLimit;
+    nonNegativeInteger WarnTimeLimit;
+    string Priority;
+    string Comment;
+
+    bool ReloadFailed;
+    bool Suspended;
+    string ErrorMessage;
+    ESParray<ESPStruct LogicalFileError, File> FileErrors;
 };
 
 ESPenum WUExceptionSeverity : string
@@ -694,6 +821,7 @@ ESPrequest WUInfoRequest
     [min_ver("1.66")] bool IncludeECL(true);
     [min_ver("1.66")] bool IncludeHelpers(true);
     [min_ver("1.66")] bool IncludeAllowedClusters(true);
+    [min_ver("1.73")] bool IncludeTotalClusterTime(true);
     [min_ver("1.16")] bool SuppressResultSchemas(false);
     [min_ver("1.25")] string ThorSlaveIP;
 };
@@ -706,7 +834,7 @@ ESPresponse [exceptions_inline] WUInfoResponse
    [min_ver("1.25")] string ThorSlaveIP;
    [min_ver("1.34")] ESParray<string, View> ResultViews;
    [min_ver("1.54")] string SecMethod;
-}; 
+};
 
 ESPrequest WUResultSummaryRequest
 {
@@ -753,6 +881,20 @@ ESPresponse [exceptions_inline] WULogFileResponse
     [http_content("application/octet-stream")] binary thefile;
 };
 
+ESPrequest WUDownloadFilesRequest
+{
+    string Wuid;
+    string QuerySet;
+    string Query;
+    ESPenum WUFileDownloadOption DownloadOption;
+    ESParray<ESPstruct WUFileOption> WUFileOptions;
+};
+
+ESPresponse [exceptions_inline] WUDownloadFilesResponse
+{
+    [http_content("application/octet-stream")] binary thefile;
+};
+
 ESPrequest WUResultBinRequest
 {
     string LogicalName;
@@ -764,7 +906,7 @@ ESPrequest WUResultBinRequest
 
     int64 Start(0);
     int Count;
-}; 
+};
 
 ESPresponse [exceptions_inline] WUResultBinResponse
 {
@@ -795,7 +937,7 @@ ESPrequest WUResultRequest
 
     int64 Start(0);
     int Count;
-}; 
+};
 
 ESPresponse [exceptions_inline,http_encode(0)] WUResultResponse
 {
@@ -847,7 +989,7 @@ ESPrequest WUClusterJobQueueXLSRequest
    string StartDate;
    string EndDate;
     string ShowType;
-}; 
+};
 
 ESPresponse [exceptions_inline] WUClusterJobQueueXLSResponse
 {
@@ -874,7 +1016,7 @@ ESPrequest WUClusterJobXLSRequest
     bool ShowAll;
     string BusinessStartTime;
     string BusinessEndTime;
-}; 
+};
 
 ESPresponse [exceptions_inline] WUClusterJobXLSResponse
 {
@@ -890,7 +1032,7 @@ ESPrequest WUClusterJobSummaryXLSRequest
     bool ShowAll;
     string BusinessStartTime;
     string BusinessEndTime;
-}; 
+};
 
 ESPresponse [exceptions_inline] WUClusterJobSummaryXLSResponse
 {
@@ -1006,6 +1148,19 @@ ESPresponse [exceptions_inline] WUQueryGetGraphResponse
     ESParray<ESPstruct ECLGraphEx> Graphs;
 };
 
+ESPrequest WUQueryGetSummaryStatsRequest
+{
+    string Target;
+    string QueryId;
+    string FromTime; //YYYY-MM-DDTHH:MM:SS
+    string ToTime;
+};
+
+ESPresponse [exceptions_inline] WUQueryGetSummaryStatsResponse
+{
+    ESParray<ESPstruct QuerySummaryStats> StatsList;
+};
+
 ESPrequest WUExportRequest
 {
     string Cluster;
@@ -1102,6 +1257,7 @@ ESPrequest [nil_remove] WUShowScheduledRequest
     string PushEventName("");
     string PushEventText("");
     [min_ver("1.51")] string State("");
+    [min_ver("1.71")] string JobName("");
 };
 
 ESPStruct [nil_remove] ScheduledWU
@@ -1218,14 +1374,6 @@ ESPresponse [exceptions_inline] WUCopyLogicalFilesResponse
     ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
 };
 
-
-ESPenum WUQueryActivationMode : int
-{
-    NoActivate(0, "Do not activate query"),
-    Activate(1, "Activate query"),
-    ActivateSuspendPrevious(2, "Activate query, suspend previous"),
-    ActivateDeletePrevious(3, "Activate query, delete previous")
-};
 
 ESPrequest [nil_remove] WUPublishWorkunitRequest
 {
@@ -1521,6 +1669,62 @@ ESPresponse [exceptions_inline] WUMultiQuerySetDetailsResponse
     ESParray<ESPstruct WUQuerySetDetail> Querysets;
 };
 
+ESPrequest WUQuerysetExportRequest
+{
+    string  Target;
+    bool Compress(true);
+    bool ActiveOnly(false);
+    bool Protect(false);
+};
+
+ESPresponse [exceptions_inline] WUQuerysetExportResponse
+{
+    string Target;
+    bool Compressed;
+    binary Data;
+};
+
+ESPenum QuerysetImportActivation : string
+{
+    None("None"),
+    ImportedActive("ActivateImportedActive")
+};
+
+
+ESPrequest WUQuerysetImportRequest
+{
+    string Target;
+    string QueryMask;
+    bool Replace(false);
+    bool ActiveOnly(false);
+    ESPenum QuerysetImportActivation Activation;
+    bool Compressed(true);
+    binary Data;
+
+    bool AllowForeignFiles(true);
+
+    string DfsServer;
+    bool CopyFiles(true);
+    bool OverwriteDfs(false);
+    string SourceProcess;
+    bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
+};
+
+ESPresponse [exceptions_inline] WUQuerysetImportResponse
+{
+    string  Target;
+    bool ClearedExisting(true);
+    bool Success(false);
+
+    ESParray<string, QueryId> ImportedQueries;
+    ESParray<string, QueryId> ExistingQueries;
+    ESParray<string, QueryId> MissingWuids;
+    ESParray<ESPStruct LogicalFileError, File> FileErrors;
+};
+
 ESPrequest [nil_remove] WUUpdateQueryEntryRequest
 {
     string QuerySet;
@@ -1688,14 +1892,16 @@ ESPrequest [nil_remove] WUCreateZAPInfoRequest
     string ProblemDescription;
     string WhatChanged;
     string WhereSlow;
-    [min_ver("1.53")] string Password;
+    [min_ver("1.53"), depr_ver("1.70")] string Password;
     [min_ver("1.65")] string ZAPFileName;
     [min_ver("1.57")] bool IncludeThorSlaveLog(false);
+    [min_ver("1.70")] string ZAPPassword;
 };
 
 ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
 {
     [http_content("application/octet-stream")] binary thefile;
+    [min_ver("1.70")] string ZAPFileName;
 };
 
 ESPrequest [nil_remove] WUCheckFeaturesRequest
@@ -1814,7 +2020,7 @@ ESPrequest [nil_remove] WUGetNumFileToCopyRequest
     [min_ver("1.69")] string Sortby;
     [min_ver("1.69")] bool Descending(false);
     [min_ver("1.69")] int64 CacheHint;
-    
+
 };
 
 ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
@@ -1824,87 +2030,287 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
     [min_ver("1.69")] int64 Total;
 };
 
+// ----------------------------------------------------------------------------------
+// WUDetails service
+//
+// Request related structures
+ESPstruct WUPropertyFilter
+{
+    string Name;                                // Attribute Name to match
+                                                // Match attribute's RawValue
+    [optional] string ExactValue;
+    [optional] string MinValue;
+    [optional] string MaxValue;
+};
+
+// Filters that indicates which nodes are explicitly matched
+// Scopes can be used at the same time as Ids.
+// ScopeTypes cannot be used at the same time as Scopes or Ids.
+// PropertyFilters (attributes or statistics) is applied to all matches
+ESPStruct WUScopeFilter
+{
+    [optional] integer MaxDepth(9999);          // Maximum depth to return matches from (omitted means no limit)
+    [optional] ESParray<string, Scope> Scopes;  // Fully qualified scope (See definition of "Scope" in workunit.hpp)
+    [optional] ESParray<string, id> Ids;        // Return scope with given node id
+    [optional] ESParray<string, ScopeType> ScopeTypes;   // Return scope of a given type
+    [optional] ESParray<ESPstruct WUPropertyFilter, PropertyFilter> PropertyFilters;
+};
+
+// This provides the filter which indicates which nodes are implicitly matched
+// Once a match is found, all nested scopes to a depth of depth are implicitly matched, provided they match the nested filter
+ESPStruct WUNestedFilter
+{
+    [optional] unsigned Depth(9999);            // How many nodes deep relative to matched scope id(s)
+                                                // 0 - implies return only the given scope id
+                                                // 1 - return only the immediate child of the given scope
+                                                // n - return children to 'n' level deep
+    [optional] ESParray<string, ScopeType> ScopeTypes;   // Return scope of a given type
+};
+
+// Additional properties that are returned for a scopeType
+ESPStruct WUExtraProperties
+{
+    string scopeType;                   // A type of scope e.g., activity/edge
+    [optional] ESParray<string, Property> Properties; // a list of properties to return, omitted means none
+};
+
+// If measure and attributes are omitted then all matches are returned
+// Measure and Attributes/ScopeAttributes are mutually exclusive.
+// Measure set to blank or Attributes set to empty will prevent any attributes being returned.
+ESPStruct WUPropertiesToReturn
+{
+    bool AllStatistics(false);
+    bool AllAttributes(false);
+    bool AllHints(false);
+    bool AllScopes(false);
+    bool AllProperties(false);
+    [optional] uint64 MinVersion;       // Only return properties where the version is later than this version.
+    [optional] string Measure;          // E.g. Time, Num, Size
+    [optional] ESParray<string, Property> Properties; // a list of properties to return
+    [optional] ESParray<ESPstruct WUExtraProperties, Extra> ExtraProperties;
+};
+
+ESPStruct WUScopeOptions
+{
+    bool IncludeMatchedScopesInResults(true);
+    bool IncludeScope(true);
+    bool IncludeId(false);
+    bool IncludeScopeType(false);
+};
+
+// Controls which information is returned for the statistics
+ESPStruct WUPropertyOptions
+{
+    bool IncludeName(true);
+    bool IncludeRawValue(false);
+    bool IncludeFormatted(true);
+    bool IncludeMeasure(true);
+    bool IncludeCreator(false);
+    bool IncludeCreatorType(false);
+};
+
+ESPRequest WUDetailsRequest
+{
+    string WUID;
+    [optional] ESPstruct WUScopeFilter ScopeFilter;               // which scopes are matched
+    [optional] ESPstruct WUNestedFilter NestedFilter;             // what nested scopes are returned
+    [optional] ESPstruct WUPropertiesToReturn PropertiesToReturn; // List of properties to return
+    [optional] string    Filter;                                  // Filter as a string text
+    [optional] ESPstruct WUScopeOptions ScopeOptions;             // Which scope details are returned
+    [optional] ESPstruct WUPropertyOptions PropertyOptions;       // Which attribute details are returned
+};
+
+// ----------------------------------------------------------------------------------
+// Response related structures
+ESPstruct [nil_remove] WUResponseProperty
+{
+    [optional] string Name;         // Name of attribute
+    [optional] string RawValue;     // Value of attribute
+    [optional] string Formatted;    // Formatted value of attribute
+    [optional] string Measure;      // What type is this attribute
+    [optional] string Creator;      // Which engine created it
+    [optional] string CreatorType;  // What type of engine created it.
+};
+
+ESPstruct [nil_remove] WUResponseScope
+{
+    [optional] string ScopeName;        // Fully qualified scope (See definition of "Scope" in workunit.hpp)
+    [optional] string Id;               // Node/Graph id
+    [optional] string ScopeType;        // e.g. Activity, Edge
+    [optional] ESParray<ESPstruct WUResponseProperty, Property> Properties;
+};
+
+
+ESPResponse [exceptions_inline] WUDetailsResponse
+{
+    uint64 MaxVersion;                              // largest version for any matches
+    string WUID;                                    // all    [optional] ESParray<string, Attribute> Attributes; // a list of attributes to returnows wildcarded requests to be interpreted.
+    ESParray<ESPstruct WUResponseScope, Scope> Scopes;
+};
+
+// ----------------------------------------------------------------------------------
+ESPenum WUDetailsAttrValueType : string
+{
+    Single("Single"),
+    List("List"),
+    Multi("Multi"),
+};
+
+ESPStruct WUDetailsMetaProperty
+{
+    string Name;
+    ESPenum WUDetailsAttrValueType ValueType;
+};
+
+ESPStruct WUDetailsActivityInfo
+{
+    unsigned Kind;
+    string Name;
+    boolean IsSink;
+    boolean IsSource;
+};
+
+ESPRequest WUDetailsMetaRequest
+{
+};
+
+ESPResponse [exceptions_inline] WUDetailsMetaResponse
+{
+    ESParray<ESPStruct WUDetailsMetaProperty, Property> Properties;
+    ESParray<string, ScopeType> ScopeTypes;
+    ESParray<string, Measure> Measures;
+    ESParray<ESPStruct WUDetailsActivityInfo, Activity> Activities;
+};
+
+ESPStruct [nil_remove] WUEclDefinitionActionResult
+{
+    string EclDefinition;
+    string Action;
+    string WUID;
+    string QueryID;
+    string Result;
+};
+
+ESPrequest [nil_remove] WUEclDefinitionActionRequest
+{
+    ESParray<string> EclDefinitions;
+    ESPenum EclDefinitionActions ActionType;
+    string Target;
+
+    string RemoteDali; //Publish
+    string SourceProcess; //Publish
+    string Priority; //Publish
+    string Comment; //Publish
+    string MemoryLimit; //Publish - 123M
+    bool DeletePrevious(false); //Publish
+    bool SuspendPrevious(false); //Publish
+    bool NoActivate(false); //Publish
+    bool NoReload(false); //Publish
+    bool DontCopyFiles(false); //Publish
+    bool AllowForeign(false); //Publish
+    bool UpdateDfs(false); //Publish
+    bool UpdateSuperfiles(false); //Publish
+    bool UpdateCloneFrom(false); //Publish
+    bool DontAppendCluster(false); //Publish
+    int MsToWait(-1);
+    int TimeLimit(-1); //Publish
+    int WarnTimeLimit(-1); //Publish
+};
+
+ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
+{
+    ESParray<ESPstruct WUEclDefinitionActionResult> ActionResults;
+};
+
+// ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.69"), default_client_version("1.69"),
+    version("1.73"), default_client_version("1.73"), cache_group("ESPWsWUs"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
-    ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
-    ESPmethod [min_ver("1.57")] WULightWeightQuery(WULightWeightQueryRequest, WULightWeightQueryResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUInfo(WUInfoRequest, WUInfoResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/wuiddetails.xslt")]     WUInfoDetails(WUInfoRequest, WUInfoResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUGraphTiming(WUGraphTimingRequest, WUGraphTimingResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/graph.xslt")]         WUGraphInfo(WUGraphInfoRequest, WUGraphInfoResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/graph_gvc.xslt")]     WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
+    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
+    ESPmethod [cache_seconds(60), min_ver("1.57")] WULightWeightQuery(WULightWeightQueryRequest, WULightWeightQueryResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/wuid.xslt")]     WUInfo(WUInfoRequest, WUInfoResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/wuiddetails.xslt")]     WUInfoDetails(WUInfoRequest, WUInfoResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/wuid.xslt")]     WUGraphTiming(WUGraphTimingRequest, WUGraphTimingResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/graph.xslt")]         WUGraphInfo(WUGraphInfoRequest, WUGraphInfoResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/graph_gvc.xslt")]     WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
     ESPmethod [description("Stub for Ajax GVC Graph."), help(""), resp_xsl_default("/esp/xslt/GvcGraph.xslt")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/result.xslt")]        WUResult(WUResultRequest, WUResultResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/result.xslt")]        WUResult(WUResultRequest, WUResultResponse);
     ESPmethod WUFullResult(WUFullResultRequest, WUFullResultResponse);
-    ESPmethod WUResultView(WUResultViewRequest, WUResultViewResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/wuid_jobs.xslt")]     WUJobList(WUJobListRequest, WUJobListResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/wuaction_results.xslt")] WUAction(WUActionRequest, WUActionResponse); 
-    ESPmethod [resp_xsl_default("/esp/xslt/scheduledwus.xslt")] WUShowScheduled(WUShowScheduledRequest, WUShowScheduledResponse); 
+    ESPmethod [cache_seconds(30)] WUResultView(WUResultViewRequest, WUResultViewResponse);
+    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/wuid_jobs.xslt")]     WUJobList(WUJobListRequest, WUJobListResponse);
+    ESPmethod [clear_cache_group, resp_xsl_default("/esp/xslt/wuaction_results.xslt")] WUAction(WUActionRequest, WUActionResponse);
+    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/scheduledwus.xslt")] WUShowScheduled(WUShowScheduledRequest, WUShowScheduledResponse);
 
-    ESPmethod WUResultSummary(WUResultSummaryRequest, WUResultSummaryResponse);
+    ESPmethod [cache_seconds(30)] WUResultSummary(WUResultSummaryRequest, WUResultSummaryResponse);
 
-    ESPmethod WUResultBin(WUResultBinRequest, WUResultBinResponse);
-    ESPmethod WUClusterJobQueueXLS(WUClusterJobQueueXLSRequest, WUClusterJobQueueXLSResponse);
+    ESPmethod [cache_seconds(30)] WUResultBin(WUResultBinRequest, WUResultBinResponse);
+    ESPmethod [cache_seconds(60)] WUClusterJobQueueXLS(WUClusterJobQueueXLSRequest, WUClusterJobQueueXLSResponse);
     ESPmethod WUClusterJobQueueLOG(WUClusterJobQueueLOGRequest, WUClusterJobQueueLOGResponse);
-    ESPmethod WUClusterJobXLS(WUClusterJobXLSRequest, WUClusterJobXLSResponse);
-    ESPmethod WUClusterJobSummaryXLS(WUClusterJobSummaryXLSRequest, WUClusterJobSummaryXLSResponse);
-    ESPmethod [auth_feature("OwnWorkunitsAccess:WRITE")] WUCreate(WUCreateRequest, WUCreateResponse);
-    ESPmethod [auth_feature("OwnWorkunitsAccess:WRITE")] WUCreateAndUpdate(WUUpdateRequest, WUUpdateResponse);
-    ESPmethod WUUpdate(WUUpdateRequest, WUUpdateResponse);
-    ESPmethod WUDelete(WUDeleteRequest, WUDeleteResponse);
-    ESPmethod WUSubmit(WUSubmitRequest, WUSubmitResponse);
-    ESPmethod WUSchedule(WUScheduleRequest, WUScheduleResponse);
-    ESPmethod WUPushEvent(WUPushEventRequest, WUPushEventResponse);
-    ESPmethod WUDeployWorkunit(WUDeployWorkunitRequest, WUDeployWorkunitResponse);
+    ESPmethod [cache_seconds(60)] WUClusterJobXLS(WUClusterJobXLSRequest, WUClusterJobXLSResponse);
+    ESPmethod [cache_seconds(60)] WUClusterJobSummaryXLS(WUClusterJobSummaryXLSRequest, WUClusterJobSummaryXLSResponse);
+    ESPmethod [clear_cache_group, auth_feature("OwnWorkunitsAccess:WRITE")] WUCreate(WUCreateRequest, WUCreateResponse);
+    ESPmethod [clear_cache_group, auth_feature("OwnWorkunitsAccess:WRITE")] WUCreateAndUpdate(WUUpdateRequest, WUUpdateResponse);
+    ESPmethod [clear_cache_group] WUUpdate(WUUpdateRequest, WUUpdateResponse);
+    ESPmethod [clear_cache_group] WUDelete(WUDeleteRequest, WUDeleteResponse);
+    ESPmethod [clear_cache_group] WUSubmit(WUSubmitRequest, WUSubmitResponse);
+    ESPmethod [clear_cache_group] WUSchedule(WUScheduleRequest, WUScheduleResponse);
+    ESPmethod [clear_cache_group] WUPushEvent(WUPushEventRequest, WUPushEventResponse);
+    ESPmethod [clear_cache_group] WUDeployWorkunit(WUDeployWorkunitRequest, WUDeployWorkunitResponse);
 
-    ESPmethod WUAbort(WUAbortRequest, WUAbortResponse);
-    ESPmethod WUProtect(WUProtectRequest, WUProtectResponse);
-    ESPmethod WUResubmit(WUResubmitRequest, WUResubmitResponse); //????
-    ESPmethod WURun(WURunRequest, WURunResponse);
+    ESPmethod [clear_cache_group] WUAbort(WUAbortRequest, WUAbortResponse);
+    ESPmethod [clear_cache_group] WUProtect(WUProtectRequest, WUProtectResponse);
+    ESPmethod [min_ver("1.70")] WURecreateQuery(WURecreateQueryRequest, WURecreateQueryResponse);
+    ESPmethod [clear_cache_group] WUResubmit(WUResubmitRequest, WUResubmitResponse); //????
+    ESPmethod [clear_cache_group] WURun(WURunRequest, WURunResponse);
 
     ESPmethod WUExport(WUExportRequest, WUExportResponse);
     ESPmethod WUWaitCompiled(WUWaitRequest, WUWaitResponse);
     ESPmethod WUWaitComplete(WUWaitRequest, WUWaitResponse);
     ESPmethod WUSyntaxCheckECL(WUSyntaxCheckRequest, WUSyntaxCheckResponse);
-    ESPmethod WUCompileECL(WUCompileECLRequest, WUCompileECLResponse);
-    
-    //ESPmethod WUAction(WUActionRequest, WUActionResponse); 
-    ESPmethod WUFile(WULogFileRequest, WULogFileResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse); 
-    ESPmethod [min_ver("1.57")] WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
-    ESPmethod WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
-    ESPmethod WUQueryGetGraph(WUQueryGetGraphRequest, WUQueryGetGraphResponse);
-    ESPmethod WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
+    ESPmethod [clear_cache_group] WUCompileECL(WUCompileECLRequest, WUCompileECLResponse);
 
-    ESPmethod WUListLocalFileRequired(WUListLocalFileRequiredRequest, WUListLocalFileRequiredResponse);
-    ESPmethod WUAddLocalFileToWorkunit(WUAddLocalFileToWorkunitRequest, WUAddLocalFileToWorkunitResponse);
+    //ESPmethod WUAction(WUActionRequest, WUActionResponse);
+    ESPmethod [cache_seconds(60)]WUFile(WULogFileRequest, WULogFileResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse);
+    ESPmethod [cache_seconds(30), min_ver("1.57")] WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
+    ESPmethod [cache_seconds(30)] WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
+    ESPmethod [cache_seconds(30)] WUQueryGetGraph(WUQueryGetGraphRequest, WUQueryGetGraphResponse);
+    ESPmethod [cache_seconds(30), min_ver("1.72")] WUQueryGetSummaryStats(WUQueryGetSummaryStatsRequest, WUQueryGetSummaryStatsResponse);
+    ESPmethod [cache_seconds(30)] WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
+
+    ESPmethod [cache_seconds(60)] WUListLocalFileRequired(WUListLocalFileRequiredRequest, WUListLocalFileRequiredResponse);
+    ESPmethod [clear_cache_group] WUAddLocalFileToWorkunit(WUAddLocalFileToWorkunitRequest, WUAddLocalFileToWorkunitResponse);
     ESPmethod WUCDebug(WUDebugRequest, WUDebugResponse);
-    
+
     ESPmethod [resp_xsl_default("/esp/xslt/WUPublishWorkunit.xslt")] WUPublishWorkunit(WUPublishWorkunitRequest, WUPublishWorkunitResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
-    ESPmethod WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
-    ESPmethod WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
-    ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
-    ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
-    ESPmethod WUCopyQuerySet(WUCopyQuerySetRequest, WUCopyQuerySetResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
+    ESPmethod [cache_seconds(60)] WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS"), min_ver("1.71")] WUQuerysetImport(WUQuerysetImportRequest, WUQuerysetImportResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), min_ver("1.71")] WUQuerysetExport(WUQuerysetExportRequest, WUQuerysetExportResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS")] WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS")] WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS")] WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS")] WUCopyQuerySet(WUCopyQuerySetRequest, WUCopyQuerySetResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS"), resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
-    ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
-    ESPmethod [min_ver("1.59")] WUUpdateQueryEntry(WUUpdateQueryEntryRequest, WUUpdateQueryEntryResponse);
-    ESPmethod WUQueryFiles(WUQueryFilesRequest, WUQueryFilesResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/QueriesUsingFile.xslt")] WUListQueriesUsingFile(WUListQueriesUsingFileRequest, WUListQueriesUsingFileResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60)] WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS"), min_ver("1.59")] WUUpdateQueryEntry(WUUpdateQueryEntryRequest, WUUpdateQueryEntryResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60)] WUQueryFiles(WUQueryFilesRequest, WUQueryFilesResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/QueriesUsingFile.xslt")] WUListQueriesUsingFile(WUListQueriesUsingFileRequest, WUListQueriesUsingFileResponse);
     ESPmethod WUCreateZAPInfo(WUCreateZAPInfoRequest, WUCreateZAPInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
     ESPmethod WUCheckFeatures(WUCheckFeaturesRequest, WUCheckFeaturesResponse);
-    ESPmethod WUGetStats(WUGetStatsRequest, WUGetStatsResponse);
-    ESPmethod [min_ver("1.57")] WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
-    ESPmethod [min_ver("1.57")] WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
-    ESPmethod [min_ver("1.61")] WUGetNumFileToCopy(WUGetNumFileToCopyRequest, WUGetNumFileToCopyResponse);
+    ESPmethod [cache_seconds(30)] WUGetStats(WUGetStatsRequest, WUGetStatsResponse);
+    ESPmethod [cache_seconds(60), min_ver("1.57")] WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
+    ESPmethod [cache_seconds(60), min_ver("1.57")] WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
+    ESPmethod [cache_seconds(60), min_ver("1.61")] WUGetNumFileToCopy(WUGetNumFileToCopyRequest, WUGetNumFileToCopyResponse);
+    ESPmethod [min_ver("1.71")] WUDetails(WUDetailsRequest, WUDetailsResponse);
+    ESPmethod [cache_seconds(600), min_ver("1.71")] WUDetailsMeta(WUDetailsMetaRequest, WUDetailsMetaResponse);
+    ESPmethod [clear_cache_group, min_ver("1.72")] WUEclDefinitionAction(WUEclDefinitionActionRequest, WUEclDefinitionActionResponse);
 };
 
 

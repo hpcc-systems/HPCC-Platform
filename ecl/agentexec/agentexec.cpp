@@ -21,7 +21,7 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "agentexec.hpp"
-
+#include "jutil.hpp"
 
 Owned<CEclAgentExecutionServer> execSvr = NULL;
 
@@ -255,6 +255,15 @@ bool ControlHandler()
 
 int main(int argc, char **argv) 
 { 
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
     InitModuleObjects();
 
     addAbortHandler(ControlHandler);

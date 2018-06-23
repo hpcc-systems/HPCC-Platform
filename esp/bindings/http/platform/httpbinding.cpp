@@ -36,8 +36,6 @@
 
 #include "bindutil.hpp"
 
-#include "espcontext.hpp"
-
 #include "httpbinding.hpp"
 #include "htmlpage.hpp"
 #include  "seclib.hpp"
@@ -47,8 +45,11 @@
 #include "xsdparser.hpp"
 #include "espsecurecontext.hpp"
 #include "jsonhelpers.hpp"
+#include "dasds.hpp"
+#include "daclient.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
+#define DEFAULT_HTTP_PORT 80
 
 static HINSTANCE getXmlLib()
 {
@@ -261,6 +262,237 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     }
     if(m_challenge_realm.length() == 0)
         m_challenge_realm.append("ESP");
+
+    if (!m_secmgr.get() || !daliClientActive())
+    {
+        if (!daliClientActive())
+        {
+            if (proc_cfg->hasProp("AuthDomains"))
+                throw MakeStringException(-1, "ESP cannot have an 'AuthDomains' setting because no dali connection is available.");
+            if (bnd_cfg->hasProp("@authDomain"))
+                throw MakeStringException(-1, "ESP Binding %s cannot have an '@authDomain' setting because no dali connection is available.", bindname);
+        }
+
+        domainAuthType = AuthPerRequestOnly;
+        Owned<IPropertyTree> authcfg = proc_cfg->getPropTree("Authentication");
+        if (authcfg)
+        {
+            const char* authmethod = authcfg->queryProp("@method");
+            if (authmethod && strieq(authmethod, "userNameOnly"))
+            {
+                //The @getUserNameUnrestrictedResources contains URLs which may be used by the getUserNameURL page.
+                //For example, an icon file on the getUserNameURL page.
+                const char* unrestrictedResources = authcfg->queryProp("@getUserNameUnrestrictedResources");
+                if (!isEmptyString(unrestrictedResources))
+                    readUnrestrictedResources(unrestrictedResources);
+                else
+                    readUnrestrictedResources(DEFAULT_UNRESTRICTED_RESOURCES);
+
+                const char* getUserNameURL = authcfg->queryProp("@getUserNameURL");
+                if (!isEmptyString(getUserNameURL))
+                    loginURL.set(getUserNameURL);
+                else
+                    loginURL.set(DEFAULT_GET_USER_NAME_URL);
+                domainAuthType = AuthUserNameOnly;
+            }
+        }
+        return;
+    }
+
+    processName.set(procname);
+    const char* authDomain = bnd_cfg->queryProp("@authDomain");
+    if (!isEmptyString(authDomain))
+        domainName.set(authDomain);
+    else
+        domainName.set("default");
+
+    readAuthDomainCfg(proc_cfg);
+
+    if ((domainAuthType == AuthPerSessionOnly) || (domainAuthType == AuthTypeMixed))
+    {
+        setSDSSession();
+        checkSessionTimeoutSeconds = proc_cfg->getPropInt("@checkSessionTimeoutSeconds", ESP_CHECK_SESSION_TIMEOUT);
+    }
+
+    setABoolHash(proc_cfg->queryProp("@urlAlias"), serverAlias);
+}
+
+void EspHttpBinding::setSDSSession()
+{
+    espSessionSDSPath.setf("%s/%s[@name=\"%s\"]", PathSessionRoot, PathSessionProcess, processName.get());
+    Owned<IRemoteConnection> conn = querySDS().connect(espSessionSDSPath.str(), myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+    if (!conn)
+        throw MakeStringException(-1, "Failed to connect SDS ESP Session.");
+
+    IPropertyTree* espSession = conn->queryRoot();
+    VStringBuffer appStr("%s[@port=\"%d\"]", PathSessionApplication, m_port);
+    IPropertyTree* appSessionTree = espSession->queryBranch(appStr.str());
+    if (!appSessionTree)
+    {
+        IPropertyTree* newAppSessionTree = espSession->addPropTree(PathSessionApplication);
+        newAppSessionTree->setPropInt("@port", m_port);
+    }
+    sessionSDSPath.setf("%s/%s/", espSessionSDSPath.str(), appStr.str());
+    sessionIDCookieName.setf("%s%d", SESSION_ID_COOKIE, m_port);
+}
+
+static int compareLength(char const * const *l, char const * const *r) { return strlen(*l) - strlen(*r); }
+
+void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
+{
+    VStringBuffer xpath("AuthDomains/AuthDomain[@domainName=\"%s\"]", domainName.get());
+    IPropertyTree* authDomainTree = procCfg->queryPropTree(xpath);
+    if (authDomainTree)
+    {
+        const char* authType = authDomainTree->queryProp("@authType");
+        if (isEmptyString(authType) || strieq(authType, "AuthTypeMixed"))
+            domainAuthType = AuthTypeMixed;
+        else if (strieq(authType, "AuthPerSessionOnly"))
+            domainAuthType = AuthPerSessionOnly;
+        else
+        {
+            domainAuthType = AuthPerRequestOnly;
+            return;
+        }
+
+        int clientSessionTimeoutMinutes = authDomainTree->getPropInt("@clientSessionTimeoutMinutes", ESP_SESSION_TIMEOUT);
+        if (clientSessionTimeoutMinutes < 0)
+            clientSessionTimeoutSeconds = ESP_SESSION_NEVER_TIMEOUT;
+        else
+            clientSessionTimeoutSeconds = clientSessionTimeoutMinutes * 60;
+
+        //The serverSessionTimeoutMinutes is used to clean the sessions by ESP server after the sessions have been timed out on ESP clients.
+        //Considering possible network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.
+        int serverSessionTimeoutMinutes = authDomainTree->getPropInt("@serverSessionTimeoutMinutes", 0);
+        if ((serverSessionTimeoutMinutes < 0) || (clientSessionTimeoutMinutes < 0))
+            serverSessionTimeoutSeconds = ESP_SESSION_NEVER_TIMEOUT;
+        else
+            serverSessionTimeoutSeconds = serverSessionTimeoutMinutes * 60;
+        if (serverSessionTimeoutSeconds < clientSessionTimeoutSeconds)
+            serverSessionTimeoutSeconds = 2 * clientSessionTimeoutSeconds;
+
+        //The @unrestrictedResources contains URLs which may be used before a user is authenticated.
+        //For example, an icon file on the login page.
+        const char* unrestrictedResources = authDomainTree->queryProp("@unrestrictedResources");
+        if (!isEmptyString(unrestrictedResources))
+            readUnrestrictedResources(unrestrictedResources);
+
+        const char* _loginURL = authDomainTree->queryProp("@logonURL");
+        if (!isEmptyString(_loginURL))
+            loginURL.set(_loginURL);
+        else
+            loginURL.set(DEFAULT_LOGIN_URL);
+
+        const char* _logoutURL = authDomainTree->queryProp("@logoutURL");
+        if (!isEmptyString(_logoutURL))
+        {
+            logoutURL.set(_logoutURL);
+            domainAuthResources.setValue(logoutURL.get(), true);
+        }
+
+        //Read pre-configured 'invalidURLsAfterAuth'. Separate the comma separated string to a
+        //list. Store them into BoolHash for quick lookup.
+        setABoolHash(authDomainTree->queryProp("@invalidURLsAfterAuth"), invalidURLsAfterAuth);
+    }
+    else
+    {//old environment.xml
+        domainAuthType = AuthTypeMixed;
+        readUnrestrictedResources(DEFAULT_UNRESTRICTED_RESOURCES);
+        loginURL.set(DEFAULT_LOGIN_URL);
+    }
+
+    if (!loginURL.isEmpty())
+        setABoolHash(loginURL.get(), invalidURLsAfterAuth);
+    setABoolHash("/esp/login", invalidURLsAfterAuth);
+    domainAuthResourcesWildMatch.sortCompare(compareLength);
+}
+
+void EspHttpBinding::readUnrestrictedResources(const char* resources)
+{
+    StringArray resourceArray;
+    resourceArray.appendListUniq(resources, ",");
+    ForEachItemIn(i, resourceArray)
+    {
+        const char* resource = resourceArray.item(i);
+        if (isEmptyString(resource))
+            continue;
+        if (isWildString(resource))
+            domainAuthResourcesWildMatch.append(resource);
+        else
+            domainAuthResources.setValue(resource, true);
+    }
+}
+
+//Check whether the url is valid or not for redirect after authentication.
+bool EspHttpBinding::canRedirectAfterAuth(const char* url) const
+{
+    if (isEmptyString(url))
+        return false;
+
+    bool* found = invalidURLsAfterAuth.getValue(url);
+    return (!found || !*found);
+}
+
+//Use the origin header to check whether the request is a CORS request or not.
+bool EspHttpBinding::isCORSRequest(const char* originHeader)
+{
+    if (isEmptyString(originHeader))
+        return false;
+
+    const char* ptr = nullptr;
+    if (strnicmp(originHeader, "http://", 7) == 0)
+        ptr = originHeader + 7;
+    else if (strnicmp(originHeader, "https://", 8) == 0)
+        ptr = originHeader + 8;
+    else
+        return true;
+
+    StringBuffer ipStr; //ip or network alias
+    while(*ptr && *ptr != ':')
+    {
+        ipStr.append(*ptr);
+        ptr++;
+    }
+
+    IpAddress ip(ipStr.str());
+    if (ip.ipequals(queryHostIP()))
+        return false;
+
+    int port = 0;
+    if (*ptr && *ptr == ':')
+    {
+        ptr++;
+        while(*ptr && isdigit(*ptr))
+        {
+            port = 10*port + (*ptr-'0');
+            ptr++;
+        }
+    }
+    if (port == 0)
+        port = DEFAULT_HTTP_PORT;
+
+    if (port != getPort())
+        return true;
+
+
+    bool* found = serverAlias.getValue(ipStr.str());
+    return (!found || !*found);
+}
+
+void EspHttpBinding::setABoolHash(const char* csv, BoolHash& hash) const
+{
+    if (isEmptyString(csv))
+        return;
+
+    StringArray aList;
+    aList.appendListUniq(csv, ",");
+    ForEachItemIn(i, aList)
+    {
+        const char* s = aList.item(i);
+        bool* found = hash.getValue(s);
+        if (!found || !*found)
+            hash.setValue(s, true);
+    }
 }
 
 StringBuffer &EspHttpBinding::generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns)
@@ -305,6 +537,19 @@ int EspHttpBinding::getMethodHelp(IEspContext &context, const char *serv, const 
     StringAttr *helpStr=help_map.getValue(key.toUpperCase().str());
     page.append(helpStr ? helpStr->get() : "No Help available");
     return 0;
+}
+
+bool EspHttpBinding::isMethodInService(IEspContext& context, const char *servname, const char *methname)
+{
+    StringBuffer serviceQName;
+    StringBuffer methodQName;
+    if (!qualifyServiceName(context, servname, methname, serviceQName, &methodQName))
+        return false;
+
+    if (methodQName.length() > 0)
+        return true;
+
+    return isMethodInSubService(context, servname, methname);
 }
 
 bool EspHttpBinding::qualifySubServiceName(IEspContext &context, const char *servname, const char *methname, StringBuffer &servQName, StringBuffer *methQName)
@@ -444,6 +689,8 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     ctx->getUserID(userid);
     if(userid.length() == 0)
     {
+        ctx->setAuthError(EspAuthErrorEmptyUserID);
+        ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: No username provided");
         return false;
     }
 
@@ -454,6 +701,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     if(user == NULL)
     {
         WARNLOG("Can't find user in context");
+        ctx->setAuthError(EspAuthErrorUserNotFoundInContext);
         ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: No username provided");
         return false;
     }
@@ -461,20 +709,29 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     if(m_secmgr.get() == NULL)
     {
         WARNLOG("No mechanism established for authentication");
+        ctx->setAuthError(EspAuthErrorNoAuthMechanism);
         return false;
     }
 
     ISecResourceList* rlist = ctx->queryResources();
     if(rlist == NULL)
+    {
+        WARNLOG("No Security Resource");
+        ctx->setAuthError(EspAuthErrorEmptySecResource);
         return false;
+    }
 
     bool authenticated = m_secmgr->authorize(*user, rlist, ctx->querySecureContext());
     if(!authenticated)
     {
+        const char *desc = nullptr;
         if (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED || user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
-            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "ESP password is expired");
+            desc = "ESP password is expired";
         else
-            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: User or password invalid");
+            desc = "Access Denied: User or password invalid";
+        ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", desc);
+        ctx->setAuthError(EspAuthErrorNotAuthenticated);
+        ctx->setRespMsg(desc);
         return false;
     }
     bool authorized = true;
@@ -488,8 +745,11 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
             if(access < required)
             {
                 const char *desc=curres->getDescription();
-                ESPLOG(LogMin, "Access for user '%s' denied to: %s. Access=%d, Required=%d", user->getName(), desc?desc:"<no-desc>", access, required);
+                VStringBuffer msg("Access for user '%s' denied to: %s. Access=%d, Required=%d", user->getName(), desc?desc:"<no-desc>", access, required);
+                ESPLOG(LogMin, "%s", msg.str());
                 ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authorization", "Access Denied: Not Authorized", "Resource: %s [%s]", curres->getName(), (desc) ? desc : "");
+                ctx->setAuthError(EspAuthErrorNotAuthorized);
+                ctx->setRespMsg(msg.str());
                 authorized = false;
                 break;
             }
@@ -508,9 +768,109 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     ctx->addTraceSummaryTimeStamp(LogMin, "basicAuth");
     return authorized;
 }
-    
+
+bool EspHttpBinding::queryCacheSeconds(const char *method, unsigned& cacheSeconds)
+{
+    StringBuffer key(method);
+    unsigned* value = cacheSecondsMap.getValue(key.toUpperCase().str());
+    if (!value)
+        return false;
+    cacheSeconds = *value;
+    return true;
+}
+
+bool EspHttpBinding::queryCacheGlobal(const char *method)
+{
+    StringBuffer key(method);
+    bool* cacheGlobal = cacheGlobalMap.getValue(key.toUpperCase().str());
+    return cacheGlobal && *cacheGlobal;
+}
+
+const char* EspHttpBinding::createESPCacheID(CHttpRequest* request, StringBuffer& cacheID)
+{
+    StringBuffer idStr, msgType;
+    if(request->isSoapMessage())
+        msgType.set("SOAP");
+    else if(request->isFormSubmission())
+        msgType.set("FORM");
+
+    if (!queryCacheGlobal(request->queryServiceMethod()))
+    {
+        const char* userID = request->queryContext()->queryUserId();
+        if (!isEmptyString(userID))
+            idStr.append(userID).append("_");
+    }
+    if (!msgType.isEmpty())
+        idStr.append(msgType.str()).append("_");
+    idStr.appendf("%s_%s_%s", request->queryServiceName(), request->queryServiceMethod(), request->queryAllParameterString());
+    cacheID.append(hashc((unsigned char *)idStr.str(), idStr.length(), 0));
+    return cacheID.str();
+}
+
+bool EspHttpBinding::sendFromESPCache(IEspCache* cacheClient, CHttpRequest* request, CHttpResponse* response, const char* cacheID)
+{
+    StringBuffer content, contentType;
+    if (!cacheClient->readResponseCache(cacheID, content.clear(), contentType.clear()))
+        ESPLOG(LogMax, "Failed to read from ESP Cache for %s.", request->queryServiceMethod());
+    if (content.isEmpty() || contentType.isEmpty())
+        return false;
+
+    ESPLOG(LogMax, "Sending from ESP Cache for %s.", request->queryServiceMethod());
+    response->setContentType(contentType.str());
+    response->setContent(content.str());
+    response->send();
+    return true;
+}
+
+void EspHttpBinding::addToESPCache(IEspCache* cacheClient, CHttpRequest* request, CHttpResponse* response, const char* cacheID, unsigned cacheSeconds)
+{
+    StringBuffer content, contentType;
+    response->getContent(content);
+    response->getContentType(contentType);
+    if (cacheClient->cacheResponse(cacheID, cacheSeconds, content.str(), contentType.str()))
+        ESPLOG(LogMax, "AddTo ESP Cache for %s.", request->queryServiceMethod());
+    else
+        ESPLOG(LogMax, "Failed to add ESP Cache for %s.", request->queryServiceMethod());
+}
+
+void EspHttpBinding::clearCacheByGroupID(const char *ids)
+{
+    if (isEmptyString(ids))
+        return;
+
+    IEspContainer *espContainer = getESPContainer();
+    if (!espContainer->hasCacheClient())
+        return;
+
+    ESPLOG(LogMax, "clearCacheByGroupID %s.", ids);
+    StringArray errorMsgs;
+    espContainer->clearCacheByGroupID(ids, errorMsgs);
+    if (errorMsgs.length() > 0)
+    {
+        ForEachItemIn(i, errorMsgs)
+            DBGLOG("%s", errorMsgs.item(i));
+    }
+}
+
 void EspHttpBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *response)
 {
+    StringBuffer cacheID;
+    unsigned cacheSeconds = 0;
+    IEspCache *cacheClient = nullptr;
+    IEspContext &context = *request->queryContext();
+
+    IEspContainer *espContainer = getESPContainer();
+    if (espContainer->hasCacheClient() && (cacheMethods > 0)
+        && queryCacheSeconds(request->queryServiceMethod(), cacheSeconds)) //ESP cache is needed for this method
+    {
+        cacheClient = (IEspCache*) espContainer->queryCacheClient(getCacheGroupID(request->queryServiceMethod()));
+        if (cacheClient)
+            createESPCacheID(request, cacheID);
+        if (!cacheID.isEmpty() && !context.queryRequestParameters()->queryProp("dirty_cache")
+            && sendFromESPCache(cacheClient, request, response, cacheID.str()))
+            return;
+    }
+
     if(request->isSoapMessage()) 
     {
         request->queryParameters()->setProp("__wsdl_address", m_wsdlAddress.str());
@@ -520,6 +880,9 @@ void EspHttpBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respon
         onPostForm(request, response);
     else
         onPost(request, response);
+
+    if (!cacheID.isEmpty())
+        addToESPCache(cacheClient, request, response, cacheID.str(), cacheSeconds);
 }
 
 int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
@@ -958,9 +1321,12 @@ int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request
     bool inhouse = user && (user->getStatus()==SecUserStatus_Inhouse);
     xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
 
-    VStringBuffer url("%s?%s", methodQName.str(), params.str()); 
+    VStringBuffer url("%s?%s", methodQName.str(), params.str());
     xform->setStringParameter("destination", url.str());
-        
+    const char* authMethod = context.getAuthenticationMethod();
+    if (authMethod && !strieq(authMethod, "none") && ((context.getDomainAuthType() == AuthPerSessionOnly) || (context.getDomainAuthType() == AuthTypeMixed)))
+        xform->setParameter("showLogout", "1");
+
     StringBuffer page;
     xform->transform(page);     
 
@@ -1877,11 +2243,13 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
         StringBuffer schema;
         context.addOptions(ESPCTX_ALL_ANNOTATION);
         getSchema(schema, context, request, serv, method, true);
-        //DBGLOG("Schema: %s", schema.str());
 
         Owned<IXslTransform> xform = xslp->createXslTransform();
         xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/gen_form.xsl").str());
         xform->setXmlSource(schema.str(), schema.length()+1);
+        const char* authMethod = context.getAuthenticationMethod();
+        if (authMethod && !strieq(authMethod, "none") && ((context.getDomainAuthType() == AuthPerSessionOnly) || (context.getDomainAuthType() == AuthTypeMixed)))
+            xform->setParameter("showLogout", "1");
 
         // params
         xform->setStringParameter("serviceName", serviceQName);

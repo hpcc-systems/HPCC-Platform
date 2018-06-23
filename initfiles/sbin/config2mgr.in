@@ -1,0 +1,191 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+#------------------------------------------------------------------------------
+#                       Common Function
+#------------------------------------------------------------------------------
+
+###<REPLACE>###
+
+DEBUG=${DEBUG:-NO_DEBUG}
+
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+
+createConf ()
+{
+    dir_name=$(basename ${INSTALL_DIR})
+    awk -f ${reg_path}/regex.awk -v NEW_ENVFILE=$1 -v NEW_PORT=$2 -v NEW_CONFFILE=$3< ${path}/etc/${dir_name}/config2mgr/esp.xml >${runtime}/${compName}/esp.xml
+}
+
+
+cleanup ()
+{
+    echo "Exiting config2mgr"
+    PIDPATH=${pid}/${compName}_init.pid
+    stopcmd="${START_STOP_DAEMON} -K -p $PIDPATH"
+    eval $stopcmd
+    sleep 2
+    cleanupRuntimeEnvironment
+    exit
+}
+
+
+control_c ()
+{
+    echo "Ctrl-c was hit. Exiting the process"
+    cleanup
+    exit
+}
+
+print_usage ()
+{
+    echo >&2 "Usage : $0 <full path for env file> <port> <full path for conf file>
+              or $0 (will use default files and default port number)"
+    exit 0
+}
+
+set_environmentvars
+
+exec_script_path=${path}/bin
+reg_path=${path}/sbin
+
+compName=config2mgr
+compPath=${runtime}/${compName}
+
+[[ ! -w "${CONFIG_DIR}" ]] && is_root
+
+# Trapping keyboard interrupt  control-c
+trap control_c SIGINT
+
+# Setting up Environment variables
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${path}/lib
+export PATH=${PATH}:${runtime}/bin:${path}/sbin
+
+# Creating runtime environment for config2mgr
+createRuntime
+
+logFile=${log}/${compName}/${compName}.log
+
+initPidFile=${pid}/${compName}_init.pid
+compPidFile=${pid}/${compName}.pid
+lockFile=${lock}/${compName}/${compName}.lock
+defaultEnv=0
+
+# Checking input arguments
+if [ $# -eq 3 ]; then
+    filename=$1
+    portnum=$2
+    conffile=$3
+    echo "<filename> = ${filename}"
+    echo "<portnumber> = ${portnum}"
+    echo "<LocalEnvConfFile> = ${conffile}"
+    #checking where files exists or not
+    if [ ! -e ${filename} ] || [ ! -e ${conffile} ]
+    then
+       echo "File ${filename} or ${conffile} does not exists"
+       exit
+    fi
+elif [ $# -eq 0 ]; then
+    defaultEnv=1
+    filename="${sourcedir}/${environment}"
+    portnum="8020"
+    conffile="${configs}/environment.conf"
+    echo "Using default filename ${sourcedir}/${environment} and default port \"8020\""
+    if [ ! -d ${sourcedir} ];
+    then
+       #creating source directory if not present
+       createDir ${sourcedir}
+       cp ${configs}/${environment} ${sourcedir} > /dev/null 2<&1
+       chmod 755 ${sourcedir}/${environment}
+       chown -R ${user}:${group} ${sourcedir}
+    else
+        if [ ! -e ${filename} ];
+        then
+            if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
+                echo "Default environment file does not exists, copying from ${configs}"
+            fi
+            cp ${configs}/${environment} ${sourcedir}/environment.xml > /dev/null 2<&1
+            chmod 755 ${sourcedir}/environment.xml
+            chown -R ${user}:${group} ${sourcedir}
+        fi
+    fi
+else
+    print_usage
+fi
+
+createConf "${filename}" "${portnum}" "${conffile}"
+chown ${user}:${group} ${conffile}
+
+# Sanity Check for previous instances of config2. This code also takes care if configmgr script/configesp is not running and it killed by kill command
+
+check_status ${initPidFile} ${lockFile} ${compPidFile} 0
+RCSTAT=$?
+
+if [ ${RCSTAT} -eq 0 ]; then
+    checkPid ${initPidFile}
+    echo "Config2mgr is already running with Pid $__pidValue"
+    exit 0
+else
+    cleanupRuntimeEnvironment
+fi
+
+#-----------------------------------------------------------
+# Actual Processing begins
+#-----------------------------------------------------------
+cd ${runtime}/${compName}
+
+#start configesp
+EXEC_COMMAND="${exec_script_path}/init_configesp >> $logFile 2>&1"
+startcmd="${START_STOP_DAEMON} -S -p ${initPidFile} -c ${user}:${group} -d ${runtime}/${compName} -m -x ${EXEC_COMMAND} -b"
+eval ${startcmd}
+started=$?
+
+# Creating a Lock
+lock $lockFile
+
+if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
+    echo $startcmd
+    echo "configesp status = $started"
+fi
+
+echo -n "Verifying config2 startup ..."
+sleep 5
+
+check_status ${initPidFile} ${lockFile} ${compPidFile} 1
+RCSTAT=$?
+
+if [ ${RCSTAT} -ne 0 ];then
+   echo "Failure"
+   cleanup
+else
+    echo " Success"
+    echo "Exit by pressing ctrl-c..."
+    while :
+        check_status ${initPidFile} ${lockFile} ${compPidFile} 1
+        if [ $? -ne 0 ] ;
+        then
+            if [ "${DEBUG}" != "NO_DEBUG" ];
+            then
+                 echo "Init_configesp/Configesp is not running, hence shutting down configmgr script"
+            fi
+            kill -2 $$ > /dev/null 2>&1
+        fi
+        trap control_c SIGINT
+    do
+        sleep 1
+    done
+fi

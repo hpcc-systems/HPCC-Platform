@@ -15,14 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-import Std.File AS FileServices;
-
-// This is not an engine test, but a DFU.
-// Doesn't matter much which engine does it, so we restrict to only one
-
-//noRoxie
-//noThorLCR
-//noThor
+//nohthor
 
 //class=spray
 
@@ -30,10 +23,25 @@ import Std.File AS FileServices;
 //version sprayFixed=false,sprayEmpty=false
 //version sprayFixed=false,sprayEmpty=true
 
+
+import std.system.thorlib;
+import Std.File AS FileServices;
+import $.setup;
 import ^ as root;
+
+jlib:= SERVICE
+    unsigned8 rtlTick() : library='jlib',eclrtl,entrypoint='rtlNano';
+END;
+
+
+engine := thorlib.platform();
+prefix := setup.Files(false, false).FilePrefix + '-' + engine + '-';
+suffix := '-' + jlib.rtlTick() : stored('startTime');
 
 boolean sprayFixed := #IFDEFINED(root.sprayFixed, true);
 boolean sprayEmpty := #IFDEFINED(root.sprayEmpty, false);
+
+dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
 
 unsigned VERBOSE := 0;
 
@@ -51,26 +59,26 @@ allPeople := DATASET([ {'foo', 10, 1},
             ,Layout_Person);
 
 #if (sprayFixed)
-    sprayPrepFileName := '~REGRESS::spray_prep_fixed';
-    desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_fixed';
-    sprayOutFileName := '~REGRESS::spray_test_fixed';
+    sprayPrepFileName := prefix + 'spray_prep_fixed-' + suffix;
+    desprayOutFileName := dropzonePath + 'spray_input_fixed-' + suffix;
+    sprayOutFileName := prefix + 'spray_test_fixed-' + suffix;
     dsSetup := allPeople;
 #else
     #if (sprayEmpty)
-        sprayPrepFileName := '~REGRESS::spray_prep_empty';
-        desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_empty';
-        sprayOutFileName := '~REGRESS::spray_test_empty';
+        sprayPrepFileName := prefix + 'spray_prep_empty-' + suffix;
+        desprayOutFileName := dropzonePath + 'spray_input_empty-' + suffix;
+        sprayOutFileName := prefix + 'spray_test_empty-' + suffix;
         dsSetup := empty;
     #else
-        sprayPrepFileName := '~REGRESS::spray_prep';
-        desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
-        sprayOutFileName := '~REGRESS::spray_test';
+        sprayPrepFileName := prefix + 'spray_prep-' + suffix;
+        desprayOutFileName := dropzonePath + 'spray_input-' + suffix;
+        sprayOutFileName := prefix + 'spray_test-' + suffix;
         dsSetup := allPeople;
     #end
 #end
 
 //  Create a small logical file
-setup := output(dsSetup, , sprayPrepFileName, CSV, OVERWRITE);
+setupFile := output(dsSetup, , sprayPrepFileName, CSV, OVERWRITE);
 
 rec := RECORD
   string result;
@@ -90,7 +98,7 @@ rec despray(rec l) := TRANSFORM
 end;
 
 dst1 := NOFOLD(DATASET([{'', ''}], rec));
-p1 := PROJECT(NOFOLD(dst1), despray(LEFT));
+p1 := NOTHOR(PROJECT(NOFOLD(dst1), despray(LEFT)));
 c1 := CATCH(NOFOLD(p1), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Despray Fail',
                                  SELF.msg := FAILMESSAGE
@@ -134,7 +142,7 @@ c1 := CATCH(NOFOLD(p1), ONFAIL(TRANSFORM(rec,
 
 
 dst2 := NOFOLD(DATASET([{'', ''}], rec));
-p2 := PROJECT(NOFOLD(dst2), spray(LEFT));
+p2 := NOTHOR(PROJECT(NOFOLD(dst2), spray(LEFT)));
 c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Spray Fail',
                                  SELF.msg := FAILMESSAGE
@@ -156,8 +164,13 @@ END;
 
 
 SEQUENTIAL(
-  setup,
-  desprayOut,
-  sprayOut,
-  output(compareDatasets(dsSetup,ds))
+    setupFile,
+    desprayOut,
+    sprayOut,
+    output(compareDatasets(dsSetup,ds)),
+
+    // Clean-up
+    FileServices.DeleteExternalFile('.', desprayOutFileName),
+    FileServices.DeleteLogicalFile(sprayPrepFileName),
+    FileServices.DeleteLogicalFile(sprayOutFileName)
 );

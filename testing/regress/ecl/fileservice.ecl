@@ -16,6 +16,8 @@
 ############################################################################## */
 
 import Std.File;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 rec := RECORD
     STRING6 name;
@@ -26,10 +28,10 @@ END;
 ds := DATASET([{'fruit', 123, 'apple'}, {'fruit', 246, 'ford'}, {'os', 680, 'bsd'}, {'music', 369, 'rhead'}, {'os', 987, 'os'}], rec);
 
 SEQUENTIAL(
-  OUTPUT(ds, , '~regress::renametest.d00', OVERWRITE),
-  File.RenameLogicalFile('~regress::renametest.d00', '~regress::afterrename1.d00'),
-  File.RenameLogicalFile('~regress::afterrename1.d00', '~regress::scope1::scope2::afterrename2.d00'),
-  File.RenameLogicalFile('~regress::scope1::scope2::afterrename2.d00', '~regress::scope1::afterrename3.d00'),
-  OUTPUT(DATASET('~regress::scope1::afterrename3.d00', rec, FLAT)),
-  File.DeleteLogicalFile('~regress::scope1::afterrename3.d00')
+  OUTPUT(ds, , prefix + 'renametest.d00', OVERWRITE),
+  File.RenameLogicalFile(prefix + 'renametest.d00', prefix + 'afterrename1.d00'),
+  File.RenameLogicalFile(prefix + 'afterrename1.d00', prefix + 'scope1::scope2::afterrename2.d00'),
+  File.RenameLogicalFile(prefix + 'scope1::scope2::afterrename2.d00', prefix + 'scope1::afterrename3.d00'),
+  OUTPUT(DATASET(prefix + 'scope1::afterrename3.d00', rec, FLAT)),
+  File.DeleteLogicalFile(prefix + 'scope1::afterrename3.d00')
 );

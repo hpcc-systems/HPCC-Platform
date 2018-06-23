@@ -479,13 +479,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibrarySelect(BuildCtx & ctx, 
 
 void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibraryInstance * libraryInstance)
 {
-    BuildCtx subctx(ctx);
-    subctx.addQuotedCompoundLiteral("virtual void createParentExtract(rtlRowBuilder & builder)");
+    MemberFunction func(*this, ctx, "virtual void createParentExtract(rtlRowBuilder & builder) override");
 
-
-    BuildCtx beforeBuilderCtx(subctx);
+    BuildCtx beforeBuilderCtx(func.ctx);
     beforeBuilderCtx.addGroup();
-    Owned<ParentExtract> extractBuilder = createExtractBuilder(subctx, PETlibrary, NULL, GraphNonLocal, false);
+    Owned<ParentExtract> extractBuilder = createExtractBuilder(func.ctx, PETlibrary, NULL, GraphNonLocal, false);
 
     StringBuffer s;
     s.append("rtlRowBuilder & ");
@@ -493,7 +491,7 @@ void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibrary
     s.append(" = builder;");
     beforeBuilderCtx.addQuoted(s);
 
-    beginExtract(subctx, extractBuilder);
+    beginExtract(func.ctx, extractBuilder);
 
     //Ensure all the values are added to the serialization in the correct order 
     CHqlBoundExpr dummyTarget;
@@ -504,7 +502,7 @@ void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibrary
         extractBuilder->addSerializedExpression(libraryInstance->queryActual(i2), parameter->queryType());
     }
 
-    endExtract(subctx, extractBuilder);
+    endExtract(func.ctx, extractBuilder);
 }
 
 ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx, IHqlExpression * expr)
@@ -555,18 +553,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
 
     if (nameValue)
     {
-        instance->addAttribute("libname", libraryName.str());
+        instance->addAttribute(WaLibraryName, libraryName.str());
         Owned<IWULibrary> wulib = wu()->updateLibraryByName(libraryName.str());
     }
 
 
-    instance->addAttributeInt("_interfaceHash", library->getInterfaceHash());
-    instance->addAttributeBool("embedded", (embeddedAttr != NULL));
-    instance->addAttributeInt("_maxOutputs", library->outputs.ordinality());
+    instance->addAttributeInt(WaInterfaceHash, library->getInterfaceHash());
+    instance->addAttributeBool(WaIsEmbedded, (embeddedAttr != NULL));
+    instance->addAttributeInt(WaNumMaxOutputs, library->outputs.ordinality());
     if (embeddedAttr)
-        instance->addAttribute("graph", embeddedAttr->queryChild(0));
+        instance->addAttribute(WaIdGraph, embeddedAttr->queryChild(0));
     if (!targetHThor())
-        instance->addAttributeInt("_graphid", nextActivityId());            // reserve an id...
+        instance->addAttributeInt(WaIdLibraryGraph, nextActivityId());            // reserve an id...
 
     // A debugging option to make it clearer how a library is being called.
     if (options.addLibraryInputsToGraph)
@@ -577,7 +575,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
             IHqlExpression * parameter = libraryInstance->queryParameter(iIn);
             StringBuffer paramName;
             StringBuffer paramEcl;
-            paramName.append("input").append(iIn).append("__").append(parameter->queryName());
+            paramName.append("debuggingInput").append(iIn).append("__").append(parameter->queryName());
             toECL(libraryInstance->queryActual(iIn), paramEcl, false, true);
             instance->addAttribute(paramName, paramEcl);
         }
@@ -585,7 +583,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
 
     StringBuffer s;
     BuildCtx metactx(instance->classctx);
-    metactx.addQuotedCompoundLiteral("virtual IOutputMetaData * queryOutputMeta(unsigned whichOutput)");
+    metactx.addQuotedFunction("virtual IOutputMetaData * queryOutputMeta(unsigned whichOutput) override");
     BuildCtx switchctx(metactx);
     switchctx.addQuotedCompoundLiteral("switch (whichOutput)");
 
@@ -602,10 +600,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     }
     metactx.addReturn(queryQuotedNullExpr());
 
-    //Library Name must be onCreate invariant
-    BuildCtx namectx(instance->createctx);
-    namectx.addQuotedCompoundLiteral("virtual char * getLibraryName()");
-    buildReturn(namectx, name, unknownVarStringType);
+    {
+        //Library Name must be onCreate invariant
+        MemberFunction func(*this, instance->createctx, "virtual char * getLibraryName() override");
+        buildReturn(func.ctx, name, unknownVarStringType);
+    }
 
     buildInstanceSuffix(instance);
 

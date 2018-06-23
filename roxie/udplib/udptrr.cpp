@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#undef new
 #include <string>
 #include <map>
 #include <queue>
@@ -39,17 +38,12 @@
 #include <sys/resource.h>
 #endif
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 using roxiemem::DataBuffer;
 using roxiemem::IRowManager;
 
 unsigned udpRetryBusySenders = 0; // seems faster with 0 than 1 in my testing on small clusters and sustained throughput
 unsigned udpInlineCollationPacketLimit;
 bool udpInlineCollation = false;
-bool udpSendCompletedInData = false;
 
 class CReceiveManager : implements IReceiveManager, public CInterface
 {
@@ -637,7 +631,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
     Linked<IMessageCollator> defaultMessageCollator;
     uid_map         collators; // MORE - more sensible to use a jlib mapping I would have thought
-    SpinLock collatorsLock; // protects access to collators map and defaultMessageCollator
+    SpinLock collatorsLock; // protects access to collators map and defaultMessageCollator (note that defaultMessageCollator is not just set at startup)
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -687,8 +681,10 @@ public:
     {
         ruid_t ruid = msgColl->queryRUID();
         if (udpTraceLevel >= 2) DBGLOG("UdpReceiver: detach %p %u", msgColl, ruid);
-        SpinBlock b(collatorsLock);
-        collators.erase(ruid); 
+        {
+            SpinBlock b(collatorsLock);
+            collators.erase(ruid);
+        }
         msgColl->Release();
     }
 
@@ -718,6 +714,7 @@ public:
                 pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->length, pktHdr->nodeIndex);
 
         Linked <IMessageCollator> msgColl;
+        bool isDefault = false;
         {
             SpinBlock b(collatorsLock);
             try
@@ -725,9 +722,8 @@ public:
                 msgColl.set(collators[pktHdr->ruid]);
                 if (!msgColl)
                 {
-                    if (udpTraceLevel)
-                        DBGLOG("UdpReceiver: CPacketCollator NO msg collator found - using default - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u", pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex);
                     msgColl.set(defaultMessageCollator); // MORE - if we get a header, we can send an abort.
+                    isDefault = true;
                 }
             }
             catch (IException *E)
@@ -744,6 +740,8 @@ public:
         }
         if (msgColl) 
         {
+            if (udpTraceLevel && isDefault)
+                DBGLOG("UdpReceiver: CPacketCollator NO msg collator found - using default - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u", pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex);
             if (msgColl->add_package(dataBuff)) 
             {
                 dataBuff = 0;
@@ -759,16 +757,19 @@ public:
         if (dataBuff) 
         {   
             dataBuff->Release();
-            atomic_inc(&unwantedDiscarded);
+            unwantedDiscarded++;
         }
     }
 
     virtual IMessageCollator *createMessageCollator(IRowManager *rowManager, ruid_t ruid)
     {
         IMessageCollator *msgColl = createCMessageCollator(rowManager, ruid);
-        if (udpTraceLevel >= 2) DBGLOG("UdpReceiver: createMessageCollator %p %u", msgColl, ruid);
-        SpinBlock b(collatorsLock);
-        collators[ruid] = msgColl;
+        if (udpTraceLevel >= 2)
+            DBGLOG("UdpReceiver: createMessageCollator %p %u", msgColl, ruid);
+        {
+            SpinBlock b(collatorsLock);
+            collators[ruid] = msgColl;
+        }
         msgColl->Link();
         return msgColl;
     }

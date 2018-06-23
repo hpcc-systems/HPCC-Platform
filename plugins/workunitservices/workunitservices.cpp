@@ -180,14 +180,8 @@ IPluginContext * parentCtx = NULL;
 
 static void getSashaNodes(SocketEndpointArray &epa)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-    {
-        ERRLOG("getSashaNodes: cannot connect to /Environment!");
-        return;
-    }
-
     Owned<IPropertyTree> root = &env->getPTree();
     StringBuffer tmp;
     Owned<IPropertyTreeIterator> siter = root->getElements("Software/SashaServerProcess/Instance");
@@ -526,39 +520,48 @@ WORKUNITSERVICES_API char * wsWUIDdaysAgo(unsigned daysago)
     return getWUIDdaysAgo(ret,(int)daysago).detach();
 }
 
+class WsTimeStampVisitor : public WuScopeVisitorBase
+{
+public:
+    WsTimeStampVisitor(MemoryBuffer & _mb) : mb(_mb) {}
+
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
+    {
+        const char * curScope = cur.queryScope();
+        const char * kindName = queryStatisticName(kind);
+        assertex(kindName && memicmp(kindName, "when", 4) == 0);
+        kindName += 4;
+
+        StringBuffer formattedTime;
+        convertTimestampToStr(value, formattedTime, true);
+
+        SCMStringBuffer creator;
+        cur.getCreator(creator);
+        const char * at = strchr(creator.str(), '@');
+        const char * instance = at ? at + 1 : creator.str();
+
+        fixedAppend(mb, 32, curScope);
+        fixedAppend(mb, 16, kindName); // id
+        fixedAppend(mb, 20, formattedTime);            // time
+        fixedAppend(mb, 16, instance);                 // item correct here
+    }
+
+protected:
+    MemoryBuffer & mb;
+};
+
 WORKUNITSERVICES_API void wsWorkunitTimeStamps(ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid)
 {
     Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
     MemoryBuffer mb;
     if (wu)
     {
-        Owned<StatisticsFilter> filter = new StatisticsFilter(SCTall, SSTall, SMeasureTimestampUs, StKindAll);
-        filter->setScopeDepth(1, 2);
-        Owned<IConstWUStatisticIterator> stats = &wu->getStatistics(filter);
-        ForEach(*stats)
+        WsTimeStampVisitor visitor(mb);
+        WuScopeFilter filter("measure[When],source[global]");
+        Owned<IConstWUScopeIterator> iter = &wu->getScopeIterator(filter);
+        ForEach(*iter)
         {
-            IConstWUStatistic & cur = stats->query();
-
-            SCMStringBuffer scope;
-            cur.getScope(scope);
-
-            StatisticKind kind = cur.getKind();
-            const char * kindName = queryStatisticName(kind);
-            assertex(kindName && memicmp(kindName, "when", 4) == 0);
-            kindName += 4;
-
-            StringBuffer formattedTime;
-            convertTimestampToStr(cur.getValue(), formattedTime, true);
-
-            SCMStringBuffer creator;
-            cur.getCreator(creator);
-            const char * at = strchr(creator.str(), '@');
-            const char * instance = at ? at + 1 : creator.str();
-
-            fixedAppend(mb, 32, scope.str());
-            fixedAppend(mb, 16, kindName); // id
-            fixedAppend(mb, 20, formattedTime);            // time
-            fixedAppend(mb, 16, instance);                 // item correct here
+            iter->playProperties(visitor);
         }
     }
     __lenResult = mb.length();
@@ -634,31 +637,42 @@ WORKUNITSERVICES_API void wsWorkunitFilesWritten( ICodeContext *ctx, size32_t & 
     __result = mb.detach();
 }
 
+
+class WsTimingVisitor : public WuScopeVisitorBase
+{
+public:
+    WsTimingVisitor(MemoryBuffer & _mb) : mb(_mb) {}
+
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
+    {
+        SCMStringBuffer desc;
+
+        unsigned __int64 count = cur.getCount();
+        unsigned __int64 max = cur.getMax();
+        cur.getDescription(desc, true);
+
+        mb.append((unsigned) count);
+        mb.append((unsigned) (value / 1000000));
+        mb.append((unsigned) max);
+        varAppend(mb, desc.str());
+    }
+
+protected:
+    MemoryBuffer & mb;
+};
+
 WORKUNITSERVICES_API void wsWorkunitTimings( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid )
 {
     Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
     MemoryBuffer mb;
     if (wu)
     {
-        StatisticsFilter filter;
-        filter.setScopeDepth(1, 2);
-        filter.setMeasure(SMeasureTimeNs);
-
-        SCMStringBuffer desc;
-        Owned<IConstWUStatisticIterator> iter = &wu->getStatistics(&filter);
+        WsTimingVisitor visitor(mb);
+        WuScopeFilter filter("measure[Time],source[global]");
+        Owned<IConstWUScopeIterator> iter = &wu->getScopeIterator(filter);
         ForEach(*iter)
         {
-            IConstWUStatistic & cur = iter->query();
-
-            unsigned __int64 value = cur.getValue();
-            unsigned __int64 count = cur.getCount();
-            unsigned __int64 max = cur.getMax();
-            cur.getDescription(desc, true);
-
-            mb.append((unsigned) count);
-            mb.append((unsigned) (value / 1000000));
-            mb.append((unsigned) max);
-            varAppend(mb, desc.str());
+            iter->playProperties(visitor);
         }
     }
     __lenResult = mb.length();
@@ -666,52 +680,24 @@ WORKUNITSERVICES_API void wsWorkunitTimings( ICodeContext *ctx, size32_t & __len
 }
 
 
-class StreamedStatistics : public CInterfaceOf<IRowStream>
+//This function is deprecated and no longer supported - I'm not sure it ever worked
+WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, bool includeActivities, const char * filterText)
+{
+    return createNullRowStream();
+}
+
+class WsStreamedStatistics : public CInterfaceOf<IRowStream>
 {
 public:
-    StreamedStatistics(IConstWorkUnit * _wu, IEngineRowAllocator * _resultAllocator, IConstWUStatisticIterator * _iter)
-    : wu(_wu), resultAllocator(_resultAllocator),iter(_iter)
+    WsStreamedStatistics(IConstWorkUnit * _wu, IEngineRowAllocator * _resultAllocator, const char * _filter)
+    : wu(_wu), resultAllocator(_resultAllocator), filter(_filter)
     {
+        iter.setown(&wu->getScopeIterator(filter));
     }
 
     virtual const void *nextRow()
     {
-        if (!iter || !iter->isValid())
-            return NULL;
-
-        IConstWUStatistic & cur = iter->query();
-
-        unsigned __int64 value = cur.getValue();
-        unsigned __int64 count = cur.getCount();
-        unsigned __int64 max = cur.getMax();
-        StatisticCreatorType creatorType = cur.getCreatorType();
-        cur.getCreator(creator);
-        StatisticScopeType scopeType = cur.getScopeType();
-        cur.getScope(scope);
-        cur.getDescription(description, true);
-        StatisticMeasure measure = cur.getMeasure();
-        StatisticKind kind = cur.getKind();
-
-        MemoryBuffer mb;
-        mb.append(sizeof(value),&value);
-        mb.append(sizeof(count),&count);
-        mb.append(sizeof(max),&max);
-        varAppend(mb, queryCreatorTypeName(creatorType));
-        varAppend(mb, creator.str());
-        varAppend(mb, queryScopeTypeName(scopeType));
-        varAppend(mb, scope.str());
-        varAppend(mb, queryStatisticName(kind));
-        varAppend(mb, description.str());
-        varAppend(mb, queryMeasureName(measure));
-
-        size32_t len = mb.length();
-        size32_t newSize;
-        void * row = resultAllocator->createRow(newSize);
-        row = resultAllocator->resizeRow(len, row, newSize);
-        memcpy(row, mb.bufferBase(), len);
-
-        iter->next();
-        return resultAllocator->finalizeRow(len, row, newSize);
+        return NULL;
     }
     virtual void stop()
     {
@@ -722,23 +708,16 @@ public:
 protected:
     Linked<IConstWorkUnit> wu;
     Linked<IEngineRowAllocator> resultAllocator;
-    Linked<IConstWUStatisticIterator> iter;
-    SCMStringBuffer creator;
-    SCMStringBuffer scope;
-    SCMStringBuffer description;
+    WuScopeFilter filter;
+    Linked<IConstWUScopeIterator> iter;
 };
 
-WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, bool includeActivities, const char * filterText)
+WORKUNITSERVICES_API IRowStream * wsNewWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, const char * filterText)
 {
     Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
     if (!wu)
         return createNullRowStream();
-    //Filter needs to be allocated because the iterator outlasts it.
-    Owned<StatisticsFilter> filter = new StatisticsFilter(filterText);
-    if (!includeActivities)
-        filter->setScopeDepth(1, 2);
-    Owned<IConstWUStatisticIterator> stats = &wu->getStatistics(filter);
-    return new StreamedStatistics(wu, allocator, stats);
+    return new WsStreamedStatistics(wu, allocator, filterText);
 }
 
 WORKUNITSERVICES_API bool wsSetWorkunitAppValue( ICodeContext *ctx, const char *appname, const char *key, const char *value, bool overwrite)

@@ -62,7 +62,7 @@
             ]]></xsl:text>
         </script>
       </head>
-      <frameset rows="62,*" FRAMEPADDING="0" PADDING="0" SPACING="0" FRAMEBORDER="0" onload="onLoad()">
+      <frameset rows="72,*" FRAMEPADDING="0" PADDING="0" SPACING="0" FRAMEBORDER="0" onload="onLoad()">
                 <frame src="esp/titlebar" name="header" target="main" scrolling="no"/>
                 <frameset FRAMEPADDING="0" PADDING="0" SPACING="0" FRAMEBORDER="{@navResize}" BORDERCOLOR="black" FRAMESPACING="1">
                     <xsl:attribute name="cols"><xsl:value-of select="@navWidth"/>,*</xsl:attribute>

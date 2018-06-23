@@ -133,7 +133,7 @@ class CBroadcaster : public CSimpleInterface
             threaded.join();
         }
     // IThreaded
-        virtual void main()
+        virtual void threadmain() override
         {
             try
             {
@@ -206,7 +206,7 @@ class CBroadcaster : public CSimpleInterface
             threaded.join();
         }
     // IThreaded
-        virtual void main()
+        virtual void threadmain() override
         {
             try
             {
@@ -558,7 +558,7 @@ class CMarker
         void start() { threaded.start(); }
         void join() { threaded.join(); }
     // IThreaded
-        virtual void main()
+        virtual void threadmain() override
         {
             chunkUnique = parent.run(startRow, endRow);
         }
@@ -758,13 +758,13 @@ public:
     {
         return helper->match(lhs, rhsrow);
     }
-    inline const size32_t joinTransform(ARowBuilder &rowBuilder, const void *left, const void *right, unsigned numRows, const void **rows)
+    inline const size32_t joinTransform(ARowBuilder &rowBuilder, const void *left, const void *right, unsigned numRows, const void **rows, unsigned flags)
     {
-        return helper->transform(rowBuilder, left, right, numRows, rows);
+        return helper->transform(rowBuilder, left, right, numRows, rows, flags);
     }
-    inline const size32_t joinTransform(ARowBuilder &rowBuilder, const void *left, const void *right, unsigned count)
+    inline const size32_t joinTransform(ARowBuilder &rowBuilder, const void *left, const void *right, unsigned count, unsigned flags)
     {
-        return helper->transform(rowBuilder, left, right, count);
+        return helper->transform(rowBuilder, left, right, count, flags);
     }
 };
 
@@ -886,7 +886,7 @@ protected:
             blockQueue.enqueue(sendItem); // will block if queue full
         }
     // IThreaded
-        virtual void main()
+        virtual void threadmain() override
         {
             try
             {
@@ -942,6 +942,7 @@ protected:
     PointerArrayOf<CThorRowArrayWithFlushMarker> rhsSlaveRows;
     IArrayOf<IRowStream> gatheredRHSNodeStreams;
     bool rhsConstant = false;
+    bool rhsStartedBefore = false;
 
     unsigned keepLimit;
     unsigned joined;
@@ -1186,7 +1187,7 @@ protected:
             const void *rightRow = numRows ? filteredRhs.item(0) : defaultRight.get();
             if (isGroupOp())
             {
-                size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, rightRow, numRows, filteredRhs.getArray());
+                size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, rightRow, numRows, filteredRhs.getArray(), JTFmatchedleft|(numRows ? JTFmatchedright : 0));
                 if (sz)
                     ret.setown(rowBuilder.finalizeRowClear(sz));
             }
@@ -1199,7 +1200,7 @@ protected:
                     for (;;)
                     {
                         const void *rightRow = filteredRhs.item(rcCount);
-                        size32_t sz = HELPERBASE::joinTransform(rowBuilder, ret, rightRow, ++rcCount);
+                        size32_t sz = HELPERBASE::joinTransform(rowBuilder, ret, rightRow, ++rcCount, JTFmatchedleft|JTFmatchedright);
                         if (sz)
                         {
                             rowSize = sz;
@@ -1268,7 +1269,7 @@ protected:
                             leftMatch = true;
                             if (!exclude)
                             {
-                                size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, rhsNext, ++joinCounter);
+                                size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, rhsNext, ++joinCounter, JTFmatchedleft|JTFmatchedright);
                                 if (sz)
                                 {
                                     OwnedConstThorRow row = rowBuilder.finalizeRowClear(sz);
@@ -1287,7 +1288,7 @@ protected:
                     }
                     if (!leftMatch && NULL == rhsNext && 0!=(flags & JFleftouter))
                     {
-                        size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, defaultRight, 0);
+                        size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, defaultRight, 0, JTFmatchedleft);
                         if (sz)
                             ret.setown(rowBuilder.finalizeRowClear(sz));
                     }
@@ -1488,7 +1489,7 @@ public:
         currentHashEntry.index = 0;
         currentHashEntry.count = 0;
 
-        if (hasStarted() && isRhsConstant()) // if this is the 2nd+ iteration and the RHS is constant, don't both restarting right, it will not be used.
+        if (rhsStartedBefore && isRhsConstant()) // if this is the 2nd+ iteration and the RHS is constant, don't bother restarting right, it will not be used.
         {
             startLeftInput();
         }
@@ -1498,6 +1499,7 @@ public:
             try
             {
                 startInput(1);
+                rhsStartedBefore = true;
             }
             catch (CATCHALL)
             {
@@ -2335,7 +2337,7 @@ protected:
             if (getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER)) // for testing only (force to disk, as if spilt)
                 channelDistributor.spill(false);
 
-            Owned<IRowStream> distChannelStream = rhsDistributor->connect(queryRowInterfaces(rightITDL), right, rightHash, NULL);
+            Owned<IRowStream> distChannelStream = rhsDistributor->connect(queryRowInterfaces(rightITDL), right, rightHash, nullptr, nullptr);
             channelDistributor.processDistRight(distChannelStream);
         }
         catch (IException *e)
@@ -2477,7 +2479,7 @@ protected:
                     }
 
                     // start LHS distributor, needed by local lookup or full join
-                    left.setown(lhsDistributor->connect(queryRowInterfaces(leftITDL), left, leftHash, NULL));
+                    left.setown(lhsDistributor->connect(queryRowInterfaces(leftITDL), left, leftHash, nullptr, nullptr));
 
                     // NB: Some channels in this or other slave processes may have fallen over to hash join
                 }
@@ -2647,7 +2649,7 @@ public:
                         e.setown(_e);
                     }
                     RtlDynamicRowBuilder ret(allocator);
-                    size32_t transformedSize = helper->onFailTransform(ret, leftRow, defaultRight, e.get());
+                    size32_t transformedSize = helper->onFailTransform(ret, leftRow, defaultRight, e.get(), JTFmatchedleft);
                     if (transformedSize)
                         failRow = ret.finalizeRowClear(transformedSize);
                 }

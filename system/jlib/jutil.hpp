@@ -142,6 +142,15 @@ jlib_decl int rand_r(unsigned int *seed);
 
 #endif
 
+inline int fastRand()
+{
+    // rand() causes Coverity can issue a 'WEAK_CRYPTO' warning, but we only use fastRand() where deemed safe to do so.
+
+    // coverity[DC.WEAK_CRYPTO]
+    return rand();
+}
+
+
 interface IShuffledIterator: extends IInterface
 {
     virtual void seed(unsigned seedval)=0;  // ony required for repeatability
@@ -217,9 +226,9 @@ class jlib_decl StringArray : public ArrayOf<const char *, const char *, StringP
     typedef ArrayOf<const char *, const char *, StringPointerArrayMapper> PARENT;
 public:
     // Appends a list in a string delimited by 'delim'
-    void appendList(const char *list, const char *delim);
+    void appendList(const char *list, const char *delim, bool trimSpaces = true);
     // Appends a list in a string delimited by 'delim' without duplicates
-    void appendListUniq(const char *list, const char *delim);
+    void appendListUniq(const char *list, const char *delim, bool trimSpaces = true);
     StringBuffer &getString(StringBuffer &ret, const char *delim); // get CSV string of array contents
     void sortAscii(bool nocase=false);
     void sortAsciiReverse(bool nocase=false);
@@ -233,7 +242,7 @@ class CIStringArray : public StringArray, public CInterface
 
 extern jlib_decl unsigned msTick();
 extern jlib_decl unsigned usTick();
-extern jlib_decl int make_daemon(bool printpid=false);  // outputs pid to stdout if printpid true
+extern jlib_decl int write_pidfile(const char * instance);
 extern jlib_decl void doStackProbe();
 
 #ifndef arraysize
@@ -373,10 +382,24 @@ extern jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
                                            const char * *  _privateKey,
                                            const char * *  _passPhrase);
 
+//Queries environment.conf file
+extern jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertificateFile
+                                           const char * *  _publicKey,  //HPCCPublicKeyFile
+                                           const char * *  _privateKey, //HPCCPrivateKeyFile
+                                           const char * *  _passPhrase);//HPCCPassPhrase, encrypted
+
 extern jlib_decl const char * matchConfigurationDirectoryEntry(const char *path,const char *mask,StringBuffer &name, StringBuffer &component, StringBuffer &instance);
 extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,const char *tomask,StringBuffer &out);
 
-extern jlib_decl const char *queryCurrentProcessPath(); 
+extern jlib_decl const char *queryCurrentProcessPath();
+
+/**
+ * Locate the 'package home' directory - normally /opt/HPCCSystems - by detecting the current executable's location
+ *
+ * @param path     Returns the package home location
+ * @return         True if the home directory was located
+ */
+extern jlib_decl bool getPackageFolder(StringBuffer & path);
 
 extern jlib_decl int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvout); // parses cmdline into argvout returning arg count (mb used as buffer)
 
@@ -388,9 +411,13 @@ interface jlib_thrown_decl ICorruptDllException: extends IException
 {
 };
 
-struct mapEnums { int val; const char *str; };
+struct EnumMapping { int val; const char *str; };
 
-extern jlib_decl const char *getEnumText(int value, const mapEnums *map);
+extern jlib_decl const char *getEnumText(int value, const EnumMapping *map); // fails if no match
+extern jlib_decl int getEnum(const char *v, const EnumMapping *map); //fails if no match
+extern jlib_decl const char *getEnumText(int value, const EnumMapping *map, const char * defval);
+extern jlib_decl int getEnum(const char *v, const EnumMapping *map, int defval);
+
 
 class jlib_decl QuantilePositionIterator
 {

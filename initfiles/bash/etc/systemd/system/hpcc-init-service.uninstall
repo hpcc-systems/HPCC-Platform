@@ -1,0 +1,4 @@
+if [[ -e /bin/systemctl ]]; then
+    removeSymlink "/etc/systemd/system/hpcc-init@.service"
+    removeSymlink "/etc/systemd/system/hpcc-init.service"
+fi

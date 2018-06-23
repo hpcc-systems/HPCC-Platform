@@ -80,7 +80,7 @@ static const char * LIBFLAG_DEBUG[] = { "/MDd", "" };
 static const char * LIBFLAG_RELEASE[] = { "/MD", "" };
 static const char * COMPILE_ONLY[] = { "/c", "-c" };
 
-static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1" };
+static const char * CC_OPTION_CORE[] = { "", "-std=c++11 -fvisibility=hidden -DUSE_VISIBILITY=1 -Werror -Wno-tautological-compare" };
 static const char * LINK_OPTION_CORE[] = { "/DLL /libpath:." , "" };
 static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC  -O0" };
 
@@ -279,6 +279,13 @@ void CppCompiler::setPrecompileHeader(bool _pch)
     precompileHeader = _pch;
 }
 
+bool CppCompiler::fireException(IException *e)
+{
+    CriticalBlock block(cs);
+    exceptions.append(*LINK(e));
+    return true;
+}
+
 void CppCompiler::addDefine(const char * symbolName, const char * value)
 {
     compilerOptions.append(" ").append(USE_DEFINE_FLAG[targetCompiler]).append(symbolName);
@@ -384,7 +391,7 @@ bool CppCompiler::compile()
 
     TIME_SECTION(!verbose ? NULL : onlyCompile ? "compile" : "compile/link");
 
-    Owned<IThreadPool> pool = createThreadPool("CCompilerWorker", this, NULL, maxCompileThreads?maxCompileThreads:1, INFINITE);
+    Owned<IThreadPool> pool = createThreadPool("CCompilerWorker", this, this, maxCompileThreads?maxCompileThreads:1, INFINITE);
     addCompileOption(COMPILE_ONLY[targetCompiler]);
 
     bool ret = false;
@@ -523,6 +530,13 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
 
 void CppCompiler::extractErrors(IArrayOf<IError> & errors)
 {
+    ForEachItemIn(i, exceptions)
+    {
+        IException & cur = exceptions.item(i);
+        StringBuffer msg;
+        cur.errorMessage(msg);
+        errors.append(*createError(JLIBERR_CppCompileError, msg, nullptr));
+    }
     const char* cclog = ccLogPath.get();
     if(!cclog||!*cclog)
         cclog = queryCcLogName();
@@ -684,7 +698,17 @@ bool CppCompiler::doLink()
         PrintLog("%s", expanded.str());
     StringBuffer logFile = StringBuffer(coreName).append("_link.log.tmp");
     logFiles.append(logFile);
-    bool ret = invoke_program(expanded.str(), runcode, true, logFile) && (runcode == 0);
+
+    bool ret;
+    try
+    {
+        ret = invoke_program(expanded.str(), runcode, true, logFile, nullptr, true) && (runcode == 0);
+    }
+    catch (IException * e)
+    {
+        exceptions.append(*e);
+        ret = false;
+    }
     linkFailed = !ret;
     return ret;
 }
@@ -885,25 +909,26 @@ public:
         handle = 0;
         aborted = false;
     }
-    bool canReuse()             { return true; }
-    bool stop()
+    virtual bool canReuse() const override { return true; }
+    virtual bool stop() override
     {
         if (okToAbort)
             interrupt_program(handle, true);
         aborted = true;
         return true;
     }
-    void init(void *_params)    { params.set((CCompilerThreadParam *)_params); }
+    virtual void init(void *_params) override    { params.set((CCompilerThreadParam *)_params); }
 
-    void main()
+    virtual void threadmain() override
     {
         DWORD runcode = 0;
         bool success;
         aborted = false;
         handle = 0;
+        Owned<IException> error;
         try
         {
-            success = invoke_program(params->cmdline, runcode, false, params->logfile, &handle, false, okToAbort);
+            success = invoke_program(params->cmdline, runcode, false, params->logfile, &handle, true, okToAbort);
             if (success)
                 wait_program(handle, runcode, true);
         }
@@ -911,7 +936,7 @@ public:
         {
             StringBuffer sb;
             e->errorMessage(sb);
-            e->Release();
+            error.setown(e);
             if (sb.length())
                 PrintLog("%s", sb.str());
             success = false;
@@ -921,7 +946,8 @@ public:
         if (!success || aborted)
             compiler->numFailed++;
         params->finishedCompiling.signal();
-        return;
+        if (error)
+            throw error.getClear();
     }
 
 private:

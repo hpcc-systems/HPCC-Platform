@@ -38,7 +38,7 @@ class WorkflowMachine;
 interface IWorkUnitRowReader : public IInterface
 {
     virtual const void * nextRow() = 0;
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt) = 0;
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt) = 0;
 };
 
 interface IRoxieServerContext;
@@ -59,7 +59,7 @@ interface IRoxieSlaveContext : extends IRoxieContextLogger
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal) = 0;
     virtual IActivityGraph * getLibraryGraph(const LibraryCallFactoryExtra &extra, IRoxieServerActivity *parentActivity) = 0;
     virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const = 0;
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const = 0;
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId) const = 0;
     virtual IProbeManager *queryProbeManager() const = 0;
     virtual IDebuggableContext *queryDebugContext() const = 0;
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) = 0;
@@ -77,7 +77,7 @@ interface IRoxieServerContext : extends IInterface
 {
     virtual IGlobalCodeContext *queryGlobalCodeContext() = 0;
     virtual void setResultXml(const char *name, unsigned sequence, const char *xml) = 0;
-    virtual void appendResultDeserialized(const char *name, unsigned sequence, size32_t count, byte **data, bool extend, IOutputMetaData *meta) = 0;
+    virtual void appendResultDeserialized(const char *name, unsigned sequence, size32_t count, const byte **data, bool extend, IOutputMetaData *meta) = 0;
     virtual void appendResultRawContext(const char *name, unsigned sequence, int len, const void * data, int numRows, bool extend, bool saveInContext) = 0;
     virtual roxiemem::IRowManager &queryRowManager() = 0;
 
@@ -98,8 +98,8 @@ interface IRoxieServerContext : extends IInterface
 
 interface IDeserializedResultStore : public IInterface
 {
-    virtual int addResult(size32_t count, byte **data, IOutputMetaData *meta) = 0;
-    virtual void queryResult(int id, size32_t &count, byte ** &data) const = 0;
+    virtual int addResult(size32_t count, const byte **data, IOutputMetaData *meta) = 0;
+    virtual void queryResult(int id, size32_t &count, const byte ** &data) const = 0;
     virtual IWorkUnitRowReader *createDeserializedReader(int id) const = 0;
     virtual void serialize(unsigned & tlen, void * & tgt, int id, ICodeContext *ctx) const = 0;
 };

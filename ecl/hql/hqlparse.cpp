@@ -28,6 +28,7 @@
 
 #define YY_NO_UNISTD_H
 #include "hqllex.hpp"
+#include "eclrtl.hpp"
 
 //#define TIMING_DEBUG
 
@@ -48,12 +49,11 @@ static const char * skipws(const char * str)
 
 class CDummyScopeIterator : public IIterator, public CInterface
 {
-    IXmlScope *parent;
+    Linked<IXmlScope> parent;
 public:
     IMPLEMENT_IINTERFACE;
-    CDummyScopeIterator(IXmlScope *_parent)
+    CDummyScopeIterator(IXmlScope *_parent) : parent(_parent)
     {
-        parent = _parent;
     }
     ~CDummyScopeIterator ()
     {
@@ -177,6 +177,7 @@ void HqlLex::init(IFileContents * _text)
     inComment = false;
     inSignature = false;
     inCpp = false;
+    inMultiString = false;
     hasHashbreak = false;
     encrypted = false;
     loopTimes = 0;
@@ -327,7 +328,7 @@ void HqlLex::pushText(IFileContents * text, int startLineNo, int startColumn)
 
 void HqlLex::pushText(const char *s, int startLineNo, int startColumn)
 {
-    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0);
     pushText(macroContents, startLineNo, startColumn);
 }
 
@@ -337,7 +338,7 @@ void HqlLex::pushText(const char *s)
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::pushText");
 #endif
-    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0);
     bool useLegacyImport = hasLegacyImportSemantics();
     bool useLegacyWhen = hasLegacyWhenSemantics();
     inmacro = new HqlLex(yyParser, macroContents, NULL, NULL);
@@ -619,16 +620,7 @@ void HqlLex::checkSignature(const attribute & dummyToken)
 
         StringBuffer buf;
         Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
-        const size32_t chunkSize = 8192;
-        for (;;)
-        {
-            size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
-            if (sizeRead < chunkSize)
-            {
-                buf.setLength(buf.length() - (chunkSize - sizeRead));
-                break;
-            }
-        }
+        readSimpleStream(buf, *pipeReader);
         DBGLOG("GPG %d %s", retcode, buf.str());
         if (retcode)
         {
@@ -713,7 +705,7 @@ void HqlLex::processEncrypted()
     decryptEclAttribute(decrypted, encoded64.str());
     decrypted.append(0);    // add a null terminator to the string...
     Owned<ISourcePath> sourcePath = createSourcePath("<encrypted>");
-    Owned<IFileContents> decryptedContents = createFileContentsFromText((const char *)decrypted.toByteArray(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+    Owned<IFileContents> decryptedContents = createFileContentsFromText((const char *)decrypted.toByteArray(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, text->getTimeStamp());
     bool useLegacyImport = hasLegacyImportSemantics();
     bool useLegacyWhen = hasLegacyWhenSemantics();
     inmacro = new HqlLex(yyParser, decryptedContents, NULL, NULL);
@@ -1208,7 +1200,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         try
         {
             HqlLookupContext ctx(yyParser->lookupCtx);
-            Owned<IFileContents> exportContents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+            Owned<IFileContents> exportContents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0);
             expr.setown(parseQuery(scope, exportContents, ctx, xmlScope, NULL, true, false));
 
             if (expr && (expr->getOperator() == no_sizeof))
@@ -1350,8 +1342,8 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
 
     forLoop = getSubScopes(returnToken, str(name), doAll);
     if (forFilterText.length())
-        forFilter.setown(createFileContentsFromText(forFilterText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature));
-    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature));
+        forFilter.setown(createFileContentsFromText(forFilterText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0));
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0));
 
     loopTimes = 0;
     if (forLoop && forLoop->first()) // more - check filter
@@ -1400,7 +1392,7 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
     ::Release(forLoop);
     forLoop = new CDummyScopeIterator(ensureTopXmlScope());
     forFilter.clear();
-    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature));
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0));
     loopTimes = 0;
     if (forLoop->first()) // more - check filter
         checkNextLoop(returnToken, true,startLine,startCol);
@@ -1641,7 +1633,7 @@ void HqlLex::doIsValid(YYSTYPE & returnToken)
     {
         HqlLookupContext ctx(yyParser->lookupCtx);
         ctx.errs.clear();   //Deliberately ignore any errors
-        Owned<IFileContents> contents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+        Owned<IFileContents> contents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0);
         expr = parseQuery(scope, contents, ctx, xmlScope, NULL, true, false);
 
         if(expr)
@@ -1684,9 +1676,8 @@ void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, in
 #ifdef TIMING_DEBUG
             MTIME_SECTION(timer, "HqlLex::checkNextLoopcond");
 #endif
-            IValue *value = parseConstExpression(errpos, forFilter, subscope,startLine,startCol);
+            Owned<IValue> value = parseConstExpression(errpos, forFilter, subscope,startLine,startCol);
             filtered = !value || !value->getBoolValue();
-            ::Release(value);
         }
         else
             filtered = false;
@@ -1918,7 +1909,7 @@ IHqlExpression *HqlLex::parseECL(IFileContents * contents, IXmlScope *xmlScope, 
 
 IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int startLine, int startCol)
 {
-    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath(), yyParser->inSignedModule, yyParser->gpgSignature);
+    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath(), yyParser->inSignedModule, yyParser->gpgSignature, 0);
     return parseECL(contents, xmlScope, startLine, startCol);
 }
 
@@ -2079,56 +2070,203 @@ static StringBuffer& mangle(IErrorReceiver* errReceiver,const char* src, StringB
     return mangled;
 }
 
-bool HqlLex::checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg)
+int HqlLex::processStringLiteral(YYSTYPE & returnToken, char *CUR_TOKEN_TEXT, unsigned CUR_TOKEN_LENGTH, int oldColumn, int oldPosition)
 {
-    unsigned i;
-    for(i = 0; i < length; i++)
+    MemoryAttr tempBuff;
+    char *b = (char *)tempBuff.allocate(CUR_TOKEN_LENGTH); // Escape sequence can only make is shorter...
+    char *bf = b;
+    const char *finger = CUR_TOKEN_TEXT;
+    type_t tc = type_string;
+    if (*finger != '\'')
     {
-        if (str[i] == '\\')
+        if ((*finger == 'd') || (*finger == 'D'))
+            tc = type_data;
+        else if((*finger == 'q') || (*finger == 'Q'))
+            tc = type_qstring;
+        else if((*finger == 'v') || (*finger == 'V'))
+            tc = type_varstring;
+        finger++;
+    }
+    bool isMultiline = false;
+    if (finger[1]=='\'' && finger[2]=='\'')
+    {
+        isMultiline = true;
+        CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-2] = '\0';
+        finger += 2;
+    }
+    for (finger++; finger[1]; finger++)
+    {
+        unsigned char next = *finger;
+        size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
+        if (next == '\\')
         {
-            unsigned char next = str[++i];
-            if (next == '\'' || next == '\\' || next == 'n' || next == 'r' || next == 't' || next == 'a' || next == 'b' || next == 'f' || next == 'v' || next == '?' || next == '"')
+            next = finger[1];
+            if (finger[2]==0)  // finger[1] must be '.
             {
-                continue;
+                returnToken.setPosition(yyLineNo, oldColumn+delta, oldPosition+delta, querySourcePath());
+                StringBuffer msg("Can not terminate a string with escape char '\\': ");
+                msg.append(CUR_TOKEN_TEXT);
+                reportError(returnToken, RRR_ESCAPE_ENDWITHSLASH, "%s", msg.str());
+                if (checkAborting())
+                    return EOF;
+            }
+            else if (next == '\'' || next == '\\' || next == '?' || next == '"')
+            {
+                finger++;
+            }
+            else if (next == '\n')
+            {
+                finger++;
+                continue;  // A \ at end of line in a multiline constant means remove the end-of-line
+            }
+            else if (next == 'a')
+            {
+                next = '\a';
+                finger++;
+            }
+            else if (next == 'b')
+            {
+                next = '\b';
+                finger++;
+            }
+            else if (next == 'f')
+            {
+                next = '\f';
+                finger++;
+            }
+            else if (next == 'n')
+            {
+                next = '\n';
+                finger++;
+            }
+            else if (next == 'r')
+            {
+                next = '\r';
+                finger++;
+            }
+            else if (next == 't')
+            {
+                next = '\t';
+                finger++;
+            }
+            else if (next == 'v')
+            {
+                next = '\v';
+                finger++;
             }
             else if (isdigit(next) && next < '8')
             {
+                //Allow octal constants for ^Z etc.
+                unsigned value = 0;
                 unsigned count;
-                for(count = 1; count < 3; count++)
+                for (count=0; count < 3; count++)
                 {
-                    next = str[++i];
-                    if(!isdigit(next) || next >= '8')
-                    {
-                        msg.append("3-digit numeric escape sequence contained non-octal digit: ").append(next);
-                        ep = i;
-                        return false;
-                    }
+                    next = finger[count+1];
+                    if (!isdigit(next) || next >= '8')
+                        break;
+                    value = value * 8 + (next - '0');
                 }
-            }
-            else if (next == 'u' || next == 'U')
-            {
-                unsigned count;
-                unsigned max = (next == 'u') ? 4 : 8;
-                for(count = 0; count < max; count++)
+                if(count != 3)
                 {
-                    next = str[++i];
-                    if(!isdigit(next) && (!isalpha(next) || tolower(next) > 'f'))
-                    {
-                        msg.append((max == 4) ? '4' : '8').append("-digit unicode escape sequence contained non-hex digit: ").append(next);
-                        ep = i;
-                        return false;
-                    }
+                    returnToken.setPosition(yyLineNo, oldColumn+delta, oldPosition+delta, querySourcePath());
+                    StringBuffer msg;
+                    msg.append("3-digit numeric escape sequence contained non-octal digit: ").append(next);
+                    reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
+                    if (checkAborting())
+                        return EOF;
                 }
+                *bf++ = value;
+                if(!(isValidAsciiLikeCharacter(value) || (tc == type_data)))
+                {
+                    returnToken.setPosition(yyLineNo, oldColumn+delta, oldPosition+delta, querySourcePath());
+                    reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
+                    if (checkAborting())
+                        return EOF;
+                }
+                finger += count;
+                continue;
             }
             else
             {
-                msg.append("Unrecognized escape sequence: ").append("\\").append(next);
-                ep = i;
-                return false;
+                StringBuffer msg;
+                msg.append("Unrecognized escape sequence: ");
+                msg.append("\\").append(finger[1]);
+                returnToken.setPosition(yyLineNo, oldColumn+delta, oldPosition+delta, querySourcePath());
+                reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
+                if (checkAborting())
+                    return EOF;
+            }
+            *bf++ = next;
+        }
+        else if (next == '\'' && !isMultiline)
+        {
+            returnToken.setPosition(yyLineNo, oldColumn+delta, oldPosition+delta, querySourcePath());
+            reportError(returnToken, ERR_STRING_NEEDESCAPE,"' needs to be escaped by \\ inside string");
+            if (checkAborting())
+                return EOF;
+        }
+        else if (next >= 128)
+        {
+            const byte * temp = (byte *)finger;
+            unsigned lenLeft = CUR_TOKEN_LENGTH - (size32_t)(finger - CUR_TOKEN_TEXT);
+            int extraCharsRead = rtlSingleUtf8ToCodepage(bf, lenLeft, finger, ASCII_LIKE_CODEPAGE);
+            if (extraCharsRead == -1)
+            {
+                //This really has to be an error, otherwise it will work most of the time, but will then sometimes fail
+                //because two characters > 128 are next to each other.
+                returnToken.setPosition(yyLineNo, oldColumn+delta, oldPosition+delta, querySourcePath());
+                reportError(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not legal UTF-8");
+                if (checkAborting())
+                    return EOF;
+                *bf = next;
+            }
+            else
+            {
+                if (*bf == ASCII_LIKE_SUBS_CHAR)
+                {
+                    returnToken.setPosition(yyLineNo, oldColumn+delta, oldPosition+delta, querySourcePath());
+                    reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE ", try using a unicode constant");
+                }
+                finger += extraCharsRead;
+            }
+            bf++;
+        }
+        else
+        {
+            *bf++ = next;
+            if(!(isValidAsciiLikeCharacter(next) || (tc == type_data)))
+            {
+                returnToken.setPosition(yyLineNo, oldColumn+delta, oldPosition+delta, querySourcePath());
+                reportError(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
+                if (checkAborting())
+                    return EOF;
             }
         }
     }
-    return true;
+    returnToken.setPosition(yyLineNo, oldColumn, oldPosition, querySourcePath());
+    switch (tc)
+    {
+    case type_qstring:
+        {
+            Owned<ITypeInfo> qStrType = makeQStringType(UNKNOWN_LENGTH);
+            returnToken.setExpr(createConstant(qStrType->castFrom((size32_t)(bf-b), b)));
+            return (DATA_CONST);
+        }
+    case type_data:
+        {
+            returnToken.setExpr(createConstant(createDataValue(b, (size32_t)(bf-b))));
+            return (DATA_CONST);
+        }
+    case type_varstring:
+        {
+            returnToken.setExpr(createConstant(createVarStringValue((size32_t)(bf-b), b, makeVarStringType(UNKNOWN_LENGTH))));
+            return (DATA_CONST);
+        }
+    case type_string:
+        returnToken.setExpr(createConstant(createStringValue(b, (size32_t)(bf-b))));
+        return (STRING_CONST);
+    }
+    throwUnexpected();
 }
 
 //====================================== Error Reporting  ======================================
@@ -2289,7 +2427,7 @@ IPropertyTree * HqlLex::getClearJavadoc()
         return NULL;
 
     IPropertyTree * tree = createPTree("javadoc");
-    extractJavadoc(tree, javaDocComment.str());
+    tree->addProp("content", javaDocComment.str());
     javaDocComment.clear();
     return tree;
 }
@@ -2367,6 +2505,8 @@ int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"Signature is not terminated");
             else if (inCpp)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"BEGINC++ or EMBED is not terminated");
+            else if (inMultiString)
+                reportError(returnToken, ERR_COMMENT_UNENDED,"Multiline string constant is not terminated");
             if (hashendKinds.ordinality())
             {
                 StringBuffer msg("Unexpected EOF: ");

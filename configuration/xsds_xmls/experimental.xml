@@ -167,6 +167,10 @@
                           path="FileIOAccess"
                           resource="FileIOAccess"
                           service="ws_fileio"/>
+     <AuthenticateFeature description="Access to package map"
+                          path="PackageMapAccess"
+                          resource="PackageMapAccess"
+                          service="ws_packageprocess"/>
      <AuthenticateFeature description="Access to permissions for file scopes"
                           path="FileScopeAccess"
                           resource="FileScopeAccess"
@@ -191,10 +195,6 @@
                           path="OthersWorkunitsAccess"
                           resource="OthersWorkunitsAccess"
                           service="ws_workunits"/>
-     <AuthenticateFeature description="Access to ECL direct service"
-                          path="EclDirectAccess"
-                          resource="EclDirectAccess"
-                          service="ecldirect"/>
      <ProcessFilters>
       <Platform name="Windows">
        <ProcessFilter name="any">
@@ -295,29 +295,6 @@
                           path="WsEclAccess"
                           resource="WsEclAccess"
                           service="ws_ecl"/>
-    </Properties>
-   </BuildSet>
-   <BuildSet deployable="no"
-             installSet="deploy_map.xml"
-             name="ecldirect"
-             path="componentfiles/ecldirect"
-             processName="EspService"
-             schema="esp_service_ecldirect.xsd">
-    <Properties bindingType="EclDirectSoapBinding"
-                defaultPort="8008"
-                defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
-                defaultSecurePort="18008"
-                plugin="ecldirect"
-                type="ecldirect">
-     <Authenticate access="Read"
-                   description="Root access to ECL Direct service"
-                   path="/"
-                   required="Read"
-                   resource="EclDirectAccess"/>
-     <AuthenticateFeature description="Access to ECL Direct service"
-                          path="EclDirectAccess"
-                          resource="EclDirectAccess"
-                          service="ecldirect"/>
     </Properties>
    </BuildSet>
   </Build>
@@ -541,6 +518,11 @@
                          resource="FileIOAccess"
                          service="ws_fileio"/>
     <AuthenticateFeature authenticate="Yes"
+                         description="Access to package map"
+                         path="PackageMapAccess"
+                         resource="PackageMapAccess"
+                         service="ws_packageprocess"/>
+    <AuthenticateFeature authenticate="Yes"
                          description="Access to permissions for file scopes"
                          path="FileScopeAccess"
                          resource="FileScopeAccess"
@@ -570,11 +552,6 @@
                          path="OthersWorkunitsAccess"
                          resource="OthersWorkunitsAccess"
                          service="ws_workunits"/>
-    <AuthenticateFeature authenticate="Yes"
-                         description="Access to ECL direct service"
-                         path="EclDirectAccess"
-                         resource="EclDirectAccess"
-                         service="ecldirect"/>
    </EspBinding>
    <EspBinding defaultForPort="true"
                defaultServiceVersion=""
@@ -707,6 +684,10 @@
                          path="FileIOAccess"
                          resource="FileIOAccess"
                          service="ws_fileio"/>
+    <AuthenticateFeature description="Access to package map"
+                         path="PackageMapAccess"
+                         resource="PackageMapAccess"
+                         service="ws_packageprocess"/>
     <AuthenticateFeature description="Access to permissions for file scopes"
                          path="FileScopeAccess"
                          resource="FileScopeAccess"
@@ -731,10 +712,6 @@
                          path="OthersWorkunitsAccess"
                          resource="OthersWorkunitsAccess"
                          service="ws_workunits"/>
-    <AuthenticateFeature description="Access to ECL direct service"
-                         path="EclDirectAccess"
-                         resource="EclDirectAccess"
-                         service="ecldirect"/>
     <ProcessFilters>
      <Platform name="Windows">
       <ProcessFilter name="any">
@@ -910,6 +887,8 @@
                 logQueueLen="512"
                 lowTimeout="10000"
                 maxBlockSize="10000000"
+                maxHttpConnectionRequests="10"
+                maxHttpKeepAliveWait="5000"
                 maxLocalFilesOpen="4000"
                 maxLockAttempts="5"
                 maxRemoteFilesOpen="1000"

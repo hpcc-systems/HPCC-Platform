@@ -31,6 +31,69 @@
 #include "esp.hpp"
 #include "esphttp.hpp"
 
+#define SESSION_SDS_LOCK_TIMEOUT (30*1000) // 30 seconds
+#define ESP_SESSION_TIMEOUT (120) // 120 Mins
+#define ESP_SESSION_NEVER_TIMEOUT   -1
+#define ESP_CHECK_SESSION_TIMEOUT (30) // 30 seconds
+
+static const char* const USER_NAME_COOKIE = "ESPUserName";
+static const char* const SESSION_ID_COOKIE = "ESPSessionID";
+static const char* const SESSION_START_URL_COOKIE = "ESPAuthURL";
+static const char* const SESSION_TIMEOUT_COOKIE = "ESPSessionTimeoutSeconds";
+static const char* const SESSION_ID_TEMP_COOKIE = "ESPAuthIDTemp";
+static const char* const SESSION_AUTH_OK_COOKIE = "ESPAuthenticated";
+static const char* const SESSION_AUTH_MSG_COOKIE = "ESPAuthenticationMSG";
+static const char* const DEFAULT_LOGIN_URL = "/esp/files/Login.html";
+static const char* const DEFAULT_GET_USER_NAME_URL = "/esp/files/GetUserName.html";
+static const char* const DEFAULT_UNRESTRICTED_RESOURCES = "/favicon.ico,/esp/files/*,/esp/xslt/*";
+
+//xpath in dali
+static const char* const PathSessionRoot="Sessions";
+static const char* const PathSessionProcess="Process";
+static const char* const PathSessionApplication="Application";
+static const char* const PathSessionSession="Session_";
+static const char* const PropSessionID = "@id";
+static const char* const PropSessionExternalID = "@externalid";
+static const char* const PropSessionUserID = "@userid";
+static const char* const PropSessionNetworkAddress = "@netaddr";
+static const char* const PropSessionState = "@state";
+static const char* const PropSessionCreateTime = "@createtime";
+static const char* const PropSessionLastAccessed = "@lastaccessed";
+static const char* const PropSessionTimeoutAt = "@timeoutAt";
+static const char* const PropSessionTimeoutByAdmin = "@timeoutByAdmin";
+static const char* const PropSessionLoginURL = "@loginurl";
+/* The following is an example of session data stored in Dali.
+<Sessions>
+ <Process name="myesp">
+   <Application port="8010">
+    <Session_3831947145 createtime="1497376914"
+             id="3831947145"
+             lastaccessed="1497377015"
+             timeoutAt="1497477015"
+             loginurl="/"
+             netaddr="10.176.152.200"
+             userid="user1"/>
+    <Session_4106750941 createtime="1497377427"
+             id="4106750941"
+             lastaccessed="1497377427"
+             timeoutAt="1497477427"
+             loginurl="/"
+             netaddr="10.176.152.200"
+             userid="user2"/>
+   </Application>
+   <Application port="8002">
+    <Session_3680948651 createtime="1497376989"
+             id="3680948651"
+             lastaccessed="1497377003"
+             timeoutAt="1497477003"
+             loginurl="/"
+             netaddr="10.176.152.200"
+             userid="user1"/>
+   </Application>
+ </Process>
+</Sessions>
+ */
+
 interface IEspSecureContext;
 
 ESPHTTP_API IEspContext* createEspContext(IEspSecureContext* secureContext = NULL);
@@ -68,5 +131,6 @@ ESPHTTP_API void setBuildVersion(const char* buildVersion);
 ESPHTTP_API const char* getBuildVersion();
 ESPHTTP_API void setBuildLevel(const char* buildLevel);
 ESPHTTP_API const char* getBuildLevel();
+ESPHTTP_API IEspServer* queryEspServer();
 #endif
 

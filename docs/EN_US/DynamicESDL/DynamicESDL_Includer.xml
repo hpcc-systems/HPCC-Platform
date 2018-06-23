@@ -1,0 +1,852 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>Dynamic ESDL</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Please include <emphasis role="bold">Documentation
+      Feedback</emphasis> in the subject line and reference the document name,
+      page numbers, and current Version Number in the text of the
+      message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
+
+      <para>Other products, logos, and services may be trademarks or
+      registered trademarks of their respective companies.</para>
+
+      <para>All names and example data used in this manual are fictitious. Any
+      similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Dynamic ESDL</title>
+
+    <para>Dynamic ESDL (Enterprise Service Description Language) is a
+    methodology that helps you develop and manage web-based query interfaces
+    quickly and consistently.</para>
+
+    <para>Dynamic ESDL takes an interface-first development approach. It
+    leverages the ESDL Language to create a common interface "contract" that
+    both Roxie Query and Web interface developers will adhere to. It is
+    intended to allow developers to create production web services, with clean
+    interfaces that can evolve and grow over time without breaking existing
+    applications.</para>
+
+    <para>ESDL's built-in versioning support helps ensure compiled and
+    deployed applications continue to operate while changes are made to the
+    deployed service's interface for new functionality.</para>
+
+    <para>ESDL's ability to define and reuse common structures helps maintain
+    consistent interfaces across methods.</para>
+
+    <para>The Dynamic ESDL service is built to scale horizontally, and hooks
+    are provided to add custom logging and security to help create fully
+    "productionalized" web services.</para>
+
+    <para>Once a service is deployed, application developers and end-users can
+    consume the service using REST, JSON, XML, SOAP, or form encoded posts.
+    Dynamic ESDL provides quick and easy access to a WSDL, live forms, sample
+    requests and responses, and testing interfaces to allow developers to test
+    logic changes, data changes, or new features, as well as to interact with
+    the service directly using SOAP, XML, or JSON.</para>
+
+    <para></para>
+  </chapter>
+
+  <chapter id="DESDLWorkflowTutorial">
+    <title>Dynamic ESDL Workflow Tutorial</title>
+
+    <sect1 id="DESDLBefore" role="nobrk">
+      <title>Before You Begin...</title>
+
+      <para>You will need:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Access to an HPCC Cluster (version 6.4.2 or later) that you
+          can reconfigure using Configuration Manager. This can be one running
+          in a Virtual Machine.</para>
+
+          <para>You should have a basic understanding of Configuration Manager
+          and how to use it. You also need access to the server(s) with
+          sufficient rights to modify the environment.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>Access to ECL Watch and WsECL (using a browser).</para>
+
+          <para>For purposes of this tutorial, we assume that you know how to
+          submit a published using WsECL.</para>
+        </listitem>
+
+        <listitem>
+          <para>The ECL IDE (version 6.4.2 or later)</para>
+
+          <para>You won't need to know the ECL or ESDL languages to follow the
+          steps in this book, but you will need to understand both to develop
+          dESDL-based applications.</para>
+
+          <para>For purposes of this tutorial, you should know the basics of
+          using the ECL IDE including how to add files to your repository, how
+          to compile ECL Code, and how to publish a compiled query.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para><emphasis role="bold">dESDL and LDAP Security</emphasis></para>
+
+      <para>If your HPCC platform is configured to use LDAP security, you must
+      ensure any user who will be publishing ESDL Definitions has Access to
+      <emphasis role="bold">ESDL configuration service</emphasis> set to
+      <emphasis role="bold">Allow Full</emphasis>, as shown below.</para>
+
+      <para><graphic fileref="images/desdl-LDAP.jpg" /></para>
+
+      <para></para>
+    </sect1>
+
+    <sect1 id="DESDLWorkflowOverview">
+      <title>Overview</title>
+
+      <para>In this tutorial, we will:</para>
+
+      <para></para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Use Configuration Manager to add a Dynamic ESDL-based ESP
+          Service and bind it to a port on an ESP server.</para>
+
+          <para></para>
+        </listitem>
+
+        <listitem>
+          <para>Write an ESDL Service Definition using the editor in the ECL
+          IDE.</para>
+
+          <para></para>
+        </listitem>
+
+        <listitem>
+          <para>Generate ECL from the ESDL Service Definition within the ECL
+          IDE.</para>
+
+          <para>This step automatically generates an ECL file in your ECL
+          repository. You will use the definitions in that ECL file when you
+          write the ECL query that will deliver the result (the business
+          logic).</para>
+        </listitem>
+
+        <listitem>
+          <para>Write the ECL for the business logic of the query, compile it,
+          and then publish the query to a Roxie cluster.</para>
+
+          <para></para>
+        </listitem>
+
+        <listitem>
+          <para>Publish the Dynamic ESDL definition from the ECL IDE.</para>
+
+          <para></para>
+        </listitem>
+
+        <listitem>
+          <para>Bind the service methods to the Roxie queries in ECLWatch
+          using an XML formatted configuration.</para>
+
+          <para></para>
+        </listitem>
+      </itemizedlist>
+
+      <para></para>
+    </sect1>
+
+    <sect1 id="DESDLConfigureAndBind">
+      <title>Configure and Bind the dESDL Service</title>
+
+      <para>In this portion of the tutorial, we will add an ESP service and a
+      service binding that reserves a port for the dynamic ESDL
+      service.</para>
+
+      <para>This step is independent of the development and publishing of the
+      actual Roxie query, so you can set it up before or after your query is
+      ready.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>If it is running, stop the HPCC system, using this command in
+          a terminal window:</para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png" /></entry>
+
+                    <entry>You can use this command to confirm HPCC processes
+                    are stopped:<para> <programlisting>sudo /etc/init.d/hpcc-init status</programlisting>
+                    </para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Start the Configuration Manager service.<emphasis
+          role="bold"></emphasis><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Using a Web browser, go to the Configuration Manager's
+          interface:</para>
+
+          <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
+
+          <para>The Configuration Manager startup wizard displays.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Select <emphasis role="bold">Advanced View</emphasis> and then
+          select the source environment XML file to edit.</para>
+
+          <para><graphic fileref="images/desdl-openconfig.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Next</emphasis> button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the <emphasis role="bold">Write Access</emphasis> box at
+          the top of the page.</para>
+
+          <para>Default access is read-only. Many options are only available
+          when write-access is enabled.</para>
+        </listitem>
+
+        <listitem>
+          <para>Right-click on <emphasis role="bold">Esp Services</emphasis>
+          and select <emphasis role="bold">Dynamic ESDL</emphasis> from
+          <emphasis role="bold">New Esp Services.</emphasis></para>
+
+          <para><graphic fileref="images/desdl-addDESDL.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Change the name for the service. For this tutorial, let's name
+          it <emphasis role="bold">MathService</emphasis>.</para>
+
+          <para><graphic fileref="images/dsdl-NametheService.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Select your ESP, then select the <emphasis role="bold">ESP
+          Service Bindings</emphasis> tab.</para>
+
+          <para><graphic fileref="images/desdl-ESPSVCBinding.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Right-click in the list of bindings and select <emphasis
+          role="bold">Add</emphasis></para>
+
+          <para><graphic fileref="images/desdl-AddSVCBinding.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Provide a name, port, and then select the service from the
+          drop list.</para>
+
+          <para>For this tutorial, name it <emphasis
+          role="bold">MathService</emphasis>, set the port to <emphasis
+          role="bold">8003</emphasis>, and select <emphasis
+          role="bold">MathService</emphasis> from the service drop list. This
+          is service definition you added in an earlier step.</para>
+
+          <para><graphic fileref="images/desdl-NameSVCBinding.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the Save As button and name your new XML file <emphasis
+          role="bold">NewEnvironment</emphasis>.</para>
+
+          <para><graphic fileref="images/desdl-configSaveAs.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Return to the terminal window and press <emphasis
+          role="bold">ctrl+c</emphasis> to close the Configuration
+          Manager.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the NewEnvironment.xml file from the source directory to
+          the /etc/HPCCSystems and rename the file to environment.xml</para>
+
+          <programlisting># for example
+sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png" /></entry>
+
+                    <entry>Make sure that you have sufficient privileges to
+                    write file(s) to the destination directory before
+                    attempting to copy. If prompted to overwrite the
+                    destination file, you should answer <emphasis
+                    role="bold">yes</emphasis>.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the <emphasis
+          role="bold">/etc/HPCCSystems/environment.xml</emphasis> to <emphasis
+          role="bold">/etc/HPCCSystems/</emphasis> on <emphasis
+          role="bold">every</emphasis> node.</para>
+
+          <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;</programlisting>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Restart the HPCC system on <emphasis
+          role="bold">every</emphasis> node. The following command starts the
+          HPCC system on an individual node:</para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+
+          <para></para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
+
+                  <entry><para>You may want to create a script to push this
+                  command out to every node. A sample script is provided with
+                  HPCC. Use the following command to start HPCC on all
+                  nodes:</para> <para> <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting>
+                  </para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para></para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1 id="DESDLWriteDef">
+      <title>Write the ESDL Service Definition</title>
+
+      <para>In this portion of the tutorial, we will write the Service
+      Definitions in the ECL IDE. The program listing below shows an ESDL
+      service called <emphasis>MathService</emphasis>. It contains one method,
+      <emphasis>AddThis</emphasis>, with a request and a response
+      defined.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Start the ECL IDE (Start &gt;&gt; All Programs &gt;&gt; HPCC
+          Systems &gt;&gt; ECL IDE )</para>
+        </listitem>
+
+        <listitem>
+          <para>Log in to your environment</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Right-click on the <emphasis role="bold">My Files</emphasis>
+          folder in the Repository window, and select <emphasis
+          role="bold">Insert Folder</emphasis> from the pop-up menu.</para>
+
+          <para><figure>
+              <title>Insert Folder</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/desdl-insertFolder.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>For purposes of this tutorial, let's create a folder called
+          <emphasis role="bold">MathService</emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enter <emphasis role="bold">MathService</emphasis> for the
+          label, then press the <emphasis role="bold">OK</emphasis>
+          button.</para>
+
+          <para><figure>
+              <title>Enter Folder Label</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/desdl-insertFolder2.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Right-click on the <emphasis role="bold">MathService
+          </emphasis>folder, and select <emphasis role="bold">Insert
+          File</emphasis> from the pop-up menu.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enter <emphasis role="bold">MathService</emphasis> for the
+          label, select <emphasis>ESDL</emphasis> as the <emphasis
+          role="bold">Type</emphasis>, then press the <emphasis
+          role="bold">OK</emphasis> button.</para>
+
+          <para><figure>
+              <title>Insert File</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/desdl-insertFile.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>An Editor Window opens.</para>
+
+          <para><figure>
+              <title>ESDL file</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/desdl-newDESDL.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Notice that some text has been written for you in the
+          window.</para>
+
+          <para></para>
+        </listitem>
+      </orderedlist>
+
+      <?hard-pagebreak ?>
+
+      <orderedlist continuation="continues">
+        <listitem>
+          <para><?dbfo keep-together="always"?>Write the following code,
+          replacing what was written, in the editor workspace :</para>
+
+          <para><programlisting>ESPservice [auth_feature("None")]  MathService
+{
+  ESPmethod AddThis(AddThisRequest, AddThisResponse);
+};
+
+ESPrequest AddThisRequest 
+{
+  int  FirstNumber;
+  int  SecondNumber;
+};
+    
+ESPresponse AddThisResponse 
+{
+  int  Answer;
+};
+</programlisting> <figure>
+              <title>ESDL Code in Editor Window</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/desdl-codeInEditor.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para><?dbfo keep-together="always"?>Save the file using <emphasis
+          role="bold">ctrl+s</emphasis> or the <emphasis role="bold">File
+          &gt;&gt; Save</emphasis> menu option.</para>
+
+          <para>Notice that a new ECL file is now in the repository folder.
+          Saving the ESDL file automatically generated a file named
+          <emphasis>MathService.ecl</emphasis> in the current directory. You
+          could generate this ECl using the dropdown button and selecting
+          <emphasis role="bold">Generate ECL</emphasis>.</para>
+
+          <para><figure>
+              <title>Saving an ESDL file generates ECL</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/desdl-saveESDLFile.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>This provides the ECL Structures you will IMPORT and use in
+          the ECL code you write to support the service method.</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Writing the ECL</title>
+
+      <para>First, let's examine the generated ECL code in
+      MathService.ecl.</para>
+
+      <programlisting><emphasis role="green">/*** Not to be hand edited (changes will be lost on re-generation) ***/
+/*** ECL Interface generated by esdl2ecl version 1.0 from MathService.xml. ***/
+/*===================================================*/</emphasis>
+
+export MathService := MODULE
+
+export t_AddThisRequest := record
+  integer FirstNumber {xpath('FirstNumber')};
+  integer SecondNumber {xpath('SecondNumber')};
+end;
+
+export t_AddThisResponse := record
+  integer Answer {xpath('Answer')};
+end;
+end;
+
+<emphasis role="green">/*** Not to be hand edited (changes will be lost on re-generation) ***/
+/*** ECL Interface generated by esdl2ecl version 1.0 from MathService.xml. ***/
+/*===================================================*/</emphasis>
+</programlisting>
+
+      <para>Notice it created a file named MathService.ecl which has defined a
+      MODULE named MathService. Remember in ECL, the name of the file
+      (MathService) <emphasis>must always exactly match</emphasis> the name of
+      the single EXPORT definition (MathService) contained in that
+      file.</para>
+
+      <para>Next, we will write the ECL code to support the functionality of
+      the AddThis method. We will IMPORT the MathService module and reference
+      the request and response structures.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Right-click on the <emphasis role="bold">MathService
+            </emphasis>Folder, and select <emphasis role="bold">Insert
+            File</emphasis> from the pop-up menu.</para>
+          </listitem>
+
+          <listitem>
+            <para>Enter <emphasis role="bold">AddThis</emphasis> for the
+            label, select <emphasis>ECL</emphasis> as the <emphasis
+            role="bold">Type</emphasis>, then press the <emphasis
+            role="bold">OK</emphasis> button.</para>
+
+            <para>An Editor Window opens.</para>
+          </listitem>
+
+          <listitem>
+            <para>Write ECL to support the service:</para>
+
+            <programlisting>IMPORT MathService;
+rec_in := MathService.MathService.t_AddThisRequest;
+
+First_Row := ROW ([], rec_in) : STORED ('AddThisRequest', FEW);
+
+res:= first_row.FirstNumber + first_row.SecondNumber; 
+ds_out := ROW ({res},MathService.MathService.t_AddThisResponse);
+OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
+          </listitem>
+
+          <listitem><?dbfo keep-together="always"?>
+            <para>Using the <emphasis
+            role="bold">Target</emphasis> drop list, select
+            <emphasis>Roxie</emphasis> as the Target cluster.</para>
+
+            <para><figure>
+                <title>Target Roxie</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/desdl-targetRoxie.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>In the Builder window, in the upper left corner the
+            <emphasis role="bold">Submit</emphasis> button has a drop down
+            arrow next to it. Select the arrow, then select <emphasis
+            role="bold">Compile</emphasis>.</para>
+
+            <figure>
+              <title>Compile</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/desdl-compileService.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+
+          <listitem>
+            <para><?dbfo keep-together="always"?>When the workunit finishes,
+            it will display a green circle indicating it has compiled.</para>
+
+            <para><figure>
+                <title>Compiled</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/desdl-compiled.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Select the workunit tab for the AddThis workunit that you
+            just compiled.</para>
+
+            <para>This opens the workunit in an ECL Watch tab.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Publish</emphasis> action
+            button, then verify the information in the dialog and press
+            <emphasis role="bold">Submit</emphasis>.</para>
+
+            <para><figure>
+                <title>Publish Query</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/desdl-publishQuery.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure>This publishes the AddThis query to the Roxie.</para>
+          </listitem>
+
+          <listitem>
+            <para>Test the service using WsECL :<programlisting>http://&lt;<emphasis>esp ip </emphasis>&gt;:8002 </programlisting></para>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+
+    <sect1 id="DESDLPublishandBind">
+      <title>Publish the ESDL Service Definitions and Bind the ESDL
+      Service</title>
+
+      <para>In this portion of the tutorial, we will publish the ESDL Service
+      definitions to the System Data Store and bind the methods to the
+      published Roxie query.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Open the Dynamic ESDL definition file (MathService.esdl) in
+            the ECL IDE.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Publish</emphasis>
+            button.</para>
+
+            <para>This publishes the ESDL Service definition to the ESP
+            Server. Next we will bind the <emphasis>AddThis</emphasis> method
+            to the <emphasis>AddThis</emphasis> published query.</para>
+
+            <para></para>
+          </listitem>
+
+          <listitem>
+            <para>Open ECL Watch in your browser (&lt;your ESP
+            ip&gt;:8010)</para>
+
+            <para></para>
+          </listitem>
+
+          <listitem>
+            <para>Select the Operations tab, then select <emphasis
+            role="bold">Dynamic ESDL</emphasis>.</para>
+
+            <para><figure>
+                <title>Dynamic ESDL in ECLWatch</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/desdl-ECLWatch1.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para><?dbfo keep-together="always"?>Select the <emphasis
+            role="bold">Dynamic ESDL</emphasis> Tab, then expand
+            <emphasis>myesp</emphasis> by clicking on the triangle next to
+            it.</para>
+
+            <figure>
+              <title>Add Binding</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/desdl-addBinding.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>
+
+            <para></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Add Binding</emphasis>
+            button, then select <emphasis>MathService.1</emphasis> from the
+            drop list and press the <emphasis role="bold">Apply</emphasis>
+            button.</para>
+
+            <para></para>
+          </listitem>
+
+          <listitem>
+            <para>Select the <emphasis role="bold">Binding</emphasis> tab,
+            then expand <emphasis>AddThis</emphasis> by clicking on the
+            triangle next to it.</para>
+
+            <para></para>
+          </listitem>
+
+          <listitem>
+            <para>Provide the Method Configuration (in XML format) in the text
+            box.</para>
+
+            <para><emphasis role="bold">Note: You must replace
+            &lt;RoxieIPRange&gt; with the IP Range of your Roxie
+            servers.</emphasis></para>
+
+            <programlisting>&lt;Method name="AddThis"
+        queryname="AddThis"
+        querytype="roxie"
+        url="http://<emphasis role="bold">&lt;RoxieIPRange&gt;</emphasis>:9876"/&gt;
+</programlisting>
+
+            <figure>
+              <title>Method Configuration</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/desdl-methodConfiguration.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Save</emphasis>
+            button.</para>
+          </listitem>
+
+          <listitem>
+            <para>Test the service using the new interface:<programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8003</programlisting></para>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+  </chapter>
+
+  <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
+              xpointer="xpointer(//*[@id='ESDL_CLI'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <!-- Moved the ESDL Language Reference to a separate book -->
+</book>

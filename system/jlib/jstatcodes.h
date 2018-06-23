@@ -27,8 +27,7 @@
 #define WorkflowScopePrefix "w"
 #define ChildGraphScopePrefix "c"
 
-#define CONST_STRLEN(x) (sizeof(x)-1)       // sizeof(const-string) = strlen(const-string) + 1 byte for the \0 terminator
-#define MATCHES_CONST_PREFIX(search, prefix) (strncmp(search, prefix, CONST_STRLEN(prefix)) == 0)
+#define MATCHES_CONST_PREFIX(search, prefix) (strncmp(search, prefix, strlen(prefix)) == 0)
 
 enum CombineStatsAction
 {
@@ -70,6 +69,7 @@ enum StatisticScopeType
     SSTfunction,                        // a function call
     SSTworkflow,
     SSTchildgraph,
+    SSTunknown,
     SSTmax
 };
 
@@ -87,6 +87,11 @@ enum StatisticMeasure
     SMeasurePercent,                    // actually stored as parts per million, displayed as a percentage
     SMeasureIPV4,
     SMeasureCycle,
+    SMeasureEnum,                       // A value from an enumeration
+    SMeasureText,                       // A textual value (from a graph attribute rather than a statistic)
+    SMeasureBool,                       // A boolean
+    SMeasureId,                         // An Id for an element
+    SMeasureFilename,                   // A filename
     SMeasureMax,
 };
 
@@ -110,15 +115,15 @@ enum StatisticKind
 {
     StKindNone,
     StKindAll,
-    StWhenGraphStarted,                 // When a graph starts
-    StWhenGraphFinished,                // When a graph stopped
+  StWhenGraphStarted,                   // Deprecated use StWhenStarted
+  StWhenGraphFinished,                  // Deprecated use StWhenFinished
     StWhenFirstRow,                     // When the first row is processed by slave activity
-    StWhenQueryStarted,
-    StWhenQueryFinished,
+  StWhenQueryStarted,                   // Deprecated use StWhenStarted
+  StWhenQueryFinished,                  // Deprecated use StWhenFinished
     StWhenCreated,
     StWhenCompiled,
     StWhenWorkunitModified,             // Not sure this is very useful
-    StTimeElapsed,                      // Elapsed wall time between first row and last row
+    StTimeElapsed,                      // An elapsed time - should always have a corresponding StWhenStarted...
     StTimeLocalExecute,                 // Time spend processing just this activity
     StTimeTotalExecute,                 // Time executing this activity and all inputs
     StTimeRemaining,
@@ -127,8 +132,8 @@ enum StatisticKind
     StSizeMaxRowSize,
     StNumRowsProcessed,                 // on edge
     StNumSlaves,                        // on edge
-    StNumStarted,                       // on edge
-    StNumStopped,                       // on edge
+    StNumStarts,                        // on edge
+    StNumStops,                         // on edge
     StNumIndexSeeks,
     StNumIndexScans,
     StNumIndexWildSeeks,
@@ -188,9 +193,23 @@ enum StatisticKind
     StNumAllocations,
     StNumAllocationScans,
     StNumDiskRetries,
+    StCycleElapsedCycles,
+    StCycleRemainingCycles,
+    StCycleSoapcallCycles,
+    StCycleFirstExecuteCycles,
+    StCycleTotalNestedCycles,
     StTimeGenerate,
     StCycleGenerateCycles,
-
+    StWhenStarted,                      // When a graph/query etc. starts
+    StWhenFinished,                     // When a graph stopped
+    StNumAnalyseExprs,
+    StNumTransformExprs,
+    StNumUniqueAnalyseExprs,
+    StNumUniqueTransformExprs,
+    StNumDuplicateKeys,                 // When generating index, number of duplicate keys found
+    StNumAttribsProcessed,
+    StNumAttribsSimplified,
+    StNumAttribsFromCache,
     StMax,
 
     //For any quantity there is potentially the following variants.
@@ -209,6 +228,8 @@ enum StatisticKind
     StStdDevX                           = 0xa0000,  // standard deviation in the value of X
     StNextModifier                      = 0xb0000,
 
+    //NOTE: Do not use 0x80000000 since wu attributes use those values, and they should not overlap
 };
+constexpr StatisticKind operator |(StatisticKind l, StatisticKind r) { return (StatisticKind)((unsigned)l | (unsigned)r); }
 
 #endif

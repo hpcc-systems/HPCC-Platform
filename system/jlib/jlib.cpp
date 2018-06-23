@@ -134,16 +134,21 @@ void InitTable::add(boolFunc func, unsigned int priority, unsigned int modpriori
     initializers.append(iT);
 }
 
-DynamicScopeCtx::DynamicScopeCtx() : soCtx(0)
+DynamicScopeCtx::DynamicScopeCtx()
 {
     dynamicScopeCtx = this;
 }
 
 DynamicScopeCtx::~DynamicScopeCtx()
 {
+    dynamicScopeCtx = NULL;
+}
+
+void DynamicScopeCtx::processInitialization(SoContext soCtx)
+{
     if (soCtx)
     {
-        // initliaze those in this context
+        // initialize those in this context
         initTable.init();
         // add to global table with patched ctx's, for use by ExitModuleObjects(ctx) call
         ForEachItemIn(i, initTable.initializers)
@@ -153,7 +158,6 @@ DynamicScopeCtx::~DynamicScopeCtx()
             queryInitTable()->add(iT);
         }
     }
-    dynamicScopeCtx = NULL;
 }
 
 ModInit::ModInit(boolFunc func, unsigned int priority, unsigned int modpriority)
@@ -266,7 +270,7 @@ void test2(void)
 #endif
 
 
-int main(void)
+int main(int argc, const char **argv)
 {
 #ifdef _DEBUG
 #ifdef _WIN32

@@ -47,6 +47,11 @@ const char *queryEclccPath(bool optVerbose)
     return eclccpath.str();
 }
 
+void outputExceptionEx(IException &e)
+{
+    StringBuffer msg;
+    fprintf(stderr, "%d: %s\n", e.errorCode(), e.errorMessage(msg).str());
+}
 
 int outputMultiExceptionsEx(const IMultiException &me)
 {
@@ -55,11 +60,7 @@ int outputMultiExceptionsEx(const IMultiException &me)
     fprintf(stderr, "\nException(s):\n");
     aindex_t count = me.ordinality();
     for (aindex_t i=0; i<count; i++)
-    {
-        IException& e = me.item(i);
-        StringBuffer msg;
-        fprintf(stderr, "%d: %s\n", e.errorCode(), e.errorMessage(msg).str());
-    }
+        outputExceptionEx(me.item(i));
     fprintf(stderr, "\n");
     return 1;
 }
@@ -161,49 +162,6 @@ static bool looksLikeOnlyAWuid(const char * wuid)
         if (wuid[i]!='-' && !isdigit(wuid[i]))
             return false;
     return true;
-}
-
-bool isValidMemoryValue(const char *value)
-{
-    if (!value || !*value || !isdigit(*value))
-        return false;
-    while (isdigit(*++value));
-
-    if (!*value)
-        return true;
-
-    switch (toupper(*value++))
-    {
-        case 'E':
-        case 'P':
-        case 'T':
-        case 'G':
-        case 'M':
-        case 'K':
-            if (!*value || strieq("B", value))
-                return true;
-            break;
-        case 'B':
-            if (!*value)
-                return true;
-            break;
-    }
-    return false;
-}
-
-bool isValidPriorityValue(const char *value)
-{
-    if (!value || !*value)
-        return false;
-    if (strieq("LOW", value))
-        return true;
-    if (strieq("HIGH", value))
-        return true;
-    if (strieq("SLA", value))
-        return true;
-    if (strieq("NONE", value))
-        return true;
-    return false;
 }
 
 //=========================================================================================
@@ -380,6 +338,10 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
     if (iter.matchOption(optServer, ECLOPT_SERVER)||iter.matchOption(optServer, ECLOPT_SERVER_S))
         return EclCmdOptionMatch;
     if (iter.matchOption(optPort, ECLOPT_PORT))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optWaitConnectMs, ECLOPT_WAIT_CONNECT))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optWaitReadSec, ECLOPT_WAIT_READ))
         return EclCmdOptionMatch;
     if (iter.matchOption(optUsername, ECLOPT_USERNAME)||iter.matchOption(optUsername, ECLOPT_USERNAME_S))
         return EclCmdOptionMatch;

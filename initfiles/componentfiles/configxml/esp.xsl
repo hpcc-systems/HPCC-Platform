@@ -85,8 +85,35 @@
 
             <xsl:call-template name="addEnvironmentInfo"/>
 
+            <xsl:if test="./Authentication/@method='ldap' or ./Authentication/@method='ldaps' or ./Authentication/@method='secmgrPlugin'">
+              <xsl:value-of disable-output-escaping="yes" select="$break" />
+              <xsl:value-of disable-output-escaping="yes" select="$indent" />
+              <xsl:value-of disable-output-escaping="yes" select="$indent" />
+              <xsl:value-of disable-output-escaping="yes" select="$indent" />
+              <xsl:if test="AuthDomain[1]">
+                <AuthDomains>
+                  <xsl:for-each select="AuthDomain">
+                    <xsl:value-of disable-output-escaping="yes" select="$break" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:copy-of select="."/>
+                  </xsl:for-each>
+                  <xsl:value-of disable-output-escaping="yes" select="$break" />
+                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                </AuthDomains>
+              </xsl:if>
+            </xsl:if>
+
             <xsl:for-each select="Authentication">
                 <xsl:if test="@method='ldap' or @method='ldaps'">
+                    <xsl:value-of disable-output-escaping="yes" select="$break" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
                     <xsl:call-template name="doLdapSecurity">
                         <xsl:with-param name="method" select="@method"/>
                         <xsl:with-param name="ldapServer" select="@ldapServer"/>
@@ -192,7 +219,16 @@
                 <xsl:value-of disable-output-escaping="yes" select="$indent" />
                 <xsl:value-of disable-output-escaping="yes" select="$indent" />
                 <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$espBindingProtocol}" type="ws_espcontrolSoapBinding" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$controlPort}"/>
+                <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$espBindingProtocol}" type="ws_espcontrolSoapBinding" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$controlPort}">
+                    <xsl:if test="EspControlBinding">
+                        <xsl:variable name="authNode" select="Authentication[1]"/>
+                        <xsl:variable name="espControlBinding" select="EspControlBinding"/>
+                        <xsl:call-template name="bindAuthentication">
+                            <xsl:with-param name="bindingNode" select="$espControlBinding"/>
+                            <xsl:with-param name="authMethod" select="$authNode/@method"/>
+                        </xsl:call-template>
+                    </xsl:if>
+                </EspBinding>
             </xsl:if>
             <xsl:variable name="importedServiceDefinitionFiles">
                 <xsl:call-template name="importServiceDefinitionFiles">
@@ -315,6 +351,11 @@
     <!--don't produce in output -->
     <xsl:template match="@buildSet|@maxRequestEntityLength"/>
 
+    <!--don't produce in output -->
+    <xsl:template match="EspProcess/AuthDomain"/>
+
+    <!--don't produce in output -->
+    <xsl:template match="EspProcess/EspControlBinding"/>
 
     <xsl:template match="/|@*|node()">
         <!--matches any attribute or child of any types-->
@@ -596,6 +637,53 @@
         </xsl:for-each>
      </xsl:template>
 
+     <xsl:template name="bindAuthentication">
+        <xsl:param name="authMethod"/>
+        <xsl:param name="bindingNode"/>
+        <xsl:choose>
+           <xsl:when test="$authMethod='basic'">
+              <Authenticate type="Basic" method="UserDefined">
+                 <xsl:for-each select="$bindingNode/Authenticate[string(@path) != '']">
+                    <Location path="{@path}"/>
+                 </xsl:for-each>
+              </Authenticate>
+           </xsl:when>
+           <xsl:when test="$authMethod='local'">
+              <Authenticate method="Local">
+                 <xsl:for-each select="$bindingNode/Authenticate[string(@path) != '']">
+                    <Location path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
+                 </xsl:for-each>
+              </Authenticate>
+           </xsl:when>
+           <xsl:when test="$authMethod='ldap' or $authMethod='ldaps'">
+              <Authenticate method="LdapSecurity" config="ldapserver">
+                 <xsl:copy-of select="$bindingNode/@resourcesBasedn"/>
+                 <xsl:for-each select="$bindingNode/Authenticate[string(@path) != '']">
+                    <Location path="{@path}" resource="{@resource}" access="{@access}" description="{@description}"/>
+                 </xsl:for-each>
+                 <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
+                    <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
+                 </xsl:for-each>                              
+              </Authenticate>
+           </xsl:when>
+           <xsl:when test="$authMethod='secmgrPlugin'">
+              <Authenticate>
+                 <xsl:attribute name="method">
+                    <xsl:value-of select="$bindingNode/@type"/>
+                 </xsl:attribute>
+                 <xsl:copy-of select="$bindingNode/@resourcesBasedn"/>
+                 <xsl:for-each select="$bindingNode/Authenticate[string(@path) != '']">
+                    <Location path="{@path}" resource="{@resource}" access="{@access}" description="{@description}"/>
+                 </xsl:for-each>
+
+                 <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
+                    <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
+                 </xsl:for-each>
+              </Authenticate>
+           </xsl:when>
+        </xsl:choose>
+     </xsl:template>
+   
         <xsl:template name="printUniqueTokens">
             <xsl:param name="s"/><!--space delimited string of tokens with space as last char-->
             <xsl:param name="enclosingTagName"/>

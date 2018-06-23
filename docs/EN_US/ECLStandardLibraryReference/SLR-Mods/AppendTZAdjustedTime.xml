@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AppendTZAdjustedTime">
+  <title>AppendTZAdjustedTime</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.AppendTZAdjustedTime<indexterm>
+      <primary>STD.Date.TimeZone.AppendTZAdjustedTime</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.AppendTZAdjustedTime</primary>
+    </indexterm><indexterm>
+      <primary>AppendTZAdjustedTime</primary>
+    </indexterm>(</emphasis> <emphasis>infile, timeField, timeZoneAbbrevField,
+  newTimeField, </emphasis>[<emphasis>fromLocationField</emphasis>,
+  ][<emphasis>toTimeZoneAbbrev</emphasis>, ] [<emphasis>toLocation</emphasis>
+  ]<emphasis role="bold"> )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>infile</emphasis></entry>
+
+          <entry>REQUIRED. The dataset to process.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>timeField</emphasis></entry>
+
+          <entry>REQUIRED. The field within inFile that contains a time
+          represented in Time_t format. This is not a string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>timeZoneAbbrevField</emphasis></entry>
+
+          <entry>REQUIRED. The field within inFile that contains the time zone
+          abbreviation to use for matching; the values in this field should be
+          uppercase.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>newTimeField</emphasis></entry>
+
+          <entry>REQUIRED. The field to append to inFile that will contain the
+          adjusted value of timeField.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fromLocationField</emphasis></entry>
+
+          <entry>OPTIONAL. The field within inFile that contains the time zone
+          location for the time zone cited by timeZoneAbbrevField. Defaults to
+          a null value (indicating that there is no time zone location
+          attribute.) If a location is not provided or is an empty string, the
+          first record matching fromTimeZoneAbbrevField is used</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toTimeZoneAbbrev</emphasis></entry>
+
+          <entry>OPTIONAL. The to time zone abbreviation to use for all
+          calculations, as a string. Defaults to 'UTC'</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toLocation</emphasis></entry>
+
+          <entry>OPTIONAL. The name of the location that goes along with
+          toTimeZoneAbbrev; if a location is not provided or is an empty
+          string, the first record matching toTimeZoneAbbrev is used; Defaults
+          to an empty string</entry>
+        </row>
+
+        <row>
+          <entry>Returns:</entry>
+
+          <entry>A new dataset with the same record definition as inFile but
+          with four new fields added; the new fields are named based on the
+          name given as the newOffsetField attribute: <programlisting>std.Date.Time_t &lt;newOffsetField&gt;   // Value of timeField expressed in new 
+                                   // time zone 
+BOOLEAN &lt;newOffsetField&gt;_is_valid  // TRUE if &lt;newOffsetField&gt; contains a 
+                                   // valid value 
+                                   // If &lt;newOffsetField&gt;_is_valid is FALSE  
+                                   // then &lt;newOffsetField&gt; will have the same 
+                                   // value as timeField.
+STRING5 &lt;newOffsetField&gt;_tz        // The value of toTimeZoneAbbrev 
+STRING15 &lt;newOffsetField&gt;_location // The time zone location for
+                                   // &lt;newOffsetField&gt;_tz </programlisting></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis
+  role="bold">STD.Date.TimeZone.AppendTZAdjustedTime</emphasis> takes a given
+  a dataset that contains a time (in Time_t format), a time zone abbreviation,
+  and an optional time zone location, and appends four new fields to the
+  dataset: A new Time_t attribute containing the original time expressed in a
+  different time zone, and three attributes providing information regarding
+  that destination time zone and the validity of the translation.</para>
+
+  <para>This could be useful as an ETL step where time data is made common in
+  respect to one particular time zone (e.g., UTC). The actions within this
+  function macro are conceptually similar to AdjustTimeTZ() but applied to an
+  entire dataset, and somewhat more efficiently.</para>
+
+  <para><emphasis role="bold">Note:</emphasis> In order for this function
+  macro to execute correctly, the calling code must import the STD
+  library.</para>
+
+  <?hard-pagebreak ?>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+ds := DATASET ([
+                {120000, 'CT'},
+                {120000, 'ET'}
+               ],{Std.Date.Time_t time, STRING tz});
+
+utcRewriteDS := Std.Date.TimeZone.AppendTZAdjustedTime(ds, time, tz, utc_time);
+OUTPUT(utcRewriteDS, NAMED('utc_result'));
+ 
+ptRewriteDS := Std.Date.TimeZone.AppendTZAdjustedTime (ds, time, tz, pacific_time, 
+                                                       toTimeZoneAbbrev := 'PT', 
+                                                       toLocation := 'NORTH AMERICA');
+OUTPUT(ptRewriteDS, NAMED('pacific_time_result'));
+</programlisting>
+
+  <para>See Also: <link linkend="AppendTZOffset">AppendTZOffset</link> , <link
+  linkend="AdjustTimeTZ">AdjustTimeTZ</link></para>
+</sect1>

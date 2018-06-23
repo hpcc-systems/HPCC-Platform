@@ -67,9 +67,10 @@ typedef unsigned __int64 hash64_t;
 #include "eclhelper.hpp"
 #include "rtlkey.hpp"
 #include "eclrtl_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 #include "eclhelper_base.hpp"
 #include "rtlbcd.hpp"
+#include "rtlrecord.hpp"
 
 #endif

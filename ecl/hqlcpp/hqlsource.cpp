@@ -23,6 +23,7 @@
 #include "jstream.ipp"
 #include "jdebug.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlkey.hpp"
 
 #include "hql.hpp"
 #include "hqlattr.hpp"
@@ -40,6 +41,7 @@
 #include "hqlfold.hpp"
 #include "hqlcerrors.hpp"
 #include "hqlcatom.hpp"
+#include "hqlccommon.hpp"
 #include "hqltrans.ipp"
 #include "hqlpmap.hpp"
 #include "hqlttcpp.ipp"
@@ -48,6 +50,7 @@
 #include "hqliter.ipp"
 #include "thorcommon.hpp"
 #include "hqlinline.hpp"
+#include "hqliproj.hpp"
 
 //#define FLATTEN_DATASETS
 //#define HACK_TO_IGNORE_TABLE
@@ -214,6 +217,31 @@ bool isSimpleSource(IHqlExpression * expr)
     }
 }
 
+static bool isSimpleProjectingDiskRead(IHqlExpression * expr)
+{
+    bool projected = false;
+    for (;;)
+    {
+        switch (expr->getOperator())
+        {
+        case no_table:
+            return true;
+        case no_hqlproject:
+        case no_newusertable:
+            if (projected)
+                return false;
+            //MORE: HPCC-18469 Check if the transform only assigns fields with the same name from source to the target
+            if (!isSimpleProject(expr))
+                return false;
+            projected = true;
+            break;
+        default:
+            return false;
+        }
+        expr = expr->queryChild(0);
+    }
+}
+
 IHqlExpression * getVirtualSelector(IHqlExpression * dataset)
 {
     IHqlExpression * table = queryPhysicalRootTable(dataset);
@@ -248,33 +276,6 @@ IHqlExpression * getVirtualReplacement(IHqlExpression * field, IHqlExpression * 
     throwError1(HQLERR_UnknownVirtualAttr, str(virtualKind));
     return NULL;
 }
-
-static IHqlExpression * getExplicitlyPromotedCompare(IHqlExpression * filter)
-{
-    switch (filter->getOperator())
-    {
-    case no_in:
-    case no_notin:
-        return LINK(filter);
-    }
-    IHqlExpression * l = filter->queryChild(0);
-    IHqlExpression * r = filter->queryChild(1);
-    ITypeInfo * lType = queryUnqualifiedType(l->queryType());
-    ITypeInfo * rType = queryUnqualifiedType(r->queryType());
-    if (lType == rType)
-        return LINK(filter);
-
-    //Add explicit casts to the type.  ensureExprType won't add a (string) to a string2 field.
-    Owned<ITypeInfo> promotedType = getPromotedECLType(lType, rType);
-    HqlExprArray args;
-    if (lType == promotedType)
-        args.append(*LINK(l));
-    else
-        args.append(*createValue(no_implicitcast, LINK(promotedType), LINK(l)));
-    args.append(*ensureExprType(r, promotedType));
-    return filter->clone(args);
-}
-
 
 static IHqlExpression * createFileposCall(HqlCppTranslator & translator, IIdAtom * name, const char * provider, const char * rowname)
 {
@@ -370,6 +371,27 @@ IHqlExpression * buildTableWithoutVirtuals(VirtualFieldsInfo & info, IHqlExpress
 }
 
 
+static IHqlExpression * createTableFromSerialized(IHqlExpression * tableExpr)
+{
+    IHqlExpression * record = tableExpr->queryChild(1);
+    OwnedHqlExpr diskRecord = getSerializedForm(record, diskAtom);
+    OwnedHqlExpr diskRecordWithMeta = record->cloneAllAnnotations(diskRecord);
+
+    OwnedHqlExpr newTable = replaceChild(tableExpr->queryBody(), 1, diskRecordWithMeta);
+
+    OwnedHqlExpr transform = createRecordMappingTransform(no_newtransform, record, newTable->queryNormalizedSelector());
+    OwnedHqlExpr projected = createDatasetF(no_newusertable, LINK(newTable), LINK(record), LINK(transform), createAttribute(_internal_Atom), NULL);
+    return tableExpr->cloneAllAnnotations(projected);
+}
+
+static IHqlExpression * buildTableFromSerialized(IHqlExpression * expr)
+{
+    IHqlExpression * tableExpr = queryPhysicalRootTable(expr);
+    OwnedHqlExpr projected = createTableFromSerialized(tableExpr);
+    return replaceExpression(expr, tableExpr, projected);
+}
+
+
 static IHqlExpression * nextDiskField(IHqlExpression * diskRecord, unsigned & diskIndex)
 {
     for (;;)
@@ -408,23 +430,18 @@ static void createPhysicalLogicalAssigns(HqlExprArray & assigns, IHqlExpression 
             {
                 OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(cur));
                 OwnedHqlExpr newValue;
-                if (idx2  == fileposIndex)
-                    newValue.setown(getFilepos(diskDataset, false));
-                else
+                IHqlExpression * curPhysical = nextDiskField(diskRecord, diskIndex);
+                OwnedHqlExpr physicalSelect = createSelectExpr(LINK(diskDataset), LINK(curPhysical));
+                if (cur->isDatarow() && !cur->hasAttribute(blobAtom) && (!isInPayload() || (physicalSelect->queryType() != target->queryType())))
                 {
-                    IHqlExpression * curPhysical = nextDiskField(diskRecord, diskIndex);
-                    OwnedHqlExpr physicalSelect = createSelectExpr(LINK(diskDataset), LINK(curPhysical));
-                    if (cur->isDatarow() && !cur->hasAttribute(blobAtom) && (!isInPayload() || (physicalSelect->queryType() != target->queryType())))
-                    {
-                        HqlExprArray subassigns;
-                        OwnedHqlExpr childSelf = createSelector(no_self, cur, NULL);
-                        createPhysicalLogicalAssigns(subassigns, childSelf, curPhysical->queryRecord(), cur->queryRecord(), physicalSelect, false, NotFound);
-                        OwnedHqlExpr transform = createValue(no_transform, makeTransformType(cur->queryRecord()->getType()), subassigns);
-                        newValue.setown(createRow(no_createrow, transform.getClear()));
-                    }
-                    else
-                        newValue.setown(convertIndexPhysical2LogicalValue(cur, physicalSelect, allowTranslate));
+                    HqlExprArray subassigns;
+                    OwnedHqlExpr childSelf = createSelector(no_self, cur, NULL);
+                    createPhysicalLogicalAssigns(subassigns, childSelf, curPhysical->queryRecord(), cur->queryRecord(), physicalSelect, false, NotFound);
+                    OwnedHqlExpr transform = createValue(no_transform, makeTransformType(cur->queryRecord()->getType()), subassigns);
+                    newValue.setown(createRow(no_createrow, transform.getClear()));
                 }
+                else
+                    newValue.setown(convertIndexPhysical2LogicalValue(cur, physicalSelect, allowTranslate && (idx2 != fileposIndex)));
 
                 if (newValue)
                     assigns.append(*createAssign(target.getClear(), newValue.getClear()));
@@ -471,7 +488,7 @@ static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * 
 }
 
 
-static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * tableExpr, IHqlExpression * record, bool hasInternalFileposition, bool allowTranslate)
+static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * record, bool hasInternalFileposition, bool createKeyedTypes)
 {
     HqlExprArray physicalFields;
     unsigned max = record->numChildren() - (hasInternalFileposition ? 1 : 0);
@@ -485,42 +502,29 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
         else if (cur->getOperator() == no_ifblock)
             physicalFields.append(*mapIfBlock(mapper, cur));
         else if (cur->getOperator() == no_record)
-            physicalFields.append(*createPhysicalIndexRecord(mapper, tableExpr, cur, false, allowTranslate));
+            physicalFields.append(*createPhysicalIndexRecord(mapper, cur, false, createKeyedTypes));
         else if (cur->hasAttribute(blobAtom))
         {
-            newField = createField(cur->queryId(), makeIntType(8, false), NULL, NULL);
+            newField = createField(cur->queryId(), makeIntType(8, false), nullptr, createKeyedTypes ? createAttribute(_payload_Atom) : nullptr);
         }
         else
         {
-            OwnedHqlExpr select = createSelectExpr(LINK(tableExpr), LINK(cur));
-            if (!allowTranslate)
-                newField = LINK(cur);
-            else if (cur->isDatarow() && !isInPayload())
+            //This should support other non serialized formats.  E.g., link counted strings.
+            //Simplest would be to move getSerializedForm code + call that first.
+            if (cur->hasAttribute(_linkCounted_Atom) || cur->isDatarow())
             {
-                //MORE: Mappings for ifblocks using self.a.b (!)
-                HqlMapTransformer childMapper;
-                OwnedHqlExpr newRecord = createPhysicalIndexRecord(childMapper, select, cur->queryRecord(), false, allowTranslate);
-                HqlExprArray args;
-                unwindChildren(args, cur);
-                newField = createField(cur->queryId(), newRecord->getType(), args);
+                newField = getSerializedForm(cur, diskAtom);
+                assertex(newField != cur || cur->isDatarow());
             }
             else
             {
-                //This should support other non serialized formats.  E.g., link counted strings. 
-                //Simplest would be to move getSerializedForm code + call that first.
-                if (cur->hasAttribute(_linkCounted_Atom) || cur->isDatarow())
-                {
-                    newField = getSerializedForm(cur, diskAtom);
-                    assertex(newField != cur || cur->isDatarow());
-                }
+                Owned<ITypeInfo> hozedType = getHozedKeyType(cur);
+                if (hozedType == cur->queryType())
+                    newField = LINK(cur);
+                else if (createKeyedTypes)
+                    newField = createField(cur->queryId(), makeKeyedType(cur->getType()), nullptr, extractFieldAttrs(cur));
                 else
-                {
-                    OwnedHqlExpr hozed = getHozedKeyValue(select);
-                    if (hozed->queryType() == select->queryType())
-                        newField = LINK(cur);
-                    else
-                        newField = createField(cur->queryId(), hozed->getType(), extractFieldAttrs(cur));
-                }
+                    newField = createField(cur->queryId(), hozedType.getClear(), nullptr, extractFieldAttrs(cur));
             }
         }
 
@@ -537,9 +541,31 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             }
         }
     }
+    if (hasInternalFileposition)
+    {
+        if (createKeyedTypes)
+        {
+            IHqlExpression * cur = record->queryChild(record->numChildren()-1);
+            IHqlExpression *fposField = createField(cur->queryId(), makeFilePosType(cur->getType()), nullptr, extractFieldAttrs(cur));
+            physicalFields.append(*fposField);
+        }
+        else
+        {
+            IHqlExpression * cur = record->queryChild(record->numChildren()-1);
+            IHqlExpression *fposField = createField(cur->queryId(), makeSwapIntType(8, false), nullptr, extractFieldAttrs(cur));
+            physicalFields.append(*fposField);
+        }
+    }
 
     return createRecord(physicalFields);
 }
+
+IHqlExpression * createMetadataIndexRecord(IHqlExpression * record, bool hasInternalFilePosition)
+{
+    HqlMapTransformer mapper;
+    return createPhysicalIndexRecord(mapper, record, hasInternalFilePosition, true);
+}
+
 
 IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * tableExpr)
 {
@@ -555,16 +581,15 @@ IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * table
 
     HqlMapTransformer mapper;
     bool hasFileposition = getBoolAttribute(tableExpr, filepositionAtom, true);
-    IHqlExpression * diskRecord = createPhysicalIndexRecord(mapper, tableExpr, record, hasFileposition, true);
+    IHqlExpression * diskRecord = createPhysicalIndexRecord(mapper, record, hasFileposition, false);
 
     unsigned payload = numPayloadFields(tableExpr);
     assertex(payload || !hasFileposition);
-    unsigned newPayload = hasFileposition ? payload-1 : payload;
     HqlExprArray args;
     unwindChildren(args, tableExpr);
     args.replace(*diskRecord, 1);
     removeAttribute(args, _payload_Atom);
-    args.append(*createAttribute(_payload_Atom, getSizetConstant(newPayload)));
+    args.append(*createAttribute(_payload_Atom, getSizetConstant(payload)));
     args.append(*createAttribute(_original_Atom, LINK(tableExpr)));
 
     //remove the preload attribute and replace with correct value
@@ -615,7 +640,7 @@ public:
         rawSteppingProject.extractFields(rawStepping);
     }
 
-    void checkKeyable(MonitorExtractor & monitors)
+    void checkKeyable(CppFilterExtractor & monitors)
     {
         if (!rawStepping.exists())
             return;
@@ -642,13 +667,12 @@ public:
             {
                 outputStepping.generateSteppingMetaMember(translator, ctx, "ProjectedSteppingMeta");
 
-                BuildCtx transformctx(ctx);
-                transformctx.addQuotedCompoundLiteral("virtual void mapOutputToInput(ARowBuilder & crSelf, const void * _projected, unsigned numFields)");
-                translator.ensureRowAllocated(transformctx, "crSelf");
-                transformctx.addQuotedLiteral("const byte * pr = (const byte *)_projected;");
+                MemberFunction func(translator, ctx, "virtual void mapOutputToInput(ARowBuilder & crSelf, const void * _projected, unsigned numFields) override");
+                translator.ensureRowAllocated(func.ctx, "crSelf");
+                func.ctx.addQuotedLiteral("const byte * pr = (const byte *)_projected;");
 
-                translator.bindTableCursor(transformctx, rawStepping.ds, "crSelf.row()");
-                translator.bindTableCursor(transformctx, outputStepping.ds, "pr");
+                translator.bindTableCursor(func.ctx, rawStepping.ds, "crSelf.row()");
+                translator.bindTableCursor(func.ctx, outputStepping.ds, "pr");
                 StringBuffer s;
                 ForEachChild(i, outputStepping.fields)
                 {
@@ -656,17 +680,16 @@ public:
                     IHqlExpression * curRawExpr = rawSteppingProject.fields->queryChild(i);
                     IHqlExpression * curRawSelect = rawStepping.fields->queryChild(i);
                     OwnedHqlExpr original = outputStepping.invertTransform(curRawExpr, curOutput);
-                    transformctx.addQuoted(s.clear().append("if (numFields < ").append(i+1).append(") return;"));
-                    translator.buildAssign(transformctx, curRawSelect, original);
+                    func.ctx.addQuoted(s.clear().append("if (numFields < ").append(i+1).append(") return;"));
+                    translator.buildAssign(func.ctx, curRawSelect, original);
                 }
             }
         }
         else
         {
             OwnedHqlExpr fail = createValue(no_fail, makeVoidType(), createConstant("Cannot step output of index read"));
-            BuildCtx transformctx(ctx);
-            transformctx.addQuotedCompoundLiteral("virtual void mapOutputToInput(void * _original, const void * _projected, unsigned numFields)");
-            translator.buildStmt(transformctx, fail);
+            MemberFunction func(translator, ctx, "virtual void mapOutputToInput(ARowBuilder & crSelf, const void * _projected, unsigned numFields) override");
+            translator.buildStmt(func.ctx, fail);
         }
     }
 
@@ -712,6 +735,23 @@ public:
         requiresOrderedMerge = false;
         rootSelfRow = NULL;
         activityKind = TAKnone;
+
+        if (tableExpr)
+        {
+            IHqlExpression * virtualAttr = tableExpr->queryAttribute(virtualAtom);
+            newDiskReadMapping = translator.queryOptions().newDiskReadMapping;
+            if (virtualAttr)
+                newDiskReadMapping = !getBoolAttribute(virtualAttr, legacyAtom);
+            switch (tableExpr->getOperator())
+            {
+            case no_fetch:
+            case no_compound_fetch:
+                newDiskReadMapping = false;
+                break;
+            }
+        }
+        else
+            newDiskReadMapping = false;
     }
     virtual ~SourceBuilder() {}
 
@@ -722,12 +762,15 @@ public:
     virtual void buildTransform(IHqlExpression * expr) = 0;
     virtual void analyse(IHqlExpression * expr);
 
+    void buildCanMatch(IHqlExpression * expr);
+    void buildMatchFilter(BuildCtx & ctx, IHqlExpression * expr);
+
     void buildFilenameMember();
     void appendFilter(SharedHqlExpr & unkeyedFilter, IHqlExpression * expr);
     void buildKeyedLimitHelper(IHqlExpression * expr);
     void buildLimits(BuildCtx & classctx, IHqlExpression * expr, unique_id_t id);
     void buildReadMembers( IHqlExpression * expr);
-    void buildSteppingMeta(IHqlExpression * expr, MonitorExtractor * monitors);
+    void buildSteppingMeta(IHqlExpression * expr, CppFilterExtractor * monitors);
     void buildTransformBody(BuildCtx & transformCtx, IHqlExpression * expr, bool returnSize, bool ignoreFilters, bool bindInputRow);
     void checkDependencies(BuildCtx & ctx, IHqlExpression * expr);
     bool containsStepping(IHqlExpression * expr);
@@ -737,7 +780,7 @@ public:
     bool recordHasVirtualsOrDeserialize()                               { return fieldInfo.hasVirtualsOrDeserialize(); }
     bool isSourceInvariant(IHqlExpression * dataset, IHqlExpression * expr);
     bool hasExistChoosenLimit() { return (choosenValue && getIntValue(choosenValue) == 1); }
-
+    bool isRootSelector(IHqlExpression * expr) const;
 
 protected:
     void assignLocalExtract(BuildCtx & ctx, ParentExtract * extractBuilder, IHqlExpression * dataset, const char * argName);
@@ -753,7 +796,7 @@ protected:
     void buildGroupAggregateCompareHelper(ParentExtract * extractBuilder, IHqlExpression * aggregate, HqlExprArray & recordFields, HqlExprArray & agrgegateFields);
     void buildGroupAggregateHashHelper(ParentExtract * extractBuilder, IHqlExpression * dataset, IHqlExpression * fields);
     void buildGroupAggregateProcessHelper(ParentExtract * extractBuilder, IHqlExpression * aggregate, const char * name, bool doneAny);
-    void buildGroupingMonitors(IHqlExpression * expr, MonitorExtractor & monitors);
+    void buildGroupingMonitors(IHqlExpression * expr, CppFilterExtractor & monitors);
     void buildGroupAggregateTransformBody(BuildCtx & transformctx, IHqlExpression * expr, bool useExtract, bool bindInputRow);
     void buildNormalizeHelpers(IHqlExpression * expr);
     void buildTargetCursor(Shared<BoundRow> & tempRow, Shared<BoundRow> & rowBuilder, BuildCtx & ctx, IHqlExpression * expr);
@@ -781,6 +824,7 @@ public:
     HqlExprAttr     keyedLimitExpr;
     HqlExprAttr     choosenValue;
     HqlExprAttr     preloadSize;
+    HqlExprAttr     firstTransformer;
     HqlExprAttr     lastTransformer;
     HqlExprAttr     alreadyDoneFlag;
     HqlExprArray    originalFilters;
@@ -789,6 +833,10 @@ public:
     HqlExprAttr     failedFilterValue;
     HqlExprAttr     compoundCountVar;
     HqlExprAttr     physicalRecord;
+    LinkedHqlExpr   expectedRecord;
+    LinkedHqlExpr   projectedRecord;
+    LinkedHqlExpr   tableSelector;
+    LinkedHqlExpr   projectedSelector;
     HqlExprAttr     steppedExpr;
     Linked<BuildCtx> globaliterctx;
     HqlExprCopyArray parentCursors;
@@ -811,6 +859,8 @@ public:
     bool            isUnfilteredCount;
     bool            isVirtualLogicalFilenameUsed;
     bool            requiresOrderedMerge;
+    bool            newDiskReadMapping;
+    bool            extractCanMatch = false;
 protected:
     HqlCppTranslator & translator;
 };
@@ -858,6 +908,13 @@ bool SourceBuilder::isSourceInvariant(IHqlExpression * dataset, IHqlExpression *
         if (!dataset)
             return true;
     }
+}
+
+bool SourceBuilder::isRootSelector(IHqlExpression * expr) const
+{
+    if (!tableExpr)
+        return false;
+    return (expr->queryNormalizedSelector() == tableExpr->queryNormalizedSelector());
 }
 
 void SourceBuilder::analyse(IHqlExpression * expr)
@@ -912,11 +969,19 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     {
     case no_table:
     case no_newkeyindex:
-        if (fieldInfo.hasVirtuals())
+        if (fieldInfo.hasVirtuals() && !newDiskReadMapping)
         {
             assertex(fieldInfo.simpleVirtualsAtEnd);
             needToCallTransform = true;
             needDefaultTransform = false;
+        }
+        if (newDiskReadMapping)
+        {
+            if (!tableExpr->hasAttribute(_noVirtual_Atom) && (tableExpr->queryChild(2)->getOperator() != no_pipe))
+            {
+                if (containsVirtualField(tableExpr->queryRecord(), logicalFilenameAtom))
+                    isVirtualLogicalFilenameUsed = true;
+            }
         }
         break;
     case no_null:
@@ -938,7 +1003,8 @@ void SourceBuilder::analyse(IHqlExpression * expr)
 
             if (unkeyedFilter)
             {
-                transformCanFilter = true;
+                if (!extractCanMatch || !isRootSelector(expr))
+                    transformCanFilter = true;
                 originalFilters.append(*LINK(expr));
                 mappedFilters.append(*unkeyedFilter.getClear());
             }
@@ -1003,11 +1069,15 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     case no_hqlproject:
         needToCallTransform = true;
         needDefaultTransform = false;
+        if (!firstTransformer)
+            firstTransformer.set(expr);
         lastTransformer.set(expr);
         break;
     case no_newusertable:
         needToCallTransform = true;
         needDefaultTransform = false;
+        if (!firstTransformer)
+            firstTransformer.set(expr);
         lastTransformer.set(expr);
         break;
     case no_aggregate:
@@ -1015,6 +1085,8 @@ void SourceBuilder::analyse(IHqlExpression * expr)
             needToCallTransform = true;
             needDefaultTransform = false;
             aggregation = true;
+            if (!firstTransformer)
+                firstTransformer.set(expr);
             lastTransformer.set(expr);
             break;
         }
@@ -1023,6 +1095,8 @@ void SourceBuilder::analyse(IHqlExpression * expr)
             needToCallTransform = true;
             needDefaultTransform = false;
             aggregation = true;
+            if (!firstTransformer)
+                firstTransformer.set(expr);
             lastTransformer.set(expr);
 
             IHqlExpression * transform = expr->queryChild(2);
@@ -1044,6 +1118,8 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     case no_fetch:
         needToCallTransform = true;
         needDefaultTransform = false;
+        if (!firstTransformer)
+            firstTransformer.set(expr);
         lastTransformer.set(expr);
         break;
     case no_compound_diskread:
@@ -1147,18 +1223,25 @@ void SourceBuilder::rebindFilepositons(BuildCtx & ctx, IHqlExpression * dataset,
 void SourceBuilder::buildFilenameMember()
 {
     //---- virtual const char * getFileName() { return "x.d00"; } ----
-    translator.buildFilenameFunction(*instance, instance->startctx, "getFileName", nameExpr, translator.hasDynamicFilename(tableExpr));
+    translator.buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", nameExpr, translator.hasDynamicFilename(tableExpr));
 }
 
 void SourceBuilder::buildReadMembers(IHqlExpression * expr)
 {
     buildFilenameMember();
-    
+
+    //Sanity check to ensure that the projected row is only in the in memory format if it from a spill file, or no transform needs to be called.
+    if (needToCallTransform || transformCanFilter)
+    {
+        if (!tableExpr->hasAttribute(_spill_Atom) && recordRequiresSerialization(tableExpr->queryRecord(), diskAtom))
+            throwUnexpectedX("Projected dataset should have been serialized");
+    }
+
     //---- virtual bool needTransform() { return <bool>; } ----
     if (needToCallTransform || transformCanFilter)
         translator.doBuildBoolFunction(instance->classctx, "needTransform", true);
 
-    //---- virtual bool needTransform() { return <bool>; } ----
+    //---- virtual bool transformMayFilter() { return <bool>; } ----
     if (transformCanFilter)
         translator.doBuildBoolFunction(instance->classctx, "transformMayFilter", true);
 }
@@ -1170,10 +1253,9 @@ void SourceBuilder::buildLimits(BuildCtx & classctx, IHqlExpression * expr, uniq
 
     if (choosenValue)
     {
-        BuildCtx funcctx(classctx);
-        funcctx.addQuotedCompoundLiteral("virtual unsigned __int64 getChooseNLimit()");
+        MemberFunction func(translator, classctx, "virtual unsigned __int64 getChooseNLimit() override");
         OwnedHqlExpr newLimit = ensurePositiveOrZeroInt64(choosenValue);
-        translator.buildReturn(funcctx, newLimit);
+        translator.buildReturn(func.ctx, newLimit);
     }
 }
 
@@ -1188,9 +1270,17 @@ void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression *
         }
         else
         {
-            //NOTE: The source is not link counted - it comes from a prefetched row, and does not include any virtual file position field.
-            OwnedHqlExpr boundSrc = createVariable("left", makeRowReferenceType(physicalRecord));
-            transformCtx.associateOwn(*new BoundRow(tableExpr->queryNormalizedSelector(), boundSrc, translator.queryRecordOffsetMap(physicalRecord), no_none, NULL));
+            if (newDiskReadMapping)
+            {
+                translator.bindTableCursor(transformCtx, projectedSelector, "left");
+            }
+            else
+            {
+                //NOTE: The source is not link counted - it comes from a prefetched row, and does not include any virtual file position field.
+                OwnedHqlExpr boundSrc = createVariable("left", makeRowReferenceType(physicalRecord));
+                IHqlExpression * accessor = NULL;
+                transformCtx.associateOwn(*new BoundRow(tableExpr->queryNormalizedSelector(), boundSrc, accessor, translator.queryRecordOffsetMap(physicalRecord, (accessor != NULL)), no_none, NULL));
+            }
         }
         transformCtx.addGroup();
     }
@@ -1254,7 +1344,7 @@ void SourceBuilder::associateTargetCursor(BuildCtx & subctx, BuildCtx & ctx, Bou
 void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr, bool ignoreFilters)
 {
     //This function can be called again for the unfiltered tranform.  Don't process annotations again.
-    if ((expr != instance->dataset) && !ignoreFilters)
+    if ((expr != instance->activityExpr) && !ignoreFilters)
         instance->processAnnotations(expr);
 
     expr = expr->queryBody();
@@ -1288,50 +1378,56 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
     {
     case no_newkeyindex:
     case no_table:
-        if (fieldInfo.hasVirtuals())
+        if (newDiskReadMapping)
         {
-            IHqlExpression * record = expr->queryRecord();
-            assertex(fieldInfo.simpleVirtualsAtEnd);
-            assertex(!recordRequiresSerialization(record, diskAtom));
-            CHqlBoundExpr bound;
-            StringBuffer s;
-            translator.getRecordSize(ctx, expr, bound);
-
-            size32_t virtualSize = 0;
-            ForEachChild(idx, record)
+        }
+        else
+        {
+            if (fieldInfo.hasVirtuals())
             {
-                IHqlExpression * field = record->queryChild(idx);
-                IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
-                if (virtualAttr)
+                IHqlExpression * record = expr->queryRecord();
+                assertex(fieldInfo.simpleVirtualsAtEnd);
+                assertex(!recordRequiresSerialization(record, diskAtom));
+                CHqlBoundExpr bound;
+                StringBuffer s;
+                translator.getRecordSize(ctx, expr, bound);
+
+                size32_t virtualSize = 0;
+                ForEachChild(idx, record)
                 {
-                    size32_t fieldSize = field->queryType()->getSize();
-                    assertex(fieldSize != UNKNOWN_LENGTH);
-                    virtualSize += fieldSize;
+                    IHqlExpression * field = record->queryChild(idx);
+                    IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
+                    if (virtualAttr)
+                    {
+                        size32_t fieldSize = field->queryType()->getSize();
+                        assertex(fieldSize != UNKNOWN_LENGTH);
+                        virtualSize += fieldSize;
+                    }
                 }
-            }
 
-            if (!isFixedSizeRecord(record))
-            {
-                OwnedHqlExpr ensureSize = adjustValue(bound.expr, virtualSize);
-                s.clear().append("crSelf.ensureCapacity(");
-                translator.generateExprCpp(s, ensureSize).append(", NULL);");
-                ctx.addQuoted(s);
-            }
-
-            s.clear().append("memcpy(crSelf.row(), left, ");
-            translator.generateExprCpp(s, bound.expr).append(");");
-            ctx.addQuoted(s);
-
-            ForEachChild(idx2, record)
-            {
-                IHqlExpression * field = record->queryChild(idx2);
-                IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
-                if (virtualAttr)
+                if (!isFixedSizeRecord(record))
                 {
-                    IHqlExpression * self = rootSelfRow->querySelector();
-                    OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(field));
-                    OwnedHqlExpr value = getVirtualReplacement(field, virtualAttr->queryChild(0), expr);
-                    translator.buildAssign(ctx, target, value);
+                    OwnedHqlExpr ensureSize = adjustValue(bound.expr, virtualSize);
+                    s.clear().append("crSelf.ensureCapacity(");
+                    translator.generateExprCpp(s, ensureSize).append(", NULL);");
+                    ctx.addQuoted(s);
+                }
+
+                s.clear().append("memcpy(crSelf.row(), left, ");
+                translator.generateExprCpp(s, bound.expr).append(");");
+                ctx.addQuoted(s);
+
+                ForEachChild(idx2, record)
+                {
+                    IHqlExpression * field = record->queryChild(idx2);
+                    IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
+                    if (virtualAttr)
+                    {
+                        IHqlExpression * self = rootSelfRow->querySelector();
+                        OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(field));
+                        OwnedHqlExpr value = getVirtualReplacement(field, virtualAttr->queryChild(0), expr);
+                        translator.buildAssign(ctx, target, value);
+                    }
                 }
             }
         }
@@ -1370,7 +1466,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
         break;
     case no_filter:
         {
-            if (!ignoreFilters)
+            if (!ignoreFilters && (!extractCanMatch || !isRootSelector(expr)))
             {
                 LinkedHqlExpr cond;
                 if (useFilterMappings)
@@ -1424,8 +1520,12 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
     case no_hqlproject:
         {
             IHqlExpression * dataset = expr->queryChild(0);
+            IHqlExpression * datasetSelector = dataset->queryNormalizedSelector();
             IHqlExpression * selSeq = querySelSeq(expr);
             OwnedHqlExpr leftSelect = createSelector(no_left, dataset, querySelSeq(expr));
+
+            if ((projectedSelector != tableSelector) && (expr == firstTransformer))
+                datasetSelector = projectedSelector;
 
             //Following is a bit nasty....
             //Converting the no_hqlproject to a no_newusertable means that some of the expressions
@@ -1434,7 +1534,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
             //e.g. project(i(x), transform(exists(i....))) - see jholt25.xhql
             //And unfortunately it fails silently.
             //So we use queryReplaceSelector which fails if an ambiguity is introduced by the replacement
-            OwnedHqlExpr newSelect = ensureActiveRow(dataset->queryNormalizedSelector());
+            OwnedHqlExpr newSelect = ensureActiveRow(datasetSelector);
             OwnedHqlExpr transform = queryNewReplaceSelector(expr->queryChild(1), leftSelect, newSelect);
 
             BuildCtx subctx(ctx);       // buildTargetCursor adds group if necessary
@@ -1444,7 +1544,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
             if (!transform)
             {
                 //The replace introduced an ambiguity => need to use the unmapped expression.
-                BoundRow * prevCursor = translator.resolveSelectorDataset(ctx, dataset->queryNormalizedSelector());
+                BoundRow * prevCursor = translator.resolveSelectorDataset(ctx, datasetSelector);
                 transform.set(expr->queryChild(1));
 
                 translator.rebindTableCursor(subctx, dataset, prevCursor, no_left, selSeq);
@@ -1470,7 +1570,13 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
             Linked<BoundRow> tempRow;
             Linked<BoundRow> rowBuilder;
             buildTargetCursor(tempRow, rowBuilder, subctx, expr);
-            IHqlExpression * transform = expr->queryChild(2);
+            LinkedHqlExpr transform = expr->queryChild(2);
+            if (tableExpr && (expr == firstTransformer))
+            {
+                if (tableSelector != projectedSelector)
+                    transform.setown(newReplaceSelector(transform, tableSelector, projectedSelector));
+            }
+
             if (returnIfFilterFails)
             {
                 translator.associateSkipReturnMarker(subctx, failedFilterValue, NULL);      // failedFilterValue already handles clearing the result
@@ -1632,6 +1738,73 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
 }
 
 
+void SourceBuilder::buildMatchFilter(BuildCtx & ctx, IHqlExpression * expr)
+{
+    expr = expr->queryBody();
+    node_operator op = expr->getOperator();
+
+    switch (op)
+    {
+    case no_cachealias:
+        buildMatchFilter(ctx, expr->queryChild(1));
+        return;
+    case no_newkeyindex:
+    case no_table:
+    case no_fetch:
+    case no_select:     // handled below
+    case no_null:
+    case no_anon:
+    case no_pseudods:
+    case no_workunit_dataset:
+    case no_getgraphresult:
+    case no_call:
+    case no_externalcall:
+    case no_rows:
+    case no_libraryinput:
+        return;
+    default:
+        buildMatchFilter(ctx, expr->queryChild(0));
+        break;
+    }
+
+    switch (op)
+    {
+    case no_filter:
+        {
+            LinkedHqlExpr cond;
+            if (useFilterMappings)
+            {
+                unsigned match = originalFilters.find(*expr);
+                if (match != NotFound)
+                    cond.set(&mappedFilters.item(match));
+            }
+            else
+            {
+                HqlExprArray args;
+                unwindRealChildren(args, expr, 1);
+                cond.setown(createBalanced(no_and, queryBoolType(), args));
+            }
+
+            if (cond)
+            {
+                IHqlExpression * ds = expr->queryChild(0);
+                OwnedHqlExpr test = getInverse(cond);
+                if (translator.queryOptions().foldFilter)
+                    test.setown(foldScopedHqlExpression(translator.queryErrorProcessor(), ds->queryNormalizedSelector(), test));
+
+                if (translator.options.spotCSE)
+                    test.setown(spotScalarCSE(test, ds, translator.queryOptions().spotCseInIfDatasetConditions));
+
+                if (tableSelector != projectedSelector)
+                    test.setown(newReplaceSelector(test, tableSelector, projectedSelector));
+                translator.buildFilteredReturn(ctx, test, queryBoolExpr(false));
+            }
+        }
+        break;
+    }
+}
+
+
 void SourceBuilder::doBuildAggregateSelectIterator(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * ds = expr->queryChild(0);
@@ -1653,43 +1826,43 @@ void SourceBuilder::doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * e
 
     //MORE: transform also needs to be inside this iterctx
     BuildCtx iterctx(*globaliterctx);
-    BuildCtx firstctx(instance->startctx);
+
+    MemberFunction firstFunc(translator, instance->startctx);
     CursorArray cursors;
     if (isChildIterator)
     {
         assertex(!root);
-        firstctx.addQuotedCompoundLiteral("virtual bool first()");
+        firstFunc.start("virtual bool first() override");
     }
     else
     {
         assertex(root);
 
-        firstctx.addQuotedCompoundLiteral("virtual bool first(const void * _src)");
+        firstFunc.start("virtual bool first(const void * _src) override");
         bool isProjected = (root->queryNormalizedSelector() != tableExpr->queryNormalizedSelector());
         if (!isProjected)
         {
             iterctx.addQuotedLiteral("byte * src;");
             associateFilePositions(iterctx, "activity->fpp", "activity->src");      // in case no projection in first()
-            translator.associateBlobHelper(iterctx, tableExpr, "fpp");
-            firstctx.addQuotedLiteral("src = (byte *)_src;");
+            firstFunc.ctx.addQuotedLiteral("src = (byte *)_src;");
         }
         else
         {
-            firstctx.addQuotedLiteral("byte * src = (byte *)_src;");
+            firstFunc.ctx.addQuotedLiteral("byte * src = (byte *)_src;");
         }
 
-        translator.associateBlobHelper(firstctx, tableExpr, "fpp");
-        BoundRow * tableCursor = translator.bindTableCursor(firstctx, tableExpr, "src");
-        associateFilePositions(firstctx, "fpp", "src");
+        translator.associateBlobHelper(firstFunc.ctx, tableExpr, "fpp");
+        BoundRow * tableCursor = translator.bindTableCursor(firstFunc.ctx, tableExpr, "src");
+        associateFilePositions(firstFunc.ctx, "fpp", "src");
 
         TransformSequenceBuilder builder(translator, queryBoolExpr(false));
-        builder.buildSequence(firstctx, &iterctx, root);
+        builder.buildSequence(firstFunc.ctx, &iterctx, root);
 
         if (!isProjected)
             cursors.append(*LINK(tableCursor));
         else
         {
-            BoundRow * match = translator.resolveSelectorDataset(firstctx, root);
+            BoundRow * match = translator.resolveSelectorDataset(firstFunc.ctx, root);
             assertex(match);
             cursors.append(*LINK(match));
         }
@@ -1700,21 +1873,25 @@ void SourceBuilder::doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * e
     {
         StringBuffer s, iterName, cursorName;
         iterBuilder.createSingleLevelIterator(iterName, cursorName, &iterators.item(0), cursors);
-        firstctx.addQuoted(s.clear().append("return (").append(cursorName).append(" = (byte *)").append(iterName).append(".first()) != 0;"));
+        firstFunc.ctx.addQuoted(s.clear().append("return (").append(cursorName).append(" = (byte *)").append(iterName).append(".first()) != 0;"));
 
-        BuildCtx nextctx(instance->startctx);
-        nextctx.addQuotedCompoundLiteral("virtual bool next()");
-        nextctx.addQuoted(s.clear().append("return (").append(cursorName).append(" = (byte *)").append(iterName).append(".next()) != 0;"));
+        {
+            BuildCtx nextctx(instance->startctx);
+            nextctx.addQuotedFunction("virtual bool next() override");
+            nextctx.addQuoted(s.clear().append("return (").append(cursorName).append(" = (byte *)").append(iterName).append(".next()) != 0;"));
+        }
     }
     else
     {
         iterBuilder.buildCompoundIterator(instance->onlyEvalOnceContext(), iterators, cursors);
 
-        firstctx.addQuotedLiteral("return iter.first();");
+        firstFunc.ctx.addQuotedLiteral("return iter.first();");
 
-        BuildCtx nextctx(instance->startctx);
-        nextctx.addQuotedCompoundLiteral("virtual bool next()");
-        nextctx.addQuotedLiteral("return iter.next();");
+        {
+            BuildCtx nextctx(instance->startctx);
+            nextctx.addQuotedFunction("virtual bool next() override");
+            nextctx.addQuotedLiteral("return iter.next();");
+        }
     }
 
     ForEachItemIn(i, cursors)
@@ -1809,6 +1986,7 @@ static bool expandGraphLabel(ThorActivityKind kind)
     case TAKjsonread:
     case TAKdiskcount:
     case TAKdiskexists:
+    case TAKspillread:
         return true;
     default:
         return false;
@@ -1822,13 +2000,15 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     translator.gatherActiveCursors(ctx, parentCursors);
 
     bool isSpill = tableExpr && tableExpr->hasAttribute(_spill_Atom);
+    if (isSpill && (activityKind == TAKdiskread))
+        activityKind = TAKspillread;
     useImplementationClass = translator.queryOptions().minimizeActivityClasses && translator.targetRoxie() && isSpill;
 
     Owned<ActivityInstance> localInstance = new ActivityInstance(translator, ctx, activityKind, expr, kind);
     if (useImplementationClass)
         localInstance->setImplementationClass(newMemorySpillReadArgId);
 
-    if ((activityKind >= TAKdiskread) && (activityKind <= TAKdiskgroupaggregate))
+    if (((activityKind >= TAKdiskread) && (activityKind <= TAKdiskgroupaggregate)) || (activityKind == TAKspillread))
     {
         IHqlExpression * seq = querySequence(tableExpr);
         translator.noteResultAccessed(ctx, seq, nameExpr);
@@ -1960,9 +2140,16 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     if (nameExpr && nameExpr->queryValue())
     {
         if (isSpill)
-            graphLabel.append("\nSpill");
+        {
+            if (activityKind != TAKspillread)
+                graphLabel.append("\nSpill");
+        }
         else
         {
+            graphLabel.newline();
+            if (tableExpr->hasAttribute(_workflowPersist_Atom))
+                graphLabel.append("Persist ");
+
             StringBuffer filename;
             //Call getStringValue() rather than generateECL() to avoid 't quote \ etc. in the string
             getStringValue(filename.append("'"), nameExpr).append("'");
@@ -1977,10 +2164,10 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
                         break;
                     coloncolon = next;
                 }
-                graphLabel.newline().append("'...").append(coloncolon);
+                graphLabel.append("'...").append(coloncolon);
             }
             else
-                graphLabel.newline().append(filename);
+                graphLabel.append(filename);
         }
     }
     instance->graphLabel.set(graphLabel.str());
@@ -1994,18 +2181,36 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     {
         buildMembers(expr);
         buildTransform(expr);
+        buildCanMatch(expr);
         buildFlagsMember(expr);
 
-        if (tableExpr)
+        if (tableExpr && (activityKind < TAKchildread || activityKind > TAKchildthroughnormalize))
         {
-            if (fieldInfo.hasVirtualsOrDeserialize())
+            switch (activityKind)
             {
-                OwnedHqlExpr diskTable = createDataset(no_anon, LINK(physicalRecord));
-                translator.buildMetaMember(instance->classctx, diskTable, false, "queryDiskRecordSize");
-            }
-            else
-                translator.buildMetaMember(instance->classctx, tableExpr, isGrouped(tableExpr), "queryDiskRecordSize");
+            case TAKindexread:
+            case TAKindexnormalize:
+            case TAKindexaggregate:
+            case TAKindexcount:
+            case TAKindexgroupaggregate:
+            case TAKindexexists:
+            {
+                LinkedHqlExpr indexExpr = queryAttributeChild(tableExpr, _original_Atom, 0);
+                OwnedHqlExpr serializedRecord;
+                unsigned numPayload = numPayloadFields(indexExpr);
+                if (numPayload)
+                    serializedRecord.setown(notePayloadFields(indexExpr->queryRecord(), numPayload));
+                else
+                    serializedRecord.set(indexExpr->queryRecord());
+                serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
 
+                bool hasFilePosition = getBoolAttribute(indexExpr, filepositionAtom, true);
+                serializedRecord.setown(createMetadataIndexRecord(serializedRecord, hasFilePosition));
+                translator.buildMetaMember(instance->classctx, serializedRecord, false, "queryDiskRecordSize");
+                translator.buildMetaMember(instance->classctx, serializedRecord, false, "queryProjectedDiskRecordSize");
+                break;
+            }
+            }
         }
     }
     else
@@ -2021,18 +2226,18 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             else
                 throwError1(HQLERR_ReadSpillBeforeWrite, spillName.str());
         }
-        translator.addFilenameConstructorParameter(*instance, "getFileName", nameExpr);
+        translator.addFilenameConstructorParameter(*instance, WaFilename, nameExpr);
     }
 
     if (steppedExpr)
         buildSteppedHelpers();
 
     if (translator.targetRoxie())
-        instance->addAttributeBool("_isSpill", isSpill);
+        instance->addAttributeBool(WaIsSpill, isSpill);
     else if (needToCallTransform || transformCanFilter)
-        instance->addAttributeBool("_isTransformSpill", isSpill);
+        instance->addAttributeBool(WaIsTransformSpill, isSpill);
     else
-        instance->addAttributeBool("_isSpill", isSpill);
+        instance->addAttributeBool(WaIsSpill, isSpill);
     if (isFiltered)
     {
         if (isKnownLikelihood(filterLikelihood))
@@ -2040,7 +2245,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             StringBuffer text;
             filterLikelihood *= 100;
             text.setf("%3.2f%%", filterLikelihood);
-            instance->addAttribute("matchLikelihood", text);
+            instance->addAttribute(WaMatchLikelihood, text);
         }
     }
     IHqlExpression * spillReason = tableExpr ? queryAttributeChild(tableExpr, _spillReason_Atom, 0) : NULL;
@@ -2049,7 +2254,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     {
         StringBuffer text;
         getStringValue(text, spillReason);
-        instance->addAttribute("spillReason", text.str());
+        instance->addAttribute(WaSpillReason, text.str());
     }
 
     if (tableExpr)
@@ -2070,27 +2275,28 @@ void SourceBuilder::buildKeyedLimitHelper(IHqlExpression * self)
     if (keyedLimitExpr)
     {
         IHqlExpression * limitValue = keyedLimitExpr->queryChild(1);
-        BuildCtx func1ctx(instance->startctx);
-        func1ctx.addQuotedCompoundLiteral("virtual unsigned __int64 getKeyedLimit()");
-        translator.buildReturn(func1ctx, limitValue);
-        if (isZero(limitValue))
-            translator.WARNING(CategoryUnusual, HQLWRN_KeyedLimitIsZero);
+        {
+            MemberFunction func(translator, instance->startctx, "virtual unsigned __int64 getKeyedLimit() override");
+            translator.buildReturn(func.ctx, limitValue);
+            if (isZero(limitValue))
+                translator.WARNING(CategoryUnusual, HQLWRN_KeyedLimitIsZero);
+        }
 
         LinkedHqlExpr fail = keyedLimitExpr->queryChild(2);
         if (!fail || fail->isAttribute())
             fail.setown(translator.createFailAction("Keyed limit exceeded", limitValue, NULL, instance->activityId));
 
-        BuildCtx func2ctx(instance->startctx);
-        func2ctx.addQuotedCompoundLiteral("virtual void onKeyedLimitExceeded()");
-        translator.buildStmt(func2ctx, fail);
+        {
+            MemberFunction func(translator, instance->startctx, "virtual void onKeyedLimitExceeded() override");
+            translator.buildStmt(func.ctx, fail);
+        }
 
         IHqlExpression * transform = queryAttributeChild(keyedLimitExpr, onFailAtom, 0);
         if (transform)
         {
-            BuildCtx transformctx(instance->startctx);
-            transformctx.addQuotedCompoundLiteral("virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & crSelf)");
-            translator.ensureRowAllocated(transformctx, "crSelf");
-            translator.buildTransformBody(transformctx, transform, NULL, NULL, self, NULL);
+            MemberFunction func(translator, instance->startctx, "virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & crSelf) override");
+            translator.ensureRowAllocated(func.ctx, "crSelf");
+            translator.buildTransformBody(func.ctx, transform, NULL, NULL, self, NULL);
         }
     }
 }
@@ -2145,19 +2351,20 @@ void SourceBuilder::assignLocalExtract(BuildCtx & ctx, ParentExtract * extractBu
 
 void SourceBuilder::buildGroupAggregateHashHelper(ParentExtract * extractBuilder, IHqlExpression * dataset, IHqlExpression * fields)
 {
-    instance->classctx.addQuotedLiteral("virtual IHash * queryHash() { return &hash; }");
+    instance->classctx.addQuotedLiteral("virtual IHash * queryHash() override { return &hash; }");
 
     BuildCtx classctx(instance->nestedctx);
-    translator.beginNestedClass(classctx, "hash", "IHash", NULL, extractBuilder);
+    IHqlStmt * classStmt = translator.beginNestedClass(classctx, "hash", "IHash", NULL, extractBuilder);
 
-    BuildCtx funcctx(classctx);
-    funcctx.addQuotedCompoundLiteral("virtual unsigned hash(const void * _self)");
-    assignLocalExtract(funcctx, extractBuilder, dataset, "_self");
+    {
+        MemberFunction func(translator, classctx, "virtual unsigned hash(const void * _self) override");
+        assignLocalExtract(func.ctx, extractBuilder, dataset, "_self");
 
-    OwnedHqlExpr hash = createValue(no_hash32, LINK(unsignedType), LINK(fields), createAttribute(internalAtom));
-    translator.buildReturn(funcctx, hash);
+        OwnedHqlExpr hash = createValue(no_hash32, LINK(unsignedType), LINK(fields), createAttribute(internalAtom));
+        translator.buildReturn(func.ctx, hash);
+    }
 
-    translator.endNestedClass();
+    translator.endNestedClass(classStmt);
 }
 
 void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuilder, IHqlExpression * aggregate, HqlExprArray & recordFields, HqlExprArray & aggregateFields)
@@ -2208,43 +2415,46 @@ void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuil
     OwnedHqlExpr order = createValue(no_order, makeIntType(sizeof(signed), true), LINK(leftList), LINK(rightResolved));
 
     //Now generate the nested class
-    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompareRowElement() { return &compareRowElement; }");
+    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompareRowElement() override { return &compareRowElement; }");
 
     BuildCtx classctx(instance->nestedctx);
-    translator.beginNestedClass(classctx, "compareRowElement", "ICompare", NULL, extractBuilder);
+    IHqlStmt * classStmt = translator.beginNestedClass(classctx, "compareRowElement", "ICompare", NULL, extractBuilder);
 
-    BuildCtx funcctx(classctx);
-    funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const");
-    assignLocalExtract(funcctx, extractBuilder, aggregate->queryChild(0), "_left");
-    funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
-    funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
+    {
+        MemberFunction func(translator, classctx, "virtual int docompare(const void * _left, const void * _right) const override");
+        assignLocalExtract(func.ctx, extractBuilder, aggregate->queryChild(0), "_left");
+        func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
+        func.ctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
-    translator.bindTableCursor(funcctx, aggregate, "right", no_right, selSeq);
-    translator.doBuildReturnCompare(funcctx, order, no_eq, false, false);
+        translator.bindTableCursor(func.ctx, aggregate, "right", no_right, selSeq);
+        translator.doBuildReturnCompare(func.ctx, order, no_eq, false, false);
+    }
 
-    translator.endNestedClass();
+    translator.endNestedClass(classStmt);
 }
 
 
 void SourceBuilder::buildGroupAggregateProcessHelper(ParentExtract * extractBuilder, IHqlExpression * aggregate, const char * name, bool doneAny)
 {
-    StringBuffer s;
+    StringBuffer proto;
     IHqlExpression * dataset = aggregate->queryChild(0);
     IHqlExpression * tgtRecord = aggregate->queryChild(1);
     OwnedHqlExpr resultDataset = createDataset(no_anon, LINK(tgtRecord));
 
-    BuildCtx funcctx(instance->nestedctx);
-    funcctx.addQuotedCompound(s.clear().append("virtual size32_t ").append(name).append("(ARowBuilder & crSelf, const void * _src)"));
-    translator.ensureRowAllocated(funcctx, "crSelf");
-    assignLocalExtract(funcctx, extractBuilder, dataset, "_src");
+    proto.append("virtual size32_t ").append(name).append("(ARowBuilder & crSelf, const void * _src) override");
+    MemberFunction validateFunc(translator, instance->nestedctx, proto, MFdynamicproto);
 
-    BoundRow * selfRow = translator.bindSelf(funcctx, resultDataset, "crSelf");
+    translator.ensureRowAllocated(validateFunc.ctx, "crSelf");
+    assignLocalExtract(validateFunc.ctx, extractBuilder, dataset, "_src");
+
+    BoundRow * selfRow = translator.bindSelf(validateFunc.ctx, resultDataset, "crSelf");
 
     if (extractBuilder)
     {
-        MemberEvalContext * evalContext = new MemberEvalContext(translator, extractBuilder, translator.queryEvalContext(funcctx), funcctx);
-        funcctx.associateOwn(*evalContext);
+        MemberEvalContext * evalContext = new MemberEvalContext(translator, extractBuilder, translator.queryEvalContext(validateFunc.ctx), validateFunc.ctx);
+        validateFunc.ctx.associateOwn(*evalContext);
         evalContext->initContext();
+        validateFunc.ctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
     }
 
     if (aggregate->getOperator() == no_aggregate)
@@ -2258,11 +2468,11 @@ void SourceBuilder::buildGroupAggregateProcessHelper(ParentExtract * extractBuil
 
         OwnedHqlExpr left = createSelector(no_left, dataset, querySelSeq(aggregate));
         OwnedHqlExpr mappedTransform = replaceSelector(transform, left, dataset);
-        translator.doBuildUserAggregateProcessTransform(funcctx, selfRow, aggregate, mappedTransform, queryBoolExpr(doneAny));
+        translator.doBuildUserAggregateProcessTransform(validateFunc.ctx, selfRow, aggregate, mappedTransform, queryBoolExpr(doneAny));
     }
     else
-        translator.doBuildAggregateProcessTransform(funcctx, selfRow, aggregate, queryBoolExpr(doneAny));
-    translator.buildReturnRecordSize(funcctx, selfRow);
+        translator.doBuildAggregateProcessTransform(validateFunc.ctx, selfRow, aggregate, queryBoolExpr(doneAny));
+    translator.buildReturnRecordSize(validateFunc.ctx, selfRow);
 }
 
 void SourceBuilder::buildGroupAggregateHelpers(ParentExtract * extractBuilder, IHqlExpression * aggregate)
@@ -2341,27 +2551,38 @@ void SourceBuilder::buildGlobalGroupAggregateHelpers(IHqlExpression * expr)
     translator.doBuildAggregateMergeFunc(instance->startctx, aggregate, requiresOrderedMerge);
 
     //virtual void processRow(void * self, const void * src) = 0;
-    BuildCtx rowctx(instance->startctx);
-    rowctx.addQuotedCompoundLiteral("virtual void processRow(const void * src, IHThorGroupAggregateCallback * callback)");
-    rowctx.addQuotedLiteral("doProcessRow((byte *)src, callback);");
+    {
+        BuildCtx rowctx(instance->startctx);
+        rowctx.addQuotedFunction("virtual void processRow(const void * src, IHThorGroupAggregateCallback * callback) override");
+        rowctx.addQuotedLiteral("doProcessRow((byte *)src, callback);");
+    }
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
-    BuildCtx rowsctx(instance->startctx);
-    rowsctx.addQuotedCompoundLiteral("virtual void processRows(size32_t srcLen, const void * _left, IHThorGroupAggregateCallback * callback)");
-    rowsctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-    OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
-    OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
-    OwnedHqlExpr fullDs = createTranslated(ds, len);
+    {
+        OwnedHqlExpr newTableExpr = LINK(tableExpr);
+        if (isKey(tableExpr))
+        {
+            IHqlExpression * record = tableExpr->queryRecord();
+            OwnedHqlExpr newRecord = removeChild(record, record->numChildren()-1);
+            newTableExpr.setown(replaceChild(tableExpr, 1, newRecord));
+        }
 
-    BoundRow * curRow = translator.buildDatasetIterate(rowsctx, fullDs, false);
-    s.clear().append("doProcessRow(");
-    translator.generateExprCpp(s, curRow->queryBound());
-    s.append(", callback);");
-    rowsctx.addQuoted(s);
+        MemberFunction func(translator, instance->startctx, "virtual void processRows(size32_t srcLen, const void * _left, IHThorGroupAggregateCallback * callback) override");
+        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(newTableExpr->getType()));
+        OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
+        OwnedHqlExpr fullDs = createTranslated(ds, len);
+
+        BoundRow * curRow = translator.buildDatasetIterate(func.ctx, fullDs, false);
+        s.clear().append("doProcessRow(");
+        translator.generateExprCpp(s, curRow->queryBound());
+        s.append(", callback);");
+        func.ctx.addQuoted(s);
+    }
 }
 
 
-void SourceBuilder::buildGroupingMonitors(IHqlExpression * expr, MonitorExtractor & monitors)
+void SourceBuilder::buildGroupingMonitors(IHqlExpression * expr, CppFilterExtractor & monitors)
 {
     IHqlExpression * aggregate = expr->queryChild(0);
     node_operator op = aggregate->getOperator();
@@ -2371,32 +2592,33 @@ void SourceBuilder::buildGroupingMonitors(IHqlExpression * expr, MonitorExtracto
     IHqlExpression * grouping = aggregate->queryChild(3);
 
     //virtual void createGroupSegmentMonitors(IIndexReadContext *ctx) = 0;
-    BuildCtx groupctx(instance->startctx);
-    IHqlStmt * group = groupctx.addQuotedCompoundLiteral("virtual bool createGroupSegmentMonitors(IIndexReadContext * irc)");
+    MemberFunction func(translator, instance->startctx, "virtual bool createGroupSegmentMonitors(IIndexReadContext * irc) override");
 
     monitorsForGrouping = true;
     if (op == no_newaggregate)
-        translator.bindTableCursor(groupctx, dataset, "_dummy");
+        translator.bindTableCursor(func.ctx, dataset, "_dummy");
     else
-        translator.bindTableCursor(groupctx, dataset, "_dummy", no_left, querySelSeq(aggregate));
-    unsigned maxOffset = 0;
+        translator.bindTableCursor(func.ctx, dataset, "_dummy", no_left, querySelSeq(aggregate));
+    unsigned maxField = 0;
     ForEachChild(i, grouping)
     {
-        unsigned nextOffset = 0;
-        if (!monitors.createGroupingMonitor(groupctx, "irc", grouping->queryChild(i), nextOffset))
+        unsigned nextField = 0;
+        if (!monitors.createGroupingMonitor(func.ctx, "irc", grouping->queryChild(i), nextField))
         {
             monitorsForGrouping = false;
-            group->setIncluded(false);
+            func.setIncluded(false);
             break;
         }
-        if (maxOffset < nextOffset)
-            maxOffset = nextOffset;
+        if (maxField < nextField)
+            maxField = nextField;
     }
     if (monitorsForGrouping)
-        groupctx.addReturn(queryBoolExpr(true));
+        func.ctx.addReturn(queryBoolExpr(true));
 
     if (monitorsForGrouping)
-        translator.doBuildUnsignedFunction(instance->classctx, "getGroupSegmentMonitorsSize", maxOffset);
+    {
+        translator.doBuildUnsignedFunction(instance->classctx, "getGroupingMaxField", maxField);
+    }
 }
 
 
@@ -2438,56 +2660,58 @@ void SourceBuilder::buildCountHelpers(IHqlExpression * expr, bool allowMultiple)
         if (transformCanFilter||isNormalize)
         {
             //virtual size32_t numValid(const void * src) = 0;
-            BuildCtx rowctx(instance->startctx);
-            rowctx.addQuotedCompoundLiteral("virtual size32_t numValid(const void * src)");
-            rowctx.addQuotedLiteral("return valid((byte *)src);");
+            {
+                BuildCtx rowctx(instance->startctx);
+                rowctx.addQuotedFunction("virtual size32_t numValid(const void * src) override");
+                rowctx.addQuotedLiteral("return valid((byte *)src);");
+            }
 
             //virtual size32_t numValid(size32_t srcLen, const void * src);
-            BuildCtx rowsctx(instance->startctx);
-            rowsctx.addQuotedCompoundLiteral("virtual size32_t numValid(size32_t srcLen, const void * _src)");
-            rowsctx.addQuotedLiteral("unsigned char * src = (unsigned char *)_src;");
-            OwnedHqlExpr ds = createVariable("src", makeReferenceModifier(tableExpr->getType()));
-            OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
-            OwnedHqlExpr fullDs = createTranslated(ds, len);
+            {
+                MemberFunction func(translator, instance->startctx, "virtual size32_t numValid(size32_t srcLen, const void * _src) override");
+                func.ctx.addQuotedLiteral("unsigned char * src = (unsigned char *)_src;");
+                OwnedHqlExpr ds = createVariable("src", makeReferenceModifier(tableExpr->getType()));
+                OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
+                OwnedHqlExpr fullDs = createTranslated(ds, len);
 
-            if (isExists)
-            {
-                BuildCtx iterctx(rowsctx);
-                BoundRow * curRow = translator.buildDatasetIterate(iterctx, fullDs, false);
-                s.clear().append("if (valid(");
-                translator.generateExprCpp(s, curRow->queryBound());
-                s.append("))");
-                iterctx.addQuotedCompound(s);
-                iterctx.addReturn(one);
-                rowsctx.addQuotedLiteral("return 0;");
-            }
-            else
-            {
-                rowsctx.addQuotedLiteral("size32_t cnt = 0;");
-                BuildCtx iterctx(rowsctx);
-                BoundRow * curRow = translator.buildDatasetIterate(iterctx, fullDs, false);
-                s.clear().append("cnt += valid(");
-                translator.generateExprCpp(s, curRow->queryBound());
-                s.append(");");
-                iterctx.addQuoted(s);
-                rowsctx.addQuotedLiteral("return cnt;");
+                if (isExists)
+                {
+                    BuildCtx iterctx(func.ctx);
+                    BoundRow * curRow = translator.buildDatasetIterate(iterctx, fullDs, false);
+                    s.clear().append("if (valid(");
+                    translator.generateExprCpp(s, curRow->queryBound());
+                    s.append("))");
+                    iterctx.addQuotedCompound(s, nullptr);
+                    iterctx.addReturn(one);
+                    func.ctx.addQuotedLiteral("return 0;");
+                }
+                else
+                {
+                    func.ctx.addQuotedLiteral("size32_t cnt = 0;");
+                    BuildCtx iterctx(func.ctx);
+                    BoundRow * curRow = translator.buildDatasetIterate(iterctx, fullDs, false);
+                    s.clear().append("cnt += valid(");
+                    translator.generateExprCpp(s, curRow->queryBound());
+                    s.append(");");
+                    iterctx.addQuoted(s);
+                    func.ctx.addQuotedLiteral("return cnt;");
+                }
             }
         }
         else
         {
             //virtual size32_t numValid(size32_t srcLen, const void * src);
-            BuildCtx rowsctx(instance->startctx);
-            rowsctx.addQuotedCompoundLiteral("virtual size32_t numValid(size32_t srcLen, const void * _src)");
+            MemberFunction func(translator, instance->startctx, "virtual size32_t numValid(size32_t srcLen, const void * _src) override");
             if (isExists)
-                rowsctx.addReturn(one);
+                func.ctx.addReturn(one);
             else
             {
-                rowsctx.addQuotedLiteral("unsigned char * src = (unsigned char *)_src;");
+                func.ctx.addQuotedLiteral("unsigned char * src = (unsigned char *)_src;");
                 CHqlBoundExpr bound;
                 bound.length.setown(createVariable("srcLen", LINK(sizetType)));
                 bound.expr.setown(createVariable("src", makeReferenceModifier(tableExpr->getType())));
                 OwnedHqlExpr count = translator.getBoundCount(bound);
-                rowsctx.addReturn(count);
+                func.ctx.addReturn(count);
             }
         }
     }
@@ -2496,6 +2720,35 @@ void SourceBuilder::buildCountHelpers(IHqlExpression * expr, bool allowMultiple)
 
 void SourceBuilder::buildNormalizeHelpers(IHqlExpression * expr)
 {
+}
+
+
+void SourceBuilder::buildCanMatch(IHqlExpression * expr)
+{
+    if (extractCanMatch)
+    {
+        MemberFunction func(translator, instance->startctx);
+        func.start("virtual bool canMatch(const void * _left) override");
+        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        if (newDiskReadMapping)
+            translator.bindTableCursor(func.ctx, projectedSelector, "left");
+        else
+            translator.bindTableCursor(func.ctx, tableExpr, "left");
+
+        //This will have no ill effect for disk read, and is used for blob lookup
+        translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
+        buildTransformFpos(func.ctx);
+
+        unsigned mark = func.numStmts();
+        buildMatchFilter(func.ctx, firstTransformer ? firstTransformer->queryChild(0) : expr);
+        if (func.numStmts() != mark)
+        {
+            func.ctx.addReturn(queryBoolExpr(true));
+            translator.doBuildBoolFunction(instance->classctx, "hasMatchFilter", true);
+        }
+        else
+            func.setIncluded(false);
+    }
 }
 
 
@@ -2547,6 +2800,28 @@ void SourceBuilder::gatherVirtualFields(bool ignoreVirtuals, bool ensureSerializ
         physicalRecord.setown(fieldInfo.createPhysicalRecord());
     else
         physicalRecord.set(record);
+
+    if (newDiskReadMapping)
+    {
+        projectedRecord.set(tableExpr->queryRecord());
+        expectedRecord.setown(getSerializedForm(physicalRecord, diskAtom));
+        //MORE: HPCC-18469 Reduce projected to the fields that are actually required by the dataset, and will need to remap field references.
+
+        if (fieldInfo.hasVirtuals())
+        {
+            StringBuffer typeName;
+            unsigned recordTypeFlags = translator.buildRtlType(typeName, projectedRecord->queryType());
+            if (recordTypeFlags & RFTMcannotinterpret)
+                throwError(HQLERR_CannotInterpretRecord);
+        }
+    }
+    else
+    {
+        expectedRecord.set(physicalRecord);
+        projectedRecord.set(physicalRecord);
+    }
+    tableSelector.set(tableExpr->queryNormalizedSelector());
+    projectedSelector.set(tableSelector);
 }
 
 
@@ -2644,14 +2919,14 @@ class DiskReadBuilderBase : public SourceBuilder
 {
 public:
     DiskReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, 0, true)
+        : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, 0, true, false)
     {
         fpos.setown(getFilepos(tableExpr, false));
         lfpos.setown(getFilepos(tableExpr, true));
         logicalFilenameMarker.setown(getFileLogicalName(tableExpr));
         mode = tableExpr->queryChild(2);
         modeOp = mode->getOperator();
-        includeFormatCrc = (modeOp != no_csv);
+        includeFormatCrc = (modeOp != no_csv && modeOp != no_pipe);
     }
 
     virtual void buildMembers(IHqlExpression * expr);
@@ -2662,7 +2937,7 @@ protected:
     virtual void buildFlagsMember(IHqlExpression * expr);
 
 protected:
-    MonitorExtractor monitors;
+    CppFilterExtractor monitors;
     OwnedHqlExpr globalGuard;
     IHqlExpression * mode;
     node_operator modeOp;
@@ -2675,22 +2950,21 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     StringBuffer s;
 
     //Process any KEYED() information
-    if (monitors.isFiltered())
+    if (monitors.isKeyed())
     {
-        BuildCtx createSegmentCtx(instance->startctx);
-        createSegmentCtx.addQuotedCompoundLiteral("virtual void createSegmentMonitors(IIndexReadContext *irc)");
-        monitors.buildSegments(createSegmentCtx, "irc", true);
+        MemberFunction func(translator, instance->startctx, "virtual void createSegmentMonitors(IIndexReadContext *irc) override");
+        monitors.buildSegments(func.ctx, "irc", true);
     }
-    instance->addAttributeBool("_isKeyed", monitors.isFiltered());
+    instance->addAttributeBool(WaIsKeyed, monitors.isKeyed());
 
     //---- virtual unsigned getFlags()
-    instance->addAttributeBool("preload", isPreloaded);
+    instance->addAttributeBool(WaIsPreload, isPreloaded);
 
     bool matched = translator.registerGlobalUsage(tableExpr->queryChild(0));
     if (translator.getTargetClusterType() == RoxieCluster)
     {
-        instance->addAttributeBool("_isOpt", tableExpr->hasAttribute(optAtom));
-        instance->addAttributeBool("_isSpillGlobal", tableExpr->hasAttribute(jobTempAtom));
+        instance->addAttributeBool(WaIsFileOpt, tableExpr->hasAttribute(optAtom));
+        instance->addAttributeBool(WaIsGlobalSpill, tableExpr->hasAttribute(jobTempAtom));
         if (tableExpr->hasAttribute(jobTempAtom) && !matched)
             throwUnexpected();
     }
@@ -2713,21 +2987,27 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
 
     translator.buildEncryptHelper(instance->startctx, tableExpr->queryAttribute(encryptAtom));
 
-    //---- virtual size32_t getPreloadSize() { return <value>; } ----
+    //---- preloadSize is passed via the xgmml, not via a member
     if (preloadSize)
     {
-        BuildCtx subctx(instance->classctx);
-        subctx.addQuotedCompoundLiteral("virtual size32_t getPreloadSize()");
-        translator.buildReturn(subctx, preloadSize, sizetType);
-        instance->addAttributeInt("_preloadSize", preloadSize->queryValue()->getIntValue());
+        instance->addAttributeInt(WaSizePreload, preloadSize->queryValue()->getIntValue());
     }
 
     if (includeFormatCrc)
     {
         //Spill files can still have virtual attributes in their physical records => remove them.
-        OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(physicalRecord);
-        translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", noVirtualRecord, NULL, 0);
+        OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(expectedRecord);
+        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, noVirtualRecord, NULL, 0);
+
+        if (newDiskReadMapping)
+            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", false, projectedRecord, NULL, 0);
+        else
+            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", false, noVirtualRecord, NULL, 0);
     }
+
+    translator.buildMetaMember(instance->classctx, expectedRecord, isGrouped(tableExpr), "queryDiskRecordSize");
+    if (activityKind != TAKpiperead)
+        translator.buildMetaMember(instance->classctx, projectedRecord, isGrouped(tableExpr), "queryProjectedDiskRecordSize");
 
     buildLimits(instance->startctx, expr, instance->activityId); 
     buildKeyedLimitHelper(expr);
@@ -2748,7 +3028,7 @@ void DiskReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (tableExpr->hasAttribute(optAtom)) flags.append("|TDRoptional");
     if (tableExpr->hasAttribute(_workflowPersist_Atom)) flags.append("|TDXupdateaccessed");
     if (isPreloaded) flags.append("|TDRpreload");
-    if (monitors.isFiltered()) flags.append("|TDRkeyed");
+    if (monitors.isKeyed()) flags.append("|TDRkeyed");
     if (limitExpr)
     {
         if (limitExpr->hasAttribute(onFailAtom))
@@ -2789,34 +3069,54 @@ void DiskReadBuilderBase::buildTransformFpos(BuildCtx & transformCtx)
 
 void DiskReadBuilderBase::extractMonitors(IHqlExpression * ds, SharedHqlExpr & unkeyedFilter, HqlExprArray & conds)
 {
-    ForEachItemIn(i, conds)
+    HqlExprAttr mode = tableExpr->queryChild(2);
+    //KEYED filters can only currently be implemented for binary files - not csv, xml or pipe....
+    if (queryTableMode(tableExpr) == no_flat)
     {
-        IHqlExpression * filter = &conds.item(i);
-        if (isSourceInvariant(ds, filter))                  // more actually isSourceInvariant.
-            extendConditionOwn(globalGuard, no_and, LINK(filter));
-        else
+        OwnedHqlExpr implicitFilter;
+        ForEachItemIn(i, conds)
         {
-            node_operator op = filter->getOperator();
-            switch (op)
+            IHqlExpression * filter = &conds.item(i);
+            if (isSourceInvariant(ds, filter))                  // more actually isSourceInvariant.
+                extendConditionOwn(globalGuard, no_and, LINK(filter));
+            else
             {
-            case no_assertkeyed:
-            case no_assertwild:
+                node_operator op = filter->getOperator();
+                switch (op)
                 {
-                    //MORE: This needs to test that the fields are at fixed offsets, fixed length, and collatable.
-                    OwnedHqlExpr extraFilter;
-                    monitors.extractFilters(filter, extraFilter);
+                case no_assertkeyed:
+                case no_assertwild:
+                    {
+                        //MORE: This needs to test that the fields are at fixed offsets, fixed length, and collatable.
+                        OwnedHqlExpr extraFilter;
+                        monitors.extractFilters(filter, extraFilter);
 
-                    //NB: Even if it is keyed then (part of) the test condition might be duplicated.
-                    appendFilter(unkeyedFilter, extraFilter);
+                        //NB: Even if it is keyed then (part of) the test condition might be duplicated.
+                        appendFilter(unkeyedFilter, extraFilter);
+                        break;
+                    }
+                default:
+                    // Add this condition to the catchall filter
+                    appendFilter(implicitFilter, filter);
                     break;
                 }
-            default:
-                // Add this condition to the catchall filter
-                appendFilter(unkeyedFilter, filter);
-                break;
             }
         }
+
+        if (implicitFilter)
+        {
+            if (translator.queryOptions().implicitKeyedDiskFilter && !monitors.isKeyed())
+            {
+                OwnedHqlExpr extraFilter;
+                monitors.extractFilters(implicitFilter.get(), extraFilter);
+                appendFilter(unkeyedFilter, extraFilter);
+            }
+            else
+                appendFilter(unkeyedFilter, implicitFilter);
+        }
     }
+    else
+        SourceBuilder::extractMonitors(ds, unkeyedFilter, conds);
 }
 
 //---------------------------------------------------------------------------
@@ -2826,17 +3126,46 @@ class DiskReadBuilder : public DiskReadBuilderBase
 public:
     DiskReadBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
+        extractCanMatch = (modeOp == no_thor) || (modeOp == no_flat);
     }
 
-    virtual void buildTransform(IHqlExpression * expr);
-    virtual void buildMembers(IHqlExpression * expr);
+protected:
+    virtual void buildTransform(IHqlExpression * expr) override;
+    virtual void buildMembers(IHqlExpression * expr) override;
+    virtual void analyseGraph(IHqlExpression * expr) override;
 };
+
+
+void DiskReadBuilder::analyseGraph(IHqlExpression * expr)
+{
+    DiskReadBuilderBase::analyseGraph(expr);
+    if (newDiskReadMapping && extractCanMatch && firstTransformer)
+    {
+        //Calculate the minimum set of fields required by any post-filters and projects.
+        projectedRecord.setown(getMinimumInputRecord(translator, firstTransformer));
+        if (projectedRecord != firstTransformer->queryChild(0)->queryRecord())
+        {
+            OwnedHqlExpr selSeq = createUniqueSelectorSequence();
+            projectedSelector.setown(createSelector(no_left, projectedRecord, selSeq));
+
+            //Check if projecting the input fields to the minimum now means the transform can be removed.
+            if ((firstTransformer == lastTransformer) && (projectedRecord == firstTransformer->queryRecord()))
+            {
+                if (isSimpleProject(firstTransformer))
+                    needToCallTransform = false;
+            }
+        }
+    }
+}
 
 
 void DiskReadBuilder::buildMembers(IHqlExpression * expr)
 {
-    buildReadMembers(expr);
+    if (modeOp == no_csv)
+        buildFilenameMember();
+    else if (modeOp != no_pipe)
+        buildReadMembers(expr);
     DiskReadBuilderBase::buildMembers(expr);
 
     //---- virtual const char * getPipeProgram() { return "grep"; } ----
@@ -2844,9 +3173,11 @@ void DiskReadBuilder::buildMembers(IHqlExpression * expr)
     {
         if (expr->hasAttribute(_disallowed_Atom))
             throwError(HQLERR_PipeNotAllowed);
-        BuildCtx pipeCtx(instance->startctx);
-        pipeCtx.addQuotedCompoundLiteral("virtual const char * getPipeProgram()");
-        translator.buildReturn(pipeCtx, mode->queryChild(0), unknownVarStringType);
+
+        {
+            MemberFunction func(translator, instance->startctx, "virtual const char * getPipeProgram() override");
+            translator.buildReturn(func.ctx, mode->queryChild(0), unknownVarStringType);
+        }
 
         IHqlExpression * csvFromPipe = tableExpr->queryAttribute(csvAtom);
         IHqlExpression * xmlFromPipe = tableExpr->queryAttribute(xmlAtom);
@@ -2859,7 +3190,7 @@ void DiskReadBuilder::buildMembers(IHqlExpression * expr)
                 translator.buildCsvReadTransformer(tableExpr, csvInstanceName, csvFromPipe);
 
                 StringBuffer s;
-                s.append("virtual ICsvToRowTransformer * queryCsvTransformer() { return &").append(csvInstanceName).append("; }");
+                s.append("virtual ICsvToRowTransformer * queryCsvTransformer() override { return &").append(csvInstanceName).append("; }");
                 instance->classctx.addQuoted(s);
             }
             else
@@ -2904,13 +3235,15 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
     {
         translator.buildCsvParameters(instance->nestedctx, mode, NULL, true);
 
-        BuildCtx funcctx(instance->startctx);
-        funcctx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc)");
-        translator.ensureRowAllocated(funcctx, "crSelf");
+        {
+            MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc) override");
+            translator.ensureRowAllocated(func.ctx, "crSelf");
 
-        //associateVirtualCallbacks(*this, funcctx, tableExpr);
+            //associateVirtualCallbacks(*this, func.ctx, tableExpr);
 
-        buildTransformBody(funcctx, expr, true, false, true);
+            buildTransformBody(func.ctx, expr, true, false, true);
+        }
+
         rootSelfRow = NULL;
 
         unsigned maxColumns = countTotalFields(tableExpr->queryRecord(), false);
@@ -2918,19 +3251,18 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
         return;
     }
 
-    BuildCtx transformCtx(instance->startctx);
-    if (instance->kind == TAKdiskread)
-        transformCtx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, const void * _left)");
+    MemberFunction func(translator, instance->startctx);
+    if ((instance->kind == TAKdiskread) || (instance->kind == TAKspillread))
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left) override");
     else
-        transformCtx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IFilePositionProvider * fpp)");
-    translator.ensureRowAllocated(transformCtx, "crSelf");
-    transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-    buildTransformBody(transformCtx, expr, true, false, true);
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IFilePositionProvider * fpp) override");
+    translator.ensureRowAllocated(func.ctx, "crSelf");
+    func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+    buildTransformBody(func.ctx, expr, true, false, true);
 }
 
 
 //---------------------------------------------------------------------------
-
 ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlExpression * expr)
 {
 //  assertex(!isGroupedActivity(expr));
@@ -2945,16 +3277,49 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
     info.gatherVirtualFields(tableExpr->hasAttribute(_noVirtual_Atom) || isPiped, needToSerializeRecord(modeOp));
 
     unsigned optFlags = (options.foldOptimized ? HOOfold : 0);
-    if (!info.fieldInfo.simpleVirtualsAtEnd || info.fieldInfo.requiresDeserialize ||
-        (info.recordHasVirtuals() && (modeOp == no_csv || !isSimpleSource(expr))))
+    if (info.newDiskReadMapping && (modeOp != no_csv) && (modeOp != no_xml) && (modeOp != no_pipe))
     {
-        OwnedHqlExpr transformed = buildTableWithoutVirtuals(info.fieldInfo, expr);
-        //Need to wrap a possible no_usertable, otherwise the localisation can go wrong.
-        if (expr->getOperator() == no_table)
-            transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
-        OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
-        traceExpression("after disk optimize", optimized);
-        return doBuildActivityDiskRead(ctx, optimized);
+        //The projected disk information (which is passed to the transform) uses the in memory format IFF
+        // - The source is a spill file (to allow efficient in memory mapping)
+        // - The disk read is a trivial slimming transform (so no transform needs calling on the projected disk format.
+        // Otherwise the table is converted to the serialized format.
+
+        //MORE: This shouldn't always need to be serialized - but engines crash at the moment if not
+        const bool forceAllProjectedSerialized = true;
+        //Reading from a spill file uses the in-memory format to optimize on-demand spilling.
+        bool optimizeInMemorySpill = !targetHThor() && tableExpr->hasAttribute(_spill_Atom);
+        bool useInMemoryFormat = optimizeInMemorySpill || isSimpleProjectingDiskRead(expr);
+        if (forceAllProjectedSerialized || !useInMemoryFormat)
+        {
+            //else if the the table isn't serialized, then map to a serialized table, and then project to the real format
+            if (recordRequiresSerialization(tableExpr->queryRecord(), diskAtom))
+            {
+                OwnedHqlExpr transformed = buildTableFromSerialized(expr);
+                //Need to wrap a possible no_usertable, otherwise the localisation can go wrong.
+                if (expr->getOperator() == no_table)
+                    transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
+                OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
+                traceExpression("after disk optimize", optimized);
+                return doBuildActivityDiskRead(ctx, optimized);
+            }
+        }
+
+        //Otherwise the dataset is in the correct format
+
+    }
+    else
+    {
+        if (!info.fieldInfo.simpleVirtualsAtEnd || info.fieldInfo.requiresDeserialize ||
+            (info.recordHasVirtuals() && (modeOp == no_csv || !isSimpleSource(expr))))
+        {
+            OwnedHqlExpr transformed = buildTableWithoutVirtuals(info.fieldInfo, expr);
+            //Need to wrap a possible no_usertable, otherwise the localisation can go wrong.
+            if (expr->getOperator() == no_table)
+                transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
+            OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
+            traceExpression("after disk optimize", optimized);
+            return doBuildActivityDiskRead(ctx, optimized);
+        }
     }
 
     OwnedHqlExpr optimized;
@@ -2965,9 +3330,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
 
     if (optimized != expr)
         return buildActivity(ctx, optimized, false);
-
-    if (optimized->getOperator() != no_compound_diskread)
-        optimized.setown(createDataset(no_compound_diskread, LINK(optimized)));
 
     if (isPiped)
         return info.buildActivity(ctx, expr, TAKpiperead, "PipeRead", NULL);
@@ -3017,10 +3379,10 @@ void DiskNormalizeBuilder::buildTransform(IHqlExpression * expr)
 {
     globaliterctx.setown(new BuildCtx(instance->startctx));
     globaliterctx->addGroup();
-    BuildCtx transformCtx(instance->startctx);
-    transformCtx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf)");
-    translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, true, false, false);
+
+    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf) override");
+    translator.ensureRowAllocated(func.ctx, "crSelf");
+    buildTransformBody(func.ctx, expr, true, false, false);
 }
 
 
@@ -3085,33 +3447,35 @@ void DiskAggregateBuilder::buildMembers(IHqlExpression * expr)
     buildAggregateHelpers(expr);
 
     //virtual void processRow(void * self, const void * src) = 0;
-    BuildCtx rowctx(instance->startctx);
-    rowctx.addQuotedCompoundLiteral("virtual void processRow(ARowBuilder & crSelf, const void * src)");
-    rowctx.addQuotedLiteral("doProcessRow(crSelf, (byte *)src);");
+    {
+        BuildCtx rowctx(instance->startctx);
+        rowctx.addQuotedFunction("virtual void processRow(ARowBuilder & crSelf, const void * src) override");
+        rowctx.addQuotedLiteral("doProcessRow(crSelf, (const byte *)src);");
+    }
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
-    BuildCtx rowsctx(instance->startctx);
-    rowsctx.addQuotedCompoundLiteral("virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left)");
-    rowsctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-    OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
-    OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
-    OwnedHqlExpr fullDs = createTranslated(ds, len);
+    {
+        MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left) override");
+        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
+        OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
+        OwnedHqlExpr fullDs = createTranslated(ds, len);
 
-    Owned<IHqlCppDatasetCursor> iter = translator.createDatasetSelector(rowsctx, fullDs);
-    BoundRow * curRow = iter->buildIterateLoop(rowsctx, false);
-    s.clear().append("doProcessRow(crSelf, ");
-    translator.generateExprCpp(s, curRow->queryBound());
-    s.append(");");
-    rowsctx.addQuoted(s);
+        Owned<IHqlCppDatasetCursor> iter = translator.createDatasetSelector(func.ctx, fullDs);
+        BoundRow * curRow = iter->buildIterateLoop(func.ctx, false);
+        s.clear().append("doProcessRow(crSelf, ");
+        translator.generateExprCpp(s, curRow->queryBound());
+        s.append(");");
+        func.ctx.addQuoted(s);
+    }
 }
 
 
 void DiskAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    BuildCtx transformCtx(instance->startctx);
-    transformCtx.addQuotedCompoundLiteral("void doProcessRow(ARowBuilder & crSelf, byte * left)");
-    translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, false, false, true);
+    MemberFunction func(translator, instance->startctx, "void doProcessRow(ARowBuilder & crSelf, const byte * left)");
+    translator.ensureRowAllocated(func.ctx, "crSelf");
+    buildTransformBody(func.ctx, expr, false, false, true);
 }
 
 
@@ -3163,21 +3527,19 @@ void DiskCountBuilder::buildTransform(IHqlExpression * expr)
 {
     if (transformCanFilter||isNormalize)
     {
-        BuildCtx transformCtx(instance->startctx);
-        transformCtx.addQuotedCompoundLiteral("size32_t valid(byte * _left)");
-        transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        MemberFunction func(translator, instance->startctx, "size32_t valid(const byte * left)");
         OwnedHqlExpr cnt;
         if (isNormalize)
         {
-            compoundCountVar.setown(transformCtx.getTempDeclare(sizetType, queryZero()));
+            compoundCountVar.setown(func.ctx.getTempDeclare(sizetType, queryZero()));
             cnt.set(compoundCountVar);
         }
         else
             cnt.setown(getSizetConstant(1));
 
-        BuildCtx subctx(transformCtx);
+        BuildCtx subctx(func.ctx);
         buildTransformBody(subctx, expr, false, false, true);
-        transformCtx.addReturn(cnt);
+        func.ctx.addReturn(cnt);
     }
 }
 
@@ -3255,10 +3617,9 @@ void DiskGroupAggregateBuilder::buildMembers(IHqlExpression * expr)
 
 void DiskGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    BuildCtx transformCtx(instance->startctx);
-    transformCtx.addQuotedCompoundLiteral("void doProcessRow(byte * left, IHThorGroupAggregateCallback * callback)");
+    MemberFunction func(translator, instance->startctx, "void doProcessRow(const byte * left, IHThorGroupAggregateCallback * callback)");
     bool accessesCallback = containsOperator(expr, no_filepos) || containsOperator(expr, no_file_logicalname); 
-    buildGroupAggregateTransformBody(transformCtx, expr, isNormalize || accessesCallback, true);
+    buildGroupAggregateTransformBody(func.ctx, expr, isNormalize || accessesCallback, true);
 }
 
 
@@ -3341,10 +3702,10 @@ void ChildNormalizeBuilder::buildTransform(IHqlExpression * expr)
 {
     globaliterctx.setown(new BuildCtx(instance->startctx));
     globaliterctx->addGroup();
-    BuildCtx transformCtx(instance->startctx);
-    transformCtx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf)");
-    translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, true, false, false);
+
+    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf) override");
+    translator.ensureRowAllocated(func.ctx, "crSelf");
+    buildTransformBody(func.ctx, expr, true, false, false);
 }
 
 
@@ -3397,10 +3758,9 @@ void ChildAggregateBuilder::buildMembers(IHqlExpression * expr)
 
 void ChildAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    BuildCtx transformCtx(instance->startctx);
-    transformCtx.addQuotedCompoundLiteral("virtual void processRows(ARowBuilder & crSelf)");
-    translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, false, false, false);
+    MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf) override");
+    translator.ensureRowAllocated(func.ctx, "crSelf");
+    buildTransformBody(func.ctx, expr, false, false, false);
 }
 
 
@@ -3456,14 +3816,13 @@ void ChildGroupAggregateBuilder::buildMembers(IHqlExpression * expr)
     translator.doBuildAggregateClearFunc(instance->startctx, aggregate);
 
     //virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) - never actually called.
-    instance->startctx.addQuotedLiteral("virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) { return 0; }");
+    instance->startctx.addQuotedLiteral("virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) override { return 0; }");
 }
 
 void ChildGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    BuildCtx transformCtx(instance->startctx);
-    transformCtx.addQuotedCompoundLiteral("void processRows(IHThorGroupAggregateCallback * callback)");
-    buildGroupAggregateTransformBody(transformCtx, expr, true, false);
+    MemberFunction func(translator, instance->startctx, "void processRows(IHThorGroupAggregateCallback * callback)");
+    buildGroupAggregateTransformBody(func.ctx, expr, true, false);
 }
 
 
@@ -3521,10 +3880,10 @@ void ChildThroughNormalizeBuilder::buildTransform(IHqlExpression * expr)
 {
     globaliterctx.setown(new BuildCtx(instance->startctx));
     globaliterctx->addGroup();
-    BuildCtx transformCtx(instance->startctx);
-    transformCtx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf)");
-    translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, true, false, false);
+
+    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf) override");
+    translator.ensureRowAllocated(func.ctx, "crSelf");
+    buildTransformBody(func.ctx, expr, true, false, false);
 }
 
 
@@ -3555,2717 +3914,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCompoundSelectNew(BuildCtx & c
     return info.buildActivity(ctx, activityExpr, TAKchildthroughnormalize, "ChildThroughNormalize", childActivity);
 }
 
-//-----------------------------------------------------------------------------------------------
-//-- Index processing
-//-----------------------------------------------------------------------------------------------
-
-/*
-
-  Note on generating segment monitors for conditions (ty)x = Y
-
-  1) casting from Tx to Ty loses information.  E.g., (int1)string2field = int1value.
-     In this case it is almost impossible to generate a segment monitor because we would need to work out all
-     the possibly values for x which could generate the value y.
-     The only exception is an inequality (and no_notin), which we can use to remove some of the candidates.  The test will always need
-     duplicating since we cannot remove all the expected values.
-
-  2) Casting from Ty to Tx loses information.  E.g., (string)string2field = stringvalue
-     In this case we can process the filter without prefiltering by testing whether isExact: (Ty)(Tx)Y == Y, and following the following rules:
-     a) no_eq.  If isExact, add value else nothing.
-     b) no_ne.  If isExtact, remove value else nothing.
-     c) no_gt.  Always add > value
-     d) no_ge.  If isExact add >= value else add > value
-     e) no_lt.  If isExact add < value else add <= value
-     f) no_le.  Always add <= value
-
-  3) Note casts must be present on both sides to indicate exactly what type the comparison will be done as.  This includes (string)which would
-     normally be missing if the field was of type string<n>.
-
-*/
-
-static node_operator getModifiedOp(node_operator op, bool duplicate)
-{
-    if (!duplicate)
-        return op;
-
-    switch (op)
-    {
-    case no_eq:
-    case no_le:
-    case no_ge:
-    case no_in:
-        return op;
-        //err on the side of caution for the segment monitors - 
-        //the test later which check it more accurately.
-    case no_gt:
-        return no_ge;
-    case no_lt:
-        return no_le;
-    case no_ne:
-    case no_notin:
-        return no_none;
-    default:
-        UNIMPLEMENTED;
-    }
-}
-
-
-void KeyFailureInfo::merge(const KeyFailureInfo & other)
-{
-    if (code < other.code)
-        set(other.code, other.field);
-}
-
-void KeyFailureInfo::reportError(HqlCppTranslator & translator, IHqlExpression * condition)
-{
-    StringBuffer ecl;
-    getExprECL(condition, ecl);
-    switch (code)
-    {
-    case KFRunknown:
-        translator.throwError1(HQLERR_KeyedJoinTooComplex, ecl.str());
-    case KFRnokey:
-        translator.throwError1(HQLERR_KeyAccessNoKeyField, ecl.str());
-    case KFRtoocomplex:
-        translator.throwError1(HQLERR_KeyedJoinTooComplex, ecl.str());
-    case KFRcast:
-        translator.throwError2(HQLERR_KeyAccessNeedCast, ecl.str(), str(field->queryName()));
-    case KFRor:
-        translator.throwError1(HQLERR_OrMultipleKeyfields, ecl.str());
-    }
-}
-
-
-const char * BuildMonitorState::getSetName()
-{
-    if (!setNames.isItem(numActiveSets))
-    {
-        StringBuffer name;
-        getUniqueId(name.append("set"));
-        setNames.append(*new StringAttrItem(name.str()));
-
-        StringBuffer s;
-        funcctx.setNextConstructor();
-        funcctx.addQuoted(s.append("Owned<IStringSet> ").append(name).append(";"));
-    }
-
-    return setNames.item(numActiveSets++).text;
-}
-
-
-void BuildMonitorState::popSetName()
-{
-    numActiveSets--;
-}
-
-
-IHqlExpression * KeyConditionInfo::createConjunction()
-{
-    LinkedHqlExpr result = preFilter;
-    ForEachItemIn(i, conditions)
-        extendAndCondition(result, conditions.item(i).expr);
-    extendAndCondition(result, postFilter);
-    return result.getClear();
-}
-
-MonitorExtractor::MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool _allowTranslatedConds) : translator(_translator) 
-{ 
-    tableExpr = _tableExpr;
-    allowTranslatedConds = _allowTranslatedConds;
-
-    if (_numKeyableFields <= 0)
-    {
-        //-ve number means remove a certain number of fields from the record
-        IHqlExpression * record = tableExpr->queryRecord();
-        numKeyableFields = 0;
-        ForEachChild(i, record)
-            if (!record->queryChild(i)->isAttribute())
-                numKeyableFields++;
-        numKeyableFields += _numKeyableFields;          // remove payload fields.
-    }
-    else
-        numKeyableFields = (unsigned)_numKeyableFields;
-
-    onlyHozedCompares = !allowTranslatedConds;
-
-    expandKeyableFields();
-    cleanlyKeyedExplicitly = false;
-    keyedExplicitly = false;
-    allowDynamicFormatChange = !tableExpr->hasAttribute(fixedAtom);
-}
-
-void MonitorExtractor::callAddAll(BuildCtx & ctx, IHqlExpression * targetVar)
-{
-    HqlExprArray args;
-    args.append(*LINK(targetVar));
-    translator.callProcedure(ctx, addAllId, args);
-}
-
-static IHqlExpression * createExpandedRecord(IHqlExpression * expr);
-
-static ITypeInfo * getExpandedFieldType(ITypeInfo * type, IHqlExpression * expr)
-{
-    Linked<ITypeInfo> expandedType = type;
-    if (type->getSize() == UNKNOWN_LENGTH)
-        expandedType.clear();
-    switch (type->getTypeCode())
-    {
-    case type_packedint:
-        expandedType.setown(makeIntType(type->queryPromotedType()->getSize(), type->isSigned()));
-        break;
-    case type_bitfield:
-        expandedType.set(type->queryPromotedType());
-        break;
-    case type_varstring:
-    case type_varunicode:
-#if 0
-        if (type->getSize() != UNKNOWN_LENGTH)
-        {
-            unsigned len = type->getStringLen();
-            switch (type->getTypeCode())
-            {
-            case type_varstring:
-                expandedType.setown(makeStringType(len, LINK(type->queryCharset()), LINK(type->queryCollation())));
-                break;
-            case type_varunicode:
-                expandedType.setown(makeUnicodeType(len, type->queryLocale()));
-                break;
-            }
-            break;
-        }
-#endif              //fall through
-    case type_data:
-    case type_qstring:
-    case type_string:
-    case type_unicode:
-    case type_utf8:
-        if (type->getSize() == UNKNOWN_LENGTH)
-        {
-            unsigned maxLength = UNKNOWN_LENGTH;
-            IHqlExpression * maxSizeExpr = expr ? queryAttributeChild(expr, maxSizeAtom, 0) : NULL;
-            if (maxSizeExpr)
-            {
-                unsigned maxSize = (unsigned)maxSizeExpr->queryValue()->getIntValue();
-                switch (type->getTypeCode())
-                {
-                case type_data:
-                case type_string:
-                    maxLength = maxSize - sizeof(size32_t);
-                    break;
-                case type_qstring:
-                    maxLength = rtlQStrLength(maxSize - sizeof(size32_t));
-                    break;
-                case type_unicode:
-                    maxLength = (maxSize-sizeof(size32_t))/sizeof(UChar);
-                    break;
-                case type_utf8:
-                    maxLength = (maxSize-sizeof(size32_t))/4;
-                    break;
-                case type_varstring:
-                    maxLength = maxSize - 1;
-                    break;
-                case type_varunicode:
-                    maxLength = (maxSize/sizeof(UChar)) - 1;
-                    break;
-                }
-            }
-            else
-            {
-                IHqlExpression * maxLengthExpr = expr ? queryAttributeChild(expr, maxLengthAtom, 0) : NULL;
-                if (maxLengthExpr)
-                    maxLength = (unsigned)maxLengthExpr->queryValue()->getIntValue();
-            }
-
-            if (maxLength != UNKNOWN_LENGTH)
-            {
-                switch (type->getTypeCode())
-                {
-                case type_data:
-                    expandedType.setown(makeDataType(maxLength));
-                    break;
-                case type_qstring:
-                    expandedType.setown(makeQStringType(maxLength));
-                    break;
-                case type_string:
-                    expandedType.setown(makeStringType(maxLength, LINK(type->queryCharset()), LINK(type->queryCollation())));
-                    break;
-                case type_unicode:
-                    expandedType.setown(makeUnicodeType(maxLength, type->queryLocale()));
-                    break;
-                case type_utf8:
-                    expandedType.setown(makeUtf8Type(maxLength, type->queryLocale()));
-                    break;
-                case type_varstring:
-                    expandedType.setown(makeVarStringType(maxLength, LINK(type->queryCharset()), LINK(type->queryCollation())));
-                    break;
-                case type_varunicode:
-                    expandedType.setown(makeVarUnicodeType(maxLength, type->queryLocale()));
-                    break;
-                }
-            }
-        }
-        else
-        {
-            //This could ensure the strings are ascii, but the ebcdic strings are still comparable, and the order will be more logical
-            //if they remain as ebcdic.
-        }
-        break;
-    case type_table:
-    case type_groupedtable:
-    case type_set:
-        expandedType.clear();
-        break;
-    case type_row:
-        {
-            OwnedHqlExpr newRecord = createExpandedRecord(queryRecord(type));
-            if (isEmptyRecord(newRecord))
-                expandedType.clear();
-            else
-                expandedType.setown(makeRowType(LINK(newRecord->queryRecordType())));
-            break;
-        }
-    case type_alien:
-        {
-            IHqlAlienTypeInfo * alien = queryAlienType(type);
-            expandedType.set(alien->queryLogicalType());
-            break;
-        }
-    }
-    return expandedType.getClear();
-}
-
-static void createExpanded(HqlExprArray & fields, IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_ifblock:
-        //if blocks need to generate translated segment monitors to be keyed, so don't expand them
-        break;
-    case no_record:
-        {
-            ForEachChild(i, expr)
-                createExpanded(fields, expr->queryChild(i));
-            break;
-        }
-    case no_field:
-        {
-            ITypeInfo * type = expr->queryType();
-            Owned<ITypeInfo> expandedType = getExpandedFieldType(type, expr);
-            if (expandedType)
-            {
-                if (expandedType == type)
-                    fields.append(*LINK(expr));
-                else
-                {
-                    HqlExprArray attrs;
-                    unwindChildren(attrs, expr);
-                    //MORE: Any default will now have the wrong type => remove it for the moment (ideally it would be projected)
-                    removeAttribute(attrs, defaultAtom);
-                    fields.append(*createField(expr->queryId(), LINK(expandedType), attrs));
-                }
-            }
-            break;
-        }
-    case no_attr:
-    case no_attr_link:
-    case no_attr_expr:
-        fields.append(*LINK(expr));
-        break;
-    }
-}
-
-static IHqlExpression * createExpandedRecord(IHqlExpression * expr)
-{
-    HqlExprArray fields;
-    createExpanded(fields, expr);
-    return cloneOrLink(expr, fields);
-}
-
-
-bool MonitorExtractor::createGroupingMonitor(BuildCtx ctx, const char * listName, IHqlExpression * expr, unsigned & maxOffset)
-{
-    switch (expr->getOperator())
-    {
-    case no_if:
-        {
-            IHqlExpression * cond = expr->queryChild(0);
-            if (expr->queryChild(2)->isConstant() && isIndependentOfScope(cond))
-            {
-                BuildCtx subctx(ctx);
-                translator.buildFilter(subctx, expr->queryChild(0));
-                createGroupingMonitor(subctx, listName, expr->queryChild(1), maxOffset);
-                return true;        // may still be keyed
-            }
-            break;
-        }
-    case no_select:
-        {
-            size32_t offset = 0;
-            ForEachItemIn(i, keyableSelects)
-            {
-                IHqlExpression & cur = keyableSelects.item(i);
-                size32_t curSize = cur.queryType()->getSize();
-                if (curSize == UNKNOWN_LENGTH)
-                    break;
-                if (expr == &cur)
-                {
-                    //MORE: Check the type of the field is legal.
-                    ctx.addQuotedF("%s->append(createWildKeySegmentMonitor(%u, %u));", listName, offset, curSize);
-                    maxOffset = offset+curSize;
-                    return true;
-                }
-                offset += curSize;
-            }
-            break;
-        }
-    case no_constant:
-        return true;
-    }
-    ctx.addReturn(queryBoolExpr(false));
-    return false;
-}
-
-void MonitorExtractor::expandKeyableFields()
-{
-    HqlExprArray fields;
-    IHqlExpression * tableRecord = tableExpr->queryRecord();
-    unsigned cnt = 0;
-    ForEachChild(i, tableRecord)
-    {
-        if (cnt == numKeyableFields)
-            break;
-        IHqlExpression * cur = tableRecord->queryChild(i);
-        if (!cur->isAttribute())
-        {
-            fields.append(*LINK(cur));
-            cnt++;
-        }
-    }
-    keyableRecord.setown(createRecord(fields));
-
-    expandedRecord.setown(createExpandedRecord(keyableRecord));
-    IHqlExpression * selector = tableExpr->queryNormalizedSelector();
-
-    OwnedHqlExpr expandedSelector = createDataset(no_anon, LINK(expandedRecord), createUniqueId());
-    firstOffsetField = NotFound;
-    expandSelects(keyableRecord, expandedRecord->querySimpleScope(), selector, expandedSelector);
-    if (firstOffsetField == NotFound)
-        firstOffsetField = keyableSelects.ordinality();
-}
-
-void MonitorExtractor::expandSelects(IHqlExpression * expr, IHqlSimpleScope * expandedScope, IHqlExpression * keySelector, IHqlExpression * expandedSelector)
-{
-    switch (expr->getOperator())
-    {
-    case no_record:
-        {
-            ForEachChild(i, expr)
-                expandSelects(expr->queryChild(i), expandedScope, keySelector, expandedSelector);
-            break;
-        }
-    case no_ifblock:
-        expandSelects(expr->queryChild(1), expandedScope, keySelector, expandedSelector);
-        break;
-    case no_field:
-        {
-            OwnedHqlExpr match = expandedScope->lookupSymbol(expr->queryId());
-            if (match)
-            {
-                OwnedHqlExpr keySelected = createSelectExpr(LINK(keySelector), LINK(expr));
-                OwnedHqlExpr expandedSelected = createSelectExpr(LINK(expandedSelector), LINK(match));
-                IHqlExpression * record = expr->queryRecord();
-                if (record)
-                    expandSelects(record, match->queryRecord()->querySimpleScope(), keySelected, expandedSelected);
-                else
-                {
-                    if ((expr != match) && (firstOffsetField == NotFound))
-                    {
-                        ITypeInfo * exprType = expr->queryType();
-                        ITypeInfo * matchType = match->queryType();
-                        if ((exprType->getSize() != matchType->getSize()) ||
-                            (exprType->getTypeCode() == type_bitfield || exprType->getTypeCode() == type_bitfield))
-                            firstOffsetField = keyableSelects.ordinality();
-                    }
-
-                    keyableSelects.append(*LINK(keySelected));
-                    expandedSelects.append(*LINK(expandedSelected));
-                }
-            }
-            else
-            {
-                if (firstOffsetField == NotFound)
-                    firstOffsetField = keyableSelects.ordinality();
-            }
-            break;
-        }
-    }
-}
-
-void MonitorExtractor::buildKeySegmentInExpr(BuildMonitorState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * target, IHqlExpression & thisKey, MonitorFilterKind filterKind)
-{
-    //Generally this slightly increases the code size, but reduces the number of
-    //temporary sets which is generally more efficient.
-    OwnedHqlExpr simplified = querySimplifyInExpr(&thisKey);
-    if (simplified)
-    {
-        OwnedHqlExpr folded = foldHqlExpression(simplified);
-        buildKeySegmentExpr(buildState, selectorInfo, ctx, target, *folded, filterKind);
-        return;
-    }
-
-    IHqlExpression * expandedSelector = selectorInfo.expandedSelector;
-    ITypeInfo * fieldType = expandedSelector->queryType();
-    unsigned curSize = fieldType->getSize();
-    createStringSet(ctx, target, curSize, fieldType);
-
-    OwnedHqlExpr targetVar = createVariable(target, makeVoidType());
-    IHqlExpression * lhs = thisKey.queryChild(0);
-    OwnedHqlExpr values = normalizeListCasts(thisKey.queryChild(1));
-
-    IIdAtom * func = addRangeId;
-    if (thisKey.getOperator() == no_notin)
-    {
-        callAddAll(ctx, targetVar);
-        func = killRangeId;
-    }
-
-    if (values->getOperator() != no_list)
-    {
-        //iterate through the set
-        BuildCtx subctx(ctx);
-        CHqlBoundExpr boundCurElement;
-        Owned<IHqlCppSetCursor> cursor = translator.createSetSelector(ctx, values);
-
-        bool done = false;
-        CHqlBoundExpr isAll;
-        cursor->buildIsAll(subctx, isAll);
-        if (isAll.expr->queryValue())
-        {
-            if (isAll.expr->queryValue()->getBoolValue())
-            {
-                callAddAll(subctx, targetVar);
-                done = true;
-                //If ALL allowed exceptions then we would need to do more....
-            }
-        }
-        else
-        {
-            IHqlStmt * stmt = subctx.addFilter(isAll.expr);
-            callAddAll(subctx, targetVar);
-            subctx.selectElse(stmt);
-        }
-
-        if (!done)
-        {
-            cursor->buildIterateLoop(subctx, boundCurElement, false);
-            OwnedHqlExpr curValue = boundCurElement.getTranslatedExpr();
-
-            OwnedHqlExpr test = createBoolExpr(no_eq, LINK(lhs), LINK(curValue));
-            OwnedHqlExpr promoted = getExplicitlyPromotedCompare(test);
-            OwnedHqlExpr compare, normalized;
-            extractCompareInformation(subctx, promoted, compare, normalized, expandedSelector, selectorInfo.isComputed);
-            if (compare)
-                translator.buildFilter(subctx, compare);
-
-            HqlExprArray args;
-            args.append(*LINK(targetVar));
-            unsigned srcSize = normalized->queryType()->getSize();
-            if (srcSize < curSize)
-            {
-                OwnedHqlExpr lengthExpr = getSizetConstant(srcSize);
-                OwnedHqlExpr rangeLower = getRangeLimit(fieldType, lengthExpr, normalized, -1);
-                OwnedHqlExpr rangeUpper = getRangeLimit(fieldType, lengthExpr, normalized, +1);
-
-                CHqlBoundExpr boundLower, boundUpper;
-                translator.buildExpr(subctx, rangeLower, boundLower);
-                translator.buildExpr(subctx, rangeUpper, boundUpper);
-                args.append(*getPointer(boundLower.expr));
-                args.append(*getPointer(boundUpper.expr));
-            }
-            else
-            {
-                OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
-                args.append(*LINK(address));
-                args.append(*LINK(address));
-            }
-            translator.callProcedure(subctx, func, args);
-        }
-    }
-    else
-    {
-        ForEachChild(idx2, values)
-        {
-            BuildCtx subctx(ctx);
-            IHqlExpression * cur = values->queryChild(idx2);
-            OwnedHqlExpr test = createBoolExpr(no_eq, LINK(lhs), LINK(cur));
-            OwnedHqlExpr promoted = getExplicitlyPromotedCompare(test);
-            OwnedHqlExpr compare, normalized;
-            extractCompareInformation(subctx, promoted, compare, normalized, expandedSelector, selectorInfo.isComputed);
-            if (compare)
-                translator.buildFilter(subctx, compare);
-
-            OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
-            HqlExprArray args;
-            args.append(*LINK(targetVar));
-            args.append(*LINK(address));
-            args.append(*LINK(address));
-
-            translator.callProcedure(subctx, func, args);
-        }
-    }
-}
-
-static IHqlExpression * createCompareRecast(node_operator op, IHqlExpression * value, IHqlExpression * recastValue)
-{
-    if (recastValue->queryValue())
-        return LINK(queryBoolExpr(op == no_ne));
-    return createValue(op, makeBoolType(), LINK(value), LINK(recastValue));
-}
-
-
-void MonitorExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isComputed)
-{
-    extractCompareInformation(ctx, expr->queryChild(0), expr->queryChild(1), compare, normalized, expandedSelector, isComputed);
-}
-
-
-void MonitorExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isComputed)
-{
-    LinkedHqlExpr compareValue = value->queryBody();
-    OwnedHqlExpr recastValue;
-    if (isComputed)
-        normalized.setown(ensureExprType(compareValue, expandedSelector->queryType()));
-    else
-    {
-        if ((lhs->getOperator() != no_select) || (lhs->queryType() != compareValue->queryType()))
-        {
-            OwnedHqlExpr temp  = castToFieldAndBack(lhs, compareValue);
-            if (temp != compareValue)
-            {
-                //Force into a temporary variable since it will be used more than once, and reapply the field casting/
-                compareValue.setown(translator.buildSimplifyExpr(ctx, compareValue));
-                //cast to promoted type because sometimes evaluating can convert string to string<n>
-                Owned<ITypeInfo> promotedType = getPromotedECLType(lhs->queryType(), compareValue->queryType());
-                compareValue.setown(ensureExprType(compareValue, promotedType));
-                recastValue.setown(castToFieldAndBack(lhs, compareValue));
-            }
-        }
-
-        normalized.setown(invertTransforms(lhs, compareValue));
-    }
-    normalized.setown(foldHqlExpression(normalized));
-
-    if (recastValue && recastValue != compareValue)
-        compare.setown(createCompareRecast(no_eq, compareValue, recastValue));
-}
-
-void MonitorExtractor::createStringSet(BuildCtx & ctx, const char * target, unsigned size, ITypeInfo * type)
-{
-    if (onlyHozedCompares)
-        ctx.addQuotedF("%s.setown(createRtlStringSet(%u));", target, size);
-    else
-    {
-        bool isBigEndian = !type->isInteger() || !isLittleEndian(type);
-        ctx.addQuotedF("%s.setown(createRtlStringSetEx(%u,%d,%d));", target, size, isBigEndian, type->isSigned());
-    }
-}
-
-void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * targetSet, IHqlExpression & thisKey)
-{
-    OwnedHqlExpr targetVar = createVariable(targetSet, makeVoidType());
-    createStringSet(ctx, targetSet, selectorInfo.size, selectorInfo.expandedSelector->queryType());
-
-    if (!exprReferencesDataset(&thisKey, tableExpr))
-    {
-        BuildCtx subctx(ctx);
-        translator.buildFilter(subctx, &thisKey);
-        callAddAll(subctx, targetVar);
-        return;
-    }
-
-    OwnedHqlExpr compare;
-    OwnedHqlExpr normalized;
-    BuildCtx subctx(ctx);
-    extractCompareInformation(subctx, &thisKey, compare, normalized, selectorInfo.expandedSelector, selectorInfo.isComputed);
-    OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
-
-    HqlExprArray args;
-    args.append(*LINK(targetVar));
-
-    node_operator op = thisKey.getOperator();
-    switch (op)
-    {
-    case no_eq:
-        if (compare)
-            translator.buildFilter(subctx, compare);
-        args.append(*LINK(address));
-        args.append(*LINK(address));
-        translator.callProcedure(subctx, addRangeId, args);
-        break;
-    case no_ne:
-        subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
-        if (compare)
-            translator.buildFilter(subctx, compare);
-        args.append(*LINK(address));
-        args.append(*LINK(address));
-        translator.callProcedure(subctx, killRangeId, args);
-        break;
-    case no_le:
-        args.append(*createValue(no_nullptr, makeVoidType()));
-        args.append(*LINK(address));
-        translator.callProcedure(subctx, addRangeId, args);
-        break;
-    case no_lt:
-        // e) no_lt.  If isExact add < value else add <= value
-        if (compare)
-        {
-            OwnedHqlExpr invCompare = getInverse(compare);
-            IHqlStmt * cond = translator.buildFilterViaExpr(subctx, invCompare);
-            //common this up...
-            args.append(*createValue(no_nullptr, makeVoidType()));
-            args.append(*LINK(address));
-            translator.callProcedure(subctx, addRangeId, args);
-            subctx.selectElse(cond);
-            args.append(*LINK(targetVar));
-        }
-        subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
-        args.append(*LINK(address));
-        args.append(*createValue(no_nullptr, makeVoidType()));
-        translator.callProcedure(subctx, killRangeId, args);
-        break;
-    case no_ge:
-        // d) no_ge.  If isExact add >= value else add > value
-        if (compare)
-        {
-            OwnedHqlExpr invCompare = getInverse(compare);
-            IHqlStmt * cond = translator.buildFilterViaExpr(subctx, invCompare);
-            //common this up...
-            subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
-            args.append(*createValue(no_nullptr, makeVoidType()));
-            args.append(*LINK(address));
-            translator.callProcedure(subctx, killRangeId, args);
-            subctx.selectElse(cond);
-            args.append(*LINK(targetVar));
-        }
-        args.append(*LINK(address));
-        args.append(*createValue(no_nullptr, makeVoidType()));
-        translator.callProcedure(subctx, addRangeId, args);
-        break;
-    case no_gt:
-        subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
-        args.append(*createValue(no_nullptr, makeVoidType()));
-        args.append(*LINK(address));
-        translator.callProcedure(subctx, killRangeId, args);
-        break;
-    case no_between:
-    case no_notbetween:
-        {
-            //NB: This should only be generated for substring queries.  User betweens are converted
-            //to two separate comparisons to cope with range issues.
-            args.append(*LINK(address));
-
-            CHqlBoundExpr rhs2;
-            OwnedHqlExpr adjustedUpper = invertTransforms(thisKey.queryChild(0), thisKey.queryChild(2));
-            OwnedHqlExpr foldedUpper = foldHqlExpression(adjustedUpper);
-            OwnedHqlExpr hozedValue = getHozedKeyValue(foldedUpper);
-            IIdAtom * name = hozedValue->queryId();
-            if ((name != createRangeHighId) && (name != createQStrRangeHighId))
-                hozedValue.setown(ensureExprType(hozedValue, selectorInfo.expandedSelector->queryType()));
-            translator.buildExpr(subctx, hozedValue, rhs2);
-            translator.ensureHasAddress(subctx, rhs2);
-            args.append(*getPointer(rhs2.expr));
-            if (op == no_between)
-                translator.callProcedure(subctx, addRangeId, args);
-            else
-            {
-                subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
-                translator.callProcedure(subctx, killRangeId, args);
-            }
-            break;
-        }
-    default:
-        throwUnexpectedOp(op);
-    }
-}
-
-
-IHqlExpression * MonitorExtractor::unwindConjunction(HqlExprArray & matches, IHqlExpression * expr)
-{
-    node_operator op = expr->getOperator();
-    expr->unwindList(matches, op);
-    OwnedHqlExpr invariant;
-    ForEachItemInRev(i, matches)
-    {
-        IHqlExpression & cur = matches.item(i);
-        if (isIndexInvariant(&cur, false))
-        {
-            invariant.setown(extendConditionOwn(op, LINK(&cur), invariant.getClear()));
-            matches.remove(i);
-        }
-    }
-    return invariant.getClear();
-}
-
-
-//Note this function may change the incoming ctx if filterKind is not NoMonitorFilter
-void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * requiredSet, IHqlExpression & thisKey, MonitorFilterKind filterKind)
-{
-    const char * targetSet = requiredSet;
-    StringBuffer s;
-    unsigned curSize = selectorInfo.size;
-    node_operator op = thisKey.getOperator();
-
-    BuildCtx subctx(ctx);
-    BuildCtx * appendCtx = &ctx;
-    StringBuffer createMonitorText;
-
-    switch (op)
-    {
-    case no_in: 
-    case no_notin:
-        {
-            if (!targetSet)
-                targetSet = buildState.getSetName();
-            buildKeySegmentInExpr(buildState, selectorInfo, ctx, targetSet, thisKey, filterKind);
-            break;
-        }
-    case no_if:
-        {
-            MonitorFilterKind childFilter = targetSet ? NoMonitorFilter : filterKind;
-            IHqlStmt * ifStmt = translator.buildFilterViaExpr(subctx, thisKey.queryChild(0));
-            buildKeySegmentExpr(buildState, selectorInfo, subctx, targetSet, *thisKey.queryChild(1), childFilter);
-            subctx.selectElse(ifStmt);
-            buildKeySegmentExpr(buildState, selectorInfo, subctx, targetSet, *thisKey.queryChild(2), childFilter);
-            break;
-        }
-    case no_and:
-        {
-            HqlExprArray matches;
-            OwnedHqlExpr invariant = unwindConjunction(matches, &thisKey);
-            unsigned numMatches = matches.ordinality();
-
-            if (!targetSet && numMatches > 1)
-                targetSet = buildState.getSetName();
-
-            IHqlStmt * ifStmt = NULL;
-            if (invariant)
-            {
-                ifStmt = translator.buildFilterViaExpr(subctx, invariant);
-                if (filterKind == MonitorFilterSkipEmpty)
-                    ctx.set(subctx);
-            }
-            
-            buildKeySegmentExpr(buildState, selectorInfo, subctx, targetSet, matches.item(0), NoMonitorFilter);
-            for (unsigned i=1; i< numMatches; i++)
-            {
-                IHqlExpression & cur = matches.item(i);
-                const char * curTarget = buildState.getSetName();
-                BuildCtx childctx(subctx);
-                buildKeySegmentExpr(buildState, selectorInfo, childctx, curTarget, cur, MonitorFilterSkipAll);
-                childctx.addQuotedF("%s.setown(rtlIntersectSet(%s,%s));", targetSet, targetSet, curTarget);
-                buildState.popSetName();
-            }
-
-            if (invariant && (filterKind != MonitorFilterSkipEmpty))
-            {
-                subctx.selectElse(ifStmt);
-                if (targetSet)
-                    createStringSet(subctx, targetSet, curSize, selectorInfo.selector->queryType());
-                else
-                    buildEmptyKeySegment(buildState, subctx, selectorInfo);
-            }
-            break;
-        }
-    case no_or:
-        {
-            HqlExprArray matches;
-            OwnedHqlExpr invariant = unwindConjunction(matches, &thisKey);
-            unsigned numMatches = matches.ordinality();
-
-            if (invariant)
-            {
-                if (filterKind == MonitorFilterSkipAll)
-                {
-                    OwnedHqlExpr test = getInverse(invariant);
-                    translator.buildFilter(subctx, test);
-                    ctx.set(subctx);
-                }
-                else
-                {
-                    IHqlStmt * ifStmt = translator.buildFilterViaExpr(subctx, invariant);
-                    if (targetSet)
-                    {
-                        createStringSet(subctx, targetSet, curSize, selectorInfo.selector->queryType());
-                        OwnedHqlExpr targetVar = createVariable(targetSet, makeVoidType());
-                        callAddAll(subctx, targetVar);
-                    }
-                    else
-                        buildWildKeySegment(buildState, subctx, selectorInfo);
-                    subctx.selectElse(ifStmt);
-                }
-            }
-            
-            appendCtx = &subctx;
-            if (!targetSet && numMatches > 1)
-                targetSet = buildState.getSetName();
-
-            buildKeySegmentExpr(buildState, selectorInfo, subctx, targetSet, matches.item(0), NoMonitorFilter);
-            for (unsigned i=1; i < numMatches; i++)
-            {
-                IHqlExpression & cur = matches.item(i);
-                const char * curTarget = buildState.getSetName();
-                BuildCtx childctx(subctx);
-                buildKeySegmentExpr(buildState, selectorInfo, childctx, curTarget, cur, MonitorFilterSkipEmpty);
-                childctx.addQuotedF("%s.setown(rtlUnionSet(%s, %s));", targetSet, targetSet, curTarget);
-                buildState.popSetName();
-            }
-            break;
-        }
-    case no_eq:
-        {
-            if (!targetSet)
-            {
-                if (buildSingleKeyMonitor(createMonitorText, selectorInfo, subctx, thisKey))
-                    break;
-                targetSet = buildState.getSetName();
-            }
-            buildKeySegmentCompareExpr(buildState, selectorInfo, ctx, targetSet, thisKey);
-            break;
-        }
-    default:
-        {
-            if (!targetSet)
-                targetSet = buildState.getSetName();
-            buildKeySegmentCompareExpr(buildState, selectorInfo, ctx, targetSet, thisKey);
-            break;
-        }
-    }
-
-    if (targetSet && !requiredSet)
-    {
-        unsigned offset = (selectorInfo.isComputed || selectorInfo.mapOffset) ? 0 : selectorInfo.offset;
-        createMonitorText.appendf("createKeySegmentMonitor(%s, %s.getClear(), %u, %u)", 
-                                  boolToText(selectorInfo.keyedKind != KeyedYes), targetSet, offset, selectorInfo.size);
-
-        buildState.popSetName();
-    }
-
-    if (createMonitorText.length())
-    {
-        if (selectorInfo.expandNeeded || selectorInfo.isComputed)
-            generateFormatWrapping(createMonitorText, selectorInfo.selector, selectorInfo.expandedSelector, buildState.curOffset);
-        else if (selectorInfo.mapOffset)
-            generateOffsetWrapping(createMonitorText, selectorInfo.selector, buildState.curOffset);
-
-        appendCtx->addQuotedF("%s->append(%s);", buildState.listName, createMonitorText.str());
-    }
-}
-
-
-IHqlExpression * MonitorExtractor::getMonitorValueAddress(BuildCtx & ctx, IHqlExpression * _value)
-{
-    LinkedHqlExpr value = _value;
-    CHqlBoundExpr bound;
-    ITypeInfo * type = value->queryType();
-    switch (type->getTypeCode())
-    {
-    case type_varstring: case type_varunicode:
-        {
-            assertex(type->getSize() != UNKNOWN_LENGTH);
-            CHqlBoundTarget tempTarget;
-            translator.createTempFor(ctx, type, tempTarget, typemod_none, FormatNatural);
-            //clear the variable.
-            HqlExprArray args;
-            args.append(*getPointer(tempTarget.expr));
-            args.append(*getZero());
-            args.append(*getSizetConstant(type->getSize()));
-            OwnedHqlExpr call = translator.bindTranslatedFunctionCall(memsetId, args);
-            ctx.addExpr(call);
-            //then assign over the top
-            translator.buildExprAssign(ctx, tempTarget, value);
-            bound.setFromTarget(tempTarget);
-            break;
-        }
-    default:
-        translator.buildExpr(ctx, value, bound);
-        translator.ensureHasAddress(ctx, bound);
-        break;
-    }
-    return getPointer(bound.expr);
-}
-
-
-/*
-interface IKeySegmentOffsetTranslator : public IInterface
-{
-    virtual const void * getSegmentBase(const void * row) const = 0;
-};
-
-interface IKeySegmentFormatTranslator : public IInterface
-{
-    virtual void extractField(void * target, const void * row) const = 0;
-};
-*/
-
-void MonitorExtractor::generateOffsetWrapping(StringBuffer & createMonitorText, IHqlExpression * selector, unsigned curOffset)
-{
-    //MORE: Common up classes if same field filtered more than once.
-    OwnedHqlExpr key = createAttribute(wrapperAtom, LINK(selector));
-
-    BuildCtx declarectx(*translator.code, declareAtom);
-    StringBuffer s, suffix, instanceName, className, factoryName;
-    unique_id_t id = translator.getUniqueId();
-    appendUniqueId(className.append("c"), id);
-    appendUniqueId(instanceName.append("i"), id);
-    appendUniqueId(factoryName.append("f"), id);
-
-    declarectx.setPriority(SegMonitorPrio);
-    BuildCtx classctx(declarectx);
-    //MORE: Use a base class for implementing this to save Link()/Release()
-    s.clear().append("struct ").append(className).append(" : public RtlCInterface, public IKeySegmentOffsetTranslator");
-    suffix.append(instanceName).append(";");
-    classctx.addQuotedCompound(s, suffix);
-    classctx.addQuotedLiteral("virtual void Link() const { RtlCInterface::Link(); }");
-    classctx.addQuotedLiteral("virtual bool Release() const { return RtlCInterface::Release(); }");
-    classctx.addQuoted(s.clear().append("virtual const char * queryFactoryName() const { return \"").append(factoryName).append("\"; }"));
-
-    classctx.addQuotedCompoundLiteral("virtual const void * getSegmentBase(const void * _row) const");
-    classctx.addQuotedLiteral("const byte * row = (const byte *)_row;");
-    classctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
-    translator.bindTableCursor(classctx, tableExpr, "row");
-    CHqlBoundExpr bound;
-    Owned<IReferenceSelector> ds = translator.buildReference(classctx, selector);
-    ds->buildAddress(classctx, bound);
-    classctx.addReturn(bound.expr);
-
-    declarectx.addQuoted(s.clear().append("IKeySegmentOffsetTranslator * ").append(factoryName).append("() { return new ").append(className).append("; }"));
-
-    if (translator.options.spanMultipleCpp)
-    {
-        s.clear().append("extern IKeySegmentOffsetTranslator * ").append(factoryName).append("();");
-        BuildCtx protoctx(*translator.code, mainprototypesAtom);
-        protoctx.addQuoted(s);
-    }
-
-
-    //TAKE NOTE: Child activities are only colocal if whole graph is colocal, or targeting roxie and activity is colocal.
-    //Email Richard if any objections to changing parameters so byte * not void *.  Would save quite a lot of generated boilerplate code.
-
-    s.clear().append("createVarOffsetKeySegmentMonitor(").append(createMonitorText).append(",").append(curOffset).append(",").append(factoryName).append("())");
-    createMonitorText.swapWith(s);
-}
-
-void MonitorExtractor::generateFormatWrapping(StringBuffer & createMonitorText, IHqlExpression * selector, IHqlExpression * expandedSelector, unsigned curOffset)
-{
-    BuildCtx declarectx(*translator.code, declareAtom);
-    StringBuffer s, suffix, instanceName, className, factoryName;
-    unique_id_t id = translator.getUniqueId();
-    appendUniqueId(className.append("c"), id);
-    appendUniqueId(instanceName.append("i"), id);
-    appendUniqueId(factoryName.append("f"), id);
-
-    declarectx.setNextPriority(SegMonitorPrio);
-    BuildCtx classctx(declarectx);
-    //MORE: Use a base class for implementing this to save Link()/Release()
-    s.clear().append("struct ").append(className).append(" : public RtlCInterface, public IKeySegmentFormatTranslator");
-    suffix.append(instanceName).append(";");
-    classctx.addQuotedCompound(s, suffix);
-    classctx.addQuotedLiteral("virtual void Link() const { RtlCInterface::Link(); }");
-    classctx.addQuotedLiteral("virtual bool Release() const { return RtlCInterface::Release(); }");
-    classctx.addQuoted(s.clear().append("virtual const char * queryFactoryName() const { return \"").append(factoryName).append("\"; }"));
-    classctx.addQuoted(s.clear().append("virtual unsigned queryHashCode() const { return ").append(getExpressionCRC(selector)).append("; }"));
-    classctx.addQuotedCompoundLiteral("virtual void extractField(void * _target, const void * _row) const");
-    classctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
-    classctx.addQuotedLiteral("const byte * row = (const byte *)_row;");
-    classctx.addQuotedLiteral("byte * target = (byte *)_target;");
-
-    OwnedHqlExpr castValue = ensureExprType(selector, expandedSelector->queryType());
-    LinkedHqlExpr targetField = expandedSelector->queryChild(1);
-    OwnedHqlExpr simpleRecord = createRecord(targetField);
-    OwnedHqlExpr targetDataset = createDataset(no_anon, LINK(simpleRecord));
-    OwnedHqlExpr target = createSelectExpr(LINK(targetDataset), LINK(targetField));
-
-    translator.bindTableCursor(classctx, tableExpr, "row");
-    translator.bindTableCursor(classctx, targetDataset, "target");
-    translator.buildAssign(classctx, target, castValue);
-
-    declarectx.setNextPriority(SegMonitorPrio);
-    declarectx.addQuoted(s.clear().append("IKeySegmentFormatTranslator * ").append(factoryName).append("() { return new ").append(className).append("; }"));
-    if (translator.spanMultipleCppFiles())
-    {
-        s.clear().append("extern IKeySegmentFormatTranslator * ").append(factoryName).append("();");
-        BuildCtx protoctx(*translator.code, mainprototypesAtom);
-        protoctx.addQuoted(s);
-    }
-
-    //Now generate the key segment monitor...
-    s.clear().append("createTranslatedKeySegmentMonitor(").append(createMonitorText).append(",").append(curOffset).append(",").append(factoryName).append("())");
-    createMonitorText.swapWith(s);
-}
-
-bool MonitorExtractor::buildSingleKeyMonitor(StringBuffer & createMonitorText, KeySelectorInfo & selectorInfo, BuildCtx & ctx, IHqlExpression & thisKey)
-{
-    BuildCtx subctx(ctx);
-    OwnedHqlExpr compare, normalized;
-
-    StringBuffer funcName;
-    extractCompareInformation(subctx, &thisKey, compare, normalized, selectorInfo.expandedSelector, selectorInfo.isComputed);
-    if (compare)
-        return false;
-
-    ITypeInfo * type = selectorInfo.expandedSelector->queryType();
-    type_t tc = type->getTypeCode();
-    if ((tc == type_int) || (tc == type_swapint))
-    {
-        if (isLittleEndian(type))
-        {
-            if (type->isSigned())
-                funcName.append("createSingleLittleSignedKeySegmentMonitor");
-            else if (type->getSize() != 1)
-                funcName.append("createSingleLittleKeySegmentMonitor");
-        }
-        else
-        {
-            if (type->isSigned())
-                funcName.append("createSingleBigSignedKeySegmentMonitor");
-            else
-                funcName.append("createSingleKeySegmentMonitor");
-        }
-    }
-    
-    if (!funcName.length())
-        funcName.append("createSingleKeySegmentMonitor");
-
-    OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
-    StringBuffer addrText;
-    translator.generateExprCpp(addrText, address);
-
-    unsigned offset = (selectorInfo.isComputed || selectorInfo.mapOffset) ? 0 : selectorInfo.offset;
-    createMonitorText.append(funcName)
-                     .appendf("(%s, %u, %u, %s)", 
-                              boolToText(selectorInfo.keyedKind != KeyedYes), offset, selectorInfo.size, addrText.str());
-    return true;
-}
-
-KeyedKind getKeyedKind(HqlCppTranslator & translator, KeyConditionArray & matches)
-{
-    KeyedKind keyedKind = KeyedNo;
-    ForEachItemIn(i, matches)
-    {
-        KeyCondition & cur = matches.item(i);
-        if (cur.keyedKind != keyedKind)
-        {
-            if (keyedKind == KeyedNo)
-                keyedKind = cur.keyedKind;
-            else
-                translator.throwError1(HQLERR_InconsistentKeyedOpt, str(cur.selector->queryChild(1)->queryName()));
-        }
-    }
-    return keyedKind;
-}
-
-void MonitorExtractor::buildEmptyKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, KeySelectorInfo & selectorInfo)
-{
-    StringBuffer s;
-    ctx.addQuoted(s.appendf("%s->append(createEmptyKeySegmentMonitor(%s, %u, %u));", buildState.listName, boolToText(selectorInfo.keyedKind != KeyedYes), selectorInfo.offset, selectorInfo.size));
-}
-
-
-void MonitorExtractor::buildWildKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, unsigned offset, unsigned size)
-{
-    StringBuffer s;
-    ctx.addQuoted(s.appendf("%s->append(createWildKeySegmentMonitor(%u, %u));", buildState.listName, offset, size));
-}
-
-
-void MonitorExtractor::buildWildKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, KeySelectorInfo & selectorInfo)
-{
-    buildWildKeySegment(buildState, ctx, selectorInfo.offset, selectorInfo.size);
-}
-
-
-void MonitorExtractor::buildKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, unsigned whichField, unsigned curSize)
-{
-    IHqlExpression * selector = &keyableSelects.item(whichField);
-    IHqlExpression * expandedSelector = &expandedSelects.item(whichField);
-    IHqlExpression * field = selector->queryChild(1);
-    KeyConditionArray matches;
-    bool isImplicit = true;
-    bool prevWildWasKeyed = buildState.wildWasKeyed;
-    buildState.wildWasKeyed = false;
-    ForEachItemIn(cond, keyed.conditions)
-    {
-        KeyCondition & cur = keyed.conditions.item(cond);
-        if (cur.selector == selector)
-        {
-            cur.generated = true;
-            if (cur.isWild)
-            {
-                isImplicit = false;
-                if (cur.wasKeyed)
-                    buildState.wildWasKeyed = true;
-                else if (buildState.implicitWildField && !ignoreUnkeyed)
-                {
-                    StringBuffer s, keyname;
-                    translator.throwError3(HQLERR_WildFollowsGap, getExprECL(field, s).str(), str(buildState.implicitWildField->queryChild(1)->queryName()), queryKeyName(keyname));
-                }
-            }
-            else
-            {
-                matches.append(OLINK(cur));
-                if (buildState.implicitWildField && !ignoreUnkeyed)
-                {
-                    StringBuffer s,keyname;
-                    if (cur.isKeyed())
-                        translator.throwError3(HQLERR_KeyedFollowsGap, getExprECL(field, s).str(), str(buildState.implicitWildField->queryChild(1)->queryName()), queryKeyName(keyname));
-                    else if (!buildState.doneImplicitWarning)
-                    {
-                        translator.WARNING3(CategoryEfficiency, HQLWRN_KeyedFollowsGap, getExprECL(field, s).str(), str(buildState.implicitWildField->queryChild(1)->queryName()), queryKeyName(keyname));
-                        buildState.doneImplicitWarning = true;
-                    }
-                }
-            }
-        }
-    }
-    if (buildState.wildWasKeyed && (matches.ordinality() == 0))
-    {
-        StringBuffer keyname;
-        translator.WARNING2(CategoryFolding, HQLWRN_FoldRemoveKeyed, str(field->queryName()), queryKeyName(keyname));
-    }
-
-    StringBuffer s;
-    KeyedKind keyedKind = getKeyedKind(translator, matches);
-    KeySelectorInfo selectorInfo(keyedKind, selector, expandedSelector, buildState.curOffset, curSize, (whichField >= firstOffsetField), false);
-
-    bool ignoreKeyedExtend = false;
-    if ((keyedKind == KeyedExtend) && buildState.wildPending() && !ignoreUnkeyed)
-    {
-        if (keyedKind == KeyedExtend)
-        {
-            if (prevWildWasKeyed)
-                buildState.wildWasKeyed = true;
-            else
-            {
-                StringBuffer keyname;
-                translator.WARNING2(CategoryEfficiency, HQLERR_OptKeyedFollowsWild, getExprECL(field, s).str(), queryKeyName(keyname));
-            }
-        }
-        //previous condition folded so always true, so keyed,opt will always be a wildcard.
-
-        if (!allowDynamicFormatChange)
-            ignoreKeyedExtend = true;
-        isImplicit = false;
-    }
-
-    if (matches.ordinality() && !ignoreKeyedExtend)
-    {
-        if (buildState.wildPending() && !ignoreUnkeyed)
-        {
-            buildWildKeySegment(buildState, ctx, buildState.wildOffset, buildState.curOffset-buildState.wildOffset);
-            buildState.clearWild();
-        }
-
-        HqlExprArray args;
-        ForEachItemIn(i, matches)
-        {
-            KeyCondition & cur = matches.item(i);
-            args.append(*LINK(cur.expr));
-        }
-
-        OwnedHqlExpr fullExpr = createBalanced(no_and, queryBoolType(), args);
-        BuildCtx subctx(ctx);
-        buildKeySegmentExpr(buildState, selectorInfo, subctx, NULL, *fullExpr, ignoreUnkeyed ? MonitorFilterSkipAll : NoMonitorFilter);
-    }
-    else
-    {
-        if (isImplicit)
-        {
-            buildState.implicitWildField.set(selector);
-            buildState.doneImplicitWarning = false;
-        }
-
-        if (buildState.wildPending() && noMergeSelects.contains(*selector))
-        {
-            buildWildKeySegment(buildState, ctx, buildState.wildOffset, buildState.curOffset-buildState.wildOffset);
-            buildState.clearWild();
-        }
-
-        if (!buildState.wildPending())
-            buildState.wildOffset = buildState.curOffset;
-    }
-    buildState.curOffset += selectorInfo.size;
-}
-
-void MonitorExtractor::buildArbitaryKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, unsigned curSize, IHqlExpression * condition)
-{
-    IHqlExpression * left = condition->queryChild(0);
-    node_operator op = condition->getOperator();
-
-    StringBuffer createMonitorText;
-    OwnedHqlExpr field = createField(unknownId, getExpandedFieldType(left->queryType(), NULL), NULL);
-    OwnedHqlExpr pseudoSelector = createSelectExpr(getActiveTableSelector(), LINK(field));
-
-    KeySelectorInfo selectorInfo(KeyedExtend, left, pseudoSelector, buildState.curOffset, curSize, false, true);
-    BuildCtx subctx(ctx);
-    buildKeySegmentExpr(buildState, selectorInfo, subctx, NULL, *condition, MonitorFilterSkipAll);
-}
-
-
-void MonitorExtractor::spotSegmentCSE(BuildCtx & ctx)
-{
-    //This could make things much better, but needs some thought
-    HqlExprArray conditions;
-    ForEachItemIn(cond, keyed.conditions)
-    {
-        KeyCondition & cur = keyed.conditions.item(cond);
-        if (cur.expr)
-            conditions.append(*LINK(cur.expr));
-    }
-
-    HqlExprArray associated;
-    IHqlExpression * selector = tableExpr->queryNormalizedSelector();
-    translator.traceExpressions("before seg spot", conditions);
-    spotScalarCSE(conditions, associated, NULL, selector, translator.queryOptions().spotCseInIfDatasetConditions);
-    translator.traceExpressions("after seg spot", conditions);
-
-    unsigned curCond = 0;
-    ForEachItemIn(i, conditions)
-    {
-        IHqlExpression * cur = &conditions.item(i);
-        switch (cur->getOperator())
-        {
-        case no_alias:
-            translator.buildStmt(ctx, cur);
-            break;
-        case no_alias_scope:
-            translator.expandAliasScope(ctx, cur);
-            cur = cur->queryChild(0);
-            //fallthrough
-        default:
-            for (;;)
-            {   
-                if (!keyed.conditions.isItem(curCond))
-                    throwUnexpected();
-                KeyCondition & keyCond = keyed.conditions.item(curCond++);
-                if (keyCond.expr)
-                {
-                    keyCond.expr.set(cur);
-                    break;
-                }
-            }
-            break;
-        }
-    }
-    for (;;)
-    {   
-        if (!keyed.conditions.isItem(curCond))
-            break;
-        KeyCondition & keyCond = keyed.conditions.item(curCond++);
-        assertex(!keyCond.expr);
-    }
-}
-
-
-void MonitorExtractor::buildSegments(BuildCtx & ctx, const char * listName, bool _ignoreUnkeyed)
-{
-    translator.useInclude("rtlkey.hpp");
-    ignoreUnkeyed = _ignoreUnkeyed;
-
-    if (translator.queryOptions().spotCSE)
-        spotSegmentCSE(ctx);
-
-    BuildMonitorState buildState(ctx, listName);
-    ForEachItemIn(idx, keyableSelects)
-    {
-        IHqlExpression * selector = &keyableSelects.item(idx);
-        IHqlExpression * expandedSelector = &expandedSelects.item(idx);
-        IHqlExpression * field = selector->queryChild(1);
-        unsigned curSize = expandedSelector->queryType()->getSize();
-        assertex(curSize != UNKNOWN_LENGTH);
-
-        //MORE: Should also allow nested record structures, and allow keying on first elements.
-        //      and field->queryType()->getSize() doesn't work for alien datatypes etc.
-        if(!field->hasAttribute(virtualAtom))
-        {
-            if (mergedSizes.isItem(idx))
-                curSize = mergedSizes.item(idx);
-            if (curSize)
-                buildKeySegment(buildState, ctx, idx, curSize);
-            else
-            {
-                ForEachItemIn(cond, keyed.conditions)
-                {
-                    KeyCondition & cur = keyed.conditions.item(cond);
-                    if (cur.selector == selector)
-                        cur.generated = true;
-                }
-            }
-        }
-    }
-
-    if (buildState.wildPending() && !ignoreUnkeyed)
-        buildWildKeySegment(buildState, ctx, buildState.wildOffset, buildState.curOffset-buildState.wildOffset);
-
-    //These really don't work very sensibly - we would need an offset that was constant, possibly based on the crc of the expression.
-    //I suspect they need a complete rethink.
-    ForEachItemIn(i, keyed.conditions)
-    {
-        KeyCondition & cur = keyed.conditions.item(i);
-        if (cur.selector->isAttribute() && cur.selector->queryName() == _translated_Atom)
-        {
-            BuildCtx subctx(ctx);
-            IHqlExpression * curExpr = cur.expr;
-            unsigned curSize = curExpr->queryChild(0)->queryType()->getSize();
-            buildArbitaryKeySegment(buildState, subctx, curSize, curExpr);
-            buildState.curOffset += curSize;
-            cur.generated = true;
-        }
-    }
-
-    //check that all keyed entries have been matched
-    ForEachItemIn(cond, keyed.conditions)
-    {
-        KeyCondition & cur = keyed.conditions.item(cond);
-        if (!cur.generated)
-            translator.throwError(HQLERR_OnlyKeyFixedField);
-    }
-}
-
-
-static UniqueSequenceCounter translatedSequence;
-KeyCondition * MonitorExtractor::createTranslatedCondition(IHqlExpression * cond, KeyedKind keyedKind)
-{
-    OwnedHqlExpr seq = createSequence(no_attr, makeNullType(), _translated_Atom, translatedSequence.next());
-    return new KeyCondition(seq, cond, keyedKind);
-}
-
-bool MonitorExtractor::isKeySelect(IHqlExpression * select)
-{
-    return (keyableSelects.find(*select) != NotFound);
-}
-
-bool MonitorExtractor::isEqualityFilter(IHqlExpression * search)
-{
-    bool matched = false;
-    ForEachItemIn(cond, keyed.conditions)
-    {
-        KeyCondition & cur = keyed.conditions.item(cond);
-        if (cur.selector == search)
-        {
-            if (!cur.isWild)
-            {
-                if (matched)
-                    return false;
-                matched = true;
-                IHqlExpression * matchExpr = cur.expr;
-                if (matchExpr->getOperator() != no_eq)
-                    return false;
-            }
-        }
-    }
-    return matched;
-}
-
-bool MonitorExtractor::isEqualityFilterBefore(IHqlExpression * select)
-{
-    ForEachItemIn(i, keyableSelects)
-    {
-        IHqlExpression & cur = keyableSelects.item(i);
-        if (select == &cur)
-            return true;
-        if (!isEqualityFilter(&cur))
-            return false;
-    }
-    throwUnexpected();
-}
-
-bool MonitorExtractor::isPrevSelectKeyed(IHqlExpression * select)
-{
-    unsigned match = keyableSelects.find(*select);
-    assertex(match != NotFound);
-    if (match == 0)
-        return true;
-    IHqlExpression * prev = &keyableSelects.item(match-1);
-    ForEachItemIn(i, keyed.conditions)
-    {
-        KeyCondition & cur = keyed.conditions.item(i);
-        if (cur.selector == prev)
-        {
-            if (!cur.isWild && cur.isKeyed())
-                return true;
-            if (cur.wasKeyed)
-                return true;
-        }
-    }
-    return false;
-}
-
-
-bool MonitorExtractor::okToKey(IHqlExpression * select, KeyedKind keyedKind)
-{
-    if (keyedKind == KeyedYes)
-        return true;
-
-    ForEachItemIn(i, keyed.conditions)
-    {
-        KeyCondition & cur = keyed.conditions.item(i);
-        if (cur.selector == select && cur.isWild)
-            return false;
-    }
-
-    return true;
-}
-
-bool MonitorExtractor::isIndexInvariant(IHqlExpression * expr, bool includeRoot)
-{
-    if (containsAssertKeyed(expr))
-        return false;
-
-    HqlExprCopyArray scopeUsed;
-    expr->gatherTablesUsed(NULL, &scopeUsed);
-
-    IHqlExpression * search = tableExpr->queryNormalizedSelector();
-    ForEachItemIn(i, scopeUsed)
-    {
-        IHqlExpression * cur = &scopeUsed.item(i);
-        for (;;)
-        {
-            if (cur == search)
-                return false;
-
-            if (includeRoot && (queryRoot(cur) == search))
-                return false;
-
-            IHqlExpression * parent = queryNextMultiLevelDataset(cur, true);
-            if (!parent)
-                break;
-            cur = parent;
-        }
-    }
-    return true;
-}
-
-
-
-
-IHqlExpression * MonitorExtractor::castToFieldAndBack(IHqlExpression * left, IHqlExpression * right)
-{
-    node_operator op = left->getOperator();
-    switch (op)
-    {
-    case no_cast:
-    case no_implicitcast:
-        {
-            IHqlExpression * uncast = left->queryChild(0);
-            ITypeInfo * castType = right->queryType();
-            ITypeInfo * uncastType = uncast->queryType();
-
-            OwnedHqlExpr castRight = ensureExprType(right, uncastType);
-            OwnedHqlExpr base = castToFieldAndBack(uncast, castRight);
-            //If this cast doesn't lose any information and child didn't change then don't bother
-            //casting back and forwards.
-            if ((base == castRight) && !castLosesInformation(uncastType, castType))
-                return LINK(right);
-            return ensureExprType(base, castType);
-        }
-
-    case no_select:
-        {
-            ITypeInfo * leftType = left->queryType();
-            ITypeInfo * rightType = right->queryType();
-            if (leftType == rightType || !castLosesInformation(leftType, rightType))
-                return LINK(right);
-            return ensureExprType(right, leftType);
-        }
-    case no_substring:
-    case no_add:
-    case no_sub:
-        return castToFieldAndBack(left->queryChild(0), right);
-    default:
-        UNIMPLEMENTED;
-    }
-}
-
-
-
-IHqlExpression * MonitorExtractor::invertTransforms(IHqlExpression * left, IHqlExpression * right)
-{
-    node_operator op = left->getOperator();
-    switch (op)
-    {
-    case no_cast:
-    case no_implicitcast:
-        {
-            assertex(right->queryType()->getTypeCode() != type_set);
-
-            IHqlExpression * uncast = left->queryChild(0);
-            ITypeInfo * uncastType = uncast->queryType();
-
-
-            OwnedHqlExpr castRight = ensureExprType(right, uncastType);
-            return invertTransforms(uncast, castRight);
-        }
-
-    case no_select:
-        {
-            assertex(isKeySelect(left));
-            ITypeInfo * leftType = left->queryType();
-            ITypeInfo * rightType = right->queryType();
-            if (leftType == rightType || !castLosesInformation(leftType, rightType))
-                return LINK(right);
-            return ensureExprType(right, leftType);
-        }
-
-    case no_add:
-    case no_sub:
-        {
-            assertex(right->getOperator() != no_list);
-
-            OwnedHqlExpr adjusted = createValue(op == no_sub ? no_add : no_sub, right->getType(), LINK(right), LINK(left->queryChild(1)));
-            return invertTransforms(left->queryChild(0), adjusted);
-        }
-     case no_substring:
-         {
-             assertex(right->getOperator() != no_list);
-
-             return invertTransforms(left->queryChild(0), right);
-         }
-    default:
-        UNIMPLEMENTED;
-    }
-}
-
-
-
-IHqlExpression * MonitorExtractor::queryKeyableSelector(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_cast:
-    case no_implicitcast:
-    case no_add:
-    case no_sub:
-        return queryKeyableSelector(expr->queryChild(0));
-    case no_select:
-        if (isKeySelect(expr))
-            return expr;
-        return NULL;
-    }
-    return NULL;
-}
-
-IHqlExpression * MonitorExtractor::isKeyableFilter(IHqlExpression * left, IHqlExpression * right, bool & duplicate, node_operator compareOp, KeyFailureInfo & reason, KeyedKind keyedKind)
-{
-    node_operator op = left->getOperator();
-    switch (op)
-    {
-    case no_cast:
-    case no_implicitcast:
-        {
-            IHqlExpression * uncast = left->queryChild(0);
-            ITypeInfo * castType = left->queryType();
-            ITypeInfo * uncastType = uncast->queryType();
-            //(ty)x = y.            E.g., (int1)string2field = int1value
-            //if more than one value of x[uncastType] corresponds to a single value in y[castType] then we can't sensibly create
-            //the key segment monitor.  Because we will get false negatives.  If it is an inverse then duplicate (see below)
-            bool canRemoveCast = true;
-            if (castLosesInformation(castType, uncastType))
-            {
-                if ((compareOp != no_ne) && (compareOp != no_notin))
-                    canRemoveCast = false;
-                duplicate = true;
-            }
-
-            //if more than one value of y corresponds to a single value of x then need to duplicate the test condition.
-            //or pretest whether (ty)(tx)y == y.
-            //if (castLosesInformation(uncastType, castType))
-            //Now taken care of when the segment monitors are created
-
-            //If the comparison is non equality and the cast changes the collation sequence then you can't remove it.
-            switch (compareOp)
-            {
-            case no_eq:
-            case no_ne:
-            case no_in:
-            case no_notin:
-                break;
-            default:
-                if (!preservesOrder(castType, uncastType))
-                    canRemoveCast = false;
-                break;
-            }
-
-            Linked<ITypeInfo> newType = uncastType;
-            if (right->queryType()->getTypeCode() == type_set)
-                newType.setown(makeSetType(newType.getLink()));
-            OwnedHqlExpr castRight = ensureExprType(right, newType);
-            IHqlExpression * ret = isKeyableFilter(uncast, castRight, duplicate, compareOp, reason, keyedKind);
-            if (canRemoveCast || !ret)
-                return ret;
-            reason.set(KFRcast, ret->queryChild(1));
-            return NULL;
-        }
-
-    case no_select:
-        if (isKeySelect(left) && okToKey(left, keyedKind))
-        {
-            if (isIndexInvariant(right, false))
-                return left;
-            reason.set(KFRtoocomplex, left);
-        }
-        else
-            reason.set(KFRnokey);
-        return NULL;
-
-    case no_substring:
-        {
-            IHqlExpression * range = left->queryChild(1);
-            if (range->getOperator() == no_rangeto)
-            {
-                IValue *end = range->queryChild(0)->queryValue();
-                if (!end)
-                    break;
-                return isKeyableFilter(left->queryChild(0), right, duplicate, compareOp, reason, keyedKind);
-            }
-            else if (range->getOperator() == no_range)
-            {
-                IValue *start = range->queryChild(0)->queryValue();
-                IValue *end = range->queryChild(1)->queryValue();
-                if (!start || !end || start->getIntValue() != 1)
-                    break;
-                return isKeyableFilter(left->queryChild(0), right, duplicate, compareOp, reason, keyedKind);
-            }
-            reason.set(KFRtoocomplex, right);
-            return NULL;
-        }
-    case no_add:
-    case no_sub:
-        if (isIndexInvariant(left->queryChild(1), false))
-            return isKeyableFilter(left->queryChild(0), right, duplicate, compareOp, reason, keyedKind);
-        reason.set(KFRtoocomplex, left);
-        return NULL;
-    }
-    reason.set(KFRnokey);
-    return NULL;
-}
-
-
-
-static IHqlExpression * getCompareValue(ITypeInfo * fieldType, unsigned subStringLen, IValue * value, int whichBoundary)
-{
-    type_t ftc = fieldType->getTypeCode();
-    unsigned fieldLen = fieldType->getStringLen();
-    unsigned lenValue = value->queryType()->getStringLen();
-    const void * rawValue = value->queryValue();
-    size32_t resultLen;
-    rtlDataAttr result;
-
-    if (whichBoundary < 0)
-    {
-        switch (ftc)
-        {
-        case type_qstring:
-            rtlCreateQStrRangeLow(resultLen, result.refstr(), fieldLen, subStringLen, lenValue, static_cast<const char *>(rawValue));
-            break;
-        case type_string:
-            rtlCreateStrRangeLow(resultLen, result.refstr(), fieldLen, subStringLen, lenValue, static_cast<const char *>(rawValue));
-            break;
-        case type_data:
-            rtlCreateDataRangeLow(resultLen, result.refdata(), fieldLen, subStringLen, lenValue, rawValue);
-            break;
-        case type_unicode:
-            rtlCreateUnicodeRangeLow(resultLen, result.refustr(), fieldLen, subStringLen, lenValue, static_cast<const UChar *>(rawValue));
-            break;
-        default:
-            //should this generate a warning/error instead?
-            rtlCreateRange(resultLen, result.refstr(), fieldLen, subStringLen, fieldType->getSize(), static_cast<const char *>(rawValue), 0, 0);
-            break;
-        }
-    }
-    else
-    {
-        switch (ftc)
-        {
-        case type_qstring:
-            rtlCreateQStrRangeHigh(resultLen, result.refstr(), fieldLen, subStringLen, lenValue, static_cast<const char *>(rawValue));
-            break;
-        case type_string:
-            rtlCreateStrRangeHigh(resultLen, result.refstr(), fieldLen, subStringLen, lenValue, static_cast<const char *>(rawValue));
-            break;
-        case type_data:
-            rtlCreateDataRangeHigh(resultLen, result.refdata(), fieldLen, subStringLen, lenValue, rawValue);
-            break;
-        case type_unicode:
-            rtlCreateUnicodeRangeHigh(resultLen, result.refustr(), fieldLen, subStringLen, lenValue, static_cast<const UChar *>(rawValue));
-            break;
-        default:
-            rtlCreateRange(resultLen, result.refstr(), fieldLen, subStringLen, fieldType->getSize(), static_cast<const char *>(rawValue), 255, 0);
-            break;
-        }
-    }
-    assertex(resultLen == fieldLen);
-    return createConstant(createValueFromMem(LINK(fieldType), result.getdata()));
-}
-
-
-IHqlExpression * MonitorExtractor::getRangeLimit(ITypeInfo * fieldType, IHqlExpression * lengthExpr, IHqlExpression * value, int whichBoundary)
-{
-    type_t ftc = fieldType->getTypeCode();
-    unsigned fieldLength = fieldType->getStringLen();
-    IValue * constValue = value->queryValue();
-
-    if (constValue && lengthExpr->queryValue())
-    {
-        unsigned subStringLen = (unsigned)lengthExpr->queryValue()->getIntValue();
-        if ((int)subStringLen < 0) subStringLen = 0;
-        if (subStringLen > fieldLength)
-            translator.throwError1(HQLERR_SubstringOutOfRange, subStringLen);
-
-        return getCompareValue(fieldType, subStringLen, constValue, whichBoundary);
-    }
-
-    IIdAtom * func;
-    if (whichBoundary < 0)
-    {
-        switch (ftc)
-        {
-        case type_qstring:
-            func = createQStrRangeLowId;
-            break;
-        case type_string:
-            func = createStrRangeLowId;
-            break;
-        case type_data:
-            func = createDataRangeLowId;
-            break;
-        case type_unicode:
-            func = createUnicodeRangeLowId;
-            break;
-        default:
-            func = createRangeLowId;
-            break;
-        }
-    }
-    else
-    {
-        switch (ftc)
-        {
-        case type_qstring:
-            func = createQStrRangeHighId;
-            break;
-        case type_string:
-            func = createStrRangeHighId;
-            break;
-        case type_data:
-            func = createDataRangeHighId;
-            break;
-        case type_unicode:
-            func = createUnicodeRangeHighId;
-            break;
-        default:
-            func = createRangeHighId;
-            break;
-        }
-    }
-
-    HqlExprArray args;
-    args.append(*getSizetConstant(fieldLength));
-    args.append(*LINK(lengthExpr));
-    args.append(*LINK(value));
-
-    //Note: I can't change the return type of the function - because if fixed length then wrong call is made, and variable length is worse code.
-    OwnedHqlExpr call = translator.bindFunctionCall(func, args);
-    return createValue(no_typetransfer, LINK(fieldType), LINK(call));
-}
-
-
-IHqlExpression * MonitorExtractor::createRangeCompare(IHqlExpression * selector, IHqlExpression * value, IHqlExpression * lengthExpr, bool compareEqual)
-{
-    OwnedHqlExpr foldedValue = foldHqlExpression(value);
-    ITypeInfo * fieldType = selector->queryType();
-    IHqlExpression * lowExpr = getRangeLimit(fieldType, lengthExpr, foldedValue, -1);
-    IHqlExpression * highExpr = getRangeLimit(fieldType, lengthExpr, foldedValue, +1);
-
-    //Could convert to two separate tests, but code is worse, and boundary conditions aren't going to happen.
-    return createValue(compareEqual ? no_between : no_notbetween, makeBoolType(), LINK(selector), lowExpr, highExpr);
-}
-
-
-static IHqlExpression * removeCastTrim(IHqlExpression * expr)
-{
-    for (;;)
-    {
-        if ((expr->getOperator() == no_trim) && !expr->queryChild(1))
-            expr = expr->queryChild(0);
-        else if (isLengthPreservingCast(expr))
-            expr = expr->queryChild(0);
-        else
-            return expr;
-
-        expr = queryNonAliased(expr);
-    }
-}
-
-static IHqlExpression * queryLengthFromRange(IHqlExpression * range)
-{
-    switch (range->getOperator())
-    {
-    case no_rangefrom:
-    case no_rangecommon:
-        return NULL;
-    case no_rangeto:
-        return range->queryChild(0);
-    case no_range:
-        if (getIntValue(range->queryChild(0), 0) == 1)
-            return range->queryChild(1);
-        return NULL;
-    default:
-        if (getIntValue(range, 0) == 1)
-            return range;
-        return NULL;
-    }
-}
-
-static void extendRangeCheck(SharedHqlExpr & globalGuard, SharedHqlExpr & localCond, IHqlExpression * selector, IHqlExpression * lengthExpr, bool compareEqual)
-{
-#if 0
-    //This might be a good idea, but probably doesn't make a great deal of difference at runtime
-    //Optimize the case where you check zero length to use a wild carded range instead
-    //x[1..len=0] = y from x in range 0000000..FFFFFF to  len==0 || x in range....
-    if (compareEqual)
-    {
-        if (!lengthExpr->queryValue())
-        {
-            OwnedHqlExpr testLength = createBoolExpr(no_eq, LINK(lengthExpr), ensureExprType(queryZero(), lengthExpr->queryType()));
-            localCond.setown(createBoolExpr(no_or, testLength.getClear(), LINK(localCond)));
-        }
-    }
-#endif
-    //For a range check x[1..m] = y we generate
-    //x in range(sizeof(x), m, y, 0) and range(maxlength(x), m, y, 255)
-    //need to guard with condition len(trim(y)) <= m
-
-    //If x[1..length(trim(y))] == y then don't add a condition
-    IHqlExpression * cur = queryNonAliased(lengthExpr);
-    IHqlExpression * compare = removeCastTrim(queryNonAliased(selector));
-    if (cur->getOperator() == no_charlen)
-    {
-        cur = queryNonAliased(cur->queryChild(0));
-        if (cur->getOperator() == no_trim)
-        {
-            cur = queryNonAliased(cur->queryChild(0));
-            while (isLengthPreservingCast(cur))
-                cur = queryNonAliased(cur->queryChild(0));
-
-            IHqlExpression * compare = selector;
-            for (;;)
-            {
-                compare = removeCastTrim(queryNonAliased(compare));
-                if (cur->queryBody() == compare->queryBody())
-                    return;
-                //Casts between strings that reduce/increase the number of characters don't matter as long as
-                //they eventually match the search string
-                if (!isCast(compare) || !isStringType(compare->queryType()))
-                    break;
-                compare = compare->queryChild(0);
-                if (!isStringType(compare->queryType()))
-                    break;
-            }
-        }
-    }
-
-    // if x[1..n] = z[1..n] then no need for a condition
-    if (compare->getOperator() == no_substring)
-    {
-        IHqlExpression * range = queryLengthFromRange(compare->queryChild(1));
-        if (range == lengthExpr)
-            return;
-    }
-
-    // if x[1..n] = (string<m>y) where m<n then no need for condition
-    unsigned selectorLength = selector->queryType()->getStringLen();
-    if (selectorLength <= getIntValue(lengthExpr, 0))
-        return;
-
-    //otherwise, if x[1..y] == z then add check length(trim(z)) <= y
-    OwnedHqlExpr trim = createTrimExpr(selector, NULL);
-    OwnedHqlExpr len = createValue(no_charlen, LINK(unsignedType), LINK(trim));
-    ITypeInfo * lengthType = lengthExpr->queryType();
-    Owned<ITypeInfo> compareType = getPromotedECLCompareType(unsignedType, lengthType);
-    node_operator compOp = compareEqual ? no_le : no_gt;
-    OwnedHqlExpr positiveLen = createValue(no_maxlist, lengthExpr->getType(), createValue(no_list, makeSetType(LINK(lengthType)), LINK(lengthExpr), createConstant(lengthType->castFrom(false, I64C(0)))));
-    OwnedHqlExpr test = createValue(no_le, makeBoolType(), ensureExprType(len, compareType), ensureExprType(positiveLen, compareType));
-    test.setown(foldHqlExpression(test));
-    if (compareEqual)
-        extendConditionOwn(globalGuard, no_and, test.getClear());
-    else
-        extendConditionOwn(localCond, no_or, getInverse(test));
-}
-
-
-bool MonitorExtractor::matchSubstringFilter(KeyConditionInfo & matches, node_operator op, IHqlExpression * left, IHqlExpression * right, KeyedKind keyedKind, bool & duplicate)
-{
-    LinkedHqlExpr value = right;
-    duplicate = false;
-    OwnedHqlExpr guard;
-    ITypeInfo * guardCastType = NULL;
-
-    if ((left->getOperator() == no_cast) || (left->getOperator() == no_implicitcast))
-    {
-        //code is extracted and simplified from isKeyableFilter() above - should be commoned up.
-        IHqlExpression * uncast = left->queryChild(0);
-        ITypeInfo * castType = left->queryType();
-        ITypeInfo * uncastType = uncast->queryType();
-
-        //(ty)x = y.
-        //if more than one value of x[uncastType] corresponds to a single value in y[castType] then we can't sensibly create
-        //the key segment monitor.  Because we will get false negatives.  If it is an inverse then duplicate (see below)
-        bool canRemoveCast = true;
-        if (castLosesInformation(castType, uncastType))
-            canRemoveCast = false;
-
-        //if more than one value of y corresponds to a single value of x then need to duplicate the test condition.
-        if (!preservesOrder(castType, uncastType))
-            canRemoveCast = false;
-
-        if (!canRemoveCast)
-        {
-//          reason.set(KFRcast, ret->queryChild(1));
-            return false;
-        }
-
-        if ((op != no_in) && (op != no_notin))
-        {
-            value.setown(ensureExprType(right, uncastType));
-
-            //If a simple equality test then create a global guard to check that we aren't matching a false positive
-            if (castLosesInformation(uncastType, castType))
-                guard.setown(createBoolExpr(no_eq, ensureExprType(value, castType), LINK(right)));
-        }
-        else
-        {
-            //if an IN then add guards to each comparison - generated later...
-            if (castLosesInformation(uncastType, castType))
-                guardCastType = uncastType;
-            else
-            {
-                Owned<ITypeInfo> targetType = makeSetType(LINK(uncastType));
-                value.setown(ensureExprType(right, targetType));
-            }
-        }
-
-        left = uncast;
-    }
-
-    if (left->getOperator() != no_substring)
-        return false;
-
-    if ((op == no_in) || (op == no_notin))
-    {
-        value.setown(normalizeListCasts(value));
-        if (value->getOperator() != no_list)
-            return false;
-    }
-
-    IHqlExpression * selector = left->queryChild(0);
-    if (!isKeySelect(selector) || !okToKey(selector, keyedKind))
-        return false;
-    if (!isIndexInvariant(right, false))
-        return false;
-    ITypeInfo * fieldType = selector->queryType();
-    unsigned fieldLength = fieldType->getStringLen();
-    if (fieldLength == UNKNOWN_LENGTH)
-        return false;
-
-    OwnedHqlExpr range = foldHqlExpression(left->queryChild(1));
-    IHqlExpression * lengthExpr = queryLengthFromRange(range);
-    if (!lengthExpr)
-        return false;
-
-    OwnedHqlExpr newTest;
-    if ((op == no_eq) || (op == no_ne))
-    {
-        newTest.setown(createRangeCompare(selector, value, lengthExpr, op == no_eq));
-        extendRangeCheck(guard, newTest, right, lengthExpr, op == no_eq);
-    }
-    else //no_in, no_notin
-    {
-        HqlExprArray compares;
-        ForEachChild(i, value)
-        {
-            IHqlExpression * cur = value->queryChild(i);
-            LinkedHqlExpr castValue = cur;
-            OwnedHqlExpr valueGuard;
-
-            if (guardCastType)
-            {
-                castValue.setown(ensureExprType(castValue, guardCastType));
-                valueGuard.setown(createBoolExpr(no_eq, ensureExprType(castValue, cur->queryType()), LINK(cur)));
-                extendRangeCheck(valueGuard, valueGuard, cur, lengthExpr, (op == no_in));
-            }
-            OwnedHqlExpr cond = createRangeCompare(selector, castValue, lengthExpr, (op == no_in));
-            if (valueGuard)
-                cond.setown(createValue(no_and, makeBoolType(), valueGuard.getClear(), cond.getClear()));
-            compares.append(*cond.getClear());
-        }
-
-        node_operator combineOp = (op == no_in) ? no_or : no_and;
-        newTest.setown(createBalanced(combineOp, queryBoolType(), compares));
-    }
-    
-    matches.appendCondition(*new KeyCondition(selector, newTest, keyedKind));
-    if (guard)
-        matches.appendPreFilter(guard);
-    return true;
-}
-
-
-bool MonitorExtractor::extractSimpleCompareFilter(KeyConditionInfo & matches, IHqlExpression * expr, KeyedKind keyedKind) 
-{
-    OwnedHqlExpr promoted = getExplicitlyPromotedCompare(expr);
-    IHqlExpression * l = promoted->queryChild(0);
-    IHqlExpression * r = promoted->queryChild(1);
-    bool duplicate = false;
-    KeyFailureInfo reasonl, reasonr;
-    node_operator op = expr->getOperator();
-    IHqlExpression * matchedSelector = isKeyableFilter(l, r, duplicate, op, reasonl, keyedKind);
-    Owned<KeyCondition> result;
-    if (matchedSelector)
-    {
-        node_operator newOp = getModifiedOp(op, duplicate);
-        if (newOp != no_none)
-        {
-            OwnedHqlExpr newFilter = createValue(newOp, expr->getType(), LINK(l), LINK(r));
-            result.setown(new KeyCondition(matchedSelector, newFilter, keyedKind));
-        }
-    }
-    else
-    {
-        duplicate = false;
-        matchedSelector = isKeyableFilter(r, l, duplicate, op, reasonr, keyedKind);
-        if (matchedSelector)
-        {
-            node_operator newOp = getModifiedOp(getReverseOp(op), duplicate);
-            if (newOp != no_none)
-            {
-                OwnedHqlExpr newFilter = createValue(newOp, expr->getType(), LINK(r), LINK(l));
-                result.setown(new KeyCondition(matchedSelector, newFilter, keyedKind));
-            }
-        }
-    }
-
-    if (!result && allowTranslatedConds)
-    {
-        duplicate = false;
-        ITypeInfo * type = l->queryType();
-        if (isKeyableType(type))
-        {
-            bool leftHasSelects = containsTableSelects(l);
-            bool rightHasSelects = containsTableSelects(r);
-            if (leftHasSelects && !rightHasSelects)
-            {
-                result.setown(createTranslatedCondition(expr, keyedKind));
-            }
-            else if (!leftHasSelects && rightHasSelects && (op != no_in) && (op != no_notin))
-            {
-                OwnedHqlExpr newFilter = createValue(getReverseOp(op), expr->getType(), LINK(r), LINK(l));
-                result.setown(createTranslatedCondition(newFilter, keyedKind));
-            }
-        }
-    }
-
-    bool extracted = (result != NULL);
-    if (extracted)
-    {
-        matches.appendCondition(*result.getClear());
-    }
-    else
-    {
-        failReason.merge(reasonl);
-        failReason.merge(reasonr);
-    }
-    if (duplicate || !extracted)
-        matches.appendPostFilter(expr);
-    return extracted;
-}
-
-
-bool MonitorExtractor::extractOrFilter(KeyConditionInfo & matches, IHqlExpression * expr, KeyedKind keyedKind)
-{
-    HqlExprArray conds;
-    expr->unwindList(conds, no_or);
-
-    bool validOrFilter = true;
-    HqlExprAttr invariant;
-    CIArrayOf<KeyConditionInfo> branches;
-    ForEachItemIn(idx, conds)
-    {
-        IHqlExpression & cur = conds.item(idx);
-        if (isIndexInvariant(&cur, false))
-            extendOrCondition(invariant, &cur);
-        else
-        {
-            KeyConditionInfo & branch = * new KeyConditionInfo;
-            branches.append(branch);
-            //Can't generate an OR with a pure post-filter
-            if (!extractFilters(branch, &cur, keyedKind))
-                validOrFilter = false;
-        }
-    }
-
-    //check all the conditions that are ORd together don't contain references to multiple fields.
-    KeyCondition * firstBranch = NULL;
-    bool multipleBranches = branches.ordinality() > 1;
-    bool multipleSelectors = false;
-    bool multipleConditions = false;
-    bool hasPostFilter = false;
-    ForEachItemIn(i1, branches)
-    {
-        KeyConditionInfo & branch = branches.item(i1);
-        if (branch.postFilter)
-            hasPostFilter = true;
-        ForEachItemIn(i2, branch.conditions)
-        {
-            KeyCondition & cur = branch.conditions.item(i2);
-            if (!firstBranch)
-                firstBranch = &cur;
-            else
-            {
-                multipleConditions = true;
-                if (i1 == 0)
-                {
-                    if (firstBranch->selector != cur.selector)
-                        multipleSelectors = true;
-                }
-                else
-                {
-                    if ((firstBranch->selector != cur.selector) || multipleSelectors)
-                        validOrFilter = false;
-                }
-            }
-        }
-    }
-
-    if (multipleBranches && hasPostFilter)
-        validOrFilter = false;
-
-    if (validOrFilter && firstBranch)
-    {
-        bool optimizeSingleBranch = true;
-        if (multipleSelectors || hasPostFilter || (optimizeSingleBranch && !multipleConditions))
-        {
-            //Invariant ored with a conjunction
-            //X or (A and B) -> (X or A) AND (X or B)
-            assertex(branches.ordinality() == 1);
-            KeyConditionInfo & branch = branches.item(0);
-            OwnedHqlExpr preFilter = branch.preFilter ? extendCondition(no_or, invariant, branch.preFilter) : NULL;
-            OwnedHqlExpr postFilter = branch.postFilter ? extendCondition(no_or, invariant, branch.postFilter) : NULL;
-
-            matches.appendPreFilter(preFilter);
-            matches.appendPostFilter(postFilter);
-            ForEachItemIn(i2, branch.conditions)
-            {
-                KeyCondition & cur = branch.conditions.item(i2);
-                OwnedHqlExpr filter = extendCondition(no_or, invariant, cur.expr);
-                matches.conditions.append(*new KeyCondition(cur.selector, filter, keyedKind));
-            }
-        }
-        else
-        {
-            LinkedHqlExpr combinedCondition = invariant;
-
-            ForEachItemIn(i1, branches)
-            {
-                KeyConditionInfo & branch = branches.item(i1);
-                OwnedHqlExpr conjunction = branch.createConjunction();
-                extendOrCondition(combinedCondition, conjunction);
-            }
-            
-            matches.conditions.append(*new KeyCondition(firstBranch->selector, combinedCondition, keyedKind));
-        }
-        return true;
-    }
-    else
-    {
-        matches.appendPostFilter(expr);
-        KeyFailureInfo reason;
-        reason.set(KFRor);
-        failReason.merge(reason);
-        return false;
-    }
-}
-
-
-bool MonitorExtractor::extractIfFilter(KeyConditionInfo & matches, IHqlExpression * expr, KeyedKind keyedKind)
-{
-    //MORE: This could generate better code, but I don't think it is worth the effort at the moment.
-    //Really, I should analyse left and right.  Iterate each selector referenced.  If there are no post conditions then
-    //generate IF(a, X, Y) compound expression, otherwise generate the default below.
-    IHqlExpression * cond = expr->queryChild(0);
-    if ((keyedKind != KeyedNo) && isIndexInvariant(cond, false))
-    {
-        //Convert IF(a, X, Y) to... IF (a, X, true) AND IF (a, true, Y) to... (NOT a OR X) AND (a OR Y)
-        OwnedHqlExpr inverseCond = getInverse(cond);
-        OwnedHqlExpr trueValue = createBoolExpr(no_or, LINK(inverseCond), LINK(expr->queryChild(1)));
-        OwnedHqlExpr falseValue = createBoolExpr(no_or, LINK(cond), LINK(expr->queryChild(2)));
-        OwnedHqlExpr combined = createBoolExpr(no_and, LINK(trueValue), LINK(falseValue));
-        return extractFilters(matches, combined, keyedKind);
-    }
-    matches.appendPostFilter(expr);
-    return false;
-}
-
-
-static HqlTransformerInfo selectSpotterInfo("SelectSpotter");
-MonitorExtractor::SelectSpotter::SelectSpotter(const HqlExprArray & _selects) : NewHqlTransformer(selectSpotterInfo), selects(_selects) 
-{ 
-    hasSelects = false; 
-}
-
-void MonitorExtractor::SelectSpotter::analyseExpr(IHqlExpression * expr)
-{
-    if (hasSelects || alreadyVisited(expr))
-        return;
-    if (selects.find(*expr) != NotFound)
-    {
-        hasSelects = true;
-        return;
-    }
-    NewHqlTransformer::analyseExpr(expr);
-}
-
-bool MonitorExtractor::containsTableSelects(IHqlExpression * expr)
-{
-    HqlExprCopyArray inScope;
-    expr->gatherTablesUsed(NULL, &inScope);
-
-    //Check that cursors for all inScope tables are already bound in the start context
-    return inScope.find(*tableExpr->queryNormalizedSelector()) != NotFound;
-}
-
-
-void MonitorExtractor::extractFilters(IHqlExpression * expr, SharedHqlExpr & extraFilter)
-{
-    HqlExprArray conds;
-    expr->unwindList(conds, no_and);
-    extractFilters(conds, extraFilter);
-}
-
-void MonitorExtractor::extractFilters(HqlExprArray & exprs, SharedHqlExpr & extraFilter)
-{
-    OwnedHqlExpr savedFilter = keyed.postFilter.getClear();
-    ForEachItemIn(i1, exprs)
-    {
-        IHqlExpression & cur = exprs.item(i1);
-        switch (cur.getOperator())
-        {
-        case no_assertkeyed:
-        case no_assertwild:
-            extractFilters(keyed, &cur, KeyedNo);
-            break;
-        }
-    }
-
-    keyedExplicitly = (keyed.conditions.ordinality() != 0);
-    cleanlyKeyedExplicitly = keyedExplicitly && !keyed.postFilter;
-    ForEachItemIn(i2, exprs)
-    {
-        IHqlExpression & cur = exprs.item(i2);
-        switch (cur.getOperator())
-        {
-        case no_assertkeyed:
-        case no_assertwild:
-            break;
-        default:
-            if (!keyedExplicitly)
-                extractFilters(keyed, &cur, KeyedNo);
-            else if (!cur.isAttribute() && isIndexInvariant(&cur, true))
-                keyed.appendPreFilter(&cur);
-            else
-                keyed.appendPostFilter(&cur);
-            break;
-        }
-    }
-
-    extraFilter.set(keyed.postFilter);
-    keyed.postFilter.setown(extendConditionOwn(no_and, savedFilter.getClear(), LINK(extraFilter)));
-}
-
-
-void MonitorExtractor::extractFiltersFromFilterDs(IHqlExpression * expr)
-{
-    HqlExprArray conds;
-    HqlExprAttr dummy;
-    unwindFilterConditions(conds, expr);
-    extractFilters(conds, dummy);
-}
-
-
-
-void MonitorExtractor::extractFoldedWildFields(IHqlExpression * expr)
-{
-    node_operator op = expr->getOperator();
-    switch (op)
-    {
-    case no_cast:
-    case no_implicitcast:
-    case no_add:
-    case no_sub:
-        //fields may have been transformed since folding...
-        extractFoldedWildFields(expr->queryChild(0));
-        break;
-    case no_select:
-        if (isKeySelect(expr))
-        {
-            KeyCondition * condition = new KeyCondition;
-            condition->selector.set(expr);
-            condition->isWild = true;
-            condition->wasKeyed = true;
-            keyed.conditions.append(*condition);
-        }
-        break;
-    }
-}
-
-bool MonitorExtractor::extractBoolFieldFilter(KeyConditionInfo & matches, IHqlExpression * selector, KeyedKind keyedKind, bool compareValue)
-{
-    if (selector->isBoolean())
-    {
-        if (isKeySelect(selector) && okToKey(selector, keyedKind))
-        {
-            OwnedHqlExpr newFilter = createValue(no_eq, makeBoolType(), LINK(selector), createConstant(compareValue));
-            matches.appendCondition(*new KeyCondition(selector, newFilter, keyedKind));
-            return true;
-        }
-    }
-    return false;
-}
-
-bool MonitorExtractor::extractFilters(KeyConditionInfo & matches, IHqlExpression * expr, KeyedKind keyedKind)
-{
-    if (!expr->isAttribute() && isIndexInvariant(expr, true))
-    {
-        extendAndCondition(matches.preFilter, expr);
-        return true;
-    }
-
-    IHqlExpression *l = expr->queryChild(0);
-    IHqlExpression *r = expr->queryChild(1);
-    node_operator op = expr->getOperator();
-    switch (op)
-    {
-    case no_and:
-        {
-            bool extracted = extractFilters(matches, l, keyedKind);
-            if (!extractFilters(matches, r, keyedKind)) extracted = false;
-            return extracted;
-        }
-    case no_or:
-        return extractOrFilter(matches, expr, keyedKind);
-    case no_attr:
-    case no_attr_expr:
-    case no_attr_link:
-        return true;
-    case no_not:
-        {
-            IHqlExpression * arg = expr->queryChild(0);
-            OwnedHqlExpr inverse = getInverse(arg);
-            if (inverse->queryBody() != expr->queryBody())
-                return extractFilters(matches, inverse, keyedKind);
-
-            if ((arg->getOperator() == no_select) && arg->isBoolean() &&
-                extractBoolFieldFilter(matches, arg, keyedKind, false))
-                return true;
-
-            matches.appendPostFilter(expr);
-            return false;
-        }
-    case no_between:
-    case no_notbetween:
-        {
-            //Convert this into two comparisons because that will handle weird boundary conditions much better.
-            OwnedHqlExpr normalized = expandBetween(expr);
-            return extractFilters(matches, normalized, keyedKind);
-        }
-    case no_eq:
-    case no_ne:
-        {
-            bool duplicate = false;
-            if (matchSubstringFilter(matches, op, l, r, keyedKind, duplicate) || matchSubstringFilter(matches, op, r, l, keyedKind, duplicate))
-            {
-                if (duplicate)
-                    matches.appendPostFilter(expr);
-                return true;
-            }
-            return extractSimpleCompareFilter(matches, expr, keyedKind);
-        }
-    case no_in:
-    case no_notin:
-        {
-            bool duplicate = false;
-            if (matchSubstringFilter(matches, op, l, r, keyedKind, duplicate))
-            {
-                if (duplicate)
-                    matches.appendPostFilter(expr);
-                return true;
-            }
-            return extractSimpleCompareFilter(matches, expr, keyedKind);
-        }
-    case no_gt:
-    case no_lt:
-    case no_ge:
-    case no_le:
-        return extractSimpleCompareFilter(matches, expr, keyedKind);
-    case no_assertkeyed:
-        {
-            KeyFailureInfo reason;
-            reason.merge(failReason);
-            failReason.clear();
-            bool extend = expr->hasAttribute(extendAtom);
-            if (!extractFilters(matches, l, extend ? KeyedExtend : KeyedYes))
-            {
-                if (!extend)
-                    failReason.reportError(translator, expr);
-            }
-
-            IHqlExpression * original = expr->queryAttribute(_selectors_Atom);
-            if (original)
-            {
-                ForEachChild(i, original)
-                    extractFoldedWildFields(original->queryChild(i));
-            }
-            failReason.merge(reason);
-            return true;
-        }
-    case no_assertwild:
-        {
-            if (l->getOperator() == no_all)
-            {
-                IHqlExpression * original = expr->queryAttribute(_selectors_Atom);
-                assertex(original);
-                ForEachChild(i, original)
-                    extractFoldedWildFields(original->queryChild(i));
-            }
-            else
-            {
-                IHqlExpression * selector = queryKeyableSelector(l);
-                if (!selector)
-                {
-                    StringBuffer keyname;
-                    translator.throwError1(HQLERR_WildNotReferenceIndex, queryKeyName(keyname));
-                }
-                KeyCondition * condition = new KeyCondition;
-                condition->selector.set(selector);
-                condition->isWild = true;
-                matches.appendCondition(*condition);
-            }
-            return true;
-        }
-    case no_if:
-        return extractIfFilter(matches, expr, keyedKind);
-    case no_select:
-        {
-            if (expr->isBoolean() && extractBoolFieldFilter(matches, expr, keyedKind, true))
-                return true;
-
-            matches.appendPostFilter(expr);
-            return false;
-        }
-    default:
-        // Add this condition to the catchall expr
-        matches.appendPostFilter(expr);
-        return false;
-    }
-}
-
-
-void MonitorExtractor::extractAllFilters(IHqlExpression * dataset)
-{
-    for (;;)
-    {
-        switch (dataset->getOperator())
-        {
-        case no_newkeyindex:
-            return;
-        case no_filter:
-            extractAllFilters(dataset->queryChild(0));
-            extractFiltersFromFilterDs(dataset);
-            return;
-        case no_compound_indexread:
-        case no_newusertable:
-        case no_hqlproject:
-        case no_distributed:
-        case no_preservemeta:
-        case no_unordered:
-        case no_sorted:
-        case no_stepped:
-        case no_grouped:
-        case no_alias_scope:
-        case no_dataset_alias:
-            break;
-        default:
-            UNIMPLEMENTED;
-        }
-        dataset = dataset->queryChild(0);
-    }
-}
-
-
-bool MonitorExtractor::isKeyed()                                            
-{ 
-    ForEachItemIn(i, keyed.conditions)
-    {
-        if (!keyed.conditions.item(i).isWild)
-            return true;
-    }
-    return false;
-}
-
-
-bool expandFilename(StringBuffer & s, IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_constant:
-        expr->toString(s);
-        return true;
-    case no_getresult:
-        //more
-        break;
-    case no_concat:
-        {
-            bool hadString = expandFilename(s, expr->queryChild(0));
-            unsigned oldLength = s.length();
-            s.append("+");
-            if (expandFilename(s, expr->queryChild(1)) || hadString)
-                return true;
-            s.setLength(oldLength);
-            return false;
-        }
-    case no_alias:
-    case no_cast:
-    case no_implicitcast:
-        return expandFilename(s, expr->queryChild(0));
-    }
-    if (hasNamedSymbol(expr))
-    {
-        s.append(expr->queryName());
-        return true;
-    }
-    s.append("...");
-    return false;
-}
-
-const char * MonitorExtractor::queryKeyName(StringBuffer & s)
-{
-    IAtom * name = tableExpr->queryName();
-    if (name)
-        s.append(" \'").append(name).append("'");
-    else
-    {
-        IHqlExpression * filename = queryTableFilename(tableExpr);
-        if (filename)
-        {
-            if (!expandFilename(s.append(' '), filename))
-                s.clear();
-        }
-    }
-    return s.str();
-}
-
-
-static bool isNextField(IHqlExpression * record, IHqlExpression * prevExpr, IHqlExpression * nextExpr)
-{
-    if ((prevExpr->getOperator() != no_select) || (nextExpr->getOperator() != no_select))
-        return false;
-    IHqlExpression * prevSelect = prevExpr->queryChild(0);
-    if (prevSelect != nextExpr->queryChild(0))
-        return false;
-    if (!containsOnlyLeft(prevExpr))
-        return false;
-    if (prevSelect->getOperator() != no_left)
-        record = prevSelect->queryRecord();
-
-    IHqlExpression * prevField = prevExpr->queryChild(1);
-    IHqlExpression * nextField = nextExpr->queryChild(1);
-
-    //Slow, but probably doesn't matter...
-    ForEachChild(i, record)
-    {
-        IHqlExpression * cur = record->queryChild(i);
-        if (cur == prevField)
-            return (record->queryChild(i+1) == nextField);
-    }
-    return false;
-}
-
-
-IHqlExpression * MonitorExtractor::querySimpleJoinValue(IHqlExpression * selector)
-{
-    IHqlExpression * matched = NULL;
-    ForEachItemIn(cond, keyed.conditions)
-    {
-        KeyCondition & cur = keyed.conditions.item(cond);
-        if (cur.selector == selector)
-        {
-            if (!cur.isWild)
-            {
-                if (matched)
-                    return NULL;
-                IHqlExpression * matchExpr = cur.expr;
-                if (matchExpr->getOperator() != no_eq)
-                    return NULL;
-                if (matchExpr->queryChild(0) != selector)
-                    return NULL;
-                matched = matchExpr->queryChild(1);
-            }
-        }
-    }
-
-    return matched;
-}
-
-
-void MonitorExtractor::optimizeSegments(IHqlExpression * leftRecord)
-{
-    //loop to see if we have matches for key.cpt[n] = x.field[n] and key.cpt[n+1] = x.field[n+1]
-    //where fields are fixed length, no casts and no modifiers.
-    //if so, mark the new total size,
-    //when generate, extend the size of the first monitor, and skip the others.
-    //MORE: Could also combine fixed constants, but less of an advantage.
-    //Don't process anything after a variable size field/something that is transformed.
-    unsigned i = 0;
-    for (; i < firstOffsetField; i++)
-    {
-        IHqlExpression * keySelector = &keyableSelects.item(i);
-        unsigned mergedSize = keySelector->queryType()->getSize();
-        IHqlExpression * prevValue = querySimpleJoinValue(keySelector);
-        unsigned best = i;
-        if (prevValue && isSameBasicType(keySelector->queryType(), prevValue->queryType()))
-        {
-            for (unsigned j = i+1; j < firstOffsetField; j++)
-            {
-                IHqlExpression * nextSelector = &keyableSelects.item(j);
-                if (noMergeSelects.contains(*nextSelector))
-                    break;
-
-                IHqlExpression * nextValue = querySimpleJoinValue(nextSelector);
-                if (!nextValue || !isNextField(leftRecord, prevValue, nextValue) ||
-                    !isSameBasicType(nextSelector->queryType(), nextValue->queryType()))
-                    break;
-                prevValue = nextValue;
-                mergedSize += nextSelector->queryType()->getSize();
-                best = j;
-            }
-        }
-        mergedSizes.append(mergedSize);
-        for (;i < best;i++)
-            mergedSizes.append(0);
-    }
-    while ( i < numKeyableFields)
-        mergedSizes.append(expandedSelects.item(i).queryType()->getSize());
-}
-
 //---------------------------------------------------------------------------
 
 
@@ -6281,10 +3929,8 @@ class IndexReadBuilderBase : public SourceBuilder
     friend class MonitorRemovalTransformer;
 public:
     IndexReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, -(int)numPayloadFields(_tableExpr), false)
+        : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, -(int)numPayloadFields(_tableExpr), false, false)
     { 
-        fpos.setown(getFilepos(tableExpr, false));
-        lfpos.setown(getFilepos(tableExpr, true));
     }
 
     virtual void buildMembers(IHqlExpression * expr);
@@ -6299,16 +3945,17 @@ protected:
     IHqlExpression * removeMonitors(IHqlExpression * expr);
 
 protected:
-    MonitorExtractor monitors;
+    CppFilterExtractor monitors;
     SourceSteppingInfo steppingInfo;
 };
 
 void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
 {
     //---- virtual void createSegmentMonitors(struct IIndexReadContext *) { ... } ----
-    BuildCtx createSegmentCtx(instance->startctx);
-    createSegmentCtx.addQuotedCompoundLiteral("virtual void createSegmentMonitors(IIndexReadContext *irc)");
-    monitors.buildSegments(createSegmentCtx, "irc", false);
+    {
+        MemberFunction func(translator, instance->startctx, "virtual void createSegmentMonitors(IIndexReadContext *irc) override");
+        monitors.buildSegments(func.ctx, "irc", false);
+    }
 
     buildLimits(instance->startctx, expr, instance->activityId);
     if (!limitExpr && !keyedLimitExpr && !choosenValue && (instance->kind == TAKindexread || instance->kind == TAKindexnormalize) && !steppedExpr)
@@ -6330,16 +3977,16 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
         }
     }
 
-    instance->addAttributeBool("preload", isPreloaded);
+    instance->addAttributeBool(WaIsPreload, isPreloaded);
     if (translator.getTargetClusterType() == RoxieCluster)
-        instance->addAttributeBool("_isIndexOpt", tableExpr->hasAttribute(optAtom));
+        instance->addAttributeBool(WaIsIndexOpt, tableExpr->hasAttribute(optAtom));
 
     if (monitors.queryGlobalGuard())
         translator.doBuildBoolFunction(instance->startctx, "canMatchAny", monitors.queryGlobalGuard());
 
     buildKeyedLimitHelper(expr);
 
-    translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", tableExpr, tableExpr, 1);
+    translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", true, tableExpr, tableExpr, 1);
     IHqlExpression * originalKey = queryAttributeChild(tableExpr, _original_Atom, 0);
     translator.buildSerializedLayoutMember(instance->classctx, originalKey->queryRecord(), "getIndexLayout", numKeyedFields(originalKey));
 
@@ -6384,6 +4031,10 @@ void IndexReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (!nameExpr->isConstant()) flags.append("|TIRvarfilename");
     if (translator.hasDynamicFilename(tableExpr)) flags.append("|TIRdynamicfilename");
     if (requiresOrderedMerge) flags.append("|TIRorderedmerge");
+    if (translator.queryOptions().createValueSets)
+        flags.append("|TIRnewfilters");
+    if (containsOperator(expr, no_id2blob))
+        flags.append("|TIRusesblob");
 
     if (flags.length())
         translator.doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -6450,7 +4101,8 @@ class NewIndexReadBuilder : public IndexReadBuilderBase
 public:
     NewIndexReadBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : IndexReadBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
+        extractCanMatch = true;
     }
 
     virtual void analyseGraph(IHqlExpression * expr)
@@ -6489,22 +4141,20 @@ void NewIndexReadBuilder::buildTransform(IHqlExpression * expr)
 {
     if (true)
     {
-        BuildCtx transformCtx(instance->startctx);
-        transformCtx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, const void * _left)");
-        translator.ensureRowAllocated(transformCtx, "crSelf");
-        transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-        translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
-        buildTransformBody(transformCtx, expr, true, false, true);
+        MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left) override");
+        translator.ensureRowAllocated(func.ctx, "crSelf");
+        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
+        buildTransformBody(func.ctx, expr, true, false, true);
     }
 
     if (generateUnfilteredTransform)
     {
-        BuildCtx transformCtx(instance->startctx);
-        transformCtx.addQuotedCompoundLiteral("virtual size32_t unfilteredTransform(ARowBuilder & crSelf, const void * _left)");
-        translator.ensureRowAllocated(transformCtx, "crSelf");
-        transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-        translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
-        buildTransformBody(transformCtx, expr, true, true, true);
+        MemberFunction func(translator, instance->startctx, "virtual size32_t unfilteredTransform(ARowBuilder & crSelf, const void * _left) override");
+        translator.ensureRowAllocated(func.ctx, "crSelf");
+        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
+        buildTransformBody(func.ctx, expr, true, true, true);
     }
 }
 
@@ -6572,16 +4222,16 @@ void IndexNormalizeBuilder::buildTransform(IHqlExpression * expr)
 {
     globaliterctx.setown(new BuildCtx(instance->startctx));
     globaliterctx->addGroup();
-    BuildCtx transformCtx(instance->startctx);
-    transformCtx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf)");
-    translator.ensureRowAllocated(transformCtx, "crSelf");
+
+    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf) override");
+    translator.ensureRowAllocated(func.ctx, "crSelf");
 
     //Because this transform creates iterator classes for the child iterators the expression tree needs to be modified
     //instead of using an inline tests.  We could switch to using this all the time for indexes once I trust it!
     OwnedHqlExpr simplified = removeMonitors(expr);
     lastTransformer.set(queryExpression(simplified->queryDataset()->queryTable()));
     useFilterMappings=false;
-    buildTransformBody(transformCtx, simplified, true, false, false);
+    buildTransformBody(func.ctx, simplified, true, false, false);
 }
 
 
@@ -6640,34 +4290,39 @@ void IndexAggregateBuilder::buildMembers(IHqlExpression * expr)
     buildAggregateHelpers(expr);
 
     //virtual void processRow(void * self, const void * src) = 0;
-    BuildCtx rowctx(instance->startctx);
-    rowctx.addQuotedCompoundLiteral("virtual void processRow(ARowBuilder & crSelf, const void * src)");
-    rowctx.addQuotedLiteral("doProcessRow(crSelf, (byte *)src);");
+    {
+        BuildCtx rowctx(instance->startctx);
+        rowctx.addQuotedFunction("virtual void processRow(ARowBuilder & crSelf, const void * src) override");
+        rowctx.addQuotedLiteral("doProcessRow(crSelf, (const byte *)src);");
+    }
 
-    //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
-    BuildCtx rowsctx(instance->startctx);
-    rowsctx.addQuotedCompoundLiteral("virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left)");
-    rowsctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-    OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
-    OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
-    OwnedHqlExpr fullDs = createTranslated(ds, len);
+    {
+        IHqlExpression * record = tableExpr->queryRecord();
+        OwnedHqlExpr newRecord = removeChild(record, record->numChildren()-1);
+        OwnedHqlExpr newTableExpr = replaceChild(tableExpr, 1, newRecord);
 
-    Owned<IHqlCppDatasetCursor> iter = translator.createDatasetSelector(rowsctx, fullDs);
-    BoundRow * curRow = iter->buildIterateLoop(rowsctx, false);
-    s.clear().append("doProcessRow(crSelf, ");
-    translator.generateExprCpp(s, curRow->queryBound());
-    s.append(");");
-    rowsctx.addQuoted(s);
+        MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left) override");
+        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(newTableExpr->getType()));
+        OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
+        OwnedHqlExpr fullDs = createTranslated(ds, len);
+
+        Owned<IHqlCppDatasetCursor> iter = translator.createDatasetSelector(func.ctx, fullDs);
+        BoundRow * curRow = iter->buildIterateLoop(func.ctx, false);
+        s.clear().append("doProcessRow(crSelf, ");
+        translator.generateExprCpp(s, curRow->queryBound());
+        s.append(");");
+        func.ctx.addQuoted(s);
+    }
 }
 
 
 void IndexAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    BuildCtx transformCtx(instance->startctx);
-    transformCtx.addQuotedCompoundLiteral("void doProcessRow(ARowBuilder & crSelf, byte * left)");
-    translator.ensureRowAllocated(transformCtx, "crSelf");
-    translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
-    buildTransformBody(transformCtx, expr, false, false, true);
+    MemberFunction func(translator, instance->startctx, "void doProcessRow(ARowBuilder & crSelf, const byte * left)");
+    translator.ensureRowAllocated(func.ctx, "crSelf");
+    translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
+    buildTransformBody(func.ctx, expr, false, false, true);
 }
 
 
@@ -6734,22 +4389,21 @@ void IndexCountBuilder::buildTransform(IHqlExpression * expr)
 {
     if (transformCanFilter||isNormalize)
     {
-        BuildCtx transformCtx(instance->startctx);
-        transformCtx.addQuotedCompoundLiteral("virtual size32_t numValid(const void * _left)");
-        transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-        translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
+        MemberFunction func(translator, instance->startctx, "virtual size32_t numValid(const void * _left) override");
+        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
         OwnedHqlExpr cnt;
         if (isNormalize)
         {
-            compoundCountVar.setown(transformCtx.getTempDeclare(sizetType, queryZero()));
+            compoundCountVar.setown(func.ctx.getTempDeclare(sizetType, queryZero()));
             cnt.set(compoundCountVar);
         }
         else
             cnt.setown(getSizetConstant(1));
 
-        BuildCtx subctx(transformCtx);
+        BuildCtx subctx(func.ctx);
         buildTransformBody(subctx, expr, false, false, true);
-        transformCtx.addReturn(cnt);
+        func.ctx.addReturn(cnt);
     }
 }
 
@@ -6852,13 +4506,12 @@ void IndexGroupAggregateBuilder::doBuildProcessCountMembers(BuildCtx & ctx, IHql
     OwnedHqlExpr resultDataset = createDataset(no_anon, LINK(tgtRecord));
 
     {
-        BuildCtx funcctx(ctx);
-        funcctx.addQuotedCompoundLiteral("virtual size32_t initialiseCountGrouping(ARowBuilder & crSelf, const void * _src)");
-        translator.ensureRowAllocated(funcctx, "crSelf");
-        funcctx.addQuotedLiteral("unsigned char * src = (unsigned char *) _src;");
-        translator.associateBlobHelper(funcctx, tableExpr, "fpp");
-        BoundRow * selfCursor = translator.bindSelf(funcctx, resultDataset, "crSelf");
-        translator.bindTableCursor(funcctx, dataset, "src");
+        MemberFunction func(translator, ctx, "virtual size32_t initialiseCountGrouping(ARowBuilder & crSelf, const void * _src) override");
+        translator.ensureRowAllocated(func.ctx, "crSelf");
+        func.ctx.addQuotedLiteral("unsigned char * src = (unsigned char *) _src;");
+        translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
+        BoundRow * selfCursor = translator.bindSelf(func.ctx, resultDataset, "crSelf");
+        translator.bindTableCursor(func.ctx, dataset, "src");
 
         //Replace count() with 0, exists() with true and call as a transform - which will error if the replacement fails.
         OwnedHqlExpr count = createValue(no_countgroup, LINK(defaultIntegralType));
@@ -6867,15 +4520,14 @@ void IndexGroupAggregateBuilder::doBuildProcessCountMembers(BuildCtx & ctx, IHql
         OwnedHqlExpr newTransform = replaceExpression(transform, count, newCount);
         newTransform.setown(replaceExpression(newTransform, exists, queryBoolExpr(true)));
 
-        translator.doTransform(funcctx, newTransform, selfCursor);
-        translator.buildReturnRecordSize(funcctx, selfCursor);
+        translator.doTransform(func.ctx, newTransform, selfCursor);
+        translator.buildReturnRecordSize(func.ctx, selfCursor);
     }
 
     {
-        BuildCtx funcctx(ctx);
-        funcctx.addQuotedCompoundLiteral("virtual size32_t processCountGrouping(ARowBuilder & crSelf, unsigned __int64 count)");
-        translator.ensureRowAllocated(funcctx, "crSelf");
-        BoundRow * selfCursor = translator.bindSelf(funcctx, resultDataset, "crSelf");
+        MemberFunction func(translator, ctx, "virtual size32_t processCountGrouping(ARowBuilder & crSelf, unsigned __int64 count) override");
+        translator.ensureRowAllocated(func.ctx, "crSelf");
+        BoundRow * selfCursor = translator.bindSelf(func.ctx, resultDataset, "crSelf");
 
         OwnedHqlExpr newCount = createTranslatedOwned(createVariable("count", LINK(defaultIntegralType)));
 
@@ -6890,7 +4542,7 @@ void IndexGroupAggregateBuilder::doBuildProcessCountMembers(BuildCtx & ctx, IHql
             IHqlExpression * src = cur->queryChild(1);
             IHqlExpression * arg = queryRealChild(src, 0);
 
-            BuildCtx condctx(funcctx);
+            BuildCtx condctx(func.ctx);
             node_operator srcOp = src->getOperator();
             switch (srcOp)
             {
@@ -6904,16 +4556,15 @@ void IndexGroupAggregateBuilder::doBuildProcessCountMembers(BuildCtx & ctx, IHql
                 break;
             }
         }
-        translator.buildReturnRecordSize(funcctx, selfCursor);
+        translator.buildReturnRecordSize(func.ctx, selfCursor);
     }
 }
 
 void IndexGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    BuildCtx transformCtx(instance->startctx);
-    transformCtx.addQuotedCompoundLiteral("void doProcessRow(byte * left, IHThorGroupAggregateCallback * callback)");
-    translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
-    buildGroupAggregateTransformBody(transformCtx, expr, isNormalize || transformAccessesCallback, true);
+    MemberFunction func(translator, instance->startctx, "void doProcessRow(const byte * left, IHThorGroupAggregateCallback * callback)");
+    translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
+    buildGroupAggregateTransformBody(func.ctx, expr, isNormalize || transformAccessesCallback, true);
 }
 
 
@@ -6975,7 +4626,7 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
     prolog.append("struct ").append(className).append(" : public RtlCInterface, implements ").append(interfaceName);
     epilog.append(";");
 
-    GlobalClassBuilder builder(*this, declarectx, className, "CXmlToRowTransformer", interfaceName);
+    GlobalClassBuilder builder(*this, declarectx, className, "CXmlToRowTransformer", interfaceName, true);
     builder.buildClass(XmlTransformerPrio);
     builder.setIncomplete(true);
 
@@ -6983,24 +4634,25 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
     s.clear().append("inline ").append(className).append("(unsigned _activityId) : CXmlToRowTransformer(_activityId) {}");
     classctx.addQuoted(s);
 
-    BuildCtx funcctx(classctx);
-    funcctx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * row, IThorDiskCallback * fpp)");
-    ensureRowAllocated(funcctx, "crSelf");
+    {
+        MemberFunction func(*this, classctx, "virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * row, IThorDiskCallback * fpp) override");
+        ensureRowAllocated(func.ctx, "crSelf");
 
-    xmlUsesContents = false;
-    //MORE: If this becomes a compound activity
-    BoundRow * rootSelfRow = bindSelf(funcctx, dataset, "crSelf");
-    bindXmlTableCursor(funcctx, dataset, "row", no_none, NULL, true);
-    OwnedHqlExpr activityId = createVariable("activityId", LINK(sizetType));
-    funcctx.associateExpr(queryActivityIdMarker(), activityId);
+        xmlUsesContents = false;
+        //MORE: If this becomes a compound activity
+        BoundRow * rootSelfRow = bindSelf(func.ctx, dataset, "crSelf");
+        bindXmlTableCursor(func.ctx, dataset, "row", no_none, NULL, true);
+        OwnedHqlExpr activityId = createVariable("activityId", LINK(sizetType));
+        func.ctx.associateExpr(queryActivityIdMarker(), activityId);
 
-    associateVirtualCallbacks(*this, funcctx, dataset);
+        associateVirtualCallbacks(*this, func.ctx, dataset);
 
-    OwnedHqlExpr active = ensureActiveRow(dataset);
-    buildAssign(funcctx, rootSelfRow->querySelector(), active);
-    buildReturnRecordSize(funcctx, rootSelfRow);
-    usesContents = xmlUsesContents;
-    rootSelfRow = NULL;
+        OwnedHqlExpr active = ensureActiveRow(dataset);
+        buildAssign(func.ctx, rootSelfRow->querySelector(), active);
+        buildReturnRecordSize(func.ctx, rootSelfRow);
+        usesContents = xmlUsesContents;
+        rootSelfRow = NULL;
+    }
 
     buildMetaMember(classctx, dataset, false, "queryRecordSize");
 
@@ -7017,32 +4669,32 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
 
 unsigned HqlCppTranslator::buildCsvReadTransform(BuildCtx & subctx, IHqlExpression * dataset, bool newInterface, IHqlExpression * csvAttr)
 {
-    BuildCtx funcctx(subctx);
+    MemberFunction func(*this, subctx);
 
     if (newInterface)
-        funcctx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc)");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc) override");
     else
-        funcctx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc, unsigned __int64 _fpos)");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc, unsigned __int64 _fpos) override");
 
     //MORE: If this becomes a compound activity
-    BoundRow * rootSelfRow = bindSelf(funcctx, dataset, "crSelf");
-    bindCsvTableCursor(funcctx, dataset, "Src", no_none, NULL, true, queryCsvEncoding(csvAttr));
-    ensureRowAllocated(funcctx, rootSelfRow);
+    BoundRow * rootSelfRow = bindSelf(func.ctx, dataset, "crSelf");
+    bindCsvTableCursor(func.ctx, dataset, "Src", no_none, NULL, true, queryCsvEncoding(csvAttr));
+    ensureRowAllocated(func.ctx, rootSelfRow);
 
     if (newInterface)
     {
-        associateVirtualCallbacks(*this, funcctx, dataset);
+        associateVirtualCallbacks(*this, func.ctx, dataset);
     }
     else
     {
         OwnedHqlExpr fpos = getFilepos(dataset, false);
         OwnedHqlExpr fposVar = createVariable("_fpos", fpos->getType());
-        funcctx.associateExpr(fpos, fposVar);
+        func.ctx.associateExpr(fpos, fposVar);
     }
 
     OwnedHqlExpr active = ensureActiveRow(dataset);
-    buildAssign(funcctx, rootSelfRow->querySelector(), active);
-    buildReturnRecordSize(funcctx, rootSelfRow);
+    buildAssign(func.ctx, rootSelfRow->querySelector(), active);
+    buildReturnRecordSize(func.ctx, rootSelfRow);
     rootSelfRow = NULL;
 
     return countTotalFields(dataset->queryRecord(), false);
@@ -7076,8 +4728,8 @@ void HqlCppTranslator::buildCsvReadTransformer(IHqlExpression * dataset, StringB
     transformClass->setIncomplete(true);
     transformClass->setIncluded(false);         // if can't generate csv for this record, then don't generate an invalid class.
 
-    classctx.addQuotedLiteral("virtual void Link() const { RtlCInterface::Link(); }");
-    classctx.addQuotedLiteral("virtual bool Release() const { return RtlCInterface::Release(); }");
+    classctx.addQuotedLiteral("virtual void Link() const override { RtlCInterface::Link(); }");
+    classctx.addQuotedLiteral("virtual bool Release() const override { return RtlCInterface::Release(); }");
 
     unsigned maxColumns = buildCsvReadTransform(classctx, dataset, false, optCsvAttr);
     doBuildUnsignedFunction(classctx, "getMaxColumns", maxColumns);
@@ -7122,7 +4774,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
         fieldUsage->noteAll();
 
     //---- virtual const char * getFileName() { return "x.d00"; } ----
-    buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, hasDynamicFilename(tableExpr));
+    buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", filename, hasDynamicFilename(tableExpr));
     buildEncryptHelper(instance->startctx, tableExpr->queryAttribute(encryptAtom));
 
     bool usesContents = false;
@@ -7131,6 +4783,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
     doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", queryRealChild(mode, 0));
 
     buildMetaMember(instance->classctx, tableExpr, false, "queryDiskRecordSize");  // A lie, but I don't care....
+    buildMetaMember(instance->classctx, tableExpr, false, "queryProjectedDiskRecordSize");  // A lie, but I don't care....
 
     //virtual unsigned getFlags() = 0;
     StringBuffer flags;
@@ -7209,14 +4862,15 @@ protected:
 
 void FetchBuilder::buildMembers(IHqlExpression * expr)
 {
-    buildReadMembers(expr);
+    buildFilenameMember();
 
     IHqlExpression * fetch = queryFetch(expr);
-    BuildCtx getposctx(instance->startctx);
-    getposctx.addQuotedCompoundLiteral("virtual unsigned __int64 extractPosition(const void * _right)");
-    getposctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
-    translator.bindTableCursor(getposctx, fetch->queryChild(1), "right", no_right, selSeq);
-    translator.buildReturn(getposctx, fetch->queryChild(2));
+    {
+        MemberFunction func(translator, instance->startctx, "virtual unsigned __int64 extractPosition(const void * _right) override");
+        func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
+        translator.bindTableCursor(func.ctx, fetch->queryChild(1), "right", no_right, selSeq);
+        translator.buildReturn(func.ctx, fetch->queryChild(2));
+    }
     
     translator.buildEncryptHelper(instance->startctx, tableExpr->queryAttribute(encryptAtom), "getFileEncryptKey");
 
@@ -7233,7 +4887,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         translator.doBuildUnsignedFunction(instance->classctx, "getFetchFlags", flags.str()+1);
 
     if (tableExpr->hasAttribute(optAtom) && translator.targetRoxie())
-        instance->addAttributeBool("_isOpt", true);
+        instance->addAttributeBool(WaIsFileOpt, true);
 
     buildLimits(instance->startctx, expr, instance->activityId);
 
@@ -7244,37 +4898,37 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
             translator.buildCsvParameters(instance->nestedctx, tableExpr->queryChild(2), NULL, true);
             unsigned maxColumns = getFieldCount(tableExpr->queryRecord());
             StringBuffer s;
-            s.clear().append("virtual unsigned getMaxColumns() { return ").append(maxColumns).append("; }");
+            s.clear().append("virtual unsigned getMaxColumns() override { return ").append(maxColumns).append("; }");
             instance->classctx.addQuoted(s);
             break;
         }
     case no_xml:
     case no_json:
-        {
-            // virtual const char * getXmlIteratorPath()
-            translator.doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", queryRealChild(tableExpr->queryChild(2), 0));
-            break;
-        }
+        break;
     default:
-        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", physicalRecord, NULL, 0);
+        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, physicalRecord, NULL, 0);
         break;
     }
 
     if (!containsOnlyLeft(fetch->queryChild(3), true))
     {
         //MORE: Need to change following if we optimize it to only extract the relevant fields.
-        instance->classctx.addQuotedLiteral("virtual bool extractAllJoinFields() { return true; }");
+        instance->classctx.addQuotedLiteral("virtual bool extractAllJoinFields() override { return true; }");
 
-        BuildCtx funcctx(instance->startctx);
-        funcctx.addQuotedCompoundLiteral("virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void * _left)");
-        translator.ensureRowAllocated(funcctx, "crSelf");
-        translator.buildRecordSerializeExtract(funcctx, memoryRhsRecord);
+        {
+            MemberFunction func(translator, instance->startctx, "virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void * _left) override");
+            translator.ensureRowAllocated(func.ctx, "crSelf");
+            translator.buildRecordSerializeExtract(func.ctx, memoryRhsRecord);
+        }
 
         StringBuffer s;
         MetaInstance meta(translator, serializedRhsRecord, false);
         translator.buildMetaInfo(meta);
-        instance->classctx.addQuoted(s.clear().append("virtual IOutputMetaData * queryExtractedSize() { return &").append(meta.queryInstanceObject()).append("; }"));
+        instance->classctx.addQuoted(s.clear().append("virtual IOutputMetaData * queryExtractedSize() override { return &").append(meta.queryInstanceObject()).append("; }"));
     }
+
+    translator.buildMetaMember(instance->classctx, expectedRecord, isGrouped(tableExpr), "queryDiskRecordSize");
+    translator.buildMetaMember(instance->classctx, projectedRecord, isGrouped(tableExpr), "queryProjectedDiskRecordSize");
 }
 
 
@@ -7282,30 +4936,30 @@ void FetchBuilder::buildTransform(IHqlExpression * expr)
 {
     translator.xmlUsesContents = false;
 
-    BuildCtx transformCtx(instance->startctx);
+    MemberFunction func(translator, instance->startctx);
     switch (getDatasetKind(tableExpr))
     {
     case no_csv:
-        transformCtx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenLeft, const char * * dataLeft, const void * _right, unsigned __int64 _fpos)");
-        transformCtx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenLeft, const char * * dataLeft, const void * _right, unsigned __int64 _fpos) override");
+        func.ctx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;
     case no_xml:
     case no_json:
-        transformCtx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * xmlLeft, const void * _right, unsigned __int64 _fpos)");
-        transformCtx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * xmlLeft, const void * _right, unsigned __int64 _fpos) override");
+        func.ctx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;
     default:
-        transformCtx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _fpos)");
-        transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-        transformCtx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _fpos) override");
+        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        func.ctx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;
     }
 
-    translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, true, false, true);
+    translator.ensureRowAllocated(func.ctx, "crSelf");
+    buildTransformBody(func.ctx, expr, true, false, true);
 
     if (translator.xmlUsesContents)
-        instance->classctx.addQuotedLiteral("virtual bool requiresContents() { return true; }");
+        instance->classctx.addQuotedLiteral("virtual bool requiresContents() override { return true; }");
 }
 
 
@@ -7313,7 +4967,7 @@ void FetchBuilder::buildTransformFpos(BuildCtx & transformCtx)
 {
     fpos.setown(createVariable("_fpos", LINK(fposType)));
 
-    //NB: Because the fetch gets merged with the usertable used to project the dataset, the 
+    //NB: Because the fetch gets merged with the usertable used to project the dataset, the
     //transform contains filepos(LEFT) not filepos(tableExpr)
     OwnedHqlExpr leftSelect = createSelector(no_left, fetchExpr->queryChild(0), selSeq);
     OwnedHqlExpr fposField = getFilepos(leftSelect, false);
@@ -7371,6 +5025,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFetch(BuildCtx & ctx, IHqlExpr
         OwnedHqlExpr simple = replaceFetchInput(expr, null, no_right);
         OwnedHqlExpr transformed = replaceExpression(simple, tableExpr, projected);
         OwnedHqlExpr optSimple = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
+        IHqlExpression * newFetch = queryFetch(optSimple);
+        assertex(newFetch);
+        IHqlExpression * lhs = newFetch->queryChild(0);
+        if (lhs->getOperator() != no_table)
+            throwError1(HQLERR_ExpectedFileLhsFetch, getOpString(lhs->getOperator()));
+
         OwnedHqlExpr optimized = replaceFetchInput(optSimple, fetchRhs, no_right);
         return doBuildActivityFetch(ctx, optimized);
     }

@@ -30,15 +30,14 @@ define([
     "dijit/form/Button",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsDFUXref",
+    "src/WsDFUXref",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
-    "hpcc/XrefDetailsWidget"
+    "src/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domConstruct, domClass,
                 registry, ToggleButton, ToolbarSeparator, Button,
                 GridDetailsWidget, WsDFUXref, DelayLoadWidget, ESPUtil) {
-    return declare("XrefQueryWidget", [GridDetailsWidget], {
+    return declare("XrefDirectoriesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.title_DirectoriesFor + ":",
         idProperty: "Name",
@@ -93,8 +92,8 @@ define([
                     MaxSize: {label: this.i18n.MaxSize, width: 30, sortable: false},
                     MinIP: {label: this.i18n.MinNode, width: 30, sortable: false},
                     MinSize: {label: this.i18n.MinSize, width: 30, sortable: false},
-                    SkewPositive: {label: this.i18n.SkewPositive, width: 30, sortable: true},
-                    SkewNegative: {label: this.i18n.SkewNegative, width: 30, sortable: true}
+                    PositiveSkew: {label: this.i18n.SkewPositive, width: 30, sortable: true},
+                    NegativeSkew: {label: this.i18n.SkewNegative, width: 30, sortable: true}
                 }
             }, domID);
 
@@ -123,8 +122,8 @@ define([
                         MaxSize: row.MaxSize,
                         MinIP: row.MinIP,
                         MinSize: row.MinSize,
-                        SkewPositive: row.SkewPositive,
-                        SkewNegative: row.SkewNegative
+                        PositiveSkew: row.PositiveSkew,
+                        NegativeSkew: row.NegativeSkew
                     });
                 });
                 context.store.setData(newRows);

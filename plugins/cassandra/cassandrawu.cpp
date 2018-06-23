@@ -25,7 +25,7 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlembed.hpp"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
@@ -2231,18 +2231,18 @@ public:
         CIArrayOf<CassandraStatement> deleteSearches;
         deleteSecondaries(wuid, deleteSearches);
 
-        CassandraBatch main(CASS_BATCH_TYPE_UNLOGGED);
-        deleteChildren(wuid, main);
-        sessionCache->deleteChildByWuid(wuGraphProgressMappings, wuid, main);
-        sessionCache->deleteChildByWuid(wuGraphStateMappings, wuid, main);
-        sessionCache->deleteChildByWuid(wuGraphRunningMappings, wuid, main);
+        CassandraBatch mainBatch(CASS_BATCH_TYPE_UNLOGGED);
+        deleteChildren(wuid, mainBatch);
+        sessionCache->deleteChildByWuid(wuGraphProgressMappings, wuid, mainBatch);
+        sessionCache->deleteChildByWuid(wuGraphStateMappings, wuid, mainBatch);
+        sessionCache->deleteChildByWuid(wuGraphRunningMappings, wuid, mainBatch);
         // If the partitioning of the main workunits table does not match the partitioning of the other tables, then would be better to
         // execute the deletes of the child tables and the main record as two separate batches.
         CassandraStatement update(sessionCache->prepareStatement("DELETE from workunits where partition=? and wuid=?;"));
         update.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
         update.bindString(1, wuid);
-        check(cass_batch_add_statement(main, update));
-        executeBatch(main, "delete wu");
+        check(cass_batch_add_statement(mainBatch, update));
+        executeBatch(mainBatch, "delete wu");
         executeAsync(deleteSearches, "delete wu");
     }
 
@@ -2454,9 +2454,9 @@ public:
         }
     }
 
-    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml)
+    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml, unsigned wfid)
     {
-        CPersistedWorkUnit::createGraph(name, label, type, xgmml);
+        CPersistedWorkUnit::createGraph(name, label, type, xgmml, wfid);
         VStringBuffer xpath("Graphs/Graph[@name='%s']", name);
         noteDirty(xpath, wuGraphsMappings);
     }
@@ -2498,7 +2498,7 @@ public:
         noteDirty(xpath, wuExceptionsMappings);
         return result;
     }
-    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all)
     {
         // Make sure that any required updates to the secondary files happen
         IPropertyTree *fromP = queryExtendedWU(cached)->queryPTree();
@@ -2506,7 +2506,7 @@ public:
             trackSecondaryChange(fromP->queryProp(*search), *search);
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             checkChildLoaded(**table);
-        CPersistedWorkUnit::copyWorkUnit(cached, all);
+        CPersistedWorkUnit::copyWorkUnit(cached, copyStats, all);
         memset(childLoaded, 1, sizeof(childLoaded));
         allDirty = true;
         actionChanged = true;
@@ -2668,8 +2668,8 @@ public:
     class CCassandraWuGraphStats : public CWuGraphStats
     {
     public:
-        CCassandraWuGraphStats(const CCassandraWorkUnit *_parent, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
-        : CWuGraphStats(createPTree(_rootScope), _creatorType, _creator, _rootScope, _id),
+        CCassandraWuGraphStats(const CCassandraWorkUnit *_parent, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id)
+        : CWuGraphStats(createPTree(_rootScope), _creatorType, _creator, _wfid, _rootScope, _id),
           parent(_parent)
         {
         }
@@ -2684,10 +2684,9 @@ public:
         StringAttr wuid;
     };
 
-
-    IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
+    IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph) const override
     {
-        return new CCassandraWuGraphStats(this, creatorType, creator, graphName, subgraph);
+        return new CCassandraWuGraphStats(this, creatorType, creator, wfid, graphName, subgraph);
     }
 
 
@@ -3259,6 +3258,7 @@ public:
                 Owned<IPTree> wuXML = createPTree(useWuid);
                 wuXML->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
                 wuXML->setPropInt("@wuidVersion", WUID_VERSION);  // we implement the latest version.
+                wuXML->setProp("@totalThorTime", ""); // must be non null, otherwise sorting by thor time excludes the values
                 Owned<IRemoteConnection> daliLock;
                 lockWuid(daliLock, useWuid);
                 Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), secmgr, secuser, daliLock.getClear(), false);

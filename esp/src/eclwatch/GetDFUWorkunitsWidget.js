@@ -36,13 +36,13 @@ define([
     "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPDFUWorkunit",
-    "hpcc/FileSpray",
+    "src/ESPUtil",
+    "src/ESPDFUWorkunit",
+    "src/FileSpray",
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
-    "hpcc/Utility",
+    "src/Utility",
 
     "dojo/text!../templates/GetDFUWorkunitsWidget.html",
 
@@ -75,6 +75,7 @@ define([
         filter: null,
         clusterTargetSelect: null,
         stateTargetSelect: null,
+        username: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -86,6 +87,16 @@ define([
             this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
             this.downListForm = registry.byId(this.id + "DownListForm");
             this.fileName = registry.byId(this.id + "FileName");
+        },
+
+        _onMine: function (event) {
+            if (event) {
+                this.filter.setValue(this.id + "Owner", this.userName);
+                this.filter._onFilterApply();
+            } else {
+                this.filter._onFilterClear();
+                this.filter._onFilterApply();
+            }
         },
 
         startup: function (args) {
@@ -252,12 +263,13 @@ define([
                     context.refreshGrid();
                 }
             });
+            this.userName = dojoConfig.username;
         },
 
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.workunitsTab.id) {
+                if (currSel.id === this.workunitsTab.id) {
                 } else {
                     currSel.init(currSel.params);
                 }
@@ -364,13 +376,13 @@ define([
                     }),
                     isProtected: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("locked.png", context.i18n.Protected);
+                            node.innerHTML = Utility.getImageHTML("locked.png", context.i18n.Protected);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (_protected) {
                             if (_protected === true) {
-                                return dojoConfig.getImageHTML("locked.png");
+                                return Utility.getImageHTML("locked.png");
                             }
                             return "";
                         }
@@ -451,12 +463,12 @@ define([
             var hasNotFailed = false;
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
-                if (selection[i] && selection[i].isProtected && selection[i].isProtected != "0") {
+                if (selection[i] && selection[i].isProtected && selection[i].isProtected !== false) {
                     hasProtected = true;
                 } else {
                     hasNotProtected = true;
                 }
-                if (selection[i] && selection[i].State && selection[i].State == "5") {
+                if (selection[i] && selection[i].State && selection[i].State === 5) {
                     hasFailed = true;
                 } else {
                     hasNotFailed = true;

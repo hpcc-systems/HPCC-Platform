@@ -31,11 +31,11 @@ public:
   {
   }
 
-  void init(void *startInfo) 
+  virtual void init(void *startInfo) override
   {
     m_pTask.set((IDeployTask*)startInfo);
   }
-  void main()
+  virtual void threadmain() override
   {
     m_pTask->copyFile( m_pTask->getFlags() );
 
@@ -58,11 +58,11 @@ public:
     }
   }
 
-  bool canReuse()
+  virtual bool canReuse() const override
   {
     return true;
   }
-  bool stop()
+  virtual bool stop() override
   {
     return true;
   }
@@ -206,8 +206,7 @@ void CWsDeployEngine::deploy(CDeployOptions& pOptions)
 {
   try
   {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    factory->validateCache();   
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv(factory->openEnvironment());
 
     m_pEnvDepEngine.setown( createEnvDeploymentEngine(*constEnv, *this, m_pDeploy->queryPropTree("SelectedComponents")) );
@@ -360,8 +359,7 @@ void CWsDeployEngine::deploy()
 {
   try
   {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    factory->validateCache();   
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv(factory->openEnvironment());
 
     m_pEnvDepEngine.setown( createEnvDeploymentEngine(*constEnv, *this, m_pDeploy->queryPropTree("SelectedComponents")) );

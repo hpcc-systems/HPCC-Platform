@@ -19,7 +19,7 @@
 
 import Setup.SerialTest;
 
-#option ('skipFileFormatCrcCheck', true);
+#option ('layoutTranslation', 'ecl');
 
 inDs := DATASET(SerialTest.DictFilename, SerialTest.LibraryDsRec, THOR);
 

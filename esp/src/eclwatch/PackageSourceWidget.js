@@ -28,13 +28,16 @@ define([
     "dijit/layout/ContentPane",
     "dijit/registry",
 
-    "hpcc/WsPackageMaps",
+    "src/CodeMirror",
+
+    "src/WsPackageMaps",
 
     "dojo/text!../templates/PackageSourceWidget.html"
 ],
     function (declare, lang, i18n, nlsHPCC, dom, topic,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
             BorderContainer, ContentPane, registry,
+            CodeMirror,
             WsPackageMaps, template) {
         return declare("PackageSourceWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
@@ -122,7 +125,7 @@ define([
             addArrayToText: function (arrayTitle, arrayItems, text) {
                 if ((arrayItems.Item !== undefined) && (arrayItems.Item.length > 0)) {
                     text += arrayTitle + ":\n";
-                    for (i=0;i<arrayItems.Item.length;i++)
+                    for (var i=0;i<arrayItems.Item.length;i++)
                         text += "  " + arrayItems.Item[i] + "\n";
                     text += "\n";
                 }

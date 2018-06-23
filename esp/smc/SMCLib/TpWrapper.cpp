@@ -33,22 +33,14 @@ const char* MSG_FAILED_GET_ENVIRONMENT_INFO = "Failed to get environment informa
 
 IPropertyTree* CTpWrapper::getEnvironment(const char* xpath)
 {
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IPropertyTree> root = &constEnv->getPTree();
-    if (root)
-    {
-        if (!xpath || !*xpath)
-        {
-            return LINK(root);
-        }
-        else
-        {
-            IPropertyTree* pSubTree = root->queryPropTree( xpath );
-            if (pSubTree)
-                return LINK(pSubTree);
-        }
-    }
+    if (!xpath || !*xpath)
+        return LINK(root);
+    IPropertyTree* pSubTree = root->queryPropTree( xpath );
+    if (pSubTree)
+        return LINK(pSubTree);
 
     return NULL;
 }
@@ -59,17 +51,9 @@ bool CTpWrapper::getClusterLCR(const char* clusterType, const char* clusterName)
     if (!clusterType || !*clusterType || !clusterName || !*clusterName)
         return bLCR;
 
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-    if (!envFactory)
-        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-    
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-    if (!constEnv)
-        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-
     Owned<IPropertyTree> root = &constEnv->getPTree();
-    if (!root)
-        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
     StringBuffer xpath;
     xpath.appendf("Software/%s[@name='%s']", clusterType, clusterName);
@@ -181,7 +165,7 @@ void CTpWrapper::fetchInstances(const char* ServiceType, IPropertyTree& service,
     }
 }
 
-void CTpWrapper::getTpDaliServers(IArrayOf<IConstTpDali>& list)
+void CTpWrapper::getTpDaliServers(double clientVersion, IArrayOf<IConstTpDali>& list)
 {
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
@@ -201,17 +185,25 @@ void CTpWrapper::getTpDaliServers(IArrayOf<IConstTpDali>& list)
         pService->setBuild(serviceTree.queryProp("@build"));
         pService->setType(eqDali);
 
-        StringBuffer tmpDir;
+        StringBuffer tmpDir, tmpAuditDir;
         if (getConfigurationDirectory(root->queryPropTree("Directories"), "log", "dali", name, tmpDir))
         {
             const char* pStr = tmpDir.str();
             if (pStr)
             {
                 if (strchr(pStr, '/'))
-                    tmpDir.append("/server");
+                    tmpDir.append("/");
                 else
-                    tmpDir.append("\\server");
-                pService->setLogDirectory( tmpDir.str() );
+                    tmpDir.append("\\");
+                tmpAuditDir.set(tmpDir.str());
+
+                tmpDir.append("server");
+                pService->setLogDirectory(tmpDir.str());
+                if (clientVersion >= 1.27)
+                {
+                    tmpAuditDir.append("audit");
+                    pService->setAuditLogDirectory(tmpAuditDir.str());
+                }
             }
         }
         else
@@ -734,11 +726,9 @@ void CTpWrapper::getTargetClusterList(IArrayOf<IEspTpLogicalCluster>& clusters, 
 
 void CTpWrapper::queryTargetClusterProcess(double version, const char* processName, const char* clusterType, IArrayOf<IConstTpCluster>& clusterList)
 {
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IPropertyTree> root = &constEnv->getPTree();
-    if (!root)
-        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
     StringBuffer xpath;
     xpath.appendf("Software/%s[@name='%s']", clusterType, processName);
@@ -864,11 +854,9 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
 {
     try
     {
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
-        if (!root)
-            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
         Owned<IPropertyTreeIterator> clusters= root->getElements("Software/Topology/Cluster");
         if (!clusters->first())
@@ -1001,152 +989,149 @@ void CTpWrapper::getClusterProcessList(const char* ClusterType, IArrayOf<IEspTpC
 {
     try
     {
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
-        if (root)
-        {
-            IPropertyTree* pSoftware = root->queryPropTree("Software");
-            if (!pSoftware)
-                throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
+        IPropertyTree* pSoftware = root->queryPropTree("Software");
+        if (!pSoftware)
+            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
-            StringArray queuesdone;
-            StringArray groupsdone;
-            Owned<IPropertyTreeIterator> clusters= pSoftware->getElements(ClusterType);
-            if (clusters->first()) {
-                do {
-                    IPropertyTree &cluster = clusters->query();                 
-                    const char* name = cluster.queryProp("@name");
-                    if (!name||!*name)
-                        continue;
-                    const char* queueName = NULL;
-                    const char* groupName = NULL;
-                    if (name&&(stricmp(ClusterType,eqThorCluster)==0)) 
-                    {   
-                        // only for multi-thor
-                        // only list first thor cluster on queue
-                        queueName = cluster.queryProp("@queueName");
-                        if (!queueName||!*queueName)
-                            queueName = name;
-                        if (ignoreduplicatqueues) 
+        StringArray queuesdone;
+        StringArray groupsdone;
+        Owned<IPropertyTreeIterator> clusters= pSoftware->getElements(ClusterType);
+        if (clusters->first()) {
+            do {
+                IPropertyTree &cluster = clusters->query();
+                const char* name = cluster.queryProp("@name");
+                if (!name||!*name)
+                    continue;
+                const char* queueName = NULL;
+                const char* groupName = NULL;
+                if (name&&(stricmp(ClusterType,eqThorCluster)==0))
+                {
+                    // only for multi-thor
+                    // only list first thor cluster on queue
+                    queueName = cluster.queryProp("@queueName");
+                    if (!queueName||!*queueName)
+                        queueName = name;
+                    if (ignoreduplicatqueues)
+                    {
+                        bool done=false;
+                        ForEachItemIn(i,queuesdone)
                         {
-                            bool done=false;
-                            ForEachItemIn(i,queuesdone) 
+                            if (strcmp(queuesdone.item(i),queueName)==0)
                             {
-                                if (strcmp(queuesdone.item(i),queueName)==0) 
-                                {
-                                    done = true;
-                                    break;
-                                }
+                                done = true;
+                                break;
                             }
-                            if (done)
-                                continue;
-                            queuesdone.append(queueName);
                         }
-                        groupName = cluster.queryProp("@nodeGroup");
-                        if (!groupName||!*groupName)
-                            groupName = name;
-                        if (ignoreduplicategroups) 
+                        if (done)
+                            continue;
+                        queuesdone.append(queueName);
+                    }
+                    groupName = cluster.queryProp("@nodeGroup");
+                    if (!groupName||!*groupName)
+                        groupName = name;
+                    if (ignoreduplicategroups)
+                    {
+                        bool done=false;
+                        ForEachItemIn(i,groupsdone)
                         {
-                            bool done=false;
-                            ForEachItemIn(i,groupsdone) 
+                            if (strcmp(groupsdone.item(i),groupName)==0)
                             {
-                                if (strcmp(groupsdone.item(i),groupName)==0) 
-                                {
-                                    done = true;
-                                    break;
-                                }
+                                done = true;
+                                break;
                             }
-                            if (done)
-                                continue;
-                            groupsdone.append(groupName);
                         }
-
+                        if (done)
+                            continue;
+                        groupsdone.append(groupName);
                     }
 
-                    IEspTpCluster* clusterInfo = createTpCluster("","");                    
-                    clusterInfo->setName(name);
-                    if (queueName && *queueName)
-                        clusterInfo->setQueueName(queueName);
+                }
+
+                IEspTpCluster* clusterInfo = createTpCluster("","");
+                clusterInfo->setName(name);
+                if (queueName && *queueName)
+                    clusterInfo->setQueueName(queueName);
+                else
+                    clusterInfo->setQueueName(name);
+                clusterInfo->setDesc(name);
+                clusterInfo->setBuild( cluster.queryProp("@build") );
+
+                StringBuffer path("/Environment/Software");
+                StringBuffer tmpPath;
+                setAttPath(path, ClusterType, "name", name, tmpPath);
+
+                clusterInfo->setType(ClusterType);
+
+                StringBuffer tmpDir;
+                if (getConfigurationDirectory(root->queryPropTree("Software/Directories"), "run", ClusterType, name, tmpDir))
+                {
+                    clusterInfo->setDirectory(tmpDir.str());
+                }
+                else
+                {
+                    clusterInfo->setDirectory(cluster.queryProp("@directory"));
+                }
+
+                tmpDir.clear();
+                if (getConfigurationDirectory(root->queryPropTree("Software/Directories"), "log", ClusterType, name, tmpDir))
+                {
+                    clusterInfo->setLogDirectory( tmpDir.str() );
+                }
+                else
+                {
+                    const char* logDir = cluster.queryProp("@logDir");
+                    if (logDir)
+                        clusterInfo->setLogDirectory( logDir );
+                }
+
+                clusterInfo->setPath(tmpPath.str());
+                clusterInfo->setPrefix("");
+                if(cluster.hasProp("@dataBuild"))
+                    clusterInfo->setDataModel(cluster.queryProp("@dataBuild"));
+
+                clusterList.append(*clusterInfo);
+
+                //find out OS
+                OS_TYPE os = OS_WINDOWS;
+                unsigned int clusterTypeLen = strlen(ClusterType);
+                const char* childType = NULL;
+                if (clusterTypeLen > 4)
+                {
+                    if (!strnicmp(ClusterType, "roxie", 4))
+                        childType = "RoxieServerProcess[1]";
+                    else if (!strnicmp(ClusterType, "thor", 4))
+                        childType = "ThorMasterProcess";
                     else
-                        clusterInfo->setQueueName(name);
-                    clusterInfo->setDesc(name);
-                    clusterInfo->setBuild( cluster.queryProp("@build") );
-
-                    StringBuffer path("/Environment/Software");
-                    StringBuffer tmpPath;
-                    setAttPath(path, ClusterType, "name", name, tmpPath);
-
-                    clusterInfo->setType(ClusterType);
-
-                    StringBuffer tmpDir;
-                    if (getConfigurationDirectory(root->queryPropTree("Software/Directories"), "run", ClusterType, name, tmpDir))
+                        childType = "HoleControlProcess";
+                }
+                if (childType)
+                {
+                    IPropertyTree* pChild = cluster.queryPropTree(childType);
+                    if (pChild)
                     {
-                        clusterInfo->setDirectory(tmpDir.str());
-                    }
-                    else
-                    {
-                        clusterInfo->setDirectory(cluster.queryProp("@directory"));
-                    }
-
-                    tmpDir.clear();
-                    if (getConfigurationDirectory(root->queryPropTree("Software/Directories"), "log", ClusterType, name, tmpDir))
-                    {
-                        clusterInfo->setLogDirectory( tmpDir.str() );
-                    }
-                    else
-                    {
-                        const char* logDir = cluster.queryProp("@logDir");
-                        if (logDir)
-                            clusterInfo->setLogDirectory( logDir );
-                    }
-
-                    clusterInfo->setPath(tmpPath.str());
-                    clusterInfo->setPrefix("");
-                    if(cluster.hasProp("@dataBuild"))
-                        clusterInfo->setDataModel(cluster.queryProp("@dataBuild"));
-
-                    clusterList.append(*clusterInfo);
-
-                    //find out OS
-                    OS_TYPE os = OS_WINDOWS;
-                    unsigned int clusterTypeLen = strlen(ClusterType);
-                    const char* childType = NULL;
-                    if (clusterTypeLen > 4)
-                    {
-                        if (!strnicmp(ClusterType, "roxie", 4))
-                            childType = "RoxieServerProcess[1]";
-                        else if (!strnicmp(ClusterType, "thor", 4))
-                            childType = "ThorMasterProcess";
-                        else
-                            childType = "HoleControlProcess";
-                    }
-                    if (childType)
-                    {
-                        IPropertyTree* pChild = cluster.queryPropTree(childType);
-                        if (pChild)
+                        const char* computer = pChild->queryProp("@computer");
+                        IPropertyTree* pHardware = root->queryPropTree("Hardware");
+                        if (computer && *computer && pHardware)
                         {
-                            const char* computer = pChild->queryProp("@computer");
-                            IPropertyTree* pHardware = root->queryPropTree("Hardware");
-                            if (computer && *computer && pHardware)
+                            StringBuffer xpath;
+                            xpath.appendf("Computer[@name='%s']/@computerType", computer);
+                            const char* computerType = pHardware->queryProp( xpath.str() );
+                            if (computerType && *computerType)
                             {
-                                StringBuffer xpath;
-                                xpath.appendf("Computer[@name='%s']/@computerType", computer);
-                                const char* computerType = pHardware->queryProp( xpath.str() );
-                                if (computerType && *computerType)
-                                {
-                                    xpath.clear().appendf("ComputerType[@name='%s']/@opSys", computerType);
-                                    const char* opSys = pHardware->queryProp( xpath.str() );
-                                    if (!stricmp(opSys, "linux") || !stricmp( opSys, "solaris"))
-                                        os = OS_LINUX;
-                                }
+                                xpath.clear().appendf("ComputerType[@name='%s']/@opSys", computerType);
+                                const char* opSys = pHardware->queryProp( xpath.str() );
+                                if (!stricmp(opSys, "linux") || !stricmp( opSys, "solaris"))
+                                    os = OS_LINUX;
                             }
                         }
                     }
-                    clusterInfo->setOS(os);
+                }
+                clusterInfo->setOS(os);
 
-                } while (clusters->next());
-            }
+            } while (clusters->next());
         }
     }
     catch(IException* e){   
@@ -1164,84 +1149,81 @@ void CTpWrapper::getHthorClusterList(IArrayOf<IEspTpCluster>& clusterList)
 {
     try
     {
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
-        if (root)
+        IPropertyTree* pSoftware = root->queryPropTree("Software");
+
+        const char * ClusterType = "EclAgentProcess";
+        Owned<IPropertyTreeIterator> clusters(pSoftware->getElements(ClusterType));
+        ForEach(*clusters)
         {
-            IPropertyTree* pSoftware = root->queryPropTree("Software");
-
-            const char * ClusterType = "EclAgentProcess";
-            Owned<IPropertyTreeIterator> clusters(pSoftware->getElements(ClusterType));
-            ForEach(*clusters) 
+            IPropertyTree &cluster = clusters->query();
+            const char* name = cluster.queryProp("@name");
+            if (!name||!*name)
+                continue;
+            unsigned ins = 0;
+            Owned<IPropertyTreeIterator> insts = clusters->query().getElements("Instance");
+            ForEach(*insts)
             {
-                IPropertyTree &cluster = clusters->query();                 
-                const char* name = cluster.queryProp("@name");
-                if (!name||!*name)
-                    continue;
-                unsigned ins = 0;
-                Owned<IPropertyTreeIterator> insts = clusters->query().getElements("Instance");
-                ForEach(*insts) 
+                const char *na = insts->query().queryProp("@netAddress");
+                if (na&&*na)
                 {
-                    const char *na = insts->query().queryProp("@netAddress");
-                    if (na&&*na) 
+                    SocketEndpoint ep(na);
+                    if (!ep.isNull())
                     {
-                        SocketEndpoint ep(na);
-                        if (!ep.isNull()) 
+                        ins++;
+                        StringBuffer gname("hthor__");
+                        gname.append(name);
+                        if (ins>1)
+                            gname.append('_').append(ins);
+
+                        IEspTpCluster* clusterInfo = createTpCluster("","");
+
+                        clusterInfo->setName(gname.str());
+                        clusterInfo->setQueueName(name);
+                        clusterInfo->setDesc(cluster.queryProp("@build"));
+
+                        clusterInfo->setBuild( cluster.queryProp("@description") );
+
+                        StringBuffer path("/Environment/Software");
+                        StringBuffer tmpPath;
+                        setAttPath(path, ClusterType, "name", name, tmpPath);
+
+                        clusterInfo->setType(ClusterType);
+                        clusterInfo->setDirectory(insts->query().queryProp("@directory"));
+
+                        StringBuffer tmpDir;
+                        if (getConfigurationDirectory(root->queryPropTree("Software/Directories"), "run", ClusterType, name, tmpDir))
                         {
-                            ins++;
-                            StringBuffer gname("hthor__");
-                            gname.append(name);
-                            if (ins>1)
-                                gname.append('_').append(ins);
-
-                            IEspTpCluster* clusterInfo = createTpCluster("","");    
-                    
-                            clusterInfo->setName(gname.str());
-                            clusterInfo->setQueueName(name);
-                            clusterInfo->setDesc(cluster.queryProp("@build"));
-
-                            clusterInfo->setBuild( cluster.queryProp("@description") );
-
-                            StringBuffer path("/Environment/Software");
-                            StringBuffer tmpPath;
-                            setAttPath(path, ClusterType, "name", name, tmpPath);
-
-                            clusterInfo->setType(ClusterType);
-                            clusterInfo->setDirectory(insts->query().queryProp("@directory"));
-
-                            StringBuffer tmpDir;
-                            if (getConfigurationDirectory(root->queryPropTree("Software/Directories"), "run", ClusterType, name, tmpDir))
-                            {
-                                clusterInfo->setDirectory(tmpDir.str());
-                            }
-                            else
-                            {
-                                clusterInfo->setDirectory(insts->query().queryProp("@directory"));
-                            }
-
-                            clusterInfo->setPath(tmpPath.str());
-                            clusterList.append(*clusterInfo);
-
-                            //find out OS
-                            OS_TYPE os = OS_WINDOWS;
-                            const char* computer = insts->query().queryProp("@computer");
-                            IPropertyTree* pHardware = root->queryPropTree("Hardware");
-                            if (computer && *computer && pHardware)
-                            {
-                                StringBuffer xpath;
-                                xpath.appendf("Computer[@name='%s']/@computerType", computer);
-                                const char* computerType = pHardware->queryProp( xpath.str() );
-                                if (computerType && *computerType)
-                                {
-                                    xpath.clear().appendf("ComputerType[@name='%s']/@opSys", computerType);
-                                    const char* opSys = pHardware->queryProp( xpath.str() );
-                                    if (!stricmp(opSys, "linux") || !stricmp( opSys, "solaris"))
-                                        os = OS_LINUX;
-                                }
-                            }
-                            clusterInfo->setOS(os);
+                            clusterInfo->setDirectory(tmpDir.str());
                         }
+                        else
+                        {
+                            clusterInfo->setDirectory(insts->query().queryProp("@directory"));
+                        }
+
+                        clusterInfo->setPath(tmpPath.str());
+                        clusterList.append(*clusterInfo);
+
+                        //find out OS
+                        OS_TYPE os = OS_WINDOWS;
+                        const char* computer = insts->query().queryProp("@computer");
+                        IPropertyTree* pHardware = root->queryPropTree("Hardware");
+                        if (computer && *computer && pHardware)
+                        {
+                            StringBuffer xpath;
+                            xpath.appendf("Computer[@name='%s']/@computerType", computer);
+                            const char* computerType = pHardware->queryProp( xpath.str() );
+                            if (computerType && *computerType)
+                            {
+                                xpath.clear().appendf("ComputerType[@name='%s']/@opSys", computerType);
+                                const char* opSys = pHardware->queryProp( xpath.str() );
+                                if (!stricmp(opSys, "linux") || !stricmp( opSys, "solaris"))
+                                    os = OS_LINUX;
+                            }
+                        }
+                        clusterInfo->setOS(os);
                     }
                 }
             }
@@ -1304,13 +1286,9 @@ bool CTpWrapper::checkGroupReplicateOutputs(const char* groupName, const char* k
     if (strieq(kind, "Roxie") || strieq(kind, "hthor"))
         return false;
 
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> environment = factory->openEnvironment();
-    if (!environment)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
     Owned<IPropertyTree> root = &environment->getPTree();
-    if (!root)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
     Owned<IPropertyTreeIterator> it= root->getElements("Software/ThorCluster");
     ForEach(*it)
@@ -1384,7 +1362,7 @@ bool CTpWrapper::ContainsProcessDefinition(IPropertyTree& clusterNode,const char
 
 void CTpWrapper::getMachineInfo(double clientVersion, const char* name, const char* netAddress, IEspTpMachine& machineInfo)
 {
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IConstMachineInfo> pMachineInfo;
     if (name && *name)
@@ -1446,11 +1424,9 @@ void CTpWrapper::getMachineInfo(IEspTpMachine& machineInfo,IPropertyTree& machin
 
 bool CTpWrapper::checkMultiSlavesFlag(const char* clusterName)
 {
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IPropertyTree> root = &constEnv->getPTree();
-    if (!root)
-        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
     VStringBuffer path("Software/ThorCluster[@name=\"%s\"]", clusterName);
     Owned<IPropertyTree> cluster= root->getPropTree(path.str());
@@ -1504,7 +1480,7 @@ void CTpWrapper::getThorSlaveMachineList(double clientVersion, const char* clust
 {
     try
     {
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IGroup> nodeGroup = getClusterProcessNodeGroup(clusterName, "ThorCluster");
         if (!nodeGroup || (nodeGroup->ordinality() == 0))
@@ -1534,11 +1510,9 @@ void CTpWrapper::getThorSpareMachineList(double clientVersion, const char* clust
 {
     try
     {
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
-        if (!root)
-            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
         VStringBuffer path("Software/ThorCluster[@name=\"%s\"]", clusterName);
         Owned<IPropertyTree> cluster= root->getPropTree(path.str());
@@ -1584,11 +1558,9 @@ void CTpWrapper::getMachineList(const char* MachineType,
     try
     {
         //ParentPath=Path to parent node... normally a cluster
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root0 = &constEnv->getPTree();
-        if (!root0)
-            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
     
         char* xpath = (char*)ParentPath;
         if (!strnicmp(xpath, "/Environment/", 13))
@@ -1689,7 +1661,7 @@ void CTpWrapper::getDropZoneMachineList(double clientVersion, bool ECLWatchVisib
 
 void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECLWatchVisibleOnly, IArrayOf<IConstTpDropZone>& list)
 {
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     if (!isEmptyString(name))
     {
@@ -1811,9 +1783,9 @@ IEspTpMachine* CTpWrapper::createTpMachineEx(const char* name, const char* type,
 void CTpWrapper::setMachineInfo(const char* name,const char* type,IEspTpMachine& machine)
 {
     try{
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> m_pConstEnvironment = factory->openEnvironment();
-        Owned<IConstMachineInfo> pMachineInfo =  m_pConstEnvironment->getMachine(name);
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> constEnv = factory->openEnvironment();
+        Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachine(name);
         if (pMachineInfo.get())
         {
             SCMStringBuffer ep;

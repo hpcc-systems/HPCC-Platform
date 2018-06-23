@@ -103,6 +103,7 @@ Files.DG_VarOutRec Proj1(Files.DG_OutRec L) := TRANSFORM
   SELF.ExtraField := IF(self.DG_Prange<=10,
                         trim(self.DG_lastname[1..self.DG_Prange]+self.DG_firstname[1..self.DG_Prange],all),
                         trim(self.DG_lastname[1..self.DG_Prange-10]+self.DG_firstname[1..self.DG_Prange-10],all));
+  SELF := [];
 END;
 DG_VarOutRecs := PROJECT(DG_ParentRecs,Proj1(LEFT));
 
@@ -110,6 +111,7 @@ sequential(
   output(DG_VarOutRecs,,Files.DG_FileOut+'VAR',overwrite),
   buildindex(Files.DG_NormalVarIndex, overwrite),
   buildindex(Files.DG_TransVarIndex, overwrite),
+  buildindex(Files.DG_IntIndex, overwrite, BLOOM(DG_parentID));
   fileServices.AddFileRelationship( __nameof__(Files.DG_VarFile), __nameof__(Files.DG_NormalVarIndex), '', '', 'view', '1:1', false),
   fileServices.AddFileRelationship( __nameof__(Files.DG_VarFile), __nameof__(Files.DG_NormalVarIndex), '__fileposition__', '__filepos', 'link', '1:1', true),
 );
@@ -122,7 +124,8 @@ IF (createMultiPart,
         buildindex(LocalFiles.DG_NormalIndexFileEvens,overwrite,NOROOT,SET('_nodeSize', 512)),
         buildindex(LocalFiles.DG_TransIndexFile,overwrite,NOROOT),
         buildindex(LocalFiles.DG_TransIndexFileEvens,overwrite,NOROOT),
-        buildindex(LocalFiles.DG_NormalVarIndex, overwrite,NOROOT);
+        buildindex(LocalFiles.DG_NormalVarIndex, overwrite,NOROOT,PARTITION(DG_firstname));
         buildindex(LocalFiles.DG_TransVarIndex, overwrite,NOROOT);
+        buildindex(LocalFiles.DG_IntIndex, overwrite,NOROOT,BLOOM(DG_parentId), PARTITION(DG_parentId));
    )
 );

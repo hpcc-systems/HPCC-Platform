@@ -66,7 +66,7 @@
 #define MAX_SIMPLE_VAR_SIZE             99999
 #define MAX_STATIC_ROW_SIZE             10000
 #define MAX_LOCAL_ROW_SIZE              32
-#define DEFAULT_NLP_DETAIL              1
+#define DEFAULT_NLP_DETAIL              0
 #define DEFAULT_EXPIRY_PERIOD               7
 #define DEFAULT_PERSIST_EXPIRY_PERIOD       0           // Persists that expire by default have a period defined in sasha
 
@@ -146,6 +146,7 @@ WorkflowItem::WorkflowItem(IHqlExpression * _function) : wfid(0), function(_func
     assertex(body->getOperator() == no_outofline);
     IHqlExpression * ecl = body->queryChild(0);
     exprs.append(*createValue(no_return_stmt, makeVoidType(), LINK(ecl)));
+    label.append(function->queryId());
 }
 
 IHqlExpression * WorkflowItem::getFunction() const
@@ -254,6 +255,7 @@ bool isSimpleTranslatedStringExpr(IHqlExpression * expr)
         case no_constant:
         case no_variable:
         case no_callback:
+        case no_select:
             return true;
         case no_cast:
         case no_implicitcast:
@@ -1418,7 +1420,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
             HqlDummyLookupContext ctx(&errs);
             cppSystemScope = createScope();
             Owned<ISourcePath> sysPath = createSourcePath("<system-definitions>");
-            Owned<IFileContents> systemContents = createFileContentsFromText(systemText.str(), sysPath, true, NULL);
+            Owned<IFileContents> systemContents = createFileContentsFromText(systemText.str(), sysPath, true, NULL, 0);
             OwnedHqlExpr query = parseQuery(cppSystemScope, systemContents, ctx, NULL, NULL, false, false);
             if (errs.errCount())
             {
@@ -1798,11 +1800,18 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
         DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),
         DebugOption(options.forceAllDatasetsParallel,"forceAllDatasetsParallel",false),  // Purely for regression testing.
-        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsFatal",true),
+        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsAreFatal",true),
         DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
         DebugOption(options.addLikelihoodToGraph,"addLikelihoodToGraph", true),
+        DebugOption(options.varFieldAccessorThreshold,"varFieldAccessorThreshold",3),   // Generate accessor classes for rows with #variable width fields >= threshold
         DebugOption(options.translateDFSlayouts,"translateDFSlayouts", false),
+        DebugOption(options.timeTransforms,"timeTransforms", false),
         DebugOption(options.reportDFSinfo,"reportDFSinfo", 0),
+        DebugOption(options.useGlobalCompareClass,"useGlobalCompareClass", false),
+        DebugOption(options.createValueSets,"createValueSets", true),
+        DebugOption(options.implicitKeyedDiskFilter,"implicitKeyedDiskFilter", false),
+        DebugOption(options.addDefaultBloom,"addDefaultBloom", true),
+        DebugOption(options.newDiskReadMapping, "newDiskReadMapping", true),
     };
 
     //get options values from workunit
@@ -2112,14 +2121,26 @@ void HqlCppTranslator::doReportWarning(WarnErrorCategory category, ErrorSeverity
     if (!location)
         location = queryActiveActivityLocation();
     unsigned activity = 0;
+    const char * scope = nullptr;
+    StringBuffer scopeText;
     if (activeActivities.ordinality())
-        activity = activeActivities.tos().queryActivityId();
+    {
+        ABoundActivity & top = activeActivities.tos();
+        activity = top.queryActivityId();
+        ActivityInstance * active = top.queryActive();
+        dbgassertex(active);
+        if (active)
+        {
+            active->getScope(scopeText);
+            scope = scopeText;
+        }
+    }
 
     ErrorSeverity severity = (explicitSeverity == SeverityUnknown) ? queryDefaultSeverity(category) : explicitSeverity;
     if (location)
-        warnError.setown(createError(category, severity, id, msg, str(location->querySourcePath()), location->getStartLine(), location->getStartColumn(), 0, activity));
+        warnError.setown(createError(category, severity, id, msg, str(location->querySourcePath()), location->getStartLine(), location->getStartColumn(), 0, activity, scope));
     else
-        warnError.setown(createError(category, severity, id, msg, activity));
+        warnError.setown(createError(category, severity, id, msg, activity, scope));
 
     errorProcessor->report(warnError);
 }
@@ -2201,7 +2222,32 @@ IHqlExpression * HqlCppTranslator::queryActiveActivityLocation() const
     return NULL;
 }
 
-void HqlCppTranslator::ThrowStringException(int code,const char *format, ...)
+void HqlCppTranslator::report(IError* error)
+{
+    return errorProcessor->report(error);
+}
+
+IError * HqlCppTranslator::mapError(IError * error)
+{
+    return errorProcessor->mapError(error);
+}
+
+size32_t HqlCppTranslator::errCount()
+{
+    return errorProcessor->errCount();
+}
+
+size32_t HqlCppTranslator::warnCount()
+{
+    return errorProcessor->warnCount();
+}
+
+void HqlCppTranslator::exportMappings(IWorkUnit * wu) const
+{
+    errorProcessor->exportMappings(wu);
+}
+
+void HqlCppTranslator::ThrowStringException(int code,const char *format, ...) const
 {
     IHqlExpression * location = queryActiveActivityLocation();
     if (errorProcessor && location)
@@ -2643,8 +2689,19 @@ void HqlCppTranslator::buildExprAssignViaType(BuildCtx & ctx, const CHqlBoundTar
     buildExprAssign(ctx, target, temp);
 }
 
-void HqlCppTranslator::buildExprAssignViaString(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, unsigned len)
+void HqlCppTranslator::buildExprAssignViaString(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, ITypeInfo *dest)
 {
+    unsigned len;
+    switch (dest->getTypeCode())
+    {
+    case type_varstring:
+    case type_varunicode:
+        len = UNKNOWN_LENGTH;
+        break;
+    default:
+        len = dest->getStringLen();
+        break;
+    }
     OwnedITypeInfo type = makeStringType(len, NULL, NULL);
     buildExprAssignViaType(ctx, target, expr, type);
 }
@@ -3017,6 +3074,9 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
             buildExpr(ctx, null, tgt); 
             return;
         }
+    case no_matched_injoin:
+        doBuildExprMatchedInJoin(ctx, expr, tgt);
+        return;
     case no_matched:
     case no_matchtext:
     case no_matchlength:
@@ -3120,7 +3180,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprSysFunc(ctx, expr, tgt, clibExpId);
         return;
     case no_ln:
-        doBuildExprSysFunc(ctx, expr, tgt, lnId);
+        doBuildExprSysFunc(ctx, expr, tgt, lnId, options.divideByZeroAction);
         return;
     case no_sin:
         doBuildExprSysFunc(ctx, expr, tgt, sinId);
@@ -3132,10 +3192,10 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprSysFunc(ctx, expr, tgt, tanId);
         return;
     case no_asin:
-        doBuildExprSysFunc(ctx, expr, tgt, asinId);
+        doBuildExprSysFunc(ctx, expr, tgt, asinId, options.divideByZeroAction);
         return;
     case no_acos:
-        doBuildExprSysFunc(ctx, expr, tgt, acosId);
+        doBuildExprSysFunc(ctx, expr, tgt, acosId, options.divideByZeroAction);
         return;
     case no_atan:
         doBuildExprSysFunc(ctx, expr, tgt, atanId);
@@ -3153,7 +3213,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprSysFunc(ctx, expr, tgt, tanhId);
         return;
     case no_log10:
-        doBuildExprSysFunc(ctx, expr, tgt, log10Id);
+        doBuildExprSysFunc(ctx, expr, tgt, log10Id, options.divideByZeroAction);
         return;
     case no_power:
         doBuildExprSysFunc(ctx, expr, tgt, powerId);
@@ -3182,7 +3242,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprRound(ctx, expr, tgt);
         return;
     case no_sqrt:
-        doBuildExprSysFunc(ctx, expr, tgt, sqrtId);
+        doBuildExprSysFunc(ctx, expr, tgt, sqrtId, options.divideByZeroAction);
         return;
     case no_truncate:
         doBuildExprTrunc(ctx, expr, tgt);
@@ -4719,7 +4779,7 @@ void HqlCppTranslator::ensureHasAddress(BuildCtx & ctx, CHqlBoundExpr & tgt)
     case no_variable:
         break;
     default:
-        if (!isTypePassedByAddress(expr->queryType()))
+        if (!isTypePassedByAddress(expr->queryType()) || (expr->getOperator() == no_decimalstack))
         {
             OwnedHqlExpr bound = tgt.getTranslatedExpr();
             buildTempExpr(ctx, bound, tgt);
@@ -6143,6 +6203,11 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                 normalizeBoundExpr(ctx, bound);
                 break;
             }
+        case type_record:
+            {
+                args.append(*buildMetaParameter(curParam));
+                break;
+            }
         default:
             {
                 buildExpr(ctx, castParam, bound);
@@ -6200,6 +6265,9 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                 bound.expr.setown(getPointer(bound.expr));
                 break;
             }
+        case type_record:
+            done = true;
+            break;
         case type_array:
             UNIMPLEMENTED;
         }
@@ -7374,7 +7442,7 @@ void HqlCppTranslator::doBuildDivideByZero(BuildCtx & ctx, const CHqlBoundTarget
             if (zero->queryType()->getTypeCode() == type_real)
             {
                 HqlExprArray noArgs;
-                nan.setown(bindFunctionCall(createRealNullId, noArgs));
+                nan.setown(bindFunctionCall(createRealInfId, noArgs));
             }
 
             if (target)
@@ -9429,7 +9497,8 @@ void HqlCppTranslator::doBuildExprOrdered(BuildCtx & ctx, IHqlExpression * expr,
 
     BuildCtx declareCtx(*code, declareAtom);
     s.clear().append("int ").append(tempName).append("(const void * left, const void * right)");
-    declareCtx.addQuotedCompound(s);
+
+    MemberFunction compareFunc(*this, declareCtx, s, MFdynamicproto);
 
     Owned<ITypeInfo> argType;
     if (isTypePassedByAddress(elementType) && !hasReferenceModifier(elementType))
@@ -9452,9 +9521,9 @@ void HqlCppTranslator::doBuildExprOrdered(BuildCtx & ctx, IHqlExpression * expr,
     else
         compare.setown(createValue(no_order, LINK(signedType), right, left));
     CHqlBoundExpr boundCompare;
-    buildExpr(declareCtx, compare, boundCompare);
-    declareCtx.setNextDestructor();
-    declareCtx.addReturn(boundCompare.expr);
+    buildExpr(compareFunc.ctx, compare, boundCompare);
+    compareFunc.ctx.setNextDestructor();
+    compareFunc.ctx.addReturn(boundCompare.expr);
 
     //Allocate an array to store the orders
     unsigned max = list->numChildren();
@@ -9593,6 +9662,29 @@ void HqlCppTranslator::doBuildExprFailCode(BuildCtx & ctx, IHqlExpression * expr
     }
 }
 
+void HqlCppTranslator::doBuildExprMatchedInJoin(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
+{
+    IHqlExpression *selExpr = expr->queryChild(0);
+    assertex(selExpr);
+
+    node_operator op = selExpr->getOperator();
+    if (op==no_rows) //denormalize group
+    {
+        selExpr = selExpr->queryChild(0);
+        assertex(selExpr);
+        op = selExpr->getOperator();
+        if (op!=no_right)
+            throwError(HQLERR_InvalidMatchedPatternInJoin);
+    }
+
+    OwnedHqlExpr markerExpr = createValue(no_matched_injoin, makeBoolType(), LINK(selExpr));
+    if (!ctx.getMatchExpr(markerExpr, tgt))
+    {
+        if (!buildExprInCorrectContext(ctx, expr, tgt, false))
+            throwError(HQLERR_InvalidMatchedPatternInJoin); //to get this far they must be matching on a dataset that is not the current left or right
+        return;
+    }
+}
 
 void HqlCppTranslator::doBuildAssignFailMessage(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
@@ -9645,7 +9737,7 @@ void HqlCppTranslator::doBuildAssignEventExtra(BuildCtx & ctx, const CHqlBoundTa
 //---------------------------------------------------------------------------
 //-- system call e.g. EXP(), LOG()...
 
-void HqlCppTranslator::doBuildExprSysFunc(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, IIdAtom * funcName)
+void HqlCppTranslator::doBuildExprSysFunc(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, IIdAtom * funcName, byte dbz)
 {
     HqlExprArray args;
     ForEachChild(i, expr)
@@ -9654,6 +9746,8 @@ void HqlCppTranslator::doBuildExprSysFunc(BuildCtx & ctx, IHqlExpression * expr,
         if (!cur->isAttribute())
             args.append(*LINK(cur));
     }
+    if (dbz)
+        args.append(*createConstant(dbz));
     OwnedHqlExpr call = bindFunctionCall(funcName, args);
     buildExpr(ctx, call, tgt);
 }
@@ -9977,11 +10071,14 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
     IIdAtom * func;
     bool hasAll = expr->hasAttribute(allAtom);
     bool hasLeft = expr->hasAttribute(leftAtom);
-    bool hasRight = expr->hasAttribute(rightAtom);
+    bool hasRight = expr->hasAttribute(rightAtom) || !(hasAll || hasLeft);
+    bool hasWS = expr->hasAttribute(whitespaceAtom);
 
     if (str->queryType()->getTypeCode() == type_varstring)
     {
-        if(hasAll)
+        if(hasWS)
+            func = trimVWSId;
+        else if(hasAll)
             func = trimVAllId;
         else if(hasLeft && hasRight)
             func = trimVBothId;
@@ -9992,7 +10089,9 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
     }
     else if(str->queryType()->getTypeCode() == type_unicode)
     {
-        if(hasAll)
+        if(hasWS)
+            func = trimUnicodeWSId;
+        else if(hasAll)
             func = trimUnicodeAllId;
         else if(hasLeft && hasRight)
             func = trimUnicodeBothId;
@@ -10003,7 +10102,9 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
     }
     else if(str->queryType()->getTypeCode() == type_varunicode)
     {
-        if(hasAll)
+        if(hasWS)
+            func = trimVUnicodeWSId;
+        else if(hasAll)
             func = trimVUnicodeAllId;
         else if(hasLeft && hasRight)
             func = trimVUnicodeBothId;
@@ -10014,7 +10115,9 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
     }
     else if(str->queryType()->getTypeCode() == type_utf8)
     {
-        if(hasAll)
+        if(hasWS)
+            func = trimUtf8WSId;
+        else if(hasAll)
             func = trimUtf8AllId;
         else if(hasLeft && hasRight)
             func = trimUtf8BothId;
@@ -10025,7 +10128,9 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
     }
     else
     {
-        if(hasAll)
+        if(hasWS)
+            func = trimWSId;
+        else if(hasAll)
             func = trimAllId;
         else if(hasLeft && hasRight)
             func = trimBothId;
@@ -10037,6 +10142,12 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
 
     HqlExprArray args;
     args.append(*LINK(str));
+    if (hasWS)
+    {
+        args.append(*LINK(queryBoolExpr(hasLeft)));
+        args.append(*LINK(queryBoolExpr(hasAll)));
+        args.append(*LINK(queryBoolExpr(hasRight)));
+    }
     OwnedHqlExpr call = bindFunctionCall(func, args);
     buildExprAssign(ctx, target, call);
 }
@@ -10054,26 +10165,36 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
     
     bool hasAll = expr->hasAttribute(allAtom);
     bool hasLeft = expr->hasAttribute(leftAtom);
-    bool hasRight = expr->hasAttribute(rightAtom);
+    bool hasRight = expr->hasAttribute(rightAtom) || !(hasAll || hasLeft);
+    bool hasWS = expr->hasAttribute(whitespaceAtom);
     
     type_t btc = bound.expr->queryType()->getTypeCode();
-    if(hasAll || hasLeft) 
+    if(hasAll || hasLeft || hasWS || btc == type_varstring || btc == type_varunicode)
     {
         if (btc == type_varstring)
         {
-            if(hasAll) {
+            if(hasWS) {
+                func = trimVWSId;
+            }
+            else if(hasAll) {
                 func = trimVAllId;
             }
             else if(hasLeft && hasRight) {
                 func = trimVBothId;
             }
-            else {
+            else if (hasLeft) {
                 func = trimVLeftId;
+            }
+            else {
+                func = trimVRightId;
             }
         }
         else if (btc == type_unicode)
         {
-            if(hasAll) {
+            if(hasWS) {
+                func = trimUnicodeWSId;
+            }
+            else if(hasAll) {
                 func = trimUnicodeAllId;
             }
             else if(hasLeft && hasRight) {
@@ -10085,19 +10206,28 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
         }
         else if (btc == type_varunicode)
         {
-            if(hasAll) {
+            if(hasWS) {
+                func = trimVUnicodeWSId;
+            }
+            else if(hasAll) {
                 func = trimVUnicodeAllId;
             }
             else if(hasLeft && hasRight) {
                 func = trimVUnicodeBothId;
             }
-            else {
+            else if(hasLeft) {
                 func = trimVUnicodeLeftId;
+            }
+            else {
+                func = trimVUnicodeRightId;
             }
         }
         else if (btc == type_utf8)
         {
-            if(hasAll) {
+            if(hasWS) {
+                func = trimUtf8WSId;
+            }
+            else if(hasAll) {
                 func = trimUtf8AllId;
             }
             else if(hasLeft && hasRight) {
@@ -10109,7 +10239,10 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
         }
         else
         {
-            if(hasAll) {
+            if(hasWS) {
+                func = trimWSId;
+            }
+            else if(hasAll) {
                 func = trimAllId;
             }
             else if(hasLeft && hasRight) {
@@ -10121,6 +10254,12 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
         }
 
         args.append(*bound.getTranslatedExpr());
+        if (hasWS)
+        {
+            args.append(*LINK(queryBoolExpr(hasLeft)));
+            args.append(*LINK(queryBoolExpr(hasAll)));
+            args.append(*LINK(queryBoolExpr(hasRight)));
+        }
         OwnedHqlExpr call = bindFunctionCall(func, args);
         buildExpr(ctx, call, tgt);
     }
@@ -10572,7 +10711,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
         default:
             //Need to go via a temporary string.
             OwnedHqlExpr temp = pure.getTranslatedExpr();
-            buildExprAssignViaString(ctx, target, temp, to->getStringLen());
+            buildExprAssignViaString(ctx, target, temp, to);
             return;
         }
         break;
@@ -10689,7 +10828,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                     if (queryDefaultTranslation(tgtset, from->queryCharset()))
                     {
                         OwnedHqlExpr temp = pure.getTranslatedExpr();
-                        buildExprAssignViaString(ctx, target, temp, to->getStringLen());
+                        buildExprAssignViaString(ctx, target, temp, to);
                     }
                     else
                     {
@@ -10744,7 +10883,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                             break;
                         case type_varstring:
                             OwnedHqlExpr temp = pure.getTranslatedExpr();
-                            buildExprAssignViaString(ctx, target, temp, to->getStringLen());
+                            buildExprAssignViaString(ctx, target, temp, to);
                             return;
                         }
                         args.append(*getSizetConstant(toSize));
@@ -10888,7 +11027,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                     if (toType == type_varunicode)
                     {
                         OwnedHqlExpr temp = pure.getTranslatedExpr();
-                        OwnedITypeInfo type = makeUnicodeType(to->getStringLen(), NULL);
+                        OwnedITypeInfo type = makeUnicodeType(UNKNOWN_LENGTH, NULL);
                         buildExprAssignViaType(ctx, target, temp, type);
                         return;
                     }
@@ -10909,7 +11048,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
             }
         default:
             OwnedHqlExpr temp = pure.getTranslatedExpr();
-            buildExprAssignViaString(ctx, target, temp, to->getStringLen());
+            buildExprAssignViaString(ctx, target, temp, to);
             return;
         }
         break;
@@ -10953,7 +11092,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
             }
         default:
             OwnedHqlExpr temp = pure.getTranslatedExpr();
-            buildExprAssignViaString(ctx, target, temp, to->getStringLen());
+            buildExprAssignViaString(ctx, target, temp, to);
             return;
         }
         break;
@@ -11737,7 +11876,7 @@ void HqlCppTranslator::doBuildUserFunctionReturn(BuildCtx & ctx, ITypeInfo * typ
     }
 }
 
-void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpression * bodyCode, const char *proto)
+void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx & ctx, IHqlExpression * bodyCode, const char *proto)
 {
     processCppBodyDirectives(bodyCode);
     IHqlExpression * location = queryLocation(bodyCode);
@@ -11771,10 +11910,10 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
             throwError(HQLERR_BodyNotAllowedWithInline);
         text.setCharAt(separator-text.str(), 0);
         if (location)
-            funcctx.addLine(locationFilename, startLine);
-        funcctx.addQuoted(body);
+            ctx.addLine(locationFilename, startLine);
+        ctx.addQuoted(body);
         if (location)
-            funcctx.addLine();
+            ctx.addLine();
 
         body = separator + strlen(cppSeparatorText);
         if (*body == '\r') body++;
@@ -11784,35 +11923,34 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
 
     bool addPragmas = options.embeddedWarningsAsErrors && !bodyCode->hasAttribute(inlineAtom);
 
-    BuildCtx outerctx(funcctx);
     if (addPragmas)
     {
-        funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+        ctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
                 "#pragma GCC diagnostic error \"-Wall\"\n"
                 "#pragma GCC diagnostic error \"-Wextra\"\n"
                 "#pragma GCC diagnostic ignored \"-Wunused-parameter\"\n"  // Generated prototype tends to include ctx that is often not used
                 "#endif\n");
     }
 
-    funcctx.addQuotedCompound(proto);
+    MemberFunction userFunc(*this, ctx, proto, MFdynamicproto);
+    if (location)
+        userFunc.ctx.addLine(locationFilename, startLine);
+    userFunc.ctx.addQuoted(body);
+    if (location)
+        userFunc.ctx.addLine();
 
     if (addPragmas)
     {
-        outerctx.addQuoted("\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+        ctx.addQuoted("\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
                 "#pragma GCC diagnostic ignored \"-Wall\"\n"
                 "#pragma GCC diagnostic ignored \"-Wextra\"\n"
                 "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"  // Some variants of gcc seem to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
                 "#pragma GCC diagnostic ignored \"-Wparentheses\"\n"      // Some variants of gcc seem to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
                 "#endif\n");
     }
-    if (location)
-        funcctx.addLine(locationFilename, startLine);
-    funcctx.addQuoted(body);
-    if (location)
-        funcctx.addLine();
 }
 
-void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpression * funcdef, const char *proto)
+void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpression * funcdef, const char *proto)
 {
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     IHqlExpression * outofline = funcdef->queryChild(0);
@@ -11822,7 +11960,8 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     IHqlExpression *language = queryAttributeChild(bodyCode, languageAtom, 0);
     bool isImport = bodyCode->hasAttribute(importAtom);
 
-    funcctx.addQuotedCompound(proto);
+    MemberFunction scriptFunc(*this, ctx, proto, MFdynamicproto);
+    BuildCtx & funcctx = scriptFunc.ctx;
     funcctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
     funcctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
 
@@ -11832,6 +11971,12 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     buildAssignToTemp(funcctx, pluginPtr, getPlugin);
     StringBuffer createParam;
     createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(ctx,");
+
+    if (functionBodyIsActivity(bodyCode))
+        createParam.append("activity,");
+    else
+        createParam.append("nullptr,");
+
     createParam.append(isImport ? "EFimport" : "EFembed");
     if (returnType->getTypeCode()==type_void)
         createParam.append("|EFnoreturn");
@@ -11995,6 +12140,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             StringBuffer typeText;
             getFriendlyTypeStr(paramType, typeText);
             throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
+            return; // Cannot reach here, but previous throw is virtual, so the compiler cannot be sure it does not return
         }
         args.append(*createActualFromFormal(param));
         buildFunctionCall(funcctx, bindFunc, args);
@@ -12059,6 +12205,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         StringBuffer typeText;
         getFriendlyTypeStr(returnType, typeText);
         throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
+        return; // Cannot reach here, but previous throw is virtual, so the compiler cannot be sure it does not return
     }
     OwnedHqlExpr call = bindFunctionCall(returnFunc, retargs, newReturnType);
     doBuildUserFunctionReturn(funcctx, returnType, call);
@@ -12117,18 +12264,19 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
     }
     else
     {
-        funcctx.addQuotedCompound(proto);
+        MemberFunction func(*this, funcctx, proto, MFdynamicproto);
+
         //MORE: Need to work out how to handle functions that require the context.
         //Need to create a class instead.
         if (functionBodyUsesContext(outofline))
         {
-            funcctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
-            funcctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
+            func.ctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
+            func.ctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
         }
         OwnedHqlExpr newCode = replaceInlineParameters(funcdef, bodyCode);
         newCode.setown(foldHqlExpression(newCode));
         ITypeInfo * returnType = funcdef->queryType()->queryChildType();
-        doBuildUserFunctionReturn(funcctx, returnType, newCode);
+        doBuildUserFunctionReturn(func.ctx, returnType, newCode);
     }
 }
 
@@ -12295,9 +12443,8 @@ IHqlExpression * HqlCppTranslator::getBoundSize(const CHqlBoundExpr & bound)
             return getSizetConstant(sizeof(void*));
 
         IHqlExpression * record = ::queryRecord(type);
-        ColumnToOffsetMap * map = queryRecordOffsetMap(record);
-        if (map->isFixedWidth())
-            return getSizetConstant(map->getFixedRecordSize());
+        if (isFixedSizeRecord(record))
+            return getSizetConstant(getMinRecordSize(record));
 
         //call meta function mm.queryRecordSize(&row)
         StringBuffer metaInstance, temp;

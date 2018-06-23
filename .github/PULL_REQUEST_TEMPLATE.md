@@ -2,9 +2,6 @@
 
  PLEASE READ the following before proceeding.
 
- Lines in comments may be deleted from the comment before you submit.
- Other lines should be modified appropriately and left in place.
-
  This project only accepts pull requests related to open JIRA issues.
  If suggesting a new feature or change, please discuss it in a JIRA issue first.
  If fixing a bug, there should be an issue describing it with steps to reproduce.
@@ -13,7 +10,7 @@
 
  HPCC-nnnnn Short description of issue
 
- This will allow the Jira ticket to be automatically updated to refer to this pull request,and
+ This will allow the Jira ticket to be automatically updated to refer to this pull request,
  and will ensure that the automatically-generated changelog is properly formatted.
  Where a pull request contains a single commit the pull request title will be set automatically,
  assuming that the commit has followed the proper guidelines.
@@ -25,12 +22,17 @@
 ## Type of change:
 - [ ] This change is a bug fix (non-breaking change which fixes an issue).
 - [ ] This change is a new feature (non-breaking change which adds functionality).
+- [ ] This change improves the code (refactor or other change that does not change the functionality)
+- [ ] This change fixes warnings (the fix does not alter the functionality or the generated code)
 - [ ] This change is a breaking change (fix or feature that will cause existing behavior to change).
 - [ ] This change alters the query API (existing queries will have to be recompiled)
 
 ## Checklist:
 - [ ] My code follows the code style of this project.
   - [ ] My code does not create any new warnings from compiler, build system, or lint.
+- [ ] The commit message is properly formatted and free of typos.
+  - [ ] The commit message title makes sense in a changelog, by itself.
+  - [ ] The commit is signed.
 - [ ] My change requires a change to the documentation.
   - [ ] I have updated the documentation accordingly, or...
   - [ ] I have created a JIRA ticket to update the documentation.
@@ -53,6 +55,9 @@
 - [ ] There are no similar instances of the same problem that should be addressed
   - [ ] I have addressed them here
   - [ ] I have raised JIRA issues to address them separately
+- [ ] This is a user interface / front-end modification
+  - [ ] I have tested my changes in multiple modern browsers
+  - [ ] The component(s) render as expected
 
 ## Testing:
 <!-- Please describe how this change has been tested.-->

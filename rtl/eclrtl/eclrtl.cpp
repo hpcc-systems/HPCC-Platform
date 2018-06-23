@@ -27,12 +27,14 @@
 #include "junicode.hpp"
 #include "eclrtl.hpp"
 #include "rtlbcd.hpp"
+#include "eclhelper.hpp"
 #include "eclrtl_imp.hpp"
 #ifdef _USE_ICU
 #include "unicode/uchar.h"
 #include "unicode/ucol.h"
 #include "unicode/ustring.h"
 #include "unicode/ucnv.h"
+#include "unicode/uclean.h"
 #include "unicode/schriter.h"
 #include "unicode/regex.h"
 #include "unicode/normlzr.h"
@@ -105,7 +107,7 @@ ECLRTL_API void rtlReleaseRow(const void * row)
     ReleaseRoxieRow(row);
 }
 
-ECLRTL_API void rtlReleaseRowset(unsigned count, byte * * rowset)
+ECLRTL_API void rtlReleaseRowset(unsigned count, const byte * * rowset)
 {
     ReleaseRoxieRowset(count, rowset);
 }
@@ -116,7 +118,7 @@ ECLRTL_API void * rtlLinkRow(const void * row)
     return const_cast<void *>(row);
 }
 
-ECLRTL_API byte * * rtlLinkRowset(byte * * rowset)
+ECLRTL_API const byte * * rtlLinkRowset(const byte * * rowset)
 {
     LinkRoxieRowset(rowset);
     return rowset;
@@ -267,6 +269,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 MODULE_EXIT()
 {
     delete localeMap;
+    u_cleanup();
 }
 
 RTLLocale * queryRTLLocale(char const * locale)
@@ -357,19 +360,19 @@ bool vunicodeNeedsNormalize(UChar * in, UErrorCode * err)
 
 void unicodeReplaceNormalized(unsigned inlen, UChar * in, UErrorCode * err)
 {
-    UChar * buff = (UChar *)rtlMalloc(inlen*2);
+    UChar * buff = (UChar *)rtlMalloc(inlen*sizeof(UChar));
     unsigned len = unorm_normalize(in, inlen, UNORM_NFC, 0, buff, inlen, err);
     while(len<inlen) buff[len++] = 0x0020;
-    memcpy(in, buff, inlen);
+    memcpy(in, buff, inlen * sizeof(UChar));
     free(buff);
 }
 
 void vunicodeReplaceNormalized(unsigned inlen, UChar * in, UErrorCode * err)
 {
-    UChar * buff = (UChar *)rtlMalloc(inlen*2);
+    UChar * buff = (UChar *)rtlMalloc(inlen*sizeof(UChar));
     unsigned len = unorm_normalize(in, -1, UNORM_NFC, 0, buff, inlen-1, err);
     buff[len] = 0x0000;
-    memcpy(in, buff, inlen);
+    memcpy(in, buff, inlen * sizeof(UChar));
     free(buff);
 }
 
@@ -503,7 +506,7 @@ void codepageBlankFill(char const * codepage, char * out, size_t len)
 //---------------------------------------------------------------------------
 // floating point functions
 
-static const double smallPowers[16] = { 
+static const double smallPowers[16] = {
     1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7,
     1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15 };
 
@@ -999,7 +1002,7 @@ unsigned rtlStrToUInt4(size32_t l, const char * t)
     while (l--)
     {
         char c = *t++;
-        if ((c >= '0') && (c <= '9')) 
+        if ((c >= '0') && (c <= '9'))
             v = v * 10 + (c-'0');
         else
             break;
@@ -1014,7 +1017,7 @@ unsigned __int64 rtlStrToUInt8(size32_t l, const char * t)
     while (l--)
     {
         char c = *t++;
-        if ((c >= '0') && (c <= '9')) 
+        if ((c >= '0') && (c <= '9'))
             v = v * 10 + (c-'0');
         else
             break;
@@ -1030,9 +1033,9 @@ int rtlStrToInt4(size32_t l, const char * t)
     while (l--)
     {
         char c = *t++;
-        if ((c >= '0') && (c <= '9')) 
+        if ((c >= '0') && (c <= '9'))
             v = v * 10 + (c-'0');
-        else 
+        else
             break;
     }
     return negate ? -v : v;
@@ -1046,9 +1049,9 @@ __int64 rtlStrToInt8(size32_t l, const char * t)
     while (l--)
     {
         char c = *t++;
-        if ((c >= '0') && (c <= '9')) 
+        if ((c >= '0') && (c <= '9'))
             v = v * 10 + (c-'0');
-        else 
+        else
             break;
     }
     return negate ? -v : v;
@@ -1661,7 +1664,7 @@ void rtlConcatVUnicodeF(unsigned tlen, UChar * tgt, ...)
 #endif
 
 //------------------------------------------------------------------------------------------------
-// The followinf concat functions are all deprecated in favour of the variable number of argument
+// The following concat functions are all deprecated in favour of the variable number of argument
 // versions
 unsigned rtlConcatStrToStr(unsigned tlen, char * tgt, unsigned idx, unsigned slen, const char * src)
 {
@@ -1775,7 +1778,7 @@ void rtlConcatUnicodeExtend(size32_t & tlen, UChar * & tgt, size32_t slen, const
 inline void normalizeFrom(unsigned & from, unsigned slen)
 {
     from--;
-    if ((int)from < 0) 
+    if ((int)from < 0)
         from = 0;
     else if (from > slen)
         from = slen;
@@ -1793,7 +1796,7 @@ inline void clipFromTo(unsigned & from, unsigned & to, unsigned slen)
     if (to > slen)
     {
         to = slen;
-        if (from > slen) 
+        if (from > slen)
             from = slen;
     }
 }
@@ -1948,12 +1951,28 @@ unsigned rtlTrimDataLen(size32_t l, const void * _t)
 
 inline size32_t rtlQuickTrimUnicode(size32_t len, UChar const * str)
 {
-    while (len && u_isspace(str[len-1]))
+    while (len && (str[len-1] == ' '))
         len--;
     return len;
 }
 
 unsigned rtlTrimUnicodeStrLen(size32_t l, UChar const * t)
+{
+#ifdef _USE_ICU
+    if (!l)
+        return 0;
+    UCharCharacterIterator iter(t, l);
+    for(iter.last32(); iter.hasPrevious(); iter.previous32())
+        if(iter.current32() != ' ')
+            break;
+    if(iter.current32() == ' ') return iter.getIndex(); // required as the reverse iteration above doesn't hit the first character
+    return iter.getIndex() + 1;
+#else
+    return rtlQuickTrimUnicode(l, t);
+#endif
+}
+
+unsigned rtlTrimUnicodeStrLenWS(size32_t l, UChar const * t)
 {
 #ifdef _USE_ICU
     if (!l)
@@ -2000,6 +2019,19 @@ inline unsigned rtlLeftTrimUnicodeStrStart(size32_t slen, UChar const * src)
 #ifdef _USE_ICU
     UCharCharacterIterator iter(src, slen);
     for(iter.first32(); iter.hasNext(); iter.next32())
+        if(iter.current32() != ' ')
+            break;
+    return iter.getIndex();
+#else
+    return slen;
+#endif
+}
+
+inline unsigned rtlLeftTrimUnicodeStrStartWS(size32_t slen, UChar const * src)
+{
+#ifdef _USE_ICU
+    UCharCharacterIterator iter(src, slen);
+    for(iter.first32(); iter.hasNext(); iter.next32())
         if(!u_isspace(iter.current32()))
             break;
     return iter.getIndex();
@@ -2014,7 +2046,7 @@ inline unsigned rtlLeftTrimVStrStart(const char * src)
     while(src[i] == ' ')
         i++;
     return i;
-}   
+}
 
 inline void rtlTrimUtf8Len(unsigned & trimLen, size32_t & trimSize, size32_t len, const char * t)
 {
@@ -2025,7 +2057,7 @@ inline void rtlTrimUtf8Len(unsigned & trimLen, size32_t & trimSize, size32_t len
     for (unsigned i=0; i < len; i++)
     {
         unsigned next = readUtf8Character(UTF8_MAXSIZE, cur);
-        if (!u_isspace(next))
+        if (next != ' ')
         {
             trimLength = i+1;
             trimEnd = cur;
@@ -2043,7 +2075,7 @@ inline void rtlTrimUtf8Start(unsigned & trimLen, size32_t & trimSize, size32_t l
     {
         const byte * prev = cur;
         unsigned next = readUtf8Character(UTF8_MAXSIZE, cur);
-        if (!u_isspace(next))
+        if (next != ' ')
         {
             trimLen = i;
             trimSize = prev-start;
@@ -2095,7 +2127,7 @@ unsigned rtlTrimUtf8StrLen(size32_t len, const char * t)
     for (unsigned i=0; i < len; i++)
     {
         unsigned next = readUtf8Character(UTF8_MAXSIZE, cur);
-        if (!u_isspace(next))
+        if (next != ' ')
             trimLength = i+1;
     }
     return trimLength;
@@ -2173,7 +2205,7 @@ void rtlTrimVLeft(unsigned & tlen, char * & tgt, const char * src)
 {
     unsigned start = rtlLeftTrimVStrStart(src);
     unsigned len = strlen(src+start);
-    
+
     tlen = len;
     tgt = rtlDupSubString(src + start, len);
 }
@@ -2218,7 +2250,7 @@ void rtlTrimBoth(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
     unsigned len = rtlTrimStrLen(slen, src);
     unsigned start = len ? rtlLeftTrimStrStart(slen, src) : 0;
     len -= start;
-    
+
     tlen = len;
     tgt = rtlDupSubString(src + start, len);
 }
@@ -2228,7 +2260,7 @@ void rtlTrimUnicodeBoth(unsigned & tlen, UChar * & tgt, unsigned slen, UChar con
     unsigned len = rtlTrimUnicodeStrLen(slen, src);
     unsigned start = len ? rtlLeftTrimUnicodeStrStart(slen, src) : 0;
     len -= start;
-    
+
     tlen = len;
     tgt = rtlDupSubUnicode(src + start, len);
 }
@@ -2261,7 +2293,7 @@ void rtlAssignTrimBothV(size32_t tlen, char * tgt, unsigned slen, const char * s
     unsigned len = rtlTrimStrLen(slen, src);
     unsigned start = len ? rtlLeftTrimStrStart(slen, src) : 0;
     len -= start;
-    
+
     rtlCopySubStringV(tlen, tgt, len, src+start);
 }
 
@@ -2277,6 +2309,19 @@ void rtlAssignTrimVBothV(size32_t tlen, char * tgt, const char * src)
 
 //-----------------------------------------------------------------------------
 // Functions used to trim off all blank spaces in a string.
+unsigned rtlTrimStrLenNonWhitespace(size32_t l, const char * t)
+{
+    unsigned len = 0;
+
+    while (l)
+    {
+        l--;
+        if (!isspace(t[l]))
+            len++;
+    }
+    return len;
+}
+
 unsigned rtlTrimStrLenNonBlank(size32_t l, const char * t)
 {
     unsigned len = 0;
@@ -2306,7 +2351,7 @@ unsigned rtlTrimVStrLenNonBlank(const char * t)
 void rtlTrimAll(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
 {
     tlen = rtlTrimStrLenNonBlank(slen, src);
-    char * buffer = (char *)rtlMalloc(tlen + 1);
+    char * buffer = (char *)rtlMalloc(tlen);
     int ind = 0;
     for(unsigned i = 0; i < slen; i++) {
         if(src[i] != ' ') {
@@ -2314,8 +2359,39 @@ void rtlTrimAll(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
             ind++;
         }
     }
-    buffer[tlen] = 0;
     tgt = buffer;
+}
+
+void rtlTrimWS(unsigned & tlen, char * & tgt, unsigned slen, const char * src, bool left, bool all, bool right)
+{
+    if (all)
+    {
+        tlen = rtlTrimStrLenNonWhitespace(slen, src);
+        char * buffer = (char *)rtlMalloc(tlen);
+        int ind = 0;
+        for(unsigned i = 0; i < slen; i++) {
+            if (!isspace(src[i]))
+            {
+                buffer[ind] = src[i];
+                ind++;
+            }
+        }
+        tgt = buffer;
+    }
+    else
+    {
+        unsigned start = 0;
+        while (right && slen)
+        {
+            if (!isspace(src[slen-1]))
+                break;
+            slen--;
+        }
+        while (left && start < slen && isspace(src[start]))
+            start++;
+        tlen = slen - start;
+        tgt = rtlDupSubString(src + start, tlen);
+    }
 }
 
 void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UChar * src)
@@ -2324,14 +2400,42 @@ void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UCha
     UnicodeString rawStr;
     UCharCharacterIterator iter(src, slen);
     for(iter.first32(); iter.hasNext(); iter.next32())
-        if(!u_isspace(iter.current32()))
+        if(iter.current32() != ' ')
             rawStr.append(iter.current32());
     UnicodeString tgtStr;
     normalizeUnicodeString(rawStr, tgtStr); // normalized in case crazy string like [combining accent] [space] [vowel]
     tlen = tgtStr.length();
-    tgt = (UChar *)rtlMalloc((tlen+1)*2);
+    tgt = (UChar *)rtlMalloc(tlen*2);
     tgtStr.extract(0, tlen, tgt);
-    tgt[tlen] = 0x0000;
+#else
+    rtlThrowNoUnicode();
+#endif
+}
+
+void rtlTrimUnicodeWS(unsigned & tlen, UChar * & tgt, unsigned slen, const UChar * src, bool left, bool all, bool right)
+{
+#ifdef _USE_ICU
+    if (all)
+    {
+        UnicodeString rawStr;
+        UCharCharacterIterator iter(src, slen);
+        for(iter.first32(); iter.hasNext(); iter.next32())
+            if(!u_isspace(iter.current32()))
+                rawStr.append(iter.current32());
+        UnicodeString tgtStr;
+        normalizeUnicodeString(rawStr, tgtStr); // normalized in case crazy string like [combining accent] [space] [vowel]
+        tlen = tgtStr.length();
+        tgt = (UChar *)rtlMalloc(tlen*2);
+        tgtStr.extract(0, tlen, tgt);
+    }
+    else
+    {
+        if (right)
+            slen = rtlTrimUnicodeStrLenWS(slen, src);
+        unsigned start = (left && slen) ? rtlLeftTrimUnicodeStrStartWS(slen, src) : 0;
+        tlen = slen - start;
+        tgt = rtlDupSubUnicode(src + start, slen);
+    }
 #else
     rtlThrowNoUnicode();
 #endif
@@ -2340,7 +2444,7 @@ void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UCha
 void rtlTrimVAll(unsigned & tlen, char * & tgt, const char * src)
 {
     tlen = rtlTrimVStrLenNonBlank(src);
-    char * buffer = (char *)rtlMalloc(tlen + 1);
+    char * buffer = (char *)rtlMalloc(tlen);
     int ind = 0;
     int i = 0;
     while(src[i] != 0) {
@@ -2350,8 +2454,12 @@ void rtlTrimVAll(unsigned & tlen, char * & tgt, const char * src)
         }
         i++;
     }
-    buffer[tlen] = 0;
     tgt = buffer;
+}
+
+void rtlTrimVWS(unsigned & tlen, char * & tgt, const char * src, bool left, bool all, bool right)
+{
+    rtlTrimWS(tlen, tgt, strlen(src), src, left, all, right);
 }
 
 void rtlTrimVUnicodeAll(unsigned & tlen, UChar * & tgt, const UChar * src)
@@ -2359,24 +2467,80 @@ void rtlTrimVUnicodeAll(unsigned & tlen, UChar * & tgt, const UChar * src)
     rtlTrimUnicodeAll(tlen, tgt, rtlUnicodeStrlen(src), src);
 }
 
+void rtlTrimVUnicodeWS(unsigned & tlen, UChar * & tgt, const UChar * src, bool left, bool all, bool right)
+{
+    rtlTrimUnicodeWS(tlen, tgt, rtlUnicodeStrlen(src), src, left, all, right);
+}
+
 ECLRTL_API void rtlTrimUtf8All(unsigned &tlen, char * &tgt, unsigned slen, const char * src)
 {
     //Go via unicode because of possibility of combining accents etc.
-    rtlDataAttr temp1(slen*sizeof(UChar));
-    rtlUtf8ToUnicode(slen, temp1.getustr(), slen, src);
+    rtlDataAttr temp1;
+    unsigned temp1len;
+    rtlUtf8ToUnicodeX(temp1len, temp1.refustr(), slen, src);
 
     unsigned trimLen;
     rtlDataAttr trimText;
-    rtlTrimUnicodeAll(trimLen, trimText.refustr(), slen, temp1.getustr());
+    rtlTrimUnicodeAll(trimLen, trimText.refustr(), temp1len, temp1.getustr());
     rtlUnicodeToUtf8X(tlen, tgt, trimLen, trimText.getustr());
 }
+
+void rtlTrimUtf8WS(unsigned & tlen, char * & tgt, unsigned slen, const char * src, bool left, bool all, bool right)
+{
+    if (all)
+    {
+        //Go via unicode because of possibility of combining accents etc.
+        rtlDataAttr temp1;
+        unsigned temp1len;
+        rtlUtf8ToUnicodeX(temp1len, temp1.refustr(), slen, src);
+
+        unsigned trimLen;
+        rtlDataAttr trimText;
+        rtlTrimUnicodeWS(trimLen, trimText.refustr(), temp1len, temp1.getustr(), left, all, right);
+        rtlUnicodeToUtf8X(tlen, tgt, trimLen, trimText.getustr());
+    }
+    else
+    {
+        const byte * start = (const byte *) src;
+        const byte * cur = start;
+
+        while (left && slen && u_isspace(readUtf8Character(UTF8_MAXSIZE, cur)))
+        {
+            slen--;
+            start = cur;
+        }
+        if (right)
+        {
+            cur = start;
+            unsigned rtrimLength = 0;
+            const byte * trimEnd = cur;
+            for (unsigned i=0; i < slen; i++)
+            {
+                unsigned next = readUtf8Character(UTF8_MAXSIZE, cur);
+                if (!u_isspace(next))
+                {
+                    rtrimLength = i+1;
+                    trimEnd = cur;
+                }
+            }
+            tlen = rtrimLength;
+            tgt = rtlDupSubString((const char *) start, trimEnd-start);
+        }
+        else
+        {
+            tlen = slen;
+            tgt = rtlDupSubString((const char *) start, rtlUtf8Size(slen, start));
+        }
+    }
+}
+
 
 void rtlAssignTrimAllV(unsigned tlen, char * tgt, unsigned slen, const char * src)
 {
     unsigned to = 0;
-    for (unsigned from = 0; (from < slen)&&(to+1 < tlen); from++) 
+    for (unsigned from = 0; (from < slen)&&(to+1 < tlen); from++)
     {
-        if (src[from] != ' ') 
+        if (src[from] != ' ')
             tgt[to++] = src[from];
     }
     tgt[to] = 0;
@@ -2385,9 +2549,9 @@ void rtlAssignTrimAllV(unsigned tlen, char * tgt, unsigned slen, const char * sr
 void rtlAssignTrimVAllV(unsigned tlen, char * tgt, const char * src)
 {
     unsigned to = 0;
-    for (;(*src && (to+1 < tlen));src++) 
+    for (;(*src && (to+1 < tlen));src++)
     {
-        if (*src != ' ') 
+        if (*src != ' ')
             tgt[to++] = *src;
     }
     tgt[to] = 0;
@@ -2788,7 +2952,7 @@ int searchTableStringN(unsigned count, const char * * table, unsigned width, con
     return -1;
 }
 
-int rtlSearchTableStringN(unsigned count, char * * table, unsigned width, const char * search)
+int rtlSearchTableStringN(unsigned count, const char * * table, unsigned width, const char * search)
 {
     int left = 0;
     int right = count;
@@ -2810,7 +2974,7 @@ int rtlSearchTableStringN(unsigned count, char * * table, unsigned width, const 
 }
 
 
-int rtlSearchTableVStringN(unsigned count, char * * table, const char * search)
+int rtlSearchTableVStringN(unsigned count, const char * * table, const char * search)
 {
     int left = 0;
     int right = count;
@@ -2822,13 +2986,13 @@ int rtlSearchTableVStringN(unsigned count, char * * table, const char * search)
             right = mid;
         else if (cmp > 0)
             left = mid+1;
-        else 
+        else
             return mid;
     } while (left < right);
     return -1;
 }
 
-int rtlNewSearchDataTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search)
+int rtlNewSearchDataTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search)
 {
     int left = 0;
     int right = count;
@@ -2844,13 +3008,13 @@ int rtlNewSearchDataTable(unsigned count, unsigned elemlen, char * * table, unsi
         else {
             return mid;
         }
-                
+
     } while (left < right);
 
     return -1;
 }
 
-int rtlNewSearchEStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search)
+int rtlNewSearchEStringTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search)
 {
     int left = 0;
     int right = count;
@@ -2866,13 +3030,13 @@ int rtlNewSearchEStringTable(unsigned count, unsigned elemlen, char * * table, u
         else {
             return mid;
         }
-                
+
     } while (left < right);
 
     return -1;
 }
 
-int rtlNewSearchQStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search)
+int rtlNewSearchQStringTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search)
 {
     int left = 0;
     int right = count;
@@ -2888,13 +3052,13 @@ int rtlNewSearchQStringTable(unsigned count, unsigned elemlen, char * * table, u
         else {
             return mid;
         }
-                
+
     } while (left < right);
 
     return -1;
 }
 
-int rtlNewSearchStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search)
+int rtlNewSearchStringTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search)
 {
     int left = 0;
     int right = count;
@@ -2910,7 +3074,7 @@ int rtlNewSearchStringTable(unsigned count, unsigned elemlen, char * * table, un
         else {
             return mid;
         }
-                
+
     } while (left < right);
 
     return -1;
@@ -2918,12 +3082,14 @@ int rtlNewSearchStringTable(unsigned count, unsigned elemlen, char * * table, un
 
 
 #ifdef _USE_ICU
-int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, UChar * * table, unsigned width, const UChar * search, const char * locale)
+int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, const UChar * * table, unsigned width, const UChar * search, const char * locale)
 {
+    dbgassertex(search != nullptr || width == 0);
+
     UCollator * coll = queryRTLLocale(locale)->queryCollator();
     int left = 0;
     int right = count;
-    
+
     if (!search) search = &nullUStr;
     size32_t trimWidth = rtlQuickTrimUnicode(width, search);
 
@@ -2943,7 +3109,7 @@ int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, UChar * * table, 
     return -1;
 }
 
-int rtlNewSearchVUnicodeTable(unsigned count, UChar * * table, const UChar * search, const char * locale)
+int rtlNewSearchVUnicodeTable(unsigned count, const UChar * * table, const UChar * search, const char * locale)
 {
     UCollator * coll = queryRTLLocale(locale)->queryCollator();
     int left = 0;
@@ -2968,7 +3134,7 @@ int rtlNewSearchVUnicodeTable(unsigned count, UChar * * table, const UChar * sea
 //-----------------------------------------------------------------------------
 
 template <class T>
-int rtlSearchIntegerTable(unsigned count, T * table, T search)
+int rtlSearchIntegerTable(unsigned count, const T * table, T search)
 {
     int left = 0;
     int right = count;
@@ -2989,22 +3155,22 @@ int rtlSearchIntegerTable(unsigned count, T * table, T search)
 }
 
 
-int rtlSearchTableInteger8(unsigned count, __int64 * table, __int64 search)
+int rtlSearchTableInteger8(unsigned count, const __int64 * table, __int64 search)
 {
     return rtlSearchIntegerTable(count, table, search);
 }
 
-int rtlSearchTableUInteger8(unsigned count, unsigned __int64 * table, unsigned __int64 search)
+int rtlSearchTableUInteger8(unsigned count, const unsigned __int64 * table, unsigned __int64 search)
 {
     return rtlSearchIntegerTable(count, table, search);
 }
 
-int rtlSearchTableInteger4(unsigned count, int * table, int search)
+int rtlSearchTableInteger4(unsigned count, const int * table, int search)
 {
     return rtlSearchIntegerTable(count, table, search);
 }
 
-int rtlSearchTableUInteger4(unsigned count, unsigned  * table, unsigned search)
+int rtlSearchTableUInteger4(unsigned count, const unsigned  * table, unsigned search)
 {
     return rtlSearchIntegerTable(count, table, search);
 }
@@ -3266,6 +3432,11 @@ void rtlVUnicodeToCodepage(unsigned outlen, char * out, UChar const * in, char c
 void rtlVUnicodeToData(unsigned outlen, void * out, UChar const * in)
 {
     rtlUnicodeToData(outlen, out, rtlUnicodeStrlen(in), in);
+}
+
+void rtlVUnicodeToDataX(unsigned& outlen, void * &out, UChar const * in)
+{
+    rtlUnicodeToDataX(outlen, out, rtlUnicodeStrlen(in), in);
 }
 
 void rtlVUnicodeToVCodepage(unsigned outlen, char * out, UChar const * in, char const * codepage)
@@ -3579,7 +3750,7 @@ hash64_t rtlHash64Data(size32_t len, const void *buf, hash64_t hval)
 #endif
 
     const unsigned char *be = bp + len;     /* beyond end of buffer */
-    while (bp < be) 
+    while (bp < be)
     {
         APPLY_FNV64(hval, *bp++);
     }
@@ -3593,7 +3764,7 @@ hash64_t rtlHash64VStr(const char *str, hash64_t hval)
     const unsigned char *s = (const unsigned char *)str;
     unsigned char c;
 
-    while ((c = *s++) != 0) 
+    while ((c = *s++) != 0)
     {
         APPLY_FNV64(hval, c);
     }
@@ -3676,7 +3847,7 @@ unsigned rtlHash32Data(size32_t len, const void *buf, unsigned hval)
 #endif
 
     const unsigned char *be = bp + len;     /* beyond end of buffer */
-    while (bp < be) 
+    while (bp < be)
     {
         APPLY_FNV32(hval, *bp++);
     }
@@ -3690,7 +3861,7 @@ unsigned rtlHash32VStr(const char *str, unsigned hval)
     const unsigned char *s = (const unsigned char *)str;
     unsigned char c;
 
-    while ((c = *s++) != 0) 
+    while ((c = *s++) != 0)
     {
         APPLY_FNV32(hval, c);
     }
@@ -3798,7 +3969,7 @@ unsigned rtlHashData( unsigned length, const void *_k, unsigned initval)
    case 10: c+=GETBYTE2(7);
    case 9 : c+=GETBYTE1(7);
       /* the first byte of c is reserved for the length */
-   case 8 : b+=GETBYTE3(4); 
+   case 8 : b+=GETBYTE3(4);
    case 7 : b+=GETBYTE2(4);
    case 6 : b+=GETBYTE1(4);
    case 5 : b+=GETBYTE0(4);
@@ -3950,13 +4121,13 @@ void rtlHashMd5Finish(void * out, size32_t sizestate, void * _state)
 
 unsigned rtlRandom()
 {
-    CriticalBlock block(random_Sect);   
+    CriticalBlock block(random_Sect);
     return random_->next();
 }
 
 void rtlSeedRandom(unsigned value)
 {
-    CriticalBlock block(random_Sect);   
+    CriticalBlock block(random_Sect);
     random_->seed(value);
 }
 
@@ -3965,7 +4136,7 @@ void rtlSeedRandom(unsigned value)
 
 ECLRTL_API unsigned rtlTick()
 {
-    return msTick(); 
+    return msTick();
 }
 
 ECLRTL_API bool rtlGPF()
@@ -4240,181 +4411,228 @@ ECLRTL_API void serializeLPString(unsigned len, const char *field, MemoryBuffer 
 
 ECLRTL_API void serializeVarString(const char *field, MemoryBuffer &out)
 {
-    out.append(field); 
+    out.append(field);
 }
 
 ECLRTL_API void serializeBool(bool field, MemoryBuffer &out)
 {
-    out.append(field); 
+    out.append(field);
 }
 
 ECLRTL_API void serializeFixedData(unsigned len, const void *field, MemoryBuffer &out)
 {
-    out.append(len, field); 
+    out.append(len, field);
 }
 
 ECLRTL_API void serializeLPData(unsigned len, const void *field, MemoryBuffer &out)
 {
     out.append(len);
-    out.append(len, field); 
+    out.append(len, field);
 }
 
 ECLRTL_API void serializeInt1(signed char field, MemoryBuffer &out)
 {
     // MORE - why did overloading pick the int method for this???
-    // out.append(field); 
-    out.appendEndian(sizeof(field), &field); 
+    // out.append(field);
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeInt2(signed short field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeInt3(signed int field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(3, &field); 
+    out.appendEndian(3, &field);
 #else
-    out.appendEndian(3, ((char *) &field) + 1); 
+    out.appendEndian(3, ((char *) &field) + 1);
 #endif
 }
 
 
 ECLRTL_API void serializeInt4(signed int field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeInt5(signed __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(5, &field); 
+    out.appendEndian(5, &field);
 #else
-    out.appendEndian(5, ((char *) &field) + 3); 
+    out.appendEndian(5, ((char *) &field) + 3);
 #endif
 }
 
 ECLRTL_API void serializeInt6(signed __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(6, &field); 
+    out.appendEndian(6, &field);
 #else
-    out.appendEndian(6, ((char *) &field) + 2); 
+    out.appendEndian(6, ((char *) &field) + 2);
 #endif
 }
 
 ECLRTL_API void serializeInt7(signed __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(7, &field); 
+    out.appendEndian(7, &field);
 #else
-    out.appendEndian(7, ((char *) &field) + 1); 
+    out.appendEndian(7, ((char *) &field) + 1);
 #endif
 }
 
 ECLRTL_API void serializeInt8(signed __int64 field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeUInt1(unsigned char field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeUInt2(unsigned short field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeUInt3(unsigned int field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(3, &field); 
+    out.appendEndian(3, &field);
 #else
-    out.appendEndian(3, ((char *) &field) + 1); 
+    out.appendEndian(3, ((char *) &field) + 1);
 #endif
 }
 
 ECLRTL_API void serializeUInt4(unsigned int field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeUInt5(unsigned __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(5, &field); 
+    out.appendEndian(5, &field);
 #else
-    out.appendEndian(5, ((char *) &field) + 3); 
+    out.appendEndian(5, ((char *) &field) + 3);
 #endif
 }
 
 ECLRTL_API void serializeUInt6(unsigned __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(6, &field); 
+    out.appendEndian(6, &field);
 #else
-    out.appendEndian(6, ((char *) &field) + 2); 
+    out.appendEndian(6, ((char *) &field) + 2);
 #endif
 }
 
 ECLRTL_API void serializeUInt7(unsigned __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(7, &field); 
+    out.appendEndian(7, &field);
 #else
-    out.appendEndian(7, ((char *) &field) + 1); 
+    out.appendEndian(7, ((char *) &field) + 1);
 #endif
 }
 
 ECLRTL_API void serializeUInt8(unsigned __int64 field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeReal4(float field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeReal8(double field, MemoryBuffer &out)
 {
-    out.append(sizeof(field), &field); 
+    out.append(sizeof(field), &field);
 }
 
 //These maths functions can all have out of range arguments....
 //---------------------------------------------------------------------------
-ECLRTL_API double rtlLog10(double x)
+static double rtlInvalidArgument(DBZaction dbz, const char *source, double arg)
 {
-    if (x <= 0) return 0;
+    switch ((DBZaction) dbz)
+    {
+    case DBZfail:
+        throw MakeStringException(MSGAUD_user, -1, "Invalid argument to %s: %f", source, arg);
+    case DBZnan:
+        return rtlCreateRealNull();
+    }
+    return 0;
+}
+
+static double rtlInvalidLog(DBZaction dbz, const char *source, double arg)
+{
+    switch ((DBZaction) dbz)
+    {
+    case DBZfail:
+        throw MakeStringException(MSGAUD_user, -1, "Invalid argument to %s: %f", source, arg);
+    case DBZnan:
+        if (arg)
+            return rtlCreateRealNull();
+        else
+            return -INFINITY;
+    }
+    return 0;
+}
+
+ECLRTL_API double rtlLog10(double x, byte dbz)
+{
+    if (x <= 0)
+        return rtlInvalidLog((DBZaction) dbz, "LOG10", x);
     return log10(x);
 }
 
-ECLRTL_API double rtlLog(double x)
+ECLRTL_API double rtlLog(double x, byte dbz)
 {
-    if (x <= 0) return 0;
+    if (x <= 0)
+        return rtlInvalidLog((DBZaction) dbz, "LOG10", x);
     return log(x);
 }
 
-ECLRTL_API double rtlSqrt(double x)
+ECLRTL_API double rtlSqrt(double x, byte dbz)
 {
-    if (x < 0) return 0;
+    if (x < 0)
+        return rtlInvalidArgument((DBZaction) dbz, "SQRT", x);
     return sqrt(x);
 }
 
-ECLRTL_API double rtlACos(double x)
+ECLRTL_API double rtlACos(double x, byte dbz)
 {
-    if (fabs(x) > 1) return 0;
+    if (fabs(x) > 1)
+        return rtlInvalidArgument((DBZaction) dbz, "ACOS", x);
     return acos(x);
 }
 
-ECLRTL_API double rtlASin(double x)
+ECLRTL_API double rtlASin(double x, byte dbz)
 {
-    if (fabs(x) > 1) return 0;
+    if (fabs(x) > 1)
+        return rtlInvalidArgument((DBZaction) dbz, "ASIN", x);
     return asin(x);
 }
+
+ECLRTL_API double rtlFMod(double numer, double denom, byte dbz)
+{
+    if (!denom)
+        return rtlInvalidArgument((DBZaction) dbz, "FMOD", denom);
+    return fmod(numer, denom);
+}
+
+ECLRTL_API bool rtlFMatch(double a, double b, double epsilon)
+{
+    if (isnan(a) || isnan(b))
+        return false;
+    return fabs(a-b) <= epsilon;
+}
+
 
 //---------------------------------------------------------------------------
 
@@ -4467,6 +4685,23 @@ double rtlCreateRealNull()
     return u.r;
 }
 
+double rtlCreateRealInf()
+{
+    return INFINITY;
+}
+
+bool rtlIsInfinite(double value)
+{
+    return isinf(value);
+}
+bool rtlIsNaN(double value)
+{
+    return isnan(value);
+}
+bool rtlIsFinite(double value)
+{
+    return isfinite(value);
+}
 
 
 unsigned rtlUtf8Size(const void * data)
@@ -4603,7 +4838,13 @@ unsigned rtlUnicodeStrlen(UChar const * str)
 void rtlUtf8ToData(size32_t outlen, void * out, size32_t inlen, const char *in)
 {
     unsigned insize = rtlUtf8Size(inlen, in);
-    rtlCodepageToCodepage(outlen, (char *)out, insize, in, ASCII_LIKE_CODEPAGE, UTF8_CODEPAGE);
+    if (insize >= outlen)
+        rtlCodepageToCodepage(outlen, (char *)out, insize, in, ASCII_LIKE_CODEPAGE, UTF8_CODEPAGE);
+    else
+    {
+        rtlCodepageToCodepage(insize, (char *)out, insize, in, ASCII_LIKE_CODEPAGE, UTF8_CODEPAGE);
+        memset((char*)out + insize, 0, outlen-insize);
+    }
 }
 
 void rtlUtf8ToDataX(size32_t & outlen, void * & out, size32_t inlen, const char *in)
@@ -4963,7 +5204,7 @@ unsigned rtlCrcUtf8(unsigned length, const char * k, unsigned initval)
     return rtlCrcData(rtlUtf8Size(length, k), k, initval);
 }
 
-int rtlNewSearchUtf8Table(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search, const char * locale)
+int rtlNewSearchUtf8Table(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search, const char * locale)
 {
     //MORE: Hopelessly inefficient....  Should rethink - possibly introducing a class for doing string searching, and the Utf8 variety pre-converting the
     //search strings into unicode.
@@ -5011,7 +5252,7 @@ ECLRTL_API void rtlCreateRange(size32_t & outlen, char * & out, unsigned fieldLe
     //
     if (compareLen > fieldLen)
     {
-        if ((int)compareLen >= 0) 
+        if ((int)compareLen >= 0)
         {
             //x[1..m] = y, m is larger than fieldLen, so truncate to fieldLen
             compareLen = fieldLen;
@@ -5084,7 +5325,7 @@ ECLRTL_API void rtlCreateUnicodeRange(size32_t & outlen, UChar * & out, unsigned
     //Same as function above!
     if (compareLen > fieldLen)
     {
-        if ((int)compareLen >= 0) 
+        if ((int)compareLen >= 0)
         {
             //x[1..m] = y, m is larger than fieldLen, so truncate to fieldLen
             compareLen = fieldLen;
@@ -5563,6 +5804,21 @@ void rtlSubstituteEmbeddedScript(size32_t &__lenResult, char * &__result, size32
     __result = result.detach();
 }
 
+void rtlSubstituteActivityContext(StringBuffer &result, const IThorActivityContext *ctx, size32_t scriptChars, const char *script)
+{
+    result.append(rtlUtf8Size(scriptChars, script), script);
+    if (ctx)
+    {
+        char buf[20];
+        result.replaceStringNoCase("__activity__.isLocal", ctx->isLocal() ? "TRUE" : "FALSE");
+        result.replaceStringNoCase("__activity__.numSlaves", itoa(ctx->numSlaves(), buf, 10));
+        result.replaceStringNoCase("__activity__.numStrands", itoa(ctx->numStrands(), buf, 10));
+        result.replaceStringNoCase("__activity__.slave", itoa(ctx->querySlave(), buf, 10));
+        result.replaceStringNoCase("__activity__.strand", itoa(ctx->queryStrand(), buf, 10));
+    }
+}
+
+
 //---------------------------------------------------------------------------
 
 void rtlRowBuilder::forceAvailable(size32_t size)
@@ -5609,8 +5865,8 @@ inline unsigned numExtraBytesFromValue(unsigned __int64 first)
 //indicate continuation, but seems to be quicker (and requires less look ahead).
 
 /*
-byte numExtraBytesFromFirstTable[256] = 
-{ 
+byte numExtraBytesFromFirstTable[256] =
+{
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -5618,7 +5874,7 @@ byte numExtraBytesFromFirstTable[256] =
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8 
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8
 };
 inline unsigned numExtraBytesFromFirst(byte first)
 {
@@ -5779,7 +6035,7 @@ bool RtlCInterface::Release(void) const
 class RtlRowStream : implements IRowStream, public RtlCInterface
 {
 public:
-    RtlRowStream(size32_t _count, byte * * _rowset) : count(_count), rowset(_rowset)
+    RtlRowStream(size32_t _count, const byte * * _rowset) : count(_count), rowset(_rowset)
     {
         rtlLinkRowset(rowset);
         cur = 0;
@@ -5794,7 +6050,7 @@ public:
     {
         if (cur >= count)
             return NULL;
-        byte * ret = rowset[cur];
+        const byte * ret = rowset[cur];
         cur++;
         rtlLinkRow(ret);
         return ret;
@@ -5807,11 +6063,11 @@ public:
 protected:
     size32_t cur;
     size32_t count;
-    byte * * rowset;
+    const byte * * rowset;
 
 };
 
-ECLRTL_API IRowStream * createRowStream(size32_t count, byte * * rowset)
+ECLRTL_API IRowStream * createRowStream(size32_t count, const byte * * rowset)
 {
     return new RtlRowStream(count, rowset);
 }

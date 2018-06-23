@@ -63,7 +63,7 @@ void addGraphIdAttribute(ActivityInstance * instance, BuildCtx & ctx, IHqlExpres
         graphname.append(graphId->queryChild(0)->querySequenceExtra());
         throwError1(HQLERR_AccessUnavailableGraph, graphname.str());
     }
-    instance->addAttributeInt("_graphId", match->graphId);
+    instance->addAttributeInt(WaIdChildGraph, match->graphId);
 }
 
 //===========================================================================
@@ -687,8 +687,7 @@ BoundRow * HqlCppTranslator::ensureLinkCountedRow(BuildCtx & ctx, BoundRow * row
         return row;
 
     OwnedHqlExpr srcRow = createTranslated(row->queryBound());
-    OwnedHqlExpr tempRowExpr = declareLinkedRowExpr(ctx, row->queryRecord(), false);
-    Owned<BoundRow> tempRow = row->clone(tempRowExpr);
+    Owned<BoundRow> tempRow = declareLinkedRow(ctx, row->represents, false);
 
     OwnedHqlExpr source = getPointer(row->queryBound());
     BuildCtx subctx(ctx);
@@ -1814,26 +1813,20 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     }
 
     {
-        cycle_t startCycles = get_cycles_now();
         CompoundSourceTransformer transformer(*this, CSFpreload|csfFlags);
         resourced.setown(transformer.process(resourced));
         checkNormalized(ctx, resourced);
-        noteFinishedTiming("workunit:tree transform: optimize disk read", startCycles);
     }
 
     bool isInsideChildQuery = (graphKind == no_childquery) || insideChildQuery(ctx);
     if (options.optimizeGraph)
     {
-        cycle_t startCycles = get_cycles_now();
         traceExpression("BeforeOptimizeSub", resourced);
         resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags(isInsideChildQuery)|HOOcompoundproject));
         traceExpression("AfterOptimizeSub", resourced);
-        noteFinishedTiming("workunit:optimize graph", startCycles);
     }
 
     traceExpression("BeforeResourcing Child", resourced);
-
-    cycle_t startCycles = get_cycles_now();
     HqlExprCopyArray activeRows;
     gatherActiveCursors(ctx, activeRows);
     if (graphKind == no_loop)
@@ -1844,7 +1837,6 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     else
         resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
 
-    noteFinishedTiming("workunit:resource graph", startCycles);
     checkNormalized(ctx, resourced);
     traceExpression("AfterResourcing Child", resourced);
     
@@ -2378,6 +2370,9 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             buildTempExpr(ctx, expr, tgt, format);
             return;
         }
+        break;
+    case no_quoted:
+        throwUnexpectedX("Translated expression passed to doBuildDataset()");
     }
 
     if (expr->isDictionary())
@@ -3007,38 +3002,39 @@ bool HqlCppTranslator::doBuildConstantDatasetInlineTable(IHqlExpression * expr, 
 class EclccEngineRowAllocator : public CInterfaceOf<IEngineRowAllocator>
 {
 public:
-    virtual byte * * createRowset(unsigned _numItems) { return (byte * *)malloc(_numItems * sizeof(byte *)); }
-    virtual byte * * linkRowset(byte * * rowset) { throwUnexpected(); }
-    virtual void releaseRowset(unsigned count, byte * * rowset) { free(rowset); }
-    virtual byte * * appendRowOwn(byte * * rowset, unsigned newRowCount, void * row)
+    virtual const byte * * createRowset(unsigned _numItems) override { return (const byte * *)malloc(_numItems * sizeof(byte *)); }
+    virtual const byte * * linkRowset(const byte * * rowset) override { throwUnexpected(); }
+    virtual void releaseRowset(unsigned count, const byte * * rowset) override { free(rowset); }
+    virtual const byte * * appendRowOwn(const byte * * rowset, unsigned newRowCount, void * row) override
     {
-        byte * * expanded = reallocRows(rowset, newRowCount-1, newRowCount);
-        expanded[newRowCount-1] = (byte *)row;
+        const byte * * expanded = reallocRows(rowset, newRowCount-1, newRowCount);
+        expanded[newRowCount-1] = (const byte *)row;
         return expanded;
     }
-    virtual byte * * reallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
+    virtual const byte * * reallocRows(const byte * * rowset, unsigned oldRowCount, unsigned newRowCount) override
     {
-        return (byte * *)realloc(rowset, newRowCount * sizeof(byte *));
+        return (const byte * *)realloc(rowset, newRowCount * sizeof(byte *));
     }
 
-    virtual void * createRow() { throwUnexpected(); }
-    virtual void releaseRow(const void * row) {  } // can occur if a row is removed from a dictionary.
-    virtual void * linkRow(const void * row) { return const_cast<void *>(row); }  // can occur if a dictionary is resized.
+    virtual void * createRow() override { throwUnexpected(); }
+    virtual void releaseRow(const void * row) override {  } // can occur if a row is removed from a dictionary.
+    virtual void * linkRow(const void * row) override { return const_cast<void *>(row); }  // can occur if a dictionary is resized.
 
 //Used for dynamically sizing rows.
-    virtual void * createRow(size32_t & allocatedSize) { throwUnexpected(); }
-    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) { throwUnexpected(); }
-    virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) { throwUnexpected(); }
+    virtual void * createRow(size32_t & allocatedSize) override { throwUnexpected(); }
+    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) override { throwUnexpected(); }
+    virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) override { throwUnexpected(); }
 
-    virtual IOutputMetaData * queryOutputMeta() { return NULL; }
-    virtual unsigned queryActivityId() const { return 0; }
-    virtual StringBuffer &getId(StringBuffer & out) { return out; }
-    virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx = NULL) { throwUnexpected(); }
-    virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) { throwUnexpected(); }
-    virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) { throwUnexpected(); }
-    virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) { throwUnexpected(); }
-    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *type) { throwUnexpected(); }
+    virtual IOutputMetaData * queryOutputMeta() override { return NULL; }
+    virtual unsigned queryActivityId() const override { return 0; }
+    virtual StringBuffer &getId(StringBuffer & out) override { return out; }
+    virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx = NULL) override { throwUnexpected(); }
+    virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) override { throwUnexpected(); }
+    virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) override { throwUnexpected(); }
+    virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) override { throwUnexpected(); }
+    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *type) override { throwUnexpected(); }
     virtual void gatherStats(CRuntimeStatisticCollection & stats) override {}
+    virtual void releaseAllRows() override { throwUnexpected(); }
 };
 
 //Use a (constant) transform to map selectors of the form queryActiveTableSelector().field
@@ -3100,10 +3096,10 @@ public:
     {
     }
 
-    virtual IHash * queryHash() { return &hasher; }
-    virtual ICompare * queryCompare() { return &comparer; }
-    virtual IHash * queryHashLookup() { throwUnexpected(); }
-    virtual ICompare * queryCompareLookup() { throwUnexpected(); }
+    virtual IHash * queryHash() override { return &hasher; }
+    virtual ICompare * queryCompare() override { return &comparer; }
+    virtual IHash * queryHashLookup() override { throwUnexpected(); }
+    virtual ICompare * queryCompareLookup() override { throwUnexpected(); }
 
 protected:
     EclccCHash hasher;
@@ -3127,7 +3123,7 @@ void HqlCppTranslator::createInlineDictionaryRows(HqlExprArray & args, ConstantR
         builder.appendOwn(&boundRows.item(i));
 
     unsigned size = builder.getcount();
-    ConstantRow * * rows = reinterpret_cast<ConstantRow * *>(builder.queryrows());
+    const ConstantRow * * rows = reinterpret_cast<const ConstantRow * *>(builder.queryrows());
     for (unsigned i=0; i < size; i++)
     {
         if (rows[i])
@@ -5383,7 +5379,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphDictionaryResult(Build
 
     buildDictionaryHashMember(instance->createctx, dictionary, "queryHashLookupInfo");
 
-    instance->addAttributeBool("_isSpill", isSpill);
+    instance->addAttributeBool(WaIsSpill, isSpill);
     if (targetRoxie())
         addGraphIdAttribute(instance, ctx, graphId);
 
@@ -5449,11 +5445,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphResult(BuildCtx & ctx,
         else
             relationship = "Child";
 
-        addDependency(ctx, instance->queryBoundActivity(), parentActivity, childAtom, relationship);
+        addDependency(ctx, instance->queryBoundActivity(), parentActivity->queryActive(), childAtom, relationship);
     }
 
-    instance->addAttributeBool("_isSpill", isSpill);
-    instance->addAttributeBool("_fromChild", expr->hasAttribute(_accessedFromChild_Atom));
+    instance->addAttributeBool(WaIsSpill, isSpill);
+    instance->addAttributeBool(WaIsAccessedFromChild, expr->hasAttribute(_accessedFromChild_Atom));
     if (targetRoxie())
         addGraphIdAttribute(instance, ctx, graphId);
 
@@ -5607,7 +5603,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityForceLocal(BuildCtx & ctx, IHq
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
-    instance->addAttributeInt("_subgraph", localId);
+    instance->addAttributeInt(WaIdSubGraph, localId);
 
     ActivityAssociation * match = static_cast<ActivityAssociation *>(ctx.queryAssociation(queryResultExpr(remote), AssocActivity, NULL));
     assertex(match);

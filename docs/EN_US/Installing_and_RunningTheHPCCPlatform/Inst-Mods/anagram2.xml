@@ -1,0 +1,642 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ECLRoxieExample_Anagram2">
+  <title>Roxie Example: Anagram2</title>
+
+  <para>In this example, we will download an open source data file of
+  dictionary words, spray that file to our Thor cluster, then validate our
+  anagrams against that file so that we determine which are valid words. The
+  validation step uses a JOIN of the anagram
+  list to the dictionary file. Using an index and a keyed join would be more
+  efficient, but this serves as a simple example.</para>
+
+  <sect3 id="RoxieExample_DownloadWordList">
+    
+
+    <title>Download the word list</title>
+
+    
+
+    <para>We will download the word list from <ulink
+    url="http://wordlist.aspell.net/12dicts">http://wordlist.aspell.net/12dicts</ulink></para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Download the <emphasis>Official 12 Dicts </emphasis>Package.
+          The files are available in tar.gz or ZIP
+          format.</para>
+        </listitem>
+
+        <listitem>
+          <para>Extract the package contents and save the <emphasis
+          role="bold">2of12.txt</emphasis> file (typically found in the
+          American sub-folder) to a folder on your local machine.</para>
+        </listitem>
+      </orderedlist></para>
+  </sect3>
+
+  <sect3 id="Load_the_Incoming_Data">
+    
+
+    <title>Load the Dictionary File to your Landing Zone</title>
+
+    
+
+    <para>In this step, you will copy the data files to a location from which
+    it can be sprayed to your HPCC cluster.
+    A Landing Zone is a storage location attached to your HPCC.
+    It has a utility running to facilitate file spraying to a cluster.</para>
+
+    <para>For smaller data files, maximum of 2GB,
+    you can use the upload/download file utility in ECL
+    Watch. This data file is only ~400 kb.</para>
+
+    <para>Next you will distribute (or Spray) the dataset to all the nodes in
+    the HPCC cluster. The power of the HPCC
+    comes from its ability to assign multiple processors to work on different
+    portions of the data file in parallel. Even though the VM
+    Edition only has a single node, the data must be sprayed to the
+    cluster.</para>
+
+    <orderedlist>
+      <listitem>
+        <para>In your browser, go to the <emphasis role="bold">ECL
+        Watch</emphasis> URL. For example,
+        http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is your ESP
+        Server's IP address.</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png" /></entry>
+
+                  <entry>Your IP address
+                  could be different from the ones provided in the example
+                  images. Please use the IP
+                  address provided by <emphasis role="bold">your</emphasis>
+                  installation.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>From ECL Watch click on the
+        <emphasis role="bold">Files</emphasis> icon, then click the <emphasis
+        role="bold">Landing Zones</emphasis> link from the navigation
+        sub-menu.</para>
+
+        <para>Press the <emphasis role="bold">Upload </emphasis>action
+        button.</para>
+
+        <para><figure>
+            <title>Upload</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/LZimg03-1.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>A dialog opens. <emphasis role="bold">Browse</emphasis> to and
+        select the file to upload and then press the <emphasis
+        role="bold">Open</emphasis> button.</para>
+
+        <para>The file you selected should appear in the <emphasis
+        role="bold">File Name</emphasis> field. The data file is named:
+        <emphasis role="bold">2of12.txt</emphasis>.</para>
+      </listitem>
+
+      <listitem>
+        <para><figure>
+            <title>Start File Upload</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/LZimg04a.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Press the <emphasis role="bold">Start</emphasis> button to
+        complete the file upload.</para>
+      </listitem>
+    </orderedlist>
+  </sect3>
+
+  <sect3 id="Spray_the_Data_to_THOR">
+    
+
+    <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
+    Cluster</emphasis></title>
+
+    
+
+    <para>To use the data file in our HPCC
+    system, we must "spray" it to all the nodes. A <emphasis>spray</emphasis>
+    or <emphasis>import</emphasis> is the relocation of a data file from one
+    location (such as a Landing Zone) to multiple file parts on nodes in a
+    cluster.</para>
+
+    <para>The distributed or sprayed file is given a
+    <emphasis>logical-file-name</emphasis> as follows<emphasis role="bold">:
+    ~thor::word_list_csv </emphasis> The system maintains a list of logical
+    files and the corresponding physical file locations of the file
+    parts.</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Open ECL Watch using the
+        following URL:</para>
+
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp(where
+        nnn.nnn.nnn.nnn is your ESP Server's
+        IP Address and pppp is the port. The
+        default port is 8010)</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+        click the <emphasis role="bold">Landing Zones</emphasis> link from the
+        navigation sub-menu. Select the appropriate landing zone (if there are
+        more than one landing zones). Click the arrow to the left of your
+        landing zone to expand it.</para>
+      </listitem>
+
+      <listitem>
+        <para>Select the file from your drop zone by checking the box next to
+        it.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Check the box next to 2of12.txt, then press the <emphasis
+        role="bold">Delimited</emphasis> button.</para>
+
+        <para><figure>
+            <title>Spray Delimited</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/GSSprayDict.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The <emphasis role="bold">DFU
+        Spray Delimited</emphasis> page displays.</para>
+      </listitem>
+
+      <listitem>
+        <para>Select mythor in the Target Group drop list.</para>
+      </listitem>
+
+      <listitem>
+        <para>Complete the Target Scope as<emphasis> thor</emphasis>.</para>
+      </listitem>
+
+      <listitem>
+        <para>Fill in the rest of the parameters (if they are not filled in
+        already).</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>Max Record Length 8192</para>
+            </listitem>
+
+            <listitem>
+              <para>Separator \,</para>
+            </listitem>
+
+            <listitem>
+              <para>Line Terminator \n,\r\n</para>
+            </listitem>
+
+            <listitem>
+              <para>Quote: '</para>
+            </listitem>
+          </itemizedlist></para>
+      </listitem>
+
+      <listitem>
+        <para>Fill in the Target Name using the rest of the Logical File name
+        desired: word_list_csv<emphasis role="bold"> </emphasis></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Make sure the <emphasis role="bold">Overwrite</emphasis> box is
+        checked.</para>
+
+        <para>If available, make sure the <emphasis
+        role="bold">Replicate</emphasis> box is checked. (The Replicate option
+        is only available on systems where replication has been
+        enabled.)</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Press the <emphasis role="bold">Spray</emphasis><emphasis
+        role="bold"> </emphasis>button.</para>
+
+        <para>A tab displays the DFU
+        Workunit where you can see the progress of the spray.</para>
+      </listitem>
+    </orderedlist>
+  </sect3>
+
+  <sect3 id="RunTheQueryOnThor">
+    
+
+    <title>Run the query on Thor</title>
+
+    
+
+    <para><orderedlist>
+        <listitem>
+          <para>Open a new <emphasis role="bold">Builder Window</emphasis>
+          (CTRL+N) and write the following
+          code:<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Select <emphasis role="bold">thor</emphasis> as your target
+          cluster.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the syntax check button on the main toolbar (or press
+          F7)</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Submit</emphasis><emphasis
+          role="bold"> </emphasis>button.</para>
+        </listitem>
+
+        <listitem>
+          <para>When it completes, select the Workunit<emphasis role="bold">
+          </emphasis>tab, then select the Result tab.</para>
+        </listitem>
+
+        <listitem>
+          <para>Examine the result.</para>
+        </listitem>
+      </orderedlist></para>
+  </sect3>
+
+  <sect3 id="RoxieExample_CompileAndPublishtheQuery">
+    
+
+    <title>Compile and Publish the query to Roxie</title>
+
+    
+
+    <para><orderedlist>
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Right-click on the <emphasis role="bold">My Files</emphasis>
+          folder in the Repository window, and select <emphasis
+          role="bold">Insert Folder</emphasis> from the pop-up menu.</para>
+
+          <para><figure>
+              <title>Insert Folder</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/DTimg04.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enter <emphasis role="bold">Anagram</emphasis> for the label,
+          then press the OK button.</para>
+
+          <para><figure>
+              <title>Enter Folder Label</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/VM1005.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Right-click on the <emphasis role="bold">Anagram
+          </emphasis>Folder, and select <emphasis role="bold">Insert
+          File</emphasis> from the pop-up menu.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enter <emphasis role="bold">ValidateAnagrams</emphasis> for
+          the label, then press the OK
+          button.</para>
+
+          <para>A Builder Window opens.</para>
+
+          <para><figure>
+              <title>Builder Window</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/VM1006.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Write the following code (you can copy the code from the other
+          builder window):<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Select <emphasis role="bold">Roxie</emphasis> as your target
+          cluster.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the syntax check button on the main toolbar (or press
+          F7)</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>In the Builder window, in the upper left corner the <emphasis
+          role="bold">Submit</emphasis> button has a drop down arrow next to
+          it. Select the arrow to expose the <emphasis role="bold">Compile</emphasis>
+          option.</para>
+
+          <figure>
+            
+
+            <title>Compile</title>
+
+            
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/DTimg17.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+        </listitem>
+
+        <listitem>
+          <para>Select <emphasis role="bold">Compile</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>When it completes, select the Workunit<emphasis role="bold">
+          </emphasis>tab, then select the Result tab.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>When the workunit finishes, it will display a green circle
+          indicating it has compiled.</para>
+
+          <para><figure>
+              <title>Compiled</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/VM1007.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+      </orderedlist></para>
+  </sect3>
+
+  <sect3 id="Deploy_the_Query_to_Roxie">
+    
+
+    <title>Publish the Roxie query</title>
+
+    
+
+    <para>Next we will publish the query to a Roxie Cluster.</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Select the workunit tab for the ValidateAnagrams that you just
+        compiled.</para>
+      </listitem>
+
+      <listitem>
+        <para>Select the ECL Watch
+        tab.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Press the <emphasis role="bold">Publish</emphasis> button,
+        complete the dialog, and press <emphasis
+        role="bold">Submit</emphasis>.</para>
+
+        <para><figure>
+            <title>Publish Query</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/VM1008.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>When it successfully publishes, a confirmation message
+        displays.</para>
+      </listitem>
+    </orderedlist>
+  </sect3>
+
+  <sect3 id="Run_the_Roxie_Query">
+    
+
+    <title>Run the Roxie Query in WsECL</title>
+
+    
+
+    <para>Now that the query is published to a Roxie cluster, we can run it
+    using the WsECL service. WsECL is a web-based interface to queries on an
+    HPCC platform. Use the following URL:</para>
+
+    <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
+    nnn.nnn.nnn.nnn is your ESP Server's
+    IP address and pppp is the port. The
+    default port is 8002)</emphasis></para>
+
+    <orderedlist>
+      <listitem>
+        <para>Click on the + sign next to <emphasis
+        role="bold">myroxie</emphasis> to expand the tree.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Click on the <emphasis role="bold">ValidateAnagrams.1</emphasis>
+        hyperlink.</para>
+
+        <para>The form for the service displays.</para>
+
+        <para><figure>
+            <title>RoxieECL</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/VM1009.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Select Output Tables in the drop list.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Provide a word to make anagrams from (e.g., TEACHER),
+        then press the Submit button.</para>
+
+        <para>The results display.</para>
+
+        <para><figure>
+            <title>RoxieResults</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/VM1010.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+    </orderedlist>
+  </sect3>
+</sect2>

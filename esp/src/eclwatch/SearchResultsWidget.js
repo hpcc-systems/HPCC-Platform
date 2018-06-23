@@ -32,21 +32,22 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsWorkunits",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPDFUWorkunit",
-    "hpcc/ESPLogicalFile",
-    "hpcc/ESPQuery",
-    "hpcc/FileSpray",
-    "hpcc/WsDfu",
+    "src/WsWorkunits",
+    "src/ESPWorkunit",
+    "src/ESPDFUWorkunit",
+    "src/ESPLogicalFile",
+    "src/ESPQuery",
+    "src/FileSpray",
+    "src/WsDfu",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil"
+    "src/ESPUtil",
+    "src/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, on, all,
                 Button,
                 Standby, validate,
                 selector,
-                GridDetailsWidget, WsWorkunits, ESPWorkunit, ESPDFUWorkunit, ESPLogicalFile, ESPQuery, FileSpray, WsDfu, DelayLoadWidget, ESPUtil) {
+                GridDetailsWidget, WsWorkunits, ESPWorkunit, ESPDFUWorkunit, ESPLogicalFile, ESPQuery, FileSpray, WsDfu, DelayLoadWidget, ESPUtil, Utility) {
     return declare("SearchResultsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -154,7 +155,7 @@ define([
 
             this.standby = new Standby({
                 target: this.domNode,
-                image: dojoConfig.getImageURL("loadingBar.gif"),
+                image: Utility.getImageURL("loadingBar.gif"),
                 color: null
             });
             document.body.appendChild(this.standby.domNode);
@@ -333,12 +334,13 @@ define([
         },
 
         loadGetDFUWorkunitResponse: function (prefix, response) {
+            var context = this;
             var workunit = lang.getObject("GetDFUWorkunitResponse.result", false, response)
             if (workunit && workunit.State !== 999) {
                 var idPrefix = prefix.split(" ").join("_");
                 this.store.add({
                     storeID: ++context._rowID,
-                    id: context.id + item.ID,
+                    id: context.id + workunit.ID,
                     Type: context.i18n.DFUWorkunit,
                     Reason: prefix,
                     Summary: workunit.ID,

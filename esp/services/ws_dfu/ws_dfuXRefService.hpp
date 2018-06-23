@@ -162,6 +162,7 @@ private:
     IXRefFilesNode* getFileNodeInterface(IXRefNode& XRefNode,const char* nodeType);
     void addXRefNode(const char* name, IPropertyTree* pXRefNodeTree);
     void readLostFileQueryResult(IEspContext &context, StringBuffer& buf);
+    bool addUniqueXRefNode(const char* processName, BoolHash& uniqueProcesses, IPropertyTree* pXRefNodeTree);
 public:
    IMPLEMENT_IINTERFACE;
 

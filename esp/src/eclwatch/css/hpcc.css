@@ -118,14 +118,14 @@ hr.dashedLine {
     margin-left:15px;
 }
 /*IDs************************/
-.claro .hpccMainpage {
+.flat .hpccMainpage {
     margin: 0;
     padding: 0;
     width: 100%; 
     height: 100%; 
 }
 
-.claro .hpccTitlebar{
+.flat .hpccTitlebar {
     height: 50px;
     margin: 0;
     padding: 0;
@@ -135,18 +135,48 @@ hr.dashedLine {
     overflow: hidden;
 }
 
-.claro #stubStackController{
+.flat #stubStackController{
     height: 32px;
     margin-top: 6px;
 }
 
-.claro .glow :hover{
+.flat .glow :hover{
     background-color:rgb(118, 157, 192);
     border-radius: 4px;
     cursor: pointer;
 }
 
-.claro .glow .dijitToggleButton .dijitButtonNode {
+.flat .dijitToolbar .dijitButton {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .dijitToolbar .dijitButton .dijitButtonNode {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .dijitToolbar .dijitDropDownButton {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .dijitToolbar .dijitDropDownButton .dijitButtonNode {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .dijitToolbar .dijitToggleButton {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .dijitToolbar .dijitToggleButton .dijitButtonNode {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .glow .dijitToggleButton .dijitButtonNode {
     background: none;
     border:none;
     box-shadow: none;
@@ -154,7 +184,7 @@ hr.dashedLine {
     align-content:center;
 }
 
-.claro .hpccTitlebar .dijitToggleButtonChecked .dijitButtonNode {
+.flat .hpccTitlebar .dijitToggleButtonChecked .dijitButtonNode {
     border-width: 1px;
     border-style: solid;
     border-color: #759dc0;
@@ -162,15 +192,15 @@ hr.dashedLine {
     align-content:center;
 }
 
-.claro .hpccTitlebar .dijitDropDownButton .dijitButtonNode {
+.flat .hpccTitlebar .dijitDropDownButton .dijitButtonNode {
     background: none;
     border:none;
     box-shadow: none;
-    margin:0;
+    margin:0px;
     align-content:center;
 }
 
-.claro .miniTitlebar {
+.flat .miniTitlebar {
     background: rgb(200, 200, 200);
     margin: 0px;
     padding: 0px;
@@ -180,7 +210,7 @@ hr.dashedLine {
     overflow: hidden;
 }
 
-.claro .miniTitlebar .dijitToggleButton .dijitButtonNode {
+.flat .miniTitlebar .dijitToggleButton .dijitButtonNode {
     background: none;
     border: none;
     box-shadow: none;
@@ -189,7 +219,7 @@ hr.dashedLine {
     cursor: pointer;
 }
 
-.claro .miniTitlebar .dijitToggleButtonChecked .dijitButtonNode {
+.flat .miniTitlebar .dijitToggleButtonChecked .dijitButtonNode {
     border-width: 1px;
     border-style: solid;
     background-image: none;
@@ -200,32 +230,37 @@ hr.dashedLine {
     cursor: pointer;
 }
 
-.claro #stubTitlebar .dijitToggleButton, .dijitButton, .dijitDropDownButton, .dijitComboButton{
-    margin:0;
+.flat .miniTitlebar .dijitNoIcon {
+    width: 0px;
+    height: 0px;
+}
+
+.flat #stubTitlebar .dijitToggleButton, .dijitButton, .dijitDropDownButton, .dijitComboButton{
+    margin:0px;
     cursor: pointer;
 }
 
-.claro .dijitPopup .dijitMenuPopup{
+.flat .dijitPopup .dijitMenuPopup{
     top:56px !important;
 }
 
-.claro .dgridInfo {
+.flat .dgridInfo {
     background-position:left center;
     background-repeat: no-repeat;
     padding-left:25px;
 }
 
-.claro .dgrid-cell { 
+.flat .dgrid-cell { 
     text-overflow: ellipsis; 
     white-space: nowrap; 
 }
 
-.claro .wrap .dgrid-cell { 
+.flat .wrap .dgrid-cell { 
     text-overflow: initial; 
     white-space: normal; 
 }
 
-.claro .hpccCentered { 
+.flat .hpccCentered { 
     text-align: center; 
 }
 
@@ -276,9 +311,23 @@ hr.dashedLine {
     cursor: pointer;
 }
 
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    background-color: #1A9BD7;
+}
+.lockLogo{
+    display:block;
+    margin:auto;
+    padding-bottom:10px;
+}
 
 @media (max-width: 959px){
-    .claro .hpccTitlebar {
+    .flat .hpccTitlebar {
         height:100px;
     }
     .searchUserMoreComponents{
@@ -317,6 +366,7 @@ hr.dashedLine {
     text-align: right;
     padding:5px 5px 0 0;
     padding-top:10px;
+    color:rgb(164, 220, 245);
 }
 
 #userAccount a{
@@ -354,7 +404,7 @@ hr.dashedLine {
     border:none;
 }
 
-.claro #stubMore{
+.flat #stubMore{
     padding:0;
     margin:0;
     height: 32px;
@@ -616,8 +666,14 @@ table.miniSelect span {
     padding-left:10px;
 }
 
+#UnlockStatus{
+    font-weight:bold;
+    font-size:1em;
+    color:rgb(218, 4, 0);
+    text-align: center;
+}
 /*CLASSES******************/
-.claro #userIcons .dijitArrowButtonInner{
+.flat #userIcons .dijitArrowButtonInner{
     margin:5px auto 0 5px;
 }
 
@@ -747,6 +803,10 @@ table.miniSelect span {
     height: 100%;
 }
 
+.hpccAppSession {
+    background: #1A9BD7;
+}
+
 .searchUserMoreComponents{
     float:right;
 }
@@ -757,8 +817,8 @@ table.miniSelect span {
     display: block;
 }
 
-.claro .hpccApp .hpccTitlebar {
-    background-color: rgb(0, 108, 204);
+.flat .hpccApp .hpccTitlebar {
+    background-color: #2196F3;
 }
 
 .hidden{
@@ -800,14 +860,6 @@ margin-left:-20px;
     bottom: 0;
     left: 0;
     right: 0;
-}
-
-.claro .hpccApp .topPanel {
-    background-color: rgb(208, 233, 252);
-}
-
-.claro .hpccApp .edgePanel {
-    background-color: rgb(208, 233, 252);
 }
 
 .TimingTreeMapWidget p {
@@ -854,19 +906,32 @@ margin-left:-20px;
 }
 
 .iconRefresh {
-    background-image: url("../img/refresh2.png"); 
+    background-image: url("../img/refresh2.png");
     width: 16px;
     height: 16px;
 }
 
 .iconAutoRefresh {
-    background-image: url("../img/autoRefresh.png"); 
+    background-image: url("../img/autoRefresh.png");
     width: 16px;
     height: 16px;
 }
 
+.iconAutoRefreshTrue{
+    background-image: url("../img/autoRefresh.png");
+    width: 16px;
+    height: 16px;
+    -webkit-animation:spin 4s linear infinite;
+    -moz-animation:spin 4s linear infinite;
+    animation:spin 4s linear infinite;
+}
+
+@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+
 .iconAutoRefreshDisabled {
-    background-image: url("../img/autoRefresh_disabled.png"); 
+    background-image: url("../img/autoRefresh_disabled.png");
     width: 16px;
     height: 16px;
 }
@@ -1120,73 +1185,99 @@ margin-left:-20px;
     font-family: monospace;
 }
 
-.dgrid {
+.flat .dgrid {
     position: absolute;
     top: 0;
     bottom: 0;
     left: 0;
     right: 0;
     height: auto;
+    border-color: rgb(158, 158, 158);
 }
 
-.claro .graph_Graph .zoom {
+.flat .dgrid-page-size {
+    padding: 0px;
+}
+
+.flat .graph_Graph .zoom {
     fill: white;
 }
 
-.claro .graph_Graph .graphVertex .common_Menu {
+.flat .graph_Graph .graphVertex .common_Menu {
     visibility:hidden;
 }
 
-.claro .graph_Graph .graphVertex > .subgraph .title rect {
+.flat .graph_Graph .graphVertex > .subgraph {
+    pointer-events: none;
+}
+
+.flat .graph_Graph .graphVertex > .graph_Vertex * {
+    cursor: pointer;
+}
+
+.flat .graph_Graph .graphEdge > .graph_Edge * {
+    cursor: pointer;
+}
+
+.flat .graph_Graph .graphVertex > .subgraph .title rect {
     fill: #dcf1ff;
     border-bottom-width:0px;
 }
 
-.claro .graph_Graph .graphVertex > .subgraph .title text {
+.flat .graph_Graph .graphVertex > .subgraph .title text {
     fill: black;
 }
 
-.claro .graph_Graph .graphVertex > .subgraph rect {
+.flat .graph_Graph .graphVertex > .subgraph rect {
     fill: none;
 }
 
-.claro .graph_Graph .graphVertex > .subgraph.selected rect {
+.flat .graph_Graph .graphVertex .common_Icon .common_Shape {
+    fill: #1f77b4;
+    stroke: #1f77b4;
+}
+
+.flat .graph_Graph .graphVertex .common_Icon .common_FAChar .common_Text {
+    fill: white;
+}
+
+.flat .graph_Graph .graphVertex > .subgraph.selected rect {
     stroke:red !important;
 }
 
-.claro .graph_Graph .graphVertex .graph_Vertex.selected .common_Shape {
+.flat .graph_Graph .graphVertex .graph_Vertex.selected .common_Shape {
     stroke:red !important;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge {
+.flat .graph_Graph .graphEdge .graph_Edge {
     stroke:lightgray;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge .common_Text {
+.flat .graph_Graph .graphEdge .graph_Edge .common_Text {
     fill:lightgray;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.active {
+.flat .graph_Graph .graphEdge .graph_Edge.active {
     stroke:green;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.active .common_Text {
+.flat .graph_Graph .graphEdge .graph_Edge.active .common_Text {
     fill:green;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.finished {
+.flat .graph_Graph .graphEdge .graph_Edge.finished {
     stroke:black;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.finished .common_Text {
+.flat .graph_Graph .graphEdge .graph_Edge.finished .common_Text {
     fill:black;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.selected {
+.flat .graph_Graph .graphEdge .graph_Edge.selected {
     stroke:red !important;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.selected .common_Text {
+.flat .graph_Graph .graphEdge .graph_Edge.selected .common_Text {
     fill:red !important;
 }
 
@@ -1200,4 +1291,319 @@ margin-left:-20px;
     background-color:#eee;
     padding:3px;
     text-align: left;
+}
+
+.dojoxColorPicker {
+    padding:8px;
+    -moz-border-radius:4pt;
+    -webkit-border-radius:5pt;
+    -webkit-drop-shadow:3pt;
+}
+
+.dojoxColorPickerRightPad {
+    padding-right: 8px;
+}
+
+.tundra .dojoxColorPicker {
+    background:#ededed;
+    border:1px solid #ccc;
+}
+
+.dojoxColorPickerBox {
+    position:relative;
+    width:150px;    
+    height:150px;    
+    margin:0; 
+    padding:0;
+}
+
+.dojoxColorPickerUnderlay {
+    position:relative; 
+    top:0; left:0;
+    width:150px; 
+    height:150px;
+    z-index:1;
+}
+
+.tundra .dojoxColorPickerUnderlay {
+    border:1px solid #a0a0a0;
+}
+
+.claro .dojoxColorPicker {
+    background:#ededed;
+    border:1px solid #cdcdcd;
+}
+
+.claro .dojoxColorPickerUnderlay {
+    border:1px solid #cccccc;
+}
+
+.dojoxHuePickerUnderlay {
+    position:relative;
+    top:0; left:0;
+    height:150px;
+    width:20px;
+    z-index:1;
+    text-align: center;
+}
+
+.dojoxHuePicker { position:relative; top: 0px; left: 0px; padding: 0px;}
+
+.dojoxHuePickerPoint {
+    position:absolute;
+    top:0; left:0;
+    width:20px;
+    height:8px;
+    z-index:3; 
+    cursor:move;
+}
+
+.dojoxColorPickerPoint {
+    position:absolute;
+    width:10px; 
+    height:10px;
+    border:0;
+    z-index:3; 
+    cursor:move; 
+}
+
+.dojoxColorPickerPreview {
+    display:block;    
+    width:45px;    
+    height:45px;
+    border:1px solid #333;
+    background-color:#fff; 
+    position:relative;
+    top: 0px;
+    left: 0px; 
+}
+.dojoxColorPickerWebSafePreview {
+    display:block;
+    width:25px; 
+    height:25px; 
+    position:relative;
+    top: 0px;
+    left: 0px; 
+    border:1px solid #333; 
+}
+
+.dojoxColorPickerOptional {
+    position:relative;
+    top: 0px;
+    left: 0px;
+    height: 100%;
+}
+
+.dojoxColorPickerOptional table {
+    border-spacing: 4px;
+}
+
+.dojoxColorPickerPreviewContainer table {
+    border-spacing: 6px 0px;
+}
+
+.dojoxColorPickerOptional input {
+    border:1px solid #a7a7a7;
+    width:25px;
+    padding:1px 3px 1px 3px;
+    line-height:1.1em;
+}
+
+.dojoxColorPickerHex input {
+    width:55px;    
+}
+
+.dojoxUpgradeBar {
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    height:32px;
+    overflow:hidden;
+    z-index:100;
+    background:#f3f2af;
+    box-shadow:0 2px 6px #444;
+    -webkit-box-shadow:0 1px 6px #444;
+    -moz-box-shadow:0 1px 6px #444;
+    font-size:.8em;
+}
+
+.dj_ie .dojoxUpgradeBar {
+    border-bottom:#665F48 2px solid;
+}
+.dojoxUpgradeBarMessage {
+    position:absolute;
+    padding-left:10px;
+    top:50%;
+    margin-top:-.75em;
+    left:5px;
+    width:100%;
+}
+.dojoxUpgradeBarMessage a{
+    margin-left:10px;
+}
+.dojoxUpgradeBarReminderButton {
+    position:absolute;
+    top:25%;
+    margin-right:50px;
+    font-size:11px;
+    text-decoration:underline;
+    text-align:right;
+    cursor:pointer;
+    right:-20px;
+}
+.dj_ie6 .dojoxUpgradeBarReminderButton {
+    margin-top:2px;
+}
+
+.dojoxUpgradeBarCloseIcon {
+    background: url("../../node_modules/dijit/themes/tundra/images/tabClose.png") no-repeat right top;
+    position: absolute;
+    vertical-align: middle;
+    right: 5px;
+    top: 30%;
+    height: 15px;
+    width: 15px;
+    cursor: pointer;
+}
+.dj_ie6 .dojoxUpgradeBarCloseIcon {
+    background : url("../../node_modules/dijit/themes/tundra/images/tabClose.gif") no-repeat right top;
+}
+.dojoxUpgradeBarCloseIcon-hover {
+    background: url("../../node_modules/dijit/themes/tundra/images/tabCloseHover.png") no-repeat right top;
+}
+.dj_ie6 .dojoxUpgradeBarCloseIcon-hover {
+    background : url("../../node_modules/dijit/themes/tundra/images/tabCloseHover.gif") no-repeat right top;
+}
+
+.dojoxTreeMap {
+    background-color: #EBEADB;
+    font-family: Geneva, Arial, Helvetica, sans-serif;
+}
+
+.dojoxTreeMapLeaf {
+    border: 1px solid black;
+    padding: 3px;
+}
+
+.dojoxTreeMapGroup {
+}
+
+.dojoxTreeMapGroupContent {
+}
+
+.dojoxTreeMapHeader {
+    background-color: white;
+    border: 1px solid black;
+}
+
+/* on desktop recent browsers you may prefer to use :hover pseudo-class instead
+   of dojoxTreeMapHovered */
+
+.dojoxTreeMapLeaf.dojoxTreeMapHovered {
+    border-color: white;
+}
+
+.dojoxTreeMapGroup.dojoxTreeMapHovered {
+}
+
+.dojoxTreeMapSelected {
+    border-color: red;
+}
+
+.dojoxTreeMapSelected:before {
+    content: '';
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    border: 3px dashed red;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.dojoxTreeMapGroup.dojoxTreeMapSelected:before {
+    content: '';
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    right: 1px;
+    bottom: 1px;
+    border: 1px solid red;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.dojoxTreeMapSelected:before {
+    content: '';
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    border: 2px dashed white;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.dojoxTreeMapGroup.dojoxTreeMapSelected{
+    border:2px dashed red;
+}
+
+.dj_iequircks .dojoxTreeMapIEHack.dojoxTreeMapSelected,
+.dj_ie7 .dojoxTreeMapIEHack.dojoxTreeMapSelected + div,
+.dj_ie8 .dojoxTreeMapIEHack.dojoxTreeMapSelected + div {
+    border:  1px solid red;
+    z-index: 20;
+}
+
+/* main classes for dojox.widget.Toaster */
+
+.dijitToasterContent {
+	padding:1em;
+	padding-top:0.25em;
+	background:#73c74a;
+}
+
+.dijitToasterMessage{ 
+	color:#fff;
+}
+
+.dijitToasterWarning,
+.dijitToasterError,
+.dijitToasterFatal{
+	font-weight:bold;
+	color:#fff;
+}
+
+.dijitToasterWarning .dijitToasterContent{
+	background:#d4d943;
+} 
+
+.dijitToasterError .dijitToasterContent{
+	background:#c46600;
+}
+
+/* imported from dijit.css */
+ 
+.dijitToasterClip {
+	position: absolute;
+	z-index: 5000;
+	overflow: hidden;
+}
+
+.dijitToasterContainer {
+	display: block;
+	position: absolute;
+	width: 17.5em;
+	margin: 0px;
+	font:0.75em;
+}
+
+button.clippy img {
+    margin:2px 0 0;
+    padding:0px;
+    width:13px;
+    height:16px;
 }

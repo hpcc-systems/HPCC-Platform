@@ -22,6 +22,8 @@
 #include "wsexcept.hpp"
 #include "httpclient.hpp"
 
+#include "rtlformat.hpp"
+
 //for dali communication
 #include "daclient.hpp"
 #include "dalienv.hpp"
@@ -35,6 +37,7 @@
 #include "wuwebview.hpp"
 #include "build-config.h"
 #include "jsmartsock.ipp"
+#include "esdl_monitor.hpp"
 
 #include "loggingagentbase.hpp"
 
@@ -65,91 +68,6 @@ bool trimXPathToParentSDSElement(const char *element, const char * xpath, String
     return false;
 }
 
-IPropertyTree * fetchESDLDefinitionFromDaliById(const char *id)
-{
-    if (!id || !*id)
-        throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, service id is not available");
-
-    DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s ", id);
-
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
-    if (!conn)
-       throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
-
-    conn->close(false); //release lock right away
-
-    IPropertyTree * esdlDefinitions = conn->queryRoot();
-    if (!esdlDefinitions)
-       throw MakeStringException(-1, "Unable to open ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
-
-    //There shouldn't be multiple entries here, but if so, we'll use the first one
-    VStringBuffer xpath("%s[@id='%s'][1]", ESDL_DEF_ENTRY, id);
-    return LINK(esdlDefinitions->getPropTree(xpath));
-}
-
-IPropertyTree * fetchESDLDefinitionFromDali(const char *esdlServiceName, unsigned targetVersion)
-{
-    if (!esdlServiceName || !*esdlServiceName)
-        throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, service name is not available");
-    if (targetVersion == 0 )
-        throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, target version number is invalid: '%s.%d", esdlServiceName, targetVersion);
-
-    DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s.%d ", esdlServiceName, targetVersion);
-
-    StringBuffer id(esdlServiceName);
-    id.toLowerCase().append(".").append(targetVersion);
-
-    return fetchESDLDefinitionFromDaliById(id);
-}
-
-IPropertyTree * fetchESDLBindingFromDali(const char *process, const char *bindingName)
-{
-    Owned<IRemoteConnection> conn;
-    try
-    {
-        conn.set(querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL));
-        if (!conn)
-        {
-            DBGLOG("Unable to connect to ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
-            return NULL;
-        }
-
-        conn->close(false); //release lock right away
-
-        DBGLOG("ESDL Binding: Fetching ESDL Binding from Dali %s[@EspProcess='%s'][@EspBinding='%s'][1]", ESDL_BINDING_ENTRY, process, bindingName);
-
-        IPropertyTree *esdlBindings = conn->queryRoot();
-        if (!esdlBindings)
-        {
-            DBGLOG("Unable to open ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
-            return NULL;
-        }
-
-        //There shouldn't be multiple entries here, but if so, we'll use the first one
-        VStringBuffer xpath("%s[@id='%s.%s'][1]", ESDL_BINDING_ENTRY, process, bindingName);
-
-        if (conn->queryRoot()->hasProp(xpath))
-            return createPTreeFromIPT(conn->queryRoot()->queryPropTree(xpath));
-        else
-            return nullptr;
-
-    }
-    catch (IException *E)
-    {
-        VStringBuffer message("ESDL Binding: Error fetching ESDL Binding %s[@EspProcess='%s'][@EspBinding='%s'][1] from Dali.", ESDL_BINDING_ENTRY, process, bindingName);
-        EXCLOG(E, message);
-        E->Release();
-    }
-    catch(...)
-    {
-        DBGLOG("ESDL Binding: Unknown error encountered while fetching ESDL Binding from Dali %s[@EspProcess='%s'][@EspBinding='%s'][1]", ESDL_BINDING_ENTRY, process, bindingName);
-        if (conn)
-            conn->close(false); //release lock right away
-
-    }
-    return NULL;
-}
-
 IPropertyTree * fetchESDLBindingFromStateFile(const char *process, const char *bindingName, const char * stateFileName)
 {
     try
@@ -158,7 +76,7 @@ IPropertyTree * fetchESDLBindingFromStateFile(const char *process, const char *b
         if (esdlState)
         {
             const char * restoredBindingTS = esdlState->queryProp("@StateSaveTimems");
-            fprintf(stdout, "ESDL State restored from local state store: %s created epoch: %s", bindingName, restoredBindingTS);
+            ESPLOG(LogNormal, "ESDL State restored from local state store: %s created epoch: %s", bindingName, restoredBindingTS);
             return esdlState->getPropTree("EsdlBinding/Binding");
         }
         else
@@ -172,17 +90,6 @@ IPropertyTree * fetchESDLBindingFromStateFile(const char *process, const char *b
     }
 
     return nullptr;
-}
-
-IPropertyTree * fetchESDLBinding(const char *process, const char *bindingName, const char * stateFileName)
-{
-    Owned<IPropertyTree> esdlBinding = fetchESDLBindingFromDali(process, bindingName);
-    if (!esdlBinding)
-    {
-        return fetchESDLBindingFromStateFile(process, bindingName, stateFileName);
-    }
-
-    return esdlBinding.getLink();
 }
 
 void saveState(const char * esdlDefinition, IPropertyTree * esdlBinding, const char * stateFileFullPath)
@@ -215,89 +122,6 @@ void clearState(const char * stateFileFullPath)
 {
     saveState("", NULL, stateFileFullPath);
 }
-/* if the target ESDL binding contains an ESDL service definition matching this espServiceName, load it.
- * Otherwise, load the first definition available, and report it via the loadedServiceName
- */
-bool loadDefinitions(const char * espServiceName, IEsdlDefinition * esdl, IPropertyTree * config, StringBuffer & loadedServiceName, const char * stateFileName)
-{
-    if (!esdl || !config)
-        return false;
-
-    //Loading first ESDL definition encountered, informed that espServiceName is to be treated as arbitrary
-    IPropertyTree * esdlDefinitionConfig = config->queryPropTree("Definition[1]");
-
-    bool stateRestored = false;
-    if (esdlDefinitionConfig)
-    {
-        try
-        {
-            const char * id = esdlDefinitionConfig->queryProp("@id");
-            Owned<IPropertyTree> esdlDefintion = fetchESDLDefinitionFromDaliById(id);
-            if (!esdlDefintion)
-            {
-                DBGLOG("ESDL Binding: Could not load ESDL definition: '%s' from Dali, attempting to load from local state store", id);
-                Owned<IPTree> pt = createPTreeFromXMLFile(stateFileName);
-
-                if (pt)
-                    esdlDefintion.set(pt->queryPropTree("EsdlDefinition"));
-
-                if (!esdlDefintion)
-                    throw MakeStringException(-1, "Could not load ESDL definition: '%s' assigned to esp service name '%s'", id, espServiceName);
-
-                stateRestored = true;
-            }
-
-            StringBuffer esdlXML;
-            toXML(esdlDefintion, esdlXML,0,0);
-
-#ifdef _DEBUG
-            DBGLOG("\nESDL Definition to be loaded:\n%s", esdlXML.str());
-#endif
-
-            esdl->addDefinitionFromXML(esdlXML, id);
-            loadedServiceName.set(esdlDefinitionConfig->queryProp("@name"));
-
-            if (strcmp(loadedServiceName.str(), espServiceName)!=0)
-                DBGLOG("ESDL Binding: ESP service %s now based off of ESDL Service def: %s", espServiceName, loadedServiceName.str());
-
-            if (!stateRestored)
-            {
-                try
-                {
-                    saveState(esdlXML.str(), config, stateFileName);
-                }
-                catch (IException *E)
-                {
-                    StringBuffer message;
-                    message.setf("Error saving DESDL state file for ESP service %s", espServiceName);
-                    // If we can't save the DESDL state for this binding, then tough. Carry on without it. Changes will not survive an unexpected roxie restart
-                    EXCLOG(E, message);
-                    E->Release();
-                }
-                catch (...)
-                {
-                    // If we can't save the DESDL state for this binding, then tough. Carry on without it. Changes will not survive an unexpected roxie restart
-                    DBGLOG("Error saving DESDL state file for ESP service %s", espServiceName);
-                }
-            }
-        }
-        catch (IException * e)
-        {
-            StringBuffer msg;
-            e->errorMessage(msg);
-            DBGLOG("Error while loading ESDL definitions: %s", msg.str());
-            e->Release();
-        }
-    }
-    else
-    {
-        DBGLOG("ESDL Binding: Could not find any ESDL definition while loading ESDL Binding: %s", config->queryProp("@id"));
-        return false;
-    }
-
-    return true;
-}
-
 
 bool EsdlServiceImpl::loadLogggingManager()
 {
@@ -417,6 +241,7 @@ void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &ent
         {
             DBGLOG(E, "DynamicESDL-JavaMethod:");
             javaExceptionMap.setValue(javaScopedClass, E);
+            E->Release();
         }
     }
 }
@@ -447,7 +272,7 @@ void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entr
         Owned<ISmartSocketFactory> sf = createSmartSocketFactory(iplist, true);
 
         connMap.remove(method);
-        connMap.setValue(method, sf.getClear());
+        connMap.setValue(method, sf.get());
     }
     catch(IException* ie)
     {
@@ -462,14 +287,9 @@ void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entr
 
 void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
 {
-    StringBuffer lc(service);
-    StringBuffer xpath;
-    xpath.setf("Definition[@name='%s']/Methods", lc.toLowerCase().str());
-
-    DBGLOG("ESDL Binding: configuring method targets: %s", xpath.str());
-
+    VStringBuffer xpath("Definition[@esdlservice='%s']/Methods", service);
     IPropertyTree *target_cfg = cfg->queryPropTree(xpath.str());
-
+    DBGLOG("ESDL Binding: configuring method targets for esdl service %s", service);
     if (target_cfg)
     {
         m_pServiceMethodTargets.setown(createPTree(ipt_caseInsensitive));
@@ -496,10 +316,11 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
                 configureJavaMethod(method, iter->query(), classPath);
             else
                 configureUrlMethod(method, iter->query());
+            DBGLOG("Method %s configured", method);
         }
     }
     else
-        DBGLOG("ESDL Binding: While configuring method targets: Could not find definition: %s", xpath.str());
+        DBGLOG("ESDL Binding: While configuring method targets: method configuration not found for %s.", service);
 }
 
 #define ROXIEREQ_FLAGS (ESDL_TRANS_START_AT_ROOT | ESDL_TRANS_ROW_OUT | ESDL_TRANS_TRIM | ESDL_TRANS_OUTPUT_XMLTAG)
@@ -611,7 +432,13 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 
     if(stricmp(mthName, "echotest")==0 || mthdef.hasProp("EchoTest"))
     {
-        handleEchoTest(mthdef.queryName(),req,out,flags);
+        handleEchoTest(mthdef.queryName(),req,out,context.getResponseFormat());
+        return;
+    }
+    else if
+    (stricmp(mthName, "ping")==0 || mthdef.hasProp("Ping"))
+    {
+        handlePingRequest(mthdef.queryName(),out,context.getResponseFormat());
         return;
     }
     else
@@ -924,14 +751,22 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
 void EsdlServiceImpl::handleEchoTest(const char *mthName,
                                      IPropertyTree *req,
                                      StringBuffer &out,
-                                     unsigned flags)
+                                     ESPSerializationFormat format)
 {
     const char* valueIn = req->queryProp("ValueIn");
 
-    if (flags & ESDL_BINDING_RESPONSE_JSON)
-        out.appendf("\n\t\"%sResponse\":\n{\t\t\"ValueOut\": \"%s\"\n\t\t}\n\t", mthName, valueIn && *valueIn ? valueIn : "");
+    if (format == ESPSerializationJSON)
+        out.appendf("{\n\t\"%sResponse\":\n{\t\t\"ValueOut\": \"%s\"\n\t\t}\n}", mthName, valueIn && *valueIn ? valueIn : "");
     else
         out.appendf("<%sResponse><ValueOut>%s</ValueOut></%sResponse>", mthName, valueIn && *valueIn ? valueIn : "", mthName);
+}
+
+void EsdlServiceImpl::handlePingRequest(const char *mthName,StringBuffer &out,ESPSerializationFormat format)
+{
+    if (format == ESPSerializationJSON)
+        out.appendf("{\"%sPingResponse\": {}}", mthName);
+    else
+        out.appendf("<%sResponse></%sResponse>", mthName, mthName);
 }
 
 void EsdlServiceImpl::generateTargetURL(IEspContext & context,
@@ -1088,16 +923,28 @@ void EsdlServiceImpl::getTargetResponseFile(IEspContext & context,
 
 EsdlServiceImpl::~EsdlServiceImpl()
 {
+    for (auto& item : connMap)
+    {
+        ISmartSocketFactory* sf = static_cast<ISmartSocketFactory*>(item.getValue());
+        if(sf)
+            sf->stop();
+    }
 }
 
 EsdlBindingImpl::EsdlBindingImpl()
 {
+        m_pESDLService = nullptr;
+        m_isAttached = true;
 }
 
 EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const char *process) : CHttpSoapBinding(cfg, binding, process)
 {
+    m_pCentralStore.setown(createEsdlCentralStore());
     m_bindingName.set(binding);
     m_processName.set(process);
+
+    m_pESDLService = nullptr;
+    m_isAttached = true;
 
     try
     {
@@ -1117,25 +964,26 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
 
     try
     {
-
-        ensureSDSPath(ESDL_DEFS_ROOT_PATH);
-        ensureSDSPath(ESDL_BINDINGS_ROOT_PATH);
-
-        m_esdlBndCfg.set(fetchESDLBinding(process, binding, m_esdlStateFilesLocation));
+        m_esdlBndCfg.setown(fetchESDLBinding(process, binding, m_esdlStateFilesLocation));
 
         if (!m_esdlBndCfg.get())
             DBGLOG("ESDL Binding: Could not fetch ESDL binding %s for ESP Process %s", binding, process);
+#ifdef _DEBUG
+        else
+        {
+            StringBuffer cfgtext;
+            toXML(m_esdlBndCfg.get(), cfgtext);
+            DBGLOG("ESDL binding configuration:\n%s", cfgtext.str());
+        }
+#endif
 
-        //Subscribe to Dali anyway
-        DBGLOG("ESDL Binding %s is subscribing to all /ESDL/Bindings/Binding dali changes", binding);
-        //Since it seems we cannot subscribe to a specific /ESDL/Bindings/Binding, all bindings have to subscribe to the /ESDL/Bindings branch
-        m_pBindingSubscription.clear();
-        m_pBindingSubscription.setown( new CESDLBindingSubscription(this));
-
-        DBGLOG("ESDL Binding %s is subscribing to all /ESDL/Bindings/Definition dali changes", binding);
-        //Since it seems we cannot subscribe to a specific /ESDL/Definitions/Definition, all bindings have to subscribe to the /ESDL/Definitions branch
-        m_pDefinitionSubscription.clear();
-        m_pDefinitionSubscription.setown( new CESDLDefinitionSubscription(this));
+        if (m_esdlBndCfg.get())
+        {
+            m_bindingId.set(m_esdlBndCfg->queryProp("@id"));
+            IEsdlMonitor* monitor = queryEsdlMonitor();
+            monitor->registerBinding(m_bindingId.get(), this);
+            DBGLOG("ESDL binding %s properly registered", m_bindingId.str());
+       }
 
         StringBuffer xpath;
         xpath.appendf("Software/EspProcess[@name=\"%s\"]/EspBinding[@name=\"%s\"]", process, binding);
@@ -1159,19 +1007,117 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
     }
 }
 
-EsdlBindingImpl::~EsdlBindingImpl()
+IPropertyTree* EsdlBindingImpl::fetchESDLBinding(const char *process, const char *bindingName, const char * stateFileName)
 {
-    if(m_pBindingSubscription != nullptr)
-        m_pBindingSubscription->unsubscribe();
-    if(m_pDefinitionSubscription != nullptr)
-        m_pDefinitionSubscription->unsubscribe();
+    if(isAttached())
+    {
+        Owned<IPropertyTree> esdlBinding = m_pCentralStore->fetchBinding(process, bindingName);
+        return esdlBinding.getClear();
+    }
+    else
+    {
+        return fetchESDLBindingFromStateFile(process, bindingName, stateFileName);
+    }
+}
+
+/* if the target ESDL binding contains an ESDL service definition matching this espServiceName, load it.
+ * Otherwise, load the first definition available, and report it via the loadedServiceName
+ */
+bool EsdlBindingImpl::loadDefinitions(const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * config, StringBuffer & loadedServiceName, const char * stateFileName)
+{
+    if (!esdl || !config)
+        return false;
+
+    //Loading first ESDL definition encountered, informed that espServiceName is to be treated as arbitrary
+    IPropertyTree * esdlDefinitionConfig = config->queryPropTree("Definition[1]");
+
+    bool stateRestored = false;
+    if (esdlDefinitionConfig)
+    {
+        try
+        {
+            const char * id = esdlDefinitionConfig->queryProp("@id");
+            PROGLOG("Loading esdl definition for ID %s", id);
+            loadedServiceName.set(esdlDefinitionConfig->queryProp("@esdlservice"));
+            IEsdlShare* esdlshare = queryEsdlShare();
+            Linked<IEsdlDefinition> shareddef = esdlshare->lookup(id);
+            if (shareddef)
+            {
+                PROGLOG("Found esdl definition %s in shared cache, use it directly.", id);
+                esdl.set(shareddef);
+                return true;
+            }
+            else
+                PROGLOG("Esdl definition %s not found in shared cache, loading it from store", id);
+            StringBuffer esdlXML;
+            m_pCentralStore->fetchDefinition(id, esdlXML);
+            if (!esdlXML.length())
+            {
+                Owned<IPropertyTree> esdlDefintion;
+                PROGLOG("ESDL Binding: Could not load ESDL definition: '%s' from Dali, attempting to load from local state store", id);
+                Owned<IPTree> pt = createPTreeFromXMLFile(stateFileName);
+
+                if (pt)
+                    esdlDefintion.set(pt->queryPropTree("EsdlDefinition"));
+
+                if (!esdlDefintion)
+                    throw MakeStringException(-1, "Could not load ESDL definition: '%s' assigned to esp service name '%s'", id, espServiceName);
+
+                stateRestored = true;
+                toXML(esdlDefintion, esdlXML);
+            }
+
+#ifdef _DEBUG
+            DBGLOG("\nESDL Definition to be loaded:\n%s", esdlXML.str());
+#endif
+            esdl->addDefinitionFromXML(esdlXML, id);
+
+            if (strcmp(loadedServiceName.str(), espServiceName)!=0)
+                DBGLOG("ESDL Binding: ESP service %s now based off of ESDL Service def: %s", espServiceName, loadedServiceName.str());
+
+            if (!stateRestored)
+            {
+                try
+                {
+                    saveState(esdlXML.str(), config, stateFileName);
+                }
+                catch (IException *E)
+                {
+                    StringBuffer message;
+                    message.setf("Error saving DESDL state file for ESP service %s", espServiceName);
+                    // If we can't save the DESDL state for this binding, then tough. Carry on without it. Changes will not survive an unexpected roxie restart
+                    EXCLOG(E, message);
+                    E->Release();
+                }
+                catch (...)
+                {
+                    // If we can't save the DESDL state for this binding, then tough. Carry on without it. Changes will not survive an unexpected roxie restart
+                    DBGLOG("Error saving DESDL state file for ESP service %s", espServiceName);
+                }
+            }
+            esdlshare->add(id, esdl.get());
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            DBGLOG("Error while loading ESDL definitions: %s", msg.str());
+            e->Release();
+        }
+    }
+    else
+    {
+        DBGLOG("ESDL Binding: Could not find any ESDL definition while loading ESDL Binding: %s", config->queryProp("@id"));
+        return false;
+    }
+
+    return true;
 }
 
 void EsdlBindingImpl::saveDESDLState()
 {
     try
     {
-        //rodrigo is this the best way to fetch the ESDL def for a given service???
         Owned<IEsdlDefObjectIterator> it = m_esdl->getDependencies(m_espServiceName.str(), "", 0, NULL, 0);
 
         StringBuffer serviceESXDL;
@@ -1195,19 +1141,24 @@ void EsdlBindingImpl::saveDESDLState()
     }
 }
 
-bool EsdlBindingImpl::reloadDefinitionsFromDali(IPropertyTree * esdlBndCng, StringBuffer & loadedname)
+bool EsdlBindingImpl::reloadDefinitionsFromCentralStore(IPropertyTree * esdlBndCng, StringBuffer & loadedname)
 {
+    if (esdlBndCng == nullptr)
+        esdlBndCng = m_esdlBndCfg.get();
     if ( m_pESDLService )
     {
         Owned<IEsdlDefinition> tempESDLDef = createNewEsdlDefinition();
 
-        if(!loadDefinitions(m_espServiceName.get(), tempESDLDef.get(), esdlBndCng, loadedname, m_esdlStateFilesLocation.str()))
+        if (!loadDefinitions(m_espServiceName.get(), tempESDLDef, esdlBndCng, loadedname, m_esdlStateFilesLocation.str()))
+        {
+            DBGLOG("Failed to reload ESDL definitions");
             return false;
+        }
 
         DBGLOG("Definitions reloaded, will update ESDL definition object");
         CriticalBlock b(configurationLoadCritSec);
 
-        m_esdl.set(tempESDLDef.getClear());
+        m_esdl.setown(tempESDLDef.getClear());
         m_pESDLService->setEsdlTransformer(createEsdlXFormer(m_esdl));
 
         return true;
@@ -1217,56 +1168,63 @@ bool EsdlBindingImpl::reloadDefinitionsFromDali(IPropertyTree * esdlBndCng, Stri
     return false;
 }
 
-
-bool EsdlBindingImpl::reloadBindingFromDali(const char *binding, const char *process)
+bool EsdlBindingImpl::reloadBindingFromCentralStore(const char* bindingId)
 {
-    if (strcmp(m_bindingName.get(), binding)==0)
+    if(!bindingId || !*bindingId)
+        return false;
+    if(m_bindingId.length() == 0 || strcmp(m_bindingId.str(), bindingId) != 0)
+        m_bindingId.set(bindingId);
+    try
     {
-        try
+        DBGLOG("Reloading binding %s...", bindingId);
+        if ( m_pESDLService)
         {
-            DBGLOG("Reloading binding %s.%s...", m_processName.get(), m_bindingName.get());
-            if ( m_pESDLService)
+            Owned<IPropertyTree> tempEsdlBndCfg;
+            DBGLOG("Fetching ESDL binding information from dali based on ESP binding (%s)", bindingId);
+            tempEsdlBndCfg.setown(m_pCentralStore->fetchBinding(bindingId));
+
+            if (!tempEsdlBndCfg.get())
             {
-                Owned<IPropertyTree> tempEsdlBndCfg;
-                DBGLOG("Fetching ESDL binding information from dali based on ESP binding (%s.%s)", m_processName.get(), m_bindingName.get());
-                tempEsdlBndCfg.set(fetchESDLBindingFromDali(process, binding));
-
-                if (!tempEsdlBndCfg.get())
-                {
-                    clearDESDLState();
-                    clearState(m_esdlStateFilesLocation.str());
-                    return false;
-                }
-
-                StringBuffer loadedname;
-                if (!reloadDefinitionsFromDali(tempEsdlBndCfg.get(), loadedname))
-                    return false;
-
-                IEsdlDefService *srvdef = m_esdl->queryService(loadedname);
-
-                if (srvdef)
-                    initEsdlServiceInfo(*srvdef);
-
-                m_pESDLService->m_espServiceType.set(loadedname);
-                m_pESDLService->configureTargets(tempEsdlBndCfg, loadedname);
-                m_esdlBndCfg.set(tempEsdlBndCfg.getClear());
+                clearDESDLState();
+                clearState(m_esdlStateFilesLocation.str());
+                return false;
             }
-            else
-                DBGLOG("Could not reload binding %s because service implementation object not available.", m_bindingName.get());
 
+            StringBuffer loadedname;
+            if (!reloadDefinitionsFromCentralStore(tempEsdlBndCfg.get(), loadedname))
+                return false;
+
+            IEsdlDefService *srvdef = m_esdl->queryService(loadedname);
+
+            if (srvdef)
+                initEsdlServiceInfo(*srvdef);
+
+            m_pESDLService->m_espServiceType.set(loadedname);
+            m_pESDLService->configureTargets(tempEsdlBndCfg, loadedname);
+            m_esdlBndCfg.setown(tempEsdlBndCfg.getClear());
         }
-        catch(IException* e)
-        {
-           StringBuffer msg;
-           e->errorMessage(msg);
-           DBGLOG("Exception caught in EsdlBindingImpl::EsdlBindingImpl: %s", msg.str());
-        }
-        catch (...)
-        {
-            DBGLOG("Exception caught in EsdlBindingImpl::EsdlBindingImpl: Could Not load Binding %s information from Dali!", binding);
-        }
+        else
+            DBGLOG("Could not reload binding %s because service implementation object not available.", bindingId);
+
+    }
+    catch(IException* e)
+    {
+       StringBuffer msg;
+       e->errorMessage(msg);
+       DBGLOG("Exception caught in EsdlBindingImpl::EsdlBindingImpl: %s", msg.str());
+       e->Release();
+    }
+    catch (...)
+    {
+        DBGLOG("Exception caught in EsdlBindingImpl::EsdlBindingImpl: Could Not load Binding %s information from Dali!", bindingId);
     }
     return true;
+}
+
+void EsdlBindingImpl::clearBindingState()
+{
+    clearDESDLState();
+    clearState(m_esdlStateFilesLocation.str());
 }
 
 void EsdlBindingImpl::addService(const char * name,
@@ -1282,15 +1240,15 @@ void EsdlBindingImpl::addService(const char * name,
         m_pESDLService = dynamic_cast<EsdlServiceImpl*>(&service);
 
     m_espServiceName.set(name);
-    DBGLOG("ESDL Binding: Adding service '%s' on host %s and port %d on %s binding.", name, host, port, m_bindingName.get());
+    DBGLOG("ESDL Binding: Adding service '%s' on %s port %d on %s binding.", name, (host&&*host)?host:"", port, m_bindingName.get());
     if ( m_pESDLService)
     {
-        if(m_esdlBndCfg)
+        if (m_esdlBndCfg)
         {
             if (m_esdl)
             {
                 StringBuffer loadedservicename;
-                if(!loadDefinitions(name, m_esdl.get(), m_esdlBndCfg, loadedservicename, m_esdlStateFilesLocation.str()))
+                if (!loadDefinitions(name, m_esdl, m_esdlBndCfg, loadedservicename, m_esdlStateFilesLocation.str()))
                 {
                     DBGLOG("ESDL Binding: Error adding ESP service '%s': Could not fetch ESDL definition", name);
                     return;
@@ -1446,7 +1404,11 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                     m_pESDLService->handleServiceRequest(context, *srvdef, *mthdef, tgtcfg, tgtctx, ns.str(), schemaLocation.str(), req_pt.get(), out, logdata, 0);
 
                     response->setContent(out.str());
-                    response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
+
+                    if (context.getResponseFormat() == ESPSerializationJSON)
+                        response->setContentType(HTTP_TYPE_APPLICATION_JSON_UTF8);
+                    else
+                      response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
                     response->setStatus(HTTP_STATUS_OK);
                     response->send();
 
@@ -1884,7 +1846,7 @@ int EsdlBindingImpl::onGet(CHttpRequest* request, CHttpResponse* response)
         me->append(*MakeStringExceptionDirect(-1, "Unknown Exception"));
     }
 
-    response->handleExceptions(getXslProcessor(), me, "DynamicESDL", "", StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt").str());
+    response->handleExceptions(getXslProcessor(), me, "DynamicESDL", "", StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt").str(), false);
     return 0;
 }
 
@@ -2165,6 +2127,10 @@ int EsdlBindingImpl::onGetXForm(IEspContext &context,
                 break;
             }
         }
+        const char* authMethod = context.getAuthenticationMethod();
+        if (authMethod && !strieq(authMethod, "none") && ((context.getDomainAuthType() == AuthPerSessionOnly) || (context.getDomainAuthType() == AuthTypeMixed)))
+            xform->setParameter("showLogout", "1");
+
         xform->transform(page);
         response->setContentType("text/html");
         response->setContent(page.str());
@@ -2527,34 +2493,6 @@ void EsdlBindingImpl::splitURLList(const char* urlList, StringBuffer& protocol,S
     options.append(finger-lastDelimiter, lastDelimiter);
 }
 
-bool EsdlBindingImpl::getRoxieConfig(StringBuffer & queryName, StringBuffer & url, StringBuffer & username, StringBuffer & password,const char *method)
-{
-    try
-    {
-        StringBuffer xpath;
-        xpath.appendf("ESDL/Methods/Method[@name='%s']", method);
-
-        IPropertyTree *srvinfo =  m_pESDLService->m_pServiceConfig->queryPropTree(xpath.str());
-
-        if (srvinfo)
-        {
-            url.clear().append(srvinfo->queryProp("@url"));
-            queryName.clear().append(srvinfo->queryProp("@queryname"));
-        }
-
-        if (url.length() <= 0 || queryName.length() <= 0)
-        {
-            WARNLOG(-1, "ROXIETEST: Creating ROXIE request: url or query name not found!");
-            return false;
-        }
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    return true;
-}
 void EsdlBindingImpl::getRequestContent(IEspContext &context, StringBuffer & req, CHttpRequest* request, const char * servicename, const char * methodname, const char *ns, unsigned flags)
 {
     if ( m_pESDLService)
@@ -2928,102 +2866,6 @@ bool EsdlBindingImpl::makeURL( StringBuffer& url, IPropertyTree& cfg )
     }
 
     return result;
-}
-
-void EsdlBindingImpl::CESDLBindingSubscription::notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-{
-    if (!thisBinding)
-        return;
-
-    if (id != sub_id)
-    {
-        DBGLOG("ESDL Binding %s.%s (Dali subscription (%" I64F "d)) received notification for unrecognized dali subscription id: (%" I64F "d)", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) sub_id, (__int64) id);
-        return;
-    }
-
-    DBGLOG("ESDL binding change reported to %s.%s binding: (%" I64F "d) of %s - flags = %d", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) id, xpath, flags);
-
-    StringBuffer parentElementXPath;
-    //path is reported with sibbling number annotation ie /ESDL/Bindings/Binding[2]/...
-    if(!trimXPathToParentSDSElement("Binding[", xpath, parentElementXPath))
-        return;
-
-    StringBuffer bindingName;
-    StringBuffer processName;
-    Owned<IRemoteConnection> conn = querySDS().connect(parentElementXPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
-    if (!conn)
-    {
-        //Can't find this path, is this a delete?
-        if (flags == SDSNotify_Deleted)
-        {
-            bindingName.set(thisBinding->m_bindingName);
-            processName.set(thisBinding->m_processName);
-        }
-        else
-            return;
-    }
-    else
-    {
-
-        IPropertyTree * bindingSubscription = conn->queryRoot();
-        if (!bindingSubscription)
-            return;
-
-        conn->close(false); //release lock right away
-
-        bindingName = bindingSubscription->queryProp("@espbinding");
-        if (bindingName.length() == 0)
-            return;
-
-        processName = bindingSubscription->queryProp("@espprocess");
-        if (processName.length() == 0)
-            return;
-    }
-
-    DBGLOG("Requesting reload of %s.%s binding...", processName.str(), bindingName.str() );
-    CriticalBlock b(daliSubscriptionCritSec);
-    thisBinding->reloadBindingFromDali(bindingName.str(), processName.str());
-}
-
-void EsdlBindingImpl::CESDLDefinitionSubscription::notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-{
-    if (!thisBinding)
-        return;
-
-    if (id != sub_id)
-    {
-        DBGLOG("ESDL Binding %s.%s (Dali subscription (%" I64F "d)) received notification for unrecognized dali subscription id: (%" I64F "d)", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) sub_id, (__int64) id);
-        return;
-    }
-
-    DBGLOG("ESDL definition change reported to %s.%s binding: (%" I64F "d) of %s - flags = %d", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) id, xpath, flags);
-
-    StringBuffer parentElementXPath;
-    //path is reported with sibbling number annotation ie /ESDL/Definitions/Definition[2]/...
-    if(!trimXPathToParentSDSElement("Definition[", xpath, parentElementXPath))
-        return;
-
-    Owned<IRemoteConnection> conn = querySDS().connect(parentElementXPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
-    if (!conn)
-        return;
-
-    IPropertyTree * definitionSubscription = conn->queryRoot();
-    if (!definitionSubscription)
-        return;
-
-    const char * definitionId = definitionSubscription->queryProp("@id");
-    if (!definitionId || !*definitionId)
-        return;
-
-    CriticalBlock b(daliSubscriptionCritSec);
-    //we reload all definitions used by this binding because the
-    //ESDL object intermingles all nodes of all definitions used.
-    if (thisBinding->usesESDLDefinition(definitionId))
-    {
-        DBGLOG("Requesting reload of ESDL definitions for %s.%s binding...", thisBinding->m_processName.get(), thisBinding->m_bindingName.get() );
-        StringBuffer loaded;
-        thisBinding->reloadDefinitionsFromDali( thisBinding->m_bndCfg.get(), loaded);
-    }
 }
 
 bool EsdlBindingImpl::usesESDLDefinition(const char * name, int version)

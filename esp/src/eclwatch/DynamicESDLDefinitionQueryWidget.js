@@ -21,10 +21,10 @@ define([
     "dojo/_base/array",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsESDLConfig",
-    "hpcc/ESPUtil",
+    "src/WsESDLConfig",
+    "src/ESPUtil",
     "hpcc/DynamicESDLDefinitionDetailsWidget",
-    "hpcc/Utility"
+    "src/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
                 GridDetailsWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget, Utility) {
@@ -84,7 +84,9 @@ define([
          refreshGrid: function (args) {
             var context = this;
             WsESDLConfig.ListESDLDefinitions({
-                request: {}
+                request: {
+                    ver_: "1.3"
+                }
             }).then(function (response) {
                 var results = [];
                 if (lang.exists("ListESDLDefinitionsResponse.Definitions.Definition", response)) {

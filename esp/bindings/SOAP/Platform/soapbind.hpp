@@ -157,20 +157,23 @@ public:
     void setReadTimeOutSecs(unsigned timeout) override {readTimeoutSecs_ = timeout;}
     unsigned getReadTimeOutSecs() override {return readTimeoutSecs_;}
 
-    void setUrl(const char *url){url_.clear().append(url);} 
+    void setUrl(const char *url){url_.clear().append(url);}
     const char * getUrl(){return url_.str();}
 
     void setProxyAddress(const char *proxy){proxy_.clear().append(proxy);}  
     const char * getProxyAddress(){return proxy_.str();}
 
-    void setUserId(const char *userid){userid_.clear().append(userid);} 
-    const char * getUserId(){return userid_.str();}
+    //unorthodox naming to avoid name collisions with generated code
+    void soap_setUserId(const char *userid){userid_.clear().append(userid);}
+    const char * soap_getUserId(){return userid_.str();}
 
-    void setPassword(const char *password){password_.clear().append(password);} 
-    const char * getPassword(){return password_.str();}
+    //unorthodox naming to avoid name collisions with generated code
+    void soap_setPassword(const char *password){password_.clear().append(password);}
+    const char * soap_getPassword(){return password_.str();}
 
-    void setRealm(const char *realm){realm_.clear().append(realm);} 
-    const char * getRealm(){return realm_.str();}
+    //unorthodox naming to avoid name collisions with generated code
+    void soap_setRealm(const char *realm){realm_.clear().append(realm);}
+    const char * soap_getRealm(){return realm_.str();}
 
     void post(const char *proxy, const char* url, IRpcResponseBinding& response, const char *action=NULL);
 
@@ -217,6 +220,27 @@ public:
     IEspContainer* queryContainer() { return m_container; }
     virtual int HandleSoapRequest(CHttpRequest* request, CHttpResponse* response);
 
+    virtual bool subscribeBindingToDali()
+    {
+        return this->getService()->subscribeServiceToDali();
+    }
+
+    virtual bool unsubscribeBindingFromDali()
+    {
+        return this->getService()->unsubscribeServiceFromDali();
+    }
+
+    virtual bool detachBindingFromDali()
+    {
+        return this->getService()->detachServiceFromDali();
+    }
+
+    virtual bool attachBindingToDali()
+    {
+        return this->getService()->attachServiceToDali();
+    }
+
+    virtual bool canDetachFromDali() {return true;}
 };
 
 void SetHTTPErrorStatus(int ErrorCode,CHttpResponse* response);

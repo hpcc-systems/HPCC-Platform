@@ -40,13 +40,15 @@ private:
     StringBuffer    m_Peer;
     SecUserStatus   m_status;
     Owned<IProperties> m_parameters;
+    unsigned        m_sessionToken;
+    StringBuffer    m_signature;
 
     CriticalSection crit;
 public:
     IMPLEMENT_IINTERFACE
 
     CSecureUser(const char *name, const char *pw) : 
-        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown)
+        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown), m_sessionToken(0)
     {
     }
 
@@ -212,10 +214,26 @@ public:
         return m_pw.str();
     }
 
-    bool addToken(unsigned type, void * data, unsigned length)
+    void setSessionToken(unsigned token)
     {
-        return false;  //not supported yet
+        m_sessionToken = token;
     }
+
+    unsigned getSessionToken()
+    {
+        return m_sessionToken;
+    }
+
+    void setSignature(const char * signature)
+    {
+        m_signature.clear().append(signature);
+    }
+
+    const char * getSignature()
+    {
+        return m_signature.str();
+    }
+
     virtual unsigned getUserID()
     {
         return m_userID;
@@ -239,6 +257,11 @@ public:
         destination.setFqdn(getFqdn());
         destination.setPeer(getPeer());
         destination.credentials().setPassword(credentials().getPassword());
+        destination.credentials().setSessionToken(credentials().getSessionToken());
+        destination.credentials().setSignature(credentials().getSignature());
+        CDateTime exp;
+        credentials().getPasswordExpiration(exp);
+        destination.credentials().setPasswordExpiration(exp);
         CDateTime tmpTime;
         destination.setPasswordExpiration(getPasswordExpiration(tmpTime));
         destination.setStatus(getStatus());
@@ -254,7 +277,6 @@ public:
         }
 
 
-        //addToken is not currently implemented....
 //      DBGLOG("Copied name %s to %s",getName(),destination.getName());
     }
 

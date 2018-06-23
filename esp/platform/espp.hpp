@@ -63,7 +63,10 @@ private:
     Mutex abortMutex;
     bool m_SEHMappingEnabled;
     CEspConfig* m_config;
-    
+    CriticalSection m_BindingCritSect;
+    unsigned countCacheClients = 0;
+    MapStringToMyClass<IEspCache> cacheClientMap;
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -104,10 +107,13 @@ public:
                 bool daliOk;
                 {
                     synchronized sync(abortMutex);
-                    daliOk=config.checkDali();
+                    if (!config.isDetachedFromDali())
+                        daliOk=config.checkDali();
+                    //else
+                    //    daliOk=true;
                 }
-                if (daliOk)
-                    m_waitForExit.wait(1000);
+                if (config.isDetachedFromDali() || daliOk)
+                    m_waitForExit.wait(1000); //if detached, should we wait longer?
                 else
                 {
                     DBGLOG("Exiting ESP -- Lost DALI connection!");
@@ -188,6 +194,7 @@ public:
 
         LOG(MCprogress, "binding %s, on %s:%d", name, strIP.str(), port);
 
+        CriticalBlock cb(m_BindingCritSect);
         ISocket **socketp = m_srvSockets.getValue(port);
         ISocket *socket=(socketp!=NULL) ? *socketp : NULL;
 
@@ -229,6 +236,48 @@ public:
         }
     }
 
+    virtual void removeBinding(unsigned short port, IEspRpcBinding & bind)
+    {
+        IEspProtocol* prot = dynamic_cast<IEspProtocol*>(bind.queryListener());
+        if (prot)
+        {
+            CriticalBlock cb(m_BindingCritSect);
+            int left = prot->removeBindingMap(port, &bind);
+            if (left == 0)
+            {
+                DBGLOG("No more bindings on port %d, so freeing up the port.",port);
+                ISocket **socketp = m_srvSockets.getValue(port);
+                ISocket *socket=(socketp!=nullptr) ? *socketp : nullptr;
+                if (socket != nullptr)
+                {
+                    remove(socket);
+                    m_srvSockets.remove(port);
+                    socket->close();
+                }
+            }
+        }
+    }
+
+    virtual IPropertyTree* queryProcConfig()
+    {
+        return m_config->queryProcConfig();
+    }
+
+    virtual IEspProtocol* queryProtocol(const char* name)
+    {
+        return m_config->queryProtocol(name);
+    }
+
+    virtual IEspRpcBinding* queryBinding(const char* name)
+    {
+        return m_config->queryBinding(name);
+    }
+
+    virtual const char* getProcName()
+    {
+        return m_config->getProcName();
+    }
+
 //ISocketHandler
     void start()
     {
@@ -256,8 +305,72 @@ public:
         m_SEHMappingEnabled = mappingEnabled;
     }
     virtual void sendSnmpMessage(const char* msg) { throwUnexpected(); }
-};
 
+    virtual bool addCacheClient(const char *id, const char *cacheInitString)
+    {
+        Owned<IEspCache> cacheClient = createESPCache(cacheInitString);
+        if (!cacheClient)
+            return false;
+        cacheClientMap.setValue(id, cacheClient);
+        countCacheClients++;
+        return true;
+    }
+    virtual bool hasCacheClient()
+    {
+        return countCacheClients > 0;
+    }
+    virtual const void *queryCacheClient(const char* id)
+    {
+        return countCacheClients > 1 ? cacheClientMap.getValue(id) : nullptr;
+    }
+    virtual void clearCacheByGroupID(const char *ids, StringArray& errorMsgs)
+    {
+        StringArray idList;
+        idList.appendListUniq(ids, ",");
+        ForEachItemIn(i, idList)
+        {
+            const char *id = idList.item(i);
+            IEspCache* cacheClient = (IEspCache*) queryCacheClient(id);
+            if (cacheClient)
+                cacheClient->flush(0);
+            else
+            {
+                VStringBuffer msg("Failed to get ESPCache client %s.", id);
+                errorMsgs.append(msg);
+            }
+        }
+    }
+
+    virtual bool reSubscribeESPToDali()
+    {
+        return m_config->reSubscribeESPToDali();
+    }
+
+    virtual bool unsubscribeESPFromDali()
+    {
+        return m_config->unsubscribeESPFromDali();
+    }
+
+    virtual bool detachESPFromDali(bool force)
+    {
+        return m_config->detachESPFromDali(force);
+    }
+
+    virtual bool attachESPToDali()
+    {
+        return m_config->attachESPToDali();
+    }
+
+    virtual bool isAttachedToDali()
+    {
+      return !m_config->isDetachedFromDali();
+    }
+
+    virtual bool isSubscribedToDali()
+    {
+        return m_config->isSubscribedToDali();
+    }
+};
 
 class CEspAbortHandler : public CInterface,
    implements IAbortHandler

@@ -359,11 +359,10 @@ void CLockedEnvironment::rollback()
 class CSdsSubscription : implements ISDSSubscription, public CInterface
 {
 public:
-    CSdsSubscription()
+    CSdsSubscription(IEnvironmentFactory &_factory) : factory(_factory)
     {
         m_constEnvUpdated = false;
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        sub_id = envFactory->subscribe(this);
+        sub_id = factory.subscribe(this);
     }
     virtual ~CSdsSubscription()
     {
@@ -380,8 +379,7 @@ public:
         synchronized block(m_mutexEnv);
         if (sub_id)
         {
-            Owned<IEnvironmentFactory> m_envFactory = getEnvironmentFactory();
-            m_envFactory->unsubscribe(sub_id);
+            factory.unsubscribe(sub_id);
             sub_id = 0;
         }
     }
@@ -404,8 +402,7 @@ public:
         synchronized block(m_mutexEnv);
         if (m_constEnvUpdated)
         {
-            Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-            Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+            Owned<IConstEnvironment> constEnv = factory.openEnvironment();
             constEnv->clearCache();
             m_constEnvUpdated = false;
         }
@@ -415,6 +412,7 @@ private:
     SubscriptionId sub_id;
     Mutex  m_mutexEnv;
     bool   m_constEnvUpdated;
+    IEnvironmentFactory &factory;
 };
 
 //==========================================================================================
@@ -450,6 +448,8 @@ public:
             if (conn)
                 cache.setown(new CLocalEnvironment(conn));
         }
+        if (!cache)
+            throw MakeStringException(0, "Failed to get environment information");
         return cache.getLink();
     }
 
@@ -525,7 +525,7 @@ public:
     virtual void validateCache()
     {
         if (!subscription)
-            subscription.setown( new CSdsSubscription() );
+            subscription.setown( new CSdsSubscription(*this) );
 
         subscription->handleEnvironmentChange();
     }
@@ -1662,7 +1662,7 @@ bool CLocalEnvironment::isDropZoneRestrictionEnabled() const
 
 CConstMachineInfoIterator::CConstMachineInfoIterator()
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     constEnv.setown((CLocalEnvironment *)factory->openEnvironment());
     maxIndex = constEnv->getNumberOfMachines();
 }
@@ -1703,7 +1703,7 @@ unsigned CConstMachineInfoIterator::count() const
 
 CConstDropZoneServerInfoIterator::CConstDropZoneServerInfoIterator(const IConstDropZoneInfo * dropZone)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     constEnv.setown((CLocalEnvironment *)factory->openEnvironment());
 
     // For backward compatibility
@@ -1784,7 +1784,7 @@ unsigned CConstDropZoneServerInfoIterator::count() const
 
 CConstDropZoneInfoIterator::CConstDropZoneInfoIterator()
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     constEnv.setown((CLocalEnvironment *)factory->openEnvironment());
     maxIndex = constEnv->getNumberOfDropZones();
 }
@@ -1829,7 +1829,7 @@ unsigned CConstDropZoneInfoIterator::count() const
 
 static CriticalSection getEnvSect;
 
-extern ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory()
+extern ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory(bool update)
 {
     CriticalBlock block(getEnvSect);
     if (!factory)
@@ -1837,6 +1837,8 @@ extern ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory()
         factory = new CEnvironmentFactory();
         addShutdownHook(*factory);
     }
+    if (update)
+        factory->validateCache();
     return LINK(factory);
 }
 

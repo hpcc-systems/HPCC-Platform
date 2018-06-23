@@ -39,16 +39,16 @@ public:
     StringBuffer(String & value);
     StringBuffer(const char *value);
     StringBuffer(StringBuffer && value);
-    StringBuffer(unsigned len, const char *value);
+    StringBuffer(size_t len, const char *value);
     StringBuffer(const StringBuffer & value);
     StringBuffer(bool useInternal);
     StringBuffer(char value);
     ~StringBuffer();
 
-    inline size32_t length() const                      { return curLen; }
+    inline size32_t length() const                      { return (size32_t)curLen; }
     inline bool     isEmpty() const                     { return (curLen == 0); }
-    void            setLength(unsigned len);
-    inline void     ensureCapacity(unsigned max)        { if (maxLen <= curLen + max) _realloc(curLen + max); }
+    void            setLength(size_t len);
+    inline void     ensureCapacity(size_t max)        { if (maxLen <= curLen + max) _realloc(curLen + max); }
     size32_t        lengthUtf8() const;
 
     StringBuffer &  append(char value);
@@ -57,7 +57,7 @@ public:
     StringBuffer &  append(const unsigned char * value);
     StringBuffer &  append(const IAtom * value);
     StringBuffer &  append(size_t len, const char * value);
-    StringBuffer &  append(const char * value, int offset, int len);
+    StringBuffer &  append(const char * value, size_t offset, size_t len);
     StringBuffer &  append(double value);
     StringBuffer &  append(float value);
     StringBuffer &  append(int value);
@@ -67,33 +67,34 @@ public:
     StringBuffer &  append(const String & value);
     StringBuffer &  append(const IStringVal & value);
     StringBuffer &  append(const IStringVal * value);
-    StringBuffer &  appendN(size32_t count, char fill);
+    StringBuffer &  appendN(size_t count, char fill);
     StringBuffer &  appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
-    StringBuffer &  appendLower(unsigned len, const char * value);
+    StringBuffer &  appendLower(size_t len, const char * value);
+    StringBuffer &  appendLower(const char * value) { return appendLower(strlen(value), value); }
 
     StringBuffer &  setf(const char* format, ...) __attribute__((format(printf,2,3)));
-    StringBuffer &  limited_valist_appendf(unsigned szLimit, const char *format, va_list args) __attribute__((format(printf,3,0)));
+    StringBuffer &  limited_valist_appendf(size_t szLimit, const char *format, va_list args) __attribute__((format(printf,3,0)));
     inline StringBuffer &valist_appendf(const char *format, va_list args) __attribute__((format(printf,2,0))) { return limited_valist_appendf(0, format, args); }
     StringBuffer &  appendhex(unsigned char value, char lower);
-    inline char     charAt(size32_t pos) { return buffer[pos]; }
+    inline char     charAt(size_t pos) { return buffer[pos]; }
     inline StringBuffer & clear() { curLen = 0; return *this; }
     void            kill();
-    void            getChars(int srcBegin, int srcEnd, char * target) const;
-    StringBuffer &  insert(int offset, char value);
-    StringBuffer &  insert(int offset, unsigned char value);
-    StringBuffer &  insert(int offset, const char * value);
-    StringBuffer &  insert(int offset, const unsigned char * value);
-    StringBuffer &  insert(int offset, double value);
-    StringBuffer &  insert(int offset, float value);
-    StringBuffer &  insert(int offset, int value);
-    StringBuffer &  insert(int offset, unsigned value);
-    StringBuffer &  insert(int offset, __int64 value);
-    StringBuffer &  insert(int offset, const String & value);
-    StringBuffer &  insert(int offset, const StringBuffer & value);
-    StringBuffer &  insert(int offset, const IStringVal & value);
-    StringBuffer &  insert(int offset, const IStringVal * value);
+    void            getChars(size_t srcBegin, size_t srcEnd, char * target) const;
+    StringBuffer &  insert(size_t offset, char value);
+    StringBuffer &  insert(size_t offset, unsigned char value);
+    StringBuffer &  insert(size_t offset, const char * value);
+    StringBuffer &  insert(size_t offset, const unsigned char * value);
+    StringBuffer &  insert(size_t offset, double value);
+    StringBuffer &  insert(size_t offset, float value);
+    StringBuffer &  insert(size_t offset, int value);
+    StringBuffer &  insert(size_t offset, unsigned value);
+    StringBuffer &  insert(size_t offset, __int64 value);
+    StringBuffer &  insert(size_t offset, const String & value);
+    StringBuffer &  insert(size_t offset, const StringBuffer & value);
+    StringBuffer &  insert(size_t offset, const IStringVal & value);
+    StringBuffer &  insert(size_t offset, const IStringVal * value);
     StringBuffer &  reverse();
-    void            setCharAt(unsigned offset, char value);
+    void            setCharAt(size_t offset, char value);
 
     //Non-standard functions:
     MemoryBuffer &  deserialize(MemoryBuffer & in);
@@ -103,25 +104,26 @@ public:
 
     StringBuffer &  append(const StringBuffer & value);
     StringBuffer &  newline();
-    StringBuffer &  pad(unsigned count);
-    StringBuffer &  padTo(unsigned count);
+    StringBuffer &  pad(size_t count);
+    StringBuffer &  padTo(size_t count);
     char *          detach();
     StringBuffer &  clip();
     StringBuffer &  trim();
     StringBuffer &  trimLeft();
     inline StringBuffer &  trimRight() {  return clip(); }
-    StringBuffer &  remove(unsigned start, unsigned len);
-    const char *   str() const;
+    StringBuffer &  remove(size_t start, size_t len);
+    const char *    str() const;
     StringBuffer &  toLowerCase();
     StringBuffer &  toUpperCase();
     StringBuffer &  replace(char oldChar, char newChar);
     StringBuffer &  replaceString(const char* oldStr, const char* newStr);
-    char *          reserve(size32_t size);
-    char *          reserveTruncate(size32_t size);
+    StringBuffer &  replaceStringNoCase(const char* oldStr, const char* newStr);
+    char *          reserve(size_t size);
+    char *          reserveTruncate(size_t size);
     void            setown(StringBuffer &other);
     StringBuffer &  stripChar(char oldChar);
     void            swapWith(StringBuffer &other);
-    void setBuffer(size32_t buffLen, char * newBuff, size32_t strLen);
+    void setBuffer(size_t buffLen, char * newBuff, size_t strLen);
 
     inline StringBuffer& set(const char* value) { return clear().append(value); }
     inline operator const char* () const { return str(); }
@@ -134,13 +136,14 @@ public:
         return clear().append(value.str());
     }
     StringBuffer& operator=(StringBuffer&& value);
+    explicit operator bool() const { return (length() != 0); }
 
     StringBuffer &  appendlong(long value);
     StringBuffer &  appendulong(unsigned long value);
 private: // long depreciated
     StringBuffer &  append(long value);
     StringBuffer &  append(unsigned long value);
-    StringBuffer &  insert(int offset, long value);
+    StringBuffer &  insert(size_t offset, long value);
 
 protected:
     inline bool useInternal() const { return buffer == internalBuffer; }
@@ -157,14 +160,14 @@ protected:
         maxLen = 0;
     }
     void freeBuffer();
-    void _insert(unsigned offset, size32_t insertLen);
-    void _realloc(size32_t newLen);
+    void _insert(size_t offset, size_t insertLen);
+    void _realloc(size_t newLen);
 
 private:    
     char                internalBuffer[InternalBufferSize];
     char *              buffer;
-    size32_t            curLen;
-    size32_t            maxLen;
+    size_t              curLen;
+    size_t              maxLen;
 };
 
 // add a variable-parameter constructor to StringBuffer.
@@ -255,6 +258,7 @@ public:
     StringAttr(const StringAttr & src);
     StringAttr(StringAttr && src);
     StringAttr& operator = (StringAttr && from);
+    StringAttr& operator = (const StringAttr & from);
     inline ~StringAttr(void) { free(text); }
     
     inline operator const char * () const       { return text; }
@@ -275,9 +279,6 @@ public:
     
 private:
     char *       text;
-    
-private:
-    StringAttr &operator = (const StringAttr & from);
 };
 
 
@@ -319,7 +320,7 @@ public:
     virtual unsigned length() const { return buffer.length(); };
 
 private:
-    size32_t initsize;
+    size_t initsize;
     StringBuffer & buffer;
 };
 
@@ -400,7 +401,7 @@ extern jlib_decl void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsign
 extern jlib_decl int utf8CharLen(unsigned char ch);
 extern jlib_decl int utf8CharLen(const unsigned char *ch, unsigned maxsize = (unsigned)-1);
 
-extern jlib_decl StringBuffer &replaceString(StringBuffer & result, size32_t lenSource, const char *source, size32_t lenOldStr, const char* oldStr, size32_t lenNewStr, const char* newStr);
+extern jlib_decl StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr);
 
 inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=false, unsigned len=(unsigned)-1)
 {
@@ -553,6 +554,7 @@ inline StringBuffer& operator << (StringBuffer& s, const TValue& value)
     return s.append(value);
 }
 
+extern jlib_decl bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg);
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);
 extern jlib_decl bool strToBool(const char * text);
 inline const char *boolToStr(bool b) { return b ? "true" : "false"; }
@@ -563,10 +565,10 @@ extern jlib_decl StringBuffer & ncnameEscape(char const * in, StringBuffer & out
 extern jlib_decl StringBuffer & ncnameUnescape(char const * in, StringBuffer & out);
 extern jlib_decl StringBuffer & elideString(StringBuffer & s, unsigned maxLength);
 
-extern jlib_decl bool startsWith(const char* src, const char* dst);
+extern jlib_decl bool startsWith(const char* src, const char* prefix);
 extern jlib_decl bool endsWith(const char* src, const char* dst);
 
-extern jlib_decl bool startsWithIgnoreCase(const char* src, const char* dst);
+extern jlib_decl bool startsWithIgnoreCase(const char* src, const char* prefix);
 extern jlib_decl bool endsWithIgnoreCase(const char* src, const char* dst);
 
 inline bool strieq(const char* s, const char* t) { return stricmp(s,t)==0; }
@@ -581,6 +583,8 @@ inline bool hasPrefix(const char * text, const char * prefix, bool caseSensitive
         return strnicmp(text, prefix, strlen(prefix)) == 0;
 }
 
+// Search for a string in a null terminated array of const char * strings
+extern jlib_decl unsigned matchString(const char * search, const char * const * strings);
 
 extern jlib_decl char *j_strtok_r(char *str, const char *delim, char **saveptr);
 extern jlib_decl int j_memicmp (const void *s1, const void *s2, size32_t len); 

@@ -37,6 +37,20 @@
                 return false;
           }
 
+          function logout()
+          {
+            var logoutRequest = new XMLHttpRequest();
+            logoutRequest.onreadystatechange = function()
+            { 
+              if (logoutRequest.readyState == 4 && logoutRequest.status == 200)
+                parent.location = '/esp/files/Login.html';
+              else
+                console.log("Logout failed: " + logoutRequest.status);
+            }
+            logoutRequest.open( "GET", 'logout', true );            
+            logoutRequest.send( null );
+          }
+
           function copy_url(inner)
           {
             var ploc = top.location;
@@ -129,6 +143,12 @@
                     <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
                     <img border="0" src="files_/img/topurl.png" title="No Frames" width="13" height="15" style="cursor:pointer"
                     onclick="top.location.href=top.frames['main'].location.href"/>
+                    <xsl:if test="LogOut = '1'">
+                        <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
+                        <a onclick="return logout();">
+                            Logout
+                        </a>
+                    </xsl:if>
                     <noscript>
                       <span style="color:red;">
                         <small>JavaScript needs to be enabled for the Enterprise Services Platform to work correctly.</small>

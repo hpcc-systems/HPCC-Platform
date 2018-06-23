@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_max_count_var">
+  <title>max_count_var</title>
+
+  <para><indexterm>
+      <primary>max_count_var</primary>
+    </indexterm>The max_count_var attribute is used to specify a variable (an
+  ECL Attribute) containing the value of the expected max items in a dataset
+  (ESParray).</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>[max_count_var("iesp.Constants.JD.MaxRecords")] ESParray &lt;ESPstruct MYRecord, Record&gt; Records;   </programlisting>
+
+  <para>The ECL developer defines the constant iesp.Constants.JD.MaxRecords
+  rather than hard coding the max count value in the ESDL. </para>
+
+  <para>See Also: <link linkend="ESParray">ESParray</link>, <link
+  linkend="ESDL_Attributes_max_count">max_count</link></para>
+</sect1>

@@ -22,6 +22,7 @@
 #include "jfile.hpp"
 #include "deftype.hpp"
 #include "rmtfile.hpp"
+#include "libbase58.h"
 
 /*
  * This is the main unittest driver for HPCC. From here,
@@ -169,14 +170,15 @@ int main(int argc, char* argv[])
     else
         removeLog();
 
-    if (!includeNames.length())
-        includeNames.append("*");
-
-    if (!includeAll)
+    if (!includeAll && includeNames.empty())
     {
         excludeNames.append("*stress*");
         excludeNames.append("*timing*");
+        excludeNames.append("*slow*");
     }
+
+    if (!includeNames.length())
+        includeNames.append("*");
 
     if (useDefaultLocations)
     {
@@ -282,9 +284,9 @@ class InternalStatisticsTest : public CppUnit::TestFixture
 CPPUNIT_TEST_SUITE_REGISTRATION( InternalStatisticsTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( InternalStatisticsTest, "StatisticsTest" );
 
-class PtreeThreadingTest : public CppUnit::TestFixture
+class PtreeThreadingStressTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( PtreeThreadingTest  );
+    CPPUNIT_TEST_SUITE( PtreeThreadingStressTest  );
         CPPUNIT_TEST(testContention);
     CPPUNIT_TEST_SUITE_END();
 
@@ -298,7 +300,7 @@ class PtreeThreadingTest : public CppUnit::TestFixture
         enum ContentionMode { max_contention, some_contention, min_contention, some_control, min_control };
         class casyncfor: public CAsyncFor
         {
-            volatile int v;
+            volatile int v = 0;
             void donothing()
             {
                 v++;
@@ -547,8 +549,8 @@ class PtreeThreadingTest : public CppUnit::TestFixture
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( PtreeThreadingTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( PtreeThreadingTest, "PtreeThreadingTest" );
+CPPUNIT_TEST_SUITE_REGISTRATION( PtreeThreadingStressTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( PtreeThreadingStressTest, "PtreeThreadingStressTest" );
 
 //MORE: This can't be included in jlib because of the dll dependency
 class StringBufferTest : public CppUnit::TestFixture
@@ -568,5 +570,108 @@ class StringBufferTest : public CppUnit::TestFixture
 CPPUNIT_TEST_SUITE_REGISTRATION( StringBufferTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( StringBufferTest, "StringBufferTest" );
 
+StringBuffer &mbToBase58(StringBuffer &s, const MemoryBuffer &data)
+{
+    size_t b58Length = data.length() * 2 + 1;
+
+    ASSERT(b58enc(s.clear().reserve(b58Length), &b58Length, data.toByteArray(), data.length()));
+
+    s.setLength(b58Length);
+    return s;
+}
+
+StringBuffer &base64ToBase58(StringBuffer &s, const char *b64)
+{
+    MemoryBuffer mb;
+    JBASE64_Decode(b64, mb);
+    return mbToBase58(s, mb);
+}
+
+StringBuffer &textToBase58(StringBuffer &s, const char *text)
+{
+    MemoryBuffer mb;
+    mb.append((size_t)strlen(text), text);
+    return mbToBase58(s, mb);
+}
+
+MemoryBuffer &base58ToMb(MemoryBuffer &data, const char *b58)
+{
+    size_t len = strlen(b58);
+    size_t offset = len;
+    b58tobin(data.clear().reserveTruncate(len), &len, b58, 0);
+    offset -= len;
+    if (offset) //if we ever start using b58tobin we should fix this weird behavior
+    {
+        MemoryBuffer weird;
+        weird.append(len, data.toByteArray()+offset);
+        data.swapWith(weird);
+    }
+    return data;
+}
+
+StringBuffer &base58ToBase64(StringBuffer &s, const char *b58)
+{
+    MemoryBuffer mb;
+    base58ToMb(mb, b58);
+    JBASE64_Encode(mb.toByteArray(), mb.length(), s.clear());
+    return s;
+}
+
+StringBuffer &base58ToText(StringBuffer &s, const char *b58)
+{
+    MemoryBuffer mb;
+    base58ToMb(mb, b58);
+    return s.clear().append(mb.length(), mb.toByteArray());
+}
+
+class Base58Test : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( Base58Test  );
+        CPPUNIT_TEST(testEncodeDecode);
+    CPPUNIT_TEST_SUITE_END();
+
+    void doTestEncodeDecodeText(const char *text, const char *b58)
+    {
+        StringBuffer s;
+        ASSERT(streq(textToBase58(s, text), b58));
+        ASSERT(streq(base58ToText(s, b58), text));
+    }
+    void doTestEncodeDecodeBase64(const char *b64, const char *b58)
+    {
+        StringBuffer s;
+        ASSERT(streq(base64ToBase58(s, b64), b58));
+        ASSERT(streq(base58ToBase64(s, b58), b64));
+    }
+    void testEncodeDecode()
+    {
+        StringBuffer s;
+
+        //short string
+        doTestEncodeDecodeText("1", "r");
+
+        //text string
+        doTestEncodeDecodeText("Fifty-eight is the sum of the first seven prime numbers.", "2ubdTkzo5vaWL4FKQGro88zp8v6Q5EftVBq2fbZsWCDRzQxGDb1heKFsMReJNhsRsK6TfvrgqVeRB");
+
+        //hex 005A1FC5DD9E6F03819FCA94A2D89669469667F9A074655946
+        doTestEncodeDecodeBase64("AFofxd2ebwOBn8qUotiWaUaWZ/mgdGVZRg==", "19DXstMaV43WpYg4ceREiiTv2UntmoiA9j");
+
+        //hex FEEFAEF022FA
+        doTestEncodeDecodeBase64("/u+u8CL6", "3Bx9Y4pUR");
+
+        //hex FFFEEFAEF022FA
+        doTestEncodeDecodeBase64("//7vrvAi+g==", "AhfV5sjWb3");
+
+        //This input causes the loop iteration counter to go negative
+        //hex 00CEF022FA
+        doTestEncodeDecodeBase64("AM7wIvo=", "16Ho7Hs");
+
+        //empty input
+        MemoryBuffer mb;
+        ASSERT(streq(mbToBase58(s, mb), ""));
+}
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( Base58Test );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( Base58Test, "Base58Test" );
 
 #endif // _USE_CPPUNIT

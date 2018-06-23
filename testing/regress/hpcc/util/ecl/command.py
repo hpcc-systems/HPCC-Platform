@@ -21,10 +21,11 @@ import logging
 import os
 import sys
 import inspect
+import traceback
 
 from ...common.shell import Shell
 from ...common.error import Error
-from ...util.util import queryWuid, getConfig
+from ...util.util import queryWuid, getConfig, clearOSCache
 
 import xml.etree.ElementTree as ET
 
@@ -96,6 +97,9 @@ class ECLcmd(Shell):
         state = ""
         results=''
         try:
+            if eclfile.flushDiskCache():
+                clearOSCache()
+                pass
             #print "runCmd:", args
             results, stderr = self.__ECLcmd()(*args)
             logging.debug("%3d. results:'%s'", eclfile.getTaskId(),  results)
@@ -140,6 +144,11 @@ class ECLcmd(Shell):
             data = str(err)
             logging.error("------" + err + "------")
             raise err
+        except:
+            err = Error("6007")
+            logging.critical(err)
+            logging.critical(traceback.format_exc())
+            raise err
         finally:
             res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
             logging.debug("%3d. in finally -> 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), res['wuid'], res['state'], data)
@@ -181,7 +190,7 @@ class ECLcmd(Shell):
                         eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
                         eclfile.diff += data
                     test = True
-                elif (res['state'] == 'failed') and (('error' in data) or ('exception' in data.lower())):
+                elif (res['state'] == 'failed'):
                     eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
                     eclfile.diff += repr(data)
                     test = False

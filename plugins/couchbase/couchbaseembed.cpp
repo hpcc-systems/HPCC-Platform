@@ -172,7 +172,7 @@ namespace couchbaseembed
 
     void bindStringParam(unsigned len, const char *value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             size32_t utf8chars;
@@ -188,7 +188,7 @@ namespace couchbaseembed
 
     void bindBoolParam(bool value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             StringBuffer serialized;
@@ -205,7 +205,7 @@ namespace couchbaseembed
 
     void bindDataParam(unsigned len, const void *value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             size32_t bytes;
@@ -222,7 +222,7 @@ namespace couchbaseembed
 
     void bindIntParam(__int64 value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             StringBuffer serialized;
@@ -239,7 +239,7 @@ namespace couchbaseembed
 
     void bindUIntParam(unsigned __int64 value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             StringBuffer serialized;
@@ -256,7 +256,7 @@ namespace couchbaseembed
 
     void bindRealParam(double value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             StringBuffer serialized;
@@ -272,7 +272,7 @@ namespace couchbaseembed
 
     void bindUnicodeParam(unsigned chars, const UChar *value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             size32_t utf8chars;
@@ -363,7 +363,7 @@ namespace couchbaseembed
     unsigned CouchbaseRecordBinder::checkNextParam(const RtlFieldInfo * field)
     {
        if (logctx.queryTraceLevel() > 4)
-           logctx.CTXLOG("Binding %s to %d", str(field->name), thisParam);
+           logctx.CTXLOG("Binding %s to %d", field->name, thisParam);
        return thisParam++;
     }
 
@@ -546,8 +546,7 @@ namespace couchbaseembed
                     // use a small loop to retry connections if necessary
                     unsigned int connectAttempt = 0;
                     unsigned int MAX_ATTEMPTS = 10;
-                    // coverity[DC.WEAK_CRYPTO]
-                    useconds_t SLEEP_TIME = 100 + (rand() % 200); // Add jitter to sleep time
+                    useconds_t SLEEP_TIME = 100 + (fastRand() % 200); // Add jitter to sleep time
 
                     while (true)
                     {
@@ -936,7 +935,7 @@ namespace couchbaseembed
         return typeInfo->build(rowBuilder, 0, &dummyField, couchbaseRowBuilder);
     }
 
-    void CouchbaseEmbedFunctionContext::bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    void CouchbaseEmbedFunctionContext::bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val)
     {
         CouchbaseRecordBinder binder(logctx, metaVal.queryTypeInfo(), m_pQcmd, m_nextParam);
         binder.processRow(val);
@@ -1409,7 +1408,6 @@ namespace couchbaseembed
         {
             failx("nextField: Field name or xpath missing");
         }
-
         StringBuffer fullXPath;
 
         if (!m_pathStack.empty() && m_pathStack.back().nodeType == CPNTSet && strncmp(xpath.str(), "<set element>", 13) == 0)
@@ -1452,7 +1450,7 @@ namespace couchbaseembed
         }
         else
         {
-            outXPath.append(str(field->name));
+            outXPath.append(field->name);
         }
     }
 
@@ -1495,12 +1493,12 @@ namespace couchbaseembed
     class CouchbaseEmbedContext : public CInterfaceOf<IEmbedContext>
     {
     public:
-        virtual IEmbedFunctionContext * createFunctionContext(unsigned flags, const char *options)
+        virtual IEmbedFunctionContext * createFunctionContext(unsigned flags, const char *options) override
         {
-            return createFunctionContextEx(NULL, flags, options);
+            return createFunctionContextEx(nullptr, nullptr, flags, options);
         }
 
-        virtual IEmbedFunctionContext * createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+        virtual IEmbedFunctionContext * createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
         {
             if (flags & EFimport)
             {
@@ -1512,7 +1510,7 @@ namespace couchbaseembed
                 return new CouchbaseEmbedFunctionContext(ctx ? ctx->queryContextLogger() : queryDummyContextLogger(), options, flags);
         }
 
-        virtual IEmbedServiceContext * createServiceContext(const char *service, unsigned flags, const char *options)
+        virtual IEmbedServiceContext * createServiceContext(const char *service, unsigned flags, const char *options) override
         {
             throwUnexpected();
             return nullptr;

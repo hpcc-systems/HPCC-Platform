@@ -140,7 +140,14 @@
                         <tr>
                         <td colspan="2">
                             <xsl:text disable-output-escaping="yes">&amp;nbsp;&amp;nbsp;</xsl:text>
+                            <xsl:choose>
+                            <xsl:when test="@isBound=1">
+                            <font size="-2" color="gray">Empty DESDL Service</font>
+                            </xsl:when>
+                            <xsl:otherwise>
                             <font size="-2" color="gray">Unbound DESDL Service</font>
+                            </xsl:otherwise>
+                            </xsl:choose>
                         </td>
                         </tr>
                     </table>

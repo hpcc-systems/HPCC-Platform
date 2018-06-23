@@ -82,7 +82,7 @@ interface IRoxieContextLogger : extends IContextLogger
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const = 0;
     virtual void CTXLOGl(LogItem *) const = 0;
     virtual bool isBlind() const = 0;
-    virtual const CRuntimeStatisticCollection &queryStats() const = 0;
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const = 0;
 };
 
 //===================================================================================

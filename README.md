@@ -4,9 +4,9 @@ HPCC Systems offers an enterprise ready, open source supercomputing platform to 
 
 # Getting Started
 
-* [Learn about HPCC](http://hpccsystems.com/download/getting-started)
-* [Download](http://hpccsystems.com/download/free-community-edition)
-* [Installation and Running](http://hpccsystems.com/download/docs/installing-running-hpcc-platform)
+* [Learn about HPCC](https://hpccsystems.com/about#Platform)
+* [Download](https://hpccsystems.com/download)
+* [Installation and Running](https://hpccsystems.com/training/documentation/installation-and-administration)
 * [Build from Source](https://github.com/hpcc-systems/HPCC-Platform/wiki/Building-HPCC)
 
 # Architecture

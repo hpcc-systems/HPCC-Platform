@@ -26,7 +26,7 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
     "hpcc/ECLSourceWidget",
-    "hpcc/WsPackageMaps",
+    "src/WsPackageMaps",
 
     "dojo/text!../templates/PackageMapValidateWidget.html",
 

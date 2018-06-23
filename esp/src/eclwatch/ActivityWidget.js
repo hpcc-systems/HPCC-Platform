@@ -20,6 +20,7 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
+    "dojo/dom-attr",
 
     "dijit/registry",
     "dijit/form/Button",
@@ -32,15 +33,16 @@ define([
     "dgrid/tree",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPRequest",
-    "hpcc/ESPActivity",
+    "src/ESPRequest",
+    "src/ESPActivity",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil"
+    "src/ESPUtil",
+    "src/Utility",
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domAttr,
                 registry, Button, ToggleButton, ToolbarSeparator, ContentPane, Tooltip,
                 selector, tree,
-                GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil) {
+                GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil, Utility) {
     return declare("ActivityWidget", [GridDetailsWidget], {
 
         i18n: nlsHPCC,
@@ -51,6 +53,11 @@ define([
         _onAutoRefresh: function (event) {
             this.activity.disableMonitor(!this.autoRefreshButton.get("checked"));
             this.createStackControllerTooltip(this.id + "AutoRefresh", this.i18n.AutoRefresh + ": " + this.autoRefreshButton.get("checked"));
+            if (this.autoRefreshButton.get("checked")) {
+                domAttr.set(this.autoRefreshButton, "iconClass", "iconAutoRefreshTrue");
+            } else {
+                domAttr.set(this.autoRefreshButton, "iconClass", "iconAutoRefresh");
+            }
         },
 
         _onPause: function (event, params) {
@@ -380,16 +387,16 @@ define([
                     }),
                     Priority: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("priority.png", context.i18n.Priority);
+                            node.innerHTML = Utility.getImageHTML("priority.png", context.i18n.Priority);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (Priority) {
                             switch (Priority) {
                                 case "high":
-                                    return dojoConfig.getImageHTML("priority_high.png");
+                                    return Utility.getImageHTML("priority_high.png");
                                 case "low":
-                                    return dojoConfig.getImageHTML("priority_low.png");
+                                    return Utility.getImageHTML("priority_low.png");
                             }
                             return "";
                         }
@@ -533,27 +540,6 @@ define([
                 });
             }
             return null;
-        },
-
-        loadRunning: function (response) {
-            var items = lang.getObject("ActivityResponse.Running", false, response)
-            if (items) {
-                var context = this;
-                arrayUtil.forEach(items, function (item, idx) {
-                    context.store.add({
-                        id: "ActivityRunning" + idx,
-                        ClusterName: item.ClusterName,
-                        Wuid: item.Wuid,
-                        Owner: item.Owner,
-                        Jobname: item.Owner,
-                        Summary: item.Name + " (" + prefix + ")",
-                        _type: "LogicalFile",
-                        _name: item.Name
-                    });
-                });
-                return items.length;
-            }
-            return 0;
         },
 
         refreshGrid: function (args) {

@@ -14,3 +14,4 @@
 #    limitations under the License.
 ################################################################################
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/platform.h DESTINATION componentfiles/cl/include COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/rtlconst.hpp DESTINATION componentfiles/cl/include COMPONENT Runtime )

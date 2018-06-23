@@ -34,6 +34,7 @@
 #include "espcfg.ipp"
 #include "xslprocessor.hpp" 
 #include "espcontext.hpp"
+#include "mplog.hpp"
 
 #include <dalienv.hpp>
 
@@ -111,6 +112,134 @@ StringBuffer &CVSBuildToEspVersion(char const * tag, StringBuffer & out)
     return out;
 }
 
+int CSessionCleaner::run()
+{
+    try
+    {
+        PROGLOG("CSessionCleaner Thread started.");
+
+        VStringBuffer xpath("%s*", PathSessionSession);
+        int checkSessionTimeoutMillSeconds = checkSessionTimeoutSeconds * 60;
+        while(!stopping)
+        {
+            if (!m_isDetached)
+            {
+                Owned<IRemoteConnection> conn = querySDS().connect(espSessionSDSPath.get(), myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+                if (!conn)
+                    throw MakeStringException(-1, "Failed to connect to %s.", PathSessionRoot);
+
+                CDateTime now;
+                now.setNow();
+                time_t timeNow = now.getSimple();
+
+                Owned<IPropertyTreeIterator> iter1 = conn->queryRoot()->getElements(PathSessionApplication);
+                ForEach(*iter1)
+                {
+                    ICopyArrayOf<IPropertyTree> toRemove;
+                    Owned<IPropertyTreeIterator> iter2 = iter1->query().getElements(xpath.str());
+                    ForEach(*iter2)
+                    {
+                        IPropertyTree& item = iter2->query();
+                        if (timeNow >= item.getPropInt64(PropSessionTimeoutAt, 0))
+                            toRemove.append(item);
+                    }
+
+                    ForEachItemIn(i, toRemove)
+                    {
+                        iter1->query().removeTree(&toRemove.item(i));
+                    }
+                }
+            }
+            sem.wait(checkSessionTimeoutMillSeconds);
+        }
+    }
+    catch(IException *e)
+    {
+        StringBuffer msg;
+        ERRLOG("CSessionCleaner::run() Exception %d:%s", e->errorCode(), e->errorMessage(msg).str());
+        e->Release();
+    }
+    catch(...)
+    {
+        ERRLOG("Unknown CSessionCleaner::run() Exception");
+    }
+    return 0;
+}
+
+void CEspConfig::ensureSDSSessionDomains()
+{
+    bool hasAuthDomainSettings = false;
+    bool hasSessionAuth = false;
+    bool hasDefaultSessionDomain = false;
+    int  serverSessionTimeoutSeconds = 120 * ESP_SESSION_TIMEOUT;
+    Owned<IPropertyTree> proc_cfg = getProcessConfig(m_envpt, m_process.str());
+    Owned<IPropertyTreeIterator> it = proc_cfg->getElements("AuthDomains/AuthDomain");
+    ForEach(*it)
+    {
+        hasAuthDomainSettings = true;
+        IPropertyTree& authDomain = it->query();
+        const char* authType = authDomain.queryProp("@authType");
+        if (isEmptyString(authType) || (!strieq(authType, "AuthPerSessionOnly") && !strieq(authType, "AuthTypeMixed")))
+            continue;
+
+        hasSessionAuth = true;
+
+        int clientSessionTimeoutSeconds;
+        int clientSessionTimeoutMinutes = authDomain.getPropInt("@clientSessionTimeoutMinutes", ESP_SESSION_TIMEOUT);
+        if (clientSessionTimeoutMinutes < 0)
+            clientSessionTimeoutSeconds = ESP_SESSION_NEVER_TIMEOUT;
+        else
+            clientSessionTimeoutSeconds = clientSessionTimeoutMinutes * 60;
+
+        //The serverSessionTimeoutMinutes is used to clean the sessions by ESP server after the sessions have been timed out on ESP clients.
+        //Considering possible network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.
+        int serverSessionTimeoutMinutes = authDomain.getPropInt("@serverSessionTimeoutMinutes", 0);
+        if ((serverSessionTimeoutMinutes < 0) || (clientSessionTimeoutMinutes < 0))
+            serverSessionTimeoutSeconds = ESP_SESSION_NEVER_TIMEOUT;
+        else
+            serverSessionTimeoutSeconds = serverSessionTimeoutMinutes * 60;
+        if (serverSessionTimeoutSeconds < clientSessionTimeoutSeconds)
+            serverSessionTimeoutSeconds = 2 * clientSessionTimeoutSeconds;
+
+        const char* authDomainName = authDomain.queryProp("@domainName");
+        if (isEmptyString(authDomainName) || strieq(authDomainName, "default"))
+        {
+            if (hasDefaultSessionDomain)
+                throw MakeStringException(-1, ">1 AuthDomains are not named.");
+
+            hasDefaultSessionDomain = true;
+        }
+    }
+    //Ensure SDS Session tree if there is session auth or there is no AuthDomain setting (ex. old environment.xml)
+    if (hasSessionAuth || !hasAuthDomainSettings)
+    {
+        Owned<IRemoteConnection> conn = querySDS().connect(PathSessionRoot, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SESSION_SDS_LOCK_TIMEOUT);
+        if (!conn)
+            throw MakeStringException(-1, "Failed to connect to %s.", PathSessionRoot);
+
+        ensureESPSessionInTree(conn->queryRoot(), m_process.str());
+
+        if (serverSessionTimeoutSeconds != ESP_SESSION_NEVER_TIMEOUT)
+        {
+            VStringBuffer espSessionSDSPath("%s/%s[@name=\"%s\"]", PathSessionRoot, PathSessionProcess, m_process.str());
+            m_sessionCleaner.setown(new CSessionCleaner(espSessionSDSPath.str(), proc_cfg->getPropInt("@checkSessionTimeoutSeconds",
+                ESP_CHECK_SESSION_TIMEOUT)));
+            m_sessionCleaner->start();
+        }
+    }
+}
+
+void CEspConfig::ensureESPSessionInTree(IPropertyTree* sessionRoot, const char* procName)
+{
+    VStringBuffer xpath("%s[@name=\"%s\"]", PathSessionProcess, procName);
+    IPropertyTree* procSessionTree = sessionRoot->queryBranch(xpath.str());
+    if (!procSessionTree)
+    {
+        IPropertyTree* processSessionTree = sessionRoot->addPropTree(PathSessionProcess);
+        processSessionTree->setProp("@name", procName);
+    }
+}
+
 
 
 CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree* procpt, bool isDali)
@@ -118,10 +247,8 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     hsami_=0;
     serverstatus=NULL;
     useDali=false;
-    
     if(inputs)
         m_inputs.setown(inputs);
-
     if(!envpt || !procpt)
         return;
 
@@ -129,7 +256,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     m_cfg.setown(procpt);
 
     loadBuiltIns();   
-   
+
     // load options
     const char* level = m_cfg->queryProp("@logLevel");
     m_options.logLevel = level ? atoi(level) : LogMin;
@@ -148,21 +275,96 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     {
         DBGLOG("ESP process name [%s]", m_process.str());
 
-        IPropertyTreeIterator *pt_iter = NULL;
+        setIsDetachedFromDali(false);
+        setIsSubscribedToDali(true);
+        try
+        {
+            StringBuffer procDirectory;
+            m_cfg->getProp("@directory", procDirectory);
+            if (!procDirectory.isEmpty())
+            {
+                m_daliAttachStateFileName.setf("%s%c%s-AttachState.xml",procDirectory.str(), PATHSEPCHAR, m_process.str());
+
+                try
+                {
+                    Owned<IPTree> espProcAttachState = createPTreeFromXMLFile(m_daliAttachStateFileName);
+                    if (espProcAttachState)
+                    {
+                        setIsDetachedFromDali(!(espProcAttachState->getPropBool("@attached", true)));
+                        setIsSubscribedToDali(espProcAttachState->getPropBool("@subscribed", true));
+                    }
+                    else
+                    {
+                        ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+                    }
+                }
+                catch (...)
+                {
+                    ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+                }
+
+                saveAttachState();
+            }
+            else
+                ESPLOG(LogMin, "ESP Process [%s] configuration is missing '@directory' attribute, could not read AttachState", m_process.str());
+        }
+        catch (...)
+        {
+           ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+        }
+
+        if (isDetachedFromDali())
+            WARNLOG("ESP Process [%s] loading in DALI DETACHED state - Some ESP services do not load in detached state!",  m_process.str());
+
         StringBuffer daliservers;
         if (m_cfg->getProp("@daliServers", daliservers))
-            initDali(daliservers.str());
+            initDali(daliservers.str()); //won't init if detached
 
 #ifndef _DEBUG
         startPerformanceMonitor(m_cfg->getPropInt("@perfReportDelay", 60)*1000);
 #endif
 
-        //get the local computer name:              
+        IPropertyTreeIterator *pt_iter = NULL;
+        StringBuffer xpath;
+
+        if (m_inputs->hasProp("SingleUserPass"))
+        {
+            StringBuffer plainesppass;
+            StringBuffer encesppass;
+            m_inputs->getProp("SingleUserPass", plainesppass);
+            encrypt(encesppass, plainesppass.str());
+            xpath.setf("SecurityManagers/SecurityManager[@type=\"SingleUserSecurityManager\"]/SingleUserSecurityManager/");
+            pt_iter = m_cfg->getElements(xpath.str());
+            if (pt_iter!=NULL)
+            {
+                IPropertyTree *ptree = NULL;
+                pt_iter->first();
+                while(pt_iter->isValid())
+                {
+                    ptree = &pt_iter->query();
+                    if (ptree)
+                    {
+                        ptree->setProp("@SingleUserPass",  encesppass.str());
+
+                        if (m_inputs->hasProp("SingleUserName"))
+                        {
+                            StringBuffer espusername;
+                            m_inputs->getProp("SingleUserName", espusername);
+                            ptree->setProp("@SingleUserName",  espusername.str());
+                        }
+                    }
+                    pt_iter->next();
+                }
+                pt_iter->Release();
+                pt_iter=NULL;
+            }
+        }
+
+        //get the local computer name:
         m_cfg->getProp("@computer", m_computer);
 
-        //get the local computer information:               
-        StringBuffer xpath;
-        xpath.appendf("Hardware/Computer[@name=\"%s\"]", m_computer.str());
+        //get the local computer information:
+        xpath.setf("Hardware/Computer[@name=\"%s\"]", m_computer.str());
 
         IPropertyTree *computer = m_envpt->queryPropTree(xpath.str());
         if (computer)
@@ -177,10 +379,10 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
             }
             m_address.set(address.str(), (unsigned short) port);
         }
-      
+
         xpath.clear();
         xpath.append("EspService");
- 
+
         pt_iter = m_cfg->getElements(xpath.str());
 
         if (pt_iter!=NULL)
@@ -213,7 +415,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
 
         xpath.clear();
         xpath.append("EspProtocol");
- 
+
         pt_iter = m_cfg->getElements(xpath.str());
 
         if (pt_iter!=NULL)
@@ -221,7 +423,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
             IPropertyTree *ptree = NULL;
 
             pt_iter->first();
-    
+
 
             while(pt_iter->isValid())
             {
@@ -263,32 +465,35 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
                 ptree = &pt_iter->query();
                 if (ptree)
                 {
-                    binding_cfg *bcfg = new binding_cfg;
-                    
+                    OwnedPtr<binding_cfg> bcfg(new binding_cfg);
                     ptree->getProp("@name", bcfg->name);
-                    ptree->getProp("@type", bcfg->type);
-                    ptree->getProp("@plugin", bcfg->plugin);
-                    fixPlugin(bcfg->plugin);
-                    bcfg->isDefault = ptree->getPropBool("@defaultBinding", false);
-                    
-                    StringBuffer addr;
-                    ptree->getProp("@netAddress", addr);
-                    if(strcmp(addr.str(), ".") == 0)
-                    {
-                        bcfg->address.append("0.0.0.0");
-                    }
+                    bcfg->port = ptree->getPropInt("@port", 0);
+                    if (bcfg->port == 0)
+                        DBGLOG("Binding %s is configured with port 0, do not load it.", bcfg->name.str());
                     else
                     {
-                        bcfg->address.append(addr.str());
+                        ptree->getProp("@type", bcfg->type);
+                        ptree->getProp("@plugin", bcfg->plugin);
+                        fixPlugin(bcfg->plugin);
+                        bcfg->isDefault = ptree->getPropBool("@defaultBinding", false);
+
+                        StringBuffer addr;
+                        ptree->getProp("@netAddress", addr);
+                        if (strcmp(addr.str(), ".") == 0)
+                        {
+                            // Here we interpret '.' as binding to all interfaces, so convert it to "0.0.0.0"
+                            bcfg->address.append("0.0.0.0");
+                        }
+                        else
+                        {
+                            bcfg->address.append(addr.str());
+                        }
+
+                        ptree->getProp("@service", bcfg->service_name);
+                        ptree->getProp("@protocol", bcfg->protocol_name);
+
+                        m_bindings.push_back(bcfg.getClear());
                     }
-                    
-                    StringBuffer portstr;
-                    ptree->getProp("@port", portstr);
-                    bcfg->port = atoi(portstr.str());
-                    ptree->getProp("@service", bcfg->service_name);
-                    ptree->getProp("@protocol", bcfg->protocol_name);
-                    
-                    m_bindings.push_back(bcfg);
                 }
                 
                 pt_iter->next();
@@ -307,7 +512,8 @@ void CEspConfig::sendAlert(int severity, char const * descr, char const * subjec
 
 void CEspConfig::initDali(const char *servers)
 {
-    if (servers!=NULL && *servers!=0 && !daliClientActive())
+    CriticalBlock b(attachcrit);
+    if (servers!=nullptr && *servers!=0 && !daliClientActive() && !isDetachedFromDali())
     {
         DBGLOG("Initializing DALI client [servers = %s]", servers);
 
@@ -325,6 +531,11 @@ void CEspConfig::initDali(const char *servers)
         setPasswordsFromSDS();
 
         serverstatus = new CSDSServerStatus("ESPserver");
+        ensureSDSSessionDomains();
+
+        // for auditing
+        startLogMsgParentReceiver();
+        connectLogMsgManagerToDali();
     }
 }
 
@@ -351,7 +562,7 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
 
     if(sit == m_services.end())
     {
-        DBGLOG("Warning: Service %s not found for the binding", xcfg.service_name.str());
+        DBGLOG("Warning: Service %s not found for binding %s", xcfg.service_name.str(), xcfg.name.str());
     }
     else
     {
@@ -360,7 +571,7 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
 
     if(pit == m_protocols.end())
     {
-        throw MakeStringException(-1, "Protocol %s not found for the binding", xcfg.protocol_name.str());
+        throw MakeStringException(-1, "Protocol %s not found for binding %s", xcfg.protocol_name.str(), xcfg.name.str());
     }
     else
     {
@@ -507,6 +718,37 @@ void CEspConfig::loadBindings()
 #endif
         iter++;
     }
+}
+
+void CEspConfig::startEsdlMonitor()
+{
+    start_esdl_monitor_t xproc = nullptr;
+    Owned<IEspPlugin> pplg = getPlugin("esdl_svc_engine");
+    if (pplg)
+    {
+        DBGLOG("Plugin esdl_svc_engine loaded.");
+        xproc = (start_esdl_monitor_t) pplg->getProcAddress("startEsdlMonitor");
+    }
+    else
+        throw MakeStringException(-1, "Plugin esdl_svc_engine can't be loaded");
+
+    if (xproc)
+    {
+        DBGLOG("Procedure startEsdlMonitor loaded, now calling it...");
+        xproc();
+    }
+    else
+        throw MakeStringException(-1, "procedure startEsdlMonitor can't be loaded");
+}
+
+void CEspConfig::stopEsdlMonitor()
+{
+    stop_esdl_monitor_t xproc = nullptr;
+    Owned<IEspPlugin> pplg = getPlugin("esdl_svc_engine");
+    if (pplg)
+        xproc = (stop_esdl_monitor_t) pplg->getProcAddress("stopEsdlMonitor");
+    if (xproc)
+        xproc();
 }
 
 class ESPxsltIncludeHandler : public CInterface, implements IIncludeHandler
@@ -669,6 +911,15 @@ void CEspConfig::bindServer(IEspServer &server, IEspContainer &container)
     }
 }
 
+void CEspConfig::saveAttachState()
+{
+    StringBuffer espProcAttachState;
+    espProcAttachState.setf( "<ESPAttachState StateSaveTimems='%d' attached='%s' subscribed='%s'/>", msTick(), isDetachedFromDali() ? "0" : "1", isSubscribedToDali() ? "1" : "0");
+
+    DBGLOG("ESP Process [%s] State to be stored: '%s'", m_process.str(), espProcAttachState.str());
+    Owned<IPropertyTree> serviceESDLDef = createPTreeFromXMLString(espProcAttachState.str(), ipt_caseInsensitive);
+    saveXML(m_daliAttachStateFileName.str(), serviceESDLDef);
+}
 
 void CEspConfig::unloadBindings()
 {
@@ -676,7 +927,7 @@ void CEspConfig::unloadBindings()
     while (iter!=m_bindings.end())
     {
         binding_cfg *bcfg = *iter;
-        
+
         if(bcfg!=NULL)
         {
             bcfg->protocol.clear();
@@ -749,5 +1000,159 @@ IEspPlugin* CEspConfig::getPlugin(const char* name)
     }
 
     return NULL;
+}
+
+void CEspConfig::checkESPCache(IEspServer& server)
+{
+    const char* cacheInitString = m_cfg->queryProp("@espCacheInitString");
+    IPropertyTree* espCacheCfg = m_cfg->queryBranch("ESPCache");
+    if (!espCacheCfg && isEmptyString(cacheInitString))
+        return;
+
+    if (!espCacheCfg)
+    {
+        if (!server.addCacheClient("default", cacheInitString))
+            throw MakeStringException(-1, "Failed in checking ESP cache service using %s", cacheInitString);
+        return;
+    }
+    Owned<IPropertyTreeIterator> iter = espCacheCfg->getElements("Group");
+    ForEach(*iter)
+    {
+        IPropertyTree& espCacheGroup = iter->query();
+        const char* id = espCacheGroup.queryProp("@id");
+        const char* initString = espCacheGroup.queryProp("@initString");
+        if (isEmptyString(id))
+            throw MakeStringException(-1, "ESP cache ID not defined");
+        if (isEmptyString(initString))
+            throw MakeStringException(-1, "ESP cache initStrings not defined");
+        if (!server.addCacheClient(id, initString))
+            throw MakeStringException(-1, "Failed in checking ESP cache service using %s", initString);
+    }
+}
+
+bool CEspConfig::reSubscribeESPToDali()
+{
+    list<binding_cfg*>::iterator iter = m_bindings.begin();
+    while (iter!=m_bindings.end())
+    {
+        binding_cfg& bindingConfig = **iter;
+        if (bindingConfig.bind)
+        {
+            ESPLOG(LogMin, "Requesting binding '%s' to subscribe to DALI notifications", bindingConfig.name.str());
+            bindingConfig.bind->subscribeBindingToDali();
+        }
+        iter++;
+    }
+    setIsSubscribedToDali(true);
+    return true;
+}
+
+bool CEspConfig::unsubscribeESPFromDali()
+{
+    list<binding_cfg*>::iterator iter = m_bindings.begin();
+    while (iter!=m_bindings.end())
+    {
+        binding_cfg& bindingConfig = **iter;
+        if (bindingConfig.bind)
+        {
+            ESPLOG(LogMin, "Requesting binding '%s' to un-subscribe from DALI notifications", bindingConfig.name.str());
+            bindingConfig.bind->unsubscribeBindingFromDali();
+        }
+        iter++;
+    }
+    setIsSubscribedToDali(false);
+    return true;
+}
+
+bool CEspConfig::detachESPFromDali(bool force)
+{
+    CriticalBlock b(attachcrit);
+    if (!isDetachedFromDali())
+    {
+        if(!force)
+        {
+            if (!canAllBindingsDetachFromDali())
+                return false;
+        }
+
+        if (!unsubscribeESPFromDali())
+            return false;
+
+        list<binding_cfg*>::iterator iter = m_bindings.begin();
+        while (iter!=m_bindings.end())
+        {
+            binding_cfg& xcfg = **iter;
+            ESPLOG(LogMin, "Detach ESP From DALI: requesting binding: '%s' to detach...", xcfg.name.str());
+            if (xcfg.bind)
+            {
+                xcfg.bind->detachBindingFromDali();
+            }
+
+            iter++;
+        }
+        setIsDetachedFromDali(true);
+        disconnectLogMsgManagerFromDali();
+        closedownClientProcess();
+        saveAttachState();
+    }
+    return true;
+}
+
+bool CEspConfig::attachESPToDali()
+{
+    bool success = true;
+
+    CriticalBlock b(attachcrit);
+    if (isDetachedFromDali())
+    {
+        setIsDetachedFromDali(false);
+        StringBuffer daliservers;
+        if (m_cfg->getProp("@daliServers", daliservers))
+            initDali(daliservers.str());
+
+        list<binding_cfg*>::iterator iter = m_bindings.begin();
+        while (iter!=m_bindings.end())
+        {
+            binding_cfg& xcfg = **iter;
+            ESPLOG(LogMin, "Attach ESP to DALI: requesting binding: '%s' to attach...", xcfg.name.str());
+            if (xcfg.bind)
+            {
+                map<string, srv_cfg*>::iterator sit = m_services.find(xcfg.service_name.str());
+                if(sit == m_services.end())
+                    ESPLOG(LogMin, "Warning: Service %s not found for the binding", xcfg.service_name.str());
+                else
+                    ((*sit).second->srv)->attachServiceToDali();
+            }
+            iter++;
+        }
+
+        reSubscribeESPToDali();
+
+        saveAttachState();
+    }
+    return success;
+}
+
+bool CEspConfig::canAllBindingsDetachFromDali()
+{
+    list<binding_cfg*>::iterator iter = m_bindings.begin();
+    while (iter!=m_bindings.end())
+    {
+        binding_cfg& xcfg = **iter;
+        if (!xcfg.bind->canDetachFromDali())
+            return false;
+        iter++;
+    }
+    return true;
+}
+
+IEspRpcBinding* CEspConfig::queryBinding(const char* name)
+{
+    for (auto binding : m_bindings)
+    {
+        if (strcmp(binding->name.str(), name) == 0)
+            return binding->bind.get();
+    }
+    return nullptr;
 }
 

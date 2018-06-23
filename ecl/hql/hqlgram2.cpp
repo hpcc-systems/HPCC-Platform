@@ -49,6 +49,7 @@
 #include "hqlrepository.hpp"
 #include "hqlir.hpp"
 #include "reservedwords.hpp"
+#include "hqlcache.hpp"
 
 #define ADD_IMPLICIT_FILEPOS_FIELD_TO_INDEX         TRUE
 #define FAST_FIND_FIELD
@@ -1097,7 +1098,7 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
     OwnedHqlExpr dataset = indexAttr.getExpr();
     checkBuildIndexFilenameFlags(dataset, flagsAttr);
 
-    LinkedHqlExpr inputDataset = dataset;
+    LinkedHqlExpr projectedDataset = dataset;
     OwnedHqlExpr flags = flagsAttr.getExpr();
     if (recordAttr)
     {
@@ -1121,8 +1122,8 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
         bool hasFileposition = getBoolAttributeInList(flags, filepositionAtom, true);
         record.setown(checkBuildIndexRecord(record.getClear(), *recordAttr));
         record.setown(checkIndexRecord(record, *recordAttr, flags));
-        inputDataset.setown(createDatasetF(no_selectfields, LINK(dataset), LINK(record), NULL));
-        warnIfRecordPacked(inputDataset, *recordAttr);
+        projectedDataset.setown(createDatasetF(no_selectfields, LINK(dataset), LINK(record), NULL));
+        warnIfRecordPacked(projectedDataset, *recordAttr);
     }
     else
     {
@@ -1130,10 +1131,53 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
     }
 
     HqlExprArray args;
-    args.append(*LINK(inputDataset));
+    args.append(*LINK(projectedDataset));
     args.append(*filenameAttr.getExpr());
     if (flags)
-        flags->unwindList(args, no_comma);
+    {
+        HqlExprArray buildOptions;
+        flags->unwindList(buildOptions, no_comma);
+        OwnedHqlExpr distribution, partition;
+        ForEachItemIn(i, buildOptions)
+        {
+            IHqlExpression & cur = buildOptions.item(i);
+            IAtom * name = cur.queryName();
+            if (name == distributedAtom)
+            {
+                if (distribution)
+                    reportError(ERR_CANNOT_REDEFINE, err, "DISTRIBUTED attribute cannot be specified more than once");
+                if (cur.queryChild(0))
+                    distribution.setown(replaceSelector(&cur, queryActiveTableSelector(), projectedDataset));
+                else
+                    distribution.set(&cur);
+            }
+            else if (name == bloomAtom)
+            {
+                OwnedHqlExpr replaced = replaceSelector(&cur, queryActiveTableSelector(), projectedDataset);
+                OwnedHqlExpr bloom = processPartitionBloomAttr(replaced, projectedDataset, err);
+                ForEachItemIn(idx, args)
+                {
+                    IHqlExpression &arg = args.item(idx);
+                    if (arg.isAttribute() && arg.queryName()==bloomAtom && arg.queryChild(0) == bloom->queryChild(0))
+                        reportError(ERR_CANNOT_REDEFINE, err, "Duplicate BLOOM definition");
+                }
+                args.append(*bloom.getClear());
+            }
+            else if (name == hashAtom)
+            {
+                if (partition)
+                    reportError(ERR_CANNOT_REDEFINE, err, "PARTITION attribute cannot be specified more than once");
+                partition.setown(replaceSelector(&cur, queryActiveTableSelector(), projectedDataset));
+            }
+            else
+                args.append(OLINK(cur));
+        }
+
+        if (distribution)
+            args.append(*distribution.getClear());
+        if (partition)
+            args.append(*processPartitionBloomAttr(partition, projectedDataset, err));
+    }
     saveDiskAccessInformation(err, args);
     checkDistributer(flagsAttr.pos, args);
     return createValue(no_buildindex, makeVoidType(), args);
@@ -2134,7 +2178,7 @@ void HqlGram::checkAssignedNormalizeTransform(IHqlExpression * originalRecord, I
 {
     OwnedHqlExpr self = getSelf(unadornedRecord);
     bool modified = false;
-    if (recordContainsNestedRecord(unadornedRecord))
+    if (recordContainsNestedRow(unadornedRecord))
     {
         HqlExprArray assigns;
         doCheckAssignedNormalizeTransform(&assigns, self, self, originalRecord, unadornedRecord, errpos, modified);
@@ -2564,6 +2608,20 @@ IIdAtom * HqlGram::createUnnamedFieldId()
 }
 
 
+void HqlGram::checkDefaultValueVirtualAttr(const attribute &errpos, IHqlExpression * attrs)
+{
+    IHqlExpression * defaultAttr = queryAttributeInList(defaultAtom, attrs);
+    IHqlExpression * virtualAttr = queryAttributeInList(virtualAtom, attrs);
+    IHqlExpression * blobAttr = queryAttributeInList(blobAtom, attrs);
+
+    if (defaultAttr && (virtualAttr || blobAttr))
+    {
+        if (virtualAttr)
+            reportError(ERR_DEFAULT_VIRTUAL_CLASH, errpos, "VIRTUAL fields cannot have explicit default values");
+        else
+            reportError(ERR_DEFAULT_VIRTUAL_CLASH, errpos, "BLOB fields cannot have explicit default values");
+    }
+}
 
 /* In parms: type, value: linked */
 void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type, IHqlExpression * _value, IHqlExpression *attrs)
@@ -2617,6 +2675,8 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
             }
         }
     }
+
+    checkDefaultValueVirtualAttr(errpos, attrs);
 
     switch (fieldType->getTypeCode())
     {
@@ -2717,8 +2777,20 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
 
     if (queryAttributeInList(virtualAtom, attrs))
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
+
+    IHqlExpression * defaultAttribute = queryAttributeInList(defaultAtom, attrs);
+    if (defaultAttribute)
+    {
+        IHqlExpression * defaultValue = defaultAttribute->queryChild(0);
+        if (isNullList(defaultValue) || (defaultValue->getOperator()==no_temptable && isNullList(defaultValue->queryChild(0))))
+        {
+            attrs = replaceExpression(attrs, defaultAttribute, createAttribute(defaultAtom,createNullExpr(dsType)));
+        }
+    }
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
+
+    checkDefaultValueVirtualAttr(errpos, attrs);
 
     //An explicitly link counted dataset type should ensure the field is linkcounted
     if (isLinkedRowset(dsType) && !queryAttributeInList(_linkCounted_Atom, attrs))
@@ -2751,6 +2823,8 @@ void HqlGram::addDictionaryField(const attribute &errpos, IIdAtom * name, ITypeI
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
+
+    checkDefaultValueVirtualAttr(errpos, attrs);
 
     if (isLinkedRowset(dictType) && !queryAttributeInList(_linkCounted_Atom, attrs))
         attrs = createComma(attrs, getLinkCountedAttr());
@@ -4525,6 +4599,14 @@ ITypeInfo * HqlGram::queryElementType(const attribute & errpos, IHqlExpression *
 }
 
 
+IHqlExpression * HqlGram::getTargetPlatformExpr()
+{
+    StringBuffer platform;
+    lookupCtx.queryParseContext().codegenCtx->getTargetPlatform(platform);
+    return createConstant(platform);
+}
+
+
 void HqlGram::setDefaultString(attribute &a)
 {
     a.release();
@@ -5854,6 +5936,16 @@ IHqlExpression * HqlGram::createAssert(attribute & condAttr, attribute * msgAttr
     return createValue(no_assert, makeVoidType(), args);
 }
 
+IHqlExpression * HqlGram::castIndexTypes(IHqlExpression *sortList)
+{
+    HqlExprArray args;
+    ForEachChild(idx, sortList)
+    {
+        IHqlExpression *item = sortList->queryChild(idx);
+        args.append(*getHozedKeyValue(item));
+    }
+    return sortList->clone(args);
+}
 
 IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operator op, IHqlExpression * dataset, HqlExprArray & items, OwnedHqlExpr * joinedClause, OwnedHqlExpr * attributes)
 {
@@ -5968,16 +6060,6 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
             else
                 joinedClause->set(&e);
             items.remove(idx);
-        }
-        else if (eop == no_constant)
-        {
-            if ((op != no_hash) && (op != no_hash32) && (op != no_hash64) && (op != no_crc) && (op != no_hashmd5) && (op != no_list))
-                reportWarning(CategoryUnusual, ERR_CONSTANT_DAFT, errpos.pos, "Constant group/sort clauses make no sense");
-        }
-        else if (!containsAnyDataset(&e))
-        {
-            if ((op != no_hash) && (op != no_hash32) && (op != no_hash64) && (op != no_crc) && (op != no_hashmd5) && (op != no_list))
-                reportWarning(CategoryUnusual, WRN_SORT_INVARIANT, errpos.pos, "Sort/Group element is not related to the dataset");
         }
         else if (e.isDatarow() && expandRows)
         {
@@ -6200,7 +6282,9 @@ void HqlGram::report(IError* error)
         if (!isFatalError)
         {
             if (associateWarnings)
+            {
                 pendingWarnings.append(*LINK(error));
+            }
             else
             {
                 Owned<IError> mappedError = mapError(error);
@@ -6979,7 +7063,7 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         transform.setown(createDefaultAssignTransform(record, sourceDataset->queryNormalizedSelector(), indexAttr));
 
     //need to tag record scope in this case so it generates no_activetable as top selector
-    OwnedHqlExpr distribution;
+    OwnedHqlExpr distribution, hash;
     if (!sourceDataset)
     {
         bool allConstant = true;
@@ -7021,7 +7105,40 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         IHqlExpression & cur = buildOptions.item(i);
         IAtom * name = cur.queryName();
         if (name == distributedAtom)
-            distribution.setown(&cur);
+        {
+            if (!index->hasAttribute(distributedAtom))
+            {
+                if (distribution)
+                    reportError(ERR_CANNOT_REDEFINE, errpos, "DISTRIBUTED attribute cannot be specified more than once");
+                if (cur.queryChild(0))
+                    distribution.setown(replaceSelector(&cur, index, select));
+                else
+                    distribution.set(&cur);
+            }
+        }
+        else if (name == bloomAtom)
+        {
+            if (!index->hasAttribute(bloomAtom))
+            {
+                OwnedHqlExpr bloom = processPartitionBloomAttr(&cur, index, errpos);
+                ForEachItemIn(idx, args)
+                {
+                    IHqlExpression &arg = args.item(idx);
+                    if (arg.isAttribute() && arg.queryName()==bloomAtom && arg.queryChild(0) == bloom->queryChild(0))
+                        reportError(ERR_CANNOT_REDEFINE, errpos, "Duplicate BLOOM definition");
+                }
+                args.append(*bloom.getClear());
+            }
+        }
+        else if (name == hashAtom)
+        {
+            if (!index->hasAttribute(hashAtom))
+            {
+                if (hash)
+                    reportError(ERR_CANNOT_REDEFINE, errpos, "PARTITION attribute cannot be specified more than once");
+                hash.set(&cur);
+            }
+        }
         else if (name == persistAtom)
             args.append(*createAttribute(persistAtom, LINK(index)));        // preserve so changes in representation don't affect crc.
         else
@@ -7035,10 +7152,32 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         if (cur->isAttribute())
         {
             IAtom * name = cur->queryName();
-            if ((name == sort_AllAtom) || (name == sort_KeyedAtom) || (name == fixedAtom) || (name == compressedAtom) || (name == dedupAtom))
+            if ((name == sort_AllAtom) || (name == sort_KeyedAtom) || (name == fixedAtom) || (name == compressedAtom) ||
+                (name == dedupAtom) || (name == probabilityAtom) || (name == limitAtom))
                 args.append(*LINK(cur));
+            else if (name == bloomAtom)
+            {
+                OwnedHqlExpr replaced = replaceSelector(cur, queryActiveTableSelector(), index);
+                OwnedHqlExpr bloom = processPartitionBloomAttr(replaced, index, errpos);
+                // Check for duplicates
+                ForEachItemIn(idx, args)
+                {
+                    IHqlExpression &arg = args.item(idx);
+                    if (arg.isAttribute() && arg.queryName()==bloomAtom && arg.queryChild(0) == bloom->queryChild(0))
+                        reportError(ERR_CANNOT_REDEFINE, errpos, "Duplicate BLOOM definition");
+                }
+                args.append(*bloom.getClear());
+            }
+            else if (name == hashAtom)
+            {
+                if (hash)
+                    reportError(ERR_CANNOT_REDEFINE, errpos, "PARTITION attribute cannot be specified more than once");
+                hash.setown(replaceSelector(cur, queryActiveTableSelector(), index));
+            }
             else if (name == distributedAtom)
             {
+                if (distribution)
+                    reportError(ERR_CANNOT_REDEFINE, errpos, "DISTRIBUTED attribute cannot be specified more than once");
                 args.append(*createAttribute(noRootAtom));
                 if (cur->queryChild(0))
                     distribution.setown(replaceSelector(cur, queryActiveTableSelector(), select));
@@ -7059,11 +7198,80 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         args.append(*LINK(fileposition));
     if (distribution)
         args.append(*distribution.getClear());
+    if (hash)
+        args.append(*processPartitionBloomAttr(hash, index, errpos));
 
     saveDiskAccessInformation(indexAttr, args);
     checkDistributer(flagsAttr.pos, args);
     return createValue(no_buildindex, makeVoidType(), args);
 }
+
+IHqlExpression *HqlGram::processPartitionBloomAttr(IHqlExpression *bloom, IHqlExpression *index, const attribute & errpos)
+{
+    __uint64 fields = 0;
+    IHqlExpression *list = bloom->queryChild(0);
+    assertex(list->getOperator()==no_sortlist);
+    unsigned numKeyed = 0;
+    if (index->hasAttribute(_payload_Atom))
+        numKeyed = numKeyedFields(index);  // NOTE - this may miss reporting an error in cases where there is a trailing filepos that someone tries to put into a bloom filter. I don't care.
+    unsigned lastFieldNum = 0;
+    OwnedHqlExpr enable;
+    const char *errName = (bloom->queryName()==bloomAtom) ? "BLOOM" : "PARTITION";
+    ForEachChild(idx, list)
+    {
+        IHqlExpression * cur = list->queryChild(idx);
+        if (cur->getOperator() != no_select || cur->queryChild(0) != index->queryNormalizedSelector())
+        {
+            if (!idx && cur->isBoolean())
+            {
+                enable.setown(createExprAttribute(activeAtom, LINK(cur)));
+                continue;
+            }
+            else
+            {
+                reportError(ERR_KEYEDINDEXINVALID, errpos, "%s parameter is not a field from the index", errName);
+                break;
+            }
+        }
+        unsigned fieldNum = getFieldNumber(cur->queryChild(0), cur);
+        if (numKeyed && fieldNum >= numKeyed)
+            reportError(ERR_KEYEDINDEXINVALID, errpos, "%s parameter must refer to keyed fields only", errName);
+        if (fieldNum < lastFieldNum)
+            reportError(ERR_KEYEDINDEXINVALID, errpos, "%s fields out of order", errName);
+        if (fields & (((__uint64) 1) << fieldNum))
+            reportError(ERR_KEYEDINDEXINVALID, errpos, "%s field repeated", errName);
+        lastFieldNum = fieldNum;
+        fields |= ((__uint64) 1) << fieldNum;
+    }
+    HqlExprArray args;
+    args.append(*createConstant(fields, makeIntType(8, false)));
+    if (bloom->queryChild(1))
+        bloom->queryChild(1)->unwindList(args, no_comma);
+    if (enable)
+        args.append(*enable.getClear());
+    IHqlExpression *ret = bloom->clone(args);
+    return ret;
+}
+
+void HqlGram::setIndexScope(IHqlExpression *index)
+{
+    assertex(!indexScope);
+    indexScope.set(index);  // NOTE - don't worry about nesting, as a BUILD inside a BUILD is highly unlikely
+}
+
+void HqlGram::clearIndexScope()
+{
+    indexScope.clear();
+}
+
+void HqlGram::pushIndexScope()
+{
+    if (indexScope)
+        pushTopScope(indexScope);
+    else
+        pushTopScope(queryTopScope());
+}
+
 
 bool HqlGram::doCheckValidFieldValue(const attribute &errpos, IHqlExpression *value, IHqlExpression * field)
 {
@@ -7231,7 +7439,7 @@ IHqlExpression * HqlGram::checkIndexRecord(IHqlExpression * record, const attrib
         {
             IHqlExpression * lastField = record->queryChild(numFields-1);
             ITypeInfo * fileposType = lastField->queryType();
-            if (!isIntegralType(fileposType))
+            if (!isSimpleIntegralType(fileposType))
                 indexAttrs.setown(createComma(indexAttrs.getClear(), createExprAttribute(filepositionAtom, createConstant(false))));
         }
     }
@@ -8225,38 +8433,6 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
         if (isKey(cur))
             reportWarning(CategoryEfficiency, ERR_BAD_JOINFLAG, err.pos, "Filtered RIGHT prevents a keyed join being used.  Consider including the filter in the join condition.");
     }
-
-    IHqlExpression * group = join->queryAttribute(groupAtom);
-    if (group)
-    {
-        //Check that each of the fields mentioned in the group are projected into the output.
-        OwnedHqlExpr left = createSelector(no_left, join->queryChild(0), querySelSeq(join));
-        OwnedHqlExpr right = createSelector(no_right, join->queryChild(1), querySelSeq(join));
-        NewProjectMapper2 mapper;
-        mapper.setMapping(join->queryChild(3));
-        IHqlExpression * sortlist = group->queryChild(0);
-        ForEachChild(i, sortlist)
-        {
-            IHqlExpression * cur = sortlist->queryChild(i);
-            if (cur->usesSelector(right))
-            {
-                StringBuffer s;
-                getExprECL(cur, s);
-                reportError(ERR_BAD_JOINGROUP_FIELD, err, "GROUP expression '%s' cannot include fields from RIGHT", s.str());
-            }
-            else
-            {
-                bool matchedAll = true;
-                OwnedHqlExpr mapped = mapper.collapseFields(cur, left, queryActiveTableSelector(), left, &matchedAll);
-                if (!matchedAll)
-                {
-                    StringBuffer s;
-                    getExprECL(cur, s);
-                    reportError(ERR_BAD_JOINGROUP_FIELD, err, "GROUP expression '%s' is not included in the JOIN output", s.str());
-                }
-            }
-        }
-    }
 }
 
 
@@ -8324,6 +8500,9 @@ void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHq
             break;
         case no_ifblock:
             lastFieldType = NULL;
+            // MORE - it might make sense to annotate the fields here (and below) - i.e.
+            // fields.append(*appendOwnedOperand(cur, createAttribute(_payload_Atom)));
+            // But that causes some changes to crcs, new errors about incompatible rows, etc
             fields.append(*LINK(cur));
             break;
         case no_field:
@@ -8345,6 +8524,9 @@ void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHq
                 else
                 {
                     lastFieldType = cur->queryType();
+                    // MORE - it might make sense to annotate the fields here (and above) - i.e.
+                    // fields.append(*appendOwnedOperand(cur, createAttribute(_payload_Atom)));
+                    // But that causes some changes to crcs, new errors about incompatible rows, etc
                     fields.append(*LINK(cur));
                 }
                 break;
@@ -10584,8 +10766,8 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
             else
                 msg.appendf("Import item  \"%s\" is not a module", str(id));
             reportError(ERR_MODULE_UNKNOWN, msg.str(),
-                        lexObject->getActualLineNo(), 
-                        lexObject->getActualColumn(), 
+                        lexObject->getActualLineNo(),
+                        lexObject->getActualColumn(),
                         lexObject->get_yyPosition());
             return NULL;
         }
@@ -10829,6 +11011,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case BETWEEN: msg.append("BETWEEN"); break;
     case BIG: msg.append("BIG_ENDIAN"); break;
     case TOK_BITMAP: msg.append("BITMAP"); break;
+    case BLOOM: msg.append("BLOOM"); break;
     case BLOB: msg.append("BLOB"); break;
     case BNOT: msg.append("BNOT"); break;
     case BUILD: msg.append("BUILD"); break;
@@ -10967,6 +11150,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case KEYED: msg.append("KEYED"); break;
     case KEYPATCH: msg.append("KEYPATCH"); break;
     case KEYUNICODE: msg.append("KEYUNICODE"); break;
+    case LABEL: msg.append("LABEL"); break;
     case LABELED: msg.append("LABELED"); break;
     case LAST: msg.append("LAST"); break;
     case LEFT: msg.append("LEFT"); break;
@@ -11060,6 +11244,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case PRELOAD: msg.append("PRELOAD"); break;
     case PRIORITY: msg.append("PRIORITY"); break;
     case PRIVATE: msg.append("PRIVATE"); break;
+    case PROBABILITY: msg.append("PROBABILITY"); break;
     case PROCESS: msg.append("PROCESS"); break;
     case PROJECT: msg.append("PROJECT"); break;
     case PULL: msg.append("PULL"); break;
@@ -11135,6 +11320,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TABLE: msg.append("TABLE"); break;
     case TAN: msg.append("TAN"); break;
     case TANH: msg.append("TANH"); break;
+    case __TARGET_PLATFORM__: msg.append("__TARGET_PLATFORM__"); break;
     case TERMINATOR: msg.append("TERMINATOR"); break;
     case THEN: msg.append("THEN"); break;
     case THISNODE: msg.append("THISNODE"); break;
@@ -11172,6 +11358,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TOK_WARNING: msg.append("WARNING"); break;
     case WHEN: msg.append("WHEN"); break;
     case WHICH: msg.append("WHICH"); break;
+    case WHITESPACE: msg.append("WHITESPACE"); break;
     case WIDTH: msg.append("WIDTH"); break;
     case WILD: msg.append("WILD"); break;
     case WITHIN: msg.append("WITHIN"); break;
@@ -12036,7 +12223,7 @@ IHqlExpression * reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *sc
     text.append("=>").append(contents->length(), contents->getText());
 
     //Could use a merge string implementation of IFileContents instead of expanding...
-    Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath(), contents->isImplicitlySigned(), contents->queryGpgSignature());
+    Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath(), contents->isImplicitlySigned(), contents->queryGpgSignature(), 0);
     HqlGram parser(scope, scope, parseContents, ctx, NULL, hasFieldMap, true);
     unsigned startLine = funcdef->getStartLine();
 
@@ -12099,11 +12286,13 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
         parser.getLexer()->setMacroParams(macroParams);
         OwnedHqlExpr ret = parser.yyParse(false, true);
         if (isRoot)
-            ctx.noteEndQuery();
+            ctx.noteEndQuery(true);
         return parser.clearFieldMap(ret.getClear());
     }
     catch (IException *E)
     {
+        if (isRoot)
+            ctx.noteEndQuery(false);
         if (ctx.errs)
         {
             ISourcePath * sourcePath = contents->querySourcePath();
@@ -12128,16 +12317,17 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
 extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit)
 {
     assertex(scope);
+    HqlLookupContext moduleCtx(ctx);
+    bool success = false;
     try
     {
-        HqlLookupContext moduleCtx(ctx);
         moduleCtx.noteBeginModule(scope, contents);
 
         HqlGram parser(scope, scope, contents, moduleCtx, xmlScope, false, loadImplicit);
         parser.getLexer()->set_yyLineNo(1);
         parser.getLexer()->set_yyColumn(1);
         OwnedHqlExpr ret = parser.yyParse(false, true);
-        moduleCtx.noteEndModule();
+        success = true;
     }
     catch (IException *E)
     {
@@ -12158,6 +12348,10 @@ extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlL
         }
         E->Release();
     }
+    if (ctx.hasCacheLocation())
+        moduleCtx.createCache(nullptr, false);
+
+    moduleCtx.noteEndModule(success);
 }
 
 
@@ -12165,7 +12359,7 @@ extern HQL_API IHqlExpression * parseQuery(const char * text, IErrorReceiver * e
 {
     Owned<IHqlScope> scope = createScope();
     HqlDummyLookupContext ctx(errs);
-    Owned<IFileContents> contents = createFileContentsFromText(text, NULL, false, NULL);
+    Owned<IFileContents> contents = createFileContentsFromText(text, NULL, false, NULL, 0);
     return parseQuery(scope, contents, ctx, NULL, NULL, true, true);
 }
 
@@ -12184,25 +12378,131 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
     return (prevErrors == ctx.errs->errCount());
 }
 
-
-void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContext & ctx, IIdAtom * name)
+void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContext & ctx, IIdAtom * name, const char * fullName)
 {
+    bool alreadySimplified = false;
     HqlLookupContext attrCtx(ctx);
     attrCtx.noteBeginAttribute(scope, contents, name);
 
-    //The attribute will be added to the current scope as a side-effect of parsing the attribute.
-    const char * moduleName = scope->queryFullName();
+    // Use simplified definition if syntax checking
+    if (!ctx.regenerateCache() && ctx.syntaxChecking() && ctx.hasCacheLocation() && !ctx.ignoreCache())
+    {
+        HqlParseContext & parseContext = ctx.queryParseContext();
+        Owned<IEclCachedDefinition> cached = parseContext.cache->getDefinition(fullName);
+        if (cached->isUpToDate(parseContext.optionHash))
+        {
+            IFileContents * cachecontents = cached->querySimplifiedEcl();
+            if (cachecontents)
+            {
+                contents = cachecontents;
+                alreadySimplified = true;
+                ctx.incrementAttribsFromCache();
+            }
+        }
+    }
 
-    //NOTE: The container scope needs to be re-resolved globally so merged file trees are supported
-    Owned<IHqlScope> globalScope = getResolveDottedScope(moduleName, LSFpublic, ctx);
-    HqlGram parser(globalScope, scope, contents, attrCtx, NULL, false, true);
+    //The attribute will be added to the current scope as a side-effect of parsing the attribute.
+    try
+    {
+        //NOTE: The container scope needs to be re-resolved globally so merged file trees are supported
+        const char * moduleName = scope->queryFullName();
+        Owned<IHqlScope> globalScope = getResolveDottedScope(moduleName, LSFpublic, ctx);
+        HqlGram parser(globalScope, scope, contents, attrCtx, NULL, false, true);
+        parser.setExpectedAttribute(name);
+        parser.setAssociateWarnings(true);
+        parser.getLexer()->set_yyLineNo(1);
+        parser.getLexer()->set_yyColumn(1);
+        ::Release(parser.yyParse(false, false));
+    }
+    catch (...)
+    {
+        attrCtx.noteEndAttribute(false);
+        throw;
+    }
+    OwnedHqlExpr parsed = scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
+    bool canCache = parsed && (parsed->getOperator() != no_forwardscope) && !alreadySimplified;
+    bool isMacro = parsed && parsed->isMacro();
+    ctx.incrementAttribsProcessed();
+    if (canCache && (ctx.syntaxChecking() || ctx.hasCacheLocation()))
+    {
+        OwnedHqlExpr simplified = createSimplifiedDefinition(parsed);
+        if (ctx.hasCacheLocation())
+            attrCtx.createCache(simplified, isMacro);
+        if (simplified)
+        {
+            ctx.incrementAttribsSimplified();
+
+            if (ctx.checkSimpleDef())
+                verifySimpifiedDefinition(parsed, simplified, attrCtx);
+
+            if (simplified != parsed && ctx.syntaxChecking() && !ctx.ignoreCache())
+                scope->defineSymbol(LINK(simplified));
+        }
+    }
+
+    attrCtx.noteEndAttribute(true);
+    if (attrCtx.queryParseContext().timeParser)
+    {
+        StringBuffer fullname;
+        fullname.append(scope->queryFullName());
+        if (fullname)
+            fullname.append(".");
+        fullname.append(str(name));
+        attrCtx.reportTiming(fullname);
+    }
+}
+
+// Parses string containing ecl definition and returns hql expression
+// (Will not generate simplified expression cache as a side affect)
+IHqlExpression * parseDefinition(const char * ecl, IIdAtom * name, MultiErrorReceiver &errors)
+{
+    Owned<IHqlScope> scope = createScope();
+    HqlDummyLookupContext ctx(&errors);
+    Owned<IFileContents> contents = createFileContentsFromText(ecl, NULL, false, NULL, 0);
+    HqlLookupContext attrCtx(ctx);
+    HqlGram parser(scope, scope, contents, attrCtx, NULL, false, true);
     parser.setExpectedAttribute(name);
     parser.setAssociateWarnings(true);
     parser.getLexer()->set_yyLineNo(1);
     parser.getLexer()->set_yyColumn(1);
     ::Release(parser.yyParse(false, false));
-    attrCtx.noteEndAttribute();
+    return scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
 }
+
+bool verifySimpifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplifiedDefinition, HqlLookupContext & ctx)
+{
+    MultiErrorReceiver errors;
+    StringBuffer ecl;
+
+    regenerateDefinition(simplifiedDefinition, ecl);
+    OwnedHqlExpr parsed = parseDefinition(ecl, simplifiedDefinition->queryId(), errors);
+    if (!parsed)
+    {
+        ctx.errs->reportError(ERR_INTERNALEXCEPTION, "Failed to parse simplified definition",0,0,0,0);
+        return false;
+    }
+    else
+    {
+        StringBuffer t1, t2;
+        EclIR::getIRText(t1, 0, queryLocationIndependent(simplifiedDefinition));
+        EclIR::getIRText(t2, 0, queryLocationIndependent(parsed));
+
+        if (!streq(t1, t2))
+        {
+            StringBuffer orig;
+            EclIR::getIRText(orig, 0, queryLocationIndependent(origExpr));
+            DBGLOG("Original:\n%s\n", orig.str());
+            DBGLOG("Simple:\n%s\n", t1.str());
+            DBGLOG("Regenerated:\n---\n%s\n---\n", ecl.str());
+            DBGLOG("Parsed:\n%s", t2.str());
+
+            ctx.errs->reportError(ERR_INTERNALEXCEPTION, "Failed verification of simplified definition",0,0,0,0);
+            return false;
+        }
+    }
+    return true;
+}
+
 
 int testHqlInternals()
 {

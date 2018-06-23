@@ -21,6 +21,8 @@ define([
     "dojo/on",
     "dojo/topic",
     "dojo/_base/array",
+    "dojo/dom-form",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/Menu",
@@ -32,10 +34,11 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
-    "hpcc/WsWorkunits",
-    "hpcc/ESPQuery",
-    "hpcc/ESPUtil",
-    "hpcc/Utility",
+    "src/WsWorkunits",
+    "src/ESPQuery",
+    "src/ESPUtil",
+    "src/Utility",
+    "hpcc/SelectionGridWidget",
 
     "dojo/text!../templates/QuerySetQueryWidget.html",
 
@@ -55,10 +58,10 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, on, topic, arrayUtil,
+], function (declare, lang, i18n, nlsHPCC, on, topic, arrayUtil, domForm, topic,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 selector,
-                _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, Utility,
+                _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, Utility, SelectionGridWidget,
                 template) {
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -68,26 +71,42 @@ define([
         borderContainer: null,
         queriesTab: null,
         querySetGrid: null,
+        recreateQueriesGrid: null,
         clusterTargetSelect: null,
+        recreateQueryTargetSelect: null,
         filter: null,
 
         initalized: false,
         loaded: false,
+        userName: null,
 
         buildRendering: function (args) {
             this.inherited(arguments);
+        },
+
+        _onMine: function (event) {
+            if (event) {
+                this.filter.setValue(this.id + "PublishedBy", this.userName);
+                this.filter._onFilterApply();
+            } else {
+                this.filter._onFilterClear();
+                this.filter._onFilterApply();
+            }
         },
 
         postCreate: function (args) {
             this.inherited(arguments);
             this.queriesTab = registry.byId(this.id + "_PublishedQueries");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
+            this.recreateQueryTargetSelect = registry.byId(this.id + "RecreateTargetSelect");
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.filter = registry.byId(this.id + "Filter");
             this.downloadToList = registry.byId(this.id + "DownloadToList");
             this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
             this.downListForm = registry.byId(this.id + "DownListForm");
             this.fileName = registry.byId(this.id + "CSVFileName");
+            this.recreateQueriesGrid = registry.byId(this.id + "RecreateQueriesGrid");
+            this.recreateForm = registry.byId(this.id + "RecreateForm");
         },
 
         startup: function (args) {
@@ -143,6 +162,7 @@ define([
                 includeBlank: true,
                 Target: params.Cluster
             });
+
             if (params.Wuid) {
                 this.filter.setValue(this.id + "Wuid", params.Wuid);
             } else if (params.LogicalName) {
@@ -160,12 +180,14 @@ define([
             topic.subscribe("hpcc/ecl_wu_published", function (topic) {
                 context.refreshGrid();
             });
+
+            this.userName = dojoConfig.username;
         },
 
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.queriesTab.id) {
+                if (currSel.id === this.queriesTab.id) {
                 } else {
                     currSel.init(currSel.hpcc.params);
                 }
@@ -321,53 +343,53 @@ define([
                     Suspended: {
                         label: this.i18n.Suspended,
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("suspended.png", context.i18n.Suspended);
+                            node.innerHTML = Utility.getImageHTML("suspended.png", context.i18n.Suspended);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (suspended) {
                             if (suspended === true) {
-                                return dojoConfig.getImageHTML("suspended.png");
+                                return Utility.getImageHTML("suspended.png");
                             }
                             return "";
                         }
                     },
                     ErrorCount: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("errwarn.png", context.i18n.ErrorWarnings);
+                            node.innerHTML = Utility.getImageHTML("errwarn.png", context.i18n.ErrorWarnings);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (error) {
                             if (error > 0) {
-                                return dojoConfig.getImageHTML("errwarn.png");
+                                return Utility.getImageHTML("errwarn.png");
                             }
                             return "";
                         }
                     },
                     MixedNodeStates: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("mixwarn.png", context.i18n.MixedNodeStates);
+                            node.innerHTML = Utility.getImageHTML("mixwarn.png", context.i18n.MixedNodeStates);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (mixed) {
                             if (mixed === true) {
-                                return dojoConfig.getImageHTML("mixwarn.png");
+                                return Utility.getImageHTML("mixwarn.png");
                             }
                             return "";
                         }
                     },
                     Activated: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("active.png", context.i18n.Active);
+                            node.innerHTML = Utility.getImageHTML("active.png", context.i18n.Active);
                         },
                         width: 25,
                         formatter: function (activated) {
                             if (activated === true) {
-                                return dojoConfig.getImageHTML("active.png");
+                                return Utility.getImageHTML("active.png");
                             }
-                            return dojoConfig.getImageHTML("inactive.png");
+                            return Utility.getImageHTML("inactive.png");
                         }
                     },
                     Id: {
@@ -445,11 +467,25 @@ define([
                 }
             });
             this.querySetGrid.startup();
+
+            this.recreateQueriesGrid.createGrid({
+                idProperty: "Name",
+                    columns: {
+                        Name: {
+                            label: this.i18n.ID
+                        },
+                        QuerySetId: {
+                            label: this.i18n.Target
+                        }
+                    }
+            });
+
             this.refreshActionState();
         },
 
         refreshActionState: function () {
             var selection = this.querySetGrid.getSelected();
+            var data = [];
             var hasSelection = false;
             var isSuspended = false;
             var isNotSuspended = false;
@@ -475,16 +511,60 @@ define([
             registry.byId(this.id + "Activate").set("disabled", !isActive);
             registry.byId(this.id + "Deactivate").set("disabled", !isNotActive);
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
-
+            registry.byId(this.id + "RecreateQueryDropDown").set("disabled", !hasSelection);
 
             this.menuUnsuspend.set("disabled", !isNotSuspended);
             this.menuSuspend.set("disabled", !isSuspended);
             this.menuActivate.set("disabled", !isActive);
             this.menuDeactivate.set("disabled", !isNotActive);
+
+            if (hasSelection) {
+                arrayUtil.forEach(selection, function (item, idx) {
+                    data.push(item);
+                });
+                this.recreateQueriesGrid.setData(data);
+            }
          },
 
         _onRefresh: function (params) {
            this.refreshGrid();
+        },
+
+        _onRecreateQueriesSuccess: function (status) {
+            var context = this;
+            if (status) {
+                dojo.publish("hpcc/brToaster", {
+                    Severity: "Message",
+                    Source: "WsWorkunits.WURecreateQuery",
+                    Exceptions: [{ Source: context.i18n.RecreateQuery, Message: context.i18n.SuccessfullySaved }]
+                });
+            }
+        },
+
+        _onRecreateQueries: function () {
+            if (this.recreateForm.validate()) {
+                var context = this;
+                var success = false;
+                arrayUtil.forEach(this.recreateQueriesGrid.store.data, function (item, idx) {
+                        var request = domForm.toObject(context.id + "RecreateForm");
+                        request.Republish === "off" ? request.Republish = 1 : request.Republish = 0;
+                        request.AllowForeignFiles === "off" ? request.AllowForeignFiles = 0 : request.AllowForeignFiles = 1;
+                        request.UpdateDfs === "off" ? request.UpdateDfs = 0 : request.UpdateDfs = 1;
+                        request.UpdateSuperFiles === "off" ? request.UpdateSuperFiles = 0 : request.UpdateSuperFiles = 1;
+                        request.QueryId = item.Name;
+                        request.Target = item.QuerySetId;
+                        request.IncludeFileErrors = 1;
+                        WsWorkunits.WURecreateQuery({
+                            request: request
+                        }).then(function (response) {
+                            if (lang.exists("WURecreateQueryResponse.Wuid", response)) {
+                                success = true;
+                            }
+                            context._onRecreateQueriesSuccess(success);
+                        });
+                });
+                registry.byId(this.id + "RecreateQueryDropDown").closeDropDown();
+            }
         },
 
         _onDelete:function(){
@@ -569,8 +649,8 @@ define([
             if (this.params.searchResults) {
                 return {};
             }    
-            optionsForm = registry.byId(this.id + "OptionsForm");
-            optionsValues = optionsForm.getValues();
+            var optionsForm = registry.byId(this.id + "OptionsForm");
+            var optionsValues = optionsForm.getValues();
             return lang.mixin(this.filter.toObject(), optionsValues);
         },
 

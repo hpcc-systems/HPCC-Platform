@@ -112,6 +112,9 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return getInlineFlags(ctx, expr->queryChild(0));
     case no_call:
     case no_externalcall:               // no so sure about this - should possibly be assignable only. (also no_call above)
+        if (callIsActivity(expr))
+            return 0;
+        //fallthrough
     case no_getresult:
         if (isStreamed(expr))
             return RETiterate;
@@ -1358,7 +1361,8 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
             else if (!cur.isBinary())
             {
                 //CSV and xml datasets need their elements serialized into the parent extract
-                newRow = new NonLocalIndirectRow(cur, NULL, childSerialization);
+                ColumnToOffsetMap * map = translator.queryRecordOffsetMap(cur.queryRecord(), false);
+                newRow = new NonLocalIndirectRow(cur, map, childSerialization);
             }
             else if (serialization)
             {
@@ -1382,7 +1386,10 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
                 else
                     expandedAlias.set(&matchAlias.item(match));
 
-                newRow = new BoundAliasRow(cur, NULL, expandedAlias);
+                //At the moment do not use offset classes in the child query, until we also serialize a pointeter to the
+                //offset class.  This would be much better once co-local extracts were implemented with c++ classes.
+                ColumnToOffsetMap * map = translator.queryRecordOffsetMap(cur.queryRecord(), false);
+                newRow = new BoundAliasRow(cur, map, expandedAlias);
                 newRow->setInherited(true);
             }
             else
@@ -1408,7 +1415,8 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
         ForEachItemInRev(i, activeRows)
         {
             BoundRow & cur = activeRows.item(i);
-            nonlocalBoundCursors.append(*new NonLocalIndirectRow(cur, NULL, childSerialization));
+            ColumnToOffsetMap * map = translator.queryRecordOffsetMap(cur.queryRecord(), false);
+            nonlocalBoundCursors.append(*new NonLocalIndirectRow(cur, map, childSerialization));
         }
     }
 }
@@ -1465,7 +1473,7 @@ void CtxCollection::createFunctionStructure(HqlCppTranslator & translator, Build
         //virtual void serializeCreateContext(MemoryBuffer & out)
         serializectx.setown(new BuildCtx(declarectx));
         StringBuffer s;
-        s.append("virtual void ").append(serializeFunc).append("(MemoryBuffer & out)");
+        s.append("virtual void ").append(serializeFunc).append("(MemoryBuffer & out) override");
         serializectx->addQuotedCompoundOpt(s.str());
     } else if (canEvaluate)
     {
@@ -1510,6 +1518,7 @@ bool EvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool h
     case no_filepos:
     case no_file_logicalname:
     case no_counter:
+    case no_matched_injoin:
     case no_variable:       // this really should happen
         return true;        // would have been bound if found
     case no_id2blob:
@@ -1938,7 +1947,7 @@ void NestedEvalContext::ensureHelpersExist()
 
         //void onStart(ICodeContext * _ctx, <ActivityClass> * _activity)
         BuildCtx oncreatectx(onCreate.declarectx);
-        IHqlStmt * onCreateStmt  = oncreatectx.addQuotedCompound(s.clear().append("inline void onCreate(ICodeContext * _ctx, ").append(rootActivity->className).append(" * _activity)"));
+        IHqlStmt * onCreateStmt  = oncreatectx.addQuotedFunction(s.clear().append("inline void onCreate(ICodeContext * _ctx, ").append(rootActivity->className).append(" * _activity)"), true);
         oncreatectx.addQuoted(s.clear().append("activity = _activity;"));
         oncreatectx.addQuotedLiteral("ctx = _ctx;");
 
@@ -2050,6 +2059,8 @@ void HqlCppTranslator::ensureContextAvailable(BuildCtx & ctx)
     EvalContext * instance = queryEvalContext(ctx);
     if (instance)
         instance->ensureContextAvailable();
+    if (!ctx.queryMatchExpr(codeContextMarkerExpr))
+        throwError(HQLERR_CodeContextNotAvailable);
 }
 
 /*

@@ -165,7 +165,6 @@ class CSkipLimitSlaveActivity : public CLimitSlaveActivityBase
     UnsignedArray sizeArray;
     size32_t ptrIndex;
     bool limitChecked, eof, rowTransform;
-    IHThorLimitTransformExtra *helperex;
     Owned<IRowWriterMultiReader> buf;
     Owned<IRowStream> reader;
 
@@ -225,9 +224,6 @@ public:
         ptrIndex = 0;
         limitChecked = eof = false;
         rowTransform = _rowTransform;
-        helperex = NULL;
-        if (rowTransform)
-            helperex = static_cast<IHThorLimitTransformExtra *>(queryHelper()->selectInterface(TAIlimittransformextra_1));
     }
     void abort()
     {
@@ -251,12 +247,12 @@ public:
             if (!gather())
             {
                 eof = true;
-                if (rowTransform&&helperex && firstNode())
+                if (rowTransform && firstNode())
                 {
                     try
                     {
                         RtlDynamicRowBuilder ret(queryRowAllocator());
-                        size32_t sizeGot = helperex->transformOnLimitExceeded(ret);
+                        size32_t sizeGot = helper->transformOnLimitExceeded(ret);
                         if (sizeGot)
                         {
                             dataLinkIncrement();

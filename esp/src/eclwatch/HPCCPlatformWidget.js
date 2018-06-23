@@ -20,12 +20,16 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
+    "dojo/dom-construct",
     "dojo/dom-class",
     "dojo/dom-form",
     "dojo/dom-style",
     "dojo/dom-geometry",
     "dojo/cookie",
+    "dojo/on",
+    "dojo/query",
     "dojo/topic",
+    "dojo/request/xhr",
 
     "dijit/registry",
     "dijit/Tooltip",
@@ -33,16 +37,20 @@ define([
     "dojox/widget/UpgradeBar",
     "dojox/widget/ColorPicker",
 
+    "src/CodeMirror",
+
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPRequest",
-    "hpcc/ESPActivity",
-    "hpcc/ws_account",
-    "hpcc/ws_access",
-    "hpcc/WsSMC",
-    "hpcc/WsTopology",
+    "src/ESPRequest",
+    "src/ESPActivity",
+    "src/ESPUtil",
+    "src/ws_account",
+    "src/ws_access",
+    "src/WsSMC",
+    "src/WsTopology",
     "hpcc/GraphWidget",
     "hpcc/DelayLoadWidget",
-    "hpcc/ws_machine",
+    "src/ws_machine",
+    "hpcc/LockDialogWidget",
 
     "dojo/text!../templates/HPCCPlatformWidget.html",
 
@@ -57,6 +65,7 @@ define([
     "dijit/form/Textarea",
     "dijit/form/CheckBox",
     "dijit/Dialog",
+    "dijit/ConfirmDialog",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
 
@@ -64,11 +73,21 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, domStyle, domGeo, cookie, topic,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, on, query, topic, xhr,
                 registry, Tooltip,
                 UpgradeBar, ColorPicker,
-                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget, WsMachine,
+                CodeMirror,
+                _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget, WsMachine, LockDialogWidget,
                 template) {
+
+    declare("HPCCColorPicker", [ColorPicker], {
+        _underlay: "/esp/files/eclwatch/img/underlay.png",
+        _hueUnderlay: "/esp/files/eclwatch/img/hue.png",
+        _pickerPointer: "/esp/files/eclwatch/img/pickerPointer.png",
+        _huePickerPointer: "/esp/files/eclwatch/img/hueHandle.png",
+        _huePickerPointerAlly: "/esp/files/eclwatch/img/hueHandleA11y.png"
+    });
+
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformWidget",
@@ -80,6 +99,7 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.searchText = registry.byId(this.id + "FindText");
+            this.logoutBtn = registry.byId(this.id + "Logout");
             this.aboutDialog = registry.byId(this.id + "AboutDialog");
             this.setBannerDialog = registry.byId(this.id + "SetBannerDialog");
             this.stackContainer = registry.byId(this.id + "TabContainer");
@@ -88,6 +108,12 @@ define([
             this.pluginsPage = registry.byId(this.id + "_Plugins");
             this.operationsPage = registry.byId(this.id + "_OPS");
             registry.byId(this.id + "SetBanner").set("disabled", true);
+            this.sessionBackground = registry.byId(this.id + "SessionBackground");
+            this.unlockDialog = registry.byId(this.id + "UnlockDialog");
+            this.unlockUserName = registry.byId(this.id + "UnlockUserName");
+            this.unlockPassword = registry.byId(this.id + "UnlockPassword");
+            this.logoutConfirm = registry.byId(this.id + "LogoutConfirm");
+            this.unlockForm = registry.byId(this.id + "UnlockForm");
 
             this.upgradeBar = new UpgradeBar({
                 notifications: [],
@@ -136,7 +162,13 @@ define([
         },
 
         refreshUserName: function () {
-            dom.byId(this.id + "UserID").textContent = this.userName ? this.userName : "";
+            if (this.userName) {
+                dom.byId(this.id + "UserID").textContent = this.userName;
+            } else if (cookie("ESPUserName")) {
+                domConstruct.place("<span>" + cookie("ESPUserName") + "</span>", this.id + "UserID", "replace");
+            } else {
+                dom.byId(this.id + "UserID").textContent = "";
+            }
         },
 
         init: function (params) {
@@ -158,6 +190,7 @@ define([
             }).then(function (response) {
                 if (lang.exists("MyAccountResponse.username", response)) {
                     context.userName = response.MyAccountResponse.username;
+                    dojoConfig.username = response.MyAccountResponse.username;
                     context.checkIfAdmin(context.userName);
                     context.refreshUserName();
                     if (!cookie("PasswordExpiredCheck")) {
@@ -211,6 +244,7 @@ define([
             this.createStackControllerTooltip(this.id + "_OPS", this.i18n.Operations);
             this.createStackControllerTooltip(this.id + "_Plugins", this.i18n.Plugins);
             this.initTab();
+            this.checkIfSessionsAreActive();
 
             topic.subscribe("hpcc/monitoring_component_update", function (topic) {
                 context.checkMonitoring(topic.status);
@@ -251,7 +285,7 @@ define([
                 }).then(function (response) {
                     if (lang.exists("UserEditResponse.Groups.Group", response)) {
                         arrayUtil.some(response.UserEditResponse.Groups.Group, function (item, idx) {
-                            if(item.name == "Administrators" || "Directory Administrators"){
+                            if(item.name === "Administrators" || item.name === "Directory Administrators"){
                                 dojoConfig.isAdmin = true;
                                 registry.byId(context.id + "SetBanner").set("disabled", false);
                                 if (context.widget._OPS.refresh) {
@@ -262,6 +296,14 @@ define([
                         });
                     }
                 });
+            }
+        },
+
+        checkIfSessionsAreActive: function () {
+            if (cookie("ESPSessionTimeoutSeconds")) {
+                this.logoutBtn.set("disabled", false);
+                dom.byId("UserDivider").textContent = " / ";
+                dom.byId("Lock").textContent = this.i18n.Lock;
             }
         },
 
@@ -343,7 +385,7 @@ define([
                     });
                     context.configSourceCM.setSize("100%", "100%");
                     context.configSourceCM.setValue(context.configText);
-                }); 
+                });
             }
             this.stackContainer.selectChild(this.widget._Config);
         },
@@ -418,6 +460,27 @@ define([
 
         _onAboutClose: function (evt) {
             this.aboutDialog.hide();
+        },
+
+        _onLock: function (evt) {
+            var LockDialog = new LockDialogWidget({});
+            LockDialog.show();
+        },
+
+        _onLogout: function (evt) {
+            this.logoutConfirm.show();
+            query(".dijitDialogUnderlay").style("opacity", "0.5");
+            this.logoutConfirm.on("execute", function(){
+                xhr("esp/logout",{
+                    method: "post"
+                }).then(function(data){
+                    if (data){
+                        cookie("ECLWatchUser", "", { expires: -1 });
+                        cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
+                        window.location.reload();
+                    }
+                });
+            });
         },
 
         _onMonitoring: function (evt) {

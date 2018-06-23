@@ -26,7 +26,7 @@ import xml.etree.ElementTree as ET
 import unicodedata
 
 from ...util.util import isPositiveIntNum, getConfig
-
+from ...common.error import Error
 class ECLFile:
     ecl = None
     xml_e = None
@@ -56,6 +56,7 @@ class ECLFile:
             pass
 
     def __init__(self, ecl, dir_a, dir_ex, dir_r, dir_inc, cluster, args):
+        logging.debug("%3d. ECLFile(ecl:%s, cluster:%s).", self.taskId, ecl,  cluster)
         self.dir_ec = os.path.dirname(ecl)
         self.dir_ex = dir_ex
         self.dir_r = dir_r
@@ -84,6 +85,13 @@ class ECLFile:
         self.args = args
         self.eclccWarning = ''
         self.eclccWarningChanges = ''
+        self.jobNameSuffix = args.jobnamesuffix
+        if self.jobNameSuffix != '':
+            self.jobNameSuffix = '-' + self.jobNameSuffix
+
+        self.isFlushDiskCache = False
+        if self.args.flushDiskCache:
+            self.isFlushDiskCache = True
 
         #If there is a --publish CL parameter then force publish this ECL file
         self.forcePublish=False
@@ -279,27 +287,46 @@ class ECLFile:
         FILE.close()
 
     def __checkSkip(self, skipText, skip):
+        logging.debug("%3d.__checkSkip (skipText:'%s', skip:'%s')", self.taskId, skipText, skip)
         skipText = skipText.lower()
         skip = skip.lower()
         eclText = open(self.getEcl(), 'r')
         skipLines = []
+        lineNo=0
         for line in eclText:
+            lineNo += 1
             line = line.lower()
             if skipText in line:
-                skipLines.append(line.rstrip('\n'))
+                skipLines.append({'line': line.rstrip('\n'),  'lineNo' : lineNo})
         if len(skipLines) > 0:
-            for skipLine in skipLines:
-                skipParts = skipLine.split()
-                skipType = skipParts[1]
-                skipReason = None
-                if len(skipParts) == 3:
-                    skipReason = skipParts[2]
-                if "==" in skipType:
-                    skipType = skipType.split("==")[1]
-                if not skip:
-                    return {'reason': skipReason, 'type': skipType}
-                if skip in skipType:
-                    return {'skip': True, 'type' : skipType, 'reason': skipReason}
+            try:
+                for skipLine in skipLines:
+                    skipParts = skipLine['line'].split()
+                    skipType = skipParts[1]
+                    skipReason = None
+
+                    if len(skipParts) == 3:
+                        skipReason = skipParts[2]
+                    splitChar = '='
+
+                    if "==" in skipType:
+                        splitChar='=='
+                    skipType = skipType.split(splitChar)[1]
+
+                    if not skip:
+                        return {'reason': skipReason, 'type': skipType}
+
+                    if skip == skipType:
+                        return {'skip': True, 'type' : skipType, 'reason': skipReason}
+
+                    if skip == 'thor' and 'thorlcr' == skipType:
+                        return {'skip': True, 'type' : skipType, 'reason': skipReason}
+
+            except Exception as e:
+                logging.debug( e, extra={'taskId':self.taskId})
+                logging.debug("%s",  traceback.format_exc().replace("\n","\n\t\t"),  extra={'taskId':self.taskId} )
+                raise Error("6005", err='file: %s:%d\n text: \"%s\"' % (self.getEcl(), skipLine['lineNo'], skipLine['line']))
+
         return {'skip': False}
 
     def __checkTag(self,  tag):
@@ -384,7 +411,6 @@ class ECLFile:
         if self.isVersions == False and not self.args.noversion:
             tag = b'//version'
             logging.debug("%3d. testVesion (ecl:'%s', tag:'%s')", self.taskId, self.ecl, tag)
-            retVal = False
             self.versions = []
             eclText = open(self.getEcl(), 'rb')
             for line in eclText:
@@ -392,7 +418,6 @@ class ECLFile:
                     items = line.replace(tag, '').strip().replace('"', '')
                     if '=' in items:
                         self.versions.append(items)
-                        retVal = True
                         self.isVersions = True
                         pass
         logging.debug("%3d. testVesion() returns with isVersions = '%s'", self.taskId,  self.isVersions)
@@ -434,15 +459,16 @@ class ECLFile:
         self.timeout = timeout
 
     def testResults(self):
-        d = difflib.Differ()
         try:
             expectedKeyPath = self.getExpected()
             logging.debug("%3d. EXP: " + expectedKeyPath,  self.taskId )
             logging.debug("%3d. REC: " + self.getResults(),  self.taskId )
             if not os.path.isfile(expectedKeyPath):
+                self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
                 self.diff += "KEY FILE NOT FOUND. " + expectedKeyPath
                 raise IOError("KEY FILE NOT FOUND. " + expectedKeyPath)
             if not os.path.isfile(self.getResults()):
+                self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
                 self.diff += "RESULT FILE NOT FOUND. " + self.getResults()
                 raise IOError("RESULT FILE NOT FOUND. " + self.getResults())
             expected = open(expectedKeyPath, 'r').readlines()
@@ -476,16 +502,25 @@ class ECLFile:
         self.elapsTime = time
 
     def setJobnameVersion(self,  version):
+        # Overrides the global flushDiskCache parameter if --pq <= 1
+        # There is no sense to clear disk cache if same test running parallel by versioning
+        if ('flushDiskCache=true' in version) and (self.args.pq in (0, 1)):
+            self.isFlushDiskCache = True
+        if 'flushDiskCache=false' in version:
+            self.isFlushDiskCache = False
+
         # convert this kind of version string
         #  'multiPart=false,useSequential=true'
         # to this
         #   'multiPart(false)-useSequential(true)'
-        
         self.jobnameVersion += '-' +version.replace('=', '(').replace(',', ')-')+')'
         pass
         
     def setJobname(self,  timestamp):
-        self.jobname = self.basename + self.jobnameVersion +"-"+timestamp
+        self.jobname = self.basename + self.jobnameVersion
+        if len(timestamp) > 0:
+            self.jobname += "-" + timestamp
+        self.jobname += self.jobNameSuffix
 
     def getJobname(self):
         return self.jobname
@@ -602,3 +637,7 @@ class ECLFile:
     def getEclccWarningChanges(self):
         # return with self.eclccWarningChanges
         return self.eclccWarningChanges+"\n"
+
+    def flushDiskCache(self):
+        logging.debug("%3d. isFlushDiskCache (ecl:'%s'): '%s')" % (self.taskId,  self.ecl, str(self.isFlushDiskCache)))
+        return self.isFlushDiskCache

@@ -155,6 +155,7 @@
 <st id='ViewDetails'>View Details</st>
 <st id='ViewingPage'>Viewing page</st>
 <st id='ViewLogFile'>View Log File</st>
+<st id='ViewAuditLogFile'>View Audit Log File</st>
 <st id='WarnIfAvailableDiskSpaceIsUnder'>Warn if available disk space is under</st>
 <st id='WarnIfAvailableMemoryIsUnder'>Warn if available memory is under</st>
 <st id='WarnIfCPUUsageIsOver'>Warn if CPU usage is over</st>

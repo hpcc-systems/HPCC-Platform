@@ -107,7 +107,7 @@ class CascadeManager : public CInterface
             if (traceLevel > 5)
                 DBGLOG("globalLock released");
             globalLock.signal();
-            atomic_inc(&globalSignals);
+            globalSignals++;
         }
     }
 
@@ -256,7 +256,7 @@ private:
             DBGLOG("in getGlobalLock");
         if (!globalLock.wait(2000))  // since all lock in the same order it's ok to block for a bit here
             throw MakeStringException(ROXIE_LOCK_ERROR, "lock failed");
-        atomic_inc(&globalLocks);
+        globalLocks++;
         entered = true;
         if (traceLevel > 5)
             DBGLOG("globalLock locked");
@@ -275,7 +275,7 @@ private:
             assertex(entered);
             entered = false;
             globalLock.signal();
-            atomic_inc(&globalSignals);
+            globalSignals++;
             if (traceLevel > 5)
                 DBGLOG("globalLock released");
             throw;
@@ -962,7 +962,7 @@ public:
     {
         Owned<IPooledThread> worker = createNew();
         worker->init((void *) query);
-        worker->main();
+        worker->threadmain();
     }
 
     virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, bool continuationNeeded)
@@ -1072,18 +1072,18 @@ public:
     }
 
     //  interface IPooledThread
-    virtual void init(void *)
+    virtual void init(void *) override
     {
         qstart = msTick();
         time(&startTime);
     }
 
-    virtual bool canReuse()
+    virtual bool canReuse() const override
     {
         return true;
     }
 
-    virtual bool stop()
+    virtual bool stop() override
     {
         ERRLOG("RoxieQueryWorker stopped with queries active");
         return true;
@@ -1136,13 +1136,13 @@ public:
     {
     }
 
-    virtual void init(void *_r)
+    virtual void init(void *_r) override
     {
         wuid.set((const char *) _r);
         RoxieQueryWorker::init(_r);
     }
 
-    virtual void main()
+    virtual void threadmain() override
     {
         assertex(wuid.length());
         bool standalone = *wuid.str()=='-';
@@ -1165,6 +1165,13 @@ public:
             wu.setown(daliHelper->attachWorkunit(wuid.get(), NULL));
         }
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
+        if (wu->hasDebugValue("GlobalId"))
+        {
+            SCMStringBuffer globalId;
+            SocketEndpoint ep;
+            ep.setLocalHost(0);
+            logctx->setGlobalId(wu->getDebugValue("GlobalId", globalId).str(), ep, GetCurrentProcessId());
+        }
         Owned<IQueryFactory> queryFactory;
         try
         {
@@ -1212,8 +1219,7 @@ public:
         unsigned priority = (unsigned) -2;
         try
         {
-            atomic_inc(&queryCount);
-
+            queryCount++;
             bool isBlind = wu->getDebugValueBool("blindLogging", false);
             if (pool)
             {
@@ -1280,7 +1286,23 @@ public:
         {
             StringBuffer s;
             logctx.getStats(s);
-            logctx.CTXLOG("COMPLETE: %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d%s", wuid.get(), elapsed, memused, priority, slavesReplyLen, s.str());
+
+            StringBuffer txidInfo;
+            const char *globalId = logctx.queryGlobalId();
+            if (globalId && *globalId)
+            {
+                txidInfo.append(" [GlobalId: ").append(globalId);
+                SCMStringBuffer s;
+                wu->getDebugValue("CallerId", s);
+                if (s.length())
+                    txidInfo.append(", CallerId: ").append(s.str());
+                s.set(logctx.queryLocalId());
+                if (s.length())
+                    txidInfo.append(", LocalId: ").append(s.str());
+                txidInfo.append(']');
+            }
+
+            logctx.CTXLOG("COMPLETE: %s%s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d%s", wuid.get(), txidInfo.str(), elapsed, memused, priority, slavesReplyLen, s.str());
         }
     }
 
@@ -1311,6 +1333,7 @@ class RoxieProtocolMsgContext : implements IHpccProtocolMsgContext, public CInte
 public:
     StringAttr queryName;
     StringAttr uid = "-";
+    StringAttr callerId;
     Owned<CascadeManager> cascade;
     Owned<IDebuggerContext> debuggerContext;
     Owned<CDebugCommandHandler> debugCmdHandler;
@@ -1326,7 +1349,7 @@ public:
     {
         ep.set(_ep);
         unknownQueryStats.noteActive();
-        atomic_inc(&queryCount);
+        queryCount++;
     }
     ~RoxieProtocolMsgContext()
     {
@@ -1388,14 +1411,24 @@ public:
         return *cascade;
     }
 
-    virtual void setTransactionId(const char *id)
+    virtual void setTransactionId(const char *id, bool global)
     {
         if (!id || !*id)
             return;
         uid.set(id);
         ensureContextLogger();
+        if (!isEmptyString(logctx->queryGlobalId())) //globalId wins
+            return;
+        if (global)
+            logctx->setGlobalId(id, ep, 0);
         StringBuffer s;
         logctx->set(ep.getIpText(s).appendf(":%u{%s}", ep.port, uid.str()).str());
+    }
+    virtual void setCallerId(const char *id)
+    {
+        if (!id || !*id)
+            return;
+        callerId.set(id);
     }
     inline IDebuggerContext &ensureDebuggerContext(const char *id)
     {
@@ -1513,7 +1546,20 @@ public:
             {
                 StringBuffer s;
                 logctx->getStats(s);
-                logctx->CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid.get(), peer, elapsed, memused, getQueryPriority(), slavesReplyLen, bytesOut, continuationNeeded, s.str());
+
+                StringBuffer txIds;
+                if (callerId.length())
+                    txIds.appendf("caller: %s", callerId.str());
+                const char *localId = logctx->queryLocalId();
+                if (localId && *localId)
+                {
+                    if (txIds.length())
+                        txIds.append(", ");
+                    txIds.append("local: ").append(localId);
+                }
+                if (txIds.length())
+                    txIds.insert(0, '[').append(']');
+                logctx->CTXLOG("COMPLETE: %s %s%s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), slavesReplyLen, bytesOut, continuationNeeded, s.str());
             }
         }
     }
@@ -1804,6 +1850,18 @@ IArrayOf<IHpccProtocolListener> socketListeners;
 MapStringToMyClass<SharedObject> protocolDlls;
 MapStringToMyClass<IHpccProtocolPlugin> protocolPlugins;
 
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+
+MODULE_EXIT()
+{
+    socketListeners.kill();
+    protocolPlugins.kill();
+    protocolDlls.kill();
+}
+
 IHpccProtocolPlugin *ensureProtocolPlugin(IHpccProtocolPluginContext &protocolCtx, const char *soname)
 {
     IHpccProtocolPlugin *plugin = protocolPlugins.getValue(soname ? soname : "native");
@@ -1812,7 +1870,7 @@ IHpccProtocolPlugin *ensureProtocolPlugin(IHpccProtocolPluginContext &protocolCt
     if (!soname)
     {
         Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(&protocolCtx, ensureLimiterFactory());
-        protocolPlugins.setValue("native", protocolPlugin.getLink());
+        protocolPlugins.setValue("native", protocolPlugin);
         return protocolPlugin.getClear();
     }
     Owned<SharedObject> so = new SharedObject();

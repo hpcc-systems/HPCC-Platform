@@ -28,11 +28,11 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPRequest",
-    "hpcc/ESPWorkunit",
+    "src/ESPRequest",
+    "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/WsTopology",
-    "hpcc/ESPUtil"
+    "src/WsTopology",
+    "src/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 registry, ContentPane, Button,

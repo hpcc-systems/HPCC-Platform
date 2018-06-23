@@ -86,17 +86,7 @@ public:
         if (pipe->run("git", gitcmd, ".", false, true, false, 0))
         {
             Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
-            const size32_t chunkSize = 8192;
-            for (;;)
-            {
-                size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
-                if (sizeRead < chunkSize)
-                {
-                    buf.setLength(buf.length() - (chunkSize - sizeRead));
-                    if (!sizeRead)
-                        break;
-                }
-            }
+            readSimpleStream(buf, *pipeReader);
             pipe->closeOutput();
         }
         int retcode = pipe->wait();

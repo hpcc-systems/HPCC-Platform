@@ -21,8 +21,8 @@ define([
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPQuery",
+    "src/ESPWorkunit",
+    "src/ESPQuery",
     "hpcc/ResultWidget",
     "hpcc/FullResultWidget",
     "hpcc/LFDetailsWidget",
@@ -134,7 +134,7 @@ define([
 
         refresh: function (params) {
             if (params.Wuid) {
-                if (!this.wu || (this.wu.Wuid != params.Wuid)) {
+                if (!this.wu || (this.wu.Wuid !== params.Wuid)) {
                     this.clear();
                     this.init(params);
                 }

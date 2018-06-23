@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="configure-and-deploy-security-manager-plugin">
+  <title role="nbrk">Configure and Deploy the Security Manager Plugin</title>
+
+  <para>The following sections detail the process of configuring your HPCC
+  system to use the Security Manager Plugin.</para>
+
+  <sect1 id="how-to-configure-an-existing-security-manager-plugin">
+    <title>How to Configure a Security Manager Plugin</title>
+
+    <para>Once the plugin has been installed, the plugin can be configured
+    onto the HPCC platform using Configuration Manager.</para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Stop all HPCC Components.</para>
+
+          <para>Verify that they are stopped. You can use a single command,
+          such as : <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Connect your web browser to the Configuration Manager web
+          interface.</para>
+
+          <para>Use the url
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015</para>
+
+          <para>where <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the
+          IP address of the node running Configuration Manager.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="strong">Advanced View</emphasis>
+          radio button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the appropriate XML configuration file.</para>
+
+          <para><emphasis role="strong">Note:</emphasis> Configuration Manager
+          never works on the active configuration file. After you finish
+          editing you will have to copy the environment.xml to the active
+          location and push it out to all nodes.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the Write Access box.</para>
+        </listitem>
+
+        <listitem>
+          <para>Create an instance of the Security Manager Plugin:
+          <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Right-click on Navigator Pane on the left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select <emphasis role="bold">New
+                Components</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>Select the appropriate component
+                &lt;name_of_Security_Manager_plugin&gt;</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Configure the Security Manager Plugin: (Example shown using
+          the Htpasswd plugin*)<figure>
+              <title>Security Mgr Configuration page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/SECM_001.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <orderedlist numeration="loweralpha">
+            <listitem>
+              <para>Provide an instance name</para>
+            </listitem>
+
+            <listitem>
+              <para>Provide a (fully qualified) library name</para>
+            </listitem>
+
+            <listitem>
+              <para>InstanceFactoryName defaults to "createInstance" if the
+              library specified in the previous step provides an alternate
+              factory method, it can be specified here.</para>
+            </listitem>
+
+            <listitem>
+              <para>Provide any custom entries required. In the example shown,
+              <emphasis>htpasswdFile</emphasis> is a custom entry.</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Associate the Security Manager Plugin with the ESP binding(s)
+          <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Click on the target Esp in the Navigator Pane on the
+                left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the<emphasis role="bold"> ESP</emphasis>
+                (Process) <emphasis role="bold">Service bindings</emphasis>
+                tab</para>
+              </listitem>
+
+              <listitem>
+                <para>On the target binding(s) select the appropriate
+                securityMgrPlugin instance from the drop list.<figure>
+                    <title>Bind to ESP</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="../../images/SECM_004.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Enable the use of the Security Manager Plugin - Select the
+          <emphasis role="bold">Authentication</emphasis> tab, in the method
+          entry select <emphasis role="bold">secmgrPlugin</emphasis> <figure>
+              <title>Security Mgr Configuration page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/SECM_002.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Save the environment file</para>
+        </listitem>
+
+        <listitem>
+          <para>Distribute the environment file to every node in your
+          cluster</para>
+        </listitem>
+
+        <listitem>
+          <para>Restart your environment.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <sect2 id="even-more-info">
+      <title>A video tutorial</title>
+
+      <para>Need further information? Check out the following video tutorial
+      demonstrating how to configure a security plugin.</para>
+
+      <para><ulink
+      url="https://www.youtube.com/watch?v=lNVwEOFkKgY&amp;feature=youtu.be">https://www.youtube.com/watch?v=lNVwEOFkKgY&amp;feature=youtu.be</ulink></para>
+
+      <para>Click the above link to watch the video.</para>
+    </sect2>
+  </sect1>
+</chapter>

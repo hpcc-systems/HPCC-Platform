@@ -37,6 +37,8 @@
 #include "hqlplugins.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
+#include "rtlcommon.hpp"
+#include "rtldynfield.hpp"
 #include "workunit.hpp"
 #include "eventqueue.hpp"
 #include "schedulectrl.hpp"
@@ -268,7 +270,7 @@ public:
     {
     }
 
-    void init(void *_r)
+    virtual void init(void *_r) override
     {
         client.setown(new CSafeSocket((ISocket *) _r));
     }
@@ -326,7 +328,7 @@ public:
             throw MakeStringException(0, "Malformed request");
     }
 
-    void main()
+    virtual void threadmain() override
     {
         StringBuffer rawText;
         unsigned priority = (unsigned) -2;
@@ -413,12 +415,12 @@ public:
         client->write(&replyLen, sizeof(replyLen));
     }
 
-    bool canReuse()
+    virtual bool canReuse() const override
     {
         return true;
     }
 
-    bool stop()
+    virtual bool stop() override
     {
         ERRLOG("CHThorDebugSocketWorker stopped with queries active");
         return true; 
@@ -525,7 +527,6 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
 
     StringAttrAdaptor adaptor(clusterType);
     wuRead->getDebugValue("targetClusterType", adaptor);
-    rltCache.setown(createRecordLayoutTranslatorCache());
     pluginMap = NULL;
     stopAfter = globals->getPropInt("-limit",-1);
 
@@ -623,7 +624,7 @@ StringBuffer & EclAgent::getTempfileBase(StringBuffer & buff)
 const char *EclAgent::queryTemporaryFile(const char *fname)
 {
     StringBuffer tempfilename;
-    getTempfileBase(tempfilename).append('.').append(fname);
+    getTempfileBase(tempfilename).append(PATHSEPCHAR).append(fname);
     CriticalBlock crit(tfsect);
     ForEachItemIn(idx, tempFiles)
     {
@@ -639,7 +640,7 @@ const char *EclAgent::queryTemporaryFile(const char *fname)
 const char *EclAgent::noteTemporaryFile(const char *fname)
 {
     StringBuffer tempfilename;
-    getTempfileBase(tempfilename).append('.').append(fname);
+    getTempfileBase(tempfilename).append(PATHSEPCHAR).append(fname);
     CriticalBlock crit(tfsect);
     tempFiles.append(tempfilename.str());
     return tempFiles.item(tempFiles.length()-1);
@@ -698,6 +699,19 @@ void EclAgent::abort()
 {
     if (activeGraph)
         activeGraph->abort();
+}
+
+RecordTranslationMode EclAgent::getLayoutTranslationMode() const
+{
+    IConstWorkUnit *wu = queryWorkUnit();
+    SCMStringBuffer val;
+    if(wu->hasDebugValue("layoutTranslation"))
+        wu->getDebugValue("layoutTranslation", val);
+    else
+    {
+        // more should read from the configuration?
+    }
+    return getTranslationMode(val.str());
 }
 
 IConstWUResult *EclAgent::getResult(const char *name, unsigned sequence)
@@ -1021,7 +1035,7 @@ void EclAgent::getExternalResultRaw(unsigned & tlen, void * & tgt, const char * 
     }
 }
 
-void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+void EclAgent::getResultRowset(size32_t & tcount, const byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
 {
     tgt = NULL;
     PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
@@ -1035,7 +1049,7 @@ void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * s
     );
 }
 
-void EclAgent::getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+void EclAgent::getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
 {
     tcount = 0;
     tgt = NULL;
@@ -1824,6 +1838,7 @@ void EclAgent::doProcess()
     PrintLog ("Entering doProcess ()");
 #endif
     bool failed = true;
+    CCycleTimer elapsedTimer;
     try
     {
         LOG(MCrunlock, unknownJob, "Waiting for workunit lock");
@@ -1845,7 +1860,7 @@ void EclAgent::doProcess()
             if(noRetry && (w->getState() == WUStateFailed))
                 throw MakeStringException(0, "Ecl agent started in 'no retry' mode for failed workunit, so failing");
             w->setState(WUStateRunning);
-            addTimeStamp(w, SSTglobal, NULL, StWhenQueryStarted);
+            addTimeStamp(w, SSTglobal, NULL, StWhenStarted);
             if (isRemoteWorkunit)
             {
                 w->setAgentSession(myProcessSession());
@@ -1915,7 +1930,8 @@ void EclAgent::doProcess()
 
         WorkunitUpdate w = updateWorkUnit();
 
-        addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
+        addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
+        updateWorkunitStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedTimer.elapsedNs());
         addTimings();
 
         switch (w->getState())
@@ -1977,6 +1993,25 @@ void EclAgent::doProcess()
             w->deleteTempFiles(NULL, false, deleteJobTemps);
             if (deleteJobTemps)
                 w->deleteTemporaries();
+            deleteTempFiles();
+            StringBuffer jobTempDir;
+            getTempfileBase(jobTempDir);
+            OwnedIFile dir = createIFile(jobTempDir);
+            StringBuffer rmMsg;
+            unsigned errCode = 0;
+            try
+            {
+               if (!dir->remove())
+                    rmMsg.append("Failed to remove temporary directory: ").append(jobTempDir.str());
+            }
+            catch (IException *e)
+            {
+                errCode = e->errorCode();
+                e->errorMessage(rmMsg);
+                e->Release();
+            }
+            if (rmMsg.length())
+                WARNLOG(errCode, "%s", rmMsg.str());
         }
 
         if (globals->getPropBool("DUMPFINALWU", false))
@@ -2048,6 +2083,31 @@ void EclAgent::runProcess(IEclProcess *process)
 
     bool retainMemory = agentTopology->getPropBool("@heapRetainMemory", false);
     retainMemory = globals->getPropBool("heapRetainMemory", retainMemory);
+
+    if (globals->hasProp("@httpGlobalIdHeader"))
+        updateDummyContextLogger().setHttpIdHeaders(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
+
+    if (queryWorkUnit()->hasDebugValue("GlobalId"))
+    {
+        SCMStringBuffer globalId;
+        queryWorkUnit()->getDebugValue("GlobalId", globalId);
+        if (globalId.length())
+        {
+            SocketEndpoint thorEp;
+            thorEp.setLocalHost(0);
+            updateDummyContextLogger().setGlobalId(globalId.str(), thorEp, GetCurrentProcessId());
+
+            VStringBuffer msg("GlobalId: %s", globalId.str());
+            SCMStringBuffer txId;
+            queryWorkUnit()->getDebugValue("CallerId", txId);
+            if (txId.length())
+                msg.append(", CallerId: ").append(txId.str());
+            txId.set(updateDummyContextLogger().queryLocalId());
+            if (txId.length())
+                msg.append(", LocalId: ").append(txId.str());
+            updateDummyContextLogger().CTXLOG("%s", msg.str());
+        }
+    }
 
 #ifndef __64BIT__
     if (memLimitMB > 4096)
@@ -2973,7 +3033,7 @@ char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
     return out.detach();
 }
 
-IConstWorkUnit *EclAgent::queryWorkUnit()
+IConstWorkUnit *EclAgent::queryWorkUnit() const
 {
     return wuRead;
 }
@@ -3374,6 +3434,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     if (globals->getPropInt("DAFILESRVCACHE", 1))
         setDaliServixSocketCaching(true);
 
+    enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
+
     try
     {
 #ifdef MONITOR_ECLAGENT_STATUS  
@@ -3424,7 +3486,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 Owned<IWorkUnit> daliWu = factory->createWorkUnit("eclagent", "eclagent");
                 IExtendedWUInterface * extendedWu = queryExtendedWU(daliWu);
-                extendedWu->copyWorkUnit(standAloneWorkUnit, true);
+                extendedWu->copyWorkUnit(standAloneWorkUnit, true, true);
                 wuid.set(daliWu->queryWuid());
                 globals->setProp("WUID", wuid.str());
 
@@ -3505,18 +3567,21 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             {
                 EclAgent agent(w, wuid.str(), globals->getPropInt("IGNOREVERSION", 0)==0, globals->getPropBool("WFRESET", false), globals->getPropBool("NORETRY", false), logfilespec.str(), globals->queryProp("allowedPipePrograms"), query.getClear(), globals, agentTopology, logMsgHandler);
                 const bool isRemoteWorkunit = (daliServers.length() != 0);
-                const bool resolveFilesLocally = !isRemoteWorkunit || globals->getPropBool("USELOCALFILES", false);
-                const bool writeResultsToStdout = !isRemoteWorkunit || globals->getPropBool("RESULTSTOSTDOUT", false);
+                const bool resolveFilesLocally = standAloneExe && (!isRemoteWorkunit || globals->getPropBool("USELOCALFILES", false));
+                const bool writeResultsToStdout = standAloneExe && (!isRemoteWorkunit || globals->getPropBool("RESULTSTOSTDOUT", true));
 
                 outputFmts outputFmt = ofSTD;
-                if (globals->getPropBool("-xml", false))
-                    outputFmt = ofXML;
-                else if (globals->getPropBool("-raw", false))
-                    outputFmt = ofRAW;
-                else if (globals->getPropBool("-csv", false))
+                if (writeResultsToStdout)
                 {
-                    fprintf(stdout,"\nCSV output format not supported\n");
-                    return false;
+                    if (globals->getPropBool("-xml", false))
+                        outputFmt = ofXML;
+                    else if (globals->getPropBool("-raw", false))
+                        outputFmt = ofRAW;
+                    else if (globals->getPropBool("-csv", false))
+                    {
+                        fprintf(stdout,"\nCSV output format not supported\n");
+                        return false;
+                    }
                 }
 
                 agent.setStandAloneOptions(standAloneExe, isRemoteWorkunit, resolveFilesLocally, writeResultsToStdout, outputFmt, standAloneUDesc);

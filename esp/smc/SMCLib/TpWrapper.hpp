@@ -167,7 +167,7 @@ public:
     void setTpMachine(IConstMachineInfo* machine, IEspTpMachine& tpMachine);
     IEspTpMachine* createTpMachineEx(const char* name, const char* type, IConstMachineInfo* machineInfo);
 
-    void getTpDaliServers(IArrayOf<IConstTpDali>& list);
+    void getTpDaliServers(double clientVersion, IArrayOf<IConstTpDali>& list);
     void getTpEclServers(IArrayOf<IConstTpEclServer>& ServiceList, const char* name = NULL);
     void getTpEclCCServers(IArrayOf<IConstTpEclServer>& ServiceList, const char* name = NULL);
     void getTpEclCCServers(IPropertyTree* environmentSoftware, IArrayOf<IConstTpEclServer>& ServiceList, const char* name = NULL);

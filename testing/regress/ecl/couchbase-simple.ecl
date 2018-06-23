@@ -25,7 +25,13 @@ IMPORT couchbase;
    The sample data is easily set-up, please refer to the couchbase documentation for set-up
 *******************************************************************************************/
 
-server := '127.0.0.1';            //change this to point to your couchbase
+/*
+ * change this to point to your couchbase
+ * or use '-X CouchbaseServerIp=<your_couchbase_ip_address>' parameter in your CLI
+ * to pass server address
+ */
+server := '127.0.0.1' : STORED('CouchbaseServerIp');
+
 thebucket := 'travel-sample';
 
 namerec := RECORD

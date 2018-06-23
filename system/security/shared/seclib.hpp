@@ -142,7 +142,10 @@ interface ISecCredentials : extends IInterface
 {
     virtual bool setPassword(const char * pw) = 0;
     virtual const char * getPassword() = 0;
-    virtual bool addToken(unsigned type, void * data, unsigned length) = 0;
+    virtual void setSessionToken(unsigned token) = 0;
+    virtual unsigned getSessionToken() = 0;
+    virtual void setSignature(const char * signature) = 0;
+    virtual const char * getSignature() = 0;
     virtual bool setPasswordExpiration(CDateTime & expirationDate) = 0;
     virtual CDateTime & getPasswordExpiration(CDateTime & expirationDate) = 0;
     virtual int getPasswordDaysRemaining() = 0;
@@ -289,6 +292,7 @@ enum secManagerType : int
     SMT_Local,
     SMT_LDAP,
     SMT_HTPasswd,
+    SMT_SingleUser,
     SMT_HTPluggable
 };
 interface IEspSecureContext;
@@ -337,6 +341,7 @@ interface ISecManager : extends IInterface
     virtual bool authenticateUser(ISecUser & user, bool * superUser) = 0;
     virtual secManagerType querySecMgrType() = 0;
     virtual const char* querySecMgrTypeName() = 0;
+    virtual bool logoutUser(ISecUser & user) = 0;
 };
 
 interface IRestartHandler : extends IInterface

@@ -27,11 +27,13 @@ import glob
 
 from hpcc.util import argparse
 from hpcc.regression.regress import Regression
-from hpcc.util.ecl.file import ECLFile
-from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress, parentPath, checkClusters, checkHpccStatus
+from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath
+from hpcc.util.util import getRealIPAddress, checkClusters, checkHpccStatus
+from hpcc.util.util import getEclRunArgs, isSudoer
 from hpcc.util.expandcheck import ExpandCheck
 from hpcc.common.error import Error
 from hpcc.common.config import Config
+from hpcc.common.logger import Logger
 
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
@@ -40,12 +42,39 @@ if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
 class RegressMain:
 
     def listClusters(self):
-        Clusters = []
-        for cluster in self.regress.config.Clusters:
-            Clusters.append(str(cluster))
-        print "Avaliable Clusters: "
-        for i in Clusters:
-            print i
+        if self.args.setup:
+            print "Setup test cases: "
+            for cluster in self.targetClusters:
+                print("Cluster: %s" % (cluster))
+                self.args.target = cluster
+                suite = self.regress.Setup(self.args)
+                for test in suite.getSuite():
+                    if self.args.createEclRunArg:
+                        print("%s " % (getEclRunArgs(test,  cluster))),
+                        print("%s/%s" % (test.dir_ec, test.getBaseEcl()))
+                    else:
+                        print(test.getBaseEclRealName())
+            pass
+        elif self.args.run:
+            print "Run test cases: "
+            for cluster in self.targetClusters:
+                self.regress.bootstrap(cluster, self.args)
+                print("Cluster: %s" % (cluster))
+                suite = self.regress.suites[cluster]
+                for test in suite.getSuite():
+                    if self.args.createEclRunArg:
+                        print("%s " % (getEclRunArgs(test,  cluster))),
+                        print("%s" % (test.getBaseEcl()))
+                    else:
+                        print(test.getBaseEclRealName())
+            pass
+        else:
+            Clusters = []
+            for cluster in self.regress.config.Clusters:
+                Clusters.append(str(cluster))
+            print "Available Clusters: "
+            for i in Clusters:
+                print i
 
     def query(self):
         if not self.args.query:
@@ -89,7 +118,7 @@ class RegressMain:
                     logging.error("%s. No ECL file match for cluster:'%s'!" % (1,  self.args.target))
                     raise Error("4001")
             except IOError:
-                logging.error("%s. Query %s does not exist!" % (1,  eclfile.getBaseEcl()))
+                logging.error("%s. Some query does not exist!" % (0))
                 exit()
 
     def setup(self):
@@ -116,6 +145,7 @@ class RegressMain:
         description = 'HPCC Platform Regression suite'
         pythonVer = getVersionNumbers()
         defaultConfigFile="ecl-test.json"
+        self.log = Logger('info')
 
         if (pythonVer['main'] <= 2) and (pythonVer['minor'] <=6) and (pythonVer['patch'] <6):
             print "\nError!"
@@ -133,26 +163,25 @@ class RegressMain:
             atexit.register(logging.shutdown)
 
         helperParser=argparse.ArgumentParser(add_help=False)
-        helperParser.add_argument('--config', help="config file to use. Default: ecl-test.json",
+        helperParser.add_argument('--config', help="Config file to use. Default: ecl-test.json",
                             nargs='?', default=defaultConfigFile)
-        helperParser.add_argument('--loglevel', help="set the log level. Use debug for more detailed logfile.",
+        helperParser.add_argument('--loglevel', help="Set the log level. Use debug for more detailed logfile.",
                             nargs='?', default="info",
                             choices=['info', 'debug'])
 
         commonParser=argparse.ArgumentParser(add_help=False)
-        commonParser.add_argument('--suiteDir', '-s', help="suiteDir to use. Default value is the current directory and it can handle relative path.",
+        commonParser.add_argument('--suiteDir', '-s', help="SuiteDir to use. Default value is the current directory and it can handle relative path.",
                             nargs='?', default=".")
-        commonParser.add_argument('--timeout', help="timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file.",
+        commonParser.add_argument('--timeout', help="Timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file.",
                             nargs='?', default="0")
-        commonParser.add_argument('--keyDir', '-k', help="key file directory to compare test output. Default value defined in ecl-test.json config file.",
+        commonParser.add_argument('--keyDir', '-k', help="Key file directory to compare test output. Default value defined in ecl-test.json config file.",
                             nargs='?', default="ecl/key")
-        commonParser.add_argument('--ignoreResult', '-i', help="completely ignore the result.",
+        commonParser.add_argument('--ignoreResult', '-i', help="Completely ignore the result.",
                             action='store_true')
-        commonParser.add_argument('-X', help="sets the stored input value (stored('name')).",
+        commonParser.add_argument('-X', help="Sets the stored input value (stored('name')).",
                             nargs=1, type=checkXParam,  default='None',  metavar="name1=value1[,name2=value2...]")
-        commonParser.add_argument('-f', help="set an ECL option (equivalent to #option and multiple -f can be use in a command line).", action="append",
-                            type=checkXParam,  metavar="optionA=valueA[,optionB=valueB...]")
-
+        commonParser.add_argument('-f', help="Set an ECL option (equivalent to #option and multiple -f can be use in a command line).", action="append",
+                            metavar="optionA=valueA[,optionB=valueB...]")
         commonParser.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )",
                                 type=checkPqParam,  default = 0,   metavar="threadNumber")
         commonParser.add_argument('--noversion', help="Avoid version expansion of queries. Execute them as a standard test.",
@@ -161,35 +190,52 @@ class RegressMain:
                                 nargs='?', default=None,  metavar="networkAddress")
 
         executionParser=argparse.ArgumentParser(add_help=False)
-        executionParser.add_argument('--runclass', '-r', help="run subclass(es) of the suite. Default value is 'all'",
+        executionParser.add_argument('--runclass', '-r', help="Run subclass(es) of the suite. Default value is 'all'",
                                 nargs=1,  default = ['all'],   metavar="class[,class,...]")
-        executionParser.add_argument('--excludeclass', '-e', help="exclude subclass(es) of the suite. Default value is 'none'",
+        executionParser.add_argument('--excludeclass', '-e', help="Exclude subclass(es) of the suite. Default value is 'none'",
                                 nargs=1,  default = ['none'],   metavar="class[,class,...]")
-        executionParser.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
-                                action='store_true')
+        executionParser.add_argument('--jobnamesuffix', help="Specify workunit job name suffix.", default='',
+                                metavar="suffix")
+        executionParser.add_argument('--flushDiskCache', help="Flush OS (Linux) Disk Cache before execute ECL code (sudo privileges needed). Ignored when --pq <n>  > 1"
+                                , action = 'store_true')
+
 
         parser = argparse.ArgumentParser(prog=prog, description=description,  parents=[helperParser, commonParser,  executionParser])
 
-        subparsers = parser.add_subparsers(help='sub-command help')
+        subparsers = parser.add_subparsers(help='Sub-command help')
 
-        parser_list = subparsers.add_parser('list', help='list help', parents=[helperParser])
+        parser_list = subparsers.add_parser('list', help='List help', parents=[helperParser, executionParser])
         parser_list.set_defaults(func='list')
-        parser_list.add_argument('targets', help="Print target clusters from config (ecl-test.json by default).",
+        parser_list.add_argument('--clusters', help="Print target clusters from config (ecl-test.json by default).",
                                  action='store_true')
+        parser_list.add_argument('--setup', help="Print testcases executed in setup.",
+                                 action='store_true')
+        parser_list.add_argument('--run', help="Print test cases executed in run.",
+                                 action='store_true')
+        parser_list.add_argument('--target', '-t', help="Provide target cluster(s) to list test cases. If target = 'all' then list test cases on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
+                                nargs='?', type=str,  default='', metavar="target_cluster_list | all")
+        parser_list.add_argument('--createEclRunArg', help="Generate ECL tool command line.",
+                                action='store_true')
 
-        parser_setup = subparsers.add_parser('setup', help='setup help',  parents=[helperParser, commonParser, executionParser])
+
+        parser_setup = subparsers.add_parser('setup', help='Setup help',  parents=[helperParser, commonParser, executionParser])
         parser_setup.set_defaults(func='setup')
         parser_setup.add_argument('--target', '-t', help="Run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
                                 nargs='?', type=str,  default='', metavar="target_cluster_list | all")
+        parser_setup.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
+                                action='store_true')
 
-        parser_run = subparsers.add_parser('run', help='run help',  parents=[helperParser, commonParser, executionParser])
+        parser_run = subparsers.add_parser('run', help='Run help',  parents=[helperParser, commonParser, executionParser])
         parser_run.set_defaults(func='run')
         parser_run.add_argument('--target', '-t', help="Run the cluster(s) suite. If target = 'all' then run suite on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
                                 nargs='?', type=str,  default='', metavar="target_cluster_list | all")
         parser_run.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
+        parser_run.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
+                                action='store_true')
 
-        self.parser_query = subparsers.add_parser('query', help='query help',  parents=[helperParser, commonParser, executionParser])
+
+        self.parser_query = subparsers.add_parser('query', help='Query help',  parents=[helperParser, commonParser, executionParser])
         self.parser_query.set_defaults(func='query')
         self.parser_query.add_argument('query', help="One or more ECL file(s). It can contain wildcards. (mandatory).",
                                   nargs='+', metavar="ECL_query")
@@ -197,8 +243,15 @@ class RegressMain:
                                 nargs='?', default='', metavar="target_cluster_list | all")
         self.parser_query.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
+        self.parser_query.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
+                                action='store_true')
 
-        self.args = parser.parse_args()
+
+        try:
+            self.args = parser.parse_args()
+        except Error as e:
+            logging.critical(e)
+            exit(e.getErrorCode());
 
         regressionSuiteMainDir = os.path.dirname(__file__)
         regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
@@ -215,6 +268,17 @@ class RegressMain:
         if ('server' in self.args) and (self.args.server != None):
             self.config.set('espIp',  self.args.server)
             pass
+
+        if self.args.flushDiskCache and not isSudoer():
+            err = Error("7000")
+            logging.error("%s. clearOSCache error:%s" % (-1,  err))
+            exit(err.getErrorCode())
+
+        # There is no sense to clear disk cache if same test runnnig parallel by versioning
+        if self.args.pq > 1:
+            self.args.flushDiskCache = False
+
+        self.config.set('log',  self.log)
         setConfig(self.config)
 
         # Process target parameter
@@ -282,10 +346,14 @@ class RegressMain:
                 self.run()
         except Error as e:
             logging.critical(e)
-            exit(e.getErrorCode());
+            logging.critical(traceback.format_exc())
+            exit(e.getErrorCode())
         except Exception as e:
+            err = Error("6007")
+            logging.critical(" RegressMain error:%s" % (-1,  err))
             logging.critical(e)
             logging.critical(traceback.format_exc())
+            exit(e.getErrorCode())
         except KeyboardInterrupt:
             logging.critical("Keyboard Interrupt Caught.")
         finally:

@@ -24,7 +24,7 @@ define([
     "dijit/registry",
 
     "hpcc/_Widget",
-    "hpcc/ws_account",
+    "src/ws_account",
 
     "dojo/text!../templates/CurrentUserDetailsWidget.html",
 

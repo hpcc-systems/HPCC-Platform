@@ -21,252 +21,108 @@
 #include "rtlkey.hpp"
 #include "rtlkey2.hpp"
 #include "eclrtl_imp.hpp"
-
-#define KSM_SET             0x01
-#define KSM_WILD            0x02
-#define KSM_LITTLE_ENDIAN   0x04
-#define KSM_SIGNED          0x08
-#define KSM_VAROFFSET       0x10
-#define KSM_TRANSLATED      0x20
-
-
+#include "rtlrecord.hpp"
+#include "rtlnewkey.hpp"
 
 class CKeySegmentMonitor : implements IKeySegmentMonitor, public CInterface
 {
 protected:
     size32_t size;
     size32_t offset;
-    unsigned hash;
+    unsigned fieldIdx;
 
 public:
     IMPLEMENT_IINTERFACE;
-    CKeySegmentMonitor(unsigned _offset, unsigned _size);
-    CKeySegmentMonitor(MemoryBuffer &mb)
+    CKeySegmentMonitor(unsigned _fieldIdx, unsigned _offset, unsigned _size);
+
+    virtual bool matchesBuffer(const void * rawRow) const override = 0;
+    virtual bool matches(const RtlRow * rawRow) const override
     {
-        mb.read(size).read(offset).read(hash);
+        return matchesBuffer(rawRow->queryRow());
     }
 
+    virtual bool increment(void *keyval) const override;
+    virtual unsigned queryFieldIndex() const override { return fieldIdx; }
+    virtual unsigned getOffset() const override { return offset; }
+    virtual unsigned getSize() const override { return size; }
+    virtual bool isWild() const override { return false; }
+    virtual bool isEmpty() const override { return false; }
+    virtual bool isSigned() const override { return false; }
+    virtual bool isLittleEndian() const override { return false; }
+    virtual unsigned numFieldsRequired() const override { return 0; }  // Should rename to queryFieldIdx or similar
 
-    virtual bool increment(void *keyval) const;
-    virtual unsigned getOffset() const { return offset; }
-    virtual unsigned getSize() const { return size; }
-    virtual IKeySegmentMonitor * split(unsigned splitSize) { throwUnexpected(); } // not required in most cases
-    virtual bool isWild() const { return false; }
-    virtual bool isEmpty() const { return false; }
-    virtual void *queryValue() const { return NULL; }
-    virtual bool isSigned() const { return false; }
-    virtual bool isLittleEndian() const { return false; }
-
-    virtual int docompare(const void * l, const void * r) const
-    {
-        char *lptr = ((char *) l) + offset;
-        char *rptr = ((char *) r) + offset;
-        return memcmp(lptr, rptr, size);
-    }
-
-    virtual int docompareraw(const void *l, const void *r) const
+    virtual int docompare(const void * l, const void * r) const override
     {
         char *lptr = ((char *) l) + offset;
         char *rptr = ((char *) r) + offset;
         return memcmp(lptr, rptr, size);
     }
 
-    virtual bool equivalentTo(const IKeySegmentMonitor &other) const 
+    virtual bool getBloomHash(hash64_t &hash) const override
     {
-        return offset==other.getOffset() 
-            && size==other.getSize() 
-            && isSigned()==other.isSigned() 
-            && isLittleEndian()==other.isLittleEndian();
+        return false;
     }
 
-    virtual unsigned queryHashCode() const
-    {
-        return hash;
-    }
+    virtual void setHigh(void *keyval) const override;
 
-    virtual bool setOffset(unsigned _offset)
-    {
-        offset = _offset;
-        return true;
-    }
-
-    virtual void setHigh(void *keyval) const;
-
-    virtual bool isSimple() const
-    {
-        return false; // err on the side of caution
-    }
-
-    virtual void copy(void * l, const void * r) const
+    virtual void copy(void * l, const void * r) const override
     {
         char *lptr = ((char *) l) + offset;
         char *rptr = ((char *) r) + offset;
         memcpy(lptr, rptr, size);
     }
-    
-    virtual MemoryBuffer &serialize(MemoryBuffer &mb) const
-    {
-        KeySegmentMonitorSerializeType typ = serializeType();
-        assertex(typ!=KSMST_none);
-        return mb.append((byte)typ).append(size).append(offset).append(hash);
-    }
-
-    virtual KeySegmentMonitorSerializeType serializeType() const = 0;
-
-};
-
-class CDummyKeySegmentMonitor : public CKeySegmentMonitor
-{
-    bool lisSigned;
-    bool lisLittleEndian;
-
-public:
-    CDummyKeySegmentMonitor(unsigned _offset, unsigned _size, bool _isSigned, bool _isLittleEndian)
-        : CKeySegmentMonitor(_offset, _size), lisSigned(_isSigned), lisLittleEndian(_isLittleEndian)
-    {
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) lisSigned);
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) lisLittleEndian);
-    }
-
-    CDummyKeySegmentMonitor(MemoryBuffer &mb)
-        : CKeySegmentMonitor(mb)
-    {
-        mb.read(lisSigned).read(lisLittleEndian);
-    }
-
-    virtual IKeySegmentMonitor *clone() const
-    {
-        return new CDummyKeySegmentMonitor(offset, size, lisSigned, lisLittleEndian);
-    }
-
-
-    virtual void setLow(void *keyval) const { throwUnexpected(); }
-    virtual void endRange(void *keyval) const { throwUnexpected(); }
-    virtual bool matches(const void *keyval) const { throwUnexpected(); }
-    virtual IKeySegmentMonitor *merge(IKeySegmentMonitor *with) const { throwUnexpected(); }
-    virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const { throwUnexpected(); }
-    virtual unsigned getFlags() const 
-    {
-        unsigned ret = 0;
-        if (lisLittleEndian)
-            ret |= KSM_LITTLE_ENDIAN;
-        if (lisSigned)
-            ret |= KSM_SIGNED;
-        return ret;
-    }
-    virtual bool isSigned() const { return lisSigned; }
-    virtual bool isLittleEndian() const { return lisLittleEndian; }
-    virtual bool isWellKeyed() const { throwUnexpected(); }
-    virtual bool isOptional() const { return true; }
-    virtual bool isSimple() const { return true; }
-
-    virtual MemoryBuffer &serialize(MemoryBuffer &mb) const
-    {
-        return CKeySegmentMonitor::serialize(mb).append(lisSigned).append(lisLittleEndian);
-    }
-
-    virtual KeySegmentMonitorSerializeType serializeType() const { return KSMST_DUMMYKEYSEGMENTMONITOR; } 
-
-
 };
 
 class CWildKeySegmentMonitor : public CKeySegmentMonitor
 {
 public:
-    CWildKeySegmentMonitor(unsigned _offset, unsigned _size);
-    CWildKeySegmentMonitor(MemoryBuffer &mb)
-        : CKeySegmentMonitor(mb)
-    {
-    }
-
-    virtual IKeySegmentMonitor * split(unsigned splitSize);
-    virtual bool matches(const void *keyval) const; 
-    virtual int docompare(const void *,const void *) const;
-    virtual int docompareraw(const void *,const void *) const;
-    virtual void setLow(void *keyval) const;
-    virtual void endRange(void *keyval) const;
-    virtual IKeySegmentMonitor *merge(IKeySegmentMonitor *with) const;
-    virtual bool isWild() const { return true; }
-    virtual bool isWellKeyed() const { return false; }
-    virtual unsigned getFlags() const { return KSM_WILD; }
-    virtual bool isOptional() const { return true; }
-    virtual IKeySegmentMonitor *clone() const;
-    virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const { throwUnexpected(); }
-    virtual KeySegmentMonitorSerializeType serializeType() const { return KSMST_WILDKEYSEGMENTMONITOR; }
-
+    CWildKeySegmentMonitor(unsigned _fieldIdx, unsigned _offset, unsigned _size);
+    virtual bool matchesBuffer(const void *keyval) const override;
+    virtual int docompare(const void *,const void *) const override;
+    virtual void setLow(void *keyval) const override;
+    virtual void endRange(void *keyval) const override;
+    virtual bool isWild() const override { return true; }
+    virtual bool isSimple() const override { return true; }
+    virtual bool isWellKeyed() const override { return false; }
+    virtual bool isOptional() const override { return true; }
+    virtual StringBuffer &describe(StringBuffer &out, const RtlTypeInfo &type) const override { return out.append('*'); }
 };
 
 class CSetKeySegmentMonitor : public CKeySegmentMonitor
 {
 private:
     Owned<IStringSet> set;
-    mutable CriticalSection cacheCrit;
-    mutable bool lastCompareResult;
-    mutable bool hasCompareResult;
-    mutable char *lastCompareValue;
     bool optional;
 
 public:
-    CSetKeySegmentMonitor(bool _optional, IStringSet *set, unsigned _offset, unsigned _size);
-    CSetKeySegmentMonitor(MemoryBuffer &mb)
-        : CKeySegmentMonitor(mb)
-    {
-        lastCompareResult = false;
-        hasCompareResult = false;
-        set.setown(deserializeStringSet(mb));
-        mb.read(optional);
-        lastCompareValue = new char[size];
-    }
-    ~CSetKeySegmentMonitor();
+    CSetKeySegmentMonitor(bool _optional, IStringSet *set, unsigned _fieldIdx, unsigned _offset, unsigned _size);
 
 // IKeySegmentMonitor
-    virtual bool increment(void *keyval) const;
-    virtual void setLow(void *keyval) const;
-    virtual bool matches(const void *keyval) const; 
-    virtual void endRange(void *keyval) const;
-    virtual IKeySegmentMonitor *merge(IKeySegmentMonitor *next) const { return NULL; }
-    virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const;
-    virtual unsigned getFlags() const { return KSM_SET; }
-    virtual bool isEmpty() const { return set->isEmptySet(); }
-    virtual bool isWellKeyed() const;
-    virtual bool isOptional() const { return optional; }
-    virtual bool isSimple() const { return true; }
-    virtual bool isSigned() const { return set->isSigned(); }
-    virtual bool isLittleEndian() const { return !set->isBigEndian(); }
-    virtual IKeySegmentMonitor *clone() const;
+    virtual bool increment(void *keyval) const override;
+    virtual void setLow(void *keyval) const override;
+    virtual bool matchesBuffer(const void *keyval) const override;
+    virtual void endRange(void *keyval) const override;
+    virtual bool isEmpty() const override { return set->isEmptySet(); }
+    virtual bool isWellKeyed() const override;
+    virtual bool isOptional() const override { return optional; }
+    virtual bool isSimple() const override { return true; }
+    virtual bool isSigned() const override { return set->isSigned(); }
+    virtual bool isLittleEndian() const override { return !set->isBigEndian(); }
 
-    virtual int docompare(const void * l, const void * r) const
+    virtual int docompare(const void * l, const void * r) const override
     {
         char *lptr = ((char *) l) + offset;
         char *rptr = ((char *) r) + offset;
         return set->memcmp(lptr, rptr, size);
     }
-
-    virtual int docompareraw(const void *l, const void *r) const
-    {
-        char *lptr = ((char *) l) + offset;
-        char *rptr = ((char *) r) + offset;
-        return set->memcmp(lptr, rptr, size);
-    }
-
-    virtual MemoryBuffer &serialize(MemoryBuffer &mb) const
-    {
-        CKeySegmentMonitor::serialize(mb);
-        set->serialize(mb);
-        return mb.append(optional);
-    }
-
-    virtual KeySegmentMonitorSerializeType serializeType() const { return KSMST_SETKEYSEGMENTMONITOR; }
-
+    virtual StringBuffer &describe(StringBuffer &out, const RtlTypeInfo &type) const override { return out.append("[...]"); }  // MORE - could do better
 };
 
-CKeySegmentMonitor::CKeySegmentMonitor(unsigned _offset, unsigned _size)
+CKeySegmentMonitor::CKeySegmentMonitor(unsigned _fieldIdx, unsigned _offset, unsigned _size)
 {
     size = _size;
     offset = _offset;
-    hash = 123456;
-    hash = hashc((unsigned char *) &offset, sizeof(offset), hash);
-    hash = hashc((unsigned char *) &size, sizeof(size), hash);
+    fieldIdx = _fieldIdx;
 }
 
 bool CKeySegmentMonitor::increment(void *bufptr) const
@@ -290,39 +146,17 @@ void CKeySegmentMonitor::setHigh(void *bufptr) const
 }
 
 
-CWildKeySegmentMonitor::CWildKeySegmentMonitor(unsigned _offset, unsigned _size)
-    : CKeySegmentMonitor(_offset, _size)
+CWildKeySegmentMonitor::CWildKeySegmentMonitor(unsigned _fieldIdx, unsigned _offset, unsigned _size)
+    : CKeySegmentMonitor(_fieldIdx, _offset, _size)
 {
 }
 
-IKeySegmentMonitor * CWildKeySegmentMonitor::split(unsigned splitSize)
-{
-    // Modifies current as well as creating a new one - use with care!
-    assert(!IsShared());
-    if(splitSize >= size)
-        return NULL;
-    unsigned splitOffset = offset;
-    offset += splitSize;
-    size -= splitSize;
-    return new CWildKeySegmentMonitor(splitOffset, splitSize);
-}
-
-IKeySegmentMonitor *CWildKeySegmentMonitor::clone() const
-{   
-    return new CWildKeySegmentMonitor(offset, size);
-}
-
-bool CWildKeySegmentMonitor::matches(const void *keyval) const
+bool CWildKeySegmentMonitor::matchesBuffer(const void *keyval) const
 { 
     return true;
 }
 
 int CWildKeySegmentMonitor::docompare(const void *l, const void *r) const
-{
-    return 0;
-}
-
-int CWildKeySegmentMonitor::docompareraw(const void *l, const void *r) const
 {
     return 0;
 }
@@ -339,46 +173,10 @@ void CWildKeySegmentMonitor::endRange(void *bufptr) const
     memset(ptr, 0xff, size); 
 }
 
-IKeySegmentMonitor *CWildKeySegmentMonitor::merge(IKeySegmentMonitor *next) const
+CSetKeySegmentMonitor::CSetKeySegmentMonitor(bool _optional, IStringSet *_set, unsigned _fieldIdx, unsigned _offset, unsigned _size)
+    : set(_set), CKeySegmentMonitor(_fieldIdx, _offset, _size)
 {
-    if (next->isWild())
-    {
-        assertex(offset + size == next->getOffset());
-        return new CWildKeySegmentMonitor(offset, next->getSize()+size);
-    }
-    else
-        return NULL;
-}
-
-CSetKeySegmentMonitor::CSetKeySegmentMonitor(bool _optional, IStringSet *_set, unsigned _offset, unsigned _size)
-    : set(_set), CKeySegmentMonitor(_offset, _size)
-{
-    lastCompareValue = new char[_size];
-    hasCompareResult = false;
-    lastCompareResult = false;
     optional = _optional;
-    hash =  FNV_32_HASHONE_VALUE(hash, (byte) set->isSigned());
-    hash =  FNV_32_HASHONE_VALUE(hash, (byte) !set->isBigEndian());
-}
-
-CSetKeySegmentMonitor::~CSetKeySegmentMonitor()
-{
-    delete [] lastCompareValue;
-}
-
-IKeySegmentMonitor *CSetKeySegmentMonitor::clone() const 
-{
-    return new CSetKeySegmentMonitor(optional, set.getLink(), offset, size);
-}
-
-IKeySegmentMonitor *CSetKeySegmentMonitor::combine(const IKeySegmentMonitor *with) const
-{
-    assertex(equivalentTo(*with)); // note - badly named - does not mean the condition is equivalent, only the field being compared
-    const CSetKeySegmentMonitor *withSet = QUERYINTERFACE(with, const CSetKeySegmentMonitor);
-    if (!withSet)
-        return with->combine(this); // let the simpler segmonitor do the work
-    Owned<IStringSet> resultSet = set->intersectSet(withSet->set);
-    return createKeySegmentMonitor(optional, resultSet.getClear(), offset, size);
 }
 
 bool CSetKeySegmentMonitor::increment(void *bufptr) const
@@ -416,18 +214,10 @@ void CSetKeySegmentMonitor::endRange(void *bufptr) const
     verifyex(set->getTransitionValue(ptr, nextTransition));
 }
 
-bool CSetKeySegmentMonitor::matches(const void *bufptr) const
+bool CSetKeySegmentMonitor::matchesBuffer(const void *bufptr) const
 {
-    // MORE - should investigate sometime how much benefit we get from this caching...
-
     char *ptr = ((char *) bufptr) + offset;
-    CriticalBlock b(cacheCrit);
-    if (hasCompareResult && 0 == memcmp(lastCompareValue, ptr, size))
-        return lastCompareResult;
-    lastCompareResult = set->inRange(ptr);
-    memcpy(lastCompareValue, ptr, size);
-    hasCompareResult = true;
-    return lastCompareResult;
+    return set->inRange(ptr);
 }
 
 bool CSetKeySegmentMonitor::isWellKeyed() const
@@ -443,8 +233,8 @@ protected:
     void *val;
     bool optional;
 public:
-    CSingleKeySegmentMonitorBase(bool _optional, const void *_val, unsigned _offset, unsigned _size)
-        : CKeySegmentMonitor(_offset, _size)
+    CSingleKeySegmentMonitorBase(bool _optional, const void *_val, unsigned _fieldIdx, unsigned _offset, unsigned _size)
+        : CKeySegmentMonitor(_fieldIdx, _offset, _size)
     {
         if (_val)
         {
@@ -455,33 +245,11 @@ public:
             val = NULL;
         optional = _optional;
     }
-    CSingleKeySegmentMonitorBase(bool _optional, unsigned _offset, const void *_val1, unsigned _val1size, const void *_val2, unsigned _val2size)
-        : CKeySegmentMonitor(_offset, _val1size+_val2size)
-    {
-        val = malloc(size);
-        memcpy(val, _val1, _val1size);
-        memcpy(((char *) val)+_val1size, _val2, _val2size);
-        optional = _optional;
-    }
-    CSingleKeySegmentMonitorBase(bool _optional, unsigned _offset, unsigned _size)
-        : CKeySegmentMonitor(_offset, _size)
+    CSingleKeySegmentMonitorBase(bool _optional, unsigned _fieldIdx, unsigned _offset, unsigned _size)
+        : CKeySegmentMonitor(_fieldIdx, _offset, _size)
     {
         val = NULL;
         optional = _optional;
-    }
-
-    CSingleKeySegmentMonitorBase(MemoryBuffer &mb)
-        : CKeySegmentMonitor(mb)
-    {
-        bool hasval;
-        mb.read(hasval);
-        if (hasval) {
-            val = malloc(size);
-            memcpy(val,mb.readDirect(size),size);
-        }
-        else
-            val = NULL;
-        mb.read(optional);
     }
 
     ~CSingleKeySegmentMonitorBase()
@@ -490,10 +258,10 @@ public:
     }
 
 // IKeySegmentMonitor
-    virtual bool increment(void *bufptr) const
+    virtual bool increment(void *bufptr) const override
     {
         // Set to next permitted value above current
-        if (docompare(bufptr, ((char *) val)-offset) < 0)
+        if (docompare(bufptr, ((char *) val)-offset) < 0)  // NOTE - we subtract offset from val before passing because the compare will add it on again. Confusing or what...
         {
             char *ptr = ((char *) bufptr) + offset;
             memcpy(ptr, val, size);
@@ -502,188 +270,82 @@ public:
         else
             return false;
     }
-    virtual void setLow(void *bufptr) const
+    virtual void setLow(void *bufptr) const override
     {
         // Set to lowest permitted value
         char *ptr = ((char *) bufptr) + offset;
         memcpy(ptr, val, size);
     }
-    virtual bool matches(const void *bufptr) const
+    virtual bool matchesBuffer(const void *bufptr) const override
     {
         // Is current a permitted value?
         char *ptr = ((char *) bufptr) + offset;
         return memcmp(ptr, val, size) == 0;
     }
 
-    virtual void endRange(void *bufptr) const
+    virtual void endRange(void *bufptr) const override
     {
         // Set to last permitted value in the range that includes current (which is asserted to be valid)
-#ifdef DEBUG
-        assertex(matches(bufptr));
-#endif
+        dbgassertex(matchesBuffer(bufptr));
     }
 
-    virtual void *queryValue() const
+    virtual bool isWellKeyed() const override { return true; }
+    virtual bool isOptional() const override { return optional; }
+    virtual bool isSimple() const override { return true; }
+    virtual StringBuffer &describe(StringBuffer &out, const RtlTypeInfo &type) const override
     {
-        return val; 
-    }
-    virtual bool isWellKeyed() const { return true; }
-    virtual bool isOptional() const { return optional; }
-    virtual IKeySegmentMonitor *merge(IKeySegmentMonitor *next) const { return NULL; }
-    virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const { throwUnexpected(); };
-    virtual bool isSimple() const { return true; }
-
-    virtual MemoryBuffer &serialize(MemoryBuffer &mb) const override
-    {
-        CKeySegmentMonitor::serialize(mb);
-        if (val) 
-            mb.append((bool)true).append(size,val);
+        size32_t size;
+        rtlDataAttr text;
+        type.getString(size, text.refstr(), val);
+        if (type.isNumeric())
+            return out.append(size, text.getstr());
         else
-            mb.append((bool)false);
-        return mb.append(optional);
+            return out.appendf("'%*s'", size, text.getstr());
     }
-
-
 };
 
 class CSingleKeySegmentMonitor : public CSingleKeySegmentMonitorBase
 {
 public:
-    CSingleKeySegmentMonitor(bool _optional, const void *_val, unsigned _offset, unsigned _size)
-        : CSingleKeySegmentMonitorBase(_optional, _val, _offset, _size)
-    {
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 0);
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 0);
-    }
-    CSingleKeySegmentMonitor(bool _optional, unsigned _offset, const void *_val1, unsigned _val1size, const void *_val2, unsigned _val2size)
-        : CSingleKeySegmentMonitorBase(_optional, _offset, _val1, _val1size, _val2, _val2size)
-    {
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 0);
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 0);
-    }
-
-    CSingleKeySegmentMonitor(MemoryBuffer &mb)
-        : CSingleKeySegmentMonitorBase(mb)
+    CSingleKeySegmentMonitor(bool _optional, const void *_val, unsigned _fieldIdx, unsigned _offset, unsigned _size)
+        : CSingleKeySegmentMonitorBase(_optional, _val, _fieldIdx, _offset, _size)
     {
     }
 
-    virtual IKeySegmentMonitor *clone() const
+    virtual bool isSigned() const override { return false; }
+    virtual bool isLittleEndian() const override { return false; }
+    virtual bool getBloomHash(hash64_t &hash) const override
     {
-        return new CSingleKeySegmentMonitor(optional, val, offset, size);
+        if (!val)
+            return false;
+        hash = rtlHash64Data(size, val, hash);
+        return true;
     }
-
-    virtual unsigned getFlags() const
-    {
-        return 0;
-    }
-
-    virtual IKeySegmentMonitor *merge(IKeySegmentMonitor *_next) const
-    {
-        CSingleKeySegmentMonitor *next = QUERYINTERFACE(_next, CSingleKeySegmentMonitor);
-        if(next)
-        {
-            void *nextval = next->queryValue();
-            assertex(nextval != NULL && offset + size == next->getOffset());
-            return new CSingleKeySegmentMonitor(optional, offset, val, size, nextval, next->getSize());
-        }
-        else
-            return NULL;
-    }
-
-    virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const
-    {
-        assertex(equivalentTo(*with)); // note - badly named - does not mean the condition is equivalent, only the field being compared
-        // result is either clone of myself, or emptySet
-        if (with->matches(val))
-            return clone();
-        else
-            return createEmptyKeySegmentMonitor(optional, offset, size);
-    
-    }
-
-    virtual IKeySegmentMonitor * split(unsigned splitSize)
-    {
-        if(splitSize >= size)
-            return NULL;
-        unsigned splitOffset = offset;
-        offset += splitSize;
-        size -= splitSize;
-        Owned<IKeySegmentMonitor> ret = new CSingleKeySegmentMonitor(optional, val, splitOffset, splitSize);
-        void * newval = malloc(size);
-        memcpy(newval, static_cast<byte *>(val)+splitSize, size);
-        free(val);
-        val = newval;
-        return ret.getClear();
-    }
-
-    virtual bool isSigned() const { return false; }
-    virtual bool isLittleEndian() const { return false; }
-
-    virtual KeySegmentMonitorSerializeType serializeType() const { return KSMST_SINGLEKEYSEGMENTMONITOR; }
 };
 
 class CSingleBigSignedKeySegmentMonitor : public CSingleKeySegmentMonitorBase
 {
 public:
-    CSingleBigSignedKeySegmentMonitor(bool _optional, const void *_val, unsigned _offset, unsigned _size)
-        : CSingleKeySegmentMonitorBase(_optional, _val, _offset, _size)
-    {
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 1);
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 0);
-    }
-
-    CSingleBigSignedKeySegmentMonitor(MemoryBuffer &mb)
-        : CSingleKeySegmentMonitorBase(mb)
+    CSingleBigSignedKeySegmentMonitor(bool _optional, const void *_val, unsigned _fieldIdx, unsigned _offset, unsigned _size)
+        : CSingleKeySegmentMonitorBase(_optional, _val, _fieldIdx, _offset, _size)
     {
     }
 
-    virtual IKeySegmentMonitor *clone() const
-    {
-        return new CSingleBigSignedKeySegmentMonitor(optional, val, offset, size);
-    }
-
-    virtual unsigned getFlags() const
-    {
-        return KSM_SIGNED;
-    }
-
-    virtual int docompare(const void *l, const void *r) const
+    virtual int docompare(const void *l, const void *r) const override
     {
         return memcmpbigsigned(((char *) l) + offset, ((char *) r) + offset, size);
     }
 
-    virtual int docompareraw(const void *l, const void *r) const
-    {
-        return memcmpbigsigned(((char *) l) + offset, ((char *) r) + offset, size);
-    }
-    virtual bool isSigned() const { return true; }
-    virtual bool isLittleEndian() const { return false; }
-    virtual KeySegmentMonitorSerializeType serializeType() const { return KSMST_SINGLEBIGSIGNEDKEYSEGMENTMONITOR; }
+    virtual bool isSigned() const override { return true; }
+    virtual bool isLittleEndian() const override { return false; }
 };
 
 class CSingleLittleSignedKeySegmentMonitor : public CSingleKeySegmentMonitorBase
 {
 public:
-    CSingleLittleSignedKeySegmentMonitor(bool _optional, const void *_val, unsigned _offset, unsigned _size)
-        : CSingleKeySegmentMonitorBase(_optional, _val, _offset, _size)
+    CSingleLittleSignedKeySegmentMonitor(bool _optional, const void *_val, unsigned _fieldIdx, unsigned _offset, unsigned _size)
+        : CSingleKeySegmentMonitorBase(_optional, _val, _fieldIdx, _offset, _size)
     {
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 1);
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 1);
-    }
-
-    CSingleLittleSignedKeySegmentMonitor(MemoryBuffer &mb)
-        : CSingleKeySegmentMonitorBase(mb)
-    {
-    }
-
-    virtual IKeySegmentMonitor *clone() const
-    {
-        return new CSingleLittleSignedKeySegmentMonitor(optional, val, offset, size);
-    }
-
-    virtual unsigned getFlags() const
-    {
-        return KSM_LITTLE_ENDIAN | KSM_SIGNED;
     }
 
     virtual int docompare(const void *l, const void *r) const
@@ -691,397 +353,26 @@ public:
         return memcmplittlesigned(((char *) l) + offset, ((char *) r) + offset, size);
     }
 
-    virtual int docompareraw(const void *l, const void *r) const
-    {
-        return memcmplittlesigned(((char *) l) + offset, ((char *) r) + offset, size);
-    }
-    virtual bool isSigned() const { return true; }
-    virtual bool isLittleEndian() const { return true; }
-    virtual KeySegmentMonitorSerializeType serializeType() const { return KSMST_SINGLELITTLESIGNEDKEYSEGMENTMONITOR; }
+    virtual bool isSigned() const override { return true; }
+    virtual bool isLittleEndian() const override { return true; }
 };
 
 class CSingleLittleKeySegmentMonitor : public CSingleKeySegmentMonitorBase
 {
 public:
-    CSingleLittleKeySegmentMonitor(bool _optional, const void *_val, unsigned _offset, unsigned _size)
-        : CSingleKeySegmentMonitorBase(_optional, _val, _offset, _size)
-    {
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 0);
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 1);
-    }
-
-    CSingleLittleKeySegmentMonitor(MemoryBuffer &mb)
-        : CSingleKeySegmentMonitorBase(mb)
+    CSingleLittleKeySegmentMonitor(bool _optional, const void *_val, unsigned _fieldIdx, unsigned _offset, unsigned _size)
+        : CSingleKeySegmentMonitorBase(_optional, _val, _fieldIdx, _offset, _size)
     {
     }
 
-    virtual IKeySegmentMonitor *clone() const
-    {
-        return new CSingleLittleKeySegmentMonitor(optional, val, offset, size);
-    }
-
-    virtual unsigned getFlags() const
-    {
-        return KSM_LITTLE_ENDIAN;
-    }
-
-    virtual int docompare(const void *l, const void *r) const
+    virtual int docompare(const void *l, const void *r) const override
     {
         return memcmplittleunsigned(((char *) l) + offset, ((char *) r) + offset, size);
     }
 
-    virtual int docompareraw(const void *l, const void *r) const
-    {
-        return memcmplittleunsigned(((char *) l) + offset, ((char *) r) + offset, size);
-    }
-    virtual bool isSigned() const { return false; }
-    virtual bool isLittleEndian() const { return true; }
-    virtual KeySegmentMonitorSerializeType serializeType() const { return KSMST_CSINGLELITTLEKEYSEGMENTMONITOR; }
+    virtual bool isSigned() const override { return false; }
+    virtual bool isLittleEndian() const override { return true; }
 };
-
-
-class CIndirectKeySegmentMonitor : implements IKeySegmentMonitor, public CInterface
-{
-protected:
-    unsigned hash;
-
-public:
-    CIndirectKeySegmentMonitor(IKeySegmentMonitor * _base, unsigned _offset) 
-    {
-        base.setown(_base); 
-        offset = _offset; 
-        hash = hashc((unsigned char *) &offset, sizeof(offset), base->queryHashCode());
-
-    }
-
-    CIndirectKeySegmentMonitor(MemoryBuffer &mb)
-    {
-        mb.read(offset).read(hash);
-        base.setown(deserializeKeySegmentMonitor(mb));
-    }
-
-    IMPLEMENT_IINTERFACE
-
-    virtual bool increment(void *keyval) const
-    {
-        return base->increment((byte *)keyval + offset);
-    }
-    virtual void setLow(void *keyval) const
-    {
-        base->setLow((byte *)keyval + offset);
-    }
-    virtual void setHigh(void *keyval) const
-    {
-        base->setHigh((byte *)keyval + offset);
-    }
-    virtual void endRange(void *keyval) const
-    {
-        base->endRange((byte *)keyval + offset);
-    }
-    virtual IKeySegmentMonitor *merge(IKeySegmentMonitor *with) const { return NULL; }          // MORE?
-    virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const { throwUnexpected(); }
-    virtual IKeySegmentMonitor * split(unsigned splitSize) { return NULL; } // not required in most cases
-    virtual bool isWild() const                             { return base->isWild(); }
-    virtual unsigned getOffset() const                      { return offset; }
-    virtual unsigned getSize() const                        { return base->getSize(); }
-    virtual void *queryValue() const                        { return NULL; }
-    virtual bool isEmpty() const                            { return base->isEmpty(); }
-    virtual bool equivalentTo(const IKeySegmentMonitor &other) const   { return false; }        // MORE?
-    virtual bool isSigned() const                           { return base->isSigned(); }
-    virtual bool isLittleEndian() const                     { return base->isLittleEndian(); }
-    virtual bool isWellKeyed() const                        { return base->isWellKeyed(); }
-    virtual bool isOptional() const                         { return base->isOptional(); }
-
-    virtual unsigned queryHashCode() const
-    {
-        return hash;
-    }
-
-    virtual bool setOffset(unsigned _offset) { return false; }
-
-    virtual MemoryBuffer &serialize(MemoryBuffer &mb) const
-    {
-        KeySegmentMonitorSerializeType typ = serializeType();
-        assertex(typ!=KSMST_none);
-        mb.append((byte)typ).append(offset).append(hash);
-        return base->serialize(mb);
-    }
-
-    virtual KeySegmentMonitorSerializeType serializeType() const = 0;
-
-
-protected:
-    Owned<IKeySegmentMonitor> base;
-    unsigned offset;
-};
-
-//The base monitor provided to this segment monitor is constructed with offsets of 0
-class CVarOffsetKeySegmentMonitor : public CIndirectKeySegmentMonitor
-{
-public:
-    CVarOffsetKeySegmentMonitor(IKeySegmentMonitor * _base, unsigned _offset, IKeySegmentOffsetTranslator * _offsetTranslator) : CIndirectKeySegmentMonitor(_base, _offset) { offsetTranslator.setown(_offsetTranslator); }
-
-    CVarOffsetKeySegmentMonitor(MemoryBuffer &mb)
-        : CIndirectKeySegmentMonitor(mb)
-    {
-        throwUnexpected();
-    }
-
-    virtual bool matches(const void *keyval) const
-    {
-        return base->matches(offsetTranslator->getSegmentBase(keyval));
-    }
-    virtual int docompare(const void * expandedLeft, const void * rawRight) const
-    {
-        return base->docompare((const byte *)expandedLeft + offset, offsetTranslator->getSegmentBase(rawRight));
-    }
-    virtual void copy(void * expandedRow, const void * rawRight) const
-    {
-        base->copy((byte *)expandedRow + offset, offsetTranslator->getSegmentBase(rawRight));
-    }
-    virtual int docompareraw(const void * left, const void * right) const
-    {
-        return base->docompare(offsetTranslator->getSegmentBase(left), offsetTranslator->getSegmentBase(right));
-    }
-    virtual bool isSimple() const
-    {
-        return false; // No way to serialize/persist at present
-    }
-
-    virtual unsigned getFlags() const                       { return KSM_VAROFFSET; }
-
-    virtual KeySegmentMonitorSerializeType serializeType() const
-    {
-        return KSMST_none;
-    }
-
-    virtual IKeySegmentMonitor *clone() const
-    {
-        return NULL;
-    }
-
-protected:
-    Owned<IKeySegmentOffsetTranslator> offsetTranslator;
-};
-
-
-class CTranslatedKeySegmentMonitor : public CIndirectKeySegmentMonitor
-{
-public:
-    CTranslatedKeySegmentMonitor(IKeySegmentMonitor * _base, unsigned _offset, IKeySegmentFormatTranslator * _formatTranslator) : CIndirectKeySegmentMonitor(_base, _offset) 
-    { 
-        formatTranslator.setown(_formatTranslator);
-        size = base->getSize();
-        unsigned formatHash = formatTranslator->queryHashCode();
-        hash = hashc((unsigned char *)&formatHash, sizeof(formatHash), hash);
-    }
-
-    CTranslatedKeySegmentMonitor(MemoryBuffer &mb)
-        : CIndirectKeySegmentMonitor(mb)
-    {
-        throwUnexpected();
-    }
-
-    virtual IKeySegmentMonitor *clone() const
-    {
-        return NULL;
-    }
-
-    virtual bool matches(const void *keyval) const
-    {
-        void *expandedLeft = alloca(size);
-        formatTranslator->extractField(expandedLeft, keyval);
-        return base->matches(expandedLeft);
-    }
-    virtual int docompare(const void * left,const void * right) const
-    {
-        void *expandedRight = alloca(size);
-        formatTranslator->extractField(expandedRight, right);
-        return base->docompare((const byte *)left + offset, expandedRight);
-    }
-
-    virtual void copy(void * left,const void * right) const
-    {
-        void *expandedRight = alloca(size);
-        formatTranslator->extractField(expandedRight, right);
-        base->copy((byte *)left + offset, expandedRight);
-    }
-
-    virtual int docompareraw(const void * left,const void * right) const
-    {
-        void *expandedLeft = alloca(size);
-        void *expandedRight = alloca(size);
-        formatTranslator->extractField(expandedLeft, left);
-        formatTranslator->extractField(expandedRight, right);
-        return base->docompare(expandedLeft, expandedRight);
-    }
-
-    virtual bool isSimple() const
-    {
-        return false; // No way to serialize/persist at present
-    }
-
-    virtual unsigned getFlags() const                       { return KSM_TRANSLATED; }
-
-    virtual KeySegmentMonitorSerializeType serializeType() const
-    {
-        return KSMST_none;
-    }
-
-protected:
-    Owned<IKeySegmentFormatTranslator> formatTranslator;
-    size_t size;
-};
-
-class COverrideableKeySegmentMonitor : public IOverrideableKeySegmentMonitor, public CInterface
-{
-    const void *overridden;
-    unsigned hash;
-
-public:
-    IMPLEMENT_IINTERFACE
-
-    COverrideableKeySegmentMonitor(IKeySegmentMonitor * _base) 
-    {
-        base.setown(_base); 
-        overridden = NULL;
-        hash = base->queryHashCode();
-        hash = FNV_32_HASHONE_VALUE(hash, (byte) 123); 
-    }
-
-    COverrideableKeySegmentMonitor(MemoryBuffer &mb) 
-    {
-        mb.read(hash);
-        base.setown(deserializeKeySegmentMonitor(mb)); 
-        overridden = NULL;
-    }
-
-    virtual void setOverrideBuffer(const void *ptr)
-    {
-        overridden = ptr;
-    }
-
-    virtual unsigned queryHashCode() const
-    {
-        return hash;
-    }
-
-    virtual bool matches(const void *keyval) const
-    {
-        if (overridden)
-        {
-            unsigned offset = base->getOffset();
-            return memcmp((char *) keyval+offset, (char *) overridden+offset, base->getSize()) == 0;
-        }
-        else
-            return base->matches(keyval);
-    }
-
-    virtual bool increment(void *keyval) const
-    {
-        if (overridden)
-        {
-            // Set to next permitted value above current
-            unsigned offset = base->getOffset();
-            if (memcmp((char *) keyval+offset, (char *) overridden+offset, base->getSize()) < 0)
-            {
-                memcpy((char *) keyval+offset, (char *) overridden+offset, base->getSize());
-                return true;
-            }
-            return false;
-        }
-        else
-            return base->increment(keyval);
-    }
-    virtual void setLow(void *keyval) const
-    {
-        if (overridden)
-        {
-            unsigned offset = base->getOffset();
-            memcpy((char *) keyval+offset, (char *) overridden+offset, base->getSize());
-        }
-        else
-            base->setLow(keyval);
-    }
-    virtual void setHigh(void *keyval) const
-    {
-        if (overridden)
-        {
-            unsigned offset = base->getOffset();
-            memcpy((char *) keyval+offset, (char *) overridden+offset, base->getSize());
-        }
-        else
-            base->setHigh(keyval);
-    }
-    virtual void endRange(void *keyval) const
-    {
-        if (overridden)
-        {
-            unsigned offset = base->getOffset();
-            memcpy((char *) keyval+offset, (char *) overridden+offset, base->getSize());
-        }
-        base->endRange(keyval);
-    }
-    virtual IKeySegmentMonitor *merge(IKeySegmentMonitor *with) const { return NULL; }          // MORE?
-    virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const { throwUnexpected(); }
-    virtual IKeySegmentMonitor * split(unsigned splitSize) { return NULL; } // not required in most cases
-    virtual bool isWild() const                             { return overridden ? false : base->isWild(); }
-    virtual unsigned getOffset() const                      { return base->getOffset(); }
-    virtual unsigned getSize() const                        { return base->getSize(); }
-    virtual void *queryValue() const                        { return NULL; }
-//  virtual unsigned getFlags() const                       { return base->getFlags(); }
-    virtual bool isEmpty() const                            { return base->isEmpty(); }
-    virtual bool equivalentTo(const IKeySegmentMonitor &other) const   { return false; }        // MORE?
-    virtual bool isSigned() const                           { return base->isSigned(); }
-    virtual bool isLittleEndian() const                     { return base->isLittleEndian(); }
-    virtual bool isWellKeyed() const                        { return overridden ? true : base->isWellKeyed(); }
-    virtual bool isOptional() const                         { return base->isOptional(); }
-
-    virtual int docompare(const void * expandedLeft, const void *rawRight) const
-    {
-        return base->docompare(expandedLeft, rawRight);
-    }
-    virtual void copy(void * expandedRow, const void *rawRight) const
-    {
-        base->copy(expandedRow, rawRight); // MORE - is this right?
-    }
-    virtual int docompareraw(const void * left, const void * right) const
-    {
-        return base->docompare(left, right);
-    }
-    virtual bool setOffset(unsigned _offset)
-    {
-        throwUnexpected();
-    }
-    virtual bool isSimple() const
-    {
-        return base->isSimple();
-    }
-
-    virtual MemoryBuffer &serialize(MemoryBuffer &mb) const
-    {
-        KeySegmentMonitorSerializeType subtyp = base->serializeType();
-        assertex(subtyp!=KSMST_none);
-        mb.append((byte)KSMST_OVERRIDEABLEKEYSEGMENTMONITOR).append(hash);
-        return base->serialize(mb);
-    }
-
-    virtual KeySegmentMonitorSerializeType serializeType() const
-    {
-        if ((base->serializeType()==KSMST_none)||overridden)   // don't think we can support overridden (TBD revisit)
-            return KSMST_none;
-        return KSMST_OVERRIDEABLEKEYSEGMENTMONITOR;
-    }
-
-    virtual IKeySegmentMonitor *clone() const
-    {
-        return NULL;
-    }
-
-protected:
-    Owned<IKeySegmentMonitor> base;
-};
-
 
 ECLRTL_API IStringSet *createRtlStringSet(size32_t size)
 {
@@ -1124,10 +415,10 @@ ECLRTL_API IStringSet * rtlIntersectSet(IStringSet * lhs, IStringSet * rhs)
 }
 
 
-IKeySegmentMonitor *createKeySegmentMonitor(bool optional, IStringSet *set, unsigned _offset, unsigned _size)
+IKeySegmentMonitor *createKeySegmentMonitor(bool optional, IStringSet *set, unsigned _fieldIdx, unsigned _offset, unsigned _size)
 {
     if (!set)
-        return new CWildKeySegmentMonitor(_offset, _size);
+        return new CWildKeySegmentMonitor(_fieldIdx, _offset, _size);
 
     Owned<IStringSet> removeSet = set; // make sure set is released if optimized out.
     if (set->isSingleValue())
@@ -1137,22 +428,22 @@ IKeySegmentMonitor *createKeySegmentMonitor(bool optional, IStringSet *set, unsi
         if (set->isSigned())
         {
             if (set->isBigEndian())
-                return createSingleBigSignedKeySegmentMonitor(optional, _offset, _size, data);
+                return createSingleBigSignedKeySegmentMonitor(optional, _fieldIdx, _offset, _size, data);
             else
-                return createSingleLittleSignedKeySegmentMonitor(optional, _offset, _size, data);
+                return createSingleLittleSignedKeySegmentMonitor(optional, _fieldIdx, _offset, _size, data);
         }
         else
         {
             if (set->isBigEndian())
-                return createSingleKeySegmentMonitor(optional, _offset, _size, data);
+                return createSingleKeySegmentMonitor(optional, _fieldIdx, _offset, _size, data);
             else
-                return createSingleLittleKeySegmentMonitor(optional, _offset, _size, data);
+                return createSingleLittleKeySegmentMonitor(optional, _fieldIdx, _offset, _size, data);
         }
     }
     else if (set->isFullSet())
-        return new CWildKeySegmentMonitor(_offset, _size);
+        return new CWildKeySegmentMonitor(_fieldIdx, _offset, _size);
     else
-        return new CSetKeySegmentMonitor(optional, removeSet.getClear(), _offset, _size);
+        return new CSetKeySegmentMonitor(optional, removeSet.getClear(), _fieldIdx, _offset, _size);
 }
 
 ECLRTL_API IStringSet *createRtlStringValue(size32_t size, const char * value)
@@ -1162,103 +453,51 @@ ECLRTL_API IStringSet *createRtlStringValue(size32_t size, const char * value)
     return set;
 }
 
-IKeySegmentMonitor *createWildKeySegmentMonitor(unsigned _offset, unsigned _size)
+IKeySegmentMonitor *createWildKeySegmentMonitor(unsigned _fieldIdx, unsigned _offset, unsigned _size)
 {
-    return new CWildKeySegmentMonitor(_offset, _size);
+    return new CWildKeySegmentMonitor(_fieldIdx, _offset, _size);
 }
 
-IKeySegmentMonitor *createEmptyKeySegmentMonitor(bool optional, unsigned _offset, unsigned _size)
+IKeySegmentMonitor *createEmptyKeySegmentMonitor(bool optional, unsigned _fieldIdx, unsigned _offset, unsigned _size)
 {
-    return new CSetKeySegmentMonitor(optional, createStringSet(_size), _offset, _size);
+    return new CSetKeySegmentMonitor(optional, createStringSet(_size), _fieldIdx, _offset, _size);
 }
 
-ECLRTL_API IKeySegmentMonitor *createSingleKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value)
+ECLRTL_API IKeySegmentMonitor *createSingleKeySegmentMonitor(bool optional, unsigned _fieldIdx, unsigned offset, unsigned size, const void * value)
 {
-    return new CSingleKeySegmentMonitor(optional, value, offset, size);
+    return new CSingleKeySegmentMonitor(optional, value, _fieldIdx, offset, size);
 }
 
-ECLRTL_API IOverrideableKeySegmentMonitor *createOverrideableKeySegmentMonitor(IKeySegmentMonitor *base)
+ECLRTL_API IKeySegmentMonitor *createSingleBigSignedKeySegmentMonitor(bool optional, unsigned fieldIdx, unsigned offset, unsigned size, const void * value)
 {
-    return new COverrideableKeySegmentMonitor(base);
+    return new CSingleBigSignedKeySegmentMonitor(optional, value, fieldIdx, offset, size);
 }
 
-ECLRTL_API IKeySegmentMonitor *createSingleBigSignedKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value)
-{
-    return new CSingleBigSignedKeySegmentMonitor(optional, value, offset, size);
-}
-
-ECLRTL_API IKeySegmentMonitor *createSingleLittleSignedKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value)
+ECLRTL_API IKeySegmentMonitor *createSingleLittleSignedKeySegmentMonitor(bool optional, unsigned fieldIdx, unsigned offset, unsigned size, const void * value)
 {
     // MORE - common int sizes 1,2,4 (8?) might be better done with dedicated subclasses
-    return new CSingleLittleSignedKeySegmentMonitor(optional, value, offset, size);
+    return new CSingleLittleSignedKeySegmentMonitor(optional, value, fieldIdx, offset, size);
 }
 
-ECLRTL_API IKeySegmentMonitor *createSingleLittleKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value)
+ECLRTL_API IKeySegmentMonitor *createSingleLittleKeySegmentMonitor(bool optional, unsigned fieldIdx, unsigned offset, unsigned size, const void * value)
 {
     // MORE - common int sizes 1,2,4 (8?) might be better done with dedicated subclasses
-    return new CSingleLittleKeySegmentMonitor(optional, value, offset, size);
+    return new CSingleLittleKeySegmentMonitor(optional, value, fieldIdx, offset, size);
 }
 
-ECLRTL_API IKeySegmentMonitor *createDummyKeySegmentMonitor(unsigned _offset, unsigned _size, bool isSigned, bool isLittleEndian)
+ECLRTL_API IKeySegmentMonitor *createDummyKeySegmentMonitor(unsigned _fieldIdx, unsigned _offset, unsigned _size, bool isSigned, bool isLittleEndian)
 {
     if (isSigned)
         if (isLittleEndian)
-            return new CSingleLittleSignedKeySegmentMonitor(false, NULL, _offset, _size);
+            return new CSingleLittleSignedKeySegmentMonitor(false, NULL, _fieldIdx, _offset, _size);
         else
-            return new CSingleBigSignedKeySegmentMonitor(false, NULL, _offset, _size);
+            return new CSingleBigSignedKeySegmentMonitor(false, NULL, _fieldIdx, _offset, _size);
     else
         if (isLittleEndian)
-            return new CSingleLittleKeySegmentMonitor(false, NULL, _offset, _size);
+            return new CSingleLittleKeySegmentMonitor(false, NULL, _fieldIdx, _offset, _size);
         else
-            return new CSingleKeySegmentMonitor(false, NULL, _offset, _size);
-        
-//  return new CDummyKeySegmentMonitor(_offset, _size, isSigned, isLittleEndian);
-}
-
-ECLRTL_API IKeySegmentMonitor *createVarOffsetKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, IKeySegmentOffsetTranslator * translator)
-{
-    return new CVarOffsetKeySegmentMonitor(base, offset, translator);
-}
-
-ECLRTL_API IKeySegmentMonitor *createTranslatedKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, IKeySegmentFormatTranslator * translator)
-{
-    return new CTranslatedKeySegmentMonitor(base, offset, translator);
-}
-
-ECLRTL_API IKeySegmentMonitor *deserializeKeySegmentMonitor(MemoryBuffer &mb)
-{
-    byte typ;
-    mb.read(typ);
-    switch ((KeySegmentMonitorSerializeType)typ) {
-        case KSMST_WILDKEYSEGMENTMONITOR:
-            return new CWildKeySegmentMonitor(mb);
-        case KSMST_SETKEYSEGMENTMONITOR:
-            return new CSetKeySegmentMonitor(mb);
-        case KSMST_SINGLEKEYSEGMENTMONITOR:
-            return new CSingleKeySegmentMonitor(mb);
-        case KSMST_SINGLEBIGSIGNEDKEYSEGMENTMONITOR:
-            return new CSingleBigSignedKeySegmentMonitor(mb);
-        case KSMST_SINGLELITTLESIGNEDKEYSEGMENTMONITOR:
-            return new CSingleLittleSignedKeySegmentMonitor(mb);
-        case KSMST_CSINGLELITTLEKEYSEGMENTMONITOR:
-            return new CSingleLittleKeySegmentMonitor(mb);
-        case KSMST_DUMMYKEYSEGMENTMONITOR:
-            return new CDummyKeySegmentMonitor(mb);
-        case KSMST_OVERRIDEABLEKEYSEGMENTMONITOR:
-            return new COverrideableKeySegmentMonitor(mb);
-    }
-    return NULL; // up to caller to check
-}
-
-enum StringSetSerializeType
-{
-    SSST_none,
-    SSST_BIGUNSIGNEDSTRINGSET,
-    SSST_BIGSIGNEDSTRINGSET,
-    SSST_LITTLEUNSIGNEDSTRINGSET,
-    SSST_LITTLESIGNEDSTRINGSET,
-    SSST_max
-};
+            return new CSingleKeySegmentMonitor(false, NULL, _fieldIdx, _offset, _size);
+        }
 
 ECLRTL_API int memcmpbigsigned(const void *l, const void *r, unsigned size)
 {
@@ -1326,7 +565,6 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
     CStringSet(size32_t size);
-    CStringSet(MemoryBuffer &mb);
 
 // IStringSet
     virtual void addRange(const void *loval, const void *hival);
@@ -1370,19 +608,6 @@ public:
         }
         return ret;
     }
-
-    virtual MemoryBuffer &serialize(MemoryBuffer &mb) const
-    {
-        StringSetSerializeType typ = serializeType();
-        assertex(typ!=SSST_none);
-        mb.append((byte)typ).append(size).append(transitions.ordinality());
-        ForEachItemIn(i,transitions) {
-            transitions.item(i).serialize(size,mb);
-        }
-        return mb;
-    }
-
-    virtual StringSetSerializeType serializeType() const = 0;
 };
 
 class CBigUnsignedStringSet : public CStringSet
@@ -1474,17 +699,8 @@ protected:
     virtual bool isSigned() const { return false; }
     virtual bool isBigEndian() const { return true; }
 
-
-    virtual StringSetSerializeType serializeType() const
-    {
-        return SSST_BIGUNSIGNEDSTRINGSET;
-    }
-
 public:
     CBigUnsignedStringSet(unsigned size) : CStringSet(size) {}
-    CBigUnsignedStringSet(MemoryBuffer &mb) : CStringSet(mb) {}
-
-
 };
 
 class CBigSignedStringSet : public CBigUnsignedStringSet
@@ -1543,13 +759,8 @@ protected:
     virtual bool isSigned() const { return true; }
     virtual bool isBigEndian() const { return true; }
 
-    virtual StringSetSerializeType serializeType() const
-    {
-        return SSST_BIGSIGNEDSTRINGSET;
-    }
 public:
     CBigSignedStringSet(unsigned size) : CBigUnsignedStringSet(size) {}
-    CBigSignedStringSet(MemoryBuffer &mb) : CBigUnsignedStringSet(mb) {}
 };
 
 class CLittleUnsignedStringSet : public CStringSet
@@ -1644,15 +855,8 @@ protected:
 
     virtual bool isSigned() const { return false; }
     virtual bool isBigEndian() const { return false; }
-
-    virtual StringSetSerializeType serializeType() const
-    {
-        return SSST_LITTLEUNSIGNEDSTRINGSET;
-    }
-
 public:
     CLittleUnsignedStringSet(unsigned size) : CStringSet(size) {}
-    CLittleUnsignedStringSet(MemoryBuffer &mb) : CStringSet(mb) {}
 };
 
 class CLittleSignedStringSet : public CLittleUnsignedStringSet
@@ -1712,15 +916,8 @@ protected:
 
     virtual bool isSigned() const { return true; }
     virtual bool isBigEndian() const { return false; }
-
-    virtual StringSetSerializeType serializeType() const
-    {
-        return SSST_LITTLESIGNEDSTRINGSET;
-    }
-
 public:
     CLittleSignedStringSet(unsigned size) : CLittleUnsignedStringSet(size) {}
-    CLittleSignedStringSet(MemoryBuffer &mb) : CLittleUnsignedStringSet(mb) {}
 };
 
 
@@ -1738,49 +935,20 @@ public:
         val = _val;
         state = _state;
     }
-
-    CTransition(MemoryBuffer &mb,size32_t size)
-    {
-        mb.read(state);
-        val = malloc(size);
-        memcpy((void *)val,mb.readDirect(size),size);
-    }
-
     ~CTransition() { free((void *) val); }
 
 // ITransition
 
-    bool getState() const { return state; }
-    const void *getValue() const { return val; }
-
-    MemoryBuffer &serialize(size32_t size, MemoryBuffer &mb) const
-    {
-        mb.append(state);
-        memcpy(mb.reserve(size),val,size);
-        return mb;
-    }
-
-    bool canSerialize() const  { return true; }
-
+    virtual bool getState() const override { return state; }
+    virtual const void *getValue() const override { return val; }
 };
 
 //======================================================================================
-
 
 CStringSet::CStringSet(size32_t _size)
 {
     size = _size;
 }
-
-CStringSet::CStringSet(MemoryBuffer &mb)
-{
-    mb.read(size);
-    unsigned n;
-    mb.read(n);
-    while(n--) 
-        transitions.append(*new CTransition(mb,size));
-}
-
 
 void CStringSet::reset()
 {
@@ -2219,23 +1387,42 @@ IStringSet *createStringSet(size32_t size, bool bigEndian, bool isSigned)
     }
 }
 
-ECLRTL_API IStringSet *deserializeStringSet(MemoryBuffer &mb)
+//---------------------------------------------------------------------------------------------------------------------
+
+class LegacySetCreator : implements ISetCreator
 {
-    byte typ;
-    mb.read(typ);
-    switch((StringSetSerializeType)typ) {
-    case SSST_BIGUNSIGNEDSTRINGSET:
-        return new CBigUnsignedStringSet(mb);
-    case SSST_BIGSIGNEDSTRINGSET:
-        return new CBigSignedStringSet(mb);
-    case SSST_LITTLEUNSIGNEDSTRINGSET:
-        return new CLittleUnsignedStringSet(mb);
-    case SSST_LITTLESIGNEDSTRINGSET:
-        return new CLittleSignedStringSet(mb);
+public:
+    LegacySetCreator(IStringSet & _set, size32_t _minRecordSize, const RtlTypeInfo * _fieldType)
+    : set(_set), minRecordSize(_minRecordSize), fieldType(_fieldType) {}
+
+    virtual void addRange(TransitionMask lowerMask, const StringBuffer & lowerString, TransitionMask upperMask, const StringBuffer & upperString) override
+    {
+        MemoryBufferBuilder lobuilder(lobuffer.clear(), minRecordSize);
+        fieldType->buildUtf8(lobuilder, 0, nullptr, lowerString.length(), lowerString.str());
+
+        MemoryBufferBuilder hibuilder(hibuffer.clear(), minRecordSize);
+        fieldType->buildUtf8(hibuilder, 0, nullptr, upperString.length(), upperString.str());
+
+        set.addRange(lobuffer.toByteArray(), hibuffer.toByteArray());
+        if (!(lowerMask & CMPeq))
+            set.killRange(lobuffer.toByteArray(), lobuffer.toByteArray());
+        if (!(upperMask & CMPeq))
+            set.killRange(hibuffer.toByteArray(), hibuffer.toByteArray());
     }
-    return NULL; // up to caller to check
+
+protected:
+    IStringSet & set;
+    const RtlTypeInfo *fieldType;
+    size32_t minRecordSize;
+    MemoryBuffer lobuffer;
+    MemoryBuffer hibuffer;
 };
 
+void deserializeSet(IStringSet & set, size32_t minRecordSize, const RtlTypeInfo * fieldType, const char * filter)
+{
+    LegacySetCreator creator(set, minRecordSize, fieldType);
+    deserializeSet(creator, filter);
+}
 
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/HelperMacros.h>
@@ -2253,24 +1440,23 @@ class SegmentMonitorTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( SegmentMonitorTest  );
         CPPUNIT_TEST(testOptional);
-        CPPUNIT_TEST(testCombine);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
 
     void testOptional()
     {
-        Owned<IKeySegmentMonitor> wild0_20 = createWildKeySegmentMonitor(0, 20);
-        Owned<IKeySegmentMonitor> wild10_10 = createWildKeySegmentMonitor(10,10);
+        Owned<IKeySegmentMonitor> wild0_20 = createWildKeySegmentMonitor(0, 0, 20);
+        Owned<IKeySegmentMonitor> wild10_10 = createWildKeySegmentMonitor(1, 10,10);
         Owned<IStringSet> abcdef = createStringSet(10);
         abcdef->addRange("ABCDEFGHIJ", "ABCDEFGHIJ");
-        Owned<IKeySegmentMonitor> opt0_20 = createSingleKeySegmentMonitor(true, 0,20, "abcdefghijklmnopqrst");
-        Owned<IKeySegmentMonitor> opt20_10 = createKeySegmentMonitor(true, LINK(abcdef), 20, 10);
-        Owned<IKeySegmentMonitor> opt30_10 = createSingleKeySegmentMonitor(true, 30, 10, "KLMNOPQRST");
-        Owned<IKeySegmentMonitor> nonOpt0_10 = createSingleKeySegmentMonitor(false, 0,10, "abcdefghij");
-        Owned<IKeySegmentMonitor> nonOpt0_20 = createSingleKeySegmentMonitor(false, 0,20, "abcdefghijklmnopqrst");
-        Owned<IKeySegmentMonitor> nonOpt20_10 = createKeySegmentMonitor(false, LINK(abcdef), 20, 10);
-        Owned<IKeySegmentMonitor> nonOpt30_10 = createSingleKeySegmentMonitor(false, 30, 10, "KLMNOPQRST");
+        Owned<IKeySegmentMonitor> opt0_20 = createSingleKeySegmentMonitor(true, 0, 0,20, "abcdefghijklmnopqrst");
+        Owned<IKeySegmentMonitor> opt20_10 = createKeySegmentMonitor(true, LINK(abcdef), 1, 20, 10);
+        Owned<IKeySegmentMonitor> opt30_10 = createSingleKeySegmentMonitor(true, 2, 30, 10, "KLMNOPQRST");
+        Owned<IKeySegmentMonitor> nonOpt0_10 = createSingleKeySegmentMonitor(false, 0, 0,10, "abcdefghij");
+        Owned<IKeySegmentMonitor> nonOpt0_20 = createSingleKeySegmentMonitor(false, 0, 0,20, "abcdefghijklmnopqrst");
+        Owned<IKeySegmentMonitor> nonOpt20_10 = createKeySegmentMonitor(false, LINK(abcdef), 1, 20, 10);
+        Owned<IKeySegmentMonitor> nonOpt30_10 = createSingleKeySegmentMonitor(false, 2, 30, 10, "KLMNOPQRST");
         CPPUNIT_ASSERT(wild0_20->isOptional());
         CPPUNIT_ASSERT(opt20_10->isOptional());
         CPPUNIT_ASSERT(opt30_10->isOptional());
@@ -2331,54 +1517,6 @@ protected:
         CPPUNIT_ASSERT(segments.item(1).getOffset() == 20);
         CPPUNIT_ASSERT(segments.item(1).getSize() == 10);
 #endif
-    }
-
-    void testCombine()
-    {
-        Owned<IStringSet> az = createStringSet(1);
-        az->addRange("A", "Z");
-        Owned<IStringSet> dj = createStringSet(1);
-        dj->addRange("D", "J");
-        Owned<IStringSet> hz = createStringSet(1);
-        hz->addRange("H", "Z");
-        Owned<IStringSet> jk = createStringSet(1);
-        jk->addRange("J", "K");
-
-        Owned<IKeySegmentMonitor> segA = createSingleKeySegmentMonitor(true, 0,1, "A");
-        Owned<IKeySegmentMonitor> segA2 = createSingleKeySegmentMonitor(true, 0,1, "A");
-        Owned<IKeySegmentMonitor> segJ = createSingleKeySegmentMonitor(true, 0,1, "J");
-        Owned<IKeySegmentMonitor> segAZ = createKeySegmentMonitor(true, az.getLink(), 0,1);
-        Owned<IKeySegmentMonitor> segDJ = createKeySegmentMonitor(true, dj.getLink(), 0,1);
-        Owned<IKeySegmentMonitor> segHZ = createKeySegmentMonitor(true, hz.getLink(), 0,1);
-        Owned<IKeySegmentMonitor> segJK = createKeySegmentMonitor(true, jk.getLink(), 0,1);
-
-        Owned<IKeySegmentMonitor> result;
-        result.setown(segA->combine(segA2));
-        CPPUNIT_ASSERT(!result->isEmpty());
-        CPPUNIT_ASSERT(result->matches("A"));
-
-        result.setown(segA->combine(segJ));
-        CPPUNIT_ASSERT(result->isEmpty());
-
-        result.setown(segA->combine(segAZ));
-        CPPUNIT_ASSERT(!result->isEmpty());
-        CPPUNIT_ASSERT(result->matches("A"));
-        CPPUNIT_ASSERT(!result->matches("B"));
-
-        result.setown(segAZ->combine(segDJ));
-        CPPUNIT_ASSERT(!result->isEmpty());
-        CPPUNIT_ASSERT(!result->matches("C"));
-        CPPUNIT_ASSERT(result->matches("D"));
-        CPPUNIT_ASSERT(result->matches("J"));
-        CPPUNIT_ASSERT(!result->matches("K"));
-
-        result.setown(segHZ->combine(segDJ));
-        CPPUNIT_ASSERT(!result->isEmpty());
-        CPPUNIT_ASSERT(!result->matches("G"));
-        CPPUNIT_ASSERT(result->matches("H"));
-        CPPUNIT_ASSERT(result->matches("J"));
-        CPPUNIT_ASSERT(!result->matches("K"));
-
     }
 };
 

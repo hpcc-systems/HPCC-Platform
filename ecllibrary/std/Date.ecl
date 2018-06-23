@@ -978,6 +978,79 @@ EXPORT Date_t AdjustCalendar(Date_t date,
 
 
 /**
+ * Helper function.  Calculates the 1-based week number of a date, starting from
+ * a reference date.  Week 1 always contains the reference date, and week 2
+ * begins on the following day of the week indicated by the value of
+ * startingDayOfWeek.  This is not an ISO-8601 implementation of computing week
+ * numbers ("week dates").
+ *
+ * @param date              The date for which to compute the week number;
+ *                          must be greater than or equal to referenceDate
+ * @param referenceDate     The date from which the week number counting begins;
+ *                          must be less than or equal to date
+ * @param startingDayOfWeek The index number of the first day of a week, 1-7,
+ *                          where 1 = Sunday
+ * @return                  The 1-based week number of date, relative to
+ *                          referenceDate
+ *
+ * @see YearWeekNumFromDate, MonthWeekNumFromDate
+ */
+
+SHARED WeekNumForDate(Date_t date, Date_t referenceDate, UNSIGNED1 startingDayOfWeek) := FUNCTION
+    referenceDayOfWeek := DayOfWeek(referenceDate);
+    startingDayOfWeekDelta := (startingDayOfWeek - referenceDayOfWeek) % 7;
+    referenceFirstDateOfWeek := AdjustDate(referenceDate, day_delta := startingDayOfWeekDelta);
+    numberOfDays := DaysBetween(referenceFirstDateOfWeek, date) + 1;
+    weekNum0 := (numberOfDays + 6) DIV 7;
+    weekNum := IF(startingDayOfWeek > referenceDayOfWeek, weekNum0 + 1, weekNum0);
+
+    RETURN weekNum;
+END;
+
+/**
+ * Returns the 1-based week number of a date within the date's year.  Week 1
+ * always contains the first day of the year, and week 2 begins on the
+ * following day of the week indicated by the value of startingDayOfWeek.  This
+ * is not an ISO-8601 implementation of computing week numbers ("week dates").
+ *
+ * @param date              The date for which to compute the week number
+ * @param startingDayOfWeek The index number of the first day of a week, 1-7,
+ *                          where 1 = Sunday; OPTIONAL, defaults to 1
+ * @return                  The 1-based week number of date, relative to
+ *                          the beginning of the date's year
+ *
+ * @see MonthWeekNumFromDate
+ */
+
+EXPORT YearWeekNumFromDate(Date_t date, UNSIGNED1 startingDayOfWeek = 1) := FUNCTION
+    yearStart := DateFromParts(Year(date), 1, 1);
+
+    RETURN WeekNumForDate(date, yearStart, startingDayOfWeek);
+END;
+
+/**
+ * Returns the 1-based week number of a date within the date's month.  Week 1
+ * always contains the first day of the month, and week 2 begins on the
+ * following day of the week indicated by the value of startingDayOfWeek.  This
+ * is not an ISO-8601 implementation of computing week numbers ("week dates").
+ *
+ * @param date              The date for which to compute the week number
+ * @param startingDayOfWeek The index number of the first day of a week, 1-7,
+ *                          where 1 = Sunday; OPTIONAL, defaults to 1
+ * @return                  The 1-based week number of date, relative to
+ *                          the beginning of the date's month
+ *
+ * @see YearWeekNumFromDate
+ */
+
+EXPORT MonthWeekNumFromDate(Date_t date, UNSIGNED1 startingDayOfWeek = 1) := FUNCTION
+    monthStart := DateFromParts(Year(date), Month(date), 1);
+
+    RETURN WeekNumForDate(date, monthStart, startingDayOfWeek);
+END;
+
+
+/**
  * Returns a boolean indicating whether daylight savings time is currently
  * in effect locally.
  *
@@ -1159,9 +1232,9 @@ END;
  */
 
 EXPORT BOOLEAN IsValidTime(Time_t time) := FUNCTION
-    hourInBounds := (Hour(time) BETWEEN 0 AND 23);
-    minuteInBounds := (Minute(time) BETWEEN 0 AND 59);
-    secondInBounds := (Second(time) BETWEEN 0 AND 59);
+    hourInBounds := (Hour(time) <= 23);
+    minuteInBounds := (Minute(time) <= 59);
+    secondInBounds := (Second(time) <= 59);
 
     RETURN hourInBounds AND minuteInBounds AND secondInBounds;
 END;
@@ -1281,4 +1354,789 @@ EXPORT DateTime_rec CreateDateTimeFromSeconds(Seconds_t seconds) := TRANSFORM
     SELF.second := timeParts.second;
 END;
 
-END; // Module
+//------------------------------------------------------------------------------
+// Time Zone Module
+//------------------------------------------------------------------------------
+
+EXPORT TimeZone := MODULE, FORWARD
+
+/**
+ * Record definition for exported time zone information
+ */
+
+EXPORT TZDataLayout := RECORD
+    STRING5         tzAbbrev;       // Time zone abbreviation; always uppercase; may be duplicated between records
+    INTEGER4        secondsOffset;  // Number of seconds east (positive) or west (negative) of UTC
+    SET OF STRING15 locations;      // Names of locations that use the given time zone abbreviation
+END;
+
+/**
+ * Hardcoded time zone definitions; a general description of each time zone
+ * is included as a line comment.  This information was collected from
+ * https://www.timeanddate.com/time/zones/ with one modification (see below).
+ *
+ * The IST abbreviation can indicate three different time zones:
+ *      India Standard Time
+ *      Irish Standard Time
+ *      Israel Standard Time
+ *
+ * Unfortunately, two of those IST time zones lie in the same location:  ASIA.
+ * That makes it impossible to differentiate between them, and they have very
+ * different offsets.  As a consequence, locations for Israel Standard Time and
+ * Israel Daylight Time have been changed from ASIA to ISRAEL.
+ */
+
+EXPORT TZ_DATA := DATASET
+    (
+        [
+            {'A', 3600, ['MILITARY']}, // Alpha Time Zone
+            {'ACDT', 37800, ['AUSTRALIA']}, // Australian Central Daylight Time
+            {'ACST', 34200, ['AUSTRALIA']}, // Australian Central Standard Time
+            {'ACT', -18000, ['SOUTH AMERICA']}, // Acre Time
+            {'ACT', 34200, ['AUSTRALIA']}, // Australian Central Time
+            {'ACWST', 31500, ['AUSTRALIA']}, // Australian Central Western Standard Time
+            {'ADT', 10800, ['ASIA']}, // Arabia Daylight Time
+            {'ADT', -10800, ['NORTH AMERICA', 'ATLANTIC']}, // Atlantic Daylight Time
+            {'AEDT', 39600, ['AUSTRALIA']}, // Australian Eastern Daylight Time
+            {'AEST', 36000, ['AUSTRALIA']}, // Australian Eastern Standard Time
+            {'AET', 36000, ['AUSTRALIA']}, // Australian Eastern Time
+            {'AFT', 16200, ['ASIA']}, // Afghanistan Time
+            {'AKDT', -28800, ['NORTH AMERICA']}, // Alaska Daylight Time
+            {'AKST', -32400, ['NORTH AMERICA']}, // Alaska Standard Time
+            {'ALMT', 21600, ['ASIA']}, // Alma-Ata Time
+            {'AMST', -10800, ['SOUTH AMERICA']}, // Amazon Summer Time
+            {'AMST', 18000, ['ASIA']}, // Armenia Summer Time
+            {'AMT', -14400, ['SOUTH AMERICA']}, // Amazon Time
+            {'AMT', 14400, ['ASIA']}, // Armenia Time
+            {'ANAST', 43200, ['ASIA']}, // Anadyr Summer Time
+            {'ANAT', 43200, ['ASIA']}, // Anadyr Time
+            {'AOE', -43200, ['PACIFIC']}, // Anywhere on Earth
+            {'AQTT', 18000, ['ASIA']}, // Aqtobe Time
+            {'ART', -10800, ['ANTARCTICA', 'SOUTH AMERICA']}, // Argentina Time
+            {'AST', 7200, ['ASIA']}, // Arabia Standard Time
+            {'AST', -14400, ['NORTH AMERICA', 'ATLANTIC' , 'CARIBBEAN']}, // Atlantic Standard Time
+            {'AT', -14400, ['NORTH AMERICA', 'ATLANTIC', 'CARIBBEAN']}, // Atlantic Time
+            {'AWDT', 32400, ['AUSTRALIA']}, // Australian Western Daylight Time
+            {'AWST', 28800, ['AUSTRALIA']}, // Australian Western Standard Time
+            {'AZOST', 0, ['ATLANTIC']}, // Azores Summer Time
+            {'AZOT', -3600, ['ATLANTIC']}, // Azores Time
+            {'AZST', 18000, ['ASIA']}, // Azerbaijan Summer Time
+            {'AZT', 14400, ['ASIA']}, // Azerbaijan Time
+            {'B', 7200, ['MILITARY']}, // Bravo Time Zone
+            {'BNT', 28800, ['ASIA']}, // Brunei Darussalam Time
+            {'BOT', -14400, ['SOUTH AMERICA']}, // Bolivia Time
+            {'BRST', -7200, ['SOUTH AMERICA']}, // Brazil Summer Time
+            {'BRT', -10800, ['SOUTH AMERICA']}, // Brazil Time
+            {'BST', 21600, ['ASIA']}, // Bangladesh Standard Time
+            {'BST', 39600, ['PACIFIC']}, // Bougainville Standard Time
+            {'BST', 3600, ['EUROPE']}, // British Summer Time
+            {'BTT', 21600, ['ASIA']}, // Bhutan Time
+            {'C', 10800, ['MILITARY']}, // Charlie Time Zone
+            {'CAST', 28800, ['ANTARCTICA']}, // Casey Time
+            {'CAT', 7200, ['AFRICA']}, // Central Africa Time
+            {'CCT', 23400, ['INDIAN OCEAN']}, // Cocos Islands Time
+            {'CDT', -18000, ['NORTH AMERICA']}, // Central Daylight Time
+            {'CDT', -14400, ['CARIBBEAN']}, // Cuba Daylight Time
+            {'CEST', 7200, ['EUROPE', 'ANTARCTICA']}, // Central European Summer Time
+            {'CET', 3600, ['EUROPE', 'AFRICA']}, // Central European Time
+            {'CHADT', 49500, ['PACIFIC']}, // Chatham Island Daylight Time
+            {'CHAST', 45900, ['PACIFIC']}, // Chatham Island Standard Time
+            {'CHOST', 32400, ['ASIA']}, // Choibalsan Summer Time
+            {'CHOT', 28800, ['ASIA']}, // Choibalsan Time
+            {'ChST', 36000, ['PACIFIC']}, // Chamorro Standard Time
+            {'CHUT', 36000, ['PACIFIC']}, // Chuuk Time
+            {'CIDST', -14400, ['CARIBBEAN']}, // Cayman Islands Daylight Saving Time
+            {'CIST', -18000, ['CARIBBEAN']}, // Cayman Islands Standard Time
+            {'CKT', -36000, ['PACIFIC']}, // Cook Island Time
+            {'CLST', -10800, ['SOUTH AMERICA', 'ANTARCTICA']}, // Chile Summer Time
+            {'CLT', -14400, ['SOUTH AMERICA', 'ANTARCTICA']}, // Chile Standard Time
+            {'COT', -18000, ['SOUTH AMERICA']}, // Colombia Time
+            {'CST', -21600, ['NORTH AMERICA', 'CENTRAL AMERICA']}, // Central Standard Time
+            {'CST', 28800, ['ASIA']}, // China Standard Time
+            {'CST', -18000, ['CARIBBEAN']}, // Cuba Standard Time
+            {'CT', -21600, ['NORTH AMERICA', 'CENTRAL AMERICA']}, // Central Time
+            {'CVT', -3600, ['AFRICA']}, // Cape Verde Time
+            {'CXT', 25200, ['AUSTRALIA']}, // Christmas Island Time
+            {'D', 14400, ['MILITARY']}, // Delta Time Zone
+            {'DAVT', 25200, ['ANTARCTICA']}, // Davis Time
+            {'DDUT', 36000, ['ANTARCTICA']}, // Dumont-d'Urville Time
+            {'E', 18000, ['MILITARY']}, // Echo Time Zone
+            {'EASST', -18000, ['PACIFIC']}, // Easter Island Summer Time
+            {'EAST', -21600, ['PACIFIC']}, // Easter Island Standard Time
+            {'EAT', 10800, ['AFRICA', 'INDIAN OCEAN']}, // Eastern Africa Time
+            {'ECT', -18000, ['SOUTH AMERICA']}, // Ecuador Time
+            {'EDT', -14400, ['NORTH AMERICA', 'CARIBBEAN']}, // Eastern Daylight Time
+            {'EEST', 10800, ['EUROPE', 'ASIA']}, // Eastern European Summer Time
+            {'EET', 7200, ['EUROPE', 'ASIA', 'AFRICA']}, // Eastern European Time
+            {'EGST', 0, ['NORTH AMERICA']}, // Eastern Greenland Summer Time
+            {'EGT', -3600, ['NORTH AMERICA']}, // East Greenland Time
+            {'EST', -18000, ['NORTH AMERICA', 'CARIBBEAN', 'CENTRAL AMERICA']}, // Eastern Standard Time
+            {'ET', -18000, ['NORTH AMERICA', 'CARIBBEAN', 'CENTRAL AMERICA']}, // Eastern Time
+            {'F', 21600, ['MILITARY']}, // Foxtrot Time Zone
+            {'FET', 10800, ['EUROPE']}, // Further-Eastern European Time
+            {'FJST', 46800, ['PACIFIC']}, // Fiji Summer Time
+            {'FJT', 43200, ['PACIFIC']}, // Fiji Time
+            {'FKST', -10800, ['SOUTH AMERICA']}, // Falkland Islands Summer Time
+            {'FKT', -14400, ['SOUTH AMERICA']}, // Falkland Island Time
+            {'FNT', -7200, ['SOUTH AMERICA']}, // Fernando de Noronha Time
+            {'G', 25200, ['MILITARY']}, // Golf Time Zone
+            {'GALT', -21600, ['PACIFIC']}, // Galapagos Time
+            {'GAMT', -32400, ['PACIFIC']}, // Gambier Time
+            {'GET', 14400, ['ASIA']}, // Georgia Standard Time
+            {'GFT', -10800, ['SOUTH AMERICA']}, // French Guiana Time
+            {'GILT', 43200, ['PACIFIC']}, // Gilbert Island Time
+            {'GMT', 0, ['EUROPE', 'AFRICA', 'NORTH AMERICA', 'ANTARCTICA']}, // Greenwich Mean Time
+            {'GST', 14400, ['ASIA']}, // Gulf Standard Time
+            {'GST', -7200, ['SOUTH AMERICA']}, // South Georgia Time
+            {'GYT', -14400, ['SOUTH AMERICA']}, // Guyana Time
+            {'H', 28800, ['MILITARY']}, // Hotel Time Zone
+            {'HADT', -32400, ['NORTH AMERICA']}, // Hawaii-Aleutian Daylight Time
+            {'HAST', -36000, ['NORTH AMERICA', 'PACIFIC']}, // Hawaii-Aleutian Standard Time
+            {'HKT', 28800, ['ASIA']}, // Hong Kong Time
+            {'HOVST', 28800, ['ASIA']}, // Hovd Summer Time
+            {'HOVT', 25200, ['ASIA']}, // Hovd Time
+            {'I', 32400, ['MILITARY']}, // India Time Zone
+            {'ICT', 25200, ['ASIA']}, // Indochina Time
+            {'IDT', 10800, ['ISRAEL']}, // Israel Daylight Time; location was ASIA
+            {'IOT', 21600, ['INDIAN OCEAN']}, // Indian Chagos Time
+            {'IRDT', 16200, ['ASIA']}, // Iran Daylight Time
+            {'IRKST', 32400, ['ASIA']}, // Irkutsk Summer Time
+            {'IRKT', 28800, ['ASIA']}, // Irkutsk Time
+            {'IRST', 12600, ['ASIA']}, // Iran Standard Time
+            {'IST', 19800, ['ASIA']}, // India Standard Time
+            {'IST', 3600, ['EUROPE']}, // Irish Standard Time
+            {'IST', 7200, ['ISRAEL']}, // Israel Standard Time; location was ASIA
+            {'JST', 32400, ['ASIA']}, // Japan Standard Time
+            {'K', 36000, ['MILITARY']}, // Kilo Time Zone
+            {'KGT', 21600, ['ASIA']}, // Kyrgyzstan Time
+            {'KOST', 39600, ['PACIFIC']}, // Kosrae Time
+            {'KRAST', 28800, ['ASIA']}, // Krasnoyarsk Summer Time
+            {'KRAT', 25200, ['ASIA']}, // Krasnoyarsk Time
+            {'KST', 32400, ['ASIA']}, // Korea Standard Time
+            {'KUYT', 14400, ['EUROPE']}, // Kuybyshev Time
+            {'L', 39600, ['MILITARY']}, // Lima Time Zone
+            {'LHDT', 39600, ['AUSTRALIA']}, // Lord Howe Daylight Time
+            {'LHST', 37800, ['AUSTRALIA']}, // Lord Howe Standard Time
+            {'LINT', 50400, ['PACIFIC']}, // Line Islands Time
+            {'M', 43200, ['MILITARY']}, // Mike Time Zone
+            {'MAGST', 43200, ['ASIA']}, // Magadan Summer Time
+            {'MAGT', 39600, ['ASIA']}, // Magadan Time
+            {'MART', -34200, ['PACIFIC']}, // Marquesas Time
+            {'MAWT', 18000, ['ANTARCTICA']}, // Mawson Time
+            {'MDT', -21600, ['NORTH AMERICA']}, // Mountain Daylight Time
+            {'MHT', 43200, ['PACIFIC']}, // Marshall Islands Time
+            {'MMT', 23400, ['ASIA']}, // Myanmar Time
+            {'MSD', 14400, ['EUROPE']}, // Moscow Daylight Time
+            {'MSK', 10800, ['EUROPE', 'ASIA']}, // Moscow Standard Time
+            {'MST', -25200, ['NORTH AMERICA']}, // Mountain Standard Time
+            {'MT', -25200, ['NORTH AMERICA']}, // Mountain Time
+            {'MUT', 14400, ['AFRICA']}, // Mauritius Time
+            {'MVT', 18000, ['ASIA']}, // Maldives Time
+            {'MYT', 28800, ['ASIA']}, // Malaysia Time
+            {'N', -3600, ['MILITARY']}, // November Time Zone
+            {'NCT', 39600, ['PACIFIC']}, // New Caledonia Time
+            {'NDT', -9000, ['NORTH AMERICA']}, // Newfoundland Daylight Time
+            {'NFT', 39600, ['AUSTRALIA']}, // Norfolk Time
+            {'NOVST', 25200, ['ASIA']}, // Novosibirsk Summer Time
+            {'NOVT', 21600, ['ASIA']}, // Novosibirsk Time
+            {'NPT', 20700, ['ASIA']}, // Nepal Time
+            {'NRT', 43200, ['PACIFIC']}, // Nauru Time
+            {'NST', -12600, ['NORTH AMERICA']}, // Newfoundland Standard Time
+            {'NUT', -39600, ['PACIFIC']}, // Niue Time
+            {'NZDT', 46800, ['PACIFIC', 'ANTARCTICA']}, // New Zealand Daylight Time
+            {'NZST', 43200, ['PACIFIC', 'ANTARCTICA']}, // New Zealand Standard Time
+            {'O', -7200, ['MILITARY']}, // Oscar Time Zone
+            {'OMSST', 25200, ['ASIA']}, // Omsk Summer Time
+            {'OMST', 21600, ['ASIA']}, // Omsk Standard Time
+            {'ORAT', 18000, ['ASIA']}, // Oral Time
+            {'P', -10800, ['MILITARY']}, // Papa Time Zone
+            {'PDT', -25200, ['NORTH AMERICA']}, // Pacific Daylight Time
+            {'PET', -18000, ['SOUTH AMERICA']}, // Peru Time
+            {'PETST', 43200, ['ASIA']}, // Kamchatka Summer Time
+            {'PETT', 43200, ['ASIA']}, // Kamchatka Time
+            {'PGT', 36000, ['PACIFIC']}, // Papua New Guinea Time
+            {'PHOT', 46800, ['PACIFIC']}, // Phoenix Island Time
+            {'PHT', 28800, ['ASIA']}, // Philippine Time
+            {'PKT', 18000, ['ASIA']}, // Pakistan Standard Time
+            {'PMDT', -7200, ['NORTH AMERICA']}, // Pierre & Miquelon Daylight Time
+            {'PMST', -10800, ['NORTH AMERICA']}, // Pierre & Miquelon Standard Time
+            {'PONT', 39600, ['PACIFIC']}, // Pohnpei Standard Time
+            {'PST', -28800, ['NORTH AMERICA']}, // Pacific Standard Time
+            {'PST', -28800, ['PACIFIC']}, // Pitcairn Standard Time
+            {'PT', -28800, ['NORTH AMERICA']}, // Pacific Time
+            {'PWT', 32400, ['PACIFIC']}, // Palau Time
+            {'PYST', -10800, ['SOUTH AMERICA']}, // Paraguay Summer Time
+            {'PYT', -14400, ['SOUTH AMERICA']}, // Paraguay Time
+            {'PYT', 30600, ['ASIA']}, // Pyongyang Time
+            {'Q', -14400, ['MILITARY']}, // Quebec Time Zone
+            {'QYZT', 21600, ['ASIA']}, // Qyzylorda Time
+            {'R', -18000, ['MILITARY']}, // Romeo Time Zone
+            {'RET', 14400, ['AFRICA']}, // Reunion Time
+            {'ROTT', -10800, ['ANTARCTICA']}, // Rothera Time
+            {'S', -21600, ['MILITARY']}, // Sierra Time Zone
+            {'SAKT', 39600, ['ASIA']}, // Sakhalin Time
+            {'SAMT', 14400, ['EUROPE']}, // Samara Time
+            {'SAST', 7200, ['AFRICA']}, // South Africa Standard Time
+            {'SBT', 39600, ['PACIFIC']}, // Solomon Islands Time
+            {'SCT', 14400, ['AFRICA']}, // Seychelles Time
+            {'SGT', 28800, ['ASIA']}, // Singapore Time
+            {'SRET', 39600, ['ASIA']}, // Srednekolymsk Time
+            {'SRT', -10800, ['SOUTH AMERICA']}, // Suriname Time
+            {'SST', -39600, ['PACIFIC']}, // Samoa Standard Time
+            {'SYOT', 10800, ['ANTARCTICA']}, // Syowa Time
+            {'T', -25200, ['MILITARY']}, // Tango Time Zone
+            {'TAHT', -36000, ['PACIFIC']}, // Tahiti Time
+            {'TFT', 18000, ['INDIAN OCEAN']}, // French Southern and Antarctic Time
+            {'TJT', 18000, ['ASIA']}, // Tajikistan Time
+            {'TKT', 46800, ['PACIFIC']}, // Tokelau Time
+            {'TLT', 32400, ['ASIA']}, // East Timor Time
+            {'TMT', 18000, ['ASIA']}, // Turkmenistan Time
+            {'TOST', 50400, ['PACIFIC']}, // Tonga Summer Time
+            {'TOT', 46800, ['PACIFIC']}, // Tonga Time
+            {'TRT', 10800, ['ASIA', 'EUROPE']}, // Turkey Time
+            {'TVT', 43200, ['PACIFIC']}, // Tuvalu Time
+            {'U', -28800, ['MILITARY']}, // Uniform Time Zone
+            {'ULAST', 32400, ['ASIA']}, // Ulaanbaatar Summer Time
+            {'ULAT', 28800, ['ASIA']}, // Ulaanbaatar Time
+            {'UTC', 0, ['WORLDWIDE']}, // Coordinated Universal Time
+            {'UYST', -7200, ['SOUTH AMERICA']}, // Uruguay Summer Time
+            {'UYT', -10800, ['SOUTH AMERICA']}, // Uruguay Time
+            {'UZT', 18000, ['ASIA']}, // Uzbekistan Time
+            {'V', -32400, ['MILITARY']}, // Victor Time Zone
+            {'VET', -14400, ['SOUTH AMERICA']}, // Venezuelan Standard Time
+            {'VLAST', 39600, ['ASIA']}, // Vladivostok Summer Time
+            {'VLAT', 36000, ['ASIA']}, // Vladivostok Time
+            {'VOST', 21600, ['ANTARCTICA']}, // Vostok Time
+            {'VUT', 39600, ['PACIFIC']}, // Vanuatu Time
+            {'W', -36000, ['MILITARY']}, // Whiskey Time Zone
+            {'WAKT', 43200, ['PACIFIC']}, // Wake Time
+            {'WARST', -10800, ['SOUTH AMERICA']}, // Western Argentine Summer Time
+            {'WAST', 7200, ['AFRICA']}, // West Africa Summer Time
+            {'WAT', 3600, ['AFRICA']}, // West Africa Time
+            {'WEST', 3600, ['EUROPE', 'AFRICA']}, // Western European Summer Time
+            {'WET', 0, ['EUROPE', 'AFRICA']}, // Western European Time
+            {'WFT', 43200, ['PACIFIC']}, // Wallis and Futuna Time
+            {'WGST', -7200, ['NORTH AMERICA']}, // Western Greenland Summer Time
+            {'WGT', -10800, ['NORTH AMERICA']}, // West Greenland Time
+            {'WIB', 25200, ['ASIA']}, // Western Indonesian Time
+            {'WIT', 32400, ['ASIA']}, // Eastern Indonesian Time
+            {'WITA', 28800, ['ASIA']}, // Central Indonesian Time
+            {'WST', 50400, ['PACIFIC']}, // West Samoa Time
+            {'WST', 3600, ['AFRICA']}, // Western Sahara Summer Time
+            {'WT', 0, ['AFRICA']}, // Western Sahara Standard Time
+            {'X', -39600, ['MILITARY']}, // X-ray Time Zone
+            {'Y', -43200, ['MILITARY']}, // Yankee Time Zone
+            {'YAKST', 36000, ['ASIA']}, // Yakutsk Summer Time
+            {'YAKT', 32400, ['ASIA']}, // Yakutsk Time
+            {'YAPT', 36000, ['PACIFIC']}, // Yap Time
+            {'YEKST', 21600, ['ASIA']}, // Yekaterinburg Summer Time
+            {'YEKT', 18000, ['ASIA']}, // Yekaterinburg Time
+            {'Z', 0, ['MILITARY']} // Zulu Time Zone
+        ],
+        TZDataLayout
+    );
+
+/**
+ * Return a list of unique time zone abbreviations from the hardcoded dataset.
+ * All abbreviations are in uppercase.
+ *
+ * @return              A new DATASET({STRING5 tzAbbrev}) containing the
+ *                      unique time zone abbreviations.
+ */
+
+EXPORT UniqueTZAbbreviations() := FUNCTION
+    RETURN TABLE(TZ_DATA, {tzAbbrev}, tzAbbrev);
+END;
+
+/**
+ * Return a list of unique location names from the hardcoded dataset.
+ * All names are in uppercase.
+ *
+ * @return              A new DATASET({STRING name}) containing the
+ *                      unique location names.
+ */
+
+EXPORT UniqueTZLocations() := FUNCTION
+    NameRec := {STRING name};
+
+    // Gather all locations as a collection of child datasets
+    collectedNames := PROJECT
+        (
+            TZ_DATA,
+            TRANSFORM
+                (
+                    {
+                        DATASET(NameRec)    names
+                    },
+                    SELF.names := DATASET(LEFT.locations, NameRec)
+                )
+        );
+
+    // Flatten collected names, so there is one name per record
+    flattenedNames := NORMALIZE
+        (
+            collectedNames,
+            LEFT.names,
+            TRANSFORM
+                (
+                    NameRec,
+                    SELF.name := RIGHT.name
+                )
+        );
+
+    // Deduplicate the names
+    ds3 := TABLE(flattenedNames, {name}, name);
+
+    RETURN ds3;
+END;
+
+/**
+ * Finds the time zone records for a given location.
+ *
+ * @param   location        The name of the location to search for; must be a
+ *                          non-empty uppercase string; REQUIRED
+ * @return                  A new DATASET(STRING5 tzAbbrev, INTEGER4 secondsOffset)
+ *                          containing the found records
+ * @see     FindTZData
+ */
+
+EXPORT TZDataForLocation(STRING location) := FUNCTION
+    ResultRec := RECORD
+        STRING5         tzAbbrev;
+        INTEGER4        secondsOffset;
+    END;
+
+    foundRecs := TZ_DATA(location IN locations);
+    foundTrimmed := PROJECT
+        (
+            foundRecs,
+            TRANSFORM
+                (
+                    ResultRec,
+                    SELF := LEFT
+                )
+        );
+
+    RETURN foundTrimmed;
+END;
+
+/**
+ * Finds the time zone records for a given abbreviation and optional location.
+ * A location should be provided as a method of differentiation if the
+ * abbreviation has duplicate entries.
+ *
+ * @param   timeZoneAbbrev  The time zone abbreviation to search for;
+ *                          must be a non-empty uppercase string; REQUIRED
+ * @param   location        The name of the location to search for; if a
+ *                          location is not provided or is an empty string,
+ *                          all records matching only the abbreviation are
+ *                          returned; OPTIONAL, defaults to an empty string
+ * @return                  A new DATASET(TZDataLayout) containing the found
+ *                          records
+ * @see     TZDataForLocation
+ */
+
+EXPORT DATASET(TZDataLayout) FindTZData(STRING5 timeZoneAbbrev, STRING location = '') := FUNCTION
+    RETURN TZ_DATA(tzAbbrev = timeZoneAbbrev AND (location = '' OR location IN locations));
+END;
+
+/**
+ * Compute the offset, in seconds, between two different time zones.  Each
+ * time zone is designated by a required time zone abbreviation and an
+ * optional location name.  The result is the number of seconds (which can be
+ * either positive or negative) that would have to be applied to a time when
+ * traveling from 'fromTimeZoneAbbrev' to 'toTimeZoneAbbrev'.
+ *
+ * Be aware that some time zones explicitly represent daylight savings time, so
+ * it is entirely possible to change not only time zones but DST observance as
+ * well in a single call.
+ *
+ * @param   fromTimeZoneAbbrev  The time zone abbreviation designated as the
+ *                              starting point; must be a non-empty uppercase
+ *                              string; REQUIRED
+ * @param   toTimeZoneAbbrev    The time zone abbreviation designated as the
+ *                              ending point; must be a non-empty uppercase
+ *                              string; REQUIRED
+ * @param   fromLocation        The name of the location that goes along with
+ *                              fromTimeZoneAbbrev; if a location is not
+ *                              provided or is an empty string, the first
+ *                              record matching fromTimeZoneAbbrev will be used;
+ *                              OPTIONAL, defaults to an empty string
+ * @param   toLocation          The name of the location that goes along with
+ *                              toTimeZoneAbbrev; if a location is not
+ *                              provided or is an empty string, the first
+ *                              record matching toTimeZoneAbbrev will be used;
+ *                              OPTIONAL, defaults to an empty string
+ * @return                      The number of seconds between the two time
+ *                              zones; will return zero if either time zone
+ *                              cannot be found
+ * @see     AdjustTimeTZ
+ */
+
+EXPORT INTEGER4 SecondsBetweenTZ(STRING5 fromTimeZoneAbbrev,
+                                 STRING5 toTimeZoneAbbrev,
+                                 STRING fromLocation = '',
+                                 STRING toLocation = '') := FUNCTION
+    fromTZ := FindTZData(fromTimeZoneAbbrev, fromLocation);
+    toTZ := FindTZData(toTimeZoneAbbrev, toLocation);
+    hasTZInfo := EXISTS(fromTZ) AND EXISTS(toTZ);
+
+    fromSecondsOffset := fromTZ[1].secondsOffset;
+    toSecondsOffset := toTZ[1].secondsOffset;
+
+    RETURN IF
+        (
+            hasTZInfo,
+            toSecondsOffset - fromSecondsOffset,
+            0
+        );
+END;
+
+/**
+ * Adjust a given Time_t time value for another time zone.  Both the given time
+ * and the destination time zone are designated by a required time zone
+ * abbreviation and an optional location name.
+ *
+ * @param   time                The time value to adjust; REQUIRED
+ * @param   fromTimeZoneAbbrev  The time zone abbreviation that the time
+ *                              value is assumed to be within; must be a
+ *                              non-empty uppercase string; REQUIRED
+ * @param   toTimeZoneAbbrev    The time zone abbreviation designated as the
+ *                              ending point; must be a non-empty uppercase
+ *                              string; REQUIRED
+ * @param   fromLocation        The name of the location that goes along with
+ *                              fromTimeZoneAbbrev; if a location is not
+ *                              provided or is an empty string, the first
+ *                              record matching fromTimeZoneAbbrev will be used;
+ *                              OPTIONAL, defaults to an empty string
+ * @param   toLocation          The name of the location that goes along with
+ *                              toTimeZoneAbbrev; if a location is not
+ *                              provided or is an empty string, the first
+ *                              record matching toTimeZoneAbbrev will be used;
+ *                              OPTIONAL, defaults to an empty string
+ * @return                      The given time value adjusted by the difference
+ *                              between the two given time zones; if either
+ *                              time zone cannot be found then the original
+ *                              time value will be returned unchanged
+ * @see     SecondsBetweenTZ
+ */
+
+EXPORT Time_t AdjustTimeTZ(Time_t time,
+                           STRING5 fromTimeZoneAbbrev,
+                           STRING5 toTimeZoneAbbrev,
+                           STRING fromLocation = '',
+                           STRING toLocation = '') := FUNCTION
+    diff := SecondsBetweenTZ(fromTimeZoneAbbrev, toTimeZoneAbbrev, fromLocation, toLocation);
+    newTime := AdjustTime(time, second_delta := diff);
+
+    RETURN newTime;
+END;
+
+/**
+ * Converts a UTC time to a time designated by a time zone abbreviation and
+ * optional location.
+ *
+ * @param   utcTime             The UTC time value to adjust; REQUIRED
+ * @param   toTimeZoneAbbrev    The time zone abbreviation designated as the
+ *                              ending point; must be a non-empty uppercase
+ *                              string; REQUIRED
+ * @param   toLocation          The name of the location that goes along with
+ *                              toTimeZoneAbbrev; if a location is not
+ *                              provided or is an empty string, the first
+ *                              record matching toTimeZoneAbbrev will be used;
+ *                              OPTIONAL, defaults to an empty string
+ * @return                      The given UTC time value adjusted to the time
+ *                              zone defined by toTimeZoneAbbrev and toLocation;
+ *                              if the time zone cannot be found then the
+ *                              original time value will be returned unchanged
+ * @see     AdjustTimeTZ
+ * @see     ToUTCTime
+ */
+
+EXPORT Time_t ToLocalTime(Time_t utcTime,
+                          STRING5 toTimeZoneAbbrev,
+                          STRING toLocation = '') := FUNCTION
+    RETURN AdjustTimeTZ(utcTime, 'UTC', toTimeZoneAbbrev, toLocation := toLocation);
+END;
+
+/**
+ * Converts a local time, defined with a time zone abbreviation and optional
+ * location, to a UTC time.
+ *
+ * @param   localTime           The time value to adjust; REQUIRED
+ * @param   fromTimeZoneAbbrev  The time zone abbreviation that the localTime
+ *                              value is assumed to be within; must be a
+ *                              non-empty uppercase string; REQUIRED
+ * @param   fromLocation        The name of the location that goes along with
+ *                              fromTimeZoneAbbrev; if a location is not
+ *                              provided or is an empty string, the first
+ *                              record matching fromTimeZoneAbbrev will be used;
+ *                              OPTIONAL, defaults to an empty string
+ * @return                      The given local time value adjusted to UTC time;
+ *                              if the given time zone cannot be found then the
+ *                              original UTC time value will be returned
+ *                              unchanged
+ * @see     AdjustTimeTZ
+ * @see     ToLocalTime
+ */
+
+EXPORT Time_t ToUTCTime(Time_t localTime,
+                        STRING5 fromTimeZoneAbbrev,
+                        STRING fromLocation = '') := FUNCTION
+    RETURN AdjustTimeTZ(localTime, fromTimeZoneAbbrev, 'UTC', fromLocation := fromLocation);
+END;
+
+/**
+ * Given a dataset that contains a time zone abbreviation and optional location,
+ * this function macro appends four new attributes to the dataset that contain
+ * useful information for translating a time value into another time zone.
+ * This could be useful as an ETL step where time data is made common in
+ * respect to one particular time zone (e.g. UTC).
+ *
+ * The actions within this function macro are conceptually similar to
+ * SecondsBetweenTZ() but applied to an entire dataset, and somewhat more
+ * efficiently.
+ *
+ * Note:  In order for this function macro to execute correctly, the calling
+ * code must import the Std library.
+ *
+ * @param   inFile              The dataset to process; REQUIRED
+ * @param   timeZoneAbbrevField The attribute within inFile that contains
+ *                              the time zone abbreviation to use for matching;
+ *                              the values in this attribute should be in
+ *                              uppercase; this is not a string; REQUIRED
+ * @param   newOffsetField      The attribute that will be appended to inFile
+ *                              and will contain the number of seconds offset
+ *                              from UTC; this is not a string; REQUIRED
+ * @param   fromLocationField   The attribute within inFile that contains the
+ *                              time zone location for the time zone cited by
+ *                              timeZoneAbbrevField; this is not a string;
+ *                              OPTIONAL, defaults to a null value (indicating
+ *                              that there is no time zone location attribute)
+ * @param   toTimeZoneAbbrev    The 'to' time zone abbreviation to use for all
+ *                              calculations, as a string; OPTIONAL, defaults
+ *                              to 'UTC'
+ * @param   toLocation          The name of the location that goes along with
+ *                              toTimeZoneAbbrev; if a location is not
+ *                              provided or is an empty string, the first
+ *                              record matching toTimeZoneAbbrev will be used;
+ *                              OPTIONAL, defaults to an empty string
+ * @return                      A new dataset with the same record definition
+ *                              as inFile but with four new attributes added;
+ *                              the new attributes are named based on the name
+ *                              given as the newOffsetField attribute:
+ *                                  INTEGER4    <newOffsetField>            // Offset, in seconds, between original time zone and toTimeZoneAbbrev
+ *                                  BOOLEAN     <newOffsetField>_is_valid   // TRUE if <newOffsetField> contains a valid value
+ *                                  STRING5     <newOffsetField>_tz         // The value of toTimeZoneAbbrev
+ *                                  STRING15    <newOffsetField>_location   // The time zone location for <newOffsetField>_tz
+ *                              If <newOffsetField>_is_valid is FALSE then
+ *                              <newOffsetField> will be zero.
+ * @see     AppendTZAdjustedTime
+ *
+ * Examples:
+ *
+ *   ds := DATASET
+ *      (
+ *          [
+ *              {120000, 'CT'},
+ *              {120000, 'ET'}
+ *          ],
+ *          {Std.Date.Time_t time, STRING tz}
+ *      );
+ *
+ *  utcOffsetDS := Std.Date.TimeZone.AppendTZOffset(ds, tz, seconds_to_utc);
+ *  OUTPUT(utcOffsetDS, NAMED('offset_to_utc_result'));
+ *
+ *  ptOffsetDS := Std.Date.TimeZone.AppendTZOffset
+ *      (
+ *          ds,
+ *          tz,
+ *          seconds_to_pacific_time,
+ *          toTimeZoneAbbrev := 'PT',
+ *          toLocation := 'NORTH AMERICA'
+ *      );
+ *  OUTPUT(ptOffsetDS, NAMED('offset_to_pacific_time_result'));
+ */
+
+EXPORT AppendTZOffset(inFile,
+                      timeZoneAbbrevField,
+                      newOffsetField,
+                      fromLocationField = '',
+                      toTimeZoneAbbrev = '\'UTC\'',
+                      toLocation = '\'\'') := FUNCTIONMACRO
+    // Find the destination time zone information just once
+    #UNIQUENAME(destOffsetDS);
+    LOCAL %destOffsetDS% := Std.Date.TimeZone.FindTZData(toTimeZoneAbbrev, toLocation);
+    #UNIQUENAME(destOffsetFound);
+    LOCAL %destOffsetFound% := EXISTS(%destOffsetDS%);
+    #UNIQUENAME(destLocation);
+    LOCAL %destLocation% := IF(toLocation != '', toLocation, %destOffsetDS%[1].locations[1]);
+    #UNIQUENAME(destOffset);
+    LOCAL %destOffset% := %destOffsetDS%[1].secondsOffset;
+
+    RETURN JOIN
+        (
+            inFile,
+            Std.Date.TimeZone.TZ_DATA,
+            LEFT.timeZoneAbbrevField = RIGHT.tzAbbrev
+                #IF(#TEXT(fromLocationField) != '')
+                    AND LEFT.fromLocationField IN RIGHT.locations
+                #END
+                AND %destOffsetFound%,
+            TRANSFORM
+                (
+                    {
+                        RECORDOF(inFile),
+                        INTEGER4    newOffsetField,
+                        BOOLEAN     #EXPAND(#TEXT(newOffsetField) + '_is_valid'),
+                        STRING5     #EXPAND(#TEXT(newOffsetField) + '_tz'),
+                        STRING15    #EXPAND(#TEXT(newOffsetField) + '_location')
+                    },
+
+                    wasFound := RIGHT.tzAbbrev != '';
+
+                    SELF.newOffsetField := IF(wasFound, %destOffset% - RIGHT.secondsOffset, 0),
+                    SELF.#EXPAND(#TEXT(newOffsetField) + '_is_valid') := wasFound,
+                    SELF.#EXPAND(#TEXT(newOffsetField) + '_tz') := toTimeZoneAbbrev,
+                    SELF.#EXPAND(#TEXT(newOffsetField) + '_location') := %destLocation%,
+                    SELF := LEFT
+                ),
+            LEFT OUTER, LOOKUP
+        );
+ENDMACRO;
+
+/**
+ * Given a dataset that contains a time (in Time_t format), a time zone
+ * abbreviation, and an optional time zone location, this function macro
+ * appends four new attributes to the dataset:  A new Time_t attribute
+ * containing the original time expressed in a different time zone, and three
+ * attributes providing information regarding that destination time zone and
+ * the validity of the translation.  This could be useful as an ETL step where
+ * time data is made common in respect to one particular time zone (e.g. UTC).
+ *
+ * The actions within this function macro are conceptually similar to
+ * AdjustTimeTZ() but applied to an entire dataset, and somewhat more
+ * efficiently.
+ *
+ * Note:  In order for this function macro to execute correctly, the calling
+ * code must import the Std library.
+ *
+ * @param   inFile              The dataset to process; REQUIRED
+ * @param   timeField           The attribute within inFile that contains a
+ *                              time represented in Time_t format; this is not
+ *                              a string; REQUIRED
+ * @param   timeZoneAbbrevField The attribute within inFile that contains
+ *                              the time zone abbreviation to use for matching;
+ *                              the values in this attribute should be in
+ *                              uppercase; this is not a string; REQUIRED
+ * @param   newTimeField        The attribute that will be appended to inFile
+ *                              and will contain the adjusted value of timeField;
+ *                              this is not a string; REQUIRED
+ * @param   fromLocationField   The attribute within inFile that contains the
+ *                              time zone location for the time zone cited by
+ *                              timeZoneAbbrevField; this is not a string;
+ *                              OPTIONAL, defaults to a null value (indicating
+ *                              that there is no time zone location attribute)
+ * @param   toTimeZoneAbbrev    The 'to' time zone abbreviation to use for all
+ *                              calculations, as a string; OPTIONAL, defaults
+ *                              to 'UTC'
+ * @param   toLocation          The name of the location that goes along with
+ *                              toTimeZoneAbbrev; if a location is not
+ *                              provided or is an empty string, the first
+ *                              record matching toTimeZoneAbbrev will be used;
+ *                              OPTIONAL, defaults to an empty string
+ * @return                      A new dataset with the same record definition
+ *                              as inFile but with four new attributes added;
+ *                              the new attributes are named based on the name
+ *                              given as the newOffsetField attribute:
+ *                                  Std.Date.Time_t <newOffsetField>            // Value of timeField expressed in new time zone
+ *                                  BOOLEAN         <newOffsetField>_is_valid   // TRUE if <newOffsetField> contains a valid value
+ *                                  STRING5         <newOffsetField>_tz         // The value of toTimeZoneAbbrev
+ *                                  STRING15        <newOffsetField>_location   // The time zone location for <newOffsetField>_tz
+ *                              If <newOffsetField>_is_valid is FALSE then
+ *                              <newOffsetField> will have the same value as
+ *                              timeField.
+ * @see     AppendTZOffset
+ *
+ * Example:
+ *
+ *   ds := DATASET
+ *      (
+ *          [
+ *              {120000, 'CT'},
+ *              {120000, 'ET'}
+ *          ],
+ *          {Std.Date.Time_t time, STRING tz}
+ *      );
+ *
+ *  utcRewriteDS := Std.Date.TimeZone.AppendTZAdjustedTime(ds, time, tz, utc_time);
+ *  OUTPUT(utcRewriteDS, NAMED('utc_result'));
+ *
+ *  ptRewriteDS := Std.Date.TimeZone.AppendTZAdjustedTime
+ *      (
+ *          ds,
+ *          time,
+ *          tz,
+ *          pacific_time,
+ *          toTimeZoneAbbrev := 'PT',
+ *          toLocation := 'NORTH AMERICA'
+ *      );
+ *  OUTPUT(ptRewriteDS, NAMED('pacific_time_result'));
+ */
+
+EXPORT AppendTZAdjustedTime(inFile,
+                            timeField,
+                            timeZoneAbbrevField,
+                            newTimeField,
+                            fromLocationField = '',
+                            toTimeZoneAbbrev = '\'UTC\'',
+                            toLocation = '\'\'') := FUNCTIONMACRO
+    // Find the destination time zone information just once
+    #UNIQUENAME(destOffsetDS);
+    LOCAL %destOffsetDS% := Std.Date.TimeZone.FindTZData(toTimeZoneAbbrev, toLocation);
+    #UNIQUENAME(destOffsetFound);
+    LOCAL %destOffsetFound% := EXISTS(%destOffsetDS%);
+    #UNIQUENAME(destLocation);
+    LOCAL %destLocation% := IF(toLocation != '', toLocation, %destOffsetDS%[1].locations[1]);
+    #UNIQUENAME(destOffset);
+    LOCAL %destOffset% := %destOffsetDS%[1].secondsOffset;
+
+    RETURN JOIN
+        (
+            inFile,
+            Std.Date.TimeZone.TZ_DATA,
+            LEFT.timeZoneAbbrevField = RIGHT.tzAbbrev
+                #IF(#TEXT(fromLocationField) != '')
+                    AND LEFT.fromLocationField IN RIGHT.locations
+                #END
+                AND %destOffsetFound%,
+            TRANSFORM
+                (
+                    {
+                        RECORDOF(inFile),
+                        Std.Date.Time_t     newTimeField,
+                        BOOLEAN             #EXPAND(#TEXT(newTimeField) + '_is_valid'),
+                        STRING5             #EXPAND(#TEXT(newTimeField) + '_tz'),
+                        STRING15            #EXPAND(#TEXT(newTimeField) + '_location')
+                    },
+
+                    wasFound := RIGHT.tzAbbrev != '';
+
+                    SELF.newTimeField := IF
+                        (
+                            wasFound,
+                            Std.Date.AdjustTime(LEFT.timeField, second_delta := (%destOffset% - RIGHT.secondsOffset)),
+                            LEFT.timeField
+                        ),
+                    SELF.#EXPAND(#TEXT(newTimeField) + '_is_valid') := wasFound,
+                    SELF.#EXPAND(#TEXT(newTimeField) + '_tz') := toTimeZoneAbbrev,
+                    SELF.#EXPAND(#TEXT(newTimeField) + '_location') := %destLocation%,
+                    SELF := LEFT
+                ),
+            LEFT OUTER, LOOKUP
+        );
+ENDMACRO;
+
+END; // TimeZone Module
+
+END; // Date Module

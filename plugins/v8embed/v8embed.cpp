@@ -24,7 +24,7 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "nbcd.hpp"
 #include "roxiemem.hpp"
 #include <vector>
@@ -66,7 +66,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("v8embed: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", str(field->name));
+        msg.appendf(" for field %s", field->name);
     rtlFail(0, msg.str());
 }
 
@@ -201,10 +201,10 @@ protected:
         v8::Local<v8::Value> v;
         if (named)
         {
-            v8::Local<v8::String> name = v8::String::New(str(field->name));
+            v8::Local<v8::String> name = v8::String::New(field->name);
             if (!row->Has(name))
             {
-                VStringBuffer msg("v8embed: No value for field %s", str(field->name));
+                VStringBuffer msg("v8embed: No value for field %s", field->name);
                 rtlFail(0, msg.str());
             }
             v = row->Get(name);
@@ -363,7 +363,7 @@ protected:
         if (inDataset)
             obj->Set(idx++, value);
         else
-            obj->Set(v8::String::New(str(field->name)), value);
+            obj->Set(v8::String::New(field->name), value);
     }
     v8::Local<v8::Object> obj;
     std::vector< v8::Local<v8::Object> > stack;
@@ -453,6 +453,10 @@ public:
         context.Dispose();
         isolate->Exit();
         isolate->Dispose();
+    }
+    void setActivityContext(const IThorActivityContext *_activityCtx)
+    {
+        activityCtx = _activityCtx;
     }
     virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
     {
@@ -649,7 +653,7 @@ public:
         }
         context->Global()->Set(v8::String::New(name), array);
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override
     {
         v8::HandleScope handle_scope;
         const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
@@ -897,6 +901,16 @@ public:
         assertex (!script.IsEmpty());
         v8::HandleScope handle_scope;
         v8::TryCatch tryCatch;
+        if (activityCtx)
+        {
+            v8::Handle<v8::Object> jsActivityCtx = v8::Object::New();
+            jsActivityCtx->Set(v8::String::New("isLocal"), v8::Boolean::New(activityCtx->isLocal()));
+            jsActivityCtx->Set(v8::String::New("numSlaves"), v8::Integer::NewFromUnsigned(activityCtx->numSlaves()));
+            jsActivityCtx->Set(v8::String::New("numStrands"), v8::Integer::NewFromUnsigned(activityCtx->numStrands()));
+            jsActivityCtx->Set(v8::String::New("slave"), v8::Integer::NewFromUnsigned(activityCtx->querySlave()));
+            jsActivityCtx->Set(v8::String::New("strand"), v8::Integer::NewFromUnsigned(activityCtx->queryStrand()));
+            context->Global()->Set(v8::String::New("__activity__"), jsActivityCtx);
+        }
         result = v8::Persistent<v8::Value>::New(script->Run());
         v8::Handle<v8::Value> exception = tryCatch.Exception();
         if (!exception.IsEmpty())
@@ -907,6 +921,7 @@ public:
     }
 
 protected:
+    const IThorActivityContext *activityCtx = nullptr;
     v8::Isolate *isolate;
     v8::Persistent<v8::Context> context;
     v8::Persistent<v8::Script> script;
@@ -936,11 +951,11 @@ public:
     V8JavascriptEmbedContext()
     {
     }
-    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) override
     {
-        return createFunctionContextEx(NULL, flags, options);
+        return createFunctionContextEx(nullptr, nullptr, flags, options);
     }
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityContext, unsigned flags, const char *options) override
     {
         if (flags & EFimport)
             UNSUPPORTED("IMPORT");
@@ -949,9 +964,10 @@ public:
             theFunctionContext = new V8JavascriptEmbedFunctionContext;
             threadHookChain = addThreadTermFunc(releaseContext);
         }
+        theFunctionContext->setActivityContext(activityContext);
         return LINK(theFunctionContext);
     }
-    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         throwUnexpected();
     }

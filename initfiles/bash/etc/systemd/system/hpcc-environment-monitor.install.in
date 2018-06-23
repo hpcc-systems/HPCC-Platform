@@ -1,0 +1,4 @@
+if [[ -e /bin/systemctl ]]; then
+    installFile "$path/etc/systemd/system/hpcc-environment-monitor.service" "/etc/systemd/system/hpcc-environment-monitor.service" 1 || exit 1
+    installFile "$path/etc/systemd/system/hpcc-environment-monitor.path" "/etc/systemd/system/hpcc-environment-monitor.path" 1 || exit 1
+fi

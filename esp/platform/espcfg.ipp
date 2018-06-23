@@ -30,6 +30,8 @@
 #include "environment.hpp"
 #include <dalienv.hpp>
 
+#include "bindutil.hpp"
+
 //STL
 #include <list>
 #include <map>
@@ -39,6 +41,7 @@ using namespace std;
 //ESP
 #include "esp.hpp"
 #include "espplugin.hpp"
+#include "espcache.hpp"
 
 struct binding_cfg
 {
@@ -98,12 +101,46 @@ struct esp_option
     { }
 };
 
-class CEspConfig : public CInterface, implements IInterface 
+class CSessionCleaner : public Thread
+{
+    bool       stopping = false;
+    Semaphore  sem;
+
+    StringAttr espSessionSDSPath;
+    int        checkSessionTimeoutSeconds; //the duration to clean timed out sesssions
+    bool       m_isDetached;
+
+public:
+    CSessionCleaner(const char* _espSessionSDSPath, int _checkSessionTimeoutSeconds) : Thread("CSessionCleaner"),
+        espSessionSDSPath(_espSessionSDSPath), checkSessionTimeoutSeconds(_checkSessionTimeoutSeconds) , m_isDetached(false){ }
+
+    virtual ~CSessionCleaner()
+    {
+        stopping = true;
+        sem.signal();
+        join();
+    }
+
+    void setIsDetached(bool isDetached) {m_isDetached = isDetached;}
+
+    virtual int run();
+};
+
+static CriticalSection attachcrit;
+
+#ifdef ESPCFG_EXPORTS
+    #define esp_cfg_decl DECL_EXPORT
+#else
+    #define esp_cfg_decl DECL_IMPORT
+#endif
+
+class esp_cfg_decl CEspConfig : public CInterface, implements IInterface
 {
 private:
     Owned<IPropertyTree> m_envpt;
     Owned<IPropertyTree> m_cfg;
     Owned<IProperties> m_inputs;
+    Owned<CSessionCleaner> m_sessionCleaner;
 
     StringBuffer m_process;
     StringBuffer m_computer;
@@ -119,6 +156,9 @@ private:
     HINSTANCE hsami_;
     CSDSServerStatus *serverstatus;
     bool useDali;
+    bool m_detachedFromDali;
+    bool m_subscribedToDali;
+    StringBuffer m_daliAttachStateFileName;
 
 private:
     CEspConfig(CEspConfig &);
@@ -127,7 +167,34 @@ public:
     IMPLEMENT_IINTERFACE;
 
     esp_option m_options;
-    
+
+    void setIsDetachedFromDali(bool isDetached)
+    {
+        CriticalBlock b(attachcrit);
+        if (m_detachedFromDali != isDetached)
+        {
+            m_detachedFromDali = isDetached;
+            if (m_sessionCleaner)
+                m_sessionCleaner->setIsDetached(m_detachedFromDali);
+        }
+    }
+
+    bool isDetachedFromDali() const
+    {
+        CriticalBlock b(attachcrit);
+        return m_detachedFromDali;
+    }
+
+    bool isSubscribedToDali() const
+    {
+        return m_subscribedToDali;
+    }
+
+    void setIsSubscribedToDali(bool issubscribed)
+    {
+        m_subscribedToDali = issubscribed;
+    }
+
     bool usesDali(){return useDali;}
     bool checkDali()
     {
@@ -166,18 +233,39 @@ public:
 
     const SocketEndpoint &getLocalEndpoint(){return m_address;}
 
+    void ensureESPSessionInTree(IPropertyTree* sessionRoot, const char* procName);
+    void ensureSDSSessionDomains();
+
     void loadProtocols();
     void loadServices();
     void loadBindings();
+    void startEsdlMonitor();
 
     void loadAll()
     {
         DBGLOG("loadServices");
-        loadServices();
+        try
+        {
+            loadServices();
+        }
+        catch(IException* ie)
+        {
+            if (isDetachedFromDali())
+                ERRLOG("Could not load ESP service(s) while DETACHED from DALI - Consider re-attaching ESP process.");
+            throw(ie);
+        }
         loadProtocols();
-        loadBindings();      
+        loadBindings();
+        if(useDali)
+            startEsdlMonitor();
     }
 
+    bool reSubscribeESPToDali();
+    bool unsubscribeESPFromDali();
+    bool detachESPFromDali(bool force);
+    bool attachESPToDali();
+    bool canAllBindingsDetachFromDali();
+    void checkESPCache(IEspServer& server);
     IEspPlugin* getPlugin(const char* name);
 
     void loadBuiltIns();
@@ -192,12 +280,16 @@ public:
     void unloadBindings();
     void unloadServices();
     void unloadProtocols();
+    void saveAttachState();
+    void stopEsdlMonitor();
 
     void clear()
     {
         unloadBindings();
         unloadServices();
         unloadProtocols();
+        if(useDali)
+           stopEsdlMonitor();
 
         serverstatus=NULL;
         
@@ -220,7 +312,20 @@ public:
         closeEnvironment();
     }
 
+    IPropertyTree* queryProcConfig()
+    {
+        return m_cfg.get();
+    }
 
+    IEspProtocol* queryProtocol(const char* name)
+    {
+        map<string, protocol_cfg*>::iterator pit = m_protocols.find(name);
+        if (pit != m_protocols.end())
+            return (*pit).second->prot;
+        return nullptr;
+    }
+
+    IEspRpcBinding* queryBinding(const char* name);
 };
 
 

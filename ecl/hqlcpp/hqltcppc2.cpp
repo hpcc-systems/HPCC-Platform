@@ -224,7 +224,7 @@ bool CMemberInfo::hasDatasetLimits() const
 
 CChildDatasetColumnInfo::CChildDatasetColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column, RecordOffsetMap & map, unsigned defaultMaxRecordSize) : CColumnInfo(_container, _prior, _column)
 {
-    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize);
+    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize, false);
     maxChildSize = offsetMap->getMaxSize();
 #ifdef _DEBUG
     assertex(!recordRequiresSerialization(column->queryRecord(), internalAtom));
@@ -264,8 +264,7 @@ void CColumnInfo::buildDeserializeToBuilder(HqlCppTranslator & translator, Build
     BuildCtx loopctx(ctx);
     buildDeserializeChildLoop(translator, loopctx, selector, helper, serializeForm);
 
-    BoundRow * selfRow = builder->buildDeserializeRow(loopctx, helper, serializeForm);
-    builder->finishRow(loopctx, selfRow);
+    builder->buildDeserializeRow(loopctx, helper, serializeForm);
 }
 
 
@@ -397,7 +396,7 @@ CChildLimitedDatasetColumnInfo::CChildLimitedDatasetColumnInfo(CContainerInfo * 
         countField.setown(ensureExprType(countField, sizetType));
     if (sizeField)
         sizeField.setown(ensureExprType(sizeField, sizetType));
-    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize);
+    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize, false);
     maxChildSize = offsetMap->getMaxSize();
     fixedChildSize = offsetMap->isFixedWidth() ? maxChildSize : UNKNOWN_LENGTH;
 }
@@ -526,13 +525,15 @@ bool CChildLimitedDatasetColumnInfo::buildReadAhead(HqlCppTranslator & translato
             OwnedHqlExpr test = createValue(no_postdec, LINK(bound.expr));
             loopctx.addLoop(test, NULL, false);
 
+            StringBuffer helperCpp;
+            translator.generateExprCpp(helperCpp, state.helper);
             StringBuffer prefetcherInstanceName;
             translator.ensureRowPrefetcher(prefetcherInstanceName, ctx, column->queryRecord());
             
             StringBuffer s;
-            s.append(prefetcherInstanceName).append("->readAhead(");
-            translator.generateExprCpp(s, state.helper).append(");");
-            loopctx.addQuoted(s);
+            loopctx.addQuoted(s.clear().append(helperCpp).append(".noteStartChild();"));
+            loopctx.addQuoted(s.clear().append(prefetcherInstanceName).append("->readAhead(").append(helperCpp).append(");"));
+            loopctx.addQuoted(s.clear().append(helperCpp).append(".noteFinishChild();"));
             return true;
         }
     }
@@ -621,7 +622,7 @@ AColumnInfo * CChildLimitedDatasetColumnInfo::lookupColumn(IHqlExpression * sear
 
 CChildLinkedDatasetColumnInfo::CChildLinkedDatasetColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column, RecordOffsetMap & map, unsigned defaultMaxRecordSize) : CColumnInfo(_container, _prior, _column)
 {
-    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize);
+    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize, false);
     maxChildSize = offsetMap->getMaxSize();
 }
 
@@ -636,7 +637,7 @@ void CChildLinkedDatasetColumnInfo::buildColumnExpr(HqlCppTranslator & translato
 
 void CChildLinkedDatasetColumnInfo::gatherSize(SizeStruct & target)
 {
-    unsigned thisSize = sizeof(size32_t) + sizeof(byte * *);
+    unsigned thisSize = sizeof(size32_t) + sizeof(const byte * *);
     if (isConditional())
         addVariableSize(thisSize, target);      // the size is used for ensure if condition is true
     else
@@ -646,13 +647,13 @@ void CChildLinkedDatasetColumnInfo::gatherSize(SizeStruct & target)
 
 IHqlExpression * CChildLinkedDatasetColumnInfo::buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector)
 {
-    return getSizetConstant(sizeof(size32_t) + sizeof(byte * *));
+    return getSizetConstant(sizeof(size32_t) + sizeof(const byte * *));
 }
 
 void CChildLinkedDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeFormat)
 {
     if (isConditional())
-        checkAssignOk(translator, ctx, selector, queryZero(), sizeof(size32_t) + sizeof(byte * *));
+        checkAssignOk(translator, ctx, selector, queryZero(), sizeof(size32_t) + sizeof(const byte * *));
 
     OwnedHqlExpr addressSize = getColumnAddress(translator, ctx, selector, sizetType, 0);
     OwnedHqlExpr addressData = getColumnAddress(translator, ctx, selector, queryType(), sizeof(size32_t));

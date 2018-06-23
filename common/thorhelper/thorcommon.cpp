@@ -27,14 +27,23 @@
 #include "thorcommon.ipp"
 #include "eclrtl.hpp"
 #include "rtlread_imp.hpp"
+#include "rtlcommon.hpp"
+#include "rtldynfield.hpp"
+#include "eclhelper_dyn.hpp"
+#include "hqlexpr.hpp"
 #include <algorithm>
 #ifdef _USE_NUMA
 #include <numa.h>
 #endif
-
+#include "roxiemem.hpp"
 #include "thorstep.hpp"
+#include "roxiemem.hpp"
 
 #define ROWAGG_PERROWOVERHEAD (sizeof(AggregateRowBuilder))
+
+void AggregateRowBuilder::Link() const { LinkRoxieRow(this); }
+bool AggregateRowBuilder::Release() const { ReleaseRoxieRow(this); return false; }  // MORE - return value is iffy
+
 RowAggregator::RowAggregator(IHThorHashAggregateExtra &_extra, IHThorRowAggregator & _helper) : helper(_helper)
 {
     comparer = _extra.queryCompareRowElement();
@@ -51,9 +60,12 @@ RowAggregator::~RowAggregator()
     reset();
 }
 
-void RowAggregator::start(IEngineRowAllocator *_rowAllocator)
+static CClassMeta<AggregateRowBuilder> AggregateRowBuilderMeta;
+
+void RowAggregator::start(IEngineRowAllocator *_rowAllocator, ICodeContext *ctx, unsigned activityId)
 {
     rowAllocator.set(_rowAllocator);
+    rowBuilderAllocator.setown(ctx->getRowAllocatorEx(&AggregateRowBuilderMeta, activityId, roxiemem::RHFunique|roxiemem::RHFscanning|roxiemem::RHFdelayrelease));
 }
 
 void RowAggregator::reset()
@@ -62,9 +74,9 @@ void RowAggregator::reset()
     {
         AggregateRowBuilder *n = nextResult();
         if (n)
-            n->Release();
+            ReleaseRoxieRow(n);
     }
-    SuperHashTable::_releaseAll();
+    _releaseAll();
     eof = false;
     cursor = NULL;
     rowAllocator.clear();
@@ -86,7 +98,7 @@ AggregateRowBuilder &RowAggregator::addRow(const void * row)
     }
     else
     {
-        Owned<AggregateRowBuilder> rowBuilder = new AggregateRowBuilder(rowAllocator, hash);
+        Owned<AggregateRowBuilder> rowBuilder = new (rowBuilderAllocator->createRow()) AggregateRowBuilder(rowAllocator, hash);
         helper.clearAggregate(*rowBuilder);
         size32_t sz = helper.processFirst(*rowBuilder, row);
         rowBuilder->setSize(sz);
@@ -112,7 +124,7 @@ void RowAggregator::mergeElement(const void * otherElement)
     }
     else
     {
-        Owned<AggregateRowBuilder> rowBuilder = new AggregateRowBuilder(rowAllocator, hash);
+        Owned<AggregateRowBuilder> rowBuilder = new (rowBuilderAllocator->createRow()) AggregateRowBuilder(rowAllocator, hash);
         rowBuilder->setSize(cloneRow(*rowBuilder, otherElement, rowAllocator->queryOutputMeta()));
         addNew(rowBuilder.getClear(), hash);
     }
@@ -698,14 +710,19 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKdiskaggregate:          return "Disk Aggregate";
     case TAKdiskcount:              return "Disk Count";
     case TAKdiskgroupaggregate:     return "Disk Grouped Aggregate";
+    case TAKdiskexists:             return "Disk Exists";
     case TAKindexread:              return "Index Read";   
     case TAKindexnormalize:         return "Index Normalize";
     case TAKindexaggregate:         return "Index Aggregate";
     case TAKindexcount:             return "Index Count";
     case TAKindexgroupaggregate:    return "Index Grouped Aggregate";
+    case TAKindexexists:            return "Index Exists";
+    case TAKchildread:              return "Child Read";
     case TAKchildnormalize:         return "Child Normalize";
     case TAKchildaggregate:         return "Child Aggregate";
+    case TAKchildcount:             return "Child Count";
     case TAKchildgroupaggregate:    return "Child Grouped Aggregate";
+    case TAKchildexists:            return "Child Exists";
     case TAKchildthroughnormalize:  return "Normalize";
     case TAKcsvread:                return "Csv Read";
     case TAKxmlread:                return "Xml Read";
@@ -718,6 +735,11 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKcombinegroup:           return "Combine Group";
     case TAKlookupdenormalize:      return "Lookup Denormalize";
     case TAKalldenormalize:         return "All Denormalize";
+    case TAKsmartdenormalizegroup:  return "Smart Denormalize Group";
+    case TAKunknowndenormalizegroup1: return "Unknown Denormalize Group1";
+    case TAKunknowndenormalizegroup2: return "Unknown Denormalize Group2";
+    case TAKunknowndenormalizegroup3: return "Unknown Denormalize Group3";
+    case TAKlastdenormalizegroup:    return "Last Denormalize Group";
     case TAKdenormalizegroup:       return "Denormalize Group";
     case TAKhashdenormalizegroup:   return "Hash Denormalize Group";
     case TAKlookupdenormalizegroup: return "Lookup Denormalize Group";
@@ -763,11 +785,13 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKcatch:                  return "Catch";
     case TAKskipcatch:              return "Skip Catch";
     case TAKcreaterowcatch:         return "OnFail Catch";
-    case TAKsectioninput:               return "Section Input";
+    case TAKsectioninput:           return "Section Input";
+    case TAKcaseaction:             return "Case Action";
     case TAKindexgroupcount:        return "Index Grouped Count";
-    case TAKindexgroupexists:   return "Index Grouped Exists";
+    case TAKindexgroupexists:       return "Index Grouped Exists";
     case TAKhashdistributemerge:    return "Distribute Merge";
     case TAKselfjoinlight:          return "Lightweight Self Join";
+    case TAKlastjoin:               return "Last Join";
     case TAKwhen_dataset:           return "When";
     case TAKhttp_rowdataset:        return "HTTP dataset";
     case TAKstreamediterator:       return "Streamed Dataset";
@@ -779,12 +803,20 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKdictionaryworkunitwrite:return "Dictionary Write";
     case TAKdictionaryresultwrite:  return "Dictionary Result";
     case TAKsmartjoin:              return "Smart Join";
+    case TAKunknownjoin1:           return "Unknown Join1";
+    case TAKunknownjoin2:           return "Unknown Join2";
+    case TAKunknownjoin3:           return "Unknown Join3";
     case TAKsmartdenormalize:       return "Smart Denormalize";
-    case TAKsmartdenormalizegroup:  return "Smart Denormalize Group";
+    case TAKunknowndenormalize1:    return "Unknown Denormalize1";
+    case TAKunknowndenormalize2:    return "Unknown Denormalize2";
+    case TAKunknowndenormalize3:    return "Unknown Denormalize3";
+    case TAKlastdenormalize:        return "Last Denormalize";
     case TAKselfdenormalize:        return "Self Denormalize";
     case TAKselfdenormalizegroup:   return "Self Denormalize Group";
     case TAKtrace:                  return "Trace";
     case TAKquantile:               return "Quantile";
+    case TAKspillread:              return "Spill Read";
+    case TAKspillwrite:             return "Spill Write";
     }
     throwUnexpected();
 }
@@ -831,6 +863,7 @@ extern bool isActivitySource(ThorActivityKind kind)
     case TAKindexgroupcount:
     case TAKstreamediterator:
     case TAKexternalsource:
+    case TAKspillread:
         return true;
     }
     return false;
@@ -867,6 +900,7 @@ extern bool isActivitySink(ThorActivityKind kind)
     case TAKwhen_action:
     case TAKdictionaryworkunitwrite:
     case TAKdictionaryresultwrite:
+    case TAKspillwrite:
         return true;
     }
     return false;
@@ -874,186 +908,6 @@ extern bool isActivitySink(ThorActivityKind kind)
 
 //=====================================================================================================
 
-
-CThorContiguousRowBuffer::CThorContiguousRowBuffer(ISerialStream * _in) : in(_in)
-{
-    buffer = NULL;
-    maxOffset = 0;
-    readOffset = 0;
-}
-
-void CThorContiguousRowBuffer::doRead(size32_t len, void * ptr)
-{
-    ensureAccessible(readOffset + len);
-    memcpy(ptr, buffer+readOffset, len);
-    readOffset += len;
-}
-
-
-size32_t CThorContiguousRowBuffer::read(size32_t len, void * ptr)
-{
-    doRead(len, ptr);
-    return len;
-}
-
-size32_t CThorContiguousRowBuffer::readSize()
-{
-    size32_t value;
-    doRead(sizeof(value), &value);
-    return value;
-}
-
-size32_t CThorContiguousRowBuffer::readPackedInt(void * ptr)
-{
-    size32_t size = sizePackedInt();
-    doRead(size, ptr);
-    return size;
-}
-
-size32_t CThorContiguousRowBuffer::readUtf8(ARowBuilder & target, size32_t offset, size32_t fixedSize, size32_t len)
-{
-    if (len == 0)
-        return 0;
-
-    size32_t size = sizeUtf8(len);
-    byte * self = target.ensureCapacity(fixedSize + size, NULL);
-    doRead(size, self+offset);
-    return size;
-}
-
-size32_t CThorContiguousRowBuffer::readVStr(ARowBuilder & target, size32_t offset, size32_t fixedSize)
-{
-    size32_t size = sizeVStr();
-    byte * self = target.ensureCapacity(fixedSize + size, NULL);
-    doRead(size, self+offset);
-    return size;
-}
-
-size32_t CThorContiguousRowBuffer::readVUni(ARowBuilder & target, size32_t offset, size32_t fixedSize)
-{
-    size32_t size = sizeVUni();
-    byte * self = target.ensureCapacity(fixedSize + size, NULL);
-    doRead(size, self+offset);
-    return size;
-}
-
-
-size32_t CThorContiguousRowBuffer::sizePackedInt()
-{
-    ensureAccessible(readOffset+1);
-    return rtlGetPackedSizeFromFirst(buffer[readOffset]);
-}
-
-size32_t CThorContiguousRowBuffer::sizeUtf8(size32_t len)
-{
-    if (len == 0)
-        return 0;
-
-    //The len is the number of utf characters, size depends on which characters are included.
-    size32_t nextOffset = readOffset;
-    while (len)
-    {
-        ensureAccessible(nextOffset+1);
-
-        for (;nextOffset < maxOffset;)
-        {
-            nextOffset += readUtf8Size(buffer+nextOffset);  // This function only accesses the first byte
-            if (--len == 0)
-                break;
-        }
-    }
-    return nextOffset - readOffset;
-}
-
-size32_t CThorContiguousRowBuffer::sizeVStr()
-{
-    size32_t nextOffset = readOffset;
-    for (;;)
-    {
-        ensureAccessible(nextOffset+1);
-
-        for (; nextOffset < maxOffset; nextOffset++)
-        {
-            if (buffer[nextOffset] == 0)
-                return (nextOffset + 1) - readOffset;
-        }
-    }
-}
-
-size32_t CThorContiguousRowBuffer::sizeVUni()
-{
-    size32_t nextOffset = readOffset;
-    const size32_t sizeOfUChar = 2;
-    for (;;)
-    {
-        ensureAccessible(nextOffset+sizeOfUChar);
-
-        for (; nextOffset+1 < maxOffset; nextOffset += sizeOfUChar)
-        {
-            if (buffer[nextOffset] == 0 && buffer[nextOffset+1] == 0)
-                return (nextOffset + sizeOfUChar) - readOffset;
-        }
-    }
-}
-
-
-void CThorContiguousRowBuffer::reportReadFail()
-{
-    throwUnexpected();
-}
-
-
-const byte * CThorContiguousRowBuffer::peek(size32_t maxSize)
-{
-    if (maxSize+readOffset > maxOffset)
-        doPeek(maxSize+readOffset);
-    return buffer + readOffset;
-}
-
-offset_t CThorContiguousRowBuffer::beginNested()
-{
-    size32_t len = readSize();
-    return len+readOffset;
-}
-
-bool CThorContiguousRowBuffer::finishedNested(offset_t & endPos)
-{
-    return readOffset >= endPos;
-}
-
-void CThorContiguousRowBuffer::skip(size32_t size)
-{ 
-    ensureAccessible(readOffset+size);
-    readOffset += size;
-}
-
-void CThorContiguousRowBuffer::skipPackedInt()
-{
-    size32_t size = sizePackedInt();
-    ensureAccessible(readOffset+size);
-    readOffset += size;
-}
-
-void CThorContiguousRowBuffer::skipUtf8(size32_t len)
-{
-    size32_t size = sizeUtf8(len);
-    ensureAccessible(readOffset+size);
-    readOffset += size;
-}
-
-void CThorContiguousRowBuffer::skipVStr()
-{
-    size32_t size = sizeVStr();
-    ensureAccessible(readOffset+size);
-    readOffset += size;
-}
-
-void CThorContiguousRowBuffer::skipVUni()
-{
-    size32_t size = sizeVUni();
-    ensureAccessible(readOffset+size);
-    readOffset += size;
-}
 
 // ===========================================
 
@@ -1123,7 +977,8 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsig
     return new cRowInterfaces(meta,actid,heapFlags,context);
 };
 
-class CRowStreamReader : implements IExtRowStream, public CSimpleInterface
+static NullVirtualFieldCallback nullVirtualFieldCallback;
+class CRowStreamReader : public CSimpleInterfaceOf<IExtRowStream>
 {
 protected:
     Linked<IFileIO> fileio;
@@ -1131,14 +986,24 @@ protected:
     Linked<IOutputRowDeserializer> deserializer;
     Linked<IEngineRowAllocator> allocator;
     Owned<ISerialStream> strm;
-    CThorStreamDeserializerSource source;
     Owned<ISourceRowPrefetcher> prefetcher;
-    CThorContiguousRowBuffer prefetchBuffer; // used if prefetcher set
+    CThorContiguousRowBuffer prefetchBuffer;
+    unsigned __int64 progress = 0;
+    Linked<ITranslator> translatorContainer;
+    MemoryBuffer translateBuf;
+    IOutputMetaData *actualFormat = nullptr;
+    const IDynamicTransform *translator = nullptr;
+    IVirtualFieldCallback * fieldCallback;
+    RowFilter actualFilter;
+    RtlDynRow *filterRow = nullptr;
+
     EmptyRowSemantics emptyRowSemantics;
-    bool eoi;
-    bool eos;
-    bool eog;
-    offset_t bufofs;
+    offset_t currentRowOffset = 0;
+    bool eoi = false;
+    bool eos = false;
+    bool eog = false;
+    bool hadMatchInGroup = false;
+    offset_t bufofs = 0;
 #ifdef TRACE_CREATE
     static unsigned rdnum;
 #endif
@@ -1153,28 +1018,136 @@ protected:
         }
     } crccb;
     
-public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    inline bool fieldFilterMatch(const void * buffer)
+    {
+        if (actualFilter.numFilterFields())
+        {
+            filterRow->setRow(buffer, 0);
+            return actualFilter.matches(*filterRow);
+        }
+        else
+            return true;
+    }
 
-    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics)
-        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(NULL), emptyRowSemantics(_emptyRowSemantics)
+    inline bool checkEmptyRow()
+    {
+        if (ers_allow == emptyRowSemantics)
+        {
+            byte b;
+            prefetchBuffer.read(1, &b);
+            prefetchBuffer.finishedRow();
+            if (1 == b)
+                return true;
+        }
+        return false;
+    }
+    inline void checkEog()
+    {
+        if (ers_eogonly == emptyRowSemantics)
+        {
+            byte b;
+            prefetchBuffer.read(1, &b);
+            eog = 1 == b;
+        }
+    }
+    inline bool checkExitConditions()
+    {
+        if (prefetchBuffer.eos())
+        {
+            eos = true;
+            return true;
+        }
+        if (eog)
+        {
+            eog = false;
+            if (hadMatchInGroup)
+            {
+                hadMatchInGroup = false;
+                return true;
+            }
+        }
+        return false;
+    }
+    const byte *getNextPrefetchRow()
+    {
+        while (true)
+        {
+            ++progress;
+            if (checkEmptyRow())
+                return nullptr;
+            currentRowOffset = prefetchBuffer.tell();
+            prefetcher->readAhead(prefetchBuffer);
+            bool matched = fieldFilterMatch(prefetchBuffer.queryRow());
+            checkEog();
+            if (matched) // NB: prefetchDone() call must be paired with a row returned from prefetchRow()
+            {
+                hadMatchInGroup = true;
+                return prefetchBuffer.queryRow(); // NB: buffer ptr could have changed due to reading eog byte
+            }
+            else
+                prefetchBuffer.finishedRow();
+            if (checkExitConditions())
+                break;
+        }
+        return nullptr;
+    }
+    const void *getNextRow()
+    {
+        /* NB: this is very similar to getNextPrefetchRow() above
+         * with the primary difference being it is deserializing into
+         * a row builder and returning finalized rows.
+         */
+        while (true)
+        {
+            ++progress;
+            if (checkEmptyRow())
+                return nullptr;
+            currentRowOffset = prefetchBuffer.tell();
+            RtlDynamicRowBuilder rowBuilder(*allocator);
+            size32_t size = deserializer->deserialize(rowBuilder, prefetchBuffer);
+            bool matched = fieldFilterMatch(rowBuilder.getUnfinalized());
+            checkEog();
+            prefetchBuffer.finishedRow();
+            const void *row = rowBuilder.finalizeRowClear(size);
+            if (matched)
+            {
+                hadMatchInGroup = true;
+                return row;
+            }
+            ReleaseRoxieRow(row);
+            if (checkExitConditions())
+                break;
+
+        }
+        return nullptr;
+    }
+public:
+    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *_translatorContainer, IVirtualFieldCallback * _fieldCallback)
+        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(nullptr), emptyRowSemantics(_emptyRowSemantics), translatorContainer(_translatorContainer), fieldCallback(_fieldCallback)
     {
 #ifdef TRACE_CREATE
         PROGLOG("CRowStreamReader %d = %p",++rdnum,this);
 #endif
-        eoi = false;
-        eos = false;
-        eog = false;
-        bufofs = 0;
         if (fileio)
             strm.setown(createFileSerialStream(fileio,_ofs,_len,(size32_t)-1, _tallycrc?&crccb:NULL));
         else
             strm.setown(createFileSerialStream(mmfile,_ofs,_len,_tallycrc?&crccb:NULL));
-        prefetcher.setown(rowif->queryRowMetaData()->createDiskPrefetcher(rowif->queryCodeContext(), rowif->queryActivityId()));
+        currentRowOffset = _ofs;
+        if (translatorContainer)
+        {
+            actualFormat = &translatorContainer->queryActualFormat();
+            translator = &translatorContainer->queryTranslator();
+        }
+        else
+        {
+            actualFormat = rowif->queryRowMetaData();
+            deserializer.set(rowif->queryRowDeserializer());
+        }
+        prefetcher.setown(actualFormat->createDiskPrefetcher());
         if (prefetcher)
             prefetchBuffer.setStream(strm);
-        source.setStream(strm);
-        deserializer.set(rowif->queryRowDeserializer());
+        if (!fieldCallback)
+            fieldCallback = &nullVirtualFieldCallback;
     }
 
     ~CRowStreamReader()
@@ -1182,99 +1155,92 @@ public:
 #ifdef TRACE_CREATE
         PROGLOG("~CRowStreamReader %d = %p",rdnum--,this);
 #endif
+        delete filterRow;
     }
 
-    void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows)
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IExtRowStream>)
+
+    virtual void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows) override
     {
         assertex(_maxrows == 0);
         eoi = false;
         eos = (_len==0);
         eog = false;
+        hadMatchInGroup = false;
         bufofs = 0;
+        progress = 0;
         strm->reset(_ofs,_len);
+        currentRowOffset = _ofs;
     }
 
-
-    const void *nextRow()
+    virtual const void *nextRow() override
     {
         if (eog)
         {
             eog = false;
-            return nullptr;
+            hadMatchInGroup = false;
         }
-        if (eos)
-            return nullptr;
-        if (source.eos())
-        {
-            eos = true;
-            return nullptr;
-        }
-        if (ers_allow == emptyRowSemantics)
-        {
-            byte b;
-            source.read(sizeof(b), &b);
-            if (1==b)
-                return nullptr;
-            RtlDynamicRowBuilder rowBuilder(*allocator);
-            size_t size = deserializer->deserialize(rowBuilder, source);
-            return rowBuilder.finalizeRowClear(size);
-        }
-        else
-        {
-            RtlDynamicRowBuilder rowBuilder(*allocator);
-            size_t size = deserializer->deserialize(rowBuilder, source);
-            if (ers_eogonly == emptyRowSemantics)
-            {
-                byte b;
-                source.read(sizeof(b), &b);
-                eog = (b==1);
-            }
-            return rowBuilder.finalizeRowClear(size);
-        }
-    }
-
-    const void *prefetchRow(size32_t *sz)
-    {
-        if (eog) 
-            eog = false;
         else if (!eos)
         {
-            if (source.eos()) 
+            if (prefetchBuffer.eos())
                 eos = true;
             else
             {
-                assertex(prefetcher);
-                if (ers_allow == emptyRowSemantics)
+                if (translator)
                 {
-                    byte b;
-                    strm->get(sizeof(b),&b);
-                    if (1==b)
-                        return nullptr;
+                    const byte *row = getNextPrefetchRow();
+                    if (row)
+                    {
+                        RtlDynamicRowBuilder rowBuilder(*allocator);
+                        size32_t size = translator->translate(rowBuilder, *fieldCallback, row);
+                        prefetchBuffer.finishedRow();
+                        return rowBuilder.finalizeRowClear(size);
+                    }
                 }
-                prefetcher->readAhead(prefetchBuffer);
-                const byte * ret = prefetchBuffer.queryRow();
-                if (sz)
-                    *sz = prefetchBuffer.queryRowSize();
-                return ret;
+                else
+                    return getNextRow();
             }
         }
-        if (sz)
-            sz = 0;
-        return NULL;
+        return nullptr;
     }
 
-    void prefetchDone()
+    virtual const byte *prefetchRow() override
+    {
+        // NB: prefetchDone() call must be paired with a row returned from prefetchRow()
+        if (eog)
+        {
+            eog = false;
+            hadMatchInGroup = false;
+        }
+        else if (!eos)
+        {
+            if (prefetchBuffer.eos())
+                eos = true;
+            else
+            {
+                const byte *row = getNextPrefetchRow();
+                if (row)
+                {
+                    if (translator)
+                    {
+                        translateBuf.setLength(0);
+                        MemoryBufferBuilder rowBuilder(translateBuf, 0);
+                        translator->translate(rowBuilder, *fieldCallback, row);
+                        row = reinterpret_cast<const byte *>(translateBuf.toByteArray());
+                    }
+                    return row;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    virtual void prefetchDone() override
     {
         prefetchBuffer.finishedRow();
-        if (ers_eogonly == emptyRowSemantics)
-        {
-            byte b;
-            strm->get(sizeof(b),&b);
-            eog = (b==1);
-        }
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         stop(NULL);
     }
@@ -1282,12 +1248,10 @@ public:
     void clear()
     {
         strm.clear();
-        source.clearStream();
         fileio.clear();
     }
 
-
-    void stop(CRC32 *crcout)
+    virtual void stop(CRC32 *crcout) override
     {
         if (!eos) {
             eos = true;
@@ -1298,18 +1262,47 @@ public:
             *crcout = crccb.crc;
     }
 
-    offset_t getOffset()
+    virtual offset_t getOffset() const override
     {
-        return source.tell();
+        return prefetchBuffer.tell();
     }
 
-    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    virtual offset_t getLastRowOffset() const override
+    {
+        return currentRowOffset;
+    }
+
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
     {
         if (fileio)
             return fileio->getStatistic(kind);
         return 0;
     }
-
+    virtual unsigned __int64 queryProgress() const override
+    {
+        return progress;
+    }
+    virtual void setFilters(IConstArrayOf<IFieldFilter> &filters)
+    {
+        if (filterRow)
+        {
+            delete filterRow;
+            filterRow = nullptr;
+            actualFilter.clear();
+        }
+        if (filters.ordinality())
+        {
+            actualFilter.appendFilters(filters);
+            if (translatorContainer)
+            {
+                const IKeyTranslator *keyedTranslator = translatorContainer->queryKeyedTranslator();
+                if (keyedTranslator)
+                    keyedTranslator->translate(actualFilter);
+            }
+            const RtlRecord *actual = &actualFormat->queryRecordAccessor(true);
+            filterRow = new RtlDynRow(*actual);
+        }
+    }
 };
 
 class CLimitedRowStreamReader : public CRowStreamReader
@@ -1318,15 +1311,15 @@ class CLimitedRowStreamReader : public CRowStreamReader
     unsigned __int64 rownum;
 
 public:
-    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics)
-        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _emptyRowSemantics)
+    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *translatorContainer, IVirtualFieldCallback * _fieldCallback)
+        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _emptyRowSemantics, translatorContainer, _fieldCallback)
     {
         maxrows = _maxrows;
         rownum = 0;
         eos = maxrows==0;
     }
 
-    void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows)
+    virtual void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows) override
     {
         CRowStreamReader::reinit(_ofs, _len, 0);
         if (_maxrows==0)
@@ -1335,23 +1328,31 @@ public:
         rownum = 0;
     }
 
-    const void *nextRow()
+    virtual const void *nextRow() override
     {
         const void * ret = CRowStreamReader::nextRow();
         if (++rownum==maxrows)
             eos = true;
         return ret;
     }
-
 };
 
 #ifdef TRACE_CREATE
 unsigned CRowStreamReader::rdnum;
 #endif
 
+IExtRowStream *createRowStreamEx(IFileIO *fileIO, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, ITranslator *translatorContainer, IVirtualFieldCallback * fieldCallback)
+{
+    EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(rwFlags);
+    if (maxrows == (unsigned __int64)-1)
+        return new CRowStreamReader(fileIO, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
+    else
+        return new CLimitedRowStreamReader(fileIO, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
+}
+
 bool UseMemoryMappedRead = false;
 
-IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, IExpander *eexp)
+IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, IExpander *eexp, ITranslator *translatorContainer, IVirtualFieldCallback * fieldCallback)
 {
     bool compressed = TestRwFlag(rwFlags, rw_compress);
     EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(rwFlags);
@@ -1362,9 +1363,9 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         if (!mmfile)
             return NULL;
         if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
+            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
         else
-            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
+            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
     }
     else
     {
@@ -1380,15 +1381,15 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         if (!fileio)
             return NULL;
         if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
+            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
         else
-            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
+            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer, fieldCallback);
     }
 }
 
-IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowIf, unsigned rwFlags, IExpander *eexp)
+IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowIf, unsigned rwFlags, IExpander *eexp, ITranslator *translatorContainer, IVirtualFieldCallback * fieldCallback)
 {
-    return createRowStreamEx(file, rowIf, 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, eexp);
+    return createRowStreamEx(file, rowIf, 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, eexp, translatorContainer, fieldCallback);
 }
 
 // Memory map sizes can be big, restrict to 64-bit platforms.
@@ -1775,6 +1776,17 @@ void ActivityTimeAccumulator::addStatistics(IStatisticGatherer & builder) const
     }
 }
 
+void ActivityTimeAccumulator::addStatistics(CRuntimeStatisticCollection & merged) const
+{
+    if (totalCycles)
+    {
+        merged.mergeStatistic(StWhenFirstRow, firstRow);
+        merged.mergeStatistic(StTimeElapsed, elapsed());
+        merged.mergeStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
+        merged.mergeStatistic(StTimeFirstExecute, latency());
+    }
+}
+
 void ActivityTimeAccumulator::merge(const ActivityTimeAccumulator & other)
 {
     if (other.totalCycles)
@@ -1982,4 +1994,136 @@ void bindMemoryToLocalNodes()
     DBGLOG("Process memory bound to numa nodemask 0x%x (of %u nodes total)", (unsigned)(*(nodes->maskp)), numNumaNodes);
     numa_bitmask_free(nodes);
 #endif
+}
+
+extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &props)
+{
+    try
+    {
+        bool isGrouped = props.getPropBool("@grouped", false);
+        if (props.hasProp("_rtlType"))
+        {
+            MemoryBuffer layoutBin;
+            props.getPropBin("_rtlType", layoutBin);
+            return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+        }
+        else if (props.hasProp("ECL"))
+        {
+            const char *kind = props.queryProp("@kind");
+            if (kind && streq(kind, "key"))
+            {
+                DBGLOG("Cannot deserialize file metadata: index too old");
+                return nullptr;
+            }
+            StringBuffer layoutECL;
+            props.getProp("ECL", layoutECL);
+            MultiErrorReceiver errs;
+            Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
+            if (errs.errCount() == 0)
+            {
+                MemoryBuffer layoutBin;
+                if (exportBinaryType(layoutBin, expr))
+                    return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+            }
+        }
+    }
+    catch (IException *E)
+    {
+        EXCLOG(E, "Cannot deserialize file metadata:");
+        ::Release(E);
+    }
+    catch (...)
+    {
+        DBGLOG("Cannot deserialize file metadata: Unknown error");
+    }
+    return nullptr;
+}
+
+static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> *keyedTranslator, const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode)
+{
+    if (expectedCrc)
+    {
+        IOutputMetaData * sourceFormat = expectedFormat;
+        unsigned sourceCrc = expectedCrc;
+        if (mode != RecordTranslationMode::AlwaysECL)
+        {
+            if (publishedFormat)
+            {
+                sourceFormat = publishedFormat;
+                sourceCrc = publishedCrc;
+            }
+
+            if (publishedCrc && expectedCrc && (publishedCrc != expectedCrc) && (RecordTranslationMode::None == mode))
+                throwTranslationError(publishedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true), tracing);
+        }
+
+        //This has a very low possibility of format crcs accidentally matching, which could lead to a crashes on an untranslated files.
+        if ((projectedFormat != sourceFormat) && (projectedCrc != sourceCrc))
+        {
+            translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), sourceFormat->queryRecordAccessor(true)));
+
+            if (!translator->canTranslate())
+                throw MakeStringException(0, "Untranslatable record layout mismatch detected for file %s", tracing);
+
+            if (translator->needsTranslate())
+            {
+                if (keyedTranslator && (sourceFormat != expectedFormat))
+                {
+                    Owned<const IKeyTranslator> _keyedTranslator = createKeyTranslator(sourceFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true));
+                    if (_keyedTranslator->needsTranslate())
+                        keyedTranslator->swap(_keyedTranslator);
+                }
+            }
+            else
+                translator.clear();
+        }
+    }
+    return nullptr != translator.get();
+}
+
+bool getTranslators(Owned<const IDynamicTransform> &translator, const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode)
+{
+    return getTranslators(translator, nullptr, tracing, expectedCrc, expectedFormat, publishedCrc, publishedFormat, projectedCrc, projectedFormat, mode);
+}
+
+bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> &keyedTranslator, const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode)
+{
+    return getTranslators(translator, &keyedTranslator, tracing, expectedCrc, expectedFormat, publishedCrc, publishedFormat, projectedCrc, projectedFormat, mode);
+}
+
+ITranslator *getTranslators(const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode)
+{
+    Owned<const IDynamicTransform> translator;
+    Owned<const IKeyTranslator> keyedTranslator;
+    if (getTranslators(translator, &keyedTranslator, tracing, expectedCrc, expectedFormat, publishedCrc, publishedFormat, projectedCrc, projectedFormat, mode))
+    {
+        if (!publishedFormat)
+            publishedFormat = expectedFormat;
+        class CTranslator : public CSimpleInterfaceOf<ITranslator>
+        {
+            Linked<IOutputMetaData> actualFormat;
+            Linked<const IDynamicTransform> translator;
+            Linked<const IKeyTranslator> keyedTranslator;
+        public:
+            CTranslator(IOutputMetaData *_actualFormat, const IDynamicTransform *_translator, const IKeyTranslator *_keyedTranslator)
+                : actualFormat(_actualFormat), translator(_translator), keyedTranslator(_keyedTranslator)
+            {
+            }
+            virtual IOutputMetaData &queryActualFormat() const override
+            {
+                return *actualFormat;
+            }
+            virtual const IDynamicTransform &queryTranslator() const override
+            {
+                return *translator;
+            }
+            virtual const IKeyTranslator *queryKeyedTranslator() const override
+            {
+                return keyedTranslator;
+            }
+        };
+        return new CTranslator(publishedFormat, translator, keyedTranslator);
+    }
+    else
+        return nullptr;
 }

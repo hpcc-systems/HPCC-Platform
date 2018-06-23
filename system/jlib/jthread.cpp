@@ -35,11 +35,6 @@
 #include <sys/resource.h>
 #endif
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 #define LINUX_STACKSIZE_CAP (0x200000)
 
 //#define NO_CATCHALL
@@ -558,7 +553,7 @@ CThreadedPersistent::~CThreadedPersistent()
     athread.join();
 }
 
-void CThreadedPersistent::main()
+void CThreadedPersistent::threadmain()
 {
     for (;;)
     {
@@ -567,7 +562,7 @@ void CThreadedPersistent::main()
             break;
         try
         {
-            owner->main();
+            owner->threadmain();
             // Note we do NOT call the thread reset hook here - these threads are expected to be able to preserve state, I think
         }
         catch (IException *e)
@@ -611,7 +606,7 @@ bool CThreadedPersistent::join(unsigned timeout)
             unsigned expected = s_joining;
             if (state.compare_exchange_strong(expected, s_running)) // if still joining, restore running state
                 return false;
-            // if here, main() set s_ready after timeout and has or will signal
+            // if here, threadmain() set s_ready after timeout and has or will signal
             if (!joinSem.wait(60000)) // should be instant
                 throwUnexpected();
             return true;
@@ -852,7 +847,7 @@ public:
                 char *temp = threadname;    // swap running name and threadname
                 threadname = runningname;
                 runningname = temp;
-                thread->main();
+                thread->threadmain();
                 temp = threadname;  // and back
                 threadname = runningname;
                 runningname = temp;
@@ -2379,7 +2374,9 @@ IWorkQueueThread *createWorkQueueThread(unsigned persisttime)
 
 unsigned threadLogID()  // for use in logging
 {
-#ifndef _WIN32
+#if defined(__APPLE__)
+     return pthread_mach_thread_np(pthread_self());
+#elif !defined(_WIN32)
 #ifdef SYS_gettid
     return (unsigned) (memsize_t) syscall(SYS_gettid);
 #endif

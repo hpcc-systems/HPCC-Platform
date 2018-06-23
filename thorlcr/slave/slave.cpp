@@ -73,10 +73,10 @@ void ProcessSlaveActivity::startProcess(bool async)
     if (async)
         threaded.start();
     else
-        main();
+        threadmain();
 }
 
-void ProcessSlaveActivity::main() 
+void ProcessSlaveActivity::threadmain()
 { 
     try
     {
@@ -269,6 +269,8 @@ CActivityBase *createDictionaryWorkunitWriteSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryResultWriteSlave(CGraphElementBase *container);
 CActivityBase *createTraceSlave(CGraphElementBase *container);
 CActivityBase *createIfActionSlave(CGraphElementBase *container);
+CActivityBase *createExternalSlave(CGraphElementBase *container);
+CActivityBase *createExternalSinkSlave(CGraphElementBase *container);
 
 
 class CGenericSlaveGraphElement : public CSlaveGraphElement
@@ -307,6 +309,7 @@ public:
         switch (kind)
         {
             case TAKdiskread:
+            case TAKspillread:
                 ret = createDiskReadSlave(this);
                 break;
             case TAKdisknormalize:
@@ -354,6 +357,7 @@ public:
                 ret = createSpillSlave(this);
                 break;
             case TAKdiskwrite:
+            case TAKspillwrite:
                 ret = createDiskWriteSlave(this);
                 break;
             case TAKsort:
@@ -760,6 +764,13 @@ public:
                 break;
             case TAKstreamediterator:
                 ret = createStreamedIteratorSlave(this);
+                break;
+            case TAKexternalprocess:
+            case TAKexternalsource:
+                ret = createExternalSlave(this);
+                break;
+            case TAKexternalsink:
+                ret = createExternalSinkSlave(this);
                 break;
             default:
                 throw MakeStringException(TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));

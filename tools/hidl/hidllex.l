@@ -53,7 +53,6 @@ ESPservice  { if (check_return( ESPSERVICE )) return ESPSERVICE; }
 ESPmethod   { if (check_return( ESPMETHOD )) return ESPMETHODREF; else return ESPMETHOD; }
 ESPmount    { if (check_return( ESPMOUNT )) return ESPMOUNT; }
 ESParray    { yylval.setName((const char *) yytext); if (check_return( ESPTEMPLATE )) return ESPTEMPLATE; }
-ESPuses     { if (check_return( ESPUSES )) return ESPUSES; }
 EspInclude  { if (check_return( ESPINCLUDE )) return ESPINCLUDE; } //Kevin
 ESPVersionDef   { if (check_return( ESPVERSIONDEF )) return ESPVERSIONDEF; }
 const       { if (check_return( _CONST )) return _CONST; }

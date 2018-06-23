@@ -212,8 +212,8 @@ private:
 
 
 #define RTLIMPLEMENT_IINTERFACE                                                 \
-    virtual void Link(void) const       { RtlCInterface::Link(); }              \
-    virtual bool Release(void) const    { return RtlCInterface::Release(); }
+    virtual void Link(void) const override     { RtlCInterface::Link(); }              \
+    virtual bool Release(void) const override  { return RtlCInterface::Release(); }
 
 
 //Inline definitions of the hash32 functions for small sizes - to optimize aggregate hash

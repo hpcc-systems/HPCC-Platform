@@ -16,6 +16,8 @@
 ############################################################################## */
 
 import std.system.thorlib;
+import $.setup;
+prefix := setup.Files(false, false).IndexPrefix;
 
 trec := RECORD
  unsigned1 key;
@@ -39,14 +41,14 @@ trec func(trec L, unsigned4 c) := TRANSFORM
   END;
 norm2 := NORMALIZE(disttmp, 5000, func(LEFT, counter));
 
-o1 := OUTPUT(norm2, , 'regress::key::test.d00', OVERWRITE);
+o1 := OUTPUT(norm2, , prefix + 'test.d00', OVERWRITE);
 
 rec := RECORD
  trec;
  unsigned8 filepos {virtual(fileposition)};
 END;
 
-d := DATASET('regress::key::test.d00', rec, FLAT);
+d := DATASET(prefix + 'test.d00', rec, FLAT);
 
 iRec := RECORD
  d.key;
@@ -55,12 +57,12 @@ END;
 
 
 // NB: avoid reusing same key file (see bug #13112)
-idx := INDEX(d, iRec, '~regress::key::test.idx');
-idx2 := INDEX(d, iRec, '~regress::key::test2.idx');
-idx3 := INDEX(d, iRec, '~regress::key::test3.idx');
-idx4 := INDEX(d, iRec, '~regress::key::test4.idx');
-idx5 := INDEX(d, iRec, {d}, '~regress::key::test5.idx');
-idx6 := INDEX(d, iRec, '~regress::key::test6.idx');
+idx := INDEX(d, iRec, prefix + 'test.idx');
+idx2 := INDEX(d, iRec, prefix + 'test2.idx');
+idx3 := INDEX(d, iRec, prefix + 'test3.idx');
+idx4 := INDEX(d, iRec, prefix + 'test4.idx');
+idx5 := INDEX(d, iRec, {d}, prefix + 'test5.idx');
+idx6 := INDEX(d, iRec, prefix + 'test6.idx');
 
 thornodes := MAX(CHOOSEN(tmp, 1), thorlib.nodes()) : global;  // Force it to calculate nodes() on thor not hthor
 

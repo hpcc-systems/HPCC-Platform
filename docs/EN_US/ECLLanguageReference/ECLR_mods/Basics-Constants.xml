@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Constants">
+  
+
+  <title>Constants</title>
+
+  
+
+  <sect2 id="Const_String">
+    
+
+    <title>String</title>
+
+    
+
+    <para>All string literals must be contained within single quotation marks
+    ( ' ' ). All ECL code is UTF-8
+    encoded, which means that all strings are also UTF-8
+    encoded, whether Unicode or non-Unicode strings. Therefore, you must use a
+    UTF-8<indexterm>
+        <primary>UTF-8</primary>
+      </indexterm> editor (such as the ECL
+    IDE <indexterm>
+        <primary>ECL IDE</primary>
+      </indexterm> program).</para>
+
+    <para>To include the single quote character (apostrophe) in a constant
+    string, prepend a backslash (\). To include the backslash character (\) in
+    a constant string, use two backslashes (\\) together.</para>
+
+    
+
+    <programlisting>STRING20 MyString2 := 'Fred\'s Place';
+                     //evaluated as: "Fred's Place"
+STRING20 MyString3 := 'Fred\\Ginger\'s Place';
+                    //evaluated as: "Fred\Ginger's Place"</programlisting>
+
+    
+
+    <para>Other available escape characters are:</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="85.75pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis role="code">\t</emphasis></entry>
+
+              <entry>tab</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="code">\n</emphasis></entry>
+
+              <entry>new line</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="code">\r</emphasis></entry>
+
+              <entry>carriage return</entry>
+            </row>
+
+            <row>
+              <entry><emphasis
+              role="code">\nnn</emphasis></entry>
+
+              <entry>3 octal digits (for any other character)</entry>
+            </row>
+
+            <row>
+              <entry><emphasis
+              role="code">\uhhhh</emphasis></entry>
+
+              <entry>lowercase "u" followed by 4 hexadecimal digits (for any
+              other UNICODE-only
+              character)</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    
+
+    <programlisting>MyString1 := 'abcd'; 
+MyString2 := U'abcd\353';    // becomes 'abcdë'
+</programlisting>
+
+    
+
+    <para><emphasis role="bold">Hexadecimal<indexterm>
+        <primary>Hexadecimal</primary>
+      </indexterm> string constants<indexterm>
+        <primary>string constants</primary>
+      </indexterm> </emphasis>must begin with a leading "x" character. Only
+    valid hexadecimal values (0-9, A-F) may be in the character string and
+    there must be an even number of characters.</para>
+
+    
+
+    <programlisting>DATA2 MyHexString := x'0D0A'; // a 2-byte hexadecimal string</programlisting>
+
+    
+
+    <para><emphasis role="bold">Data string<indexterm>
+        <primary>Data string</primary>
+      </indexterm> constants<indexterm>
+        <primary>constants</primary>
+      </indexterm> </emphasis>must begin with a leading "D" character. This is
+    directly equivalent to casting the string constant to DATA.</para>
+
+    
+
+    <programlisting>MyDataString := D'abcd'; // same as: (DATA)'abcd'</programlisting>
+
+    
+
+    <para><emphasis role="bold">Unicode string<indexterm>
+        <primary>Unicode string</primary>
+      </indexterm> constants </emphasis>must begin with a leading "U"
+    character. Characters between the quotes are utf8-encoded and the type of
+    the constant is UNICODE.</para>
+
+    
+
+    <programlisting>MyUnicodeString1 := U'abcd';        // same as: (UNICODE)'abcd'
+MyUnicodeString2 := U'abcd\353';    // becomes 'abcdë'
+MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'«'</programlisting>
+
+    
+
+    <para><emphasis role="bold">UTF8
+    string<indexterm>
+        <primary>UTF8 string</primary>
+      </indexterm> constants </emphasis>must begin with leading "U8"
+    characters. Characters between the quotes are utf8-encoded and the type of
+    the constant is UTF8.</para>
+
+    
+
+    <programlisting>MyUTF8String := U8'abcd\353';</programlisting>
+
+    
+
+    <para><emphasis role="bold">VARSTRING
+    string constants<indexterm>
+        <primary>VARSTRING string
+        constants</primary>
+      </indexterm> </emphasis>must begin with a leading "V" character. The
+    terminating null byte is implied and type of the constant is VARSTRING.</para>
+
+    
+
+    <programlisting>MyVarString := V'abcd'; // same as: (VARSTRING)'abcd'</programlisting>
+
+    
+
+    <para><emphasis role="bold">QSTRING
+    string constants<indexterm>
+        <primary>QSTRING string
+        constants</primary>
+      </indexterm> </emphasis>must begin with a leading "Q" character. The
+    terminating null byte is implied and type of the constant is VARSTRING.</para>
+
+    
+
+    <programlisting>MyQString := Q'ABCD'; // same as: (QSTRING)'ABCD'</programlisting>
+
+    
+  </sect2>
+
+  <sect2 id="Numeric">
+    
+
+    <title>Numeric</title>
+
+    
+
+    <para>Numeric constants containing a
+    decimal portion are treated as REAL
+    values (scientific notation is allowed) and those without are treated as
+    INTEGER<indexterm>
+        <primary>INTEGER</primary>
+      </indexterm> (see <emphasis role="bold">Value Types</emphasis>). Integer
+    constants may be decimal, hexadecimal, or binary values.
+    Hexadecimal<indexterm>
+        <primary>Hexadecimal</primary>
+      </indexterm> values are specified with either a leading "0x" or a
+    trailing "x" character. Binary values<indexterm>
+        <primary>Binary values</primary>
+      </indexterm> are specified with either a leading "0b" or a trailing "b"
+    character.</para>
+
+    
+
+    <programlisting>MyInt1  := 10;     // value of MyInt1 is the INTEGER value 10
+MyInt2  := 0x0A;   // value of MyInt2 is the INTEGER value 10
+MyInt3  := 0Ax;    // value of MyInt3 is the INTEGER value 10
+MyInt4  := 0b1010; // value of MyInt4 is the INTEGER value 10
+MyInt5  := 1010b;  // value of MyInt5 is the INTEGER value 10
+MyReal1 := 10.0;   // value of MyReal1 is the REAL value 10.0
+MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
+</programlisting>
+
+    
+  </sect2>
+
+  <sect2 id="CompileTimeConstants" role="brk">
+    
+
+    <title>Compile Time Constants</title>
+
+    
+
+    <para>The following system constants <indexterm>
+        <primary>constants</primary>
+      </indexterm><indexterm>
+        <primary>system constants</primary>
+      </indexterm>are available at compile time. These can be useful in
+    creating conditional code.</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="150pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>__ECL_VERSION__<indexterm>
+                  <primary>__ECL_VERSION__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A STRING containing the
+              value of the platform version. For example, '6.4.0'</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__ECL_VERSION_MAJOR__
+              <indexterm>
+                  <primary>__ECL_VERSION_MAJOR__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>An INTEGER containing
+              the value of the major portion of the platform version. For
+              example, '6'</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__ECL_VERSION_MINOR__<indexterm>
+                  <primary>__ECL_VERSION_MINOR__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>An INTEGER containing
+              the value of the minor portion of the platform version. For
+              example, '4'</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__ECL_LEGACY_MODE__<indexterm>
+                  <primary>__ECL_LEGACY_MODE__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A BOOLEAN value
+              indicating if it is being compiled with legacy IMPORT
+              semantics.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__OS__<indexterm>
+                  <primary>__OS__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A STRING indicating the
+              operating system to which it is being compiled. (Available
+              values are: 'windows' or 'linux')</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__STAND_ALONE__<indexterm>
+                  <primary>__STAND_ALONE__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A BOOLEAN value
+              indicating if it is being compiled to a stand-alone
+              executable.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>
+              __TARGET_PLATFORM__<indexterm>
+                  <primary>__TARGET_PLATFORM__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A STRING containing the
+              value of the target platform (the type of cluster the query was
+              submitted to). Possible values are: 'roxie', 'hthor' , 'thor' or
+              'thorlcr'</entry>
+            </row>
+
+            <row>
+              <entry><emphasis> __PLATFORM__<indexterm>
+                  <primary>__PLATFORM__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A STRING containing the
+              value of the platform where the query will execute. Possible
+              values are: 'roxie', 'hthor' , 'thor' or 'thorlcr'</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>Example:</para>
+
+    <para><programlisting>IMPORT STD;
+  STRING14 fGetDateTimeString() :=
+  #IF(__ECL_VERSION_MAJOR__ &gt; 5) or ((__ECL_VERSION_MAJOR__ = 5) AND (__ECL_VERSION_MINOR__ &gt;= 2))
+    STD.Date.SecondsToString(STD.Date.CurrentSeconds(true), '%Y%m%d%H%M%S');
+  #ELSE
+    FUNCTION
+      string14 fGetDimeTime():= // 14 characters returned
+      BEGINC++
+      #option action
+      struct tm localt;         // localtime in "tm" structure
+      time_t timeinsecs;        // variable to store time in secs
+      time(&amp;timeinsecs);  
+      localtime_r(&amp;timeinsecs,&amp;localt);
+      char temp[15];
+      strftime(temp , 15, "%Y%m%d%H%M%S", &amp;amp;localt); // Formats the localtime to YYYYMMDDhhmmss 
+      strncpy(__result, temp, 14);
+      ENDC++;
+      RETURN fGetDimeTime();
+    END;
+  #END;
+</programlisting></para>
+  </sect2>
+</sect1>

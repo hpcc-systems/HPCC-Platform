@@ -15,8 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noroxie
-
 import lib_logging;
 import lib_workunitservices;
 

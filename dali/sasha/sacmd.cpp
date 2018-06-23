@@ -22,8 +22,10 @@ class CSashaCommand: public CInterface, implements ISashaCommand
     CDateTime *dts;
     unsigned numdts;
 
-    StringAttr after;
-    StringAttr before;
+    StringAttr after; //datetime
+    StringAttr before; //datetime
+    StringAttr afterWU;
+    StringAttr beforeWU;
     StringAttr state;
     StringAttr owner;
     StringAttr cluster;
@@ -47,6 +49,7 @@ class CSashaCommand: public CInterface, implements ISashaCommand
     bool archived;
     bool dfu;
     bool wuservices;
+    bool sortDescending = false;
     unsigned start;
     unsigned limit;
     CMessageBuffer msgbuf;  // used for reply
@@ -150,6 +153,12 @@ public:
                 }
             }
         }
+        if (mb.remaining() > 0)
+            mb.read(sortDescending);
+        if (mb.remaining() > 0) {
+            mb.read(afterWU);
+            mb.read(beforeWU);
+        }
     }
 
     void serialize(MemoryBuffer &mb)
@@ -195,6 +204,11 @@ public:
         for (i=0;i<numdts;i++) 
             dts[i].serialize(mb);
 
+        mb.append(sortDescending);
+        if (afterWU.get() || beforeWU.get()) {
+            mb.append(afterWU);
+            mb.append(beforeWU);
+        }
     }
 
     SashaCommandAction getAction()
@@ -278,6 +292,36 @@ public:
     void setBefore(const char *val)
     {
         before.set(val);
+    }
+
+    const char *queryAfterWU() const
+    {
+        return afterWU.get();
+    }
+
+    void setAfterWU(const char *val)
+    {
+        afterWU.set(val);
+    }
+
+    const char *queryBeforeWU() const
+    {
+        return beforeWU.get();
+    }
+
+    void setBeforeWU(const char *val)
+    {
+        beforeWU.set(val);
+    }
+
+    bool querySortDescending()
+    {
+        return sortDescending;
+    }
+
+    void setSortDescending(bool _sortDescending)
+    {
+        sortDescending = _sortDescending;
     }
 
     const char *queryState()

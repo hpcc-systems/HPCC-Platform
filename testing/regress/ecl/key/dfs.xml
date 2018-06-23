@@ -1,4 +1,4 @@
-<Warning><Code>3147</Code><Filename>dfs.ecl</Filename><Line>53</Line><Source>eclcc</Source><Message> Field dg_lastname type mismatch: DFS reports string10 but ECL declared string3</Message></Warning>
+<Warning><Code>3147</Code><Filename>dfs.ecl</Filename><Line>53</Line><Source>eclcc</Source><Message>Field dg_lastname type mismatch: DFS reports string10 but ECL declared string3</Message></Warning>
 <Dataset name='Result 1'>
  <Row><dg_parentid>0</dg_parentid><dg_firstname>DAVID     </dg_firstname><dg_lastname>BAYLISS   </dg_lastname><dg_prange>1</dg_prange></Row>
  <Row><dg_parentid>1</dg_parentid><dg_firstname>DAVID     </dg_firstname><dg_lastname>BAYLISS   </dg_lastname><dg_prange>2</dg_prange></Row>

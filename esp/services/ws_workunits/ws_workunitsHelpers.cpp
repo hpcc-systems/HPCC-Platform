@@ -40,6 +40,9 @@
 
 namespace ws_workunits {
 
+const char * const timerFilterText = "measure[time],source[global],depth[1,]"; // Does not include hthor subgraph timings
+const char* zipFolder = "tempzipfiles" PATHSEPSTR;
+
 SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, const char *owner, SecAccessFlags accessOwn, SecAccessFlags accessOthers)
 {
     return (isEmpty(owner) || (user && streq(user, owner))) ? accessOwn : accessOthers;
@@ -113,7 +116,7 @@ void ensureWsCreateWorkunitAccess(IEspContext& cxt)
 StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logicalName, StringBuffer &wuid)
 {
     Owned<IUserDescriptor> userdesc = createUserDescriptor();
-    userdesc->set(context.queryUserId(), context.queryPassword());
+    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
     if (!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",logicalName);
@@ -159,6 +162,9 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
         e->setColumn(cur.getExceptionColumn());
         if (cur.getActivityId())
             e->setActivity(cur.getActivityId());
+        if (cur.getPriority())
+            e->setPriority(cur.getPriority());
+        e->setScope(cur.queryScope());
 
         const char * label = "";
         switch (cur.getSeverity())
@@ -179,10 +185,8 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
 
 void getSashaNode(SocketEndpoint &ep)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Cannot get environment information.");
     Owned<IPropertyTree> root = &env->getPTree();
     IPropertyTree *pt = root->queryPropTree("Software/SashaServerProcess[1]/Instance[1]");
     if (!pt)
@@ -202,7 +206,7 @@ void WsWuInfo::getSourceFiles(IEspECLWorkunit &info, unsigned long flags)
         context.getUserID(username);
         const char* passwd = context.queryPassword();
         userdesc.setown(createUserDescriptor());
-        userdesc->set(username.str(), passwd);
+        userdesc->set(username.str(), passwd, context.querySessionToken(), context.querySignature());
 
         IArrayOf<IEspECLSourceFile> files;
         if (version < 1.27)
@@ -369,64 +373,66 @@ void WsWuInfo::addTimerToList(SCMStringBuffer& name, const char * scope, IConstW
                 t->setSubGraphId((int)subId);
         }
     }
+    if (version >= 1.72)
+    {
+        StringBuffer tsText;
+        unsigned __int64 ts = stat.getTimestamp();
+        formatStatistic(tsText, ts,  SMeasureTimestampUs);
+        t->setTimestamp(ts);
+        t->setWhen(tsText.str());
+    }
 
     timers.append(*t.getLink());
 }
 
 void WsWuInfo::doGetTimers(IArrayOf<IEspECLTimer>& timers)
 {
-    unsigned __int64 totalThorTimeValue = 0;
-    unsigned __int64 totalThorTimerCount = 0; //Do we need this?
-
-    StatisticsFilter filter;
-    filter.setScopeDepth(1, 2);
-    filter.setMeasure(SMeasureTimeNs);
-    Owned<IConstWUStatisticIterator> it = &cw->getStatistics(&filter);
-    if (it->first())
+    class TimingVisitor : public WuScopeVisitorBase
     {
-        ForEach(*it)
+    public:
+        TimingVisitor(WsWuInfo & _wuInfo, IArrayOf<IEspECLTimer>& _timers) : wuInfo(_wuInfo), timers(_timers) {}
+
+        virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
         {
-            IConstWUStatistic & cur = it->query();
-            SCMStringBuffer name, scope;
-            cur.getDescription(name, true);
-            cur.getScope(scope);
+            SCMStringBuffer name;
+            extra.getDescription(name, true);
+            const char * scope = extra.queryScope();
+            wuInfo.addTimerToList(name, scope, extra, timers);
 
-            bool isThorTiming = false;//Should it be renamed as isClusterTiming?
-            if ((cur.getCreatorType() == SCTsummary) && (cur.getKind() == StTimeElapsed) && streq(scope.str(), GLOBAL_SCOPE))
-            {
-                SCMStringBuffer creator;
-                cur.getCreator(creator);
-                if (streq(creator.str(), "thor") || streq(creator.str(), "hthor") ||
-                    streq(creator.str(), "roxie"))
-                    isThorTiming = true;
-            }
-            else if (strieq(name.str(), TOTALTHORTIME)) // legacy
-                isThorTiming = true;
-
-            if (isThorTiming)
-            {
-                totalThorTimeValue += cur.getValue();
-                totalThorTimerCount += cur.getCount();
-            }
-            else
-                addTimerToList(name, scope.str(), cur, timers);
+            //Aggregate all the times spent executing graphs
+            if ((kind == StTimeElapsed) && (extra.getScopeType() == SSTgraph))
+                totalGraphTime.noteValue(value);
         }
-    }
 
-    if (totalThorTimeValue > 0)
-    {
-        StringBuffer totalThorTimeText;
-        formatStatistic(totalThorTimeText, totalThorTimeValue, SMeasureTimeNs);
+        void addSummary()
+        {
+            if (totalGraphTime.getCount())
+            {
+                StringBuffer totalThorTimeText;
+                formatStatistic(totalThorTimeText, totalGraphTime.getSum(), SMeasureTimeNs);
 
-        Owned<IEspECLTimer> t= createECLTimer("","");
-        if (version > 1.52)
-            t->setName(TOTALCLUSTERTIME);
-        else
-            t->setName(TOTALTHORTIME);
-        t->setValue(totalThorTimeText.str());
-        t->setCount((unsigned)totalThorTimerCount);
-        timers.append(*t.getLink());
-    }
+                Owned<IEspECLTimer> t= createECLTimer("","");
+                if (wuInfo.version > 1.52)
+                    t->setName(TOTALCLUSTERTIME);
+                else
+                    t->setName(TOTALTHORTIME);
+                t->setValue(totalThorTimeText.str());
+                t->setCount((unsigned)totalGraphTime.getCount());
+                timers.append(*t.getClear());
+            }
+        }
+    protected:
+        WsWuInfo & wuInfo;
+        IArrayOf<IEspECLTimer>& timers;
+        StatsAggregation totalGraphTime;
+    } visitor(*this, timers);
+
+    WuScopeFilter filter(timerFilterText);
+    Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
+    ForEach(*it)
+        it->playProperties(visitor);
+
+    visitor.addSummary();
 }
 
 void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned long flags)
@@ -448,18 +454,34 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned long flags)
     }
 }
 
+class TimingCounter : public WuScopeVisitorBase
+{
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
+    {
+        numTimers++;
+        if ((kind == StTimeElapsed) && (extra.getScopeType() == SSTgraph))
+            hasGraphTiming = true;
+    }
+
+    unsigned getNumTimers() const
+    {
+        return numTimers + (hasGraphTiming ? 1 : 0);
+    }
+protected:
+    bool hasGraphTiming = false;
+    unsigned numTimers = 0;
+};
+
 unsigned WsWuInfo::getTimerCount()
 {
-    unsigned numTimers = 0;
+    TimingCounter visitor;
     try
     {
-        //This filter must match the filter in the function above, otherwise it will be inconsistent
-        StatisticsFilter filter;
-        filter.setScopeDepth(1, 2);
-        filter.setMeasure(SMeasureTimeNs);
-        Owned<IConstWUStatisticIterator> it = &cw->getStatistics(&filter);
+        WuScopeFilter filter(timerFilterText);
+        Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
         ForEach(*it)
-            numTimers++;
+            it->playProperties(visitor);
     }
     catch(IException* e)
     {
@@ -467,10 +489,11 @@ unsigned WsWuInfo::getTimerCount()
         ERRLOG("%s", e->errorMessage(eMsg).str());
         e->Release();
     }
-    return numTimers;
+
+    return visitor.getNumTimers();
 }
 
-mapEnums queryFileTypes[] = {
+EnumMapping queryFileTypes[] = {
    { FileTypeCpp, "cpp" },
    { FileTypeDll, "dll" },
    { FileTypeResText, "res" },
@@ -691,32 +714,24 @@ const char *getGraphNum(const char *s,unsigned &num)
 
 bool WsWuInfo::hasSubGraphTimings()
 {
-    StatisticsFilter filter;
-    filter.setScopeType(SSTsubgraph);
-    filter.setKind(StTimeElapsed);
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    return times->first();
-}
-
-bool WsWuInfo::legacyHasSubGraphTimings()
-{
-    StatisticsFilter filter;
-    filter.setScopeDepth(1); // only "global" timers.
-    filter.setMeasure(SMeasureTimeNs);
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    ForEach(*times)
+    try
     {
-        IConstWUStatistic & cur = times->query();
-        SCMStringBuffer name;
-        cur.getDescription(name, false);
-
-        StringAttr graphName;
-        unsigned graphNum;
-        unsigned subGraphNum;
-        unsigned subId;
-        if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
-            return true;
+        WuScopeFilter filter("stype[subgraph],props[stat]");
+        Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
+        ForEach(*it)
+        {
+            stat_type value;
+            if (it->getStat(StTimeElapsed, value))
+                return true;
+        }
     }
+    catch(IException* e)
+    {
+        StringBuffer eMsg;
+        ERRLOG("%s", e->errorMessage(eMsg).str());
+        e->Release();
+    }
+
     return false;
 }
 
@@ -756,13 +771,23 @@ void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
 
         if (version >= 1.53)
         {
-            SCMStringBuffer s;
-            Owned<IConstWUStatistic> whenGraphStarted = cw->getStatistic(NULL, name.str(), StWhenGraphStarted);
-            Owned<IConstWUStatistic> whenGraphFinished = cw->getStatistic(NULL, name.str(), StWhenGraphFinished);
-            if (whenGraphStarted)
-                g->setWhenStarted(whenGraphStarted->getFormattedValue(s).str());
-            if (whenGraphFinished)
-                g->setWhenFinished(whenGraphFinished->getFormattedValue(s).str());
+            //MORE: Will need to be prefixed with the wfid
+            StringBuffer scope;
+            scope.append(name);
+
+            StringBuffer s;
+            stat_type timeStamp;
+            if (cw->getStatistic(timeStamp, scope.str(), StWhenStarted) ||
+                cw->getStatistic(timeStamp, name.str(), StWhenGraphStarted))
+            {
+                g->setWhenStarted(formatStatistic(s.clear(), timeStamp, SMeasureTimestampUs));
+            }
+
+            if (cw->getStatistic(timeStamp, scope.str(), StWhenFinished) ||
+               cw->getStatistic(timeStamp, name.str(), StWhenGraphFinished))
+            {
+                g->setWhenFinished(formatStatistic(s.clear(), timeStamp, SMeasureTimestampUs));
+            }
         }
         graphs.append(*g.getLink());
     }
@@ -770,11 +795,11 @@ void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
 
 void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned long flags)
 {
-     if (version > 1.01)
+     if ((version > 1.01) && (version < 1.71))
      {
         info.setHaveSubGraphTimings(false);
 
-        if (hasSubGraphTimings() || legacyHasSubGraphTimings())
+        if (hasSubGraphTimings())
             info.setHaveSubGraphTimings(true);
      }
 
@@ -812,73 +837,46 @@ void WsWuInfo::getWUGraphNameAndTypes(WUGraphType graphType, IArrayOf<IEspNameAn
 
 void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
 {
-    StatisticsFilter filter(SCTall, SSTsubgraph, SMeasureTimeNs, StTimeElapsed);
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    bool matched = false;
-    ForEach(*times)
+    class TimingVisitor : public WuScopeVisitorBase
     {
-        IConstWUStatistic & cur = times->query();
-        SCMStringBuffer scope;
-        cur.getScope(scope);
+    public:
+        TimingVisitor(WsWuInfo & _wuInfo, IArrayOf<IConstECLTimingData> & _timingData) : wuInfo(_wuInfo), timingData(_timingData) {}
 
-        StringAttr graphName;
-        unsigned graphNum;
-        unsigned subGraphId;
-        if (parseGraphScope(scope.str(), graphName, graphNum, subGraphId))
+        virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
         {
-            unsigned time = (unsigned)nanoToMilli(cur.getValue());
+            const char * scope = cur.queryScope();
+            StringAttr graphName;
+            unsigned graphNum;
+            unsigned subGraphId;
+            if (parseGraphScope(scope, graphName, graphNum, subGraphId))
+            {
+                unsigned time = (unsigned)nanoToMilli(value);
 
-            SCMStringBuffer name;
-            cur.getDescription(name, true);
+                SCMStringBuffer name;
+                cur.getDescription(name, true);
 
-            Owned<IEspECLTimingData> g = createECLTimingData();
-            g->setName(name.str());
-            g->setGraphNum(graphNum);
-            g->setSubGraphNum(subGraphId); // Use the Id - the number is not known
-            g->setGID(subGraphId);
-            g->setMS(time);
-            g->setMin(time/60000);
-            timingData.append(*g.getClear());
-            matched = true;
+                Owned<IEspECLTimingData> g = createECLTimingData();
+                g->setName(name.str());
+                g->setGraphNum(graphNum);
+                g->setSubGraphNum(subGraphId); // Use the Id - the number is not known
+                g->setGID(subGraphId);
+                g->setMS(time);
+                g->setMin(time/60000);
+                timingData.append(*g.getClear());
+            }
         }
-    }
 
-    if (!matched)
-        legacyGetGraphTimingData(timingData);
+    protected:
+        WsWuInfo & wuInfo;
+        IArrayOf<IConstECLTimingData> & timingData;
+    } visitor(*this, timingData);
+
+    WuScopeFilter filter("stype[subgraph],stat[TimeElapsed],nested[0]");
+    Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
+    ForEach(*it)
+        it->playProperties(visitor);
 }
 
-void WsWuInfo::legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
-{
-    StatisticsFilter filter;
-    filter.setScopeDepth(1);
-    filter.setMeasure(SMeasureTimeNs);
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    ForEach(*times)
-    {
-        IConstWUStatistic & cur = times->query();
-        SCMStringBuffer name;
-        cur.getDescription(name, false); // was previously always filled in.
-
-        StringAttr graphName;
-        unsigned graphNum;
-        unsigned subGraphNum;
-        unsigned subId;
-
-        if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
-        {
-            unsigned time = (unsigned)nanoToMilli(cur.getValue());
-
-            Owned<IEspECLTimingData> g = createECLTimingData();
-            g->setName(name.str());
-            g->setGraphNum(graphNum);
-            g->setSubGraphNum(subGraphNum);
-            g->setGID(subId);
-            g->setMS(time);
-            g->setMin(time/60000);
-            timingData.append(*g.getClear());
-        }
-    }
-}
 
 void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
 {
@@ -917,37 +915,10 @@ void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
 
 unsigned WsWuInfo::getTotalThorTime()
 {
-    StatisticsFilter filter;
-    filter.setCreatorType(SCTsummary);
-    filter.setScope(GLOBAL_SCOPE);
-    filter.setKind(StTimeElapsed);
-
-    //Should only be a single value
-    unsigned totalThorTimeMS = 0;
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    ForEach(*times)
-    {
-        totalThorTimeMS += (unsigned)nanoToMilli(times->query().getValue());
-    }
-
-    return totalThorTimeMS;
-}
-
-unsigned WsWuInfo::getLegacyTotalThorTime()
-{
-    //4.2.x backward compatibility - only scope depth and measure filters work
-    StatisticsFilter filter;
-    filter.setScopeDepth(1); // only global
-    filter.setMeasure(SMeasureTimeNs);
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    SCMStringBuffer oldname;
-    ForEach(*times)
-    {
-        times->query().getDescription(oldname, false);      // description will be set up
-        if (streq(oldname.str(), TOTALTHORTIME))
-            return (unsigned)nanoToMilli(times->query().getValue());
-    }
-    return 0;
+    const WuScopeFilter filter("stype[graph],nested[0],stat[TimeElapsed]");
+    StatsAggregation summary;
+    aggregateStatistic(summary, cw, filter, StTimeElapsed);
+    return nanoToMilli(summary.getSum());
 }
 
 void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
@@ -977,12 +948,11 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
 
     getEventScheduleFlag(info);
 
-    if (version > 1.27)
+    //The TotalClusterTime should always be returned between versions 1.27 and 1.73.
+    //After version 1.73, it should be returned only if IncludeTotalClusterTime is true.
+    if ((version > 1.27) && ((version < 1.73) || (flags & WUINFO_IncludeTotalClusterTime)))
     {
         unsigned totalThorTimeMS = getTotalThorTime();
-        if (totalThorTimeMS == 0)
-            totalThorTimeMS = getLegacyTotalThorTime();
-
         if (totalThorTimeMS)
         {
             StringBuffer totalThorTimeStr;
@@ -1195,7 +1165,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
         }
 
         StringBuffer logDir;
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> logTree = &constEnv->getPTree();
         if (logTree)
@@ -1286,11 +1256,9 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned long flags)
     {
         int clusterTypeFlag = 0;
 
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI,"Cannot connect to DALI server.");
 
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (clusterInfo.get())
@@ -1360,7 +1328,7 @@ IDistributedFile* WsWuInfo::getLogicalFileData(IEspContext& context, const char*
     StringBuffer username;
     context.getUserID(username);
     Owned<IUserDescriptor> userdesc(createUserDescriptor());
-    userdesc->set(username.str(), context.queryPassword());
+    userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
     if (!df)
         return NULL;
@@ -1508,7 +1476,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
                 Owned<IResultSetCursor> cursor(result->createCursor());
                 cursor->first();
 
-                if (cursor->getIsAll(0))
+                if (r.getResultIsAll())
                 {
                     value.set("<All/>");
                 }
@@ -1609,40 +1577,42 @@ void WsWuInfo::getResults(IEspECLWorkunit &info, unsigned long flags)
     }
 }
 
-void WsWuInfo::getStats(StatisticsFilter& filter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics)
+class FilteredStatisticsVisitor : public WuScopeVisitorBase
 {
-    Owned<IConstWUStatisticIterator> stats = &cw->getStatistics(&filter);
-    ForEach(*stats)
+public:
+    FilteredStatisticsVisitor(WsWuInfo & _wuInfo, bool _createDescriptions, IArrayOf<IEspWUStatisticItem>& _statistics, const StatisticsFilter& _statsFilter)
+        : wuInfo(_wuInfo), statistics(_statistics), statsFilter(_statsFilter), createDescriptions(_createDescriptions) {}
+
+    virtual void noteStatistic(StatisticKind curKind, unsigned __int64 value, IConstWUStatistic & cur) override
     {
-        IConstWUStatistic & cur = stats->query();
         StringBuffer xmlBuf, tsValue;
-        SCMStringBuffer curCreator, curScope, curDescription, curFormattedValue;
+        SCMStringBuffer curCreator, curDescription, curFormattedValue;
 
         StatisticCreatorType curCreatorType = cur.getCreatorType();
         StatisticScopeType curScopeType = cur.getScopeType();
         StatisticMeasure curMeasure = cur.getMeasure();
-        StatisticKind curKind = cur.getKind();
-        unsigned __int64 value = cur.getValue();
         unsigned __int64 count = cur.getCount();
         unsigned __int64 max = cur.getMax();
         unsigned __int64 ts = cur.getTimestamp();
+        const char * curScope = cur.queryScope();
         cur.getCreator(curCreator);
-        cur.getScope(curScope);
         cur.getDescription(curDescription, createDescriptions);
         cur.getFormattedValue(curFormattedValue);
 
         Owned<IEspWUStatisticItem> wuStatistic = createWUStatisticItem();
+        if (!statsFilter.matches(curCreatorType, curCreator.str(), curScopeType, curScope, curMeasure, curKind, value))
+            return;
 
-        if (version > 1.61)
-            wuStatistic->setWuid(wuid);
+        if (wuInfo.version > 1.61)
+            wuStatistic->setWuid(wuInfo.wuid);
         if (curCreatorType != SCTnone)
             wuStatistic->setCreatorType(queryCreatorTypeName(curCreatorType));
         if (curCreator.length())
             wuStatistic->setCreator(curCreator.str());
         if (curScopeType != SSTnone)
             wuStatistic->setScopeType(queryScopeTypeName(curScopeType));
-        if (curScope.length())
-            wuStatistic->setScope(curScope.str());
+        if (!isEmpty(curScope))
+            wuStatistic->setScope(curScope);
         if (curMeasure != SMeasureNone)
             wuStatistic->setMeasure(queryMeasureName(curMeasure));
         if (curKind != StKindNone)
@@ -1663,6 +1633,20 @@ void WsWuInfo::getStats(StatisticsFilter& filter, bool createDescriptions, IArra
 
         statistics.append(*wuStatistic.getClear());
     }
+
+protected:
+    WsWuInfo & wuInfo;
+    const StatisticsFilter& statsFilter;
+    IArrayOf<IEspWUStatisticItem>& statistics;
+    bool createDescriptions;
+};
+
+void WsWuInfo::getStats(const WuScopeFilter & filter, const StatisticsFilter& statsFilter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics)
+{
+    FilteredStatisticsVisitor visitor(*this, createDescriptions, statistics, statsFilter);
+    Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
+    ForEach(*it)
+        it->playProperties(visitor);
 }
 
 bool WsWuInfo::getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize)
@@ -1850,8 +1834,14 @@ unsigned WsWuInfo::getResourceURLCount()
     return 0;
 }
 
-void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownload)
+void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownload, const char *outFile = nullptr)
 {
+    Owned<IFileIOStream> outIOS;
+    if (!isEmptyString(outFile))
+    {
+        CWsWuFileHelper helper(nullptr);
+        outIOS.setown(helper.createIOStreamWithFileName(outFile, IFOcreate));
+    }
     StringBuffer line;
     bool eof = false;
     while (!eof)
@@ -1871,13 +1861,18 @@ void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownloa
                 break;
         }
 
-        mb.append(line.length(), line.str());
-        if (!forDownload && (mb.length() > 640000))
-            break;
+        if (outIOS)
+            outIOS->write(line.length(), line.str());
+        else
+        {
+            mb.append(line.length(), line.str());
+            if (!forDownload && (mb.length() > 640000))
+                break;
+        }
     }
 }
 
-void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid, MemoryBuffer& buf)
+void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid, MemoryBuffer& buf, const char* outFile)
 {
     if(!fileName || !*fileName)
         throw MakeStringException(ECLWATCH_ECLAGENT_LOG_NOT_FOUND,"Log file not specified");
@@ -1888,6 +1883,13 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
     if(!rIO)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Cannot read file %s.", fileName);
     OwnedIFileIOStream ios = createBufferedIOStream(rIO);
+
+    Owned<IFileIOStream> outIOS;
+    if (!isEmptyString(outFile))
+    {
+        CWsWuFileHelper helper(nullptr);
+        outIOS.setown(helper.createIOStreamWithFileName(outFile, IFOcreate));
+    }
 
     StringBuffer line;
     bool eof = false;
@@ -1939,7 +1941,8 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
                     break;
 
                 //The last instance is not a correct instance. Clean the buf in order to start a new instance.
-                buf.clear();
+                if (isEmptyString(outFile))
+                    buf.clear();
             }
 
             //If we spot the workunit id anywhere in the tracing for this pid then assume it is the correct instance.
@@ -1949,18 +1952,18 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
                 wuidFound = true;
             }
             if (pidOffset && 0 == strncmp(line.str() + pidOffset, pidchars, pidLen))//this makes sure the match was the PID and not the TID or something else
-                buf.append(line.length(), line.str());
+                outputALine(line.length(), line.str(), buf, outIOS);
         }
     }
 
     if (buf.length() < 1)
     {
         const char * msg = "(No logfile entries found for this workunit)";
-        buf.append(strlen(msg), msg);
+        outputALine(strlen(msg), msg, buf, outIOS);
     }
 }
 
-void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf)
+void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf, const char* outFile)
 {
     if(!fileName || !*fileName)
         throw MakeStringException(ECLWATCH_ECLAGENT_LOG_NOT_FOUND,"Log file not specified");
@@ -1982,6 +1985,12 @@ void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf)
     const char *sw = startwuid.str();
     const char *ew = endwuid.str();
 
+    Owned<IFileIOStream> outIOS;
+    if (!isEmptyString(outFile))
+    {
+        CWsWuFileHelper helper(nullptr);
+        outIOS.setown(helper.createIOStreamWithFileName(outFile, IFOcreate));
+    }
     while (!eof)
     {
         line.clear();
@@ -2001,13 +2010,14 @@ void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf)
         if (strstr(line.str(), sw))
             include = true;
         if (include)
-            buf.append(line.length(), line.str());
+            outputALine(line.length(), line.str(), buf, outIOS);
         if (strstr(line.str(), ew))
             include = false;
     }
 }
 
-void WsWuInfo::getWorkunitThorSlaveLog(const char *instanceName, const char *ipAddress, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload)
+void WsWuInfo::getWorkunitThorSlaveLog(const char *instanceName, const char *ipAddress, const char* logDate,
+    const char* logDir, int slaveNum, MemoryBuffer& buf, const char* outFile, bool forDownload)
 {
     if (isEmpty(logDir))
         throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log path not specified.");
@@ -2085,6 +2095,12 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *instanceName, const char *ipA
         const char *sw = startwuid.str();
         const char *ew = endwuid.str();
 
+        Owned<IFileIOStream> outIOS;
+        if (!isEmptyString(outFile))
+        {
+            CWsWuFileHelper helper(nullptr);
+            outIOS.setown(helper.createIOStreamWithFileName(outFile, IFOcreate));
+        }
         while (!eof)
         {
             line.clear();
@@ -2104,7 +2120,7 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *instanceName, const char *ipA
             if (strstr(line.str(), sw))
                 include = true;
             if (include)
-                buf.append(line.length(), line.str());
+                outputALine(line.length(), line.str(), buf, outIOS);
             if (strstr(line.str(), ew))
                 include = false;
         }
@@ -2134,15 +2150,14 @@ IConstWUQuery* WsWuInfo::getEmbeddedQuery()
     return NULL;
 }
 
-void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
+void WsWuInfo::getWorkunitArchiveQuery(IStringVal& str)
 {
     Owned<IConstWUQuery> query = cw->getQuery();
     if(!query)
         throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU,"No query for workunit %s.",wuid.str());
 
-    SCMStringBuffer queryText;
-    query->getQueryText(queryText);
-    if ((queryText.length() < 1) || !isArchiveQuery(queryText.str()))
+    query->getQueryText(str);
+    if ((str.length() < 1) || !isArchiveQuery(str.str()))
     {
         if (!query->hasArchive())
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive query not found for workunit %s.", wuid.str());
@@ -2151,14 +2166,26 @@ void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
         if (!embeddedQuery)
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Embedded query not found for workunit %s.", wuid.str());
 
-        embeddedQuery->getQueryText(queryText);
-        if ((queryText.length() < 1) || !isArchiveQuery(queryText.str()))
+        embeddedQuery->getQueryText(str);
+        if ((str.length() < 1) || !isArchiveQuery(str.str()))
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive query not found for workunit %s.", wuid.str());
     }
+}
+
+void WsWuInfo::getWorkunitArchiveQuery(StringBuffer& buf)
+{
+    StringBufferAdaptor queryText(buf);
+    getWorkunitArchiveQuery(queryText);
+}
+
+void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
+{
+    SCMStringBuffer queryText;
+    getWorkunitArchiveQuery(queryText);
     buf.append(queryText.length(), queryText.str());
 }
 
-void WsWuInfo::getWorkunitQueryShortText(MemoryBuffer& buf)
+void WsWuInfo::getWorkunitQueryShortText(MemoryBuffer& buf, const char* outFile)
 {
     Owned<IConstWUQuery> query = cw->getQuery();
     if(!query)
@@ -2168,7 +2195,14 @@ void WsWuInfo::getWorkunitQueryShortText(MemoryBuffer& buf)
     query->getQueryShortText(queryText);
     if (queryText.length() < 1)
         throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU, "No query for workunit %s.",wuid.str());
-    buf.append(queryText.length(), queryText.str());
+    if (isEmptyString(outFile))
+        buf.append(queryText.length(), queryText.str());
+    else
+    {
+        CWsWuFileHelper helper(nullptr);
+        Owned<IFileIOStream> outIOS = helper.createIOStreamWithFileName(outFile, IFOcreate);
+        outIOS->write(queryText.length(), queryText.str());
+    }
 }
 
 void WsWuInfo::getWorkunitDll(StringBuffer &dllname, MemoryBuffer& buf)
@@ -2197,7 +2231,7 @@ void WsWuInfo::getWorkunitXml(const char* plainText, MemoryBuffer& buf)
     buf.append(xml.length(), xml.str());
 }
 
-void WsWuInfo::getWorkunitCpp(const char *cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload)
+void WsWuInfo::getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload, const char* outFile)
 {
     if (isEmpty(description))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "File not specified.");
@@ -2220,11 +2254,12 @@ void WsWuInfo::getWorkunitCpp(const char *cppname, const char* description, cons
     OwnedIFileIOStream ios = createBufferedIOStream(rIO);
     if (!ios)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read %s.", description);
-    appendIOStreamContent(buf, ios.get(), forDownload);
+
+    appendIOStreamContent(buf, ios.get(), forDownload, outFile);
 }
 
 void WsWuInfo::getWorkunitAssociatedXml(const char* name, const char* ipAddress, const char* plainText,
-    const char* description, bool forDownload, bool addXMLDeclaration, MemoryBuffer& buf)
+    const char* description, bool forDownload, bool addXMLDeclaration, MemoryBuffer& buf, const char* outFile)
 {
     if (isEmpty(description)) //'File Name' as shown in WU Details page
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "File not specified.");
@@ -2258,7 +2293,7 @@ void WsWuInfo::getWorkunitAssociatedXml(const char* name, const char* ipAddress,
         buf.append(strlen(header), header);
     }
 
-    appendIOStreamContent(buf, ios.get(), forDownload);
+    appendIOStreamContent(buf, ios.get(), forDownload, outFile);
 }
 
 IPropertyTree* WsWuInfo::getWorkunitArchive()
@@ -2289,7 +2324,7 @@ IPropertyTree* WsWuInfo::getWorkunitArchive()
         return NULL;
 
     MemoryBuffer content;
-    getWorkunitAssociatedXml(name.str(), ip.str(), "", "WU archive eclxml", true, false, content);
+    getWorkunitAssociatedXml(name.str(), ip.str(), "", "WU archive eclxml", true, false, content, nullptr);
     if (!content.length())
         return NULL;
     return createPTreeFromXMLString(content.length(), content.toByteArray());
@@ -2402,6 +2437,14 @@ void WsWuInfo::getArchiveFile(IPropertyTree* archive, const char* moduleName, co
         xPath.appendf("Module[@name=\"%s\"]/Text", moduleName);
 
     file.set(archive->queryProp(xPath.str()));
+}
+
+void WsWuInfo::outputALine(size32_t length, const char* content, MemoryBuffer& outputBuf, IFileIOStream* outIOS)
+{
+    if (outIOS)
+        outIOS->write(length, content);
+    else
+        outputBuf.append(length, content);
 }
 
 WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,const char* cluster,const char* startDate,const char* endDate,const char* jobname)
@@ -2960,56 +3003,81 @@ bool addToQueryString(StringBuffer &queryString, const char *name, const char *v
 
 int WUSchedule::run()
 {
-    try
+    PROGLOG("ECLWorkunit WUSchedule Thread started.");
+    unsigned int waitTimeMillies = 1000*60;
+    while(!stopping)
     {
-        PROGLOG("ECLWorkunit WUSchedule Thread started.");
-        while(!stopping)
+        if (!detached)
         {
-            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            Owned<IConstWorkUnitIterator> itr = factory->getScheduledWorkUnits();
-            if (itr)
+            try
             {
-                ForEach(*itr)
+                if (waitTimeMillies == (unsigned)-1)
                 {
-                    try
+                    PROGLOG("ECLWorkunit WUSchedule Thread Re-started.");
+                    waitTimeMillies = 1000*60;
+                }
+
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                Owned<IConstWorkUnitIterator> itr = factory->getScheduledWorkUnits();
+                if (itr)
+                {
+                    ForEach(*itr)
                     {
-                        IConstWorkUnitInfo & cw = itr->query();
-                        if (factory->isAborting(cw.queryWuid()))
+                        try
                         {
-                            WorkunitUpdate wu(factory->updateWorkUnit(cw.queryWuid()));
-                            wu->setState(WUStateAborted);
-                            continue;
+                            IConstWorkUnitInfo & cw = itr->query();
+                            if (factory->isAborting(cw.queryWuid()))
+                            {
+                                WorkunitUpdate wu(factory->updateWorkUnit(cw.queryWuid()));
+                                wu->setState(WUStateAborted);
+                                continue;
+                            }
+                            WsWuDateTime dt, now;
+                            now.setNow();
+                            cw.getTimeScheduled(dt);
+                            if (now.compare(dt)>=0)
+                            {
+                                runWorkUnit(cw.queryWuid(), cw.queryClusterName());
+                                if (m_container->hasCacheClient())
+                                {
+                                    StringArray errorMsgs;
+                                    m_container->clearCacheByGroupID("ESPWsWUs", errorMsgs);
+                                    if (errorMsgs.length() > 0)
+                                    {
+                                        ForEachItemIn(i, errorMsgs)
+                                            DBGLOG("%s", errorMsgs.item(i));
+                                    }
+                                }
+                            }
                         }
-                        WsWuDateTime dt, now;
-                        now.setNow();
-                        cw.getTimeScheduled(dt);
-                        if (now.compare(dt)>=0)
-                            runWorkUnit(cw.queryWuid(), cw.queryClusterName());
-                    }
-                    catch(IException *e)
-                    {
-                        StringBuffer msg;
-                        ERRLOG("Exception %d:%s in WsWorkunits Schedule::run", e->errorCode(), e->errorMessage(msg).str());
-                        e->Release();
+                        catch(IException *e)
+                        {
+                            StringBuffer msg;
+                            ERRLOG("Exception %d:%s in WsWorkunits Schedule::run while processing WU", e->errorCode(), e->errorMessage(msg).str());
+                            e->Release();
+                        }
                     }
                 }
             }
-            semSchedule.wait(1000*60);
+            catch(IException *e)
+            {
+                StringBuffer msg;
+                ERRLOG("Exception %d:%s in WsWorkunits Schedule::run while fetching scheduled WUs from DALI", e->errorCode(), e->errorMessage(msg).str());
+                e->Release();
+            }
+            catch(...)
+            {
+                ERRLOG("Unknown exception in WsWorkunits Schedule::run while fetching scheduled WUs from DALI");
+            }
         }
-    }
-    catch(IException *e)
-    {
-        StringBuffer msg;
-        ERRLOG("Exception %d:%s in WsWorkunits Schedule::run", e->errorCode(), e->errorMessage(msg).str());
-        e->Release();
-    }
-    catch(...)
-    {
-        ERRLOG("Unknown exception in WsWorkunits Schedule::run");
-    }
+        else
+        {
+            WARNLOG("Detached from DALI, WSWorkuinits schedule interrupted");
+            waitTimeMillies = (unsigned)-1;
+        }
 
-    if (m_container)
-        m_container->exitESP();
+        semSchedule.wait(waitTimeMillies);
+    }
     return 0;
 }
 
@@ -3201,7 +3269,7 @@ void WsWuHelpers::copyWsWorkunit(IEspContext &context, IWorkUnit &wu, const char
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> src(factory->openWorkUnit(srcWuid));
 
-    queryExtendedWU(&wu)->copyWorkUnit(src, false);
+    queryExtendedWU(&wu)->copyWorkUnit(src, false, false);
 
     SCMStringBuffer token;
     wu.setSecurityToken(createToken(wu.queryWuid(), context.queryUserId(), context.queryPassword(), token).str());
@@ -3295,4 +3363,579 @@ void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& inp
 
     return;
 }
+
+IFileIOStream* CWsWuFileHelper::createIOStreamWithFileName(const char* fileNameWithPath, IFOmode mode)
+{
+    if (isEmptyString(fileNameWithPath))
+        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA, "File name not specified.");
+    Owned<IFile> wuInfoIFile = createIFile(fileNameWithPath);
+    Owned<IFileIO> wuInfoIO = wuInfoIFile->open(mode);
+    if (!wuInfoIO)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Failed to open %s.", fileNameWithPath);
+    return createIOStream(wuInfoIO);
+}
+
+void CWsWuFileHelper::writeToFile(const char* fileName, size32_t contentLength, const void* content)
+{
+    if (isEmptyString(fileName))
+        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA, "File name not specified.");
+    Owned<IFile> wuInfoIFile = createIFile(fileName);
+    Owned<IFileIO> wuInfoIO = wuInfoIFile->open(IFOcreate);
+    if (wuInfoIO)
+        wuInfoIO->write(0, contentLength, content);
+    else
+        PROGLOG("Failed to open %s.", fileName);
+}
+
+void CWsWuFileHelper::writeToFileIOStream(const char* folder, const char* file, MemoryBuffer& mb)
+{
+    if (isEmptyString(folder))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Empty folder name is not allowed to create FileIOStream.");
+    if (isEmptyString(file))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Empty file name is not allowed to create FileIOStream.");
+    VStringBuffer fileNameWithPath("%s%c%s", folder, PATHSEPCHAR, file);
+    CWsWuFileHelper helper(nullptr);
+    Owned<IFileIOStream> outIOS = helper.createIOStreamWithFileName(fileNameWithPath.str(), IFOcreate);
+    if (outIOS)
+        outIOS->write(mb.length(), mb.toByteArray());
+    else
+        PROGLOG("Failed to open FileIOStream for %s.", fileNameWithPath.str());
+}
+
+void CWsWuFileHelper::cleanFolder(IFile* folder, bool removeFolder)
+{
+    if (!folder)
+        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"Invalid file interface for the zip folder.");
+    Owned<IDirectoryIterator> iter = folder->directoryFiles(NULL,false,false);
+    ForEach(*iter)
+    {
+        OwnedIFile thisFile = createIFile(iter->query().queryFilename());
+        if (thisFile->isFile() == foundYes)
+            thisFile->remove();
+    }
+    if (removeFolder)
+        folder->remove();
+}
+
+void CWsWuFileHelper::createProcessLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& winfo, const char* process, const char* path)
+{
+    Owned<IPropertyTreeIterator> procs = cwu->getProcesses(process, NULL);
+    ForEach (*procs)
+    {
+        StringBuffer logSpec;
+        IPropertyTree& proc = procs->query();
+        proc.getProp("@log", logSpec);
+        if (!logSpec.length())
+            continue;
+        const char* processName = proc.queryName();
+        if (isEmpty(processName))
+            continue;
+
+        MemoryBuffer mb;
+        VStringBuffer fileName("%s%c%s_%s", path, PATHSEPCHAR, processName, pathTail(logSpec.str()));
+        try
+        {
+            if (strieq(process, "EclAgent"))
+            {
+                StringBuffer pid;
+                pid.appendf("%d", proc.getPropInt("@pid"));
+                winfo.getWorkunitEclAgentLog(logSpec.str(), pid.str(), mb, fileName.str());
+            }
+            else if (strieq(process, "Thor"))
+                winfo.getWorkunitThorLog(logSpec.str(), mb, fileName.str());
+        }
+        catch(IException* e)
+        {
+            StringBuffer s;
+            e->errorMessage(s);
+            DBGLOG("Error accessing Process Log file %s: %s", logSpec.str(), s.str());
+            writeToFile(fileName.str(), s.length(), s.str());
+            e->Release();
+        }
+    }
+}
+
+void CWsWuFileHelper::createThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& winfo, const char* path)
+{
+    if (cwu->getWuidVersion() == 0)
+        return;
+    const char* clusterName = cwu->queryClusterName();
+    if (isEmptyString(clusterName)) //Cluster name may not be set yet
+        return;
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
+    if (!clusterInfo)
+    {
+        WARNLOG("Cannot find TargetClusterInfo for workunit %s", cwu->queryWuid());
+        return;
+    }
+
+    unsigned numberOfSlaveLogs = clusterInfo->getNumberOfSlaveLogs();
+    BoolHash uniqueProcesses;
+    Owned<IStringIterator> thorInstances = cwu->getProcesses("Thor");
+    ForEach (*thorInstances)
+    {
+        SCMStringBuffer processName;
+        thorInstances->str(processName);
+        if (processName.length() == 0)
+            continue;
+
+        bool* found = uniqueProcesses.getValue(processName.str());
+        if (found && *found)
+            continue;
+        uniqueProcesses.setValue(processName.str(), true);
+
+        StringBuffer groupName, logDir;
+        getClusterThorGroupName(groupName, processName.str());
+        if (groupName.isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", processName.str());
+        getConfigurationDirectory(directories, "log", "thor", processName.str(), logDir);
+        Owned<IStringIterator> thorLogs = cwu->getLogs("Thor", processName.str());
+        ForEach (*thorLogs)
+        {
+            SCMStringBuffer logName;
+            thorLogs->str(logName);
+            if (logName.length() == 0)
+                continue;
+
+            const char* pStr = logName.str();
+            const char* ppStr = strstr(pStr, "/thormaster.");
+            if (!ppStr)
+            {
+                WARNLOG("Invalid thorlog entry in workunit xml: %s", logName.str());
+                continue;
+            }
+            ppStr += 12;
+            StringBuffer logDate = ppStr;
+            logDate.setLength(10);
+
+            for (unsigned i = 0; i < numberOfSlaveLogs; i++)
+            {
+                MemoryBuffer mb;
+                VStringBuffer fileName("%s%c%s_thorslave.%u.%s.log", path, PATHSEPCHAR, processName.str(), i+1, logDate.str());
+                winfo.getWorkunitThorSlaveLog(groupName.str(), NULL, logDate.str(), logDir.str(), i+1, mb, fileName.str(), false);
+            }
+        }
+    }
+}
+
+void CWsWuFileHelper::createZAPInfoFile(const char* espIP, const char* thorIP, const char* problemDesc,
+    const char* whatChanged, const char* timing, Owned<IConstWorkUnit>& cwu, const char* pathNameStr)
+{
+    VStringBuffer fileName("%s.txt", pathNameStr);
+    Owned<IFileIOStream> outFile = createIOStreamWithFileName(fileName.str(), IFOcreate);
+
+    StringBuffer sb;
+    sb.set("Workunit:     ").append(cwu->queryWuid()).append("\r\n");
+    sb.append("User:         ").append(cwu->queryUser()).append("\r\n");
+    sb.append("Build Version:").append(getBuildVersion()).append("\r\n");
+    sb.append("Cluster:      ").append(cwu->queryClusterName()).append("\r\n");
+    if (!isEmptyString(espIP))
+        sb.append("ESP:          ").append(espIP).append("\r\n");
+    else
+    {
+        StringBuffer espIPAddr;
+        IpAddress ipaddr = queryHostIP();
+        ipaddr.getIpText(espIPAddr);
+        sb.append("ESP:          ").append(espIPAddr.str()).append("\r\n");
+    }
+    if (!isEmptyString(thorIP))
+        sb.append("Thor:         ").append(thorIP).append("\r\n");
+    outFile->write(sb.length(), sb.str());
+
+    //Exceptions/Warnings/Info
+    Owned<IConstWUExceptionIterator> exceptions = &cwu->getExceptions();
+    StringBuffer info, warn, err, alert;
+    ForEach(*exceptions)
+    {
+        const char* severityString = nullptr;
+        switch (exceptions->query().getSeverity())
+        {
+        case SeverityInformation:
+            severityString = "Information:  ";
+            break;
+        case SeverityWarning:
+            severityString = "Warnings:     ";
+            break;
+        case SeverityError:
+            severityString = "Exceptions:   ";
+            break;
+        case SeverityAlert:
+            severityString = "Alert:        ";
+            break;
+        }
+
+        if (!severityString)
+            continue;
+
+        SCMStringBuffer temp;
+        exceptions->query().getExceptionMessage(temp);
+        writeZAPWUInfoToIOStream(outFile, severityString, temp);
+    }
+
+    //User provided Information
+    writeZAPWUInfoToIOStream(outFile, "Problem:      ", problemDesc);
+    writeZAPWUInfoToIOStream(outFile, "What Changed: ", whatChanged);
+    writeZAPWUInfoToIOStream(outFile, "Timing:       ", timing);
+}
+
+void CWsWuFileHelper::writeZAPWUInfoToIOStream(IFileIOStream* outFile, const char* name, SCMStringBuffer& value)
+{
+    outFile->write(strlen(name), name);
+    outFile->write(3, "\r\n\t");
+    outFile->write(value.length(), value.str());
+    outFile->write(4, "\r\n\r\n");
+}
+
+void CWsWuFileHelper::writeZAPWUInfoToIOStream(IFileIOStream* outFile, const char* name, const char* value)
+{
+    outFile->write(strlen(name), name);
+    outFile->write(strlen(value), value);
+    outFile->write(4, "\r\n\r\n");
+}
+
+void CWsWuFileHelper::createZAPWUXMLFile(WsWuInfo& winfo, const char* pathNameStr)
+{
+    MemoryBuffer mb;
+    winfo.getWorkunitXml(NULL, mb);
+    VStringBuffer fileName("%s.xml", pathNameStr);
+    writeToFile(fileName.str(), mb.length(), mb.bufferBase());
+}
+
+void CWsWuFileHelper::createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, const char* pathNameStr)
+{
+    Owned<IConstWUQuery> query = cwu->getQuery();
+    if(!query)
+        return;
+
+    //Add archive if present
+    Owned<IConstWUAssociatedFileIterator> iter = &query->getAssociatedFiles();
+    ForEach(*iter)
+    {
+        IConstWUAssociatedFile& cur = iter->query();
+        SCMStringBuffer ssb, ip;
+        cur.getDescription(ssb);
+        if (!strieq(ssb.str(), "archive"))
+            continue;
+
+        cur.getName(ssb);
+        cur.getIp(ip);
+        if (!ssb.length() || !ip.length())
+            continue;
+
+        StringBuffer fileName, archiveContents;
+        try
+        {
+            SocketEndpoint ep(ip.str());
+            RemoteFilename rfn;
+            rfn.setRemotePath(ssb.str());
+            rfn.setIp(ep);
+            Owned<IFile> rFile = createIFile(rfn);
+            if (!rFile)
+            {
+                DBGLOG("Cannot open %s on %s", ssb.str(), ip.str());
+                continue;
+            }
+            archiveContents.loadFile(rFile);
+        }
+        catch (IException *e)
+        {
+            StringBuffer s;
+            e->errorMessage(s);
+            DBGLOG("Error accessing archive file %s: %s", ssb.str(), s.str());
+            archiveContents.insert(0, "Error accessing archive file ").appendf("%s: %s\r\n\r\n", ssb.str(), s.str());
+            e->Release();
+        }
+        fileName.setf("%s.archive", pathNameStr);
+        writeToFile(fileName.str(), archiveContents.length(), archiveContents.str());
+        break;
+    }
+
+    //Add Query
+    SCMStringBuffer temp;
+    query->getQueryText(temp);
+    if (temp.length())
+    {
+        VStringBuffer fileName("%s.ecl", pathNameStr);
+        writeToFile(fileName.str(), temp.length(), temp.str());
+    }
+}
+
+void CWsWuFileHelper::createZAPWUGraphProgressFile(const char* wuid, const char* pathNameStr)
+{
+    Owned<IPropertyTree> graphProgress = getWUGraphProgress(wuid, true);
+    if (!graphProgress)
+        return;
+
+    StringBuffer graphProgressXML;
+    toXML(graphProgress, graphProgressXML, 1, XML_Format);
+
+    VStringBuffer fileName("%s.graphprogress", pathNameStr);
+    writeToFile(fileName.str(), graphProgressXML.length(), graphProgressXML.str());
+}
+
+int CWsWuFileHelper::zipAFolder(const char* folder, const char* passwordReq, const char* zipFileNameWithPath)
+{
+    VStringBuffer archiveInPath("%s%c*", folder, PATHSEPCHAR);
+    StringBuffer zipCommand;
+    if (!isEmptyString(passwordReq))
+        zipCommand.setf("zip -j --password %s %s %s", passwordReq, zipFileNameWithPath, archiveInPath.str());
+    else
+        zipCommand.setf("zip -j %s %s", zipFileNameWithPath, archiveInPath.str());
+    return (system(zipCommand.str()));
+}
+
+int CWsWuFileHelper::zipAFolder(const char* folder, bool gzip, const char* zipFileNameWithPath)
+{
+    StringBuffer zipCommand;
+    VStringBuffer archiveInPath("%s%c*", folder, PATHSEPCHAR);
+    if (!gzip)
+        zipCommand.appendf("zip -j %s %s", zipFileNameWithPath, archiveInPath.str());
+    else
+        zipCommand.appendf("tar -czf %s %s", zipFileNameWithPath, archiveInPath.str());
+    return (system(zipCommand.str()));
+}
+
+void CWsWuFileHelper::createWUZAPFile(IEspContext& context, Owned<IConstWorkUnit>& cwu, CWsWuZAPInfoReq& request,
+    StringBuffer& zipFileName, StringBuffer& zipFileNameWithPath)
+{
+    StringBuffer zapReportNameStr, folderToZIP, inFileNamePrefixWithPath;
+    Owned<IFile> zipDir = createWorkingFolder(context, request.wuid.str(), "ZAPReport_", zapReportNameStr, folderToZIP);
+    setZAPFile(request.zapFileName.str(), zapReportNameStr.str(), zipFileName, zipFileNameWithPath);
+
+    //create WU ZAP files
+    inFileNamePrefixWithPath.set(folderToZIP.str()).append(PATHSEPCHAR).append(zapReportNameStr.str());
+    createZAPInfoFile(request.espIP.str(), request.thorIP.str(), request.problemDesc.str(), request.whatChanged.str(),
+        request.whereSlow.str(), cwu, inFileNamePrefixWithPath.str());
+    createZAPECLQueryArchiveFiles(cwu, inFileNamePrefixWithPath.str());
+
+    WsWuInfo winfo(context, cwu);
+    createZAPWUXMLFile(winfo, inFileNamePrefixWithPath.str());
+    createZAPWUGraphProgressFile(request.wuid.str(), inFileNamePrefixWithPath.str());
+    createProcessLogfile(cwu, winfo, "EclAgent", folderToZIP.str());
+    createProcessLogfile(cwu, winfo, "Thor", folderToZIP.str());
+    if (request.includeThorSlaveLog)
+        createThorSlaveLogfile(cwu, winfo, folderToZIP.str());
+
+    //Write out to ZIP file
+    int zipRet = zipAFolder(folderToZIP.str(), request.password.str(), zipFileNameWithPath);
+    //Remove the temporary files and the folder
+    cleanFolder(zipDir, true);
+    if (zipRet != 0)
+        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"Failed to execute system command 'zip'. Please make sure that zip utility is installed.");
+}
+
+void CWsWuFileHelper::setZAPFile(const char* zipFileNameReq, const char* zipFileNamePrefix,
+    StringBuffer& zipFileName, StringBuffer& zipFileNameWithPath)
+{
+    StringBuffer outFileNameReq(zipFileNameReq);
+    //Clean zipFileNameReq. The zipFileNameReq should not end with PATHSEPCHAR.
+    while (!outFileNameReq.isEmpty() && (outFileNameReq.charAt(outFileNameReq.length() - 1) == PATHSEPCHAR))
+        outFileNameReq.setLength(outFileNameReq.length() - 1);
+
+    if (outFileNameReq.isEmpty())
+        zipFileName.set(zipFileNamePrefix).append(".zip");
+    else
+    {
+        zipFileName.set(outFileNameReq.str());
+        const char* ext = pathExtension(zipFileName.str());
+        if (!ext || !strieq(ext, ".zip"))
+            zipFileName.append(".zip");
+    }
+
+    zipFileNameWithPath.set(zipFolder);
+    Owned<IFile> workingDir = createIFile(zipFileNameWithPath.str());
+    if (!workingDir->exists())
+        workingDir->createDirectory();
+
+    zipFileNameWithPath.append(PATHSEPCHAR).append(zipFileName);
+    OwnedIFile thisFile = createIFile(zipFileNameWithPath.str());
+    if (thisFile->isFile() == foundYes)
+        thisFile->remove();
+}
+
+IFile* CWsWuFileHelper::createWorkingFolder(IEspContext& context, const char* wuid, const char* namePrefix,
+    StringBuffer& namePrefixStr, StringBuffer& folderName)
+{
+    StringBuffer userName;
+    if (context.queryUser())
+        userName.append(context.queryUser()->getName());
+    namePrefixStr.set(namePrefix).append(wuid).append('_').append(userName.str());
+    folderName.append(zipFolder).append(namePrefixStr.str());
+    Owned<IFile> workingDir = createIFile(folderName.str());
+    if (!workingDir->exists())
+        workingDir->createDirectory();
+    else
+        cleanFolder(workingDir, false);
+    return workingDir.getClear();
+}
+
+IFileIOStream* CWsWuFileHelper::createWUZAPFileIOStream(IEspContext& context, Owned<IConstWorkUnit>& cwu, CWsWuZAPInfoReq& request)
+{
+    StringBuffer zapFileName, zapFileNameWithPath;
+    createWUZAPFile(context, cwu, request, zapFileName, zapFileNameWithPath);
+
+    VStringBuffer headerStr("attachment;filename=%s", zapFileName.str());
+    context.addCustomerHeader("Content-disposition", headerStr.str());
+    return createIOStreamWithFileName(zapFileNameWithPath.str(), IFOread);
+}
+
+IFileIOStream* CWsWuFileHelper::createWUFileIOStream(IEspContext& context, const char* wuid, IArrayOf<IConstWUFileOption>& wuFileOptions,
+    CWUFileDownloadOption& downloadOptions, StringBuffer& contentType)
+{
+    StringBuffer fileName, fileNameStr, workingFolder, zipFileNameWithPath;
+    Owned<IFile> zipDir;
+    bool doZIP = (downloadOptions == CWUFileDownloadOption_ZIP) || (downloadOptions == CWUFileDownloadOption_GZIP);
+    if (doZIP)
+    {
+        zipDir.setown(createWorkingFolder(context, wuid, "WUFiles_", fileNameStr, workingFolder));
+    }
+    else
+    {
+        StringBuffer userName;
+        if (context.queryUser())
+            userName.append(context.queryUser()->getName());
+        fileName.set("WUFiles_").append(wuid).append('_').append(userName.str());
+    }
+
+    WsWuInfo winfo(context, wuid);
+    ForEachItemIn(i, wuFileOptions)
+    {
+        if (!doZIP)
+        {//If no zip, only return one file. If > 1 files, the caller throws exception.
+            readWUFile(wuid, zipFolder, winfo, wuFileOptions.item(i), fileName, contentType);
+            break;
+        }
+
+        StringBuffer aFileName, aFileMimeType;//Not used
+        readWUFile(wuid, workingFolder.str(), winfo, wuFileOptions.item(i), aFileName, aFileMimeType);
+    }
+    if (!doZIP)
+    {
+        if (downloadOptions != CWUFileDownloadOption_OriginalText)
+        {
+            VStringBuffer headerStr("attachment;filename=%s", fileName.str());
+            context.addCustomerHeader("Content-disposition", headerStr.str());
+        }
+
+        zipFileNameWithPath.set(zipFolder).append(fileName.str());
+        return createIOStreamWithFileName(zipFileNameWithPath.str(), IFOread);
+    }
+
+    if (downloadOptions == CWUFileDownloadOption_ZIP)
+        fileName.set(fileNameStr).append(".zip");
+    else
+        fileName.set(fileNameStr).append(".gzip");
+    zipFileNameWithPath.set(zipFolder).append(fileName.str());
+    {
+        OwnedIFile oldFile = createIFile(zipFileNameWithPath.str());
+        if (oldFile->isFile() == foundYes)
+            oldFile->remove();
+    }
+    int zipRet = zipAFolder(workingFolder.str(), downloadOptions == CWUFileDownloadOption_GZIP, zipFileNameWithPath);
+    //Remove the temporary files and the folder
+    cleanFolder(zipDir, true);
+    if (zipRet != 0)
+        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA, "Failed to execute system command 'zip'. Please make sure that zip utility is installed.");
+
+    contentType.set(HTTP_TYPE_OCTET_STREAM);
+    VStringBuffer headerStr("attachment;filename=%s", fileName.str());
+    context.addCustomerHeader("Content-disposition", headerStr.str());
+    return createIOStreamWithFileName(zipFileNameWithPath.str(), IFOread);
+}
+
+void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, WsWuInfo& winfo, IConstWUFileOption& item,
+    StringBuffer& fileName, StringBuffer& fileMimeType)
+{
+    MemoryBuffer mb;
+    StringBuffer fileNameWithPath;
+    CWUFileType fileType = item.getFileType();
+    switch (fileType)
+    {
+    case CWUFileType_ArchiveQuery:
+        winfo.getWorkunitArchiveQuery(mb);
+        fileName.set("ArchiveQuery.xml");
+        fileMimeType.set(HTTP_TYPE_APPLICATION_XML);
+        writeToFileIOStream(workingFolder, "ArchiveQuery.xml", mb);
+        break;
+    case CWUFileType_CPP:
+    {
+        const char *tail=pathTail(item.getName());
+        fileName.set(tail ? tail : item.getName());
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
+        winfo.getWorkunitCpp(item.getName(), item.getDescription(), item.getIPAddress(), mb, true, fileNameWithPath.str());
+        break;
+    }
+    case CWUFileType_DLL:
+    {
+        const char *tail=pathTail(item.getName());
+        fileName.set(tail ? tail : item.getName());
+        fileMimeType.set(HTTP_TYPE_OCTET_STREAM);
+        StringBuffer name;
+        winfo.getWorkunitDll(name, mb);
+        writeToFileIOStream(workingFolder, fileName.str(), mb);
+        break;
+    }
+    case CWUFileType_Res:
+        fileName.set("res.txt");
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        winfo.getWorkunitResTxt(mb);
+        writeToFileIOStream(workingFolder, fileName.str(), mb);
+        break;
+    case CWUFileType_ThorLog:
+        fileName.set("thormaster.log");
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
+        winfo.getWorkunitThorLog(item.getName(), mb, fileNameWithPath.str());
+        break;
+    case CWUFileType_ThorSlaveLog:
+    {
+        StringBuffer logDir;
+        fileName.set("ThorSlave.log");
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        getConfigurationDirectory(directories, "log", "thor", item.getProcess(), logDir);
+        fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
+        winfo.getWorkunitThorSlaveLog(item.getClusterGroup(), item.getIPAddress(), item.getLogDate(), logDir.str(), item.getSlaveNumber(), mb, fileNameWithPath.str(), false);
+        break;
+    }
+    case CWUFileType_EclAgentLog:
+        fileName.set("eclagent.log");
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
+        winfo.getWorkunitEclAgentLog(item.getName(), item.getProcess(), mb, fileNameWithPath.str());
+        break;
+    case CWUFileType_XML:
+    {
+        StringBuffer name  = item.getName();
+        if (!name.isEmpty())
+        {
+            const char *tail=pathTail(name.str());
+            fileName.set(tail ? tail : name.str());
+            fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
+            winfo.getWorkunitAssociatedXml(fileName.str(), item.getIPAddress(), item.getPlainText(), item.getDescription(), true, true, mb, fileNameWithPath.str());
+        }
+        else
+        {
+            fileName.setf("%s.xml", wuid);
+            winfo.getWorkunitXml(item.getPlainText(), mb);
+            writeToFileIOStream(workingFolder, fileName.str(), mb);
+        }
+        const char* plainText = item.getPlainText();
+        if (plainText && strieq(plainText, "yes"))
+            fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        else
+            fileMimeType.set(HTTP_TYPE_APPLICATION_XML);
+        break;
+    }
+    case CWUFileType_WUECL:
+        fileName.setf("%s.ecl", wuid);
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
+        winfo.getWorkunitQueryShortText(mb, fileNameWithPath.str());
+        break;
+    default:
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unsupported file type %d.", fileType);
+    }
+}
+
 }

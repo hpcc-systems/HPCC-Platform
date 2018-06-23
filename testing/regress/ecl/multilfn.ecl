@@ -618,12 +618,12 @@ ds := DATASET([
 dds := DISTRIBUTE(ds,hash(album));
 sds := SORT(dds,song);
 o1 := output(sample(sds,5,1),,'A',overwrite);
-o2 := output(sample(sds,5,2),,'~nhtest::BB',overwrite);
+o2 := output(sample(sds,5,2),,'~regress::BB',overwrite);
 o3 := output(sample(sds,5,3),,'testscope::another::CCCC',overwrite);
-o4 := output(sample(sds,5,4),,'~    nhtest :: DD DDD ',overwrite);   // space between DD and DDD significant
+o4 := output(sample(sds,5,4),,'~    regress :: DD DDD ',overwrite);   // space between DD and DDD significant
 o5 := output(sample(sds,5,5),,'e^Ee^Ee',overwrite);
 
-i1 := DATASET('{A,~nhtest::BB,testscope::another::cccc,~nhtest::dd ddd,e^Ee^Ee}',rec,flat);
+i1 := DATASET('{A,~regress::BB,testscope::another::cccc,~regress::dd ddd,e^Ee^Ee}',rec,flat);
 o6 := OUTPUT(COUNT(ds)-COUNT(i1));
 o7 := OUTPUT(COUNT(JOIN(i1,sds,left.song=right.song,FULL ONLY,LOCAL)));
 
@@ -638,7 +638,7 @@ i2 := DATASET('nhtest_'+WORKUNIT+'::{???*}',rec,flat);
 o14 := OUTPUT(COUNT(JOIN(i2,sds,left.song=right.song,FULL ONLY,LOCAL)));
 o15 := OUTPUT(COUNT(i2)-COUNT(ds));
 
-i3 := DATASET('~nhtest::{BB,dd ddd}',rec,flat);
+i3 := DATASET('~regress::{BB,dd ddd}',rec,flat);
 o16 := OUTPUT(COUNT(JOIN(i3,sample(sds,5,2)+sample(sds,5,4),left.song=right.song,FULL ONLY)));
 
 lfl1 := FileServices.LogicalFileList(str.ToLowerCase(thorlib.getExpandLogicalName('nhtest_'+WORKUNIT+'::*')));

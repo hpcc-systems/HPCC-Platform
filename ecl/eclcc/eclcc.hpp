@@ -68,6 +68,7 @@ const char * const helpText[] = {
     "File resolution options:",
     "    -dfs=ip       Use specified ip for DFS filename resolution",
     "    -scope=prefix Use specified scope prefix in DFS filename resolution",
+    "    -cluster=name Use specified cluster when calculating graph resource allocation",
     "    -user=id      Use specified username in DFS filename resolution",
     "    -password=xxx Use specified password in DFS filename resolution (blank to prompt)",
     "",
@@ -85,9 +86,11 @@ const char * const helpText[] = {
     "!   -Dname=value  Override the definition of a global attribute 'name'",
     "!   --deny=all    Disallow use of all named features not specifically allowed using --allow",
     "!   --deny=str    Disallow use of named feature",
+    "!   --expand <path> Expand the contents of an archive to a directory",
     "?!  --fastsyntax  Delay expanding functions when parsing.  May speed up processing for some queries",
     "    -help, --help Display this message",
     "    -help -v      Display verbose help message",
+    "!   --ignoreunknownimport Do not report an error on an unknown import",
     "!   -internal     Run internal tests",
     "?!  -legacy       Use legacy import and when semantics (deprecated)",
     "!   --leakcheck   Clean up memory since checking for memory leaks",
@@ -97,6 +100,7 @@ const char * const helpText[] = {
     "    --logfile <file> Write log to specified file",
     "!   --logdetail=n Set the level of detail in the log file",
     "!   --maxErrors=<n> Limit the number of errors, aborting on the nth (default = 5)",
+    "    --metacache=x Specify directory to store distributed meta information",
     "!   --nologfile   Do not write any logfile",
 #ifdef _WIN32
     "!   -m            Enable leak checking",
@@ -108,9 +112,11 @@ const char * const helpText[] = {
     "!   -pch          Generate precompiled header for eclinclude4.hpp",
 #endif
     "!   -P <path>     Specify the path of the output files (only with -b option)",
+    "!   --regeneratecache Force regeneration of cache (even if upto date)"
     "!   -showpaths    Print information about the searchpaths eclcc is using",
     "    -specs file   Read eclcc configuration from specified file",
     "!   -split m:n    Process a subset m of n input files (only with -b option)",
+    "!   --tracecache  Add details of whether cache entries are up to date to the log file",
     "    -v --verbose  Output additional tracing information while compiling",
     "    -wxxxx=level  Set the severity for a particular warning code or category",
     "!                 -wall sets default severity for all warnings",
@@ -136,6 +142,9 @@ const char * const helpText[] = {
     "?!  -fshowRecordCountInGraph  Show estimates of record counts in the graph",
     "?!  -fspanMultipleCpp       Generate a work unit in multiple c++ files",
     "?!  -fsubgraphToRegenerate=n Regenerate the ECL for a particular subgraph",
+    "?!  -ftimeParser            Add timings for parsing each ECL attribute",
+    "?!  -ftimeTransforms        Add timings for internal transforms to the workunit",
+    "?!  -faddDefaultBloom       Generate Bloom filter for first field of index if none specified",
     "",
 };
 

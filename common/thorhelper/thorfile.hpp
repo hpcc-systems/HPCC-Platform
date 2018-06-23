@@ -27,5 +27,6 @@
 
 THORHELPER_API void setExpiryTime(IPropertyTree & properties, unsigned expireDays);
 THORHELPER_API IHThorDiskReadArg * createWorkUnitReadArg(const char * filename, IHThorWorkunitReadArg * wuRead);
+THORHELPER_API void setRtlFormat(IPropertyTree & properties, IOutputMetaData * meta);
 
 #endif

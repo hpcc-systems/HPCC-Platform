@@ -256,6 +256,7 @@ xpathseq      ([^}\r\n])+
 
 %x COMMENT
 %x CPP
+%x MULTISTRING
 %x SLSL
 %x SLSLHASH
 %x PGPHEADER
@@ -654,6 +655,7 @@ BETWEEN             { RETURNSYM(BETWEEN); }
 BITMAP              { RETURNSYM(TOK_BITMAP); }
 BIG_ENDIAN          { RETURNSYM(BIG); }
 BLOB                { RETURNSYM(BLOB); }
+BLOOM               { RETURNSYM(BLOOM); }
 BNOT                { RETURNSYM(BNOT); }
 BUILD               { RETURNSYM(BUILD); }
 BUILDINDEX          { RETURNSYM(BUILD); }
@@ -778,6 +780,7 @@ KEYPATCH            { RETURNSYM(KEYPATCH); }
 KEYUNICODE          { RETURNSYM(KEYUNICODE); }
 LABELED             { RETURNSYM(LABELED); }
 LABELLED            { RETURNSYM(LABELED); }
+LABEL               { RETURNSYM(LABEL); }
 LAST                { RETURNSYM(LAST); }
 LEFT                { RETURNSYM(LEFT); }
 LENGTH              { RETURNSYM(LENGTH); }
@@ -871,6 +874,7 @@ PREFETCH            { RETURNSYM(PREFETCH); }
 PRELOAD             { RETURNSYM(PRELOAD); }
 PRIORITY            { RETURNSYM(PRIORITY); }
 PRIVATE             { RETURNSYM(PRIVATE); }
+PROBABILITY         { RETURNSYM(PROBABILITY); }
 PROCESS             { RETURNSYM(PROCESS); }
 PROJECT             { RETURNSYM(PROJECT); }
 PROXYADDRESS        { RETURNSYM(PROXYADDRESS); }
@@ -980,6 +984,7 @@ WAIT                { RETURNSYM(WAIT); }
 WARNING             { RETURNSYM(TOK_WARNING); }
 WHEN                { RETURNSYM(WHEN); }
 WHICH               { RETURNSYM(WHICH); }
+WHITESPACE          { RETURNSYM(WHITESPACE); }
 WIDTH               { RETURNSYM(WIDTH); }
 WILD                { RETURNSYM(WILD); }
 WITHIN              { RETURNSYM(WITHIN); }
@@ -1039,6 +1044,7 @@ __STAND_ALONE__     {
                         setupdatepos; 
                         return (__STAND_ALONE__);
                     }
+__TARGET_PLATFORM__ { RETURNSYM(__TARGET_PLATFORM__); }
                         
 {percent}{alphanumcolon}*{percent} {
                         setupdatepos;
@@ -1501,7 +1507,7 @@ FUNCTIONMACRO|MACRO {
                         Owned<IFileContents> macroContents;
                         if (!isFunctionMacro)
                         {
-                            macroContents.setown(createFileContentsFromText(len, lexer->yyBuffer+startpos, lexer->sourcePath, lexer->yyParser->inSignedModule, lexer->yyParser->gpgSignature));
+                            macroContents.setown(createFileContentsFromText(len, lexer->yyBuffer+startpos, lexer->sourcePath, lexer->yyParser->inSignedModule, lexer->yyParser->gpgSignature, 0));
 #if defined(TRACE_TOKEN)
                             PrintLog("TOKEN>> macro body read: \"%.*s\"", len, lexer->yyBuffer+startpos);
 #endif
@@ -1518,7 +1524,7 @@ FUNCTIONMACRO|MACRO {
                             memcpy(macroBuf, prefix, lenPrefix);
                             memcpy(macroBuf + lenPrefix, lexer->yyBuffer+startpos, len);
                             memcpy(macroBuf + lenPrefix + len, suffix, lenSuffix);
-                            macroContents.setown(createFileContentsFromText(lenSuffix + len + lenPrefix, macroBuf, lexer->sourcePath,lexer->yyParser->inSignedModule, lexer->yyParser->gpgSignature));
+                            macroContents.setown(createFileContentsFromText(lenSuffix + len + lenPrefix, macroBuf, lexer->sourcePath,lexer->yyParser->inSignedModule, lexer->yyParser->gpgSignature, 0));
 #if defined(TRACE_TOKEN)
                             PrintLog("TOKEN>> macro body read: \"%.*s\"",len+lenPrefix+lenSuffix, macroBuf);
 #endif
@@ -1557,7 +1563,7 @@ FUNCTIONMACRO|MACRO {
                         else
                             startpos += 1;  // Skip the ) of EMBED(xxx)
 
-                        // keep the orginal format info (like blanks, newlines)
+                        // keep the original format info (like blanks, newlines)
                         while (endpos != startpos && (lexer->yyBuffer[endpos-1] == 13 || lexer->yyBuffer[endpos-1] == 10))
                             endpos--;
                         int len = endpos-startpos;
@@ -1577,6 +1583,64 @@ FUNCTIONMACRO|MACRO {
                     }
 <CPP>[^\n]+         { updatepos1; }
 <CPP>\n             { updatepos1; lexer->updateNewline(); }
+
+(d|D|q|Q|v|V|u|U|u8|U8)?"'''"  { 
+                        setupdatepos; 
+                        BEGIN(MULTISTRING);
+                        lexer->inMultiString = true;
+                    }
+<MULTISTRING>[^\n]*"'''"[^\n]*  {
+                        lexer->inMultiString = false;
+                        int endpos = lexer->yyPosition;
+                        //skip to the position of ''' on the line)
+                        while (memcmp(lexer->yyBuffer+endpos, "'''", 3) != 0)
+                            endpos++;
+                        const int lastpos = endpos + 3;
+                        
+                        updatepos1; 
+                        BEGIN(0);
+
+                        //Return any characters found after the closing '''
+                        unsigned delta = lexer->yyPosition - lastpos;
+                        yyless(CUR_TOKEN_LENGTH - delta);
+                        lexer->yyPosition -= delta;
+                        lexer->yyColumn -= delta;
+                            
+                        int startpos = returnToken.pos.position;
+                        if (lexer->yyBuffer[startpos] == 'u')
+                        {
+                            bool isUtf8 = false;
+                            startpos++;
+                            if (lexer->yyBuffer[startpos]=='8')
+                            {
+                                isUtf8 = true;
+                                startpos++;
+                            }
+                            startpos +=3;
+                            int len = endpos-startpos;
+                            Owned<IValue> unicodeValue;
+                            // Special handling required for trailing \ char which suppresses the following linefeed, as unicode unescape does not handle it
+                            StringBuffer source(len, lexer->yyBuffer+startpos);
+                            source.replaceString("\\\n","");
+                            if (isUtf8)
+                            {
+                                size32_t chars = rtlUtf8Length(source.length(), source.str());
+                                unicodeValue.setown(createUtf8Value(chars, source.str(), "", true));
+                            }
+                            else
+                                unicodeValue.setown(createUnicodeValue(source.str(), source.length(), "", true, true));
+                            
+                            returnToken.setExpr(createConstant(unicodeValue.getClear()));
+                            return (UNICODE_CONST);
+                        }
+                        else
+                        {
+                            return lexer->processStringLiteral(returnToken, lexer->yyBuffer+startpos, lastpos-startpos, returnToken.pos.column, returnToken.pos.position);
+                        }
+                    }
+<MULTISTRING>[^\n]+         { updatepos1; }
+<MULTISTRING>\n             { updatepos1; lexer->updateNewline(); }
+
 
 "<)"                { setupdatepos; return(TYPE_RPAREN) ; }
 "(>"                { setupdatepos; return(TYPE_LPAREN) ; }
@@ -1701,7 +1765,7 @@ FUNCTIONMACRO|MACRO {
                             start++;
                         }
                         unsigned ep;
-                        if(!lexer->checkUnicodeLiteral(CUR_TOKEN_TEXT + start, CUR_TOKEN_LENGTH - (start+1), ep, msg))
+                        if(!checkUnicodeLiteral(CUR_TOKEN_TEXT + start, CUR_TOKEN_LENGTH - (start+1), ep, msg))
                         {
                             int delta = ep + start;
                             returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
@@ -1725,193 +1789,21 @@ FUNCTIONMACRO|MACRO {
                     }
                         
 
+(d|D|q|Q|v|V)?\'([^'\r\n\\]|\\[^\r\n])*\'/\' {
+                        /* error pattern - a string immediately followed by a ' usually means someone thought they could use '' to escape a quote char */
+                        /* It's usually going to hit a grammar error too, but patterns can legally be formed of two adjacent string tokens */
+                        lexer->reportWarning(CategoryMistake, returnToken, ERR_STRING_DOUBLE_QUOTE, "'' is not an escaped quote character: use \\' instead");
+                        int oldColumn = lexer->yyColumn;
+                        int oldPosition = lexer->yyPosition;
+                        setupdatepos;
+                        return lexer->processStringLiteral(returnToken, CUR_TOKEN_TEXT, CUR_TOKEN_LENGTH-1, oldColumn, oldPosition);
+                    }
+
 (d|D|q|Q|v|V)?\'([^'\r\n\\]|\\[^\r\n])*\' {
                         int oldColumn = lexer->yyColumn;
                         int oldPosition = lexer->yyPosition;
-                        setupdatepos; 
-                        MemoryAttr tempBuff;
-                        char *b = (char *)tempBuff.allocate(CUR_TOKEN_LENGTH); // Escape sequence can only make is shorter...
-                        char *bf = b;
-                        const char *finger = CUR_TOKEN_TEXT;
-                        type_t tc = type_string;
-                        if (*finger != '\'')
-                        {
-                            if ((*finger == 'd') || (*finger == 'D'))
-                                tc = type_data;
-                            else if((*finger == 'q') || (*finger == 'Q'))
-                                tc = type_qstring;
-                            else if((*finger == 'v') || (*finger == 'V'))
-                                tc = type_varstring;
-                            finger++;
-                        }
-                        for (finger++; finger[1]; finger++)
-                        {
-                            unsigned char next = *finger;
-                            size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
-                            if (next == '\\')
-                            {
-                                next = finger[1];
-                                if (finger[2]==0)  // finger[1] must be '.
-                                {
-                                    assertex(false);
-                                    returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
-                                    StringBuffer msg("Can not terminate a string with escape char '\\': ");
-                                    msg.append(CUR_TOKEN_TEXT);
-                                    lexer->reportError(returnToken, RRR_ESCAPE_ENDWITHSLASH, "%s", msg.str());
-                                    if (lexer->checkAborting())
-                                        return EOF;
-                                }
-                                else if (next == '\'' || next == '\\' || next == '?' || next == '"') 
-                                {
-                                    finger++;
-                                } 
-                                else if (next == 'a') 
-                                {
-                                    next = '\a';
-                                    finger++;
-                                } 
-                                else if (next == 'b') 
-                                {
-                                    next = '\b';
-                                    finger++;
-                                } 
-                                else if (next == 'f') 
-                                {
-                                    next = '\f';
-                                    finger++;
-                                } 
-                                else if (next == 'n') 
-                                {
-                                    next = '\n';
-                                    finger++;
-                                } 
-                                else if (next == 'r') 
-                                {
-                                    next = '\r';
-                                    finger++;
-                                } 
-                                else if (next == 't') 
-                                {
-                                    next = '\t';
-                                    finger++;
-                                } 
-                                else if (next == 'v') 
-                                {
-                                    next = '\v';
-                                    finger++;
-                                } 
-                                else if (isdigit(next) && next < '8')
-                                {
-                                    //Allow octal constants for ^Z etc.
-                                    unsigned value = 0;
-                                    unsigned count;
-                                    for (count=0; count < 3; count++)
-                                    {
-                                        next = finger[count+1];
-                                        if (!isdigit(next) || next >= '8')
-                                            break;
-                                        value = value * 8 + (next - '0');
-                                    }
-                                    if(count != 3)
-                                    {
-                                        returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
-                                        StringBuffer msg;
-                                        msg.append("3-digit numeric escape sequence contained non-octal digit: ").append(next);
-                                        lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
-                                        if (lexer->checkAborting())
-                                            return EOF;
-                                    }
-                                    *bf++ = value;
-                                    if(!(isValidAsciiLikeCharacter(value) || (tc == type_data)))
-                                    {
-                                        returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
-                                        lexer->reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
-                                        if (lexer->checkAborting())
-                                            return EOF;
-                                    }
-                                    finger += count;
-                                    continue;
-                                }
-                                else
-                                {
-                                    StringBuffer msg;
-                                    msg.append("Unrecognized escape sequence: ");
-                                    msg.append("\\").append(finger[1]);
-                                    returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
-                                    lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
-                                    if (lexer->checkAborting())
-                                        return EOF;
-                                }
-                                *bf++ = next;
-                            }
-                            else if (next == '\'')
-                            {
-                                returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
-                                lexer->reportError(returnToken, ERR_STRING_NEEDESCAPE,"' needs to be escaped by \\ inside string");
-                                if (lexer->checkAborting())
-                                    return EOF;
-                            }
-                            else if (next >= 128)
-                            {
-                                const byte * temp = (byte *)finger;
-                                unsigned lenLeft = CUR_TOKEN_LENGTH - (size32_t)(finger - CUR_TOKEN_TEXT);
-                                int extraCharsRead = rtlSingleUtf8ToCodepage(bf, lenLeft, finger, ASCII_LIKE_CODEPAGE);
-                                if (extraCharsRead == -1)
-                                {
-                                    //This really has to be an error, otherwise it will work most of the time, but will then sometimes fail
-                                    //because two characters > 128 are next to each other.
-                                    returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
-                                    lexer->reportError(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not legal UTF-8");
-                                    if (lexer->checkAborting())
-                                        return EOF;
-                                    *bf = next;
-                                }
-                                else
-                                {
-                                    if (*bf == ASCII_LIKE_SUBS_CHAR)
-                                    {
-                                        returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
-                                        lexer->reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE ", try using a unicode constant");
-                                    }
-                                    finger += extraCharsRead;
-                                }
-                                bf++;
-                            }
-                            else
-                            {
-                                *bf++ = next;
-                                if(!(isValidAsciiLikeCharacter(next) || (tc == type_data)))
-                                {
-                                    returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
-                                    lexer->reportError(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
-                                    if (lexer->checkAborting())
-                                        return EOF;
-                                }
-                            }
-                        }
-                        returnToken.setPosition(lexer->yyLineNo, oldColumn, oldPosition, lexer->querySourcePath());
-                        switch (tc)
-                        {
-                        case type_qstring:
-                            {
-                                Owned<ITypeInfo> qStrType = makeQStringType(UNKNOWN_LENGTH); 
-                                returnToken.setExpr(createConstant(qStrType->castFrom((size32_t)(bf-b), b)));
-                                return (DATA_CONST);
-                            }
-                        case type_data:
-                            {
-                                returnToken.setExpr(createConstant(createDataValue(b, (size32_t)(bf-b))));
-                                return (DATA_CONST);
-                            }
-                        case type_varstring:
-                            {
-                                returnToken.setExpr(createConstant(createVarStringValue((size32_t)(bf-b), b, makeVarStringType(UNKNOWN_LENGTH))));
-                                return (DATA_CONST);
-                            }
-                        case type_string:
-                            returnToken.setExpr(createConstant(createStringValue(b, (size32_t)(bf-b))));
-                            return (STRING_CONST);
-                        }
+                        setupdatepos;
+                        return lexer->processStringLiteral(returnToken, CUR_TOKEN_TEXT, CUR_TOKEN_LENGTH, oldColumn, oldPosition);
                     }
 
 (d|D|q|Q|u|U|v|V)?\'([^'\r\n\\]|\\[^\r\n])*(\\)? {  

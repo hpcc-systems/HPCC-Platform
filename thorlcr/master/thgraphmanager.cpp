@@ -21,6 +21,7 @@
 #include "jfile.hpp"
 #include "jmutex.hpp"
 #include "jlog.hpp"
+#include "rmtfile.hpp"
 
 #include "portlist.h"
 #include "wujobq.hpp"
@@ -165,7 +166,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
 
             response.flush(true);
         }
-        virtual void main()
+        virtual void threadmain() override
         {
             sock.setown(ISocket::create(port));
             while (running)
@@ -344,7 +345,7 @@ class CIdleShutdown : public CSimpleInterface, implements IThreaded
 public:
     CIdleShutdown(unsigned _timeout) : timeout(_timeout*60000), threaded("CIdleShutdown") { threaded.init(this); }
     ~CIdleShutdown() { stop(); threaded.join(); }
-    virtual void main()
+    virtual void threadmain() override
     {
         if (!sem.wait(timeout)) // feeling neglected, restarting..
             abortThor(MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000), TEC_Idle, false);
@@ -472,7 +473,7 @@ void CJobManager::run()
             stopped = true;
             queryWorldCommunicator().cancel(NULL, mptag);
         }
-        void main()
+        virtual void threadmain() override
         {
             for (;;)
             {
@@ -823,10 +824,10 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
 
 bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, const SocketEndpoint &agentEp)
 {
+    timestamp_type startTs = getTimeStampNowValue();
     {
         Owned<IWorkUnit> wu = &workunit.lock();
         wu->setTracingValue("ThorBuild", BUILD_TAG);
-        addTimeStamp(wu, SSTgraph, graphName, StWhenGraphStarted);
         updateWorkUnitLog(*wu);
     }
     Owned<IException> exception;
@@ -834,9 +835,6 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     StringAttr wuid(workunit.queryWuid());
     const char *totalTimeStr = "Total thor time";
     cycle_t startCycles = get_cycles_now();
-    unsigned __int64 totalTimeNs = 0;
-    unsigned __int64 totalThisTimeNs = 0;
-    getWorkunitTotalTime(&workunit, "thor", totalTimeNs, totalThisTimeNs);
 
     Owned<IConstWUQuery> query = workunit.getQuery(); 
     SCMStringBuffer soName;
@@ -883,6 +881,9 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
 
     PROGLOG("Query %s loaded", compoundPath.str());
     Owned<CJobMaster> job = createThorGraph(graphName, workunit, querySo, sendSo, agentEp);
+    unsigned wfid = job->getWfid();
+    StringBuffer graphScope;
+    graphScope.append(WorkflowScopePrefix).append(wfid).append(":").append(graphName);
     PROGLOG("Graph %s created", graphName);
     PROGLOG("Running graph=%s", job->queryGraphName());
     addJob(*job);
@@ -898,6 +899,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
 
         {
             Owned<IWorkUnit> wu = &workunit.lock();
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTs, 1, 0, StatsMergeAppend);
+            //Could use addTimeStamp(wu, SSTgraph, graphName, StWhenStarted, wfid) if start time could be this point
             wu->setState(WUStateRunning);
             VStringBuffer version("%d.%d", THOR_VERSION_MAJOR, THOR_VERSION_MINOR);
             wu->setDebugValue("ThorVersion", version.str(), true);
@@ -912,11 +915,9 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         StringBuffer graphTimeStr;
         formatGraphTimerLabel(graphTimeStr, graphName);
 
-        updateWorkunitTimeStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs);
-        updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+graphTimeNs);
-        wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+graphTimeNs, 1, 0, StatsMergeReplace);
+        updateWorkunitStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs, wfid);
 
-        addTimeStamp(wu, SSTgraph, graphName, StWhenGraphFinished);
+        addTimeStamp(wu, SSTgraph, graphName, StWhenFinished, wfid);
         
         removeJob(*job);
     }
@@ -996,7 +997,7 @@ class CDaliConnectionValidator : public CSimpleInterface, implements IThreaded
 public:
     CDaliConnectionValidator(unsigned _pollDelay) : threaded("CDaliConnectionValidator") { pollDelay = _pollDelay*1000; stopped = false; threaded.init(this); }
     ~CDaliConnectionValidator() { stop(); threaded.join(); }
-    void main()
+    virtual void threadmain() override
     {
         for (;;)
         {
@@ -1057,6 +1058,8 @@ void thorMain(ILogMsgHandler *logHandler)
         initFileManager();
         CThorResourceMaster masterResource;
         setIThorResource(masterResource);
+
+        enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
         try {

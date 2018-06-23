@@ -118,7 +118,7 @@ void CSlaveMessageHandler::stop()
     }
 }
 
-void CSlaveMessageHandler::main()
+void CSlaveMessageHandler::threadmain()
 {
     try
     {
@@ -427,7 +427,7 @@ MemoryBuffer &CMasterActivity::getInitializationData(unsigned slave, MemoryBuffe
     return dst.append(data[slave]);
 }
 
-void CMasterActivity::main()
+void CMasterActivity::threadmain()
 {
     try
     {
@@ -441,13 +441,13 @@ void CMasterActivity::main()
         else
             e2.setown(MakeActivityException(this, e, "Master exception"));
         e->Release();
-        ActPrintLog(e2, "In CMasterActivity::main");
+        ActPrintLog(e2, "In CMasterActivity::threadmain");
         fireException(e2);
     }
     catch (CATCHALL)
     {
         Owned<IException> e = MakeThorFatal(NULL, TE_MasterProcessError, "FATAL: Unknown master process exception kind=%s, id=%" ACTPF "d", activityKindStr(container.getKind()), container.queryId());
-        ActPrintLog(e, "In CMasterActivity::main");
+        ActPrintLog(e, "In CMasterActivity::threadmain");
         fireException(e);
     }
 }
@@ -465,7 +465,7 @@ void CMasterActivity::startProcess(bool async)
         threaded.start();
     }
     else
-        main();
+        threadmain();
 }
 
 bool CMasterActivity::wait(unsigned timeout)
@@ -581,6 +581,7 @@ bool CMasterGraphElement::checkUpdate()
         case TAKcsvwrite:
         case TAKxmlwrite:
         case TAKjsonwrite:
+        case TAKspillwrite:
         {
             IHThorDiskWriteArg *helper = (IHThorDiskWriteArg *)queryHelper();
             doCheckUpdate = 0 != (helper->getFlags() & TDWupdate);
@@ -588,6 +589,8 @@ bool CMasterGraphElement::checkUpdate()
             helper->getUpdateCRCs(eclCRC, totalCRC);
             if (TAKdiskwrite == getKind())
                 temporary = 0 != (helper->getFlags() & (TDXtemporary|TDXjobtemp));
+            else if (TAKspillwrite == getKind())
+                temporary = true;
             break;
         }
     }
@@ -1091,7 +1094,7 @@ public:
             throw MakeStringException(TE_FailedToRetrieveWorkunitValue, "Failed to retrieve external data hash %s from workunit %s", stepname, wuid);
         }
     }
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override
     {
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
@@ -1104,7 +1107,7 @@ public:
             rtlDataset2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray(), isGrouped);
         );
     }
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override
+    virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override
     {
         tcount = 0;
         tgt = NULL;
@@ -1297,6 +1300,26 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     numChannels = 1;
     init();
 
+    if (workunit->hasDebugValue("GlobalId"))
+    {
+        SCMStringBuffer txId;
+        workunit->getDebugValue("GlobalId", txId);
+        if (txId.length())
+        {
+            SocketEndpoint thorEp;
+            thorEp.setLocalHost(getMachinePortBase());
+            logctx->setGlobalId(txId.str(), thorEp, 0);
+
+            VStringBuffer msg("GlobalId: %s", txId.str());
+            workunit->getDebugValue("CallerId", txId);
+            if (txId.length())
+                msg.append(", CallerId: ").append(txId.str());
+            txId.set(logctx->queryLocalId());
+            if (txId.length())
+                msg.append(", LocalId: ").append(txId.str());
+            logctx->CTXLOG("%s", msg.str());
+        }
+    }
     resumed = WUActionResume == workunit->getAction();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));
     querySent = spillsSaved = false;
@@ -1317,7 +1340,6 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     sharedAllocator.setown(::createThorAllocator(globalMemoryMB, 0, 1, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
     Owned<IMPServer> mpServer = getMPServer();
     addChannel(mpServer);
-    mpJobTag = allocateMPTag();
     slavemptag = allocateMPTag();
     slaveMsgHandler = new CSlaveMessageHandler(*this, slavemptag);
     tmpHandler.setown(createTempHandler(true));
@@ -1328,7 +1350,6 @@ CJobMaster::~CJobMaster()
 {
     if (slaveMsgHandler)
         delete slaveMsgHandler;
-    freeMPTag(mpJobTag);
     freeMPTag(slavemptag);
     tmpHandler.clear();
 }
@@ -1529,7 +1550,6 @@ void CJobMaster::sendQuery()
     CriticalBlock b(sendQueryCrit);
     if (querySent) return;
     CMessageBuffer tmp;
-    tmp.append(mpJobTag);
     tmp.append(slavemptag);
     tmp.append(queryWuid());
     tmp.append(graphName);
@@ -1809,7 +1829,7 @@ void CJobMaster::pause(bool doAbort)
                 threaded.join();
             }
         // IThreaded
-            virtual void main()
+            virtual void threadmain() override
             {
                 owner.abort(exception);
             }
@@ -2076,7 +2096,7 @@ public:
         ensure();
         result->serialize(mb);
     }
-    virtual void getLinkedResult(unsigned & count, byte * * & ret)
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret) override
     {
         ensure();
         result->getLinkedResult(count, ret);
@@ -2611,8 +2631,6 @@ void CMasterGraph::getFinalProgress()
                 minNode = n;
             }
             totalDiskUsage += nodeDiskUsage;
-            Owned<ITimeReporter> slaveReport = createStdTimeReporter(msg);
-            queryJobChannel().queryTimeReporter().merge(*slaveReport);
         }
     }
     if (totalDiskUsage)
@@ -2635,40 +2653,6 @@ void CMasterGraph::done()
     {
         if (globals->getPropBool("@watchdogProgressEnabled"))
             queryJobManager().queryDeMonServer()->endGraph(this, true);
-    }
-    if (!queryOwner())
-    {
-        if (queryJobChannel().queryTimeReporter().numSections())
-        {
-            if (globals->getPropBool("@reportTimingsToWorkunit", true))
-            {
-                struct CReport : implements ITimeReportInfo
-                {
-                    Owned<IWorkUnit> wu;
-                    CGraphBase &graph;
-                    CReport(CGraphBase &_graph) : graph(_graph)
-                    {
-                        wu.setown(&graph.queryJob().queryWorkUnit().lock());
-                    }
-                    virtual void report(const char * timerScope, const char *description, const __int64 totaltime, const __int64 maxtime, const unsigned count)
-                    {
-                        StringBuffer timerStr(graph.queryJob().queryGraphName());
-                        timerStr.append("(").append(graph.queryGraphId()).append("): ");
-                        timerStr.append(description);
-
-                        StringBuffer scope;
-                        //GH-.JCS is this correct queryGraphId() is a subgraph?
-                        formatGraphTimerScope(scope, graph.queryJob().queryGraphName(), graph.queryGraphId(), 0);
-                        scope.append(":").append(timerScope);
-                        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsection, scope, StTimeElapsed, timerStr.str(), totaltime, count, maxtime, StatsMergeReplace);
-
-                    }
-                } wureport(*this);
-                queryJobChannel().queryTimeReporter().report(wureport);
-            }
-            else
-                queryJobChannel().queryTimeReporter().printTimings();
-        }
     }
 }
 
@@ -2912,8 +2896,8 @@ void ProgressInfo::getStats(IStatisticGatherer & stats)
     CThorStats::getStats(stats, true);
     stats.addStatistic(kind, tot);
     stats.addStatistic(StNumSlaves, counts.ordinality());
-    stats.addStatistic(StNumStarted, startcount);
-    stats.addStatistic(StNumStopped, stopcount);
+    stats.addStatistic(StNumStarts, startcount);
+    stats.addStatistic(StNumStops, stopcount);
 }
 
 

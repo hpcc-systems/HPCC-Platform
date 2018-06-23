@@ -175,23 +175,23 @@ ECLRTL_API int rtlVStrToInt4(const char * t);
 ECLRTL_API __int64 rtlVStrToInt8(const char * t);
 ECLRTL_API bool rtlVStrToBool(const char * t);
 
-ECLRTL_API int rtlSearchTableStringN(unsigned count, char * * table, unsigned width, const char * search);
-ECLRTL_API int rtlSearchTableVStringN(unsigned count, char * * table, const char * search);
+ECLRTL_API int rtlSearchTableStringN(unsigned count, const char * * table, unsigned width, const char * search);
+ECLRTL_API int rtlSearchTableVStringN(unsigned count, const char * * table, const char * search);
 
-ECLRTL_API int rtlNewSearchDataTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search);
-ECLRTL_API int rtlNewSearchEStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search);
-ECLRTL_API int rtlNewSearchQStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search);
-ECLRTL_API int rtlNewSearchStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search);
+ECLRTL_API int rtlNewSearchDataTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search);
+ECLRTL_API int rtlNewSearchEStringTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search);
+ECLRTL_API int rtlNewSearchQStringTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search);
+ECLRTL_API int rtlNewSearchStringTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search);
 
-ECLRTL_API int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, UChar * * table, unsigned width, const UChar * search, const char * locale);
-ECLRTL_API int rtlNewSearchVUnicodeTable(unsigned count, UChar * * table, const UChar * search, const char * locale);
-ECLRTL_API int rtlNewSearchUtf8Table(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search, const char * locale);
+ECLRTL_API int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, const UChar * * table, unsigned width, const UChar * search, const char * locale);
+ECLRTL_API int rtlNewSearchVUnicodeTable(unsigned count, const UChar * * table, const UChar * search, const char * locale);
+ECLRTL_API int rtlNewSearchUtf8Table(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search, const char * locale);
 
 
-ECLRTL_API int rtlSearchTableInteger8(unsigned count, __int64 * table, __int64 search);
-ECLRTL_API int rtlSearchTableUInteger8(unsigned count, unsigned __int64 * table, unsigned __int64 search);
-ECLRTL_API int rtlSearchTableInteger4(unsigned count, int * table, int search);
-ECLRTL_API int rtlSearchTableUInteger4(unsigned count, unsigned * table, unsigned search);
+ECLRTL_API int rtlSearchTableInteger8(unsigned count, const __int64 * table, __int64 search);
+ECLRTL_API int rtlSearchTableUInteger8(unsigned count, const unsigned __int64 * table, unsigned __int64 search);
+ECLRTL_API int rtlSearchTableInteger4(unsigned count, const int * table, int search);
+ECLRTL_API int rtlSearchTableUInteger4(unsigned count, const unsigned * table, unsigned search);
 
 ECLRTL_API int searchTableStringN(unsigned count, const char * * table, unsigned width, const char * search);
 ECLRTL_API unsigned rtlCrc32(unsigned len, const void * buffer, unsigned crc);
@@ -285,6 +285,11 @@ ECLRTL_API void rtlTrimUnicodeAll(unsigned &tlen, UChar * &tgt, unsigned slen, U
 ECLRTL_API void rtlTrimUtf8All(unsigned &tlen, char * &tgt, unsigned slen, const char * src);
 ECLRTL_API void rtlTrimVAll(unsigned &tlen, char * &tgt, const char * src); // YMA
 ECLRTL_API void rtlTrimVUnicodeAll(unsigned &tlen, UChar * &tgt, UChar const * src);
+ECLRTL_API void rtlTrimWS(unsigned &tlen, char * &tgt, unsigned slen, const char * src, bool left, bool all, bool right);
+ECLRTL_API void rtlTrimUnicodeWS(unsigned &tlen, UChar * &tgt, unsigned slen, UChar const * src, bool left, bool all, bool right);
+ECLRTL_API void rtlTrimUtf8WS(unsigned &tlen, char * &tgt, unsigned slen, const char * src, bool left, bool all, bool right);
+ECLRTL_API void rtlTrimVWS(unsigned &tlen, char * &tgt, const char * src, bool left, bool all, bool right);
+ECLRTL_API void rtlTrimVUnicodeWS(unsigned &tlen, UChar * &tgt, UChar const* src, bool left, bool all, bool right);
 ECLRTL_API unsigned rtlTrimStrLenNonBlank(size32_t l, const char * t);
 ECLRTL_API unsigned rtlTrimVStrLenNonBlank(const char * t);
 
@@ -335,6 +340,7 @@ ECLRTL_API void rtlUnicodeToData(unsigned outlen, void * out, unsigned inlen, UC
 ECLRTL_API void rtlUnicodeToVCodepage(unsigned outlen, char * out, unsigned inlen, UChar const * in, char const * codepage);
 ECLRTL_API void rtlVUnicodeToCodepage(unsigned outlen, char * out, UChar const * in, char const * codepage);
 ECLRTL_API void rtlVUnicodeToData(unsigned outlen, void * out, UChar const * in);
+ECLRTL_API void rtlVUnicodeToDataX(unsigned& outlen, void * &out, UChar const * in);
 ECLRTL_API void rtlVUnicodeToVCodepage(unsigned outlen, char * out, UChar const * in, char const * codepage);
 ECLRTL_API void rtlCodepageToUnicodeX(unsigned & outlen, UChar * & out, unsigned inlen, char const * in, char const * codepage);
 ECLRTL_API UChar * rtlCodepageToVUnicodeX(unsigned inlen, char const * in, char const * codepage);
@@ -426,7 +432,7 @@ inline unsigned __int64 rtlReadUInt8(const void * data) { return *(unsigned __in
 ECLRTL_API unsigned __int64 rtlReadUInt(const void * data, unsigned length);
 
 //MORE: Change if reverse endian, or if alignment issues.
-inline size32_t rtlReadSize32t(void * data) { return *(const size32_t *)data; }
+inline size32_t rtlReadSize32t(const void * data) { return *(const size32_t *)data; }
 
 inline void rtlWriteInt1(void * data, unsigned value) { *(unsigned char *)data = value; }
 inline void rtlWriteInt2(void * data, unsigned value) { *(unsigned short *)data = value; }
@@ -468,6 +474,12 @@ ECLRTL_API void rtlWriteSwapInt6(void * data, unsigned __int64 value);
 ECLRTL_API void rtlWriteSwapInt7(void * data, unsigned __int64 value);
 ECLRTL_API void rtlWriteSwapInt8(void * data, unsigned __int64 value);
 ECLRTL_API void rtlWriteSwapInt(void * self, __int64 val, unsigned length);
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+inline unsigned __int64 rtlReadBigUInt8(const void * data) { return rtlReadSwapUInt8(data); }
+#else
+inline unsigned __int64 rtlReadBigUInt8(const void * data) { return rtlReadUInt8(data); }
+#endif
 
 ECLRTL_API short rtlRevInt2(const void * data);
 ECLRTL_API int rtlRevInt3(const void * data);
@@ -511,8 +523,8 @@ ECLRTL_API size32_t rtlGetPackedSizeFromFirst(byte first);
 
 ECLRTL_API void rtlReleaseRow(const void * row);
 ECLRTL_API void * rtlLinkRow(const void * row);
-ECLRTL_API void rtlReleaseRowset(unsigned count, byte * * rowset);
-ECLRTL_API byte * * rtlLinkRowset(byte * * rowset);
+ECLRTL_API void rtlReleaseRowset(unsigned count, const byte * * rowset);
+ECLRTL_API const byte * * rtlLinkRowset(const byte * * rowset);
 
 ECLRTL_API void ensureRtlLoaded();      // call this to create a static link to the rtl...
 
@@ -554,9 +566,9 @@ ECLRTL_API void deserializeUnicodeX(size32_t & len, UChar * & data, MemoryBuffer
 ECLRTL_API void deserializeUtf8X(size32_t & len, char * & data, MemoryBuffer &in);
 ECLRTL_API UChar * deserializeVUnicodeX(MemoryBuffer &in);
 ECLRTL_API void deserializeQStrX(size32_t & len, char * & data, MemoryBuffer &out);
-ECLRTL_API void deserializeRowsetX(size32_t & count, byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
-ECLRTL_API void deserializeGroupedRowsetX(size32_t & count, byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
-ECLRTL_API void deserializeDictionaryX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
+ECLRTL_API void deserializeRowsetX(size32_t & count, const byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
+ECLRTL_API void deserializeGroupedRowsetX(size32_t & count, const byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
+ECLRTL_API void deserializeDictionaryX(size32_t & count, const byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
 
 ECLRTL_API byte * rtlDeserializeRow(IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, const void * src);
 ECLRTL_API byte * rtlDeserializeBufferRow(IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer & buffer);
@@ -569,10 +581,10 @@ ECLRTL_API void serializeSet(bool isAll, size32_t len, const void * data, Memory
 ECLRTL_API void serializeUnicodeX(size32_t len, const UChar * data, MemoryBuffer &out);
 ECLRTL_API void serializeUtf8X(size32_t len, const char * data, MemoryBuffer &out);
 ECLRTL_API void serializeQStrX(size32_t len, const char * data, MemoryBuffer &out);
-ECLRTL_API void serializeRowsetX(size32_t count, byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out);
-ECLRTL_API void serializeGroupedRowsetX(size32_t count, byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out);
+ECLRTL_API void serializeRowsetX(size32_t count, const  byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out);
+ECLRTL_API void serializeGroupedRowsetX(size32_t count, const byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out);
 ECLRTL_API void serializeRow(const void * row, IOutputRowSerializer * serializer, MemoryBuffer & out);
-ECLRTL_API void serializeDictionaryX(size32_t count, byte * * rows, IOutputRowSerializer * serializer, MemoryBuffer & buffer);
+ECLRTL_API void serializeDictionaryX(size32_t count, const byte * * rows, IOutputRowSerializer * serializer, MemoryBuffer & buffer);
 
 ECLRTL_API void serializeFixedString(unsigned len, const char *field, MemoryBuffer &out);
 ECLRTL_API void serializeLPString(unsigned len, const char *field, MemoryBuffer &out);
@@ -600,14 +612,21 @@ ECLRTL_API void serializeReal4(float field, MemoryBuffer &out);
 ECLRTL_API void serializeReal8(double field, MemoryBuffer &out);
 
 //These maths functions can all have out of range arguments....
-ECLRTL_API double rtlLog(double x);
-ECLRTL_API double rtlLog10(double x);
-ECLRTL_API double rtlSqrt(double x);
-ECLRTL_API double rtlACos(double x);
-ECLRTL_API double rtlASin(double x);
+ECLRTL_API double rtlLog(double x, byte dbz = DBZzero);
+ECLRTL_API double rtlLog10(double x, byte dbz = DBZzero);
+ECLRTL_API double rtlSqrt(double x, byte dbz = DBZzero);
+ECLRTL_API double rtlACos(double x, byte dbz = DBZzero);
+ECLRTL_API double rtlASin(double x, byte dbz = DBZzero);
+ECLRTL_API double rtlFMod(double numer, double denom, byte dbz = DBZzero);
+
+ECLRTL_API bool rtlFMatch(double a, double b, double epsilon);
 
 ECLRTL_API bool rtlIsValidReal(unsigned size, const void * data);
 ECLRTL_API double rtlCreateRealNull();
+ECLRTL_API double rtlCreateRealInf();
+ECLRTL_API bool rtlIsInfinite(double value);
+ECLRTL_API bool rtlIsNaN(double value);
+ECLRTL_API bool rtlIsFinite(double value);
 
 ECLRTL_API unsigned rtlQStrLength(unsigned size);
 ECLRTL_API unsigned rtlQStrSize(unsigned length);
@@ -778,7 +797,7 @@ interface IRowStream;
 
 //-----------------------------------------------------------------------------
 
-ECLRTL_API IRowStream * createRowStream(size32_t count, byte * * rowset);
+ECLRTL_API IRowStream * createRowStream(size32_t count, const byte * * rowset);
 
 //-----------------------------------------------------------------------------
 struct RtlTypeInfo;
@@ -814,7 +833,7 @@ interface IEmbedFunctionContext : extends IInterface
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator) = 0;
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator) = 0;
     virtual size32_t getTransformResult(ARowBuilder & builder) = 0;
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val) = 0;
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) = 0;
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val) = 0;
 
     virtual void bindFloatParam(const char *name, float val) = 0;
@@ -833,10 +852,11 @@ interface IEmbedServiceContext : extends IInterface
 enum EmbedFlags { EFembed = 1, EFimport = 2, EFnoreturn = 4, EFnoparams = 8 }; // For createFunctionContext flags
 
 interface ICodeContext;
+interface IThorActivityContext;
 interface IEmbedContext : extends IInterface
 {
     virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) = 0; // legacy
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options) = 0;
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext * activityCtx, unsigned flags, const char *options) = 0;
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) = 0;
     // MORE - add syntax checked here!
 };
@@ -844,5 +864,6 @@ interface IEmbedContext : extends IInterface
 typedef IEmbedContext * (* GetEmbedContextFunction)();
 
 ECLRTL_API void rtlSubstituteEmbeddedScript(size32_t &__lenResult, char * &__result, size32_t scriptChars, const char *script, size32_t outFieldsChars, const char *outFields, size32_t searchChars, const char *search);
+ECLRTL_API void rtlSubstituteActivityContext(StringBuffer &, const IThorActivityContext *ctx, size32_t scriptChars, const char *script);
 
 #endif

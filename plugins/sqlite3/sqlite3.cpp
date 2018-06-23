@@ -25,7 +25,7 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlembed.hpp"
 #include "nbcd.hpp"
 
@@ -88,7 +88,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("sqlite3: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", str(field->name));
+        msg.appendf(" for field %s", field->name);
     rtlFail(0, msg.str());
 }
 
@@ -357,8 +357,8 @@ protected:
 class SqLite3EmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    SqLite3EmbedFunctionContext(unsigned _flags, const char *options)
-    : flags(_flags), db(NULL)
+    SqLite3EmbedFunctionContext(const IThorActivityContext *_activityCtx, unsigned _flags, const char *options)
+    : activityCtx(_activityCtx), flags(_flags), db(NULL)
     {
         const char *dbname = NULL;
         StringArray opts;
@@ -458,7 +458,7 @@ public:
         RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
         return typeInfo->build(rowBuilder, 0, &dummyField, sqliteRowBuilder);
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override
     {
         UNSUPPORTED("Row parameters");  // Probably SHOULD support - see MySQL plugin
     }
@@ -541,7 +541,16 @@ public:
     }
     virtual void compileEmbeddedScript(size32_t chars, const char *script)
     {
-        size32_t len = rtlUtf8Size(chars, script);
+        StringBuffer scriptStr;
+        size32_t len;
+        if (activityCtx)
+        {
+            rtlSubstituteActivityContext(scriptStr, activityCtx, chars, script);
+            script = scriptStr.str();
+            len = scriptStr.length();
+        }
+        else
+            len = rtlUtf8Size(chars, script);
         int rc = sqlite3_prepare_v2(db, script, len, stmt.ref(), NULL);
         checkSqliteError(rc);
     }
@@ -578,24 +587,25 @@ protected:
     }
     OwnedStatement stmt;
     sqlite3 *db;
+    const IThorActivityContext *activityCtx;
     unsigned flags;
 };
 
 class SqLite3EmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) override
     {
-        return createFunctionContextEx(NULL, flags, options);
+        return createFunctionContextEx(nullptr, nullptr, flags, options);
     }
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
         if (flags & EFimport)
             UNSUPPORTED("IMPORT");
         else
-            return new SqLite3EmbedFunctionContext(flags, options);
+            return new SqLite3EmbedFunctionContext(activityCtx, flags, options);
     }
-    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         throwUnexpected();
     }

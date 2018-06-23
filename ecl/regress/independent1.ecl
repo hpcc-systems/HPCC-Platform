@@ -26,5 +26,5 @@ integer2        age := 25;
 
 namesTable := dataset('x',namesRecord,FLAT);
 
-filtered := namesTable(surname[1] in ['0','1','3']) : independent('400way');
+filtered := namesTable(surname[1] in ['0','1','3']) : independent('400way', LABEL('My Filtered code'));
 output(filtered,,'out.d00',overwrite);

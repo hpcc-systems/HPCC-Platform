@@ -558,7 +558,7 @@ public:
                         {
                             const void *lhs = defaultLeft;
                             do {
-                                gotsz = helper->transform(denormTmp, lhs, nextright, ++denormCount);
+                                gotsz = helper->transform(denormTmp, lhs, nextright, ++denormCount, JTFmatchedright); //manufactured left
                                 if (gotsz) {
                                     swapRows(denormTmp, ret);
                                     lhs = (const void *)ret.getSelf();
@@ -579,7 +579,7 @@ public:
                                 nextR();
                             }
                             while (getR()&&(0 == compareR->docompare(prevright,nextright)));
-                            gotsz = helper->transform(ret, defaultLeft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray());
+                            gotsz = helper->transform(ret, defaultLeft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray(), JTFmatchedright);
                             denormRows.kill();
                             break;
                         case TAKjoin:
@@ -588,7 +588,7 @@ public:
                         case TAKselfjoinlight:
                         case TAKlookupjoin:
                         case TAKsmartjoin:
-                            gotsz = helper->transform(ret, defaultLeft, nextright, 0);
+                            gotsz = helper->transform(ret, defaultLeft, nextright, 0, JTFmatchedright);
                             nextR();
                             break;
                         default:
@@ -608,7 +608,7 @@ public:
                         const void *lhs = defaultLeft;
                         do {
                             if (!rightgroupmatched[rightidx]) {
-                                gotsz = helper->transform(denormTmp, lhs, rightgroup.query(rightidx), ++denormCount);
+                                gotsz = helper->transform(denormTmp, lhs, rightgroup.query(rightidx), ++denormCount, JTFmatchedright); //manufactured left
                                 if (gotsz) {
                                     swapRows(denormTmp, ret);
                                     lhs = (const void *)ret.getSelf();
@@ -633,7 +633,7 @@ public:
                         while (rightidx<rightgroup.ordinality());
                         if (denormRows.ordinality())
                         {
-                            gotsz = helper->transform(ret, defaultLeft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray());
+                            gotsz = helper->transform(ret, defaultLeft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray(), JTFmatchedright);
                             denormRows.kill();
                         }
                         denormCount = 0;
@@ -645,7 +645,7 @@ public:
                     case TAKlookupjoin:
                     case TAKsmartjoin:
                         if (!rightgroupmatched[rightidx]) 
-                            gotsz = helper->transform(ret, defaultLeft, rightgroup.query(rightidx), 0);
+                            gotsz = helper->transform(ret, defaultLeft, rightgroup.query(rightidx), 0, JTFmatchedright);
                         rightidx++;
                         break;
                     default:
@@ -667,7 +667,7 @@ public:
                     case TAKhashdenormalizegroup:
                     case TAKlookupdenormalizegroup:
                     case TAKsmartdenormalizegroup:
-                        gotsz = helper->transform(ret, nextleft, defaultRight, 0, (const void **)NULL);
+                        gotsz = helper->transform(ret, nextleft, defaultRight, 0, (const void **)NULL, JTFmatchedleft);
                         break;
                     case TAKjoin:
                     case TAKhashjoin:
@@ -675,7 +675,7 @@ public:
                     case TAKselfjoinlight:
                     case TAKlookupjoin:
                     case TAKsmartjoin:
-                        gotsz = helper->transform(ret, nextleft, defaultRight, 0);
+                        gotsz = helper->transform(ret, nextleft, defaultRight, 0, JTFmatchedleft);
                         break;
                     default:
                         throwUnexpected();
@@ -700,7 +700,7 @@ public:
                     case TAKsmartdenormalizegroup:
                         if (denormRows.ordinality())
                         {
-                            gotsz = helper->transform(ret, nextleft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray());
+                            gotsz = helper->transform(ret, nextleft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray(), JTFmatchedleft|JTFmatchedright);
                             denormRows.kill();
                         }
                         break;
@@ -714,7 +714,7 @@ public:
             if (r==Onext) {
                 // JCSMORE - I can't see when this can happen? if r==Onext, l is always Oouter.
                 if (!exclude) 
-                    gotsz = helper->transform(ret,nextleft,nextright,++joinCounter);
+                    gotsz = helper->transform(ret,nextleft,nextright,++joinCounter, JTFmatchedleft|JTFmatchedright);
                 rightmatched = true;
             }
             else {
@@ -726,7 +726,7 @@ public:
                         case TAKlookupdenormalize:
                         case TAKsmartdenormalize:
                         {
-                            size32_t sz = helper->transform(ret, denormLhs, rightgroup.query(rightidx), ++denormCount);
+                            size32_t sz = helper->transform(ret, denormLhs, rightgroup.query(rightidx), ++denormCount, JTFmatchedleft|JTFmatchedright);
                             if (sz)
                             {
                                 denormLhs.setown(ret.finalizeRowClear(sz));
@@ -752,7 +752,7 @@ public:
                         case TAKselfjoinlight:
                         case TAKlookupjoin:
                         case TAKsmartjoin:
-                            gotsz = helper->transform(ret,nextleft,rightgroup.query(rightidx), ++joinCounter);
+                            gotsz = helper->transform(ret,nextleft,rightgroup.query(rightidx), ++joinCounter, JTFmatchedleft|JTFmatchedright);
                             break;
                         default:
                             throwUnexpected();
@@ -805,7 +805,7 @@ public:
                 case JSonfail:
                     do
                     {
-                        size32_t transformedSize = helper->onFailTransform(failret.ensureRow(), nextleft, defaultRight, onFailException.get());
+                        size32_t transformedSize = helper->onFailTransform(failret.ensureRow(), nextleft, defaultRight, onFailException.get(), JTFmatchedleft);
                         nextL();
                         if (!getL()||0!=compareL->docompare(nextleft,prevleft))
                             state = JScompare;
@@ -1113,7 +1113,7 @@ retry:
                 switch (state) {
                 case JSonfail:
                     if (leftidx<curgroup.ordinality()) {
-                        size32_t transformedSize = helper->onFailTransform(failret.ensureRow(), curgroup.query(leftidx), defaultRight, onFailException.get());
+                        size32_t transformedSize = helper->onFailTransform(failret.ensureRow(), curgroup.query(leftidx), defaultRight, onFailException.get(), JTFmatchedleft);
                         leftidx++;
                         if (transformedSize) {
                             if (mcoreintercept) {
@@ -1125,7 +1125,7 @@ retry:
                         break;
                     }
                     else if (getRow() && (compare->docompare(nextrow,curgroup.query(0))==0)) {
-                        size32_t transformedSize = helper->onFailTransform(failret, nextrow, defaultRight, onFailException.get());
+                        size32_t transformedSize = helper->onFailTransform(failret, nextrow, defaultRight, onFailException.get(), JTFmatchedleft);
                         next();
                         if (transformedSize) {
                             if (mcoreintercept) {
@@ -1223,7 +1223,7 @@ retry:
                                 if (keepremaining>0) {
                                     if (!exclude) {
                                         RtlDynamicRowBuilder rtmp(allocator);
-                                        size32_t sz = helper->transform(rtmp,l,r,++joinCounter);
+                                        size32_t sz = helper->transform(rtmp,l,r,++joinCounter, JTFmatchedleft|JTFmatchedright);
                                         if (sz)
                                             ret.setown(rtmp.finalizeRowClear(sz));
                                     }
@@ -1242,7 +1242,7 @@ retry:
                         else { // right all done
                             if (leftouter&&!leftmatched) {
                                 RtlDynamicRowBuilder rtmp(allocator);
-                                size32_t sz = helper->transform(rtmp, l, defaultRight, 0);
+                                size32_t sz = helper->transform(rtmp, l, defaultRight, 0, JTFmatchedleft);
                                 if (sz)
                                     ret.setown(rtmp.finalizeRowClear(sz));
                             }
@@ -1261,14 +1261,14 @@ retry:
                     // must be left outer after atmost to get here
                     if (leftidx<curgroup.ordinality()) {
                         RtlDynamicRowBuilder rtmp(allocator);
-                        size32_t sz = helper->transform(rtmp, curgroup.query(leftidx), defaultRight, 0);
+                        size32_t sz = helper->transform(rtmp, curgroup.query(leftidx), defaultRight, 0, JTFmatchedleft);
                         if (sz)
                             ret.setown(rtmp.finalizeRowClear(sz));
                         leftidx++;
                     }
                     else if (getRow() && (compare->docompare(nextrow,curgroup.query(0))==0)) {
                         RtlDynamicRowBuilder rtmp(allocator);
-                        size32_t sz = helper->transform(rtmp, nextrow, defaultRight, 0);
+                        size32_t sz = helper->transform(rtmp, nextrow, defaultRight, 0, JTFmatchedleft);
                         if (sz)
                             ret.setown(rtmp.finalizeRowClear(sz));
                         next();
@@ -1281,7 +1281,7 @@ retry:
                     if (rightouter&&(rightidx<curgroup.ordinality())) {
                         if (!rightmatched[rightidx]) {
                             RtlDynamicRowBuilder rtmp(allocator);
-                            size32_t sz = helper->transform(rtmp, defaultLeft,curgroup.query(rightidx), 0);
+                            size32_t sz = helper->transform(rtmp, defaultLeft,curgroup.query(rightidx), 0, JTFmatchedright);
                             if (sz)
                                 ret.setown(rtmp.finalizeRowClear(sz));
                         }
@@ -1542,7 +1542,7 @@ public:
                     if (rightouter)
                         rmatched[rightidx] = true;
                     RtlDynamicRowBuilder ret(theAllocator);
-                    size32_t sz = exclude?0:helper->transform(ret,work.lgroup.query(leftidx),rgroup.query(rightidx),++joinCounter);
+                    size32_t sz = exclude?0:helper->transform(ret,work.lgroup.query(leftidx),rgroup.query(rightidx),++joinCounter,JTFmatchedleft|JTFmatchedright);
                     if (sz)
                         writer.putRow(ret.finalizeRowClear(sz));
 
@@ -1550,7 +1550,7 @@ public:
             }
             if (!lmatched) {
                 RtlDynamicRowBuilder ret(theAllocator);
-                size32_t sz =  helper->transform(ret, work.lgroup.query(leftidx), defaultRight, 0);
+                size32_t sz =  helper->transform(ret, work.lgroup.query(leftidx), defaultRight, 0, JTFmatchedleft);
                 if (sz)
                     writer.putRow(ret.finalizeRowClear(sz));
             }
@@ -1559,7 +1559,7 @@ public:
             ForEachItemIn(rightidx2,rgroup) {
                 if (!rmatched[rightidx2]) {
                     RtlDynamicRowBuilder ret(theAllocator);
-                    size32_t sz =  helper->transform(ret, defaultLeft, rgroup.query(rightidx2), 0);
+                    size32_t sz =  helper->transform(ret, defaultLeft, rgroup.query(rightidx2), 0, JTFmatchedright);
                     if (sz)
                         writer.putRow(ret.finalizeRowClear(sz));
                 }

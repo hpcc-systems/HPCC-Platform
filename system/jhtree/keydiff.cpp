@@ -55,13 +55,12 @@ public:
         *fpos = 0;
     }
 
-    bool getCursorNext(IKeyCursor * keyCursor)
+    bool getCursorNext(IKeyCursor * keyCursor, KeyStatsCollector &stats)
     {
-        if(keyCursor->next(row))
+        if(keyCursor->next(row, stats))
         {
-            if(isVar)
-                thisrowsize = keyCursor->getSize();
-            *fpos = keyCursor->getFPos();
+            thisrowsize = keyCursor->getSize() - sizeof(offset_t);
+            *fpos = rtlReadBigUInt8(row + thisrowsize);
             return true;
         }
         *fpos = 0;
@@ -216,7 +215,7 @@ private:
 class CKeyReader: public CInterface
 {
 public:
-    CKeyReader(char const * filename) : count(0)
+    CKeyReader(char const * filename) : count(0), stats(nullptr)
     {
         keyFile.setown(createIFile(filename));
         keyFileIO.setown(keyFile->open(IFOread));
@@ -260,7 +259,7 @@ public:
     {
         if(eof)
             return false;
-        if(buffer.getCursorNext(keyCursor))
+        if(buffer.getCursorNext(keyCursor, stats))
         {
             buffer.tally(crc);
             count++;
@@ -283,9 +282,10 @@ public:
         char * buff = reinterpret_cast<char *>(malloc(rowsize));
         while(!eof)
         {
-            if(keyCursor->next(buff))
+            if(keyCursor->next(buff, stats))
             {
-                offset_t fpos = keyCursor->getFPos();
+                size32_t offset = keyCursor->getSize() - sizeof(offset_t);
+                offset_t fpos = rtlReadBigUInt8(buff + offset);
                 crc.tally(rowsize, buff);
                 crc.tally(sizeof(fpos), &fpos);
             }
@@ -330,6 +330,7 @@ private:
     Owned<IFileIO> keyFileIO;
     Owned<IKeyIndex> keyIndex;
     Owned<IKeyCursor> keyCursor;
+    KeyStatsCollector stats;
     CRC32 crc;
     size32_t keyedsize;
     size32_t rowsize;
@@ -417,13 +418,13 @@ public:
             flags |= HTREE_VARSIZE;
         if(quickCompressed)
             flags |= HTREE_QUICK_COMPRESSED_KEY;
-        keyBuilder.setown(createKeyBuilder(keyStream, flags, rowsize, nodeSize, keyedsize, 0)); // MORE - support for sequence other than 0...
+        keyBuilder.setown(createKeyBuilder(keyStream, flags, rowsize, nodeSize, keyedsize, 0, nullptr, false, false)); // MORE - support for sequence other than 0...
     }
 
     ~CKeyWriter()
     {
         if (keyBuilder)
-            keyBuilder->finish();
+            keyBuilder->finish(nullptr, nullptr);
     }
 
     void put(RowBuffer & buffer)

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
@@ -16,7 +17,6 @@
 ################################################################################
 -->
 
-<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
   <xs:include schemaLocation="environment.xsd"/>
   <xs:element name="RoxieCluster">
@@ -652,6 +652,20 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="httpCallerIdHeader" type="xs:string" use="optional" default="HPCC-Caller-Id">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>HTTP Header field to use for sending and receiving CallerId</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="httpGlobalIdHeader" type="xs:string" use="optional" default="HPCC-Global-Id">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>HTTP Header field to use for sending and receiving GlobalId</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="ignoreOrphans" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>
@@ -701,6 +715,20 @@
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Timeout (in ms) before low priority requests are resent to agents</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="maxHttpConnectionRequests" type="xs:nonNegativeInteger" use="optional" default="10">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Max number of query requests per persistent http connection</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="maxHttpKeepAliveWait" type="xs:nonNegativeInteger" use="optional" default="5000">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Max number of miliseconds to wait for addtional requests on a persistent http connection</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
@@ -1108,13 +1136,6 @@
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Controls the number of times Roxie server will repeat search for an idle sender when requesting new data</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="udpSendCompletedInData" type="xs:boolean" use="optional" default="false">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Controls whether UDP completion packets are sent in data packets if possible</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

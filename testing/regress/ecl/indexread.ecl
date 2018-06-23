@@ -19,7 +19,7 @@
 //version multiPart=false
 //version multiPart=true
 //version multiPart=true,useLocal=true
-//version multiPart=true,useTranslation=true,nothor
+//version multiPart=true,useTranslation=true
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
@@ -28,7 +28,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 
 //--- end of version configuration ---
 
-#option ('layoutTranslationEnabled', useTranslation);
+#option ('layoutTranslation', useTranslation);
 #onwarning (5402, ignore);
 
 import $.setup;

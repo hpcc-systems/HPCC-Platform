@@ -1,0 +1,11 @@
+[Unit]
+Description=generating configmgr configuration files and @RUNTIME_PATH@/configmgr/configmgr.cfg
+After=configmgr-conf.service
+Requires=hpcc-conf@configmgr.service
+
+[Service]
+Type=oneshot
+User=@RUNTIME_USER@
+Group=@RUNTIME_GROUP@
+ExecStartPre=/bin/mkdir -p @RUNTIME_PATH@/configmgr @LOG_PATH@/configmgr @PID_PATH@ @LOCK_PATH@/configmgr
+ExecStart=/bin/bash -c "/bin/cp @CONFIG_DIR@/configmgr/esp.xml @RUNTIME_PATH@/configmgr/esp.xml"

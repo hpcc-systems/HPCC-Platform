@@ -108,20 +108,24 @@ void BaseDatasetCursor::buildIterateMembers(BuildCtx & declarectx, BuildCtx & in
     OwnedHqlExpr row = createRow(declarectx, "row", rowName);
 
     //row = iter.first()
-    BuildCtx firstctx(declarectx);
-    firstctx.addQuotedCompoundLiteral("virtual bool first()");
-    s.clear().append(rowName).append(" = (byte *)").append(iterName).append(".first();");
-    firstctx.addQuoted(s);
-    s.clear().append("return ").append(rowName).append(" != NULL;");
-    firstctx.addQuoted(s);
+    {
+        BuildCtx firstctx(declarectx);
+        firstctx.addQuotedFunction("virtual bool first() override");
+        s.clear().append(rowName).append(" = (byte *)").append(iterName).append(".first();");
+        firstctx.addQuoted(s);
+        s.clear().append("return ").append(rowName).append(" != NULL;");
+        firstctx.addQuoted(s);
+    }
 
     //row = iter.first()
-    BuildCtx nextctx(declarectx);
-    nextctx.addQuotedCompoundLiteral("virtual bool next()");
-    s.clear().append(rowName).append(" = (byte *)").append(iterName).append(".next();");
-    nextctx.addQuoted(s);
-    s.clear().append("return ").append(rowName).append(" != NULL;");
-    nextctx.addQuoted(s);
+    {
+        BuildCtx nextctx(declarectx);
+        nextctx.addQuotedFunction("virtual bool next() override");
+        s.clear().append(rowName).append(" = (byte *)").append(iterName).append(".next();");
+        nextctx.addQuoted(s);
+        s.clear().append("return ").append(rowName).append(" != NULL;");
+        nextctx.addQuoted(s);
+    }
 
     //iterate
     translator.bindTableCursor(declarectx, ds, row);
@@ -611,7 +615,7 @@ BoundRow * InlineLinkedDatasetCursor::doBuildIterateLoop(BuildCtx & ctx, bool ne
     //row = ds;
     OwnedHqlExpr address = getPointer(boundDs.expr);            // ensure no longer a wrapped item
 
-    s.clear().append("byte * * ").append(cursorName).append(" = ");
+    s.clear().append("const byte * * ").append(cursorName).append(" = ");
     translator.generateExprCpp(s, address).append(";");
     ctx.addQuoted(s);
 
@@ -1783,7 +1787,7 @@ InlineDatasetBuilder::InlineDatasetBuilder(HqlCppTranslator & _translator, IHqlE
     StringBuffer cursorName;
     getUniqueId(cursorName.append("p"));
 
-    ITypeInfo * rowType = makeRowReferenceType(record);
+    ITypeInfo * rowType = makeNonConstantModifier(makeRowReferenceType(record));
     cursorVar.setown(createVariable(cursorName.str(), rowType));
     dataset.setown(createDataset(no_anon, LINK(record), getSelfAttr()));
     size.set(_size);
@@ -1799,7 +1803,7 @@ void InlineDatasetBuilder::buildDeclare(BuildCtx & ctx)
 
 BoundRow * InlineDatasetBuilder::buildCreateRow(BuildCtx & ctx)
 {
-    Owned<BoundRow> cursor = translator.createTableCursor(dataset, cursorVar, no_self, NULL);
+    Owned<BoundRow> cursor = translator.createTableCursor(dataset, cursorVar, false, no_self, NULL);
     ctx.associate(*cursor);
     return cursor;
 }

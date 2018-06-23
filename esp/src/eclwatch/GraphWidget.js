@@ -37,8 +37,8 @@ define([
     "dojox/xml/parser",
 
     "hpcc/_Widget",
-    "hpcc/ESPUtil",
-    "hpcc/Utility",
+    "src/ESPUtil",
+    "src/Utility",
 
     "dojo/text!../templates/GraphWidget.html",
 
@@ -75,15 +75,15 @@ define([
             var retVal = this.inherited(arguments);
             var sortSet = options && options.sort;
             if (sortSet) {
-                retVal.sort(typeof sortSet == "function" ? sortSet : function (a, b) {
+                retVal.sort(typeof sortSet === "function" ? sortSet : function (a, b) {
                     for (var sort, i = 0; sort = sortSet[i]; i++) {
                         var aValue = a[sort.attribute];
                         var bValue = b[sort.attribute];
                         // valueOf enables proper comparison of dates
                         aValue = aValue != null ? aValue.valueOf() : aValue;
                         bValue = bValue != null ? bValue.valueOf() : bValue;
-                        if (aValue != bValue) {
-                            return !!sort.descending == (bValue == null || aValue > bValue) ? -1 : 1;
+                        if (aValue !== bValue) {
+                            return !!sort.descending == (bValue == null || aValue > bValue) ? -1 : 1;   // jshint ignore:line
                         }
                     }
                     return 0;
@@ -99,7 +99,7 @@ define([
         calcColumns: function () {
             arrayUtil.forEach(this.data, function (item, idx) {
                 for (var key in item) {
-                    if (key != "id" && key.substring(0, 1) != "_") {
+                    if (key !== "id" && key.substring(0, 1) !== "_") {
                         if (!this.cacheColumns[key]) {
                             this.cacheColumns[key] = item[key].length;
                         } else if (item[key].length > this.cacheColumns[key]) {
@@ -140,7 +140,7 @@ define([
                 }
             }, this);
             for (var key in this.cacheColumns) {
-                if (skip.indexOf(key) === -1 && highPriority.indexOf(key) === -1 && lowPriority.indexOf(key) === -1 && key.substring(0, 1) != "_") {
+                if (skip.indexOf(key) === -1 && highPriority.indexOf(key) === -1 && lowPriority.indexOf(key) === -1 && key.substring(0, 1) !== "_") {
                     target.push({
                         field: key, label: key, width: this.getColumnWidth(key)
                     });
@@ -194,7 +194,7 @@ define([
                 this.add(item);
 
                 for (var key in item) {
-                    if (key != "id" && key.substring(0, 1) != "_") {
+                    if (key !== "id" && key.substring(0, 1) !== "_") {
                         if (!this.cacheColumns[key]) {
                             this.cacheColumns[key] = item[key].length;
                         } else if (item[key].length > this.cacheColumns[key]) {
@@ -560,7 +560,7 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
-                this._isPluginInstalled = dojoConfig.isPluginInstalled();
+                this._isPluginInstalled = Utility.isPluginInstalled();
                 this.createPlugin();
                 this.watchStyleChange();
                 this.watchSelect(this.zoomDropCombo);
@@ -747,14 +747,8 @@ define([
                 return this.depth.get("value");
             },
 
-            localLayout: function(callback) {
-                var context = this;
-                require(
-                  ["hpcc/viz"],
-                  function (viz) {
-                      callback(Viz(context.dot, "svg"));
-                  }
-                );
+            localLayout: function (callback) {
+                callback("Deprecated...");
             },
 
             displayProperties: function (wu, globalID, place) {
@@ -836,7 +830,7 @@ define([
                         }
 
                         for (var key in props) {
-                            if (key[0] == "_")
+                            if (key[0] === "_")
                                 continue;
                             ensureHeader();
                             tr = domConstruct.create("tr", null, table);
@@ -947,7 +941,7 @@ define([
                 var deferred = new Deferred();
                 var context = this;
                 var doCheck = function () {
-                    domNode = dom.byId(context.pluginID);
+                    var domNode = dom.byId(context.pluginID);
                     if (domNode && domNode.version) {
                         return {
                             version: domNode.version,

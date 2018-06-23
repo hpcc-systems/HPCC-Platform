@@ -73,7 +73,7 @@ define([
                         Copy: { label: this.i18n.Copy, width: 40 },
                         Ip: { label: this.i18n.IP },
                         Cluster: { label: this.i18n.Cluster, width: 108 },
-                        PartsizeInt: {
+                        PartsizeInt64: {
                             label: this.i18n.Size,
                             width: 120,
                             formatter: function (intsize, row) {

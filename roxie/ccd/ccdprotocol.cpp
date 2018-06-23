@@ -19,6 +19,8 @@
 #include "jlib.hpp"
 #include "jthread.hpp"
 
+#include "rtlcommon.hpp"
+
 #include "roxie.hpp"
 #include "roxiehelper.hpp"
 #include "ccdprotocol.hpp"
@@ -54,6 +56,8 @@ public:
         defaultXmlReadFlags = ctx.ctxGetPropBool("@defaultStripLeadingWhitespace", true) ? ptr_ignoreWhiteSpace : ptr_none;
         trapTooManyActiveQueries = ctx.ctxGetPropBool("@trapTooManyActiveQueries", true);
         numRequestArrayThreads = ctx.ctxGetPropInt("@requestArrayThreads", 5);
+        maxHttpConnectionRequests = ctx.ctxGetPropInt("@maxHttpConnectionRequests", 10);
+        maxHttpKeepAliveWait = ctx.ctxGetPropInt("@maxHttpKeepAliveWait", 5000);
     }
     IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const char *certFile=nullptr, const char *keyFile=nullptr, const char *passPhrase=nullptr)
     {
@@ -65,6 +69,8 @@ public:
     PTreeReaderOptions defaultXmlReadFlags;
     unsigned maxBlockSize;
     unsigned numRequestArrayThreads;
+    unsigned maxHttpConnectionRequests = 10;
+    unsigned maxHttpKeepAliveWait = 5000;
     bool trapTooManyActiveQueries;
 };
 
@@ -384,18 +390,18 @@ public:
     }
 
     //  interface IPooledThread
-    virtual void init(void *)
+    virtual void init(void *) override
     {
         qstart = msTick();
         time(&startTime);
     }
 
-    virtual bool canReuse()
+    virtual bool canReuse() const override
     {
         return true;
     }
 
-    virtual bool stop()
+    virtual bool stop() override
     {
         ERRLOG("RoxieQueryWorker stopped with queries active");
         return true;
@@ -1348,7 +1354,7 @@ IHpccProtocolResponse *createProtocolResponse(const char *queryname, SafeSocket 
 {
     StringAttr filter, tag;
     httpHelper.getResultFilterAndTag(filter, tag);
-    if (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW || protocolFlags & HPCC_PROTOCOL_NATIVE_ASCII)
+    if ((protocolFlags & HPCC_PROTOCOL_NATIVE_RAW) || (protocolFlags & HPCC_PROTOCOL_NATIVE_ASCII))
         return new CHpccNativeProtocolResponse(queryname, client, MarkupFmt_Unknown, protocolFlags, false, logctx, xmlReadFlags, filter, tag);
     else if (httpHelper.queryResponseMlFormat()==MarkupFmt_JSON)
         return new CHpccJsonResponse(queryname, client, protocolFlags, httpHelper.isHttp(), logctx, xmlReadFlags, filter, tag);
@@ -1557,13 +1563,13 @@ public:
     }
 
     //  interface IPooledThread
-    virtual void init(void *_r)
+    virtual void init(void *_r) override
     {
         client.setown(new CSafeSocket((ISocket *) _r));
         ProtocolQueryWorker::init(_r);
     }
 
-    virtual void main()
+    virtual void threadmain() override
     {
         doMain("");
     }
@@ -1699,6 +1705,8 @@ private:
         IpAddress peer;
         bool continuationNeeded = false;
         bool isStatus = false;
+        unsigned remainingHttpConnectionRequests = global->maxHttpConnectionRequests ? global->maxHttpConnectionRequests : 1;
+        unsigned readWait = WAIT_FOREVER;
 
         Owned<IHpccProtocolMsgContext> msgctx = sink->createMsgContext(startTime);
         IContextLogger &logctx = *msgctx->queryLogContext();
@@ -1713,7 +1721,7 @@ readAnother:
             if (client)
             {
                 client->querySocket()->getPeerAddress(peer);
-                if (!client->readBlock(rawText.clear(), WAIT_FOREVER, &httpHelper, continuationNeeded, isStatus, global->maxBlockSize))
+                if (!client->readBlock(rawText.clear(), readWait, &httpHelper, continuationNeeded, isStatus, global->maxBlockSize))
                 {
                     if (traceLevel > 8)
                     {
@@ -1743,6 +1751,13 @@ readAnother:
         }
 
         bool isHTTP = httpHelper.isHttp();
+        if (isHTTP)
+        {
+            if (httpHelper.allowKeepAlive())
+                client->setHttpKeepAlive(remainingHttpConnectionRequests > 1);
+            else
+                remainingHttpConnectionRequests = 1;
+        }
 
         TextMarkupFormat mlResponseFmt = MarkupFmt_Unknown;
         TextMarkupFormat mlRequestFmt = MarkupFmt_Unknown;
@@ -1754,6 +1769,16 @@ readAnother:
             {
                 mlResponseFmt = httpHelper.queryResponseMlFormat();
                 mlRequestFmt = httpHelper.queryRequestMlFormat();
+                const char *value = httpHelper.queryRequestHeader(logctx.queryGlobalIdHttpHeader());
+                if (!value || !*value)
+                    value = httpHelper.queryRequestHeader("HPCC-Global-Id"); //always support receiving in the HPCC form
+                if (value && *value)
+                    msgctx->setTransactionId(value, true);  //logged and forwarded through SOAPCALL/HTTPCALL
+                value = httpHelper.queryRequestHeader(logctx.queryCallerIdHttpHeader());
+                if (!value || !*value)
+                    value = httpHelper.queryRequestHeader("HPCC-Caller-Id");
+                if (value && *value)
+                    msgctx->setCallerId(value);  //only logged
             }
         }
 
@@ -1856,7 +1881,7 @@ readAnother:
                 uid = NULL;
                 sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug);
                 if (uid)
-                    msgctx->setTransactionId(uid);
+                    msgctx->setTransactionId(uid, false);
                 else
                     uid = "-";
 
@@ -2071,6 +2096,12 @@ readAnother:
                     unsigned replyLen = 0;
                     client->write(&replyLen, sizeof(replyLen));
                 }
+                if (--remainingHttpConnectionRequests > 0)
+                {
+                    readWait = global->maxHttpKeepAliveWait;
+                    goto readAnother;
+                }
+
                 client.clear();
             }
             catch (IException * E)
@@ -2120,5 +2151,10 @@ extern IHpccProtocolPlugin *loadHpccProtocolPlugin(IHpccProtocolPluginContext *c
     return global.getLink();
 }
 
+extern void unloadHpccProtocolPlugin()
+{
+    queryLimiterFactory.clear();
+    global.clear();
+}
 
 //================================================================================================================================

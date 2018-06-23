@@ -26,7 +26,6 @@ import threading
 import inspect
 
 from ..common.error import Error
-from ..common.logger import Logger
 from ..common.report import Report
 from ..regression.suite import Suite
 from ..util.ecl.cc import ECLCC
@@ -50,7 +49,11 @@ class Regression:
         self.args = args
         self.config = getConfig()
         self.suites = {}
-        self.log = Logger(args.loglevel)
+
+        # Use the existing logger instance
+        self.log = self.config.log
+        self.log.setLevel(args.loglevel)
+
         if args.timeout == '0':
             self.timeout = int(self.config.timeout);
         else:
@@ -249,7 +252,7 @@ class Regression:
                             self.taskParam[startThreadId]['jobName'] = query.getJobname()
                             self.taskParam[startThreadId]['retryCount'] = int(self.config.maxAttemptCount)
                             self.exitmutexes[startThreadId].acquire()
-                            sysThreadId = thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  startThreadId))
+                            thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  startThreadId))
                             started = True
                             break
 
@@ -370,16 +373,16 @@ class Regression:
                 if self.retryCount> 0:
                     self.timeouts[threadId] =  self.timeout
                     self.loggermutex.acquire()
-                    logging.warn("%3d. Has not started yet. Reset due to timeout after %d sec (%d retry attempt(s) remain)." % (cnt, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
+                    logging.warn("%3d. %s has not started yet. Reset due to timeout after %d sec (%d retry attempt(s) remain)." % (cnt, query.ecl, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
                     logging.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (cnt, threadId,  query.ecl,   wuid['state'],  self.retryCount),  extra={'taskId':cnt})
                     self.loggermutex.release()
                 else:
                     # retry counter exhausted, give up and abort this test case if exists
-                    logging.debug("%3d. Abort WUID:'%s'" % (cnt,  str(wuid)),  extra={'taskId':cnt})
+                    logging.debug("%3d. Abort %s WUID:'%s'" % (cnt, query.ecl, str(wuid)),  extra={'taskId':cnt})
                     abortWorkunit(wuid['wuid'])
                     query.setAborReason('Timeout and retry count exhausted!')
                     self.loggermutex.acquire()
-                    logging.error("%3d. Timeout occured and no more attempt left. Force to abort... " % (cnt),  extra={'taskId':cnt})
+                    logging.error("%3d. Timeout occured for %s and no more attempt left. Force to abort... " % (cnt, query.ecl),  extra={'taskId':cnt})
                     logging.debug("%3d. Task parameters: wuid:'%s', state:'%s', ecl:'%s'." % (cnt, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':cnt})
                     logging.debug("%3d. Waiting for abort..." % (cnt),  extra={'taskId':cnt})
                     self.loggermutex.release()
@@ -438,6 +441,11 @@ class Regression:
             suite.close()
             self.closeLogging()
 
+        except Error as e:
+            self.StopTimeoutThread()
+            suite.close()
+            raise(e)
+
         except Exception as e:
             self.StopTimeoutThread()
             suite.close()
@@ -474,7 +482,7 @@ class Regression:
                 self.timeouts[threadId] = self.timeout
             self.retryCount = int(self.config.maxAttemptCount)
             self.exitmutexes[threadId].acquire()
-            sysThreadId = thread.start_new_thread(self.runQuery, (cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
+            thread.start_new_thread(self.runQuery, (cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
             time.sleep(0.1)
             self.CheckTimeout(cnt, threadId,  eclfile)
 
@@ -570,13 +578,13 @@ class Regression:
         self.loggermutex.acquire()
         elapsTime = time.time()-startTime
         if res:
-            logging.info("%3d. Pass %s (%d sec)" % (cnt, wuid,  elapsTime),  extra={'taskId':cnt})
+            logging.info("%3d. Pass %s - %s (%d sec)" % (cnt, query.getBaseEclRealName(), wuid,  elapsTime),  extra={'taskId':cnt})
             logging.info("%3d. URL %s" % (cnt,url))
         else:
             if not wuid or not wuid.startswith("W"):
-                logging.error("%3d. Fail No WUID (%d sec)" % (cnt,  elapsTime),  extra={'taskId':cnt})
+                logging.error("%3d. Fail No WUID for %s (%d sec)" % (cnt, query.getBaseEclRealName(), elapsTime),  extra={'taskId':cnt})
             else:
-                logging.error("%3d. Fail %s (%d sec)" % (cnt, wuid,  elapsTime),  extra={'taskId':cnt})
+                logging.error("%3d. Fail %s - %s (%d sec)" % (cnt, query.getBaseEclRealName(), wuid, elapsTime),  extra={'taskId':cnt})
                 logging.error("%3d. URL %s" %  (cnt,url),  extra={'taskId':cnt})
                 zapRes = createZAP(wuid,  cnt)
                 logging.error("%3d. Zipped Analysis Package: %s" %  (cnt, zapRes),  extra={'taskId':cnt})

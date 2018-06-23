@@ -856,8 +856,8 @@ void TomRule::setProductionIds(HqlExprArray & productionMappings, unsigned & id)
 //---------------------------------------------------------------------------
 
 
-TomitaContext::TomitaContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & _options, ITimeReporter * _timeReporter) 
-: NlpParseContext(_expr, _wu, _options, _timeReporter), parser(NULL), translatorOptions(_options)
+TomitaContext::TomitaContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & _options)
+: NlpParseContext(_expr, _wu, _options), parser(NULL), translatorOptions(_options)
 {
     numTerminals = 0;
     numSymbols = 0;
@@ -1402,7 +1402,7 @@ void TomitaContext::generateLexer()
     //nested scope
     try
     {
-        RegexContext regex(expr, wu(), translatorOptions, timeReporter, NLPAregexStack);
+        RegexContext regex(expr, wu(), translatorOptions, NLPAregexStack);
 
         regex.beginLexer();
         ForEachItemIn(idx, tokens)
@@ -1425,7 +1425,7 @@ void TomitaContext::generateLexer()
     IHqlExpression * separator = expr->queryAttribute(separatorAtom);
     if (separator)
     {
-        RegexContext regex2(expr, wu(), translatorOptions, timeReporter, NLPAregexStack);
+        RegexContext regex2(expr, wu(), translatorOptions, NLPAregexStack);
 
         regex2.beginLexer();
         regex2.addLexerToken(1, separator->queryChild(0));
@@ -1954,9 +1954,9 @@ TomRule * TomitaContext::queryRule(IHqlExpression * expr, IAtom * name)
 
 //---------------------------------------------------------------------------
 
-NlpParseContext * createTomitaContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * timeReporter)
+NlpParseContext * createTomitaContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options)
 {
-    return new TomitaContext(expr, wu, options, timeReporter);
+    return new TomitaContext(expr, wu, options);
 }
 
 

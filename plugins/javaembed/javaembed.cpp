@@ -24,13 +24,13 @@
 #include "eclhelper.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 #include "jprop.hpp"
 #include "build-config.h"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
-#include "thorxmlwrite.hpp"
+#include "rtlformat.hpp"
 #include "esdl_def.hpp"
 
 #ifndef _WIN32
@@ -286,10 +286,10 @@ protected:
             if (inSet)
             {
                 VStringBuffer arraySig("[%s", sig);
-                fieldId = JNIenv->GetFieldID(Class, str(field->name), arraySig.str());
+                fieldId = JNIenv->GetFieldID(Class, field->name, arraySig.str());
             }
             else
-                fieldId = JNIenv->GetFieldID(Class, str(field->name), sig);
+                fieldId = JNIenv->GetFieldID(Class, field->name, sig);
         }
         else
         {
@@ -300,14 +300,14 @@ protected:
             checkException();
             jmethodID getDeclaredField = JNIenv->GetMethodID(classClass, "getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;" );
             checkException();
-            jstring fieldName = JNIenv->NewStringUTF(str(field->name));
+            jstring fieldName = JNIenv->NewStringUTF(field->name);
             checkException();
             jobject reflectedField = JNIenv->CallObjectMethod(Class, getDeclaredField, fieldName);
             checkException();
             fieldId = JNIenv->FromReflectedField(reflectedField);
         }
         if (!fieldId && expected)
-            throw MakeStringException(0, "javaembed: Unable to retrieve field %s of type %s", str(field->name), expected);
+            throw MakeStringException(0, "javaembed: Unable to retrieve field %s of type %s", field->name, expected);
         if (expected)
             checkException();
         else
@@ -933,7 +933,7 @@ public:
             if (!JNIenv->CallBooleanMethod(arrayClass, isArrayMethod))
             {
                 JNIenv->ExceptionClear();
-                VStringBuffer message("javaembed: Array expected for field %s", str(field->name));
+                VStringBuffer message("javaembed: Array expected for field %s", field->name);
                 rtlFail(0, message.str());
             }
             // Set up constructor etc for the child rows, so we don't do it per row
@@ -2922,7 +2922,7 @@ public:
         argsig++;
         addArg(v);
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override
     {
         if (*argsig != 'L')  // should tell us the type of the object we need to create to pass in
             typeError("RECORD");
@@ -3228,16 +3228,16 @@ protected:
 class JavaEmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) override
     {
-        return createFunctionContextEx(NULL, flags, options);
+        return createFunctionContextEx(nullptr, nullptr, flags, options);
     }
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
         assertex(flags & EFimport);
         return new JavaEmbedImportContext(queryContext(), NULL, options);
     }
-    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         Owned<JavaEmbedServiceContext> serviceContext = new JavaEmbedServiceContext(queryContext(), service, options);
         serviceContext->init();

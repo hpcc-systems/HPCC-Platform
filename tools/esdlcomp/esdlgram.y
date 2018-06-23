@@ -188,7 +188,60 @@ EspServiceStart
  : ESPSERVICE EspMetaData ID
  {
     CurService=new EspServInfo($3.getName());
-    CurService->tags = getClearCurMetaTags();
+    if (CurService)
+    {
+        CurService->tags = getClearCurMetaTags();
+
+        StringBuffer minPingVer;
+        for (MetaTagInfo* t = CurService->tags; t!=NULL; t = t->next)
+        {
+            if (streq("ping_min_ver",t->getName()))
+            {
+                minPingVer.set(t->getString());
+                break;
+            }
+        }
+
+        VStringBuffer reqname("%sPingRequest", $3.getName());
+        CurEspMessage = new EspMessageInfo(reqname.str(), EspMessageInfo::espm_request);
+
+        if(minPingVer.length()!=0)
+        {
+            CurMetaTags = NULL;
+            AddMetaTag(new MetaTagInfo("min_ver", minPingVer.str()));
+            CurEspMessage->tags = getClearCurMetaTags();
+         }
+
+        AddEspMessage();
+        CurEspMessage=NULL;
+
+        VStringBuffer respname("%sPingResponse", $3.getName());
+        CurEspMessage = new EspMessageInfo(respname.str(), EspMessageInfo::espm_response);
+
+        if(minPingVer.length()!=0)
+        {
+            CurMetaTags = NULL;
+            AddMetaTag(new MetaTagInfo("min_ver", minPingVer.str()));
+            CurEspMessage->tags = getClearCurMetaTags();
+         }
+
+        AddEspMessage();
+
+        EspMethodInfo *method=new EspMethodInfo("Ping", reqname.str(), respname.str());
+
+        if(minPingVer.length()!=0)
+        {
+            CurMetaTags = NULL;
+            AddMetaTag(new MetaTagInfo("min_ver", minPingVer.str()));
+            method->tags = getClearCurMetaTags();
+         }
+
+        method->next=CurService->methods;
+        CurService->methods=method;
+
+        CurMetaTags   = NULL;
+        CurEspMessage = NULL;
+    }
  }
  ;
 

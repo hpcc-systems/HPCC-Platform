@@ -32,7 +32,7 @@ example::
   EXPORT Bundle := MODULE(Std.BundleBase)
     EXPORT Name := 'Bloom';
     EXPORT Description := 'Bloom filter implementation, and example of ECL bundle layout';
-    EXPORT Authors := ['Richard Chapman','Charles Kaminsky'];
+    EXPORT Authors := ['Richard Chapman','Charles Kaminski'];
     EXPORT License := 'http://www.apache.org/licenses/LICENSE-2.0';
     EXPORT Copyright := 'Copyright (C) 2013 HPCC Systems®';
     EXPORT DependsOn := [];

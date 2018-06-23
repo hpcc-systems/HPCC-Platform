@@ -15,6 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning (2304, ignore);
+
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 //noRoxie
 
 vstring(integer i) := TYPE
@@ -61,9 +65,9 @@ d1 := dataset([
     {'id2', '20030910', 3, x'313233'}, 
     {'id2', '20030905', 3, x'333231'}], 
     rawLayout);
-output(d1,,'~REGRESS::imgfile', overwrite);
+output(d1,,prefix + 'imgfile', overwrite);
 
-d := dataset('~REGRESS::imgfile', rawLayout1, FLAT);
+d := dataset(prefix + 'imgfile', rawLayout1, FLAT, virtual(legacy));
 i := index(d, keylayout, 'imgindex');
 
 rawtrim := table(d, { dl, date, unsigned2 seq:=0, unsigned2 num := 0, imgLength, _fpos});

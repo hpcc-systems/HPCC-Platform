@@ -76,9 +76,14 @@
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
                 </div>
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
-                    <h2>
-                        <img id="${id}ProtectedImage" src="${dojoConfig.urlInfo.resourcePath}/img/locked.png" />&nbsp;<div id="${id}StateIdImage" class="iconWorkunit" ></div>&nbsp;<span id="${id}Wuid" class="bold">${i18n.WUID}</span>
-                    </h2>
+                    <div style="display:inline-block">
+                        <h2>
+                            <img id="${id}ProtectedImage" src="${dojoConfig.urlInfo.resourcePath}/img/locked.png" />&nbsp;<div id="${id}StateIdImage" class="iconWorkunit" ></div>&nbsp;<span id="${id}Wuid" class="bold">${i18n.WUID}</span>
+                            <button id="${id}ClippyButton" class="clippy" data-clipboard-target="#${id}Wuid"><img src="${dojoConfig.urlInfo.resourcePath}/img/clippy.png" alt="${i18n.CopyToClipboard}"></button>
+                        </h2>
+                    </div>
+                    <div id="${id}WUStatus" style="width:512px;height:64px;float:right">
+                    </div>
                     <form id="${id}SummaryForm">
                         <ul>
                             <li>
@@ -128,9 +133,9 @@
                             </li>
                         </ul>
                     </form>
-                </div>
-                <div id="${id}InfoContainer" class="wrap" style="height: 33%" data-dojo-props="region: 'bottom', splitter: true, minSize: 120, showToolbar: true" data-dojo-type="InfoGridWidget">
-                </div>
+            </div>
+            <div id="${id}InfoContainer" class="wrap" style="height: 33%" data-dojo-props="region: 'bottom', splitter: true, minSize: 120, showToolbar: true" data-dojo-type="InfoGridWidget">
+            </div>
             </div>
             <div id="${id}_Variables" title="${i18n.Variables}" data-dojo-props="delayWidget: 'VariablesWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>

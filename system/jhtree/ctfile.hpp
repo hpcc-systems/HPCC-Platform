@@ -96,6 +96,8 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     short unused[2]; /* unused ecx */
     __int64 blobHead; /* fpos of first blob node f0x */
     __int64 metadataHead; /* fpos of first metadata node f8x */
+    __int64 bloomHead; /* fpos of bloom table data, if present 100x */
+    __uint64 partitionFieldMask; /* Bitmap indicating partition keyed fields */
 };
 
 //#pragma pack(1)
@@ -150,6 +152,23 @@ public:
     inline KeyHdr *getHdrStruct() { return &hdr; }
     inline static size32_t getSize() { return sizeof(KeyHdr); }
     inline unsigned getNodeSize() { return hdr.nodeSize; }
+    inline bool hasSpecialFileposition() const { return true; }
+    inline bool isRowCompressed() const { return (hdr.ktype & HTREE_QUICK_COMPRESSED_KEY) == HTREE_QUICK_COMPRESSED_KEY; }
+    __uint64 getPartitionFieldMask()
+    {
+        if (hdr.partitionFieldMask == (__uint64) -1)
+            return 0;
+        else
+            return hdr.partitionFieldMask;
+    }
+    unsigned numPartitions()
+    {
+        if (hdr.ktype & HTREE_TOPLEVEL_KEY)
+            return (unsigned) hdr.nument-1;
+        else
+            return 0;
+    }
+
 };
 
 class jhtree_decl CNodeBase : public CInterface
@@ -169,6 +188,7 @@ public:
     inline size32_t getNumKeys() const { return hdr.numKeys; }
     inline bool isBlob() const { return hdr.leafFlag == 2; }
     inline bool isMetadata() const { return hdr.leafFlag == 3; }
+    inline bool isBloom() const { return hdr.leafFlag == 4; }
     inline bool isLeaf() const { return hdr.leafFlag != 0; }
 
 public:
@@ -186,11 +206,8 @@ protected:
     void unpack(const void *node, bool needCopy);
     unsigned __int64 firstSequence;
     size32_t expandedSize;
-    Owned<IRandRowExpander> rowexp;  // expander for rand rowdiff   
 
-    static char *expandKeys(void *src,unsigned keylength,size32_t &retsize, bool rowcompression);
-    static IRandRowExpander *expandQuickKeys(void *src, bool needCopy);
-
+    static char *expandKeys(void *src,unsigned keylength,size32_t &retsize);
     static void releaseMem(void *togo, size32_t size);
     static void *allocMem(size32_t size);
 
@@ -204,6 +221,8 @@ public:
     offset_t prevNodeFpos() const;
     offset_t nextNodeFpos() const ;
     virtual bool getValueAt(unsigned int num, char *key) const;
+    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const;
+    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const;
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
@@ -211,8 +230,6 @@ public:
     inline offset_t getRightSib() const { return hdr.rightSib; }
     inline offset_t getLeftSib() const { return hdr.leftSib; }
     unsigned __int64 getSequence(unsigned int num) const;
-
-    virtual void dump();
 };
 
 class CJHVarTreeNode : public CJHTreeNode 
@@ -224,10 +241,24 @@ public:
     ~CJHVarTreeNode();
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
     virtual bool getValueAt(unsigned int num, char *key) const;
+    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const;
+    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const;
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
-    virtual void dump();
+};
+
+class CJHRowCompressedNode : public CJHTreeNode
+{
+    Owned<IRandRowExpander> rowexp;  // expander for rand rowdiff
+    static IRandRowExpander *expandQuickKeys(void *src, bool needCopy);
+public:
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
+    virtual bool getValueAt(unsigned int num, char *key) const;
+    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const;
+    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const;
+    virtual offset_t getFPosAt(unsigned int num) const;
+    virtual int compareValueAt(const char *src, unsigned int index) const;
 };
 
 class CJHTreeBlobNode : public CJHTreeNode
@@ -236,6 +267,8 @@ public:
     CJHTreeBlobNode ();
     ~CJHTreeBlobNode ();
     virtual bool getValueAt(unsigned int num, char *key) const {throwUnexpected();}
+    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
+    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
     virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
     virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
@@ -249,11 +282,30 @@ class CJHTreeMetadataNode : public CJHTreeNode
 {
 public:
     virtual bool getValueAt(unsigned int num, char *key) const {throwUnexpected();}
+    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
+    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
     virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
     virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
     virtual void dump() {throwUnexpected();}
     void get(StringBuffer & out);
+};
+
+class CJHTreeBloomTableNode : public CJHTreeNode
+{
+public:
+    virtual bool getValueAt(unsigned int num, char *key) const {throwUnexpected();}
+    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
+    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
+    virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
+    virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
+    virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
+    virtual void dump() {throwUnexpected();}
+    void get(MemoryBuffer & out);
+    __int64 get8();
+    unsigned get4();
+private:
+    unsigned read = 0;
 };
 
 class jhtree_decl CNodeHeader : public CNodeBase
@@ -317,6 +369,15 @@ class jhtree_decl CMetadataWriteNode : public CWriteNodeBase
 public:
     CMetadataWriteNode(offset_t _fpos, CKeyHdr *keyHdr);
     size32_t set(const char * &data, size32_t &size);
+};
+
+class jhtree_decl CBloomFilterWriteNode : public CWriteNodeBase
+{
+public:
+    CBloomFilterWriteNode(offset_t _fpos, CKeyHdr *keyHdr);
+    size32_t set(const byte * &data, size32_t &size);
+    void put4(unsigned val);
+    void put8(__int64 val);
 };
 
 enum KeyExceptionCodes

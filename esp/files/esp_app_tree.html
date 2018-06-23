@@ -360,6 +360,20 @@ function writeESPappname(appname)
         YAHOO.util.Connect.asyncRequest('GET', sUrl, callback);
       }
 
+      var logout = function()
+      {
+        var logoutRequest = new XMLHttpRequest();
+        logoutRequest.onreadystatechange = function()
+        { 
+          if (logoutRequest.readyState == 4 && logoutRequest.status == 200)
+            parent.location = '/esp/files/Login.html';
+          else
+            console.log("Logout failed: " + logoutRequest.status);
+        }
+        logoutRequest.open( "GET", 'esp/logout', true );            
+        logoutRequest.send( null );
+      }
+
             var copy_url = function()
                 {
                     var inner = parent.frames['main'].location;
@@ -444,6 +458,10 @@ function writeESPappname(appname)
                                     { text: "Refresh", onclick: { fn: refresh_main }}
                                 ]
                         ] }
+                    },
+                    {
+                        text: "<b>Log Out</b>",
+                        onclick: { fn: logout }
                     }
                 ];
 

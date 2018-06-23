@@ -46,7 +46,8 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
 {
     switch (kind)
     {
-    case TAKdiskwrite: 
+    case TAKdiskwrite:
+    case TAKspillwrite:
         return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorDiskWriteArg &)arg, kind);
     case TAKsort: 
         return createGroupSortActivity(agent, activityId, subgraphId, (IHThorSortArg &)arg, kind);
@@ -231,6 +232,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKchildthroughnormalize:
         return createChildThroughNormalizeActivity(agent, activityId, subgraphId, (IHThorChildThroughNormalizeArg &)arg, kind);
     case TAKdiskread:
+    case TAKspillread:
         return createDiskReadActivity(agent, activityId, subgraphId, (IHThorDiskReadArg &)arg, kind);
     case TAKdisknormalize:
         return createDiskNormalizeActivity(agent, activityId, subgraphId, (IHThorDiskNormalizeArg &)arg, kind);
@@ -377,6 +379,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
     case TAKcsvwrite:
     case TAKxmlwrite:
     case TAKjsonwrite:
+    case TAKspillwrite:
         {
             IHThorDiskWriteArg * helper = static_cast<IHThorDiskWriteArg *>(arg.get());
             filename.set(helper->getFileName());
@@ -585,6 +588,7 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
         case TAKcsvwrite:
         case TAKxmlwrite:
         case TAKjsonwrite:
+        case TAKspillwrite:
             alreadyUpdated = alreadyUpToDate(agent);
             if (alreadyUpdated)
                 return false;
@@ -722,9 +726,15 @@ void EclGraphElement::updateProgress(IStatisticGatherer &progress)
         return;
     }
     if(isSink && activity)
-    {
         activity->updateProgress(progress);
-    }
+}
+
+void EclGraphElement::ready()
+{
+    if (!activity)
+        throw makeHThorException(kind, id, subgraph->id, 99, "Attempt to execute an activity that has not been created");
+    if (!alreadyUpdated)
+        activity->ready();
 }
 
 IHThorException * EclGraphElement::makeWrappedException(IException * e)
@@ -735,7 +745,7 @@ IHThorException * EclGraphElement::makeWrappedException(IException * e)
 //---------------------------------------------------------------------------
 
 EclSubGraph::EclSubGraph(IAgentContext & _agent, EclGraph & _parent, EclSubGraph * _owner, unsigned _seqNo, bool enableProbe, CHThorDebugContext * _debugContext, IProbeManager * _probeManager)
-    : parent(_parent), owner(_owner), seqNo(_seqNo), probeEnabled(enableProbe), debugContext(_debugContext), probeManager(_probeManager)
+    : parent(_parent), owner(_owner), seqNo(_seqNo), probeEnabled(enableProbe), debugContext(_debugContext), probeManager(_probeManager), isLoopBody(false)
 {
     executed = false;
     created = false;
@@ -760,10 +770,10 @@ void EclSubGraph::createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IProp
     bool multiInstance = node->getPropBool("@multiInstance");
     if (multiInstance)
         agent = &subgraphAgentContext;
-
     isSink = xgmml->getPropBool("att[@name=\"rootGraph\"]/@value", false);
     parentActivityId = node->getPropInt("att[@name=\"_parentActivity\"]/@value", 0);
     numResults = xgmml->getPropInt("att[@name=\"_numResults\"]/@value", 0);
+    isLoopBody = xgmml->getPropBool("@loopBody",false);
     if (multiInstance || numResults)
     {
         localResults.setown(new GraphResults(numResults));
@@ -803,6 +813,9 @@ void EclSubGraph::createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IProp
     ForEach(*iter2)
     {
         IPropertyTree &edge = iter2->query();
+
+        if (edge.getPropBool("att[@name=\"_childGraph\"]/@value", false))
+            continue;
 
         unsigned sourceId = edge.getPropInt("@source");
         unsigned targetId = edge.getPropInt("@target");
@@ -853,17 +866,36 @@ void EclSubGraph::updateProgress()
 {
     if (!isChildGraph && agent->queryRemoteWorkunit())
     {
-        Owned<IWUGraphStats> progress = parent.updateStats(queryStatisticsComponentType(), queryStatisticsComponentName(), id);
+        Owned<IWUGraphStats> progress = parent.updateStats(queryStatisticsComponentType(), queryStatisticsComponentName(), agent->getWorkflowId(), id);
         IStatisticGatherer & stats = progress->queryStatsBuilder();
         updateProgress(stats);
+
+        if (startGraphTime || elapsedGraphCycles)
+        {
+            WorkunitUpdate lockedwu(agent->updateWorkUnit());
+            StringBuffer subgraphid;
+            subgraphid.append(parent.queryGraphName()).append(":").append(SubGraphScopePrefix).append(id);
+            if (startGraphTime)
+                parent.updateWUStatistic(lockedwu, SSTsubgraph, subgraphid, StWhenStarted, nullptr, startGraphTime);
+            if (elapsedGraphCycles)
+                parent.updateWUStatistic(lockedwu, SSTsubgraph, subgraphid, StTimeElapsed, nullptr, cycle_to_nanosec(elapsedGraphCycles));
+        }
     }
 }
 
 void EclSubGraph::updateProgress(IStatisticGatherer &progress)
 {
-    StatsSubgraphScope subgraph(progress, id);
+    OwnedPtr<StatsScopeBlock> subGraph;
+    OwnedPtr<StatsScopeBlock> activityScope;
+    if ((isChildGraph || isLoopBody) && owner && parentActivityId != owner->parentActivityId)
+    {
+        activityScope.setown(new StatsActivityScope(progress, parentActivityId));
+        subGraph.setown(new StatsChildGraphScope(progress, id));
+    }
+    else
+        subGraph.setown(new StatsSubgraphScope(progress, id));
     if (startGraphTime)
-        progress.addStatistic(StWhenGraphStarted, startGraphTime);
+        progress.addStatistic(StWhenStarted, startGraphTime);
     if (elapsedGraphCycles)
         progress.addStatistic(StTimeElapsed, cycle_to_nanosec(elapsedGraphCycles));
     ForEachItemIn(idx, elements)
@@ -1039,13 +1071,13 @@ IHThorGraphResult * EclSubGraph::createGraphLoopResult(IEngineRowAllocator * own
     return graphLoopResults->createResult(ownedRowsetAllocator);
 }
 
-void EclSubGraph::getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+void EclSubGraph::getLinkedResult(unsigned & count, const byte * * & ret, unsigned id)
 {
     localResults->queryResult(id)->getLinkedResult(count, ret);
 }
 
 
-void EclSubGraph::getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+void EclSubGraph::getDictionaryResult(unsigned & count, const byte * * & ret, unsigned id)
 {
     localResults->queryResult(id)->getLinkedResult(count, ret);
 }
@@ -1170,6 +1202,11 @@ void EclGraph::execute(const byte * parentExtract)
     if (agent->queryRemoteWorkunit())
         wu->setGraphState(queryGraphName(), WUGraphRunning);
 
+    {
+        Owned<IWorkUnit> wu(agent->updateWorkUnit());
+        addTimeStamp(wu, SSTgraph, queryGraphName(), StWhenStarted, agent->getWorkflowId());
+    }
+
     try
     {
         unsigned startTime = msTick();
@@ -1189,15 +1226,8 @@ void EclGraph::execute(const byte * parentExtract)
             StringBuffer description;
             formatGraphTimerLabel(description, queryGraphName(), 0, 0);
 
-            unsigned __int64 totalTimeNs = 0;
-            unsigned __int64 totalThisTimeNs = 0;
             unsigned __int64 elapsedNs = milliToNano(elapsed);
-            const char *totalTimeStr = "Total cluster time";
-            getWorkunitTotalTime(wu, "hthor", totalTimeNs, totalThisTimeNs);
-
-            updateWorkunitTimeStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs);
-            updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedNs);
-            wu->setStatistic(SCTsummary, "hthor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedNs, 1, 0, StatsMergeReplace);
+            updateWorkunitStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs, agent->getWorkflowId());
         }
 
         if (agent->queryRemoteWorkunit())
@@ -1265,7 +1295,7 @@ void EclGraph::updateLibraryProgress()
     ForEachItemIn(idx, graphs)
     {
         EclSubGraph & cur = graphs.item(idx);
-        Owned<IWUGraphStats> progress = wu->updateStats(queryGraphName(), queryStatisticsComponentType(), queryStatisticsComponentName(), cur.id);
+        Owned<IWUGraphStats> progress = wu->updateStats(queryGraphName(), queryStatisticsComponentType(), queryStatisticsComponentName(), agent->getWorkflowId(), cur.id);
         cur.updateProgress(progress->queryStatsBuilder());
     }
 }
@@ -1290,7 +1320,7 @@ const void * UninitializedGraphResult::queryRow(unsigned whichRow)
     throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
 }
 
-void UninitializedGraphResult::getLinkedResult(unsigned & count, byte * * & ret)
+void UninitializedGraphResult::getLinkedResult(unsigned & count, const byte * * & ret)
 {
     throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
 }
@@ -1324,16 +1354,16 @@ const void * GraphResult::queryRow(unsigned whichRow)
     return NULL;
 }
 
-void GraphResult::getLinkedResult(unsigned & count, byte * * & ret)
+void GraphResult::getLinkedResult(unsigned & count, const byte * * & ret)
 {
     unsigned max = rows.ordinality();
-    byte * * rowset = rowsetAllocator->createRowset(max);
+    const byte * * rowset = rowsetAllocator->createRowset(max);
     unsigned i;
     for (i = 0; i < max; i++)
     {
         const void * next = rows.item(i);
         if (next) LinkRoxieRow(next);
-        rowset[i] = (byte *)next;
+        rowset[i] = (const byte *)next;
     }
 
     count = max;
@@ -1406,9 +1436,14 @@ void GraphResults::setResult(unsigned id, IHThorGraphResult * result)
 
 //---------------------------------------------------------------------------
 
-IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const char * creator, unsigned subgraph)
+IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph)
 {
-    return wu->updateStats (queryGraphName(), creatorType, creator, subgraph);
+    return wu->updateStats (queryGraphName(), creatorType, creator, wfid, subgraph);
+}
+
+void EclGraph::updateWUStatistic(IWorkUnit *lockedwu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * descr, unsigned __int64 value)
+{
+    updateWorkunitStat(lockedwu, scopeType, scope, kind, descr, value, agent->getWorkflowId());
 }
 
 IThorChildGraph * EclGraph::resolveChildQuery(unsigned subgraphId)

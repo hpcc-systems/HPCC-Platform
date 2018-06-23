@@ -30,9 +30,122 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SetLoggingResponse
     string Message;
 };
 
-ESPservice [auth_feature("NONE"), version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
+ESPStruct [nil_remove] Session
+{
+    string ID;
+    string UserID;
+    string NetworkAddress;
+    string CreateTime;
+    string LastAccessed;
+    string TimeoutAt;
+    int    Port;
+    bool   TimeoutByAdmin;
+};
+
+ESPrequest [nil_remove] SessionQueryRequest
+{
+    string FromIP;
+    string UserID;
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SessionQueryResponse
+{
+    ESParray<ESPstruct Session> Sessions;
+};
+
+ESPrequest [nil_remove] SessionInfoRequest
+{
+    int    Port;
+    string ID;
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SessionInfoResponse
+{
+    ESPstruct Session Session;
+};
+
+ESPrequest [nil_remove] CleanSessionRequest
+{
+    string ID;
+    string UserID;
+    string FromIP;
+    bool   AllSessions(false);
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] CleanSessionResponse
+{
+    int Status;
+    string Message;
+};
+
+ESPrequest [nil_remove] SetSessionTimeoutRequest
+{
+    string ID;
+    string UserID;
+    string FromIP;
+    int    TimeoutMinutes;
+    bool   AllSessions(false);
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SetSessionTimeoutResponse
+{
+    int Status;
+    string Message;
+};
+
+ESPrequest [nil_remove] DisableDaliSubscriptionsRequest
+{
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DisableDaliSubscriptionsResponse
+{
+    int Status;
+    string Message;
+};
+
+ESPrequest [nil_remove] EnableDaliSubscriptionsRequest
+{
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] EnableDaliSubscriptionsResponse
+{
+    int Status;
+    string Message;
+};
+
+ESPrequest [nil_remove] DetachFromDaliRequest
+{
+    bool Force(false);
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DetachFromDaliResponse
+{
+    int Status;
+    string Message;
+    bool Forced;
+};
+
+ESPrequest [nil_remove] AttachToDaliRequest
+{
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] AttachToDaliResponse
+{
+    int Status;
+    string Message;
+};
+
+ESPservice [auth_feature("NONE"), version("1.02"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
 {
     ESPmethod SetLogging(SetLoggingRequest, SetLoggingResponse);
+    ESPmethod [min_ver("1.01")] SessionQuery(SessionQueryRequest, SessionQueryResponse);
+    ESPmethod [min_ver("1.01")] SessionInfo(SessionInfoRequest, SessionInfoResponse);
+    ESPmethod [min_ver("1.01")] CleanSession(CleanSessionRequest, CleanSessionResponse);
+    ESPmethod [min_ver("1.01")] SetSessionTimeout(SetSessionTimeoutRequest, SetSessionTimeoutResponse);
+    ESPmethod [min_ver("1.02")] DisableDaliSubscriptions(DisableDaliSubscriptionsRequest, DisableDaliSubscriptionsResponse);
+    ESPmethod [min_ver("1.02")] EnableDaliSubscriptions(EnableDaliSubscriptionsRequest, EnableDaliSubscriptionsResponse);
+    ESPmethod [min_ver("1.02")] DetachFromDali(DetachFromDaliRequest, DetachFromDaliResponse);
+    ESPmethod [min_ver("1.02")] AttachToDali(AttachToDaliRequest, AttachToDaliResponse);
 };
 
 SCMexportdef(WSESPControl);

@@ -87,6 +87,8 @@
                 logQueueLen="512"
                 lowTimeout="10000"
                 maxBlockSize="10000000"
+                maxHttpConnectionRequests="10"
+                maxHttpKeepAliveWait="5000"
                 maxLocalFilesOpen="4000"
                 maxLockAttempts="5"
                 maxRemoteFilesOpen="1000"
@@ -369,6 +371,11 @@
                          resource="FileIOAccess"
                          service="ws_fileio"/>
     <AuthenticateFeature authenticate="Yes"
+                         description="Access to package map"
+                         path="PackageMapAccess"
+                         resource="PackageMapAccess"
+                         service="ws_packageprocess"/>
+    <AuthenticateFeature authenticate="Yes"
                          description="Access to permissions for file scopes"
                          path="FileScopeAccess"
                          resource="FileScopeAccess"
@@ -394,15 +401,14 @@
                          resource="OthersWorkunitsAccess"
                          service="ws_workunits"/>
     <AuthenticateFeature authenticate="Yes"
-                         description="Access to ECL direct service"
-                         path="EclDirectAccess"
-                         resource="EclDirectAccess"
-                         service="ecldirect"/>
-    <AuthenticateFeature authenticate="Yes"
                          description="Access to ESDL configuration service"
                          path="ESDLConfigAccess"
                          resource="ESDLConfigAccess"
                          service="ws_esdlconfig"/>
+    <AuthenticateFeature description="Access to ELK integration service"
+                         path="WsELKAccess"
+                         resource="WsELKAccess"
+                         service="ws_elk"/>
     <Authenticate access="Read"
                   description="Root access to SMC service"
                   path="/"
@@ -430,6 +436,58 @@
                   required="Read"
                   resource="WsEclAccess"/>
    </EspBinding>
+   @WSSQL_SERVICE_BLOCK_S@
+   <EspBinding defaultForPort="true"
+               defaultServiceVersion=""
+               name="myws_sqlbinding"
+               port="8510"
+               protocol="http"
+               resourcesBasedn="ou=WsSql,ou=EspServices,ou=ecl"
+               service="ws_sql"
+               type=""
+               workunitsBasedn="ou=workunits,ou=ecl"
+               wsdlServiceAddress="">
+    <Authenticate access="Read"
+                  description="Root access to WS SQL service"
+                  path="/"
+                  required="Read"
+                  resource="WsSqlAccess"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to WS SQL service"
+                         path="WsSQLAccess"
+                         resource="WsSqlAccess"
+                         service="ws_sql"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to own workunits"
+                         path="OwnWorkunitsAccess"
+                         resource="OwnWorkunitsAccess"
+                         service="ws_sql"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to others&apos; workunits"
+                         path="OthersWorkunitsAccess"
+                         resource="OthersWorkunitsAccess"
+                         service="ws_sql"/>
+   </EspBinding>
+   @WSSQL_SERVICE_BLOCK_E@
+   <EspControlBinding defaultForPort="true"
+               defaultServiceVersion=""
+               name="espcontrol"
+               protocol="http"
+               resourcesBasedn="ou=WsEspControl,ou=EspServices,ou=ecl"
+               service="espcontrol"
+               type=""
+               wsdlServiceAddress="">
+    <Authenticate access="Read"
+               description="Root access to WS Esp Control service"
+               path="/"
+               required="Read"
+               resource="WsEspControlAccess"/>
+    <AuthenticateFeature authenticate="Yes"
+               description="Access to WS Esp Control service"
+               path="WsEspControlAccess"
+               resource="WsEspControlAccess"
+               service="espcontrol"/>
+   </EspControlBinding>
   </EspProcess>
   <Directories name="${DIR_NAME}">
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/log/[NAME]/[INST]" name="log"/>
@@ -609,6 +667,10 @@
                          path="FileIOAccess"
                          resource="FileIOAccess"
                          service="ws_fileio"/>
+    <AuthenticateFeature description="Access to package map"
+                         path="PackageMapAccess"
+                         resource="PackageMapAccess"
+                         service="ws_packageprocess"/>
     <AuthenticateFeature description="Access to permissions for file scopes"
                          path="FileScopeAccess"
                          resource="FileScopeAccess"
@@ -629,10 +691,6 @@
                          path="OthersWorkunitsAccess"
                          resource="OthersWorkunitsAccess"
                          service="ws_workunits"/>
-    <AuthenticateFeature description="Access to ECL direct service"
-                         path="EclDirectAccess"
-                         resource="EclDirectAccess"
-                         service="ecldirect"/>
     <AuthenticateFeature description="Access to ESDL configuration service"
                          path="ESDLConfigAccess"
                          resource="ESDLConfigAccess"
@@ -694,6 +752,38 @@
                   resource="WsEclAccess"/>
    </Properties>
   </EspService>
+  @WSSQL_SERVICE_BLOCK_S@
+  <EspService build="_"
+              buildSet="ws_sql"
+              description="myws_sql"
+              name="ws_sql">
+   <Properties bindingType="ws_sqlSoapBinding"
+               defaultPort="8510"
+               defaultResourcesBasedn="ou=WsSql,ou=EspServices,ou=ecl"
+               defaultSecurePort="18510"
+               plugin="ws_sql"
+               type="ws_sql">
+    <Authenticate access="Read"
+                  description="Root access to WS SQL service"
+                  path="/"
+                  required="Read"
+                  resource="WsSqlAccess"/>
+    <AuthenticateFeature description="Access to WS SQL service"
+                         path="WsSQLAccess"
+                         resource="WsSqlAccess"
+                         service="ws_sql"/>
+    <AuthenticateFeature description="Access to own workunits"
+                         path="OwnWorkunitsAccess"
+                         resource="OwnWorkunitsAccess"
+                         service="ws_sql"/>
+    <AuthenticateFeature description="Access to others&apos; workunits"
+                         path="OthersWorkunitsAccess"
+                         resource="OthersWorkunitsAccess"
+                         service="ws_sql"/>
+   </Properties>
+  </EspService>
+  @WSSQL_SERVICE_BLOCK_E@
+  
   <DafilesrvProcess build="_"
                     buildSet="dafilesrv"
                     description="DaFileSrv process"
@@ -724,7 +814,7 @@
                heapUseHugePages="false"
                heapUseTransparentHugePages="true"
                localThor="true"
-               localThorPortInc="200"
+               localThorPortInc="20"
                masterport="20000"
                monitorDaliFileServer="true"
                name="mythor"
@@ -904,6 +994,10 @@
                           path="FileIOAccess"
                           resource="FileIOAccess"
                           service="ws_fileio"/>
+     <AuthenticateFeature description="Access to package map"
+                          path="PackageMapAccess"
+                          resource="PackageMapAccess"
+                          service="ws_packageprocess"/>
      <AuthenticateFeature description="Access to permissions for file scopes"
                           path="FileScopeAccess"
                           resource="FileScopeAccess"
@@ -924,10 +1018,6 @@
                           path="OthersWorkunitsAccess"
                           resource="OthersWorkunitsAccess"
                           service="ws_workunits"/>
-     <AuthenticateFeature description="Access to ECL direct service"
-                          path="EclDirectAccess"
-                          resource="EclDirectAccess"
-                          service="ecldirect"/>
      <AuthenticateFeature description="Access to ESDL configuration service"
                           path="ESDLConfigAccess"
                           resource="ESDLConfigAccess"
@@ -1037,29 +1127,6 @@
                    path="/"
                    required="Read"
                    resource="WsEclAccess"/>
-    </Properties>
-   </BuildSet>
-   <BuildSet deployable="no"
-             installSet="deploy_map.xml"
-             name="ecldirect"
-             path="componentfiles/ecldirect"
-             processName="EspService"
-             schema="esp_service_ecldirect.xsd">
-    <Properties bindingType="EclDirectSoapBinding"
-                defaultPort="8008"
-                defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
-                defaultSecurePort="18008"
-                plugin="ecldirect"
-                type="ecldirect">
-     <AuthenticateFeature description="Access to ECL Direct service"
-                          path="EclDirectAccess"
-                          resource="EclDirectAccess"
-                          service="ecldirect"/>
-     <Authenticate access="Read"
-                   description="Root access to ECL Direct service"
-                   path="/"
-                   required="Read"
-                   resource="EclDirectAccess"/>
     </Properties>
    </BuildSet>
    <BuildSet deployable="no"

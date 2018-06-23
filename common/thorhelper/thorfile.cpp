@@ -22,12 +22,11 @@
 #include "eclhelper.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
+#include "rtldynfield.hpp"
 
-namespace thorfile {
 #include "eclhelper_base.hpp"
-}
 #include "thorcommon.ipp"
 
 void setExpiryTime(IPropertyTree & properties, unsigned expireDays)
@@ -35,35 +34,53 @@ void setExpiryTime(IPropertyTree & properties, unsigned expireDays)
     properties.setPropInt("@expireDays", expireDays);
 }
 
+void setRtlFormat(IPropertyTree & properties, IOutputMetaData * meta)
+{
+    if (meta && meta->queryTypeInfo())
+    {
+        MemoryBuffer out;
+        if (dumpTypeInfo(out, meta->querySerializedDiskMeta()->queryTypeInfo()))
+            properties.setPropBin("_rtlType", out.length(), out.toByteArray());
+    }
+}
 
-class DiskWorkUnitReadArg : public thorfile::CThorDiskReadArg
+
+class DiskWorkUnitReadArg : public CThorDiskReadArg
 {
 public:
     DiskWorkUnitReadArg(const char * _filename, IHThorWorkunitReadArg * _wuRead) : filename(_filename), wuRead(_wuRead)
     {
         recordSize.set(wuRead->queryOutputMeta());
     }
-    virtual IOutputMetaData * queryOutputMeta()
+    virtual IOutputMetaData * queryOutputMeta() override
     {
         return wuRead->queryOutputMeta();
     }
-    virtual const char * getFileName()
+    virtual const char * getFileName() override
     {
         return filename;
     }
-    virtual IOutputMetaData * queryDiskRecordSize()
+    virtual IOutputMetaData * queryDiskRecordSize() override
     {
         return (IOutputMetaData *)recordSize;
     }
-    virtual unsigned getFormatCrc()
+    virtual IOutputMetaData * queryProjectedDiskRecordSize() override
+    {
+        return (IOutputMetaData *)recordSize;
+    }
+    virtual unsigned getDiskFormatCrc() override
     {
         return 0;
     }
-    virtual unsigned getFlags()
+    virtual unsigned getProjectedFormatCrc() override
     {
-        return TDRnocrccheck;
+        return 0;
     }
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * src)
+    virtual unsigned getFlags() override
+    {
+        return 0;
+    }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * src) override
     {
         unsigned size = recordSize.getRecordSize(src);
         memcpy(rowBuilder.ensureCapacity(size, NULL), src, size);

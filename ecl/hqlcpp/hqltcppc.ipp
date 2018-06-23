@@ -43,7 +43,7 @@ public:
     void forceToTemp(node_operator op, IHqlExpression * selector);
     unsigned getFixedSize() const                           { return fixedSize; }
     unsigned getMinimumSize()   const                       { return fixedSize+varMinSize; }
-    IHqlExpression * getSizeExpr(BoundRow * cursor);
+    IHqlExpression * getSizeExpr(BoundRow * cursor) const;
     bool isEmpty() const                                    { return fixedSize == 0 && varSize == NULL; }
     bool isFixedSize() const                                { return varSize == NULL; }
     bool isWorthCommoning() const;
@@ -77,6 +77,7 @@ public:
     virtual void buildAddress(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
     virtual void buildOffset(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
     virtual bool hasFixedOffset();
+    virtual bool isPayloadField() const override;
     virtual AColumnInfo * lookupColumn(IHqlExpression * search);
     virtual bool requiresTemp();
 
@@ -101,16 +102,22 @@ public:
     virtual unsigned getContainerTrailingFixed();
     virtual bool modifyColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value, node_operator op) { return false; }
     virtual bool checkCompatibleIfBlock(HqlExprCopyArray & conditions);
+    virtual bool bindOffsetsFromClass(SizeStruct & accessorOffset, bool prevVariableSize);
+    virtual void bindSizesFromOffsets(SizeStruct & thisOffset, const SizeStruct & nextOffset);
     
     void addVariableSize(size32_t varMinSize, SizeStruct & size);
     void getXPath(StringBuffer & out);
     StringBuffer & expandSelectPathText(StringBuffer & out, bool isLast) const;
+    IHqlExpression * queryColumn() const { return column; }
+    void getOffsets(SizeStruct & offset, SizeStruct & accessorOffset) const;
 
 public:
     IHqlExpression * getCondition(BuildCtx & ctx);
     IHqlExpression * getConditionSelect(HqlCppTranslator & translator, BuildCtx & ctx, BoundRow * row);
     IHqlExpression * makeConditional(HqlCppTranslator & translator, BuildCtx & ctx, BoundRow * row, IHqlExpression * value);
+
     void setOffset(bool _hasVarOffset);     // to avoid loads of arguments to constructor
+    void setPayload(bool _isPayload);       // to avoid loads of arguments to constructor
 
 protected:
     virtual ITypeInfo * queryPhysicalType();
@@ -134,12 +141,13 @@ protected:
     CContainerInfo *    container;
     CMemberInfo *       prior;
     HqlExprAttr         column;
-    HqlExprAttr         varSize;
-    SizeStruct          cachedOffset;
-    SizeStruct          cachedSize;
-//  SizeStruct          cachedMaxSize;
+    SizeStruct          cachedOffset;       // Either fixed or sizeof(x)/offsetof(x) - rebound before building
+    SizeStruct          cachedSize;         // Either fixed or sizeof(x) expressions - rebound before building
+    SizeStruct          cachedAccessorOffset;// A translated expression containing the (fixed, field with the offset)
+    unsigned            seq; // For fields the sequence number, for root container the maximum seq so far
     bool                hasVarOffset;
     bool                isOffsetCached;
+    bool                isPayload = false;
 };
 
 
@@ -148,7 +156,7 @@ typedef IArrayOf<CMemberInfo> CMemberInfoArray;
 struct ReadAheadState
 {
 public:
-    ReadAheadState(IHqlExpression * _helper) : helper(_helper) {};
+    ReadAheadState(IReferenceSelector * _selector, IHqlExpression * _helper) : helper(_helper), selector(_selector) {};
 
     void addDummyMappings()
     {
@@ -164,6 +172,7 @@ public:
     LinkedHqlExpr helper;
     HqlExprArray requiredValues;
     HqlExprArray mappedValues;
+    IReferenceSelector * selector;
 };
 
 class HQLCPP_API CContainerInfo : public CMemberInfo
@@ -191,9 +200,14 @@ public:
     virtual bool isConditional();
     virtual bool isFixedSize()              { return fixedSize && !isDynamic; }
 
+    virtual bool bindOffsetsFromClass(SizeStruct & accessorOffset, bool prevVariableSize);
+    virtual void bindSizesFromOffsets(SizeStruct & thisOffset, const SizeStruct & nextOffset);
+    virtual bool usesAccessClass() const    { return container->usesAccessClass(); }
+
     void addTrailingFixed(SizeStruct & size, CMemberInfo * cur);
     void subLeadingFixed(SizeStruct & size, CMemberInfo * cur);
     void getContainerXPath(StringBuffer & out);
+    unsigned nextSeq();
     inline unsigned numChildren() const     { return children.ordinality(); }
             
 public:
@@ -207,6 +221,7 @@ protected:
 
 protected:
     CMemberInfoArray    children;
+    SizeStruct          accessorSize;// A translated expression containing the (fixed, field with the offset)
     bool                fixedSize;
     bool                isDynamic;
 };
@@ -225,6 +240,9 @@ public:
 
     virtual IHqlExpression * getRelativeSelf();
     virtual IHqlExpression * queryRootSelf();
+    virtual bool usesAccessClass() const    { return container ? container->usesAccessClass() : useAccessClass; }
+
+    void setUseAccessClass()                { useAccessClass = true; }
 
 protected:
     virtual void registerChild(CMemberInfo * child);
@@ -232,6 +250,7 @@ protected:
 protected:
     ColumnToInfoMap map;
     OwnedHqlExpr cachedSelf;
+    bool useAccessClass;
 };
 
 
@@ -246,7 +265,6 @@ public:
     virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
-    virtual bool prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state);
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
 
     virtual void calcCachedSize(const SizeStruct & offset, SizeStruct & sizeSelf);
@@ -368,7 +386,6 @@ public:
     virtual void buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);  // get() after conditions.
     virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
-    virtual bool prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state);
     virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
     virtual bool isFixedSize();
     virtual void gatherSize(SizeStruct & target);
@@ -536,9 +553,9 @@ enum MapFormat { MapFormatBinary, MapFormatCsv, MapFormatXml };
 class HQLCPP_API ColumnToOffsetMap : public MappingBase
 {
 public:
-    ColumnToOffsetMap(IHqlExpression * record, unsigned _packing, unsigned _maxRecordSize, bool _translateVirtuals);
+    ColumnToOffsetMap(IHqlExpression * _key, IHqlExpression * record, unsigned _id, unsigned _packing, unsigned _maxRecordSize, bool _translateVirtuals, bool _useAccessClass);
 
-    virtual const void * getKey() const { return &record; }
+    virtual const void * getKey() const { return &key; }
 
     void init(RecordOffsetMap & map);
     unsigned getFixedRecordSize();
@@ -550,18 +567,24 @@ public:
     size32_t getTotalMinimumSize()                  { return root.getTotalMinimumSize(); }
     virtual MapFormat getFormat()                   { return MapFormatBinary; }
     bool queryContainsIfBlock()                     { return containsIfBlock; }
+    IHqlExpression * queryRecord() const            { return record; }
+    unsigned queryId() const                        { return id; }
+    bool usesAccessor() const                       { return root.usesAccessClass(); }
 
     AColumnInfo * queryRootColumn();
-    bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper);
+    bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper);
+    void buildAccessor(StringBuffer & accessorName, HqlCppTranslator & translator, BuildCtx & declarectx, IHqlExpression * selector);
 
 protected:
-    virtual CMemberInfo * addColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map);
-    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map);
-    CMemberInfo * expandRecord(IHqlExpression * record, CContainerInfo * container, RecordOffsetMap & map);
+    virtual CMemberInfo * addColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload);
+    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload);
+    CMemberInfo * expandRecord(IHqlExpression * record, CContainerInfo * container, RecordOffsetMap & map, unsigned payloadFields);
     void completeActiveBitfields();
     void ensureMaxSizeCached();
 
 protected:
+    unsigned id;
+    LinkedHqlExpr key;
     IHqlExpression * record;
     CMemberInfo * prior;
     BitfieldPacker packer;
@@ -569,6 +592,7 @@ protected:
     unsigned packing;
     unsigned defaultMaxRecordSize;
     unsigned cachedMaxSize;
+    unsigned payloadCount = 0;
     bool cachedDefaultMaxSizeUsed;
     bool fixedSizeRecord;
     bool translateVirtuals;
@@ -625,8 +649,8 @@ class HQLCPP_API CsvColumnToOffsetMap : public ColumnToOffsetMap
 public:
     CsvColumnToOffsetMap(IHqlExpression * record, unsigned _maxRecordSize, bool _translateVirtuals, IAtom * _encoding);
 
-    virtual MapFormat getFormat()                   { return MapFormatCsv; }
-    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map);
+    virtual MapFormat getFormat() override                  { return MapFormatCsv; }
+    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload) override;
 
 protected:
     IAtom * encoding;
@@ -638,7 +662,7 @@ public:
     XmlColumnToOffsetMap(IHqlExpression * record, unsigned _maxRecordSize, bool _translateVirtuals);
 
     virtual MapFormat getFormat()                   { return MapFormatXml; }
-    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map);
+    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload) override;
 };
 
 //---------------------------------------------------------------------------

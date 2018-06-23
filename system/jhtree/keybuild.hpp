@@ -19,6 +19,7 @@
 #define KEYBUILD_HPP
 
 #include "ctfile.hpp"
+#include "eclhelper.hpp"
 
 class CNodeInfo : implements serializable, public CInterface
 {
@@ -94,14 +95,14 @@ typedef IArrayOf<CNodeInfo> NodeInfoArray;
 
 interface IKeyBuilder : public IInterface
 {
-    virtual void finish(unsigned *crc = NULL) = 0;
-    virtual void finish(IPropertyTree * metadata, unsigned * crc = NULL) = 0;
+    virtual void finish(IPropertyTree * metadata, unsigned * crc) = 0;
     virtual void processKeyData(const char *keyData, offset_t pos, size32_t recsize) = 0;
     virtual void addLeafInfo(CNodeInfo *info) = 0;
     virtual unsigned __int64 createBlob(size32_t size, const char * _ptr) = 0;
+    virtual unsigned __int64 getDuplicateCount() = 0;
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence);
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, bool enforceOrder, bool isTLK);
 
 interface IKeyDesprayer : public IInterface
 {

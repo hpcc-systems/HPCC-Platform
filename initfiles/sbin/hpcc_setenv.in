@@ -156,6 +156,10 @@ if [[ $platform == 'linux' ]]; then
                     break
             fi
     done
+
+    if [[ -d "/opt/rh/devtoolset-2" ]]; then
+        export CL_PATH=/opt/rh/devtoolset-2/root/usr
+    fi
 elif [[ $platform == 'mac' ]]; then
     NEW_LIB="${PATH_PREFIX}/lib"
     for D in ${DYLD_LIBRARY_PATH//:/ } ; do

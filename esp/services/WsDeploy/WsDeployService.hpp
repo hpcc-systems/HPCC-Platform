@@ -119,7 +119,7 @@ private:
 
         IMPLEMENT_IINTERFACE;
 
-        virtual void main() 
+        virtual void threadmain() override
         {
             generateHeaders(&m_constEnv->getPTree(), m_constEnv);
         }
@@ -238,7 +238,7 @@ private:
         m_qObservers.dequeue(&observer);
       }
 
-      virtual void main()
+      virtual void threadmain() override
       {
         Owned<IFile> configFiles = createIFile(CONFIG_SOURCE_DIR);
 
@@ -323,7 +323,7 @@ private:
 
         IMPLEMENT_IINTERFACE;
 
-        virtual void main() 
+        virtual void threadmain() override
         {
             while (!m_quitThread)
             {
@@ -387,7 +387,7 @@ private:
 
     IMPLEMENT_IINTERFACE;
 
-    virtual void main();
+    virtual void threadmain() override;
 
     void init()
     {
@@ -512,7 +512,7 @@ public:
         m_pGraphXml.clear();
         m_pNavTree.clear();
 
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();       
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
         m_constEnvRdOnly.set(factory->openEnvironment());
         m_constEnvRdOnly->clearCache();
     }
@@ -585,16 +585,16 @@ public:
     {
     }
 
-    void init(void *startInfo) 
+    virtual void init(void *startInfo) override
     {
         m_pTask.set((CCloudTask*)startInfo);
     }
-    void main();
-    bool canReuse()
+    virtual void threadmain() override;
+    virtual bool canReuse() const override
     {
         return true;
     }
-    bool stop()
+    virtual bool stop() override
     {
         return true;
     }

@@ -96,11 +96,33 @@ public:
 
 class CWsDfuSoapBindingEx : public CWsDfuSoapBinding
 {
+private:
+    bool m_bIsAttached;
 public:
-    CWsDfuSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) : CWsDfuSoapBinding(cfg, name, process, llevel){}
+    CWsDfuSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) : CWsDfuSoapBinding(cfg, name, process, llevel)
+    {
+        m_bIsAttached = true;
+    }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
+    }
+    virtual bool canDetachFromDali() override
+    {
+      return false;
+    }
+    virtual bool subscribeBindingToDali() override
+    {
+        return true;
+    }
+    virtual bool unsubscribeBindingFromDali() override
+    {
+        return false;
+    }
+
+    bool isAttachedToDali()
+    {
+      return m_bIsAttached;
     }
 };
 
@@ -112,6 +134,8 @@ private:
     Mutex m_superfilemutex;
     unsigned nodeGroupCacheTimeout;
     Owned<CThorNodeGroupCache> thorNodeGroupCache;
+    bool m_daliDetached = false;
+    SpinLock m_daliDetachedStateLock;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -131,6 +155,8 @@ public:
     bool onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &req, IEspDFUBrowseDataResponse &resp);
     bool onDFUSearchData(IEspContext &context, IEspDFUSearchDataRequest &req, IEspDFUSearchDataResponse &resp);
     bool onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaDataRequest &req, IEspDFUGetFileMetaDataResponse &resp);
+    bool onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRequest &req, IEspDFURecordTypeInfoResponse &resp);
+    bool onEclRecordTypeInfo(IEspContext &context, IEspEclRecordTypeInfoRequest &req, IEspEclRecordTypeInfoResponse &resp);
 
     virtual bool onSavexml(IEspContext &context, IEspSavexmlRequest &req, IEspSavexmlResponse &resp);
     virtual bool onAdd(IEspContext &context, IEspAddRequest &req, IEspAddResponse &resp);
@@ -157,7 +183,7 @@ private:
         bool includeSuperOwner, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs);
     bool doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name,const char *cluster,
-        const char *description,IEspDFUFileDetail& FileDetails);
+        const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo, IEspDFUFileDetail& FileDetails);
     bool createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, unsigned& yearFrom,
         unsigned& monthFrom, unsigned& dayFrom, unsigned& yearTo, unsigned& monthTo, unsigned& dayTo);
     bool setSpaceItemByScope(IArrayOf<IEspSpaceItem>& SpaceItems64, const char*scopeName, const char*logicalName, __int64 size);
@@ -173,12 +199,10 @@ private:
     __int64 findPositionByNodeGroup(double version, const char *nodeGroup, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
     __int64 findPositionByDate(const char *datetime, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
     __int64 findPositionByDescription(const char *description, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
-    bool checkDescription(const char *description, const char *descriptionFilter);
     void getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuffer& returnStr);
     void xsltTransformer(const char* xsltPath,StringBuffer& source,StringBuffer& returnStr);
     bool checkFileContent(IEspContext &context, IUserDescriptor* udesc, const char * logicalName, const char * cluster);
-    void getRoxieClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port);
     bool checkRoxieQueryFilesOnDelete(IEspDFUArrayActionRequest &req, StringArray& roxieQueries);
     bool DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
 
@@ -202,6 +226,27 @@ private:
         const char* beforeSubFile, bool existingSuperfile, bool autocreatesuper, bool deleteFile, bool removeSuperfile =  true);
     void getFilePartsOnClusters(IEspContext &context, const char* clusterReq, StringArray& clusters, IDistributedFile* df, IEspDFUFileDetail& FileDetails,
         offset_t& mn, offset_t& mx, offset_t& sum, offset_t& count);
+    bool getQueryFile(const char *logicalName, const char *querySet, const char *queryID, IEspDFUFileDetail &fileDetails);
+    bool attachServiceToDali() override
+    {
+        SpinBlock b(m_daliDetachedStateLock);
+        m_daliDetached = false;
+        return true;
+    }
+
+    bool detachServiceFromDali() override
+    {
+        SpinBlock b(m_daliDetachedStateLock);
+        m_daliDetached = true;
+        return true;
+    }
+
+    bool isDetachedFromDali()
+    {
+        SpinBlock b(m_daliDetachedStateLock);
+        return m_daliDetached;
+    }
+
 private:
     bool         m_disableUppercaseTranslation;
     StringBuffer m_clusterName;
@@ -210,6 +255,7 @@ private:
     StringBuffer defaultScope_;
     StringBuffer user_;
     StringBuffer password_;
+    StringAttr   espProcess;
 };
 
 

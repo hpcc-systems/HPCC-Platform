@@ -33,10 +33,11 @@ define([
     "hpcc/_Widget",
     "hpcc/GraphWidget",
     "hpcc/JSGraphWidget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPWorkunit",
+    "src/ESPUtil",
+    "src/ESPWorkunit",
     "hpcc/TimingTreeMapWidget",
-    "hpcc/WsWorkunits",
+    "src/WsWorkunits",
+    "src/Utility",
 
     "dojo/text!../templates/GraphPageWidget.html",
 
@@ -55,14 +56,14 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html,
             registry, Dialog,
             entities,
-            _Widget, GraphWidget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits,
+            _Widget, GraphWidget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits, Utility,
             template) {
     return declare("GraphPageWidget", [_Widget], {
         templateString: template,
         baseClass: "GraphPageWidget",
         i18n: nlsHPCC,
 
-        graphType: dojoConfig.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
+        graphType: Utility.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
         borderContainer: null,
         rightBorderContainer: null,
         graphName: "",
@@ -278,7 +279,7 @@ define([
         },
 
         _doFind: function (prev) {
-            if (this.findText != this.findField.value) {
+            if (this.findText !== this.findField.value) {
                 this.findText = this.findField.value;
                 this.found = this.global.findAsGlobalID(this.findText);
                 this.global.setSelectedAsGlobalID(this.found);
@@ -379,7 +380,7 @@ define([
                 dom.byId(this.id + "Warning").textContent = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
             }
 
-            if (params.SafeMode && params.SafeMode != "false") {
+            if (params.SafeMode && params.SafeMode !== "false") {
                 this.overviewTabContainer.selectChild(this.widget.SubgraphsGridCP);
                 this.localTabContainer.selectChild(this.properties);
                 this.overview.depth.set("value", 0);
@@ -570,7 +571,7 @@ define([
                 {
                     label: this.i18n.ID, field: "id", width: 54,
                     formatter: function (_id, row) {
-                        var img = dojoConfig.getImageURL("folder.png");
+                        var img = Utility.getImageURL("folder.png");
                         return "<img src='" + img + "'/>&nbsp;" + _id;
                     }
                 }
@@ -587,7 +588,7 @@ define([
                 {
                     label: this.i18n.ID, field: "id", width: 54,
                     formatter: function (_id, row) {
-                        var img = dojoConfig.getImageURL("file.png");
+                        var img = Utility.getImageURL("file.png");
                         return "<img src='" + img + "'/>&nbsp;" + _id;
                     }
                 },
@@ -620,19 +621,19 @@ define([
             }
         },
 
-        _syncSelectionFrom: dojoConfig.debounce(function (sourceControl) {
+        _syncSelectionFrom: Utility.debounce(function (sourceControl) {
             this.inSyncSelectionFrom = true;
             var selectedGlobalIDs = [];
 
             //  Get Selected Items  ---
-            if (sourceControl == this.timingTreeMap) {
+            if (sourceControl === this.timingTreeMap) {
                 var items = sourceControl.getSelected();
                 for (var i = 0; i < items.length; ++i) {
                     if (items[i].SubGraphId) {
                         selectedGlobalIDs.push(items[i].SubGraphId);
                     }
                 }
-            } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid || sourceControl == this.subgraphsGrid) {
+            } else if (sourceControl === this.verticesGrid || sourceControl === this.edgesGrid || sourceControl === this.subgraphsGrid) {
                 var items = sourceControl.getSelected();
                 for (var i = 0; i < items.length; ++i) {
                     if (lang.exists("_globalID", items[i])) {
@@ -644,24 +645,24 @@ define([
             }
 
             //  Set Selected Items  ---
-            if (sourceControl != this.timingTreeMap) {
+            if (sourceControl !== this.timingTreeMap) {
                 this.timingTreeMap.setSelectedAsGlobalID(selectedGlobalIDs);
             }
-            if (sourceControl != this.subgraphsGrid && this.subgraphsGrid.store) {
+            if (sourceControl !== this.subgraphsGrid && this.subgraphsGrid.store) {
                 this.subgraphsGrid.setSelection(selectedGlobalIDs);
             }
-            if (sourceControl != this.verticesGrid && this.verticesGrid.store) {
+            if (sourceControl !== this.verticesGrid && this.verticesGrid.store) {
                 this.verticesGrid.setSelection(selectedGlobalIDs);
             }
-            if (sourceControl != this.edgesGrid && this.edgesGrid.store) {
+            if (sourceControl !== this.edgesGrid && this.edgesGrid.store) {
                 this.edgesGrid.setSelection(selectedGlobalIDs);
             }
 
             //  Refresh Graph Controls  ---
-            if (sourceControl != this.overview) {
+            if (sourceControl !== this.overview) {
                 this.overview.setSelectedAsGlobalID(selectedGlobalIDs);
             }
-            if (sourceControl != this.main) {
+            if (sourceControl !== this.main) {
                 switch (sourceControl) {
                     case this.local:
                         this.main.setSelectedAsGlobalID(selectedGlobalIDs);
@@ -670,7 +671,7 @@ define([
                         this.setMainRootItems(selectedGlobalIDs);
                 }
             }
-            if (sourceControl != this.local) {
+            if (sourceControl !== this.local) {
                 switch (sourceControl) {
                     case this.overview:
                         this.setLocalRootItems([]);

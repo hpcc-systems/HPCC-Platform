@@ -27,7 +27,7 @@
 
 typedef size32_t aindex_t;
 
-#define NotFound   (aindex_t)-1
+const aindex_t NotFound = (aindex_t)-1;
 
 /************************************************************************
  *                            Copy Lists                                *
@@ -50,6 +50,7 @@ public:
     inline aindex_t length() const                 { return used; } /* Return number of items  */
     inline aindex_t ordinality() const             { return used; } /* Return number of items  */
     inline bool empty() const                    { return (used==0); }
+    inline explicit operator bool() const        { return (used != 0); }
 
 protected:
     void * _doBAdd(void *, size32_t size, StdCompare compare, bool & isNew);
@@ -89,9 +90,6 @@ protected:
 };
 
 //--------------------------------------------------------------------------------------------------------------------
-
-//Ugly - avoid problems with new being #defined in windows debug mode
-#undef new
 
 template <class MEMBER, class PARAM = MEMBER>
 class SimpleArrayMapper
@@ -188,6 +186,12 @@ public:
         MEMBER * head= (MEMBER *)SELF::_head;
         assertex(pos <= SELF::used);
         return &head[pos];
+    }
+    MEMBER * detach()
+    {
+        MEMBER * head = (MEMBER *)SELF::_head;
+        SELF::_init();
+        return head;
     }
     void sort(CompareFunc cf)
     {
@@ -407,6 +411,11 @@ public:
 // An array which stores owned pointers to elements of type INTERFACE
 template <typename INTERFACE>
 class OwnedPointerArrayOf : public ArrayOf<INTERFACE *, INTERFACE *, OwnedPointerArrayMapper<INTERFACE> >
+{
+};
+
+template <typename INTERFACE>
+class OwnedConstPointerArrayOf : public ArrayOf<const INTERFACE *, const INTERFACE *, OwnedPointerArrayMapper<const INTERFACE> >
 {
 };
 

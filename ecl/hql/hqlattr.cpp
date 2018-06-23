@@ -85,6 +85,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_quoted:                 // codegen only
     case no_getresult:
     case no_matched:
+    case no_matched_injoin:
     case no_matchtext:
     case no_matchlength:
     case no_matchposition:
@@ -923,7 +924,7 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
             {
                 if (expr->hasAttribute(_linkCounted_Atom))
                 {
-                    thisSize = sizeof(size32_t) + sizeof(byte * *);
+                    thisSize = sizeof(size32_t) + sizeof(const byte * *);
                     break;
                 }
                 IHqlExpression * count = NULL;
@@ -1398,7 +1399,7 @@ IHqlExpression * HqlUnadornedNormalizer::createTransformed(IHqlExpression * expr
             ForEachChild(idx, expr)
             {
                 IHqlExpression * cur = expr->queryChild(idx);
-                if (cur->isAttribute())
+                if (cur->isAttribute() && (cur->queryName() != _payload_Atom))
                 {
                     IHqlExpression * mapped = transform(cur);
                     children.append(*mapped);
@@ -1705,6 +1706,15 @@ bool isLocalActivity(IHqlExpression * expr)
         return false;
     case no_compound:
         return isLocalActivity(expr->queryChild(1));
+    case no_call:
+    case no_externalcall:
+        if (callIsActivity(expr))
+        {
+            //Can only be deduced by substituting the parameters into the body and seeing if the local attribute has a constant value
+            //currently assume false.  It may need improving when support for global embed activities is added.
+            return false;
+        }
+        return false;
     case no_compound_diskread:
     case no_compound_disknormalize:
     case no_compound_diskaggregate:
@@ -1903,7 +1913,10 @@ bool localChangesActivityAction(IHqlExpression * expr)
     case no_nwaymerge:
     case no_selfjoin:
     case no_joincount:
-        return !isKeyedJoin(expr);          // Keyed joins always 
+        return !isKeyedJoin(expr);          // Keyed joins always
+    case no_call:
+    case no_externalcall:
+        return callIsActivity(expr);
     }
     return false;
 }

@@ -50,11 +50,22 @@
 
 class NullContextCallback : implements ICodegenContextCallback, public CInterface
 {
+public:
+    NullContextCallback(IWorkUnit * _wu) : workunit(_wu) {}
     IMPLEMENT_IINTERFACE
 
     virtual void noteCluster(const char *clusterName) override {}
+    virtual void pushCluster(const char *clusterName) override {}
+    virtual void popCluster() override {}
     virtual bool allowAccess(const char * category, bool isSigned) override { return true; }
     virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override { return nullptr; }
+    virtual unsigned lookupClusterSize() const override { return 0; }
+    virtual void getTargetPlatform(StringBuffer & result) override
+    {
+        workunit->getDebugValue("targetClusterType", StringBufferAdaptor(result));
+    }
+protected:
+    Linked<IWorkUnit> workunit;
 };
 
 class HqlDllGenerator : implements IHqlExprDllGenerator, implements IAbortRequestCallback, public CInterface
@@ -64,7 +75,7 @@ public:
         errs(_errs), wuname(_wuname), targetDir(_targetdir), wu(_wu), template_dir(_template_dir), targetClusterType(_targetClusterType), ctxCallback(_ctxCallback), checkForLocalFileUploads(_checkForLocalFileUploads), okToAbort(_okToAbort)
     {
         if (!ctxCallback)
-            ctxCallback.setown(new NullContextCallback);
+            ctxCallback.setown(new NullContextCallback(_wu));
         noOutput = true;
         defaultMaxCompileThreads = 1;
         generateTarget = EclGenerateNone;
@@ -398,6 +409,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
     noOutput = true;
     {
         // ensure warnings/errors are available before we do the processing...
+        addTimeStamp(wu, SSTcompilestage, "compile:generate", StWhenStarted);
         wu->commit();
 
         cycle_t startCycles = get_cycles_now();
@@ -469,7 +481,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 
         doExpand(translator);
         unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
-        updateWorkunitTimeStat(wu, SSTcompilestage, "compile:generate c++", StTimeElapsed, NULL, elapsed);
+        updateWorkunitStat(wu, SSTcompilestage, "compile:generate", StTimeElapsed, NULL, elapsed);
 
         if (wu->getDebugValueBool("addMemoryToWorkunit", true))
         {
@@ -498,16 +510,18 @@ void HqlDllGenerator::addWorkUnitAsResource()
 void HqlDllGenerator::insertStandAloneCode()
 {
     BuildCtx ctx(static_cast<HqlCppInstance &>(*code), goAtom);
-    ctx.addQuotedCompoundLiteral("int main(int argc, const char *argv[])");
+    ctx.addQuotedFunction("int main(int argc, const char *argv[])");
     ctx.addQuotedLiteral("return start_query(argc, argv);\n");
 }
 
 
 void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
 {
-    cycle_t startCycles = get_cycles_now();
+    CCycleTimer elapsedTimer;
+    addTimeStamp(wu, SSTcompilestage, "compile:write c++", StWhenStarted);
+
     unsigned numExtraFiles = translator.getNumExtraCppFiles();
-    bool isMultiFile = translator.spanMultipleCppFiles() && (numExtraFiles != 0);
+    bool isMultiFile = translator.spanMultipleCppFiles();
     CompilerType targetCompiler = translator.queryOptions().targetCompiler;
 
     StringBuffer fullname;
@@ -523,8 +537,7 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
         }
     }
 
-    cycle_t elapsedCycles = get_cycles_now() - startCycles;
-    updateWorkunitTimeStat(wu, SSTcompilestage, "compile:write c++", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
+    updateWorkunitStat(wu, SSTcompilestage, "compile:write c++", StTimeElapsed, NULL, elapsedTimer.elapsedNs());
 }
 
 bool HqlDllGenerator::abortRequested()
@@ -535,6 +548,7 @@ bool HqlDllGenerator::abortRequested()
 bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
 {
     cycle_t startCycles = get_cycles_now();
+    addTimeStamp(wu, SSTcompilestage, "compile:compile c++", StWhenStarted);
     ForEachItemIn(i, sourceFiles)
         compiler->addSourceFile(sourceFiles.item(i));
 
@@ -594,9 +608,8 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
             errs->report(&cur);
     }
 
-    cycle_t elapsedCycles = get_cycles_now() - startCycles;
-    //For eclcc the workunit has been written to the resource - so any further timings will not be preserved -> need to report differently
-    queryActiveTimer()->addTiming("compile:compile c++", elapsedCycles);
+    unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
+    updateWorkunitStat(wu, SSTcompilestage, "compile:compile c++", StTimeElapsed, NULL, elapsed);
 
     //Keep the files if there was a compile error.
     if (ok && deleteGenerated)

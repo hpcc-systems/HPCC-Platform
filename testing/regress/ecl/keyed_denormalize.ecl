@@ -20,16 +20,24 @@
 //version multiPart=false
 //version multiPart=true
 //version multiPart=true,useLocal=true
-//version multiPart=true,useTranslation=true,nothor
+//version multiPart=true,useTranslation=true
+//version multiPart=false,forceRemoteKeyedLookup=true,forceRemoteKeyedFetch=true
+//version multiPart=true,forceRemoteKeyedLookup=true,forceRemoteKeyedFetch=true
+//version multiPart=true,useTranslation=true,forceRemoteKeyedLookup=true,forceRemoteKeyedFetch=true
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
 useLocal := #IFDEFINED(root.useLocal, false);
 useTranslation := #IFDEFINED(root.useTranslation, false);
+forceRemoteKeyedLookup := #IFDEFINED(root.forceRemoteKeyedLookup, false);
+forceRemoteKeyedFetch := #IFDEFINED(root.forceRemoteKeyedLookup, false);
+
 
 //--- end of version configuration ---
 
-#option ('layoutTranslationEnabled', useTranslation);
+#option('forceRemoteKeyedLookup', forceRemoteKeyedLookup);
+#option('forceRemoteKeyedFetch', forceRemoteKeyedFetch);
+#option ('layoutTranslation', useTranslation);
 #onwarning (4522, ignore);
 #onwarning (4523, ignore);
 #onwarning (5402, ignore);

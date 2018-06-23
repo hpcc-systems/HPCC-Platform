@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IsValidTime">
+  <title>IsValidTime</title>
+
+  <para><emphasis role="bold">STD.Date.IsValidTime<indexterm>
+      <primary>STD.Date.IsValidTime</primary>
+    </indexterm><indexterm>
+      <primary>Date.IsValidTime</primary>
+    </indexterm><indexterm>
+      <primary>IsValidTime</primary>
+    </indexterm>(</emphasis> <emphasis>time</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>time</emphasis></entry>
+
+          <entry>A time value in the Time_t format.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>IsValidTime returns a BOOLEAN value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">IsValidTime</emphasis> function returns TRUE
+  if the time is valid, by validating each of the individual components
+  (hours, minutes, and seconds).</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+
+t1 := 225922;
+t2 := 275922;
+
+firstTest := STD.Date.IsValidTime(t1); //true
+secondTest := STD.Date.IsValidTime(t2);//false
+</programlisting>
+
+  <para></para>
+</sect1>

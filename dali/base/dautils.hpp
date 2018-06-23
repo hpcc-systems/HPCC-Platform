@@ -60,6 +60,8 @@ class da_decl CDfsLogicalFileName
     bool external;
     bool allowospath;
     bool allowWild;
+    SocketEndpoint foreignep;
+    bool selfScopeTranslation = true; // default behaviour is to translate self scopes, e.g. .::.::scope::.::name -> scope::name
 
 public:
     CDfsLogicalFileName();
@@ -74,13 +76,14 @@ public:
     bool setFromXPath(const char *xpath);
     void clear();
     bool isSet() const;
+    void enableSelfScopeTranslation(bool onOff) { selfScopeTranslation = onOff; }
     /*
      * Foreign files are distributed files whose meta data is stored on a foreign
      * Dali Server, so their names are resolved externally.
      */
     void setForeign(const SocketEndpoint &daliip,bool checklocal);
     void clearForeign();
-    bool isForeign() const;
+    bool isForeign(SocketEndpoint *ep=nullptr) const;
     /*
      * External files are non-distributed files. Most of the time
      * they refer to an input source, like files on a drop-zone
@@ -133,7 +136,7 @@ public:
     // Multi routines
     unsigned multiOrdinality() const;
     const CDfsLogicalFileName &multiItem(unsigned idx) const;
-    const void resolveWild();  // only for multi
+    void resolveWild();  // only for multi
     IPropertyTree *createSuperTree() const;
     void allowOsPath(bool allow=true) { allowospath = allow; } // allow local OS path to be specified
     void setAllowWild(bool b=true) { allowWild = b; } // allow wildcards
@@ -528,5 +531,8 @@ interface ILockInfoCollection : extends IInterface
 };
 extern da_decl ILockInfoCollection *createLockInfoCollection();
 extern da_decl ILockInfoCollection *deserializeLockInfoCollection(MemoryBuffer &mb);
+
+extern da_decl void setPageCacheTimeoutMilliSeconds(unsigned timeoutSeconds);
+extern da_decl void setMaxPageCacheItems(unsigned _maxPageCacheItems);
 
 #endif

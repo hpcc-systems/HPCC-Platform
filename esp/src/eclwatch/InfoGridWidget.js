@@ -34,8 +34,8 @@ define([
     "dojox/html/entities",
 
     "hpcc/_Widget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPWorkunit",
+    "src/ESPUtil",
+    "src/ESPWorkunit",
 
     "dojo/text!../templates/InfoGridWidget.html",
 
@@ -325,11 +325,11 @@ define([
                 var item = this.infoGrid.getItem(row.index);
                 if (item) {
                     var severity = this.store.getValue(item, "Severity", null);
-                    if (severity == "Error") {
+                    if (severity === "Error") {
                         row.customStyles += "background-color: red;";
                     } else if (severity === "Alert") {
                         row.customStyles += "background-color: #febe47;";
-                    } else if (severity == "Warning") {
+                    } else if (severity === "Warning") {
                         row.customStyles += "background-color: yellow;";
                     }
                 }
@@ -432,7 +432,7 @@ define([
             setSelected: function (selItems) {
                 for (var i = 0; i < this.infoGrid.rowCount; ++i) {
                     var row = this.infoGrid.getItem(i);
-                    this.infoGrid.selection.setSelected(i, (row.SubGraphId && arrayUtil.indexOf(selItems, row.SubGraphId) != -1));
+                    this.infoGrid.selection.setSelected(i, (row.SubGraphId && arrayUtil.indexOf(selItems, row.SubGraphId) !== -1));
                 }
             },
 

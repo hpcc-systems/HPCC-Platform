@@ -145,6 +145,7 @@ public:
     void addRepository(IEclRepository & _repository);
 
     virtual IHqlScope * queryRootScope() { return rootScope; }
+    virtual IEclSource * getSource(const char * eclFullname) override;
 
 protected:
     IArrayOf<IEclRepository> repositories;
@@ -156,6 +157,18 @@ void CompoundEclRepository::addRepository(IEclRepository & _repository)
     repositories.append(OLINK(_repository));
     rootScope->addScope(_repository.queryRootScope());
 }
+
+IEclSource * CompoundEclRepository::getSource(const char * eclFullname)
+{
+    ForEachItemIn(i, repositories)
+    {
+        IEclSource * match = repositories.item(i).getSource(eclFullname);
+        if (match)
+            return match;
+    }
+    return nullptr;
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -188,6 +201,9 @@ extern HQL_API IEclRepository * createCompoundRepository(EclRepositoryArray & re
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/*
+ * This class is used to represent a source file that is not really part of the repository, contained in an implicit module of its own
+ */
 class HQL_API NestedEclRepository : implements IEclRepository, public CInterface
 {
 public:
@@ -202,6 +218,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     virtual IHqlScope * queryRootScope() { return rootScope; }
+    virtual IEclSource * getSource(const char * path) override { return nullptr; }
 
 protected:
     Linked<IEclRepository> repository;
@@ -238,9 +255,13 @@ public:
     }
     IMPLEMENT_IINTERFACE
 
-    virtual IHqlScope * queryRootScope() { return rootScope->queryScope(); }
-    virtual bool loadModule(IHqlRemoteScope *scope, IErrorReceiver *errs, bool forceAll);
-    virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName);
+    virtual IHqlScope * queryRootScope() override { return rootScope->queryScope(); }
+    virtual IEclSource * getSource(const char * eclFullname) override;
+
+//interface IEclRepositoryCallback
+    virtual bool loadModule(IHqlRemoteScope *scope, IErrorReceiver *errs, bool forceAll) override;
+    virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName) override;
+    virtual IEclSource * getSource(IEclSource * parent, IIdAtom * searchName) override;
 
 protected:
     IHqlExpression * createSymbol(IHqlRemoteScope * rScope, IEclSource * source);
@@ -251,6 +272,30 @@ protected:
     CriticalSection cs;
 };
 
+
+
+IEclSource * CNewEclRepository::getSource(const char * eclFullname)
+{
+    Owned<IEclSource> parent = nullptr;
+    for (;;)
+    {
+        IIdAtom * id;
+        const char * dot = strchr(eclFullname, '.');
+        if (dot)
+            id = createIdAtom(eclFullname, dot-eclFullname);
+        else
+            id = createIdAtom(eclFullname);
+        Owned<IEclSource> child = collection->getSource(parent, id);
+        if (!child)
+            return nullptr;
+        if (!dot)
+            return child.getClear();
+
+        //Process the next part of the path following the dot
+        eclFullname = dot + 1;
+        parent.swap(child);
+    }
+}
 
 
 bool CNewEclRepository::loadModule(IHqlRemoteScope * rScope, IErrorReceiver *errs, bool forceAll)
@@ -270,10 +315,18 @@ bool CNewEclRepository::loadModule(IHqlRemoteScope * rScope, IErrorReceiver *err
     return true;
 }
 
+IEclSource * CNewEclRepository::getSource(IEclSource * parent, IIdAtom * searchName)
+{
+    return collection->getSource(parent, searchName);
+}
+
+
 IHqlExpression * CNewEclRepository::loadSymbol(IHqlRemoteScope * rScope, IIdAtom * searchName)
 {
     IEclSource * parent = rScope->queryEclSource();
-    Owned<IEclSource> source = collection->getSource(parent, searchName);
+    Owned<IEclSource> source = getSource(parent, searchName);
+    if (!source)
+        return nullptr;
     return createSymbol(rScope, source);
 }
 

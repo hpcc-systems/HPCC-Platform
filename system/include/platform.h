@@ -152,16 +152,6 @@ typedef memsize_t rowsize_t;
 #define __attribute__(param) /* do nothing */
 #endif
 
-#ifdef _DEBUG
- #ifndef USING_MPATROL //using mpatrol memory leak tool
-#ifndef _INC_CRTDBG
-#include <crtdbg.h>
-#undef new
-#define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
- #endif
-#endif
-
 #define ThreadId DWORD
 #define MutexId HANDLE
 #define sleep(X) Sleep(X*1000)
@@ -261,6 +251,7 @@ typedef unsigned long MaxCard;
 
 #define likely(x)       (x)
 #define unlikely(x)     (x)
+inline int daemon(int, int) { return -1; }
 
 // **** END   OF WIN32 SPECIFIC SECTION ****
 #else
@@ -497,6 +488,7 @@ typedef unsigned __int64 __uint64;
 typedef __uint64 offset_t;
 typedef unsigned char byte;
 typedef __int64 cycle_t;
+typedef unsigned __int64 timestamp_type;
 
 // BUILD_TAG not needed here anymore - defined in build_tag.h
 //#define BUILD_TAG "build_0000" // Will get substituted during pre-build

@@ -55,6 +55,25 @@ typedef enum ESPSerializationFormat_
     ESPSerializationCSV
 } ESPSerializationFormat;
 
+typedef enum AuthType_
+{
+    AuthTypeMixed,
+    AuthPerSessionOnly,
+    AuthPerRequestOnly,
+    AuthUserNameOnly
+} AuthType;
+
+typedef enum AuthError_
+{
+    EspAuthErrorNone,
+    EspAuthErrorEmptyUserID,
+    EspAuthErrorUserNotFoundInContext,
+    EspAuthErrorNoAuthMechanism,
+    EspAuthErrorEmptySecResource,
+    EspAuthErrorNotAuthenticated,
+    EspAuthErrorNotAuthorized
+} AuthError;
+
 #define ESPCTX_NO_NAMESPACES    0x00000001
 #define ESPCTX_WSDL             0x00000010
 #define ESPCTX_WSDL_EXT         0x00000100
@@ -78,6 +97,10 @@ interface IEspContext : extends IInterface
     virtual const char * queryRealm() = 0;
     virtual void setUser(ISecUser * user) = 0;
     virtual ISecUser * queryUser() = 0;
+    virtual void setSessionToken(unsigned token) = 0;
+    virtual unsigned querySessionToken() = 0;
+    virtual void setSignature(const char * signature) = 0;
+    virtual const char * querySignature() = 0;
     virtual void setResources(ISecResourceList * rlist) = 0;
     virtual ISecResourceList * queryResources() = 0;
     virtual void setSecManger(ISecManager * mgr) = 0;
@@ -169,6 +192,15 @@ interface IEspContext : extends IInterface
 
     virtual void setTransactionID(const char * trxid) = 0;
     virtual const char * queryTransactionID() = 0;
+
+    virtual const char * getAuthenticationMethod()=0;
+    virtual void setAuthenticationMethod(const char * method)=0;
+    virtual void setDomainAuthType(AuthType type)=0;
+    virtual AuthType getDomainAuthType()=0;
+    virtual void setAuthError(AuthError error)=0;
+    virtual AuthError getAuthError()=0;
+    virtual const char * getRespMsg()=0;
+    virtual void setRespMsg(const char * msg)=0;
 };
 
 
@@ -196,6 +228,15 @@ interface IEspContainer : extends IInterface
     virtual void setFrameTitle(const char* title) = 0;
     virtual const char* getFrameTitle() = 0;
     virtual void sendSnmpMessage(const char* msg) = 0;
+    virtual bool reSubscribeESPToDali() = 0;
+    virtual bool unsubscribeESPFromDali() = 0;
+    virtual bool detachESPFromDali(bool force) = 0;
+    virtual bool attachESPToDali() = 0;
+    virtual bool isAttachedToDali() = 0;
+    virtual bool isSubscribedToDali() = 0;
+    virtual bool hasCacheClient() = 0;
+    virtual const void* queryCacheClient(const char* id) = 0;
+    virtual void clearCacheByGroupID(const char* ids, StringArray& errorMsgs) = 0;
 };
 
 interface IEspRpcBinding;
@@ -224,9 +265,11 @@ SCMinterface IEspProtocol(IInterface)
 {
    const char * getProtocolName();
    void addBindingMap(ISocket *sock, IEspRpcBinding* binding, bool isdefault);
+   int removeBindingMap(int port, IEspRpcBinding* binding);
    void clearBindingMap();
    void init(IPropertyTree *cfg, const char *process, const char *protocol);
    void setContainer(IEspContainer *container);
+   int countBindings(int port);
 };
 
 
@@ -260,6 +303,10 @@ SCMinterface IEspService(IInterface)
     const char * getServiceType();
     bool init(const char *name, const char *type, IPropertyTree *cfg, const char *process);
     void setContainer(IEspContainer *container);
+    bool subscribeServiceToDali();
+    bool unsubscribeServiceFromDali();
+    bool detachServiceFromDali();
+    bool attachServiceToDali();
 };
 
 
@@ -298,6 +345,12 @@ SCMinterface IEspRpcBinding(IInterface)
     void setContainer(IEspContainer *ic);
     void setXslProcessor(IInterface *xslp);
     IEspContainer* queryContainer();
+    unsigned getCacheMethodCount();
+    bool subscribeBindingToDali();
+    bool unsubscribeBindingFromDali();
+    bool detachBindingFromDali();
+    bool attachBindingToDali();
+    bool canDetachFromDali();
 };
 
 SCMinterface IEspUriMap(IInterface)
@@ -316,6 +369,12 @@ SCMinterface IEspServer(IInterface)
 {
    void addProtocol(IEspProtocol &prot);
    void addBinding(const char * name, const char * host, unsigned short port, IEspProtocol &prot, IEspRpcBinding &bind, bool isdefault, IPropertyTree* cfgtree);
+   void removeBinding(unsigned short port, IEspRpcBinding& bind);
+   IEspProtocol* queryProtocol(const char* name);
+   IEspRpcBinding* queryBinding(const char* name);
+   const char* getProcName();
+   virtual IPropertyTree* queryProcConfig();
+   bool addCacheClient(const char* id, const char* initString);
 };
 
 SCMinterface IEspServiceCfg(IInterface)

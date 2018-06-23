@@ -32,21 +32,23 @@ define([
     "dijit/MenuItem",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
+    "dijit/form/ValidationTextBox",
 
     "dgrid/tree",
     "dgrid/editor",
     "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/FileSpray",
-    "hpcc/ESPUtil",
-    "hpcc/ESPRequest",
-    "hpcc/ESPDFUWorkunit",
+    "src/FileSpray",
+    "src/ESPUtil",
+    "src/ESPRequest",
+    "src/ESPDFUWorkunit",
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/TargetComboBoxWidget",
     "hpcc/SelectionGridWidget",
     "hpcc/FilterDropDownWidget",
+    "src/Utility",
 
     "dojo/text!../templates/LZBrowseWidget.html",
 
@@ -71,9 +73,9 @@ define([
 
     "hpcc/TableContainer"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, iframe, on, topic,
-                registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+                registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, ValidationTextBox,
                 tree, editor, selector,
-                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, SelectionGridWidget, FilterDropDownWidget,
+                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, SelectionGridWidget, FilterDropDownWidget, Utility,
                 template) {
     return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -623,7 +625,7 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.landingZonesTab.id) {
+                if (currSel.id === this.landingZonesTab.id) {
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel.params);
@@ -671,14 +673,14 @@ define([
                             var img = "";
                             var name = _name;
                             if (row.isDir === undefined) {
-                                img = dojoConfig.getImageHTML("server.png");
+                                img = Utility.getImageHTML("server.png");
                                 name += " [" + row.Path + "]";
                             } else if (row.isMachine) {
-                                 img = dojoConfig.getImageHTML("machine.png");
+                                img = Utility.getImageHTML("machine.png");
                             } else if (row.isDir) {
-                                img = dojoConfig.getImageHTML("folder.png");
+                                img = Utility.getImageHTML("folder.png");
                             } else {
-                                img = dojoConfig.getImageHTML("file.png");
+                                img = Utility.getImageHTML("file.png");
                             }
                             return img + "&nbsp;" + name;
                         }
@@ -759,14 +761,14 @@ define([
                         label: this.i18n.RowTag,
                         width:100,
                         autoSave: true,
-                        editor: dijit.form.ValidationTextBox,
+                        editor: "dijit.form.ValidationTextBox",
                         editorArgs: {
                             required: true,
                             placeholder: this.i18n.RequiredForXML,
                             promptMessage: this.i18n.RequiredForXML,
                             validator: function(value, constraints) {
                                 var valid = true;
-                                if ((value != null ) && (value != "")) {
+                                if (value !== null && value !== undefined && value !== "") {
                                     valid = true;
                                     context.sprayXMLButton.set("disabled", false);
                                 } else {

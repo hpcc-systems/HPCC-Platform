@@ -79,6 +79,7 @@ public:
     void setMinimalSelectors(bool value)    { minimalSelectors = value; }
     void setMaxRecurseDepth(int depth)      { maxDatasetDepth = depth; }
     void setTryToRegenerate(bool value)         { tryToRegenerate = value; }
+    StringBuffer &doAlias(IHqlExpression * expr, StringBuffer &name, bool inType);
 
 private:
     void childrenToECL(IHqlExpression *expr, StringBuffer &s, bool inType, bool needComma, unsigned first);
@@ -91,7 +92,6 @@ private:
     StringBuffer &getTypeString(ITypeInfo * i, StringBuffer &s);
     StringBuffer &getFieldTypeString(IHqlExpression * e, StringBuffer &s);
     const char *getEclOpString(node_operator op);
-    StringBuffer &doAlias(IHqlExpression * expr, StringBuffer &name, bool inType);
     void defineCallTarget(IHqlExpression * expr, StringBuffer & name);
     bool isFunctionDefined(IHqlExpression * expr);
     IHqlExpression * querySymbolDefined(IHqlExpression * expr);
@@ -1186,6 +1186,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             //First output the attributes...
             //MORE: Add attributes to the record definition
             bool first = true;
+            bool firstPayload = true;
             ForEachChild(idx, expr)
             {
                 IHqlExpression *child = queryChild(expr, idx);
@@ -1196,11 +1197,29 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     if (fieldsInline)
                     {
                         if (!first)
-                            s.append(",");
+                        {
+                            if (firstPayload && child->hasAttribute(_payload_Atom))
+                            {
+                                s.append(" =>");
+                                firstPayload = false;
+                            }
+                            else
+                                s.append(",");
+                        }
                         s.append(" ");
                     }
                     else
+                    {
+                        if (!first)
+                        {
+                            if (firstPayload && child->hasAttribute(_payload_Atom))
+                            {
+                                s.remove(s.length()-2,2).append("\n").pad(indent).append("=>\n");
+                                firstPayload = false;
+                            }
+                        }
                         s.pad(indent);
+                    }
                     toECL(child, s, false, inType, idx+1);
                     if (!fieldsInline)
                         s.append(";\n");
@@ -2993,6 +3012,9 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
     case type_table:
 //  case type_groupedtable:
         break;
+    case type_filepos:
+        getTypeString(i->queryChildType(), s);
+        break;
     default:
         ITypeInfo * original = queryModifier(i, typemod_original);
         IHqlExpression * originalExpr = NULL;
@@ -3086,6 +3108,8 @@ void HqltHql::doFunctionDefinition(StringBuffer & newdef, IHqlExpression * funcd
     newdef.append(name).append('(');
 
     IHqlExpression * formals = funcdef->queryChild(1);
+    IHqlExpression * defaults = funcdef->queryChild(2);
+    assertex( !defaults || formals->numChildren() ==defaults->numChildren());
     bool first = true;
     ForEachChild(idx, formals)
     {
@@ -3097,6 +3121,16 @@ void HqltHql::doFunctionDefinition(StringBuffer & newdef, IHqlExpression * funcd
             else
                 newdef.append(", ");
             toECL(curParam, newdef, false, hasNamedSymbol(curParam) ? inType : true);
+            if (defaults)
+            {
+                IHqlExpression * defexpr = defaults->queryChild(idx);
+                if (defexpr->getOperator() != no_omitted)
+                {
+                    newdef.append("=");
+                    toECL(defexpr, newdef, false, false);
+                }
+            }
+
         }
     }
     newdef.append(')');
@@ -3403,6 +3437,38 @@ static StringBuffer &toECL(StringBuffer &s, HqltHql & hqlthql, HqlExprArray & qu
     return s;
 }
 
+
+static StringBuffer &toECLDefinition(StringBuffer &s, HqltHql & hqlthql, HqlExprArray & queries, bool recurse)
+{
+    int startpos = s.length();
+    try
+    {
+        ForEachItemIn(idx, queries)
+        {
+            StringBuffer name;
+            hqlthql.doAlias((IHqlExpression *) &queries.item(idx), name, false);
+        }
+
+        if (recurse)
+        {
+            StringBuffer definitions;
+            hqlthql.gatherServices(definitions);
+            hqlthql.gatherDefinitions(definitions);
+            s.insert(startpos, definitions.str());
+        }
+    }
+#ifdef _DEBUG
+    catch(int*****************){}
+#else
+    catch(...)
+    {
+        PrintLog("WARNING: toECLDefinition() threw an exception");
+        s.setLength(startpos);
+    }
+#endif
+    return s;
+}
+
 StringBuffer &toECL(IHqlExpression * expr, StringBuffer &s, bool recurse, bool xgmmlGraphText)
 {
     HqltHql hqlthql(recurse, xgmmlGraphText);
@@ -3422,6 +3488,19 @@ StringBuffer &regenerateECL(IHqlExpression * expr, StringBuffer &s)
     HqlExprArray queries;
     unwindCommaCompound(queries, expr);
     return toECL(s, hqlthql, queries, true);
+}
+
+
+StringBuffer &regenerateDefinition(IHqlExpression * expr, StringBuffer &s)
+{
+    if (!isEclAlias(expr))
+        throw makeStringExceptionV(ERR_INTERNALEXCEPTION, "Internal: regenerateDefinition requires ECL alias expression");
+    HqltHql hqlthql(true, false);
+    hqlthql.setIgnoreModuleNames(true);
+
+    HqlExprArray queries;
+    unwindCommaCompound(queries, expr);
+    return toECLDefinition(s, hqlthql, queries, true);
 }
 
 

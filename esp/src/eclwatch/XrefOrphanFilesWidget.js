@@ -32,17 +32,15 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsDFUXref",
+    "src/WsDFUXref",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
-    "hpcc/FilterDropDownWidget",
-    "hpcc/XrefDetailsWidget"
+    "src/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domConstruct, domClass,
                 registry, ToggleButton, ToolbarSeparator, Button,
                 selector,
                 GridDetailsWidget, WsDFUXref, DelayLoadWidget, ESPUtil) {
-    return declare("XrefFoundFilesWidget", [GridDetailsWidget], {
+    return declare("XrefOrphanFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.title_OrphanFilesFor,
         idProperty: "Name",
@@ -75,8 +73,6 @@ define([
 
             var retVal = new declare([ESPUtil.Grid(true, true)])({
                 store: this.store,
-                selectionMode: "single",
-                allowSelectAll: false,
                 columns: {
                     col1: selector({
                         width: 27,
@@ -84,10 +80,10 @@ define([
                         label: ""
                     }),
                     Name: {label: this.i18n.Name, width:100, sortable: false},
-                    Modified: {label: this.i18n.Modified, width: 30, sortable: false},
+                    Modified: {label: this.i18n.Modified, width: 30, sortable: true},
                     PartsFound: {label: this.i18n.PartsFound, width: 30, sortable: false},
-                    TotalParts: {label: this.i18n.TotalParts, width: 30, sortable: true},
-                    Size: {label: this.i18n.Size, width: 30, sortable: true}
+                    TotalParts: {label: this.i18n.TotalParts, width: 30, sortable: false},
+                    Size: {label: this.i18n.Size, width: 30, sortable: false}
                 }
             }, domID);
 

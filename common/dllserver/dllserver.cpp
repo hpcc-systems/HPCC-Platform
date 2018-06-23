@@ -39,10 +39,8 @@ static Owned<IConstDomainInfo> hostDomain;
 
 IConstDomainInfo * getDomainFromIp(const char * ip)
 {
-    Owned<IEnvironmentFactory> ef = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> ef = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = ef->openEnvironment();
-    if (!env)
-        return NULL;
     Owned<IConstMachineInfo> curMachine = env->getMachineByAddress(ip);
     if (!curMachine)
         return NULL;

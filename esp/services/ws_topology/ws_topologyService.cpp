@@ -54,7 +54,6 @@ void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *se
         ERRLOG("No Dali Connection Active.");
         throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI, "No Connection to Dali server is active. Please specify a Dali server in the configuration file.");
     }
-    m_envFactory.setown( getEnvironmentFactory() );
 
     //load threshold values for monitoring cpu load, disk/memory usage
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
@@ -150,9 +149,6 @@ bool CWsTopologyEx::onTpSwapNode(IEspContext &context,IEspTpSwapNodeRequest  &re
     {
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to Swap Node. Permission denied.");
-
-        //another client (like configenv) may have updated the constant environment so reload it
-        m_envFactory->validateCache();
 
         bool res = swapNode(req.getCluster(),req.getOldIP(),req.getNewIP());
 
@@ -977,9 +973,6 @@ bool CWsTopologyEx::onTpClusterQuery(IEspContext &context, IEspTpClusterQueryReq
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
 
-        //another client (like configenv) may have updated the constant environment so reload it
-        m_envFactory->validateCache();
-
         IArrayOf<IEspTpCluster> clusters;
         const char* type = req.getType();
         if (!type || !*type || (strcmp(eqRootNode,type) == 0) || (strcmp(eqAllClusters,type) == 0))
@@ -1019,14 +1012,8 @@ bool CWsTopologyEx::onTpListTargetClusters(IEspContext &context, IEspTpListTarge
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
 
-        //another client (like configenv) may have updated the constant environment so reload it
-        m_envFactory->validateCache();
-
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> env = factory->openEnvironment();
-        if (!env)
-            return false;
-
         Owned<IPropertyTree> root = &env->getPTree();
         bool foundDefault = false;
         bool hasHThor = false;
@@ -1114,9 +1101,6 @@ bool CWsTopologyEx::onTpTargetClusterQuery(IEspContext &context, IEspTpTargetClu
     {
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
-
-        //another client (like configenv) may have updated the constant environment so reload it
-        m_envFactory->validateCache();
 
         double version = context.getClientVersion();
 
@@ -1273,12 +1257,9 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
         const char* type = req.getType();
         if (!type || !*type || (strcmp(eqAllServices,type) == 0))
         {
-            //another client (like configenv) may have updated the constant environment so reload it
-            m_envFactory->validateCache();
-
             IEspTpServices& ServiceList = resp.updateServiceList();
 
-            m_TpWrapper.getTpDaliServers( ServiceList.getTpDalis() );
+            m_TpWrapper.getTpDaliServers( version, ServiceList.getTpDalis() );
             m_TpWrapper.getTpEclServers( ServiceList.getTpEclServers() );
             m_TpWrapper.getTpEclCCServers( ServiceList.getTpEclCCServers() );
             m_TpWrapper.getTpEclAgents( ServiceList.getTpEclAgents() );
@@ -1332,9 +1313,6 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
 { 
     try
     {
-        //another client (like configenv) may have updated the constant environment so reload it
-        m_envFactory->validateCache();
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Machine Query. Permission denied.");
         
@@ -1403,9 +1381,6 @@ bool CWsTopologyEx::onTpMachineInfo(IEspContext &context, IEspTpMachineInfoReque
 {
     try
     {
-        //another client (like configenv) may have updated the constant environment so reload it
-        m_envFactory->validateCache();
-
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Machine Info. Permission denied.");
 
@@ -1498,9 +1473,8 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
         StringAttr      sDirectory;
         if (bCluster && !(netAddress && *netAddress))
         {
-            //another client (like configenv) may have updated the constant environment so reload it
-            m_envFactory->validateCache();
-            Owned<IConstEnvironment> constEnv = m_envFactory->openEnvironment();
+            Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+            Owned<IConstEnvironment> constEnv = factory->openEnvironment();
             Owned<IPropertyTree> pRoot = &constEnv->getPTree();
 
             StringBuffer xpath;

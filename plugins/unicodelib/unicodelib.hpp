@@ -101,6 +101,16 @@ UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned lef
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEditDistanceWithinRadius(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, unsigned radius,char const * localename);
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleWordCount(unsigned textLen, UChar const * text,char const * localename);
 UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleGetNthWord(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, unsigned n, char const * localename);
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeNthWord(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, unsigned n, char const * localename);
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeLastWord(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, char const * localename);
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleTranslate(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, unsigned searLen, UChar const * sear, unsigned replLen, UChar * repl);
+UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleStartsWith(unsigned srcLen, UChar const * src, unsigned prefLen, UChar const * pref, unsigned formLen, char const * form);
+UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEndsWith(unsigned srcLen, UChar const * src, unsigned suffLen, UChar const * suff, unsigned formLen, char const * form);
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeVersion(unsigned & tgtLen, char * & tgt);
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRemoveSuffix(unsigned & tgtLen, UChar * & tgt, unsigned srcLen, UChar const * src, unsigned suffLen, UChar const * suff, unsigned formLen, char const * form);
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRepeat(unsigned & tgtLen, UChar * & tgt, unsigned srcLen, UChar const * src, unsigned n);
+UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleFindCount(unsigned srcLen, UChar const * src, unsigned hitLen, UChar const * hit, unsigned formLen, char const * form);
+UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleCountWords(unsigned srcLen, UChar const * src, unsigned delimLen, UChar const * delim, bool allowBlankItems);
 }
 
 #endif

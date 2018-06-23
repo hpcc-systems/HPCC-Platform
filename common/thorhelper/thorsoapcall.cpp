@@ -19,6 +19,8 @@
 #include "jqueue.tpp"
 #include "jisem.hpp"
 
+#include "rtlformat.hpp"
+
 #include "thorxmlread.hpp"
 #include "thorxmlwrite.hpp"
 #include "thorcommon.ipp"
@@ -427,11 +429,11 @@ public:
             {
             }
 
-            virtual void init(void *param)
+            virtual void init(void *param) override
             {
                 ep.set(*(SocketEndpoint *) param);
             }
-            virtual void main()
+            virtual void threadmain() override
             {
                 unsigned delay = 5000;
                 for (unsigned i = 0; i < BLACKLIST_RETRIES; i++)
@@ -453,12 +455,12 @@ public:
                 }
                 parent.deblacklist(ep);
             }
-            virtual bool stop()
+            virtual bool stop() override
             {
                 stopped.signal();
                 return true;
             }
-            virtual bool canReuse() { return true; }
+            virtual bool canReuse() const override { return true; }
         };
         return new SocketDeblacklister(*this);
     }
@@ -732,8 +734,7 @@ public:
 
         rowProvider = _rowProvider;
         helper = rowProvider->queryActionHelper();
-        callHelper = rowProvider->queryCallHelper();  //MORE: This should not be done this way!! Should use extra as below.
-        helperExtra = static_cast<IHThorSoapCallExtra*>(helper->selectInterface(TAIsoapcallextra_1));
+        callHelper = rowProvider->queryCallHelper();
         flags = helper->getFlags();
         OwnedRoxieString s;
 
@@ -980,7 +981,7 @@ public:
         {
             size32_t lenText;
             rtlDataAttr text;
-            helperExtra->getLogText(lenText, text.refstr(), row);
+            helper->getLogText(lenText, text.refstr(), row);
             logctx.CTXLOG("%s: %.*s", wscCallTypeText(), lenText, text.getstr());
         }
     }
@@ -1034,7 +1035,6 @@ protected:
     IWSCRowProvider * rowProvider;
     IHThorWebServiceCallActionArg * helper;
     IHThorWebServiceCallArg *   callHelper;
-    IHThorWebServiceCallExtra * helperExtra;
     Linked<IEngineRowAllocator> outputAllocator;
     Owned<IException> error;
     UrlArray urlArray;
@@ -1522,6 +1522,12 @@ private:
         if (!httpHeaderBlockContainsHeader(httpheaders, ACCEPT_ENCODING))
             request.appendf("%s: gzip, deflate\r\n", ACCEPT_ENCODING);
 #endif
+        if (!isEmptyString(master->logctx.queryGlobalId()))
+        {
+            request.append(master->logctx.queryGlobalIdHttpHeader()).append(": ").append(master->logctx.queryGlobalId()).append("\r\n");
+            if (!isEmptyString(master->logctx.queryLocalId()))
+                request.append(master->logctx.queryCallerIdHttpHeader()).append(": ").append(master->logctx.queryLocalId()).append("\r\n");  //our localId is reciever's callerId
+        }
 
         if (master->wscType == STsoap)
         {

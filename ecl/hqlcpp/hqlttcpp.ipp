@@ -459,19 +459,13 @@ public:
 protected:
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr) { return CREATE_NEWTRANSFORMINFO(WorkflowTransformInfo, expr); }
 
-    IWorkflowItem *           addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, IHqlExpression * cluster) 
-    { 
-        UnsignedArray dependencies; 
-        ContingencyData conts; 
-        return addWorkflowToWorkunit(wfid, type, mode, dependencies, conts, cluster);
-    }
-    IWorkflowItem *           addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, IHqlExpression * cluster) 
+    IWorkflowItem *           addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, IHqlExpression * cluster, const char * label)
     { 
         ContingencyData conts;
-        return addWorkflowToWorkunit(wfid, type, mode, dependencies, conts, cluster);
+        return addWorkflowToWorkunit(wfid, type, mode, dependencies, conts, cluster, label);
     }
-    IWorkflowItem *           addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, ContingencyData const & conts, IHqlExpression * cluster);
-    IWorkflowItem *           addWorkflowContingencyToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, IHqlExpression * cluster, unsigned wfidFor) { ContingencyData conts; conts.contingencyFor = wfidFor; return addWorkflowToWorkunit(wfid, type, mode, dependencies, conts, cluster); }
+    IWorkflowItem *           addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, ContingencyData const & conts, IHqlExpression * cluster, const char * label);
+    IWorkflowItem *           addWorkflowContingencyToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, IHqlExpression * cluster, unsigned wfidFor, const char * label) { ContingencyData conts; conts.contingencyFor = wfidFor; return addWorkflowToWorkunit(wfid, type, mode, dependencies, conts, cluster, label); }
 
     void setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int  numPersistInstances, bool refresh);
     void setWorkflowSchedule(IWorkflowItem * wf, ScheduleData const & sched);
@@ -505,7 +499,7 @@ protected:
     IHqlExpression *          createWorkflowAction(unsigned wfid);
     unsigned                  ensureWorkflowAction(IHqlExpression * expr);
     void                      ensureWorkflowAction(UnsignedArray & dependencies, IHqlExpression * expr);
-    WorkflowItem *            createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp);
+    WorkflowItem *            createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp, const char * label);
     void percolateScheduledIds();
     void percolateScheduledIds(UnsignedArray & visited, const UnsignedArray & dependencies, unsigned rootWfid);
 
@@ -1304,8 +1298,8 @@ void migrateExprToNaturalLevel(WorkflowItem & curWorkflow, IWorkUnit * wu, HqlCp
 void removeTrivialGraphs(WorkflowItem & curWorkflow);
 void extractWorkflow(HqlCppTranslator & translator, HqlExprArray & exprs, WorkflowArray & out);
 void optimizeActivities(unsigned wfid, HqlExprArray & exprs, bool optimizeCountCompare, bool optimizeNonEmpty);
-IHqlExpression * insertImplicitProjects(HqlCppTranslator & translator, IHqlExpression * expr, bool optimizeSpills);
-void insertImplicitProjects(HqlCppTranslator & translator, HqlExprArray & exprs);
+
+bool reportSemanticErrors(IHqlExpression * expr, IErrorReceiver & errors);
 
 //------------------------------------------------------------------------
 

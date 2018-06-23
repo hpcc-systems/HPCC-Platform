@@ -49,12 +49,20 @@
 void SetResp(StringBuffer &resp, IConstDFUWorkUnit * wu, bool array);
 int Schedule::run()
 {
-    try
+    PROGLOG("DfuWorkunit WUSchedule Thread started.");
+    while(!stopping)
     {
-        PROGLOG("DfuWorkunit WUSchedule Thread started.");
-        while(!stopping)
+        unsigned int waitTimeMillies = 1000*60;
+        if (!detached)
         {
+            try
             {
+                if (waitTimeMillies == (unsigned)-1)
+                {
+                    PROGLOG("WS_FS WUSchedule Thread Re-started.");
+                    waitTimeMillies = 1000*60;
+                }
+
                 Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
                 Owned<IConstDFUWorkUnitIterator> itr = factory->getWorkUnitsByState(DFUstate_scheduled);
                 itr->first();
@@ -82,18 +90,23 @@ int Schedule::run()
                     itr->next();
                 }
             }
-            semSchedule.wait(1000*60);
+            catch(IException *e)
+            {
+                StringBuffer msg;
+                ERRLOG("Exception %d:%s in WS_FS Schedule::run", e->errorCode(), e->errorMessage(msg).str());
+                e->Release();
+            }
+            catch(...)
+            {
+                ERRLOG("Unknown exception in WS_FS Schedule::run");
+            }
         }
-    }
-    catch(IException *e)
-    {
-        StringBuffer msg;
-        ERRLOG("Exception %d:%s in WS_FS Schedule::run", e->errorCode(), e->errorMessage(msg).str());
-        e->Release();
-    }
-    catch(...)
-    {
-        ERRLOG("Unknown exception in WS_FS Schedule::run");
+        else
+        {
+            WARNLOG("Detached from DALI, WS_FS schedule interrupted");
+            waitTimeMillies = (unsigned)-1;
+        }
+        semSchedule.wait(waitTimeMillies);
     }
     return 0;
 }
@@ -127,11 +140,15 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
         }
     }
 
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/MonitorQueueLabel", process, service);
-    cfg->getProp(xpath.str(), m_MonitorQueueLabel);
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@PageCacheTimeoutSeconds", process);
+    if (cfg->hasProp(xpath.str()))
+        setPageCacheTimeoutMilliSeconds(cfg->getPropInt(xpath.str()));
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@MaxPageCacheItems", process);
+    if (cfg->hasProp(xpath.str()))
+        setMaxPageCacheItems(cfg->getPropInt(xpath.str()));
 
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/RootFolder", process, service);
-    cfg->getProp(xpath.str(), m_RootFolder);
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/MonitorQueueLabel", process, service);
+    cfg->getProp(xpath.str(), m_MonitorQueueLabel);
 
     directories.set(cfg->queryPropTree("Software/Directories"));
 
@@ -140,9 +157,6 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
     PrintLog(prop.str());
     prop.clear();
     prop.appendf("monitorQueueLabel=%s", m_MonitorQueueLabel.str());
-    PrintLog(prop.str());
-    prop.clear();
-    prop.appendf("rootFolder=%s", m_RootFolder.str());
     PrintLog(prop.str());
 
     if (!daliClientActive())
@@ -205,11 +219,9 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
     if(src == NULL)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "'Source DFU workunit' doesn't exist.");
 
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IPropertyTree> root = &constEnv->getPTree();
-    if (!root)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
     double version = context.getClientVersion();
     StringBuffer tmp, encoded;
@@ -567,12 +579,10 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, StringBuffer &tit
 void setRoxieClusterPartDiskMapping(const char *clusterName, const char *defaultFolder, const char *defaultReplicateFolder,
                                bool supercopy, IDFUfileSpec *wuFSpecDest, IDFUoptions *wuOptions)
 {
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-    envFactory->validateCache();
-
-    StringBuffer dirxpath;
-    dirxpath.appendf("Software/RoxieCluster[@name=\"%s\"]",clusterName);
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+
+    VStringBuffer dirxpath("Software/RoxieCluster[@name=\"%s\"]",clusterName);
     Owned<IPropertyTree> pEnvRoot = &constEnv->getPTree();
     Owned<IPropertyTreeIterator> processes = pEnvRoot->getElements(dirxpath);
     if (!processes->first())
@@ -652,13 +662,11 @@ bool CFileSprayEx::onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & 
         if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
-        StringArray dfuclusters;
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> environment = factory->openEnvironment();
         Owned<IPropertyTree> root = &environment->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
+        StringArray dfuclusters;
         Owned<IPropertyTreeIterator> clusterIterator = root->getElements("Software/Topology/Cluster");
         if (clusterIterator->first())
         {
@@ -939,11 +947,9 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             clusterReq.append(clusterName);
         }
 
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
         StringArray targetClusters, clusterProcesses;
         Owned<IPropertyTreeIterator> clusters= root->getElements("Software/Topology/Cluster");
@@ -1990,6 +1996,8 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         if (req.getRecordStructurePresent())
             options->setRecordStructurePresent(true);
 
+        options->setExpireDays(req.getExpireDays());
+
         resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
@@ -2163,6 +2171,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         if (req.getRecordStructurePresent())
             options->setRecordStructurePresent(true);
 
+        options->setExpireDays(req.getExpireDays());
+
         resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
@@ -2231,10 +2241,8 @@ void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, con
     if (!ip || !*ip)
         throw MakeStringExceptionDirect(ECLWATCH_INVALID_IP, "Network address must be specified for a drop zone!");
 
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = factory->openEnvironment();
-    if (!constEnv)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
     StringBuffer destFile;
     if (isAbsolutePath(destFileIn))
@@ -2830,7 +2838,7 @@ bool CFileSprayEx::checkDropZoneIPAndPath(double clientVersion, const char* drop
     if (isEmptyString(netAddr) || isEmptyString(path))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "NetworkAddress or Path not defined.");
 
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIteratorByAddress(netAddr);
     ForEach(*dropZoneItr)
@@ -2944,7 +2952,7 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
         if (isEmptyString(dropZoneName))
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone not specified.");
 
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IConstDropZoneInfo> dropZoneInfo = constEnv->getDropZone(dropZoneName);
         if (!dropZoneInfo || (req.getECLWatchVisibleOnly() && !dropZoneInfo->isECLWatchVisible()))
@@ -3155,7 +3163,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         bool filesFromALinux = false;
         IArrayOf<IEspDropZone> dropZoneList;
         bool ECLWatchVisibleOnly = req.getECLWatchVisibleOnly();
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIterator();
         ForEach(*dropZoneItr)
@@ -3347,11 +3355,9 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
         if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> environment = factory->openEnvironment();
         Owned<IPropertyTree> root = &environment->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
         IArrayOf<IEspGroupNode> sprayTargets;
         //Fetch all the group names for all the thor instances (and dedup them)

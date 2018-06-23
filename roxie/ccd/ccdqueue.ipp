@@ -122,4 +122,8 @@ extern void stopPingTimer();
 extern void closeMulticastSockets();
 extern void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger &logctx);
 
+extern void addSlaveChannel(unsigned channel, unsigned level);
+extern void addChannel(unsigned nodeNumber, unsigned channel, unsigned level);
+extern unsigned getReplicationLevel(unsigned channel);
+
 #endif

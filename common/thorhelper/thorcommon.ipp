@@ -18,6 +18,7 @@
 #ifndef THORCOMMON_IPP
 #define THORCOMMON_IPP
 
+#include <type_traits>
 #include "eclrtl.hpp"
 #include "thorcommon.hpp"
 #include "jsort.hpp"
@@ -99,6 +100,12 @@ public:
     {
         return meta->queryChildMeta(i);
     }
+    inline const RtlRecord &queryRecordAccessor(bool expand) const
+    {
+        return meta->queryRecordAccessor(expand);
+    }
+
+    const RtlTypeInfo * queryTypeInfo() const               { return meta->queryTypeInfo(); }
 
 //cast operators.
     inline IOutputMetaData * queryOriginal() const          { return meta; }
@@ -113,56 +120,29 @@ private:
     unsigned metaFlags;
 };
 
-//------------------------------------------------------------------------------------------------
-
-class THORHELPER_API MemoryBufferBuilder : public RtlRowBuilderBase
+template<class T> class CClassMeta : implements CInterfaceOf<IOutputMetaData>
 {
 public:
-    MemoryBufferBuilder(MemoryBuffer & _buffer, unsigned _minSize)
-        : buffer(_buffer), minSize(_minSize)
-    {
-        reserved = 0;
-    }
-
-    virtual byte * ensureCapacity(size32_t required, const char * fieldName)
-    {
-        if (required > reserved)
-        {
-            void * next = buffer.reserve(required-reserved);
-            self = (byte *)next - reserved;
-            reserved = required;
-        }
-        return self;
-    }
-
-    void finishRow(size32_t length)
-    {
-        assertex(length <= reserved);
-        size32_t newLength = (buffer.length() - reserved) + length;
-        buffer.setLength(newLength);
-        self = NULL;
-        reserved = 0;
-    }
-    virtual IEngineRowAllocator *queryAllocator() const
-    {
-        return NULL;
-    }
-
-protected:
-    virtual byte * createSelf()
-    {
-        return ensureCapacity(minSize, NULL);
-    }
-
-protected:
-    MemoryBuffer & buffer;
-    size32_t minSize;
-    size32_t reserved;
+    virtual size32_t getRecordSize(const void *rec)         { return sizeof(T); }
+    virtual size32_t getMinRecordSize() const               { return sizeof(T); }
+    virtual size32_t getFixedSize() const                   { return sizeof(T); }
+    virtual void toXML(const byte * self, IXmlWriter & out) { }
+    virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
+    virtual unsigned getMetaFlags()                         { return std::is_pod<T>() ? 0 : MDFneeddestruct; }
+    virtual void destruct(byte * self)                      { reinterpret_cast<T *>(self)->~T(); }
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createDiskPrefetcher() { return NULL; }
+    virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
+    virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); } // could provide a static implementation if needed
 };
 
-
-
 //------------------------------------------------------------------------------------------------
+
 
 //This class is only ever used to apply a delta to a self pointer, it is never finalized, and the builder must stay alive.
 class THORHELPER_API CPrefixedRowBuilder : implements RtlRowBuilderBase
@@ -196,9 +176,12 @@ protected:
 
 //------------------------------------------------------------------------------------------------
 
-class AggregateRowBuilder : public RtlDynamicRowBuilder, public CInterface
+class THORHELPER_API AggregateRowBuilder : public RtlDynamicRowBuilder
 {
 public:
+    void Link() const;
+    bool Release() const;
+
     AggregateRowBuilder(IEngineRowAllocator *_rowAllocator, unsigned _elementHash)
         : RtlDynamicRowBuilder(_rowAllocator, true), elementHash(_elementHash)
     {
@@ -236,7 +219,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     void reset();
-    void start(IEngineRowAllocator *rowAllocator);
+    void start(IEngineRowAllocator *rowAllocator, ICodeContext *ctx, unsigned activityId);
     AggregateRowBuilder &addRow(const void * row);
     void mergeElement(const void * otherElement);
     AggregateRowBuilder *nextResult();
@@ -269,6 +252,7 @@ private:
     const void * cursor;
     bool eof;
     Owned<IEngineRowAllocator> rowAllocator;
+    Owned<IEngineRowAllocator> rowBuilderAllocator;
     memsize_t totalSize, overhead;
 };
 
@@ -322,7 +306,7 @@ public:
     {
     }
 
-    virtual void readAhead(IRowDeserializerSource & in)
+    virtual void readAhead(IRowPrefetcherSource & in)
     {
         in.skip(offset);
         original->readAhead(in);
@@ -379,9 +363,9 @@ public:
     {
         return new CPrefixedRowDeserializer(offset, original->createDiskDeserializer(ctx, activityId));
     }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) 
+    virtual ISourceRowPrefetcher * createDiskPrefetcher()
     {
-        return new CPrefixedRowPrefetcher(offset, original->createDiskPrefetcher(ctx, activityId));
+        return new CPrefixedRowPrefetcher(offset, original->createDiskPrefetcher());
     }
     virtual IOutputMetaData * querySerializedDiskMeta()
     {
@@ -405,7 +389,10 @@ public:
     {
         return original->queryChildMeta(i);
     }
-
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const
+    {
+        UNIMPLEMENTED;  // If needed we could implement a version of RtlRecord that added/subtracted offset as needed
+    }
 protected:
     size32_t offset;
     IOutputMetaData *original;
@@ -460,7 +447,7 @@ public:
     {
     }
 
-    virtual void readAhead(IRowDeserializerSource & in)
+    virtual void readAhead(IRowPrefetcherSource & in)
     {
         original->readAhead(in);
         in.skip(offset);
@@ -514,9 +501,9 @@ public:
     {
         return new CSuffixedRowDeserializer(offset, original->createDiskDeserializer(ctx, activityId));
     }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) 
+    virtual ISourceRowPrefetcher * createDiskPrefetcher()
     {
-        return new CSuffixedRowPrefetcher(offset, original->createDiskPrefetcher(ctx, activityId));
+        return new CSuffixedRowPrefetcher(offset, original->createDiskPrefetcher());
     }
     virtual IOutputMetaData * querySerializedDiskMeta()
     {
@@ -540,6 +527,7 @@ public:
     {
         return original->queryChildMeta(i);
     }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const override { return original->queryRecordAccessor(expand); }
 
 protected:
     size32_t offset;
@@ -737,104 +725,16 @@ class NullDiskCallback : public IThorDiskCallback, extends CInterface
 
 extern THORHELPER_API size32_t cloneRow(ARowBuilder & rowBuilder, const void * row, IOutputMetaData * meta);
 
-//The CThorContiguousRowBuffer is the source for a readAhead call to ensure the entire row
-//is in a contiguous block of memory.  The read() and skip() functions must be implemented
-class THORHELPER_API CThorContiguousRowBuffer : implements IRowDeserializerSource
-{
-public:
-    CThorContiguousRowBuffer(ISerialStream * _in);
-
-    inline void setStream(ISerialStream *_in) { in.set(_in); maxOffset = 0; readOffset = 0; }
-
-    virtual const byte * peek(size32_t maxSize);
-    virtual offset_t beginNested();
-    virtual bool finishedNested(offset_t & len);
-
-    virtual size32_t read(size32_t len, void * ptr);
-    virtual size32_t readSize();
-    virtual size32_t readPackedInt(void * ptr);
-    virtual size32_t readUtf8(ARowBuilder & target, size32_t offset, size32_t fixedSize, size32_t len);
-    virtual size32_t readVStr(ARowBuilder & target, size32_t offset, size32_t fixedSize);
-    virtual size32_t readVUni(ARowBuilder & target, size32_t offset, size32_t fixedSize);
-
-    //These shouldn't really be called since this class is meant to be used for a deserialize.
-    //If we allowed padding/alignment fields in the input then the first function would make sense.
-    virtual void skip(size32_t size);
-    virtual void skipPackedInt();
-    virtual void skipUtf8(size32_t len);
-    virtual void skipVStr();
-    virtual void skipVUni();
-
-    inline bool eos()
-    {
-        return in->eos();
-    }
-
-    inline offset_t tell()
-    {
-        return in->tell();
-    }
-
-    inline void clearStream()
-    {
-        in.clear();
-        maxOffset = 0;
-        readOffset = 0;
-    }
-
-    inline const byte * queryRow() { return buffer; }
-    inline size32_t queryRowSize() { return readOffset; }
-    inline void finishedRow()
-    {
-        if (readOffset)
-            in->skip(readOffset);
-        maxOffset = 0;
-        readOffset = 0;
-    }
-
-
-protected:
-    size32_t sizePackedInt();
-    size32_t sizeUtf8(size32_t len);
-    size32_t sizeVStr();
-    size32_t sizeVUni();
-    void reportReadFail();
-
-private:
-    inline void doPeek(size32_t maxSize)
-    {
-        buffer = static_cast<const byte *>(in->peek(maxSize, maxOffset));
-    }
-
-    void doRead(size32_t len, void * ptr);
-
-    inline void ensureAccessible(size32_t required)
-    {
-        if (required > maxOffset)
-        {
-            doPeek(required);
-            assertex(required <= maxOffset);
-        }
-    }
-
-protected:
-    Linked<ISerialStream> in;
-    const byte * buffer;
-    size32_t maxOffset;
-    size32_t readOffset;
-};
-
-
 //=====================================================================================================
 
 class ChildRowLinkerWalker : implements IIndirectMemberVisitor
 {
 public:
-    virtual void visitRowset(size32_t count, byte * * rows)
+    virtual void visitRowset(size32_t count, const byte * * rows) override
     {
         rtlLinkRowset(rows);
     }
-    virtual void visitRow(const byte * row)
+    virtual void visitRow(const byte * row) override
     {
         rtlLinkRow(row);
     }

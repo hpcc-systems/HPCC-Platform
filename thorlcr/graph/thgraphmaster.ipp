@@ -97,7 +97,7 @@ public:
     CSlaveMessageHandler(CJobMaster &job, mptag_t mptag);
     ~CSlaveMessageHandler();
     void stop();
-    void main();
+    virtual void threadmain() override;
 };
 
 class graphmaster_decl CJobMaster : public CJobBase
@@ -320,7 +320,7 @@ public:
 // IExceptionHandler
     virtual bool fireException(IException *e);
 // IThreaded
-    virtual void main();
+    virtual void threadmain() override;
 };
 
 class graphmaster_decl CMasterGraphElement : public CGraphElementBase

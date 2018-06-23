@@ -22,6 +22,7 @@
 //Jlib
 #include "jliball.hpp"
 #include "jstats.h"
+#include "jutil.hpp"
 
 //CRT / OS
 #ifndef _WIN32
@@ -230,6 +231,7 @@ static void usage()
     puts("  esp [options]");
     puts("Options:");
     puts("  -?/-h: show this help page");
+    puts("  --daemon|-d <instanceName>: run daemon as instance");
     puts("  interactive: start in interactive mode (pop up error dialog when exception occurs)");
     puts("  config=<file>: specify the config file name [default: esp.xml]");
     puts("  process=<name>: specify the process name in the config [default: the 1st process]");
@@ -238,6 +240,15 @@ static void usage()
 
 int init_main(int argc, char* argv[])
 {
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
     InitModuleObjects();
 
     Owned<IProperties> inputs = createProperties(true);
@@ -246,10 +257,12 @@ int init_main(int argc, char* argv[])
 
     for (int i = 1; i < argc; i++)
     {
-        if (stricmp(argv[i], "-?")==0 || stricmp(argv[i], "-h")==0 || stricmp(argv[i], "-help")==0
-             || stricmp(argv[i], "/?")==0 || stricmp(argv[i], "/h")==0)
+        if (streq(argv[i], "-?") || streq(argv[i], "-h") || streq(argv[i], "-help")
+             || streq(argv[i], "/?") || streq(argv[i], "/h"))
              usage();
-        else if(stricmp(argv[i], "interactive") == 0)
+        else if(streq(argv[i], "--daemon") || streq(argv[i], "-d"))
+            i++; // skip the instance that follows --daemon|-d
+        else if(streq(argv[i], "interactive"))
             interactive = true;
         else if (strchr(argv[i],'='))
         {
@@ -377,7 +390,7 @@ int init_main(int argc, char* argv[])
 
             config->loadAll();
             config->bindServer(*server.get(), *server.get()); 
-            
+            config->checkESPCache(*server.get());
         }
         catch(IException* e)
         {
@@ -393,6 +406,7 @@ int init_main(int argc, char* argv[])
         }
 
         writeSentinelFile(sentinelFile);
+
         result = work_main(*config, *server.get());
     }
     else

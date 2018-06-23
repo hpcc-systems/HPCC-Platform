@@ -38,12 +38,15 @@ endif()
 set (   SRCS 
         hqlatoms.cpp
         hqlattr.cpp
+        hqlcache.cpp
         hqlcollect.cpp
         hqldesc.cpp
         hqldsparam.cpp
         hqlerror.cpp
         hqlesp.cpp
         hqlexpr.cpp
+        hqlfield.cpp
+        hqlfilter.cpp
         hqlfold.cpp
         hqlgram2.cpp
         hqlmanifest.cpp
@@ -76,10 +79,13 @@ set (   SRCS
         hql.hpp
         hqlatoms.hpp
         hqlattr.hpp
+        hqlcache.hpp
         hqlcollect.hpp
         hqldesc.hpp
         hqlesp.hpp
         hqlexpr.hpp
+        hqlfield.hpp
+        hqlfilter.hpp
         hqlfold.hpp
         hqlgram.hpp
         hqlmeta.hpp
@@ -110,7 +116,7 @@ include_directories (
          ./../../system/hrpc 
          ./../../common/thorhelper 
          ./../../rtl/eclrtl 
-         ./../../rtl/include 
+         ./../../rtl/include
          ./../eclagent 
          ./../../system/include 
          ./../../common/workunit

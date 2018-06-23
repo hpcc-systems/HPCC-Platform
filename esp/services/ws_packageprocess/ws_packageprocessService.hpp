@@ -57,16 +57,21 @@ public:
             dirty |= PMAS_RELOAD_PACKAGE_SET;
     }
 
-    virtual void subscribe()
+    virtual bool subscribe()
     {
         CriticalBlock b(crit);
-        pmChange = querySDS().subscribe("PackageMaps", *this, true);
-        psChange = querySDS().subscribe("PackageSets", *this, true);
+        if (!pmChange)
+            pmChange = querySDS().subscribe("PackageMaps", *this, true);
+        if(!psChange)
+            psChange = querySDS().subscribe("PackageSets", *this, true);
+
+        return pmChange != 0 && psChange != 0;
     }
 
-    virtual void unsubscribe()
+    virtual bool unsubscribe()
     {
         CriticalBlock b(crit);
+        bool success = true;
         try
         {
             if (pmChange)
@@ -77,9 +82,11 @@ public:
         catch (IException *E)
         {
             E->Release();
+            success = false;
         }
         pmChange = 0;
         psChange = 0;
+        return success;
     }
 
     IPropertyTree *getTree()
@@ -164,6 +171,16 @@ public:
     virtual bool onAddPartToPackageMap(IEspContext &context, IEspAddPartToPackageMapRequest &req, IEspAddPartToPackageMapResponse &resp);
     virtual bool onGetPartFromPackageMap(IEspContext &context, IEspGetPartFromPackageMapRequest &req, IEspGetPartFromPackageMapResponse &resp);
     virtual bool onRemovePartFromPackageMap(IEspContext &context, IEspRemovePartFromPackageMapRequest &req, IEspRemovePartFromPackageMapResponse &resp);
+
+    virtual bool unsubscribeServiceFromDali() override
+    {
+        return packageMapAndSet.unsubscribe();
+    }
+
+    virtual bool subscribeServiceToDali() override
+    {
+        return packageMapAndSet.subscribe();
+    }
 
     PackageMapAndSet packageMapAndSet;
 };

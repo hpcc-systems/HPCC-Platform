@@ -30,13 +30,9 @@
 #include "dautils.hpp"
 #include "dasds.hpp"
 
-#undef new
 #include <map>
 #include <string>
 #include <set>
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
 
 #ifdef _WIN32
 #include <lm.h>
@@ -84,6 +80,15 @@ const char* getResourceFieldNames(ResourceField field)
 {
     if (field < RFterm)
         return ResourceFieldNames[field];
+    return NULL;
+}
+
+const char* ResourcePermissionFieldNames[] = { "@name", "@type", "@allow", "@deny" };
+
+const char* getResourcePermissionFieldNames(ResourcePermissionField field)
+{
+    if (field < RPFterm)
+        return ResourcePermissionFieldNames[field];
     return NULL;
 }
 
@@ -1428,14 +1433,17 @@ public:
                 {
                 }
             }
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY);
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_ADMINISTRATORS_ONLY);
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_VIEW_SCOPE), PT_ADMINISTRATORS_ONLY);
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_ADMINISTRATORS_ONLY);
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_ADMINISTRATORS_ONLY);
 
-            createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
-            createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
+            //Create base LDAP OU tree. Specify PT_DEFAULT to ensure each OU
+            //grants access to both Administrators and to Authenticated Users
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_DEFAULT);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_DEFAULT);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_VIEW_SCOPE), PT_DEFAULT);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_DEFAULT);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_DEFAULT);
+
+            createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_DEFAULT);
+            createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_DEFAULT);
             createdOU = true;
         }
     }
@@ -1453,7 +1461,7 @@ public:
     virtual void setResourceBasedn(const char* rbasedn, SecResourceType rtype)
     {
         m_ldapconfig->setResourceBasedn(rbasedn, rtype);
-        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(rtype), PT_ADMINISTRATORS_ONLY);
+        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(rtype), PT_DEFAULT);
     }
 
     void calcPWExpiry(CDateTime &dt, unsigned len, char * val)
@@ -2231,13 +2239,16 @@ public:
         if(ldap_count_entries(ld, searchResult) < 1)
         {
             searchResult.ldapMsgFree();
-            rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
+            ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
             if(ldap_count_entries(ld, searchResult) < 1)
             {
                 searchResult.ldapMsgFree();
-                rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
-                DBGLOG("CLdapClient::lookupAccount No entries found");
-                return false;
+                ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
+                if(ldap_count_entries(ld, searchResult) < 1)
+                {
+                    DBGLOG("CLdapClient::lookupAccount No entries found");
+                    return false;
+                }
             }
         }
 
@@ -3356,6 +3367,12 @@ public:
 
     virtual bool getResources(SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources)
     {
+        Owned<ILdapConnection> lconn = m_connections->getConnection();
+        return getResources( ((CLdapConnection*)lconn.get())->getLd(), rtype, basedn, prefix, resources);
+    }
+
+    virtual bool getResources(LDAP* ld, SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources)
+    {
         char        *attribute;
         LDAPMessage *message;
 
@@ -3364,10 +3381,6 @@ public:
         StringBuffer filter("objectClass=*");
 
         TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
-
-        Owned<ILdapConnection> lconn = m_connections->getConnection();
-        LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-
         const char* fldname;
         LdapServerType servertype = m_ldapconfig->getServerType();
         if(servertype == ACTIVE_DIRECTORY && (rtype == RT_DEFAULT || rtype == RT_MODULE || rtype == RT_SERVICE))
@@ -3422,7 +3435,7 @@ public:
                     if(prefix != NULL && *prefix != '\0')
                         nextprefix.append(prefix);
                     nextprefix.append(curname.str()).append("::");
-                    getResources(rtype, nextbasedn.str(), nextprefix.str(), resources);
+                    getResources(ld, rtype, nextbasedn.str(), nextprefix.str(), resources);
                 }
             }
         }
@@ -3502,7 +3515,7 @@ public:
                 if(prefix != NULL && *prefix != '\0')
                     nextprefix.append(prefix);
                 nextprefix.append(curname.str()).append("::");
-                getResources(rtype, nextbasedn.str(), nextprefix.str(), resources);
+                getResources(ld, rtype, nextbasedn.str(), nextprefix.str(), resources);
             }
         }
 
@@ -3616,6 +3629,109 @@ public:
         m_pp->getPermissionsArray(sd.get(), permissions);
 
         return true;
+    }
+
+    SecResourceType str2RType(const char* rtstr)
+    {
+        if(isEmptyString(rtstr))
+            return RT_DEFAULT;
+        else if(strieq(rtstr, "module"))
+            return RT_MODULE;
+        else if(strieq(rtstr, "service"))
+            return RT_SERVICE;
+        else if(strieq(rtstr, "file"))
+            return RT_FILE_SCOPE;
+        else if(strieq(rtstr, "workunit"))
+            return RT_WORKUNIT_SCOPE;
+        else
+            return RT_DEFAULT;
+    }
+
+    void addPermissionTree(CPermission& permission, enum ACCOUNT_TYPE_REQ accountType, IPropertyTree* permissionTree)
+    {
+        const char* accountName = permission.getAccount_name();
+        if(isEmptyString(accountName))
+            return;
+
+        ACT_TYPE type = permission.getAccount_type();
+        if ((accountType != REQ_ANY_ACT) && (type != (ACT_TYPE) accountType))
+            return;
+
+        Owned<IPTree> permissionNode = createPTree();
+        permissionNode->setProp(getResourcePermissionFieldNames(RPFName), accountName);
+        permissionNode->setPropInt(getResourcePermissionFieldNames(RPFType), type);
+        permissionNode->setPropInt(getResourcePermissionFieldNames(RPFAllow), permission.getAllows());
+        permissionNode->setPropInt(getResourcePermissionFieldNames(RPFDeny), permission.getDenies());
+        permissionTree->addPropTree("Permission", permissionNode.getClear());
+    }
+
+    virtual IPropertyTreeIterator* getResourcePermissionIterator(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN,
+        const char* rtype, const char* prefix)
+    {
+        StringBuffer namebuf(name);
+        SecResourceType type = str2RType(rtype);
+        if((type == RT_MODULE) && !strieq(name, "repository") && (strnicmp(name, "repository.", 11) != 0))
+            namebuf.insert(0, "repository.");
+
+        if(prefix && *prefix)
+            namebuf.insert(0, prefix);
+
+        IArrayOf<CPermission> permissions;
+        getPermissionsArray(baseDN, type, namebuf.str(), permissions);
+
+        Owned<IPropertyTree> permissionTree = createPTree("Permissions");
+        ForEachItemIn(i, permissions)
+            addPermissionTree(permissions.item(i), accountType, permissionTree);
+        return permissionTree->getElements("*");
+    }
+
+    ISecItemIterator* getResourcePermissionsSorted(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN, const char* rtype,
+        const char* prefix, ResourcePermissionField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+        unsigned* total, __int64* cacheHint)
+    {
+        class CElementsPager : public CSimpleInterface, implements IElementsPager
+        {
+            ILdapClient* ldapClient;
+            StringAttr sortOrder, name, baseDN, rtype, prefix;
+            enum ACCOUNT_TYPE_REQ accountType;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CElementsPager(ILdapClient* _ldapClient, const char* _name, enum ACCOUNT_TYPE_REQ _accountType, const char* _baseDN,
+                const char* _rtype, const char* _prefix, const char*_sortOrder) : ldapClient(_ldapClient), name(_name),
+                accountType(_accountType), baseDN(_baseDN), rtype(_rtype), prefix(_prefix), sortOrder(_sortOrder) { };
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
+            {
+                StringArray unknownAttributes;
+                Owned<IPropertyTreeIterator> iter = ldapClient->getResourcePermissionIterator(name.get(), accountType, baseDN.get(), rtype.get(), prefix.get());
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                return NULL;
+            }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, ldap always returns all of matched users.
+        };
+
+        StringBuffer so;
+        if (sortOrder)
+        {
+            for (unsigned i=0; sortOrder[i]!=RPFterm; i++)
+            {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortOrder[i];
+                if (fmt&RPFreverse)
+                    so.append('-');
+                if (fmt&RPFnocase)
+                    so.append('?');
+                if (fmt&RPFnumeric)
+                    so.append('#');
+                so.append(getResourcePermissionFieldNames((ResourcePermissionField) (fmt&0xff)));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CElementsPager(this, name, accountType, baseDN, rtype, prefix, so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager, pageStartFrom, pageSize, NULL, "", cacheHint, results, total, NULL, false);
+        return new CSecItemIterator(results);
     }
 
     virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions, const char * baseDN=nullptr)
@@ -4207,7 +4323,7 @@ public:
                     {
                         const char* val = vals.queryCharValue(i);
                         StringBuffer uid;
-                        getUidFromDN(val, uid);
+                        getUidFromDN(ld, val, uid);
                         if(uid.length() > 0)
                             users.append(uid.str());
                     }
@@ -4386,7 +4502,7 @@ public:
         
         ISecUser* user = NULL;
         CLdapSecResource resource(newname);
-        addResource(rtype, *user, &resource, PT_ADMINISTRATORS_ONLY, basedn, sd.get(), false);
+        addResource(rtype, *user, &resource, PT_DEFAULT, basedn, sd.get(), false);
     }
 
     void normalizeDn(const char* dn, StringBuffer& ndn)
@@ -4622,7 +4738,7 @@ private:
 
     }
     
-    virtual void getUidFromDN(const char* dn, StringBuffer& uid)
+    virtual void getUidFromDN(LDAP* ld, const char* dn, StringBuffer& uid)
     {
         if(dn == NULL || *dn == '\0')
         {
@@ -4654,10 +4770,6 @@ private:
         TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         char *uid_fieldname = "sAMAccountName";
-
-        Owned<ILdapConnection> lconn = m_connections->getConnection();
-        LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-
         char        *attrs[] = {uid_fieldname, NULL};
         CLDAPMessage searchResult;
         int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );

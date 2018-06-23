@@ -298,6 +298,8 @@ class MappingXToIInterface : public MappingBetween<KEY, KEYINIT, IInterfacePtr,I
 template <class KEY, class KEYINIT>
 class MapXToIInterface  : public MapBetween<KEY, KEYINIT, IInterfacePtr,IInterfacePtr,MappingXToIInterface<KEY, KEYINIT> >
 {
+public:
+    using ELEMENT = MappingXToIInterface<KEY, KEYINIT>;
 };
 
 template <class KEY, class KEYINIT, class C> 

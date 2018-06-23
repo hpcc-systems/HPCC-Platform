@@ -18,7 +18,7 @@
 #ifndef rtlembed_hpp
 #define rtlembed_hpp
 
-// NOTE - not included from generated code (see rtlfield_imp.hpp)
+// NOTE - not included from generated code (see rtlfield.hpp)
 
 #include "eclrtl.hpp"
 #include "nbcd.hpp"
@@ -30,7 +30,7 @@ public:
     : intResult(0), uintResult(0), boolResult(false), doubleResult(0),
       unicodeResult(NULL), stringResult(NULL), resultChars(0), fieldExpected(field)
     {
-        if (field && field->initializer)
+        if (field && field->initializer && !isVirtualInitializer(field->initializer))
         {
             field->process(field->initializer, field->initializer, *this);
             assertex(fieldExpected==NULL);

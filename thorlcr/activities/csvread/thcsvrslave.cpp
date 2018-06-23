@@ -61,10 +61,8 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         size32_t maxRowSize;
         bool processHeaderLines = false;
 
-        unsigned splitLine()
+        unsigned splitLine(ISerialStream *inputStream, size32_t maxRowSize)
         {
-            if (inputStream->eos())
-                return 0;
             if (processHeaderLines)
             {
                 processHeaderLines = false;
@@ -82,7 +80,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 {
                     do
                     {
-                        unsigned lineLength = splitLine();
+                        size32_t lineLength = csvSplitter.splitLine(inputStream, maxRowSize);
                         if (0 == lineLength)
                             break;
                         inputStream->skip(lineLength);
@@ -91,23 +89,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 }
                 activity.sendHeaderLines(subFile, pnum);
             }
-            size32_t minRequired = 4096; // MORE - make configurable
-            size32_t thisLineLength;
-            for (;;)
-            {
-                size32_t avail;
-                const void *peek = inputStream->peek(minRequired, avail);
-                thisLineLength = csvSplitter.splitLine(avail, (const byte *)peek);
-                if (thisLineLength < minRequired || avail < minRequired)
-                    break;
-                if (minRequired == maxRowSize)
-                    throw MakeActivityException(&activity, 0, "File %s contained a line of length greater than %d bytes.", activity.logicalFilename.get(), minRequired);
-                if (minRequired >= maxRowSize/2)
-                    minRequired = maxRowSize;
-                else
-                    minRequired += minRequired;
-            }
-            return thisLineLength;
+            return csvSplitter.splitLine(inputStream, maxRowSize);
         }
     public:
         CCsvPartHandler(CCsvReadSlaveActivity &_activity) : CDiskPartHandlerBase(_activity), activity(_activity)
@@ -146,6 +128,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 CriticalBlock block(statsCs);
                 iFileIO.setown(partFileIO.getClear());
             }
+
             inputStream.setown(createFileSerialStream(iFileIO));
             if (activity.headerLines)
                 processHeaderLines = true;
@@ -169,7 +152,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
             {
                 if (eoi || activity.abortSoon)
                     return NULL;
-                unsigned lineLength = splitLine();
+                size32_t lineLength = splitLine(inputStream, maxRowSize);
                 if (!lineLength)
                     return NULL;
                 size32_t res = activity.helper->transform(row, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData());
@@ -325,7 +308,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         }
     }
 public:
-    CCsvReadSlaveActivity(CGraphElementBase *_container) : CDiskReadSlaveActivityBase(_container)
+    CCsvReadSlaveActivity(CGraphElementBase *_container) : CDiskReadSlaveActivityBase(_container, nullptr)
     {
         helper = static_cast <IHThorCsvReadArg *> (queryHelper());
         stopAfter = (rowcount_t)helper->getChooseNLimit();

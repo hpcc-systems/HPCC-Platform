@@ -198,6 +198,25 @@ static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
     return stricmp(l->queryName(), r->queryName());
 };
 
+class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
+{
+    IArrayOf<IPropertyTree> elems;
+public:
+    CPTArrayIterator(IPropertyTreeIterator &iter, TreeCompareFunc compare) : ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>(elems)
+    {
+        ForEach(iter)
+            elems.append(iter.get());
+        elems.sort(compare);
+    }
+};
+IPropertyTreeIterator * createSortedIterator(IPropertyTreeIterator & iter)
+{
+    return new CPTArrayIterator(iter, comparePropTrees);
+}
+IPropertyTreeIterator * createSortedIterator(IPropertyTreeIterator & iter, TreeCompareFunc compare)
+{
+    return new CPTArrayIterator(iter, compare);
+}
 //////////////////
 
 unsigned ChildMap::getHashFromElement(const void *e) const
@@ -239,23 +258,10 @@ IPropertyTreeIterator *ChildMap::getIterator(bool sort)
         virtual bool isValid() override { return hiter->isValid(); }
         virtual IPropertyTree & query() override { return hiter->query(); }
     };
-    class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
-    {
-        IArrayOf<IPropertyTree> elems;
-    public:
-        CPTArrayIterator(IPropertyTreeIterator &iter) : ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>(elems)
-        {
-            ForEach(iter)
-                elems.append(iter.get());
-            elems.sort(comparePropTrees);
-        }
-    };
-    IPropertyTreeIterator *baseIter = new CPTHashIterator(*this);
+    Owned<IPropertyTreeIterator> baseIter = new CPTHashIterator(*this);
     if (!sort)
-        return baseIter;
-    IPropertyTreeIterator *it = new CPTArrayIterator(*baseIter);
-    baseIter->Release();
-    return it;
+        return baseIter.getClear();
+    return createSortedIterator(*baseIter);
 }
 
 ///////////
@@ -1143,10 +1149,10 @@ void PTree::appendProp(const char *xpath, const char *val)
     }
     else if ('[' == *xpath)
     {
-        aindex_t pos = getChildMatchPos(xpath);
-        if ((aindex_t) -1 == pos)
+        IPropertyTree *qualified = queryPropTree(xpath);
+        if (!qualified)
             throw MakeIPTException(-1, "appendProp: qualifier unmatched %s", xpath);
-        appendLocal((size_t)strlen(val)+1, val, false);
+        qualified->appendProp(nullptr, val);
     }
     else
     {
@@ -1299,11 +1305,11 @@ bool PTree::isCompressed(const char *xpath) const
     else
     {
         const char *prop = splitXPathX(xpath);
-        if (prop && '\0' != *prop && !isAttribute(prop))
+        if (!isAttribute(prop))
         {
             IPropertyTree *branch = queryPropTree(xpath);
             if (branch)
-                return branch->isCompressed(prop);
+                return branch->isCompressed(nullptr);
         }
     }
     return false;
@@ -1318,11 +1324,11 @@ bool PTree::isBinary(const char *xpath) const
     else
     {
         const char *prop = splitXPathX(xpath);
-        if (prop && '\0' != *prop && !isAttribute(prop))
+        if (!isAttribute(prop))
         {
             IPropertyTree *branch = queryPropTree(xpath);
             if (branch)
-                return branch->isBinary(NULL);
+                return branch->isBinary(nullptr);
         }
     }
     return false;
@@ -1463,10 +1469,10 @@ void PTree::appendPropBin(const char *xpath, size32_t size, const void *data)
         appendLocal(size, data, true);
     else if ('[' == *xpath)
     {
-        aindex_t pos = getChildMatchPos(xpath);
-        if ((aindex_t) -1 == pos)
+        IPropertyTree *qualified = queryPropTree(xpath);
+        if (!qualified)
             throw MakeIPTException(-1, "appendPropBin: qualifier unmatched %s", xpath);
-        appendLocal(size, data, true);
+        qualified->appendPropBin(nullptr, size, data);
     }
     else
     {
@@ -2566,6 +2572,12 @@ void PTree::addLocal(size32_t l, const void *data, bool _binary, int pos)
     IPTArrayValue *newValue = new CPTValue(l, data, _binary);
     Owned<IPropertyTree> tree = create(queryName(), newValue);
     PTree *_tree = QUERYINTERFACE(tree.get(), PTree); assertex(_tree); _tree->setParent(this);
+
+    if (_binary)
+        IptFlagSet(_tree->flags, ipt_binary);
+    else
+        IptFlagClr(_tree->flags, ipt_binary);
+
     addingNewElement(*tree, pos);
 
     IPTArrayValue *array;
@@ -2592,11 +2604,6 @@ void PTree::addLocal(size32_t l, const void *data, bool _binary, int pos)
         array->addElement(tree);
     else
         array->setElement(pos, tree);
-
-    if (_binary)
-        IptFlagSet(flags, ipt_binary);
-    else
-        IptFlagClr(flags, ipt_binary);
 }
 
 enum exprType { t_none, t_equality, t_inequality, t_lteq, t_lt, t_gt, t_gteq } tType;
@@ -4009,7 +4016,7 @@ protected:
             c++;
         }
     }
-    void error(const char *msg=NULL, bool giveContext=true, PTreeReadExcptCode code=PTreeRead_syntax)  __attribute__((noreturn))
+    void error(const char *msg=NULL, bool giveContext=true, PTreeReadExcptCode code=PTreeRead_syntax) __attribute__((noreturn))
     {
         StringBuffer context;
         if (giveContext)
@@ -5536,6 +5543,20 @@ void toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, unsigned 
     _toXML(tree, out, indent, flags);
 }
 
+void printXML(const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    StringBuffer xml;
+    toXML(tree, xml, indent, flags);
+    printf("%s", xml.str());
+}
+
+void dbglogXML(const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    StringBuffer xml;
+    toXML(tree, xml, indent, flags);
+    DBGLOG("%s", xml.str());
+}
+
 void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent, unsigned flags)
 {
     OwnedIFile ifile = createIFile(filename);
@@ -5628,7 +5649,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
 {
     Owned<IAttributeIterator> it = tree->getAttributes(true);
     bool hasAttributes = it->first();
-    bool complex = (hasAttributes || tree->hasChildren());
+    bool complex = (hasAttributes || tree->hasChildren() || tree->isBinary());
     bool isBinary = tree->isBinary(NULL);
 
     const char *name = tree->queryName();
@@ -5744,7 +5765,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
     if (!isNull)
     {
         if (complex)
-            writeJSONNameToStream(out, "#value", (flags & JSON_Format) ? indent+1 : 0, delimit);
+            writeJSONNameToStream(out, isBinary ? "#valuebin" : "#value", (flags & JSON_Format) ? indent+1 : 0, delimit);
         if (isBinary)
             writeJSONBase64ValueToStream(out, thislevelbin.toByteArray(), thislevelbin.length(), delimit);
         else
@@ -6602,7 +6623,7 @@ public:
         : PARENT(buf, iEvent, readerOptions)
     {
     }
-    void readValueNotify(const char *name, bool skipAttributes)
+    void readValueNotify(const char *name, bool skipAttributes, StringBuffer *retValue, bool *isValueBinary)
     {
         offset_t startOffset = curOffset;
         StringBuffer value;
@@ -6615,11 +6636,29 @@ public:
                 iEvent->newAttribute(name, value.str());
             return;
         }
+        else if ('#'==*name)
+        {
+            dbgassertex(retValue && isValueBinary);
+            *isValueBinary = false;
+            if (0 == strncmp(name+1, "value", 5)) // this is a special IPT JSON prop name, representing a 'complex' value
+            {
+                if ('\0' == *(name+6)) // #value
+                {
+                    retValue->swapWith(value);
+                    return;
+                }
+                else if (streq(name+6, "bin")) // #valuebin
+                {
+                    *isValueBinary = true;
+                    JBASE64_Decode(value.str(), *retValue);
+                    return;
+                }
+            }
+        }
 
         iEvent->beginNode(name, startOffset);
         iEvent->beginNodeContent(name);
         iEvent->endNode(name, value.length(), value.str(), false, curOffset);
-
     }
     void readArray(const char *name)
     {
@@ -6641,7 +6680,7 @@ public:
                 readObject(name);
                 break;
             default:
-                readValueNotify(name, true);
+                readValueNotify(name, true, nullptr, nullptr);
                 break;
             }
             readNext();
@@ -6653,7 +6692,7 @@ public:
             skipWS();
         }
     }
-    void readChild(const char *name, bool skipAttributes)
+    void readChild(const char *name, bool skipAttributes, StringBuffer *value, bool *isValueBinary)
     {
         skipWS();
         switch (nextChar)
@@ -6671,7 +6710,7 @@ public:
             readArray(name);
             break;
         default:
-            readValueNotify(name, skipAttributes);
+            readValueNotify(name, skipAttributes, value, isValueBinary);
             break;
         }
     }
@@ -6684,6 +6723,8 @@ public:
         readNext();
         skipWS();
         bool attributesFinalized=false;
+        StringBuffer childValue;  // for #value
+        bool isChildValueBinary = false; // for #value
         while ('}' != nextChar)
         {
             StringBuffer tagName;
@@ -6692,7 +6733,7 @@ public:
             //values at top of object with names starting with '@' become ptree attributes
             if (*tagName.str()!='@')
                 attributesFinalized=true;
-            readChild(tagName.str(), attributesFinalized);
+            readChild(tagName.str(), attributesFinalized, &childValue.clear(), &isChildValueBinary);
             readNext();
             skipWS();
             if (','==nextChar)
@@ -6701,7 +6742,7 @@ public:
                 error("expected ',' or '}'");
             skipWS();
         }
-        iEvent->endNode(name, 0, "", false, curOffset);
+        iEvent->endNode(name, childValue.length(), childValue.str(), isChildValueBinary, curOffset);
     }
 
     void loadJSON()
@@ -6721,7 +6762,7 @@ public:
                 {
                 case '\"':  //treat named objects like we're in a noroot object
                     readName(tagName.clear());
-                    readChild(tagName.str(), true);
+                    readChild(tagName.str(), true, nullptr, nullptr);
                     break;
                 case '{':  //treat unnamed objects like we're in a noroot array
                     readObject("__object__");

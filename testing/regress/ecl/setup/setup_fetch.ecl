@@ -67,7 +67,7 @@ BUILDINDEX(Files.DG_KeyDiffIndex1, PROJECT(sortedFile, createDiffRow(LEFT)),OVER
 BUILDINDEX(Files.DG_KeyDiffIndex2, PROJECT(sortedFile(lname != 'Doe'),createDiffRow(LEFT)), OVERWRITE);
 
 //A version of the index with LName/FName transposed and x moved to the front.
-BUILDINDEX(sortedFile,{Fname,Lname},{STRING100 blobfield {blob}:= fname+lname, STRING tfn := TRIM(Fname), state, __filepos},Files.DG_FetchTransIndexName, OVERWRITE);
+BUILDINDEX(Files.DG_FetchTransIndex, TABLE(sortedFile, {STRING tfn := TRIM(Fname), STRING100 blobfield := fname+lname, sortedFile}), OVERWRITE);
 
 fileServices.AddFileRelationship( Files.DG_FetchFileName, Files.DG_FetchFilePreloadName, '', '', 'view', '1:1', false);
 fileServices.AddFileRelationship( Files.DG_FetchFileName, Files.DG_FetchFilePreloadIndexedName, '', '', 'view', '1:1', false);

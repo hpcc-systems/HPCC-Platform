@@ -97,7 +97,6 @@ int  nCommentStartLine = -1;
   ESPVERSIONDEF
   ESPTEMPLATE
   ESPMOUNT
-  ESPUSES
   ESPDEFEXPORT
   XSDTYPE
   _CONST
@@ -192,13 +191,67 @@ EspServiceStart
  : ESPSERVICE EspMetaData ID
  {
     CurService=new EspServInfo($3.getName());
-    CurService->tags = getClearCurMetaTags();
+    if (CurService)
+    {
+        CurService->tags = getClearCurMetaTags();
+
+        StrBuffer minPingVer;
+        for (MetaTagInfo* t = CurService->tags; t!=NULL; t = t->next)
+        {
+            if (streq("ping_min_ver",t->getName()))
+            {
+                minPingVer.set(t->getString());
+                break;
+            }
+        }
+
+        VStrBuffer reqname("%sPingRequest", $3.getName());
+        CurEspMessage = new EspMessageInfo(reqname.str(), EspMessageInfo::espm_request);
+        CurEspMessage->write_cpp_interfaces();
+
+        if(minPingVer.length()!=0)
+        {
+            CurMetaTags = NULL;
+            AddMetaTag(new MetaTagInfo("min_ver", minPingVer.str()));
+            CurEspMessage->tags = getClearCurMetaTags();
+         }
+
+        AddEspMessage();
+        CurEspMessage=NULL;
+
+        VStrBuffer respname("%sPingResponse", $3.getName());
+        CurEspMessage = new EspMessageInfo(respname.str(), EspMessageInfo::espm_response);
+        CurEspMessage->write_cpp_interfaces();
+        if(minPingVer.length()!=0)
+        {
+            CurMetaTags = NULL;
+            AddMetaTag(new MetaTagInfo("min_ver", minPingVer.str()));
+            CurEspMessage->tags = getClearCurMetaTags();
+         }
+
+        AddEspMessage();
+
+        EspMethodInfo *method=new EspMethodInfo("Ping", reqname.str(), respname.str());
+
+        if(minPingVer.length()!=0)
+        {
+            CurMetaTags = NULL;
+            AddMetaTag(new MetaTagInfo("min_ver", minPingVer.str()));
+            method->tags = getClearCurMetaTags();
+         }
+
+        method->next=CurService->methods;
+        CurService->methods=method;
+
+        CurMetaTags   = NULL;
+        CurEspMessage = NULL;
+    }
  }
  ;
 
 EspServiceBody
  : '{' EspServiceEntryList '}' 
- | '{' '}' 
+ | '{' '}'
  ;
 
 EspServiceEntryList
@@ -209,7 +262,6 @@ EspServiceEntryList
 EspServiceEntry
  : EspServiceMethod
  | EspServiceMount
- | EspServiceUses
  ;
 
 EspServiceMethod
@@ -258,18 +310,6 @@ EspServiceMount
 
     mount->next=CurService->mounts;
     CurService->mounts=mount;
- }
- ;
-
-EspServiceUses
- : ESPUSES EspMetaData EspType ID ';'
- {
-    EspStructInfo *esp_struct=new EspStructInfo($4.getName());
-    
-    esp_struct->tags = getClearCurMetaTags();
-
-    esp_struct->next=CurService->structs;
-    CurService->structs=esp_struct;
  }
  ;
 

@@ -35,6 +35,7 @@ include_directories (
          ./../../common/remote
          ./../../dali/base
          ./../../system/jhtree
+         ./../../rtl/include
          ./../../rtl/eclrtl
          ./../../system/security/shared
     )

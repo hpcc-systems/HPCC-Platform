@@ -29,11 +29,6 @@
 #include "rtlbcd.hpp"
 #include "eclrtl_imp.hpp"
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 BoolValue *BoolValue::trueconst;
 BoolValue *BoolValue::falseconst;
 static IAtom * asciiAtom;
@@ -1617,9 +1612,10 @@ IValue *IntValue::castTo(ITypeInfo *t)
     case type_qstring:
     case type_utf8:
     case type_unicode:
+    case type_varstring:
+    case type_varunicode:
         return castViaString(t);
     case type_string:
-    case type_varstring:
     {
         if (nLen == UNKNOWN_LENGTH)
             return castViaString(t);
@@ -1683,44 +1679,76 @@ const char *IntValue::generateECL(StringBuffer &s)
     return getStringValue(s);
 }
 
-const char *IntValue::generateCPP(StringBuffer &s, CompilerType compiler)
+static void generateUnsignedCPP(StringBuffer &s, __uint64 val, unsigned size, CompilerType compiler)
 {
-    if (type->isSwappedEndian())
-    {
-        if (type->isSigned())
-            s.append(rtlReadSwapInt(getAddressValue(), type->getSize()));
-        else
-            s.append(rtlReadSwapUInt(getAddressValue(), type->getSize()));
-    }
-    else
-        getStringValue(s);
-
+    s.append(val);
     switch (compiler)
     {
     case GccCppCompiler:
-        if (val && (type->getSize() > sizeof(unsigned)))
-        {
-            s.append("LL");
-            if (!type->isSigned())
-                s.append("U");
-        }
-        else if (!type->isSigned())
+        if (val && (size > sizeof(unsigned)))
+            s.append("LLU");
+        else
             s.append("U");
         break;
     case Vs6CppCompiler:
-        if (val && (type->getSize() > sizeof(unsigned)))
-        {
-            if (!type->isSigned())
-                s.append("U");
+        s.append("U");
+        if (val && (size > sizeof(unsigned)))
             s.append("i64");
-        }
-        else if (!type->isSigned())
-            s.append("U");
         break;
     default:
         throwUnexpected();
     }
+}
 
+static void generateSignedCPP(StringBuffer &s, __int64 val, unsigned size, CompilerType compiler)
+{
+    // Special case needed for MININT etc
+    if (val && (size > sizeof(unsigned)))
+    {
+        if (val == LLONG_MIN)
+            s.append("LLONG_MIN");
+        else
+        {
+            s.append(val);
+            switch (compiler)
+            {
+            case GccCppCompiler:
+                s.append("LL");
+                break;
+            case Vs6CppCompiler:
+                s.append("i64");
+                break;
+            default:
+                throwUnexpected();
+            }
+        }
+    }
+    else
+    {
+        if (val == INT_MIN)
+            s.append("INT_MIN");
+        else
+            s.append(val);
+    }
+}
+
+const char *IntValue::generateCPP(StringBuffer &s, CompilerType compiler)
+{
+    unsigned size = type->getSize();
+    if (type->isSwappedEndian())
+    {
+        if (type->isSigned())
+            generateSignedCPP(s, rtlReadSwapInt(getAddressValue(), size), size, compiler);
+        else
+            generateUnsignedCPP(s, rtlReadSwapUInt(getAddressValue(), size), size, compiler);
+    }
+    else
+    {
+        if (type->isSigned())
+            generateSignedCPP(s, (__int64) val, size, compiler);
+        else
+            generateUnsignedCPP(s, val, size, compiler);
+    }
     return s.str();
 }
 
@@ -2022,12 +2050,22 @@ unsigned RealValue::getHash(unsigned initval)
 
 const char *RealValue::generateECL(StringBuffer &s)
 {
-    return getStringValue(s);
+    if (isinf(val))
+        return s.append("Std.Math.INFINITY");
+    else if (isnan(val))
+        return s.append("Std.Math.NaN");
+    else
+        return getStringValue(s);
 }
 
 const char *RealValue::generateCPP(StringBuffer &s, CompilerType compiler)
 {
-    return getStringValue(s);
+    if (isinf(val))
+        return s.append("rtlCreateRealInf()");
+    else if (isnan(val))
+        return s.append("rtlCreateRealNull()");
+    else
+        return getStringValue(s);
 }
 
 const char *RealValue::getStringValue(StringBuffer &s)
@@ -2614,7 +2652,7 @@ IValue * divideValues(IValue * left, IValue * right, byte dbz)
         if (rv)
             res = lv / rv;
         else if (dbz == DBZnan)
-            res =  rtlCreateRealNull();
+            res =  rtlCreateRealInf();
         else
             res = 0.0;
 
@@ -2843,9 +2881,9 @@ IValue * truncateValue(IValue * v)
     return NULL;
 }
 
-IValue * lnValue(IValue * v)
+IValue * lnValue(IValue * v, byte onZero)
 {
-    return createRealValue(rtlLog(v->getRealValue()), 8);
+    return createRealValue(rtlLog(v->getRealValue(), onZero), 8);
 }
 
 IValue * sinValue(IValue * v)
@@ -2878,14 +2916,14 @@ IValue * tanhValue(IValue * v)
     return createRealValue(tanh(v->getRealValue()), 8);
 }
 
-IValue * asinValue(IValue * v)
+IValue * asinValue(IValue * v, byte onZero)
 {
-    return createRealValue(rtlASin(v->getRealValue()), 8);
+    return createRealValue(rtlASin(v->getRealValue(), onZero), 8);
 }
 
-IValue * acosValue(IValue * v)
+IValue * acosValue(IValue * v, byte onZero)
 {
-    return createRealValue(rtlACos(v->getRealValue()), 8);
+    return createRealValue(rtlACos(v->getRealValue(), onZero), 8);
 }
 
 IValue * atanValue(IValue * v)
@@ -2898,23 +2936,23 @@ IValue * atan2Value(IValue * y, IValue* x)
     return createRealValue(atan2(y->getRealValue(), x->getRealValue()), 8);
 }
 
-IValue * log10Value(IValue * v)
+IValue * log10Value(IValue * v, byte onZero)
 {
-    return createRealValue(rtlLog10(v->getRealValue()), 8);
+    return createRealValue(rtlLog10(v->getRealValue(), onZero), 8);
 }
 
-IValue * sqrtValue(IValue * v)
+IValue * sqrtValue(IValue * v, byte onZero)
 {
     switch(v->getTypeCode())
     {
+    case type_decimal:
+        //MORE: This should probably do this more accurately.
+        //fall into
     case type_int:
     case type_swapint:
     case type_packedint:
     case type_real:
-        return createRealValue(rtlSqrt(v->getRealValue()), 8);
-    case type_decimal:
-        //MORE: This should probably do this more accurately.
-        return createRealValue(rtlSqrt(v->getRealValue()), 8);
+        return createRealValue(rtlSqrt(v->getRealValue(), onZero), 8);
     }
     throwUnexpected();
     return NULL;
@@ -2998,7 +3036,7 @@ IValue * substringValue(IValue * v, IValue * lower, IValue * higher)
     return ret;
 }
 
-IValue * trimStringValue(IValue * v, char typecode)
+IValue * trimStringValue(IValue * v, char typecode, bool whitespace)
 {
     ITypeInfo * type = v->queryType();
     type_t tc = type->getTypeCode();
@@ -3010,7 +3048,9 @@ IValue * trimStringValue(IValue * v, char typecode)
         if (tc == type_utf8)
         {
             char const * str = (char const *)v->queryValue();
-            switch(typecode) 
+            if (whitespace)
+                rtlTrimUtf8WS(tlen, resultstr.refstr(), len, str, typecode=='B'||typecode=='L', typecode=='A', typecode=='B'||typecode=='R');
+            else switch(typecode)
             {
             case 'A':
                 rtlTrimUtf8All(tlen, resultstr.refstr(), len, str);
@@ -3032,7 +3072,9 @@ IValue * trimStringValue(IValue * v, char typecode)
         else
         {
             UChar const * str = (UChar const *)v->queryValue();
-            switch(typecode) 
+            if (whitespace)
+                rtlTrimUnicodeWS(tlen, resultstr.refustr(), len, str, typecode=='B'||typecode=='L', typecode=='A', typecode=='B'||typecode=='R');
+            else switch(typecode)
             {
             case 'A':
                 rtlTrimUnicodeAll(tlen, resultstr.refustr(), len, str);
@@ -3063,7 +3105,9 @@ IValue * trimStringValue(IValue * v, char typecode)
         rtlDataAttr resultstr;
         unsigned len = s.length();
         char const * str = s.str();
-        switch(typecode)
+        if (whitespace)
+            rtlTrimWS(tlen, resultstr.refstr(), len, str, typecode=='B'||typecode=='L', typecode=='A', typecode=='B'||typecode=='R');
+        else switch(typecode)
         {
         case 'A':
             rtlTrimAll(tlen, resultstr.refstr(), len, str);

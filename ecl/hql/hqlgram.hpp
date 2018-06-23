@@ -528,6 +528,7 @@ public:
     void ensureType(attribute &atr, ITypeInfo * type);
     void inheritRecordMaxLength(IHqlExpression * dataset, SharedHqlExpr & record);
 
+    IHqlExpression * getTargetPlatformExpr();
     void normalizeExpression(attribute & expr);
     void normalizeExpression(attribute & expr, type_t expectedType, bool isConstant);
 
@@ -573,6 +574,11 @@ public:
     IHqlExpression * createCheckMatchAttr(attribute & attr, type_t tc);
 
     bool extractConstantString(StringBuffer & text, attribute & attr);
+
+    IHqlExpression *processPartitionBloomAttr(IHqlExpression *bloom, IHqlExpression *index, const attribute & errpos);
+    void setIndexScope(IHqlExpression *index);
+    void clearIndexScope();
+    void pushIndexScope();
 
     //Various grammar rule productions.
     void beginAlienType(const attribute & errpos);
@@ -771,6 +777,8 @@ protected:
     void checkOutputRecord(attribute & errpos, bool outerLevel);
     void checkSoapRecord(attribute & errpos);
     IHqlExpression * checkOutputRecord(IHqlExpression *record, const attribute & errpos, bool & allConstant, bool outerLevel);
+    void checkDefaultValueVirtualAttr(const attribute &errpos, IHqlExpression * attrs);
+
     void doAddAssignment(IHqlExpression * transform, IHqlExpression * field, IHqlExpression * rhs, const attribute& errpos);
     void doAddAssignall(IHqlExpression* assignall, IHqlExpression *tgt, IHqlExpression *src,const attribute& errpos);
     void doAddAssignSelf(IHqlExpression* assignall, IHqlExpression *tgt, IHqlExpression *src,const attribute& errpos);
@@ -782,6 +790,7 @@ protected:
     void appendToActiveScope(IHqlExpression * arg);
     bool isVirtualFunction(DefineIdSt * defineid, const attribute & errpos);
     
+    IHqlExpression * castIndexTypes(IHqlExpression *sortList);
     IHqlExpression * processSortList(const attribute & errpos, node_operator op, IHqlExpression * dataset, HqlExprArray & items, OwnedHqlExpr *joinedClause, OwnedHqlExpr *attributes);
     void expandSortedAsList(HqlExprArray & args);
     bool expandWholeAndExcept(IHqlExpression * dataset, const attribute & errpos, HqlExprArray & parms);
@@ -920,6 +929,7 @@ protected:
     bool inType;
     Owned<IHqlScope> modScope;
     OwnedHqlExpr dotScope;
+    OwnedHqlExpr indexScope;
     unsigned outerScopeAccessDepth;
     IHqlScope* containerScope;
     IHqlScope* globalScope;
@@ -1247,7 +1257,7 @@ class HqlLex
 
         bool getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, const char* for_what, SharedHqlExpr & resolved);
 
-        bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg);
+        int processStringLiteral(YYSTYPE & returnToken, char *CUR_TOKEN_TEXT, unsigned CUR_TOKEN_LENGTH, int oldColumn, int oldPosition);
 
         bool readCheckNextToken(YYSTYPE & returnToken, int expected, unsigned errCode, const char * msg);
 
@@ -1283,6 +1293,7 @@ private:
         bool inComment;
         bool inSignature;
         bool inCpp;
+        bool inMultiString;
         bool encrypted;
         StringBuffer javaDocComment;
 

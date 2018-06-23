@@ -25,7 +25,7 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlembed.hpp"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
@@ -707,7 +707,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("mysql: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", field->name->queryStr());
+        msg.appendf(" for field %s", field->name);
     rtlFail(0, msg.str());
 }
 
@@ -1081,9 +1081,9 @@ protected:
             colIdx++;
         else
             fail("Too many fields in ECL output row");
-        const MYSQL_BIND &column = resultInfo.queryColumn(colIdx,field->name->queryStr());
+        const MYSQL_BIND &column = resultInfo.queryColumn(colIdx,field->name);
         if (*column.error)
-            failx("Error fetching column %s", field->name->queryStr());
+            failx("Error fetching column %s", field->name);
         return column;
     }
     const MySQLBindingArray &resultInfo;
@@ -1385,8 +1385,8 @@ static void initializeMySqlThread()
 class MySQLEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    MySQLEmbedFunctionContext(const char *options)
-      : nextParam(0)
+    MySQLEmbedFunctionContext(const IThorActivityContext *_ctx, const char *options)
+      : nextParam(0), activityCtx(_ctx)
     {
         initializeMySqlThread();
         conn.setown(MySQLConnection::findCachedConnection(options, false));
@@ -1475,7 +1475,7 @@ public:
             typeError("row", NULL);  // Check that a single row was returned
         return ret;
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override
     {
         MySQLRecordBinder binder(metaVal.queryTypeInfo(), stmtInfo->queryInputBindings(), nextParam);
         binder.processRow(val);
@@ -1594,7 +1594,16 @@ public:
     }
     virtual void compileEmbeddedScript(size32_t chars, const char *script)
     {
-        size32_t len = rtlUtf8Size(chars, script);
+        StringBuffer scriptStr;
+        size32_t len;
+        if (activityCtx)
+        {
+            rtlSubstituteActivityContext(scriptStr, activityCtx, chars, script);
+            script = scriptStr.str();
+            len = scriptStr.length();
+        }
+        else
+            len = rtlUtf8Size(chars, script);
         for (;;)
         {
             Owned<MySQLStatement> stmt  = new MySQLStatement(mysql_stmt_init(*conn));
@@ -1655,24 +1664,25 @@ protected:
     Owned<MySQLConnection> conn;
     Owned<MySQLPreparedStatement> stmtInfo;
     Owned<MySQLDatasetBinder> inputStream;
+    const IThorActivityContext *activityCtx;
     int nextParam;
 };
 
 class MySQLEmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) override
     {
-        return createFunctionContextEx(NULL, flags, options);
+        return createFunctionContextEx(nullptr, nullptr, flags, options);
     }
-    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, const IThorActivityContext *activityCtx, unsigned flags, const char *options) override
     {
         if (flags & EFimport)
             UNSUPPORTED("IMPORT");
         else
-            return new MySQLEmbedFunctionContext(options);
+            return new MySQLEmbedFunctionContext(activityCtx, options);
     }
-    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options) override
     {
         throwUnexpected();
     }

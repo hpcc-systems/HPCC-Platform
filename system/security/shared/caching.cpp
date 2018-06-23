@@ -349,7 +349,7 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
 
         time_t now;
         time(&now);
-        if(user->getTimestamp() < (now - m_cacheTimeout))
+        if(user->getTimestamp() < (now - m_cacheTimeout)  && 0==sec_user.credentials().getSessionToken())//don't delete session based users
         {
             deleteEntry = true;
         }
@@ -358,7 +358,15 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
             const char* cachedpw = user->queryUser()->credentials().getPassword();
             const char * pw = sec_user.credentials().getPassword();
 
-            if(cachedpw && pw && *pw != '\0')
+            if ((sec_user.credentials().getSessionToken() != 0) ||  !isEmptyString(sec_user.credentials().getSignature()))
+            {//presence of session token or signature means user is authenticated
+#ifdef _DEBUG
+                DBGLOG("CACHE: CPermissionsCache Found validated user %s", username);
+#endif
+                user->queryUser()->copyTo(sec_user);
+                return true;
+            }
+            else if(cachedpw && pw && *pw != '\0')
             {
                 if(strcmp(cachedpw, pw) == 0)
                 {

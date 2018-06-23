@@ -56,7 +56,11 @@ public:
         outputName.set(expandedFileName);
 
         originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), originalHelperName));
+        if (!isFileKey(originalIndexFile))
+            throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", originalHelperName.get());
         patchFile.setown(queryThorFileManager().lookup(container.queryJob(), patchHelperName));
+        if (isFileKey(patchFile))
+            throw MakeActivityException(this, 0, "Attempting to read index as a patch file: %s", patchHelperName.get());
         
         if (originalIndexFile->numParts() != patchFile->numParts())
             throw MakeActivityException(this, TE_KeyPatchIndexSizeMismatch, "Index %s and patch %s differ in width", originalName.get(), patchName.get());
@@ -161,8 +165,12 @@ public:
         if (originalProps.queryProp("ECL"))
             props.setProp("ECL", originalProps.queryProp("ECL"));
         MemoryBuffer rLMB;
+        // Legacy record layout info
         if (originalProps.getPropBin("_record_layout", rLMB))
             props.setPropBin("_record_layout", rLMB.length(), rLMB.toByteArray());
+        // New record layout info
+        if (originalProps.getPropBin("_rtlType", rLMB.clear()))
+            props.setPropBin("_rtlType", rLMB.length(), rLMB.toByteArray());
         props.setPropInt("@formatCrc", originalProps.getPropInt("@formatCrc"));
         if (originalProps.getPropBool("@local"))
             props.setPropBool("@local", true);

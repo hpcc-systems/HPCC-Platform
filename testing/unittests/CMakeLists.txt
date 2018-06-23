@@ -31,6 +31,7 @@ set (    SRCS
          remotetests.cpp
          dalitests.cpp
          jlibtests.cpp
+         digisigntests.cpp
     )
 
 include_directories (
@@ -38,10 +39,12 @@ include_directories (
          ./../../system/include
          ./../../system/jlib
          ./../../system/mp
+         ./../../system/libbase58
          ./../../common/remote
          ./../../dali/base
          ./../../system/security/shared
          ./../../common/deftype
+         ./../../system/security/digisign
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -54,6 +57,8 @@ target_link_libraries ( unittests
          remote
          dalibase
          deftype
+         libbase58
+         digisign
          ${CPPUNIT_LIBRARIES}
     )
 

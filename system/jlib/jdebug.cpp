@@ -28,11 +28,6 @@
 #include <time.h>
 #include <atomic>
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 #ifdef _WIN32
 #define DPSAPI_VERSION 1
 #include <psapi.h>
@@ -476,20 +471,16 @@ MTimeSection::~MTimeSection()
 class TimeSectionInfo : public MappingBase 
 {
 public:
-    TimeSectionInfo(const char * _scope, const char *_description, __int64 _cycles) : scope(_scope), description(_description), totalcycles(_cycles), maxcycles(_cycles), count(1) {};
-    TimeSectionInfo(const char * _scope, const char *_description, __int64 _cycles, __int64 _maxcycles, unsigned _count)
-    : scope(_scope), description(_description), totalcycles(_cycles), maxcycles(_maxcycles), count(_count) {};
-    TimeSectionInfo(MemoryBuffer &mb)
-    {
-        mb.read(scope).read(description).read(totalcycles).read(maxcycles).read(count);
-    }
-    void serialize(MemoryBuffer &mb)
-    {
-        mb.read(scope).read(description).append(totalcycles).append(maxcycles).append(count);
-    }
+    TimeSectionInfo(const char * _scope, __int64 _cycles) : scope(_scope), totalcycles(_cycles), maxcycles(_cycles), count(1) {};
+    TimeSectionInfo(const char * _scope, __int64 _cycles, __int64 _maxcycles, unsigned _count)
+    : scope(_scope), totalcycles(_cycles), maxcycles(_maxcycles), count(_count) {};
     virtual const void * getKey() const { return scope.get(); }
+
+    __int64 getTime() const { return cycle_to_nanosec(totalcycles); }
+    __int64 getMaxTime() const { return cycle_to_nanosec(maxcycles); }
+    unsigned getCount() const { return count; }
+
     StringAttr  scope;
-    StringAttr  description;
     __int64 totalcycles;
     __int64 maxcycles;
     unsigned count;
@@ -516,17 +507,6 @@ public:
     {
         sections = new StringMapOf<TimeSectionInfo>(true);
     }
-    DefaultTimeReporter(MemoryBuffer &mb)
-    {
-        sections = new StringMapOf<TimeSectionInfo>(true);
-        unsigned ns;
-        mb.read(ns);
-        while (ns--)
-        {
-            TimeSectionInfo &newinfo = * new TimeSectionInfo(mb);
-            sections->replaceOwn(newinfo);
-        }
-    }
     ~DefaultTimeReporter() 
     {
 //      printTimings();                     // Must explicitly call printTimings - no automatic print (too late here!)
@@ -539,7 +519,7 @@ public:
         for(iter.first(); iter.isValid(); iter.next())
         {
             TimeSectionInfo &ts = (TimeSectionInfo &)iter.query();
-            cb.report(ts.scope, ts.description, cycle_to_nanosec(ts.totalcycles), cycle_to_nanosec(ts.maxcycles), ts.count);
+            cb.report(ts.scope, ts.getTime(), ts.getMaxTime(), ts.count);
         }
     }
     virtual void addTiming(const char * scope, cycle_t cycles)
@@ -554,42 +534,9 @@ public:
         }
         else
         {
-            TimeSectionInfo &newinfo = * new TimeSectionInfo(scope, NULL, cycles);
+            TimeSectionInfo &newinfo = * new TimeSectionInfo(scope, cycles);
             sections->replaceOwn(newinfo);
         }
-    }
-    virtual unsigned numSections()
-    {
-        CriticalBlock b(c);
-        return sections->count();
-    }
-    virtual StatisticKind getTimerType(unsigned idx __attribute__((unused)))
-    {
-        return StTimeElapsed;
-    }
-    virtual StatisticScopeType getScopeType(unsigned idx __attribute__((unused)))
-    {
-        return SSTsection;
-    }
-    virtual __int64 getTime(unsigned idx)
-    {
-        CriticalBlock b(c);
-        return cycle_to_nanosec(findSection(idx).totalcycles);
-    }
-    virtual __int64 getMaxTime(unsigned idx)
-    {
-        CriticalBlock b(c);
-        return cycle_to_nanosec(findSection(idx).maxcycles);
-    }
-    virtual unsigned getCount(unsigned idx)
-    {
-        CriticalBlock b(c);
-        return findSection(idx).count;
-    }
-    virtual StringBuffer &getScope(unsigned idx, StringBuffer &s)
-    {
-        CriticalBlock b(c);
-        return s.append(findSection(idx).scope);
     }
     virtual void reset()
     {
@@ -600,19 +547,25 @@ public:
     virtual StringBuffer &getTimings(StringBuffer &str)
     {
         CriticalBlock b(c);
+        HashIterator iter(*sections);
+        for(iter.first(); iter.isValid(); iter.next())
+        {
+            TimeSectionInfo &ts = (TimeSectionInfo &)iter.query();
+            str.append("Timing: ").append(ts.scope)
+                    .append(" total=")
+                    .append(ts.getTime()/1000000)
+                    .append("ms max=")
+                    .append(ts.getMaxTime()/1000)
+                    .append("us count=")
+                    .append(ts.getCount())
+                    .append(" ave=")
+                    .append((ts.getTime()/1000)/ts.getCount())
+                    .append("us\n");
+        }
         if (numSections())
         {
             for (unsigned i = 0; i < numSections(); i++)
             {
-                getScope(i, str.append("Timing: ")).append(" total=")
-                                         .append(getTime(i)/1000000)
-                                         .append("ms max=")
-                                         .append(getMaxTime(i)/1000)
-                                         .append("us count=")
-                                         .append(getCount(i))
-                                         .append(" ave=")
-                                         .append((getTime(i)/1000)/getCount(i))
-                                         .append("us\n");
             }
         }
         return str;
@@ -632,7 +585,7 @@ public:
         TimeSectionInfo *info = sections->find(scope);
         if (!info)
         {
-            info = new TimeSectionInfo(scope, NULL, totalcycles, maxcycles, count);
+            info = new TimeSectionInfo(scope, totalcycles, maxcycles, count);
             sections->replaceOwn(*info);
         }
         else
@@ -657,16 +610,10 @@ public:
         CriticalBlock b(c);
         other.mergeInto(*this);
     }
-    virtual void serialize(MemoryBuffer &mb)
+protected:
+    unsigned numSections()
     {
-        CriticalBlock b(c);
-        mb.append(numSections());
-        HashIterator iter(*sections);
-        for(iter.first(); iter.isValid(); iter.next())
-        {
-            TimeSectionInfo &ts = (TimeSectionInfo &) iter.query();
-            ts.serialize(mb);
-        }
+        return sections->count();
     }
 };
 
@@ -678,7 +625,6 @@ ITimeReporter * queryActiveTimer()
 
 
 ITimeReporter *createStdTimeReporter() { return new DefaultTimeReporter(); }
-ITimeReporter *createStdTimeReporter(MemoryBuffer &mb) { return new DefaultTimeReporter(mb); }
 
 cycle_t oneSecInCycles;
 MODULE_INIT(INIT_PRIORITY_JDEBUG1)

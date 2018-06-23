@@ -49,7 +49,7 @@ void ActiveRequests::dec()
     atomic_dec(&gActiveRequests);
 }
 
-CEspApplicationPort::CEspApplicationPort(bool viewcfg) : bindingCount(0), defBinding(-1), viewConfig(viewcfg), rootAuth(false), navWidth(165), navResize(false), navScroll(false)
+CEspApplicationPort::CEspApplicationPort(bool viewcfg, CEspProtocol* prot) : bindingCount(0), defBinding(-1), viewConfig(viewcfg), rootAuth(false), navWidth(165), navResize(false), navScroll(false), protocol(prot)
 {
     build_ver = getBuildVersion();
 
@@ -68,6 +68,9 @@ CEspApplicationPort::CEspApplicationPort(bool viewcfg) : bindingCount(0), defBin
 
 void CEspApplicationPort::appendBinding(CEspBindingEntry* entry, bool isdefault)
 {
+    WriteLockBlock wblock(rwLock);
+    if (bindingCount + 1 == MAX_ESP_BINDINGS)
+        throw MakeStringException(0,"Error - reached maximum number of bindings allowed.");
     bindings[bindingCount]=entry;
     if (isdefault)
         defBinding=bindingCount;
@@ -88,6 +91,34 @@ void CEspApplicationPort::appendBinding(CEspBindingEntry* entry, bool isdefault)
         if (!navScroll)
             navScroll=scroll;
     }
+}
+
+void CEspApplicationPort::removeBinding(IEspRpcBinding* binding)
+{
+    CEspBindingEntry* targetEntry = nullptr;
+    {
+        WriteLockBlock wblock(rwLock);
+        for (int i = 0; i < bindingCount; i++)
+        {
+            if (!bindings[i])
+                continue;
+            IEspRpcBinding* currentBinding = bindings[i]->queryBinding();
+            if (currentBinding && currentBinding == binding)
+            {
+                targetEntry = bindings[i];
+                bindings[i] = nullptr;
+                if (i != bindingCount-1)
+                {
+                    bindings[i] = bindings[bindingCount-1];
+                    bindings[bindingCount-1] = nullptr;
+                }
+                bindingCount--;
+                break;
+            }
+        }
+    }
+    if(targetEntry != nullptr)
+        targetEntry->Release();
 }
 
 const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const char *inner, StringBuffer &html, IEspContext* ctx)
@@ -153,14 +184,16 @@ const StringBuffer &CEspApplicationPort::getTitleBarHtml(IEspContext& ctx, bool 
 {
     if (xslp)
     {
-        StringBuffer titleBarXml;
+        VStringBuffer titleBarXml("<EspHeader><BuildVersion>%s</BuildVersion><ConfigAccess>%d</ConfigAccess>", build_ver, viewConfig);
+
+        const char* authMethod = ctx.getAuthenticationMethod();
+        if (authMethod && !strieq(authMethod, "none") && (ctx.getDomainAuthType() != AuthPerRequestOnly))
+            titleBarXml.append("<LogOut>1</LogOut>");
+
         const char* user = ctx.queryUserId();
-                if (!user || !*user)
-            titleBarXml.appendf("<EspHeader><BuildVersion>%s</BuildVersion><ConfigAccess>%d</ConfigAccess>"
-                "<LoginId>&lt;nobody&gt;</LoginId><NoUser>1</NoUser></EspHeader>", build_ver, viewConfig);
-                else
-            titleBarXml.appendf("<EspHeader><BuildVersion>%s</BuildVersion><ConfigAccess>%d</ConfigAccess>"
-                "<LoginId>%s</LoginId></EspHeader>", build_ver, viewConfig, user);
+        if (user && *user)
+            titleBarXml.appendf("<LoginId>%s</LoginId>", user);
+        titleBarXml.append("</EspHeader>");
 
         if (rawXml)
         {
@@ -182,9 +215,12 @@ const StringBuffer &CEspApplicationPort::getNavBarContent(IEspContext &context, 
     if (xslp)
     {
         Owned<IPropertyTree> navtree=createPTree("EspNavigationData");
-        int count = getBindingCount();
-        for (int idx = 0; idx<count; idx++)
-            bindings[idx]->queryBinding()->getNavigationData(context, *navtree.get());
+        {
+            ReadLockBlock rblock(rwLock);
+            int count = getBindingCount();
+            for (int idx = 0; idx<count; idx++)
+                bindings[idx]->queryBinding()->getNavigationData(context, *navtree.get());
+        }
 
         StringBuffer xml;
         buildNavTreeXML(navtree.get(), xml);
@@ -225,9 +261,12 @@ const StringBuffer &CEspApplicationPort::getDynNavData(IEspContext &context, IPr
 {
     Owned<IPropertyTree> navtree=createPTree("EspDynNavData");
     bVolatile = false;
-    int count = getBindingCount();
-    for (int idx = 0; idx<count; idx++)
-        bindings[idx]->queryBinding()->getDynNavData(context, params, *navtree.get());
+    {
+        ReadLockBlock rblock(rwLock);
+        int count = getBindingCount();
+        for (int idx = 0; idx<count; idx++)
+            bindings[idx]->queryBinding()->getDynNavData(context, params, *navtree.get());
+    }
 
     if (!bVolatile)
         bVolatile = navtree->getPropBool("@volatile", false);
@@ -238,6 +277,7 @@ const StringBuffer &CEspApplicationPort::getDynNavData(IEspContext &context, IPr
 int CEspApplicationPort::onGetNavEvent(IEspContext &context, IHttpMessage* request, IHttpMessage* response)
 {
     int handled=0;
+    ReadLockBlock rblock(rwLock);
     int count = getBindingCount();
     for (int idx = 0; !handled && idx<count; idx++)
     {
@@ -252,6 +292,7 @@ int CEspApplicationPort::onBuildSoapRequest(IEspContext &context, IHttpMessage* 
     CHttpResponse *response=dynamic_cast<CHttpResponse*>(iresp);
 
     int handled=0;
+    ReadLockBlock rblock(rwLock);
     int count = getBindingCount();
     for (int idx = 0; !handled && idx<count; idx++)
     {
@@ -477,22 +518,28 @@ void CEspBinding::getNavigationData(IEspContext &context, IPropertyTree & data)
                 params.appendf("%cver_=%g", params.length()?'&':'?', context.getClientVersion());
         }
 
-        IPropertyTree *folder=createPTree("Folder");
-        folder->addProp("@name", serviceName.str());
-        folder->addProp("@info", serviceName.str());
-
         StringBuffer encodedparams;
         if (params.length())
             encodeUtf8XML(params.str(), encodedparams, 0);
 
-        folder->addProp("@urlParams", encodedparams);
-        if (showSchemaLinks())
-            folder->addProp("@showSchemaLinks", "true");
-
         if (params.length())
             params.setCharAt(0,'&'); //the entire params string will follow the initial param: "?form"
 
-        folder->addPropBool("@isDynamicBinding", isDynamicBinding());
+        VStringBuffer folderpath("Folder[@name='%s']", serviceName.str());
+
+        IPropertyTree *folder = data.queryPropTree(folderpath.str());
+        if(!folder)
+        {
+            folder=createPTree("Folder");
+            folder->addProp("@name", serviceName.str());
+            folder->addProp("@info", serviceName.str());
+            folder->addProp("@urlParams", encodedparams);
+            if (showSchemaLinks())
+                folder->addProp("@showSchemaLinks", "true");
+            folder->addPropBool("@isDynamicBinding", isDynamicBinding());
+            folder->addPropBool("@isBound", isBound());
+            data.addPropTree("Folder", folder);
+        }
 
         MethodInfoArray methods;
         wsdl->getQualifiedNames(context, methods);
@@ -508,8 +555,6 @@ void CEspBinding::getNavigationData(IEspContext &context, IPropertyTree & data)
 
             folder->addPropTree("Link", link);
         }
-
-        data.addPropTree("Folder", folder);
     }
 }
 
@@ -532,7 +577,7 @@ void CEspApplicationPort::onUpdatePasswordInput(IEspContext &context, StringBuff
     return;
 }
 
-void CEspApplicationPort::onUpdatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& html)
+unsigned CEspApplicationPort::onUpdatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& html)
 {
     StringBuffer xml, message;
     unsigned returnCode = updatePassword(context, request, message);
@@ -547,7 +592,7 @@ void CEspApplicationPort::onUpdatePassword(IEspContext &context, IHttpMessage* r
     xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/passwordupdate.xsl").str());
     xform->setXmlSource(xml.str(), xml.length()+1);
     xform->transform( html);
-    return;
+    return returnCode;
 }
 
 unsigned CEspApplicationPort::updatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& message)
@@ -563,13 +608,6 @@ unsigned CEspApplicationPort::updatePassword(IEspContext &context, IHttpMessage*
     if(!user)
     {
         message.append("Can't find user in esp context. Please check if the user was properly logged in.");
-        return 2;
-    }
-
-    const char* oldpass1 = context.queryPassword();
-    if (!oldpass1)
-    {
-        message.append("Existing password missing from request.");
         return 2;
     }
 
@@ -590,11 +628,6 @@ unsigned CEspApplicationPort::updatePassword(IEspContext &context, IHttpMessage*
         message.append("Incorrect username has been received.");
         return 1;
     }
-    if(!oldpass || !streq(oldpass, oldpass1))
-    {
-        message.append("Old password doesn't match credentials in use.");
-        return 1;
-    }
     if(!streq(newpass1, newpass2))
     {
         message.append("Password re-entry doesn't match.");
@@ -609,6 +642,9 @@ unsigned CEspApplicationPort::updatePassword(IEspContext &context, IHttpMessage*
     bool returnFlag = false;
     try
     {
+        ISecCredentials& cred = user->credentials();
+        if (isEmptyString(cred.getPassword()))
+            cred.setPassword(oldpass);
         returnFlag = secmgr->updateUserPassword(*user, newpass1, oldpass);//provide the entered current password, not the cached one
     }
     catch(IException* e)
@@ -639,11 +675,13 @@ CEspProtocol::CEspProtocol()
 CEspProtocol::~CEspProtocol()
 {
     clear();
+    if(m_persistentHandler)
+        m_persistentHandler->stop(true);
 }
 
 bool CEspProtocol::notifySelected(ISocket *sock,unsigned selected)
 {
-    return true;
+    return notifySelected(sock, selected, nullptr);
 }
 
 const char * CEspProtocol::getProtocolName()
@@ -659,27 +697,92 @@ void CEspProtocol::addBindingMap(ISocket *sock, IEspRpcBinding* binding, bool is
     char name[256];
     int port = sock->name(name, 255);
 
-    CApplicationPortMap::iterator apport_it = m_portmap.find(port);
-
-    CEspApplicationPort *apport=NULL;
-
-    if (apport_it!=m_portmap.end())
     {
-        apport = (*apport_it).second;
-        apport->appendBinding(entry, isdefault);
-    }
-    else
-    {
-        apport = new CEspApplicationPort(m_viewConfig);
-        apport->appendBinding(entry, isdefault);
+        WriteLockBlock wblock(rwLock);
+        CApplicationPortMap::iterator apport_it = m_portmap.find(port);
 
-        CApplicationPortMap::value_type vt(port, apport);
-        m_portmap.insert(vt);
+        CEspApplicationPort *apport = nullptr;
+
+        if (apport_it!=m_portmap.end())
+        {
+            apport = (*apport_it).second;
+            apport->appendBinding(entry, isdefault);
+        }
+        else
+        {
+            apport = new CEspApplicationPort(m_viewConfig, this);
+            apport->appendBinding(entry, isdefault);
+
+            CApplicationPortMap::value_type vt(port, apport);
+            m_portmap.insert(vt);
+        }
     }
 }
 
 CEspApplicationPort* CEspProtocol::queryApplicationPort(int port)
 {
+    ReadLockBlock rblock(rwLock);
     CApplicationPortMap::iterator apport_it = m_portmap.find(port);
     return (apport_it != m_portmap.end()) ? (*apport_it).second : NULL;
+}
+
+void CEspProtocol::addPersistent(ISocket* sock)
+{
+    if (m_persistentHandler != nullptr)
+        m_persistentHandler->add(sock);
+}
+
+void CEspProtocol::initPersistentHandler(IPropertyTree * proc_cfg)
+{
+    const char* idleTimeStr = nullptr;
+    const char* maxReqsStr = nullptr;
+    if (proc_cfg != nullptr)
+    {
+        idleTimeStr = proc_cfg->queryProp("@maxPersistentIdleTime");
+        maxReqsStr = proc_cfg->queryProp("@maxPersistentRequests");
+    }
+    //To disable persistent connections, set maxPersistentIdleTime or maxPersistentRequests to 0
+    int maxIdleTime = DEFAULT_MAX_PERSISTENT_IDLE_TIME;
+    if (idleTimeStr != nullptr && *idleTimeStr != '\0')
+        maxIdleTime = atoi(idleTimeStr);
+    int maxReqs = DEFAULT_MAX_PERSISTENT_REQUESTS;
+    if (maxReqsStr != nullptr && *maxReqsStr != '\0')
+        maxReqs = atoi(maxReqsStr);
+
+    if (maxIdleTime == 0 || maxReqs == 0)
+    {
+        DBGLOG("Persistent connection won't be enabled because maxPersistentIdleTime or maxPersistentRequests is set to 0");
+        return;
+    }
+    m_persistentHandler.setown(createPersistentHandler(this, maxIdleTime, maxReqs, static_cast<PersistentLogLevel>(getEspLogLevel())));
+}
+
+int CEspProtocol::removeBindingMap(int port, IEspRpcBinding* binding)
+{
+    WriteLockBlock wblock(rwLock);
+    CApplicationPortMap::iterator apport_it = m_portmap.find(port);
+
+    int left = 0;
+    if (apport_it!=m_portmap.end())
+    {
+        CEspApplicationPort* apport = (*apport_it).second;
+        apport->removeBinding(binding);
+        left = apport->countBindings();
+        if (left == 0)
+        {
+            delete apport;
+            m_portmap.erase(apport_it);
+        }
+    }
+    return left;
+}
+
+int CEspProtocol::countBindings(int port)
+{
+    ReadLockBlock rblock(rwLock);
+    CEspApplicationPort* apport = queryApplicationPort(port);
+    if (!apport)
+        return 0;
+    else
+        return apport->countBindings();
 }

@@ -128,12 +128,16 @@ while [[ 1 ]]; do
     # Would be simpler, if there was simple way to test if ip is local and get rid of 'localthor' setting
     sort $instancedir/slaves | uniq > $instancedir/uslaves
 
+    # To configure Thor to run with valgrind, set 'valgrindOptions' in the ThorCluster in the environment.xml
+    # e.g. set valgrindOptions="--tool=memcheck --leak-check=full --show-leak-kinds=all -v"
+
     if [[ "$localthor" = "true" ]]; then
         slaveip=$(head -n 1 $instancedir/uslaves)
-        $deploydir/init_thorslave start $slaveip $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect
+        $deploydir/init_thorslave start $slaveip $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect "${valgrindOptions}"
     else
         clusternodes=$(cat $instancedir/uslaves | wc -l)
-        $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/init_thorslave start %a $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
+        escapedValgrindOptions=$(printf %q "$valgrindOptions")
+        $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/init_thorslave start %a $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect ${escapedValgrindOptions}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
         FRUNSSH_RC=$?
         if [[ ${FRUNSSH_RC} -gt 0 ]]; then
             log "Error ${FRUNSSH_RC} in frunssh"
@@ -143,8 +147,14 @@ while [[ 1 ]]; do
         fi
     fi
 
-    log "thormaster cmd : $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT"
-    nohup $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT 2> /dev/null 1>/dev/null &
+    if [ -z ${valgrindOptions} ]; then
+        log "thormaster cmd : $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT"
+        nohup $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT 2> /dev/null 1>/dev/null &
+    else
+        cmd="valgrind ${valgrindOptions} --log-file=$LOG_DIR/$THORNAME/valgrind.thormaster.log $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT 2>/dev/null 1>/dev/null &"
+        log "${cmd}"
+        eval ${cmd}
+    fi
 
     thorpid=$!
     if [[ "$thorpid" -ne "0" ]]; then

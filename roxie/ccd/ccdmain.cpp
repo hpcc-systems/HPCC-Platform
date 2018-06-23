@@ -29,6 +29,8 @@
 #include "jutil.hpp"
 #include <build-config.h>
 
+#include "rtlformat.hpp"
+
 #include "dalienv.hpp"
 #include "rmtfile.hpp"
 #include "ccd.hpp"
@@ -83,8 +85,8 @@ bool defaultTraceEnabled = false;
 unsigned defaultTraceLimit = 10;
 unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
-unsigned restarts = 0;
-IRecordLayoutTranslator::Mode fieldTranslationEnabled = IRecordLayoutTranslator::NoTranslation;
+RelaxedAtomic<unsigned> restarts;
+RecordTranslationMode fieldTranslationEnabled = RecordTranslationMode::None;
 bool mergeSlaveStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
@@ -99,6 +101,7 @@ CriticalSection ccdChannelsCrit;
 IPropertyTree* ccdChannels;
 StringArray allQuerySetNames;
 
+bool alwaysTrustFormatCrcs;
 bool allFilesDynamic;
 bool lockSuperFiles;
 bool useRemoteResources;
@@ -139,9 +142,10 @@ unsigned defaultFullKeyedJoinPreload = 0;
 unsigned defaultKeyedJoinPreload = 0;
 unsigned dafilesrvLookupTimeout = 10000;
 bool defaultCheckingHeap = false;
+bool defaultDisableLocalOptimizations = false;
 unsigned defaultStrandBlockSize = 512;
 unsigned defaultForceNumStrands = 0;
-unsigned defaultHeapFlags = roxiemem::RHFnofragment;
+unsigned defaultHeapFlags = roxiemem::RHFscanning;
 
 unsigned slaveQueryReleaseDelaySeconds = 60;
 unsigned coresPerQuery = 0;
@@ -307,33 +311,6 @@ bool ipMatch(IpAddress &ip)
     return ip.isLocal();
 }
 
-void addSlaveChannel(unsigned channel, unsigned level)
-{
-    StringBuffer xpath;
-    xpath.appendf("RoxieSlaveProcess[@channel=\"%d\"]", channel);
-    if (ccdChannels->hasProp(xpath.str()))
-        throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channel %d repeated", channel);
-    IPropertyTree *ci = ccdChannels->addPropTree("RoxieSlaveProcess");
-    ci->setPropInt("@channel", channel);
-    ci->setPropInt("@subChannel", numSlaves[channel]);
-}
-
-void addChannel(unsigned nodeNumber, unsigned channel, unsigned level)
-{
-    numSlaves[channel]++;
-    if (nodeNumber == myNodeIndex && channel > 0)
-    {
-        assertex(channel <= numChannels);
-        assertex(!replicationLevel[channel]);
-        replicationLevel[channel] = level;
-        addSlaveChannel(channel, level);
-    }
-    if (!localSlave)
-    {
-        addEndpoint(channel, getNodeAddress(nodeNumber), ccdMulticastPort);
-    }
-}
-
 extern void doUNIMPLEMENTED(unsigned line, const char *file)
 {
     throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "UNIMPLEMENTED at %s:%d", sanitizeSourceFile(file), line);
@@ -361,11 +338,13 @@ static void roxie_common_usage(const char * progName)
     // Things that are also relevant to stand-alone executables
     printf("Usage: %s [options]\n", program.str());
     printf("\nOptions:\n");
-    printf("\t--daliServers=[host1,...]\t: List of Dali servers to use\n");
-    printf("\t--tracelevel=[integer]\t: Amount of information to dump on logs\n");
-    printf("\t--stdlog=[boolean]\t: Standard log format (based on tracelevel)\n");
-    printf("\t--logfile\t: Outputs to logfile, rather than stdout\n");
-    printf("\t--help|-h\t: This message\n");
+    printf("  -[xml|csv|raw]            : Output format (default ascii)\n");
+    printf("  --daliServers=[host1,...] : List of Dali servers to use\n");
+    printf("  --tracelevel=[integer]    : Amount of information to dump on logs\n");
+    printf("  --stdlog=[boolean]        : Standard log format (based on tracelevel)\n");
+    printf("  --logfile=[filename]      : Outputs to logfile, rather than stdout\n");
+    printf("  --topology=[filename]     : Load configuration from named xml file (default RoxieTopology.xml)\n");
+    printf("  --help|-h                 : This message\n");
     printf("\n");
 }
 
@@ -434,6 +413,15 @@ public:
 
 int STARTQUERY_API start_query(int argc, const char *argv[])
 {
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
     EnableSEHtoExceptionMapping();
     setTerminateOnSEH();
     init_signals();
@@ -543,7 +531,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             topology->setPropInt("RoxieFarmProcess/@port", port);
             topology->setProp("@daliServers", globals->queryProp("--daliServers"));
             topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
+            topology->setPropInt("@allFilesDynamic", globals->getPropInt("--allFilesDynamic", 1));
             topology->setProp("@memTraceLevel", globals->queryProp("--memTraceLevel"));
+            topology->setPropInt64("@totalMemoryLimit", globals->getPropInt("--totalMemoryLimitMb", 0) * (memsize_t) 0x100000);
+            topology->setProp("@disableLocalOptimizations", globals->queryProp("--disableLocalOptimizations"));
+            topology->setPropInt("@indexReadChunkSize", globals->getPropInt("--indexReadChunkSize", 60000));
         }
         if (topology->hasProp("PreferredCluster"))
         {
@@ -664,7 +656,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (restarts)
         {
             if (traceLevel)
-                DBGLOG("Roxie restarting: restarts = %d build = %s", restarts, BUILD_TAG);
+                DBGLOG("Roxie restarting: restarts = %d build = %s", restarts.load(), BUILD_TAG);
             setStartRuid(restarts);
         }
         else
@@ -704,6 +696,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
+        alwaysTrustFormatCrcs = topology->getPropBool("@alwaysTrustFormatCrcs", true);
         allFilesDynamic = topology->getPropBool("@allFilesDynamic", false);
         lockSuperFiles = topology->getPropBool("@lockSuperFiles", false);
         ignoreOrphans = topology->getPropBool("@ignoreOrphans", true);
@@ -750,7 +743,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         udpSnifferEnabled = topology->getPropBool("@udpSnifferEnabled", true);
         udpInlineCollation = topology->getPropBool("@udpInlineCollation", false);
         udpInlineCollationPacketLimit = topology->getPropInt("@udpInlineCollationPacketLimit", 50);
-        udpSendCompletedInData = topology->getPropBool("@udpSendCompletedInData", false);
         udpRetryBusySenders = topology->getPropInt("@udpRetryBusySenders", 0);
 
         // Historically, this was specified in seconds. Assume any value <= 10 is a legacy value specified in seconds!
@@ -824,20 +816,16 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultStrandBlockSize = topology->getPropInt("@defaultStrandBlockSize", 512);
         defaultForceNumStrands = topology->getPropInt("@defaultForceNumStrands", 0);
         defaultCheckingHeap = topology->getPropBool("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
+        defaultDisableLocalOptimizations = topology->getPropBool("@disableLocalOptimizations", false);  // NOTE - not in configmgr - too dangerous!
 
         slaveQueryReleaseDelaySeconds = topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60);
         coresPerQuery = topology->getPropInt("@coresPerQuery", 0);
 
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
-        fieldTranslationEnabled = IRecordLayoutTranslator::NoTranslation;
+        fieldTranslationEnabled = RecordTranslationMode::None;
         const char *val = topology->queryProp("@fieldTranslationEnabled");
         if (val)
-        {
-            if (strieq(val, "payload"))
-                fieldTranslationEnabled = IRecordLayoutTranslator::TranslatePayload;
-            else if (strToBool(val))
-                fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAll;
-        }
+            fieldTranslationEnabled = getTranslationMode(val);
 
         pretendAllOpt = topology->getPropBool("@ignoreMissingFiles", false);
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);
@@ -931,9 +919,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
 
         topology->getProp("@pluginDirectory", pluginDirectory);
-        if (pluginDirectory.length() == 0)
-            pluginDirectory.append(codeDirectory).append("plugins");
-        getAdditionalPluginsPath(pluginDirectory, codeDirectory);
+        StringBuffer packageDirectory;
+        getPackageFolder(packageDirectory);
+        if (pluginDirectory.length() == 0 && packageDirectory.length() != 0)
+        {
+            pluginDirectory.append(packageDirectory).append("plugins");
+        }
+        getAdditionalPluginsPath(pluginDirectory, packageDirectory);
         if (queryDirectory.length() == 0)
         {
             topology->getProp("@queryDir", queryDirectory);
@@ -1042,6 +1034,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             openMulticastSocket();
 
         setDaliServixSocketCaching(true);  // enable daliservix caching
+        enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
+
         loadPlugins();
         createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
@@ -1061,7 +1055,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         Owned<IHpccProtocolPluginContext> protocolCtx = new CHpccProtocolPluginCtx();
         if (runOnce)
         {
-            if (globals->hasProp("-wu"))
+            if (globals->hasProp("--wu"))
             {
                 Owned<IHpccProtocolListener> roxieServer = createRoxieWorkUnitListener(1, false);
                 try
@@ -1082,14 +1076,14 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(getNodeAddress(myNodeIndex), 0, 1, false), 0, 0, NULL);
                 try
                 {
-                    const char *format = globals->queryProp("format");
+                    const char *format = globals->queryProp("-format");
                     if (!format)
                     {
-                        if (globals->hasProp("-xml"))
+                        if (globals->hasProp("--xml") || globals->hasProp("-xml"))  // Support - versions for compatibility
                             format = "xml";
-                        else if (globals->hasProp("-csv"))
+                        else if (globals->hasProp("--csv") || globals->hasProp("-csv"))
                             format = "csv";
-                        else if (globals->hasProp("-raw"))
+                        else if (globals->hasProp("-raw") || globals->hasProp("--raw"))
                             format = "raw";
                         else
                             format = "ascii";
@@ -1108,103 +1102,112 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
         else
         {
-            Owned<IPropertyTreeIterator> roxieFarms = topology->getElements("./RoxieFarmProcess");
-            ForEach(*roxieFarms)
+            try
             {
-                IPropertyTree &roxieFarm = roxieFarms->query();
-                unsigned listenQueue = roxieFarm.getPropInt("@listenQueue", DEFAULT_LISTEN_QUEUE_SIZE);
-                unsigned numThreads = roxieFarm.getPropInt("@numThreads", numServerThreads);
-                unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
-                unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
-                // NOTE: farmer name [@name=] is not copied into topology
-                const IpAddress &ip = getNodeAddress(myNodeIndex);
-                if (!roxiePort)
+                Owned<IPropertyTreeIterator> roxieFarms = topology->getElements("./RoxieFarmProcess");
+                ForEach(*roxieFarms)
                 {
-                    roxiePort = port;
-                    ownEP.set(roxiePort, ip);
-                }
-                bool suspended = roxieFarm.getPropBool("@suspended", false);
-                Owned <IHpccProtocolListener> roxieServer;
-                if (port)
-                {
-                    const char *protocol = roxieFarm.queryProp("@protocol");
-                    StringBuffer certFileName;
-                    StringBuffer keyFileName;
-                    StringBuffer passPhraseStr;
-                    if (protocol && streq(protocol, "ssl"))
+                    IPropertyTree &roxieFarm = roxieFarms->query();
+                    unsigned listenQueue = roxieFarm.getPropInt("@listenQueue", DEFAULT_LISTEN_QUEUE_SIZE);
+                    unsigned numThreads = roxieFarm.getPropInt("@numThreads", numServerThreads);
+                    unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
+                    unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
+                    // NOTE: farmer name [@name=] is not copied into topology
+                    const IpAddress &ip = getNodeAddress(myNodeIndex);
+                    if (!roxiePort)
                     {
-#ifdef _USE_OPENSSL
-                        const char *certFile = roxieFarm.queryProp("@certificateFileName");
-                        if (!certFile)
-                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFileName tag", port);
-                        if (isAbsolutePath(certFile))
-                            certFileName.append(certFile);
-                        else
-                            certFileName.append(codeDirectory.str()).append(certFile);
-                        if (!checkFileExists(certFileName.str()))
-                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFile (%s)", port, certFileName.str());
-
-                        const char *keyFile = roxieFarm.queryProp("@privateKeyFileName");
-                        if (!keyFile)
-                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFileName tag", port);
-                        if (isAbsolutePath(keyFile))
-                            keyFileName.append(keyFile);
-                        else
-                            keyFileName.append(codeDirectory.str()).append(keyFile);
-                        if (!checkFileExists(keyFileName.str()))
-                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFile (%s)", port, keyFileName.str());
-
-                        const char *passPhrase = roxieFarm.queryProp("@passphrase");
-                        if (!isEmptyString(passPhrase))
-                            decrypt(passPhraseStr, passPhrase);
-#else
-                        WARNLOG("Skipping Roxie SSL Farm Listener on port %d : OpenSSL disabled in build", port);
-                        continue;
-#endif
+                        roxiePort = port;
+                        ownEP.set(roxiePort, ip);
                     }
-                    const char *soname =  roxieFarm.queryProp("@so");
-                    const char *config  = roxieFarm.queryProp("@config");
-                    Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
-                    roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhraseStr.str()));
-                }
-                else
-                    roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
-
-                IHpccProtocolMsgSink *sink = roxieServer->queryMsgSink();
-                const char *aclName = roxieFarm.queryProp("@aclName");
-                if (aclName && *aclName)
-                {
-                    Owned<IPropertyTree> aclInfo = createPTree("AccessInfo", ipt_lowmem);
-                    getAccessList(aclName, topology, aclInfo);
-                    Owned<IPropertyTreeIterator> accesses = aclInfo->getElements("Access");
-                    ForEach(*accesses)
+                    bool suspended = roxieFarm.getPropBool("@suspended", false);
+                    Owned <IHpccProtocolListener> roxieServer;
+                    if (port)
                     {
-                        IPropertyTree &access = accesses->query();
-                        try
+                        const char *protocol = roxieFarm.queryProp("@protocol");
+                        StringBuffer certFileName;
+                        StringBuffer keyFileName;
+                        StringBuffer passPhraseStr;
+                        if (protocol && streq(protocol, "ssl"))
                         {
-                            sink->addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode"));
+    #ifdef _USE_OPENSSL
+                            const char *certFile = roxieFarm.queryProp("@certificateFileName");
+                            if (!certFile)
+                                throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFileName tag", port);
+                            if (isAbsolutePath(certFile))
+                                certFileName.append(certFile);
+                            else
+                                certFileName.append(codeDirectory.str()).append(certFile);
+                            if (!checkFileExists(certFileName.str()))
+                                throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFile (%s)", port, certFileName.str());
+
+                            const char *keyFile = roxieFarm.queryProp("@privateKeyFileName");
+                            if (!keyFile)
+                                throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFileName tag", port);
+                            if (isAbsolutePath(keyFile))
+                                keyFileName.append(keyFile);
+                            else
+                                keyFileName.append(codeDirectory.str()).append(keyFile);
+                            if (!checkFileExists(keyFileName.str()))
+                                throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFile (%s)", port, keyFileName.str());
+
+                            const char *passPhrase = roxieFarm.queryProp("@passphrase");
+                            if (!isEmptyString(passPhrase))
+                                decrypt(passPhraseStr, passPhrase);
+    #else
+                            WARNLOG("Skipping Roxie SSL Farm Listener on port %d : OpenSSL disabled in build", port);
+                            continue;
+    #endif
                         }
-                        catch (IException *E)
+                        const char *soname =  roxieFarm.queryProp("@so");
+                        const char *config  = roxieFarm.queryProp("@config");
+                        Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
+                        roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhraseStr.str()));
+                    }
+                    else
+                        roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
+
+                    IHpccProtocolMsgSink *sink = roxieServer->queryMsgSink();
+                    const char *aclName = roxieFarm.queryProp("@aclName");
+                    if (aclName && *aclName)
+                    {
+                        Owned<IPropertyTree> aclInfo = createPTree("AccessInfo", ipt_lowmem);
+                        getAccessList(aclName, topology, aclInfo);
+                        Owned<IPropertyTreeIterator> accesses = aclInfo->getElements("Access");
+                        ForEach(*accesses)
                         {
-                            StringBuffer s, x;
-                            E->errorMessage(s);
-                            E->Release();
-                            toXML(&access, x, 0, 0);
-                            throw MakeStringException(ROXIE_ACL_ERROR, "Error in access statement %s: %s", x.str(), s.str());
+                            IPropertyTree &access = accesses->query();
+                            try
+                            {
+                                sink->addAccess(access.getPropBool("@allow", true), access.getPropBool("@allowBlind", true), access.queryProp("@ip"), access.queryProp("@mask"), access.queryProp("@query"), access.queryProp("@error"), access.getPropInt("@errorCode"));
+                            }
+                            catch (IException *E)
+                            {
+                                StringBuffer s, x;
+                                E->errorMessage(s);
+                                E->Release();
+                                toXML(&access, x, 0, 0);
+                                throw MakeStringException(ROXIE_ACL_ERROR, "Error in access statement %s: %s", x.str(), s.str());
+                            }
                         }
                     }
+                    socketListeners.append(*roxieServer.getLink());
+                    time(&startupTime);
+                    roxieServer->start();
                 }
-                socketListeners.append(*roxieServer.getLink());
-                time(&startupTime);
-                roxieServer->start();
+                writeSentinelFile(sentinelFile);
+                DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
+                DBGLOG("Waiting for queries");
+                if (pingInterval)
+                    startPingTimer();
+                LocalIAbortHandler abortHandler(waiter);
+                waiter.wait();
             }
-            writeSentinelFile(sentinelFile);
-            DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
-            DBGLOG("Waiting for queries");
-            if (pingInterval)
-                startPingTimer();
-            LocalIAbortHandler abortHandler(waiter);
-            waiter.wait();
+            catch (IException *E)
+            {
+                StringBuffer x;
+                DBGLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
+                E->Release();
+            }
         }
         shuttingDown = true;
         if (pingInterval)
@@ -1235,6 +1238,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     globalPackageSetManager = NULL;
     stopDelayedReleaser();
     cleanupPlugins();
+    unloadHpccProtocolPlugin();
     closeMulticastSockets();
     releaseSlaveDynamicFileCache();
     releaseRoxieStateCache();
@@ -1242,6 +1246,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     setNodeCaching(false); // ditto
     perfMonHook.clear();
     strdup("Make sure leak checking is working");
+    roxiemem::releaseRoxieHeap();
     UseSysLogForOperatorMessages(false);
     ExitModuleObjects();
     releaseAtoms();

@@ -339,6 +339,10 @@ class TypeNameBuilder
 public:
     TypeNameBuilder(const char * name) { typeOnLeft = false; str.append(name); }
 
+    void addConst()
+    {
+        isConst = true;
+    }
     void addPrefix(const char * text)
     {
         if (str.length())
@@ -362,11 +366,17 @@ public:
         return addSuffix().append("[").append(length ? length : 1).append("]");
     }
     
-    void get(StringBuffer & out) { out.append(str); }
+    void get(StringBuffer & out)
+    {
+        if (isConst)
+            out.append("const ");
+        out.append(str);
+    }
 
 protected:
     StringBuffer str;
     bool typeOnLeft;
+    bool isConst = false;
 };
 
 void HqlCppWriter::generateType(StringBuffer & result, ITypeInfo * type, const char * name)
@@ -391,7 +401,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
             switch (tmod)
             {
             case typemod_const:
-//              result.addPrefix("const");
+                result.addConst();
                 break;
             case typemod_outofline:
                 outOfLine = false;
@@ -454,7 +464,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
                     if (isPointer)
                         prefix = "void";
                     else
-                        prefix = "char";
+                        prefix = "byte";
                 }
                 else
                     prefix = "char";
@@ -478,6 +488,8 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
         case type_sortlist:
             if (hasLinkCountedModifier(fullType))
                 isPointer = true;
+            if (!hasNonconstModifier(fullType))
+                result.addConst();
             prefix = "byte";
             next = NULL;
             break;
@@ -502,6 +514,12 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
             break;
         case type_boolean:
             prefix = "bool";
+            break;
+        case type_filepos:
+        case type_blob:
+            prefix = intTypeName(8-1, compiler, false);
+            break;
+        case type_keyedint:
             break;
         case type_int:
         case type_swapint:
@@ -682,6 +700,13 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     else if (body->hasAttribute(userMatchFunctionAtom))
     {
         out.append("IMatchWalker * results");
+        firstParam = false;
+    }
+    if (functionBodyIsActivity(body))
+    {
+        if (!firstParam)
+            out.append(",");
+        out.append("IThorActivityContext * activity");
         firstParam = false;
     }
 
@@ -879,7 +904,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
         out.append(",");
         break;
     case type_row:
-        isConst = true;
+        isConst = false; // bit of a hack - we forced it on in generateType above, and this avoids duplicates.
         break;
     }
     
@@ -887,7 +912,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     switch (paramType->getTypeCode())
     {
     case type_record:
-        out.append("IOutputMetaData * ");
+        out.append("IOutputMetaData &");
         break;
     case type_dictionary:
     case type_table:
@@ -896,8 +921,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
             out.append("IRowStream *");
         else if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
         {
-            //At some point in the future this should change to "const byte * const *"
-            out.append("byte * *");
+            out.append("const byte * *");  // Arguably should be const byte * const *
         }
         else
         {
@@ -926,7 +950,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
             if(isStringType(childType)) {
                 // process stringn and varstringn specially.
                 if(childType->getSize() > 0) {
-                    out.append("char ");
+                    out.append("const char ");
                     if(paramName) {
                         out.append(paramNameText);
                         nameappended = true;
@@ -938,7 +962,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
                 }
                 // Process string and varstring specially
                 else {
-                    out.append("char *");
+                    out.append("const char *");
                     if(paramName) {
                         out.append(paramNameText);
                         nameappended = true;
@@ -948,7 +972,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
             }
             else
             {
-                OwnedITypeInfo pointerType = makePointerType(LINK(childType));
+                OwnedITypeInfo pointerType = makeConstantModifier(makePointerType(LINK(childType)));
                 generateType(pointerType, NULL);
             }
             break;
@@ -1033,7 +1057,7 @@ void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo *
             params.append("size32_t & __countResult,");
     //      if (hasConstModifier(retType))
     //          params.append("const ");
-            params.append("byte * * & __result");
+            params.append("const byte * * & __result");
             if (hasNonNullRecord(retType) && getBoolAttribute(attrs, allocatorAtom, true))
                 params.append(", IEngineRowAllocator * _resultAllocator");
         }
@@ -1201,6 +1225,13 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 else if (props->hasAttribute(globalContextAtom))
                 {
                     out.append("gctx");
+                    needComma = true;
+                }
+                if (functionBodyIsActivity(funcdef))
+                {
+                    if (needComma)
+                        out.append(",");
+                    out.append("activityContext");
                     needComma = true;
                 }
                 for (unsigned index = firstArg; index < numArgs; index++)
@@ -1996,7 +2027,12 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
     if (hasModifier(type, typemod_mutable))
         out.append("mutable ");
 
+    //The following is correct, but causes lots of problems because const isn't currently correctly tracked
+    //if (hasModifier(type, typemod_const))
+    //    out.append("const ");
+
     size32_t typeSize = type->getSize();
+    bool useConstructor = false;
     if (hasWrapperModifier(type))
     {
         ITypeInfo * builderModifier = queryModifier(type, typemod_builder);
@@ -2029,23 +2065,28 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
             out.append("rtlFixedSizeDataAttr<").append(typeSize).append("> ").append(targetName);
         else
             out.append("rtlDataAttr ").append(targetName);
-        if (value)
-        {
-            out.append("(");
-            generateExprCpp(value);
-            out.append(")");
-            value = NULL;
-        }
+        useConstructor = true;
     }
     else
     {
         generateType(type, targetName.str());
+        if (type->getTypeCode() == type_class)
+            useConstructor = true;
     }
 
     if (value)
     {
-        out.append(" = ");
-        generateExprCpp(value);
+        if (useConstructor)
+        {
+            out.append("(");
+            generateExprCpp(value);
+            out.append(")");
+        }
+        else
+        {
+            out.append(" = ");
+            generateExprCpp(value);
+        }
     }
     out.append(";");
     

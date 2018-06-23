@@ -45,14 +45,13 @@
 #include "eclhelper.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlread_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
+#include "rtlrecord.hpp"
 #include "rtlds_imp.hpp"
+#include "rtlformat.hpp"
 #include "rmtfile.hpp"
 #include "roxiestream.hpp"
 
-namespace thormisc {  // Make sure we can't clash with generated versions or version check mechanism fails.
- #include "eclhelper_base.hpp" 
-}
 
 #define SDS_LOCK_TIMEOUT 30000
 
@@ -66,6 +65,7 @@ static ICommunicator *nodeComm;
 
 
 mptag_t masterSlaveMpTag;
+mptag_t kjServiceMpTag;
 IPropertyTree *globals;
 static IMPtagAllocator *ClusterMPAllocator = NULL;
 
@@ -1134,7 +1134,7 @@ bool CFifoFileCache::isAvailable(const char *filename)
 IOutputMetaData *createFixedSizeMetaData(size32_t sz)
 {
     // sure if this allowed or is cheating!
-    return new thormisc::CFixedOutputMetaData(sz);
+    return new CFixedOutputMetaData(sz);
 }
 
 
@@ -1236,7 +1236,7 @@ public:
         stop();
         threaded.join();
     }
-    virtual void main()
+    virtual void threadmain() override
     {
         CMessageBuffer mb;
         while (running)
@@ -1386,7 +1386,7 @@ IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMo
     return new CPerfMonHook(job, maxLevel, chain);
 }
 
-const StatisticsMapping spillStatistics(StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile, StKindNone);
+const StatisticsMapping spillStatistics({StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile});
 
 bool isOOMException(IException *_e)
 {
@@ -1422,4 +1422,58 @@ IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IExce
     Owned<IThorException> te = MakeActivityException(activity, e, "%s", errorMsg.str());
     e->Release();
     return te.getClear();
+}
+
+RecordTranslationMode getTranslationMode(CActivityBase &activity)
+{
+    StringBuffer val;
+    activity.getOpt("layoutTranslation", val);
+    return getTranslationMode(val);
+}
+
+void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const char *fname, IArrayOf<IPartDescriptor> &partDescriptors, RecordTranslationMode translationMode, unsigned expectedFormatCrc, IOutputMetaData *expectedFormat, unsigned projectedFormatCrc, IOutputMetaData *projectedFormat)
+{
+    if (0 == partDescriptors.ordinality())
+        return;
+    IPropertyTree &props = partDescriptors.item(0).queryOwner().queryProperties();
+    typedef OwningHTMapping<const ITranslator, unsigned> CITranslatorMapping;
+    OwningSimpleHashTableOf<CITranslatorMapping, unsigned> translatorTable;
+    ForEachItemIn(p, partDescriptors)
+    {
+        IPartDescriptor &partDesc = partDescriptors.item(p);
+        unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
+        Owned<const ITranslator> translatorContainer;
+        if (translatorTable.ordinality())
+        {
+            CITranslatorMapping *entry = translatorTable.find(publishedFormatCrc);
+            if (entry)
+                translatorContainer.set(&entry->queryElement());
+        }
+        if (!translatorContainer)
+        {
+            Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
+            translatorContainer.setown(getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode));
+            if (translatorContainer)
+                translatorTable.replace(*new CITranslatorMapping(*translatorContainer.getLink(), publishedFormatCrc));
+        }
+        translators.append(translatorContainer.getClear());
+    }
+}
+
+const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &partDesc, RecordTranslationMode translationMode, unsigned expectedFormatCrc, IOutputMetaData *expectedFormat, unsigned projectedFormatCrc, IOutputMetaData *projectedFormat)
+{
+    IPropertyTree const &props = partDesc.queryOwner().queryProperties();
+    Owned<IOutputMetaData> actualFormat = getDaliLayoutInfo(props);
+    unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
+    return getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, actualFormat, projectedFormatCrc, projectedFormat, translationMode);
+}
+
+bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn, StringBuffer &localPath)
+{
+    if (!activity.getOptBool(THOROPT_FORCE_REMOTE_DISABLED))
+    {
+        if (!rfn.isLocal() || activity.getOptBool(THOROPT_FORCE_REMOTE_READ, testForceRemote(rfn.getLocalPath(localPath))))
+            return true;
+    }
+    return false;
 }

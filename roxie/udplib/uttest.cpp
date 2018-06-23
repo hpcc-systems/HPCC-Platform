@@ -27,10 +27,6 @@
 #include "jdebug.hpp"
 #include <time.h>
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 /*=============================================================================================
 Findings:
 - Detect gaps in incoming sequence

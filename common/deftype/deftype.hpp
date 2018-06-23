@@ -19,6 +19,7 @@
 #define _DEFTYPE_INCL
 
 #include "jcomp.hpp"
+#include "rtlconst.hpp"
 
 #ifdef DEFTYPE_EXPORTS
 #define DEFTYPE_API DECL_EXPORT
@@ -46,71 +47,6 @@ interface IHqlScope;
 #define type_littleendianint    type_swapint
 #endif
 
-// NOTE - do not change the values here - they are also used in Clarion and stored in a database!!
-// Add new types to the end
-
-enum type_vals 
-{
-    type_boolean        = 0, 
-    type_int            = 1,    
-    type_real           = 2, 
-    type_decimal        = 3, 
-    type_string         = 4, 
-    type_alias          = 5, // This is only used when serializing expression graphs
-    type_date           = 6, 
-type_unused2            = 7, 
-type_unused3            = 8, 
-    type_bitfield       = 9, 
-type_unused4            = 10, 
-    type_char           = 11,
-    type_enumerated     = 12, 
-    type_record         = 13, 
-    type_varstring      = 14,
-    type_blob           = 15, 
-    type_data           = 16, 
-    type_pointer        = 17, 
-    type_class          = 18, 
-    type_array          = 19,
-    type_table          = 20, 
-    type_set            = 21, 
-    type_row            = 22, 
-    type_groupedtable   = 23,
-    type_void           = 24,
-    type_alien          = 25,
-    type_swapint        = 26,
-    type_none           = 27,
-    type_packedint      = 28,
-type_unused5            = 29,
-    type_qstring        = 30,
-    type_unicode        = 31,
-    type_any            = 32,
-    type_varunicode     = 33,
-    type_pattern        = 34,
-    type_rule           = 35,
-    type_token          = 36,
-    type_feature        = 37,
-    type_event          = 38,
-    type_null           = 39,       // not the same as type_void, which should be reserved for actions.
-    type_scope          = 40,
-    type_utf8           = 41,
-    type_transform      = 42,
-    type_ifblock        = 43,       // not a real type -but used for the rtlfield serialization
-    type_function       = 44,
-    type_sortlist       = 45,
-    type_dictionary     = 46,
-
-    type_max,
-
-    type_modifier       = 0xff,     // used by getKind()
-    type_unsigned       = 0x100,  // combined with some of the above, when returning summary type information. Not returned by getTypeCode()
-    type_ebcdic         = 0x200,   // combined with some of the above, when returning summary type information. Not returned by getTypeCode()
-
-//Some pseudo types - never actually created
-    type_stringorunicode= 0xfc, // any string/unicode variant
-    type_numeric        = 0xfd,
-    type_scalar         = 0xfe,
-};
-
 enum typemod_t
 {
     typemod_none        = 0,
@@ -125,6 +61,7 @@ enum typemod_t
     typemod_attr        = 9,
     typemod_indirect    = 10,       // type definition needs to go via an ecl definition
     typemod_mutable     = 11,
+    typemod_nonconst    = 12,
     typemod_max
 };
 
@@ -233,6 +170,8 @@ extern DEFTYPE_API ITypeInfo *makeIntType(int size, bool isSigned);
 extern DEFTYPE_API ITypeInfo *makeSwapIntType(int size, bool isSigned);
 extern DEFTYPE_API ITypeInfo *makePackedIntType(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo *makePackedIntType(int size, bool isSigned);
+extern DEFTYPE_API ITypeInfo *makeFilePosType(ITypeInfo *basetype);
+extern DEFTYPE_API ITypeInfo *makeKeyedType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeRealType(int size);
 extern DEFTYPE_API ITypeInfo *makeDataType(int size);
 extern DEFTYPE_API ITypeInfo *makeBitfieldType(int sizeInBits, ITypeInfo * basetype = NULL);
@@ -259,6 +198,7 @@ extern DEFTYPE_API ITypeInfo * makePointerType(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo * makeArrayType(ITypeInfo * basetype, unsigned size=0);
 extern DEFTYPE_API ITypeInfo * makeClassType(const char * className);
 extern DEFTYPE_API ITypeInfo * makeConstantModifier(ITypeInfo * basetype);
+extern DEFTYPE_API ITypeInfo * makeNonConstantModifier(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo * makeReferenceModifier(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo * makeWrapperModifier(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo * makeModifier(ITypeInfo * basetype, typemod_t modifier, IInterface * extra=NULL);
@@ -304,6 +244,7 @@ extern DEFTYPE_API ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInf
 extern DEFTYPE_API bool isNumericType(ITypeInfo * type);
 extern DEFTYPE_API bool isStringType(ITypeInfo * type);
 extern DEFTYPE_API bool isSimpleStringType(ITypeInfo * type);
+extern DEFTYPE_API bool isSimpleIntegralType(ITypeInfo * type);
 extern DEFTYPE_API bool isIntegralType(ITypeInfo * type);
 extern DEFTYPE_API bool isPatternType(ITypeInfo * type);
 extern DEFTYPE_API bool isUnicodeType(ITypeInfo * type);
@@ -350,6 +291,7 @@ extern DEFTYPE_API ITypeInfo * getTruncType(ITypeInfo * type);
 inline bool hasConstModifier(ITypeInfo * t)      { return hasModifier(t, typemod_const); }
 inline bool hasReferenceModifier(ITypeInfo * t)  { return hasModifier(t, typemod_ref); }
 inline bool hasWrapperModifier(ITypeInfo * t)    { return hasModifier(t, typemod_wrapper); }
+inline bool hasNonconstModifier(ITypeInfo * t)   { return hasModifier(t, typemod_nonconst); }
 inline bool hasOutOfLineModifier(ITypeInfo * t)  { return hasModifier(t, typemod_outofline); }
 inline bool sameUnqualifiedType(ITypeInfo * t1, ITypeInfo * t2)  { return queryUnqualifiedType(t1) == queryUnqualifiedType(t2); }
 inline ITypeInfo * stripFunctionType(ITypeInfo * type)

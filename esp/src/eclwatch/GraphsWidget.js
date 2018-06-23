@@ -20,24 +20,27 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
-    "dojo/has",
 
     "dijit/form/Button",
+    "dijit/layout/ContentPane",
 
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPQuery",
-    "hpcc/ESPLogicalFile",
+    "src/ESPWorkunit",
+    "src/ESPQuery",
+    "src/ESPLogicalFile",
     "hpcc/DelayLoadWidget",
-    "hpcc/TimingTreeMapWidget",
-    "hpcc/ESPUtil"
+    "src/ESPUtil",
+    "src/Utility",
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, has,
-                Button,
+    "@hpcc-js/eclwatch"
+
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
+                Button, ContentPane,
                 selector,
-                GridDetailsWidget, ESPWorkunit, ESPQuery, ESPLogicalFile, DelayLoadWidget, TimingTreeMapWidget, ESPUtil) {
+                GridDetailsWidget, ESPWorkunit, ESPQuery, ESPLogicalFile, DelayLoadWidget, ESPUtil, Utility,
+                hpccEclWatch) {
     return declare("GraphsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -49,15 +52,26 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
-            this.isIE8 = has("ie") === 8;
-            this.timingTreeMap = new TimingTreeMapWidget({
-                id: this.id + "TimingTreeMap",
-                region: "right",
+
+            this.timelinePane = new ContentPane({
+                id: this.id + "TimelinePane",
+                region: "top",
                 splitter: true,
-                style: "width: 33%",
+                style: "height: 120px",
                 minSize: 120
             });
-            this.timingTreeMap.placeAt(this.gridTab, "last");
+            this.timelinePane.placeAt(this.gridTab, "last");
+            var context = this;
+            var origResize = this.timelinePane.resize;
+            this.timelinePane.resize = function() {
+                origResize.apply(this, arguments);
+                if (context.timeline) {
+                    context.timeline
+                        .resize()
+                        .lazyRender()
+                    ;
+                }
+            }
         },
 
         init: function (params) {
@@ -83,21 +97,35 @@ define([
                 this.refreshGrid();
             }
 
-            this.timingTreeMap.init(lang.mixin(params, {
-                query: {
-                    graphsOnly: true,
-                    graphName: "*",
-                    subGraphId: "*"
-                }
-            }));
-            this.timingTreeMap.onClick = function (value) {
-                context.syncSelectionFrom(context.timingTreeMap);
-            }
-            this.timingTreeMap.onDblClick = function (item) {
-                context._onOpen(item, {
-                    SubGraphId: item.SubGraphId
-                });
-            }
+            this.timeline = new hpccEclWatch.WUTimeline()
+                .target(this.id + "TimelinePane")
+                .overlapTolerence(1)
+                .baseUrl("")
+                .wuid(params.Wuid)
+                .on("dblclick", function(row, col, sel) {
+                    if (row && row.__lparam && event && event.ctrlKey) {
+                        var scope = row.__lparam;
+                        switch(scope.ScopeType) {
+                            case "graph":
+                                var tab = context.ensurePane({ Name: row.label });
+                                context.selectChild(tab);         
+                            break;
+                            default:
+                                var descendents = scope.ScopeName.split(":");
+                                for (var i = 0; i < descendents.length; ++i) {
+                                    var scopeName = descendents[i];
+                                    if (scopeName.indexOf("graph") === 0) {
+                                        var tab = context.ensurePane({ Name: scopeName }, { SubGraphId: row.label });
+                                        context.selectChild(tab);         
+                                        break;
+                                    }
+                                }
+                            }
+                    }
+                }, true)
+                .render()
+            ;
+
             this._refreshActionState();
         },
 
@@ -113,7 +141,7 @@ define([
         },
 
         getStateImageHTML: function (row) {
-            return dojoConfig.getImageHTML(this.getStateImageName(row));
+            return Utility.getImageHTML(this.getStateImageName(row));
         },
 
         createGrid: function (domID) {
@@ -126,19 +154,6 @@ define([
                     });
                 }
             }).placeAt(this.widget.Open.domNode, "after");
-            if (dojoConfig.isPluginInstalled() && !this.isIE8) {
-                this.openNativeMode = new Button({
-                    label: this.i18n.OpenNativeMode,
-                    onClick: function (event) {
-                        context._onOpen(event, {
-                            nativeMode: true
-                        });
-                    }
-                }).placeAt(this.widget.Open.domNode, "after");
-            }
-            if (this.isIE8) {
-                dojo.destroy(this.id + "Open");
-            }
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
@@ -202,9 +217,10 @@ define([
 
         getDetailID: function (row, params) {
             var retVal = "Detail" + row[this.idProperty];
-            if (params && params.nativeMode) {
-                retVal += "Native";
-            } else if (params && params.legacyMode) {
+            if (params && params.SubGraphId) {
+                retVal += params.SubGraphId;
+            }
+            if (params && params.legacyMode) {
                 retVal += "Legacy";
             }
             return retVal;
@@ -236,19 +252,15 @@ define([
                 }
             }
             var title = row.Name;
-            var delayWidget = "GraphTreeWidget";
+            var delayWidget = "Graph7Widget";
             var delayProps = {
                 forceJS: true
             };
-            if (params && params.nativeMode) {
-                title += " (N)";
-                delayWidget = "GraphTreeWidget";
-                delayProps = {
-                    forceNative: true
-                };
+            if (params && params.SubGraphId) {
+                title = params.SubGraphId + " - " + title;
             }
-            if (params && params.legacyMode || this.isIE8) {
-                delayWidget = "GraphPageWidget";
+            if (params && params.legacyMode) {
+                delayWidget = "GraphTreeWidget";
                 title += " (L)";
                 delayProps = {};
             }
@@ -292,6 +304,17 @@ define([
                             };
                             graphs.push(graph);
                         });
+                    } else if (lang.exists("WUGraphs.ECLGraph", context.query)) {
+                        arrayUtil.forEach(context.query.WUGraphs.ECLGraph, function (item, idx) {
+                            var graph = {
+                                Name: item.Name || "",
+                                Label: item.Label || "",
+                                Completed: item.Completed || "",
+                                Time: item.Time || 0,
+                                Type: item.Type || ""
+                            };
+                            graphs.push(graph);
+                        });
                     }
                     context.store.setData(graphs);
                     context.grid.refresh();
@@ -318,9 +341,6 @@ define([
         refreshActionState: function (selection) {
             this.inherited(arguments);
 
-            if (this.openNativeMode) {
-                this.openNativeMode.set("disabled", !selection.length);
-            }
             this.openLegacyMode.set("disabled", !selection.length);
         },
 
@@ -329,33 +349,15 @@ define([
             var timingItems = [];
 
             //  Get Selected Items  ---
-            if (sourceControl == this.grid) {
+            if (sourceControl === this.grid) {
                 arrayUtil.forEach(sourceControl.getSelected(), function (item, idx) {
                     timingItems.push(item);
                 });
             }
-            if (sourceControl == this.timingTreeMap) {
-                arrayUtil.forEach(sourceControl.getSelected(), function (item, idx) {
-                    if (item.children) {
-                        if (item.children.length) {
-                            graphItems.push({
-                                Name: item.children[0].GraphName
-                            })
-                        }
-                    } else {
-                        graphItems.push({
-                            Name: item.GraphName
-                        })
-                    }
-                });
-            }
 
             //  Set Selected Items  ---
-            if (sourceControl != this.grid) {
+            if (sourceControl !== this.grid) {
                 this.grid.setSelected(graphItems);
-            }
-            if (sourceControl != this.timingTreeMap) {
-                this.timingTreeMap.setSelectedGraphs(timingItems);
             }
         }
     });

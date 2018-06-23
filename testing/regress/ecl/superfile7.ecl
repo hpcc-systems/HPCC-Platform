@@ -18,6 +18,9 @@
 import Std.System.Thorlib;
 import Std.File AS FileServices;
 import Std.Str;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
 // Super File regression test
 
 rec :=
@@ -31,56 +34,51 @@ ds2 := DATASET([{2,'D'}, {2,'E'}], rec);
 ds3 := DATASET([{3,'F'}, {3,'G'}, {3,'H'}], rec);
 ds4 := DATASET([],rec);
 
-clusterLFNPrefix := thorlib.getExpandLogicalName('regress::');
-
-string stripPrefix(string qlfn) := IF (Str.Find(qlfn, clusterLFNprefix, 1) = 1, Str.FindReplace(qlfn, clusterLFNPrefix, ''), qlfn);
-
-
 SEQUENTIAL(
   // Prepare
-  FileServices.DeleteSuperFile('regress::superfile7'),
-  OUTPUT(ds1,,'regress::subfile1',overwrite),
-  OUTPUT(ds2,,'regress::subfile2',overwrite),
-  OUTPUT(ds3,,'regress::subfile3',overwrite),
-  OUTPUT(ds4,,'regress::subfile4',overwrite),
+  FileServices.DeleteSuperFile(prefix + 'superfile7'),
+  OUTPUT(ds1,,prefix + 'subfile1',overwrite),
+  OUTPUT(ds2,,prefix + 'subfile2',overwrite),
+  OUTPUT(ds3,,prefix + 'subfile3',overwrite),
+  OUTPUT(ds4,,prefix + 'subfile4',overwrite),
   FileServices.StartSuperFileTransaction(),
-  FileServices.CreateSuperFile('regress::superfile7'),
-  FileServices.AddSuperFile('regress::superfile7','regress::subfile1'),
-  FileServices.AddSuperFile('regress::superfile7','regress::subfile2'),
-  FileServices.AddSuperFile('regress::superfile7','regress::subfile3'),
-  FileServices.AddSuperFile('regress::superfile7','regress::subfile4'),
+  FileServices.CreateSuperFile(prefix + 'superfile7'),
+  FileServices.AddSuperFile(prefix + 'superfile7',prefix + 'subfile1'),
+  FileServices.AddSuperFile(prefix + 'superfile7',prefix + 'subfile2'),
+  FileServices.AddSuperFile(prefix + 'superfile7',prefix + 'subfile3'),
+  FileServices.AddSuperFile(prefix + 'superfile7',prefix + 'subfile4'),
   FileServices.FinishSuperFileTransaction(),
-  OUTPUT(FileServices.SuperFileExists('regress::superfile7')), // true
-  OUTPUT(FileServices.GetSuperFileSubCount('regress::superfile7')), // 4
-  OUTPUT(dataset ('regress::superfile7', rec, flat)),
+  OUTPUT(FileServices.SuperFileExists(prefix + 'superfile7')), // true
+  OUTPUT(FileServices.GetSuperFileSubCount(prefix + 'superfile7')), // 4
+  OUTPUT(dataset (prefix + 'superfile7', rec, flat)),
 
   // Delete Super + Rollback (keep subs)
   FileServices.StartSuperFileTransaction(),
-  FileServices.DeleteSuperFile('regress::superfile7'),
+  FileServices.DeleteSuperFile(prefix + 'superfile7'),
   FileServices.FinishSuperFileTransaction(true),    // rollback
-  OUTPUT(FileServices.SuperFileExists('regress::superfile7')), // true
-  OUTPUT(FileServices.GetSuperFileSubCount('regress::superfile7')), // 4
-  OUTPUT(dataset ('regress::superfile7', rec, flat)),
+  OUTPUT(FileServices.SuperFileExists(prefix + 'superfile7')), // true
+  OUTPUT(FileServices.GetSuperFileSubCount(prefix + 'superfile7')), // 4
+  OUTPUT(dataset (prefix + 'superfile7', rec, flat)),
 
   // Delete Super + Rollback (del subs, not really)
   FileServices.StartSuperFileTransaction(),
-  FileServices.DeleteSuperFile('regress::superfile7', true),
+  FileServices.DeleteSuperFile(prefix + 'superfile7', true),
   FileServices.FinishSuperFileTransaction(true),    // rollback
-  OUTPUT(FileServices.SuperFileExists('regress::superfile7')), // true
-  OUTPUT(FileServices.FileExists('regress::subfile1')), // true
-  OUTPUT(FileServices.FileExists('regress::subfile2')), // true
-  OUTPUT(FileServices.FileExists('regress::subfile3')), // true
-  OUTPUT(FileServices.FileExists('regress::subfile4')), // true
-  OUTPUT(FileServices.GetSuperFileSubCount('regress::superfile7')), // 4
-  OUTPUT(dataset ('regress::superfile7', rec, flat)),
+  OUTPUT(FileServices.SuperFileExists(prefix + 'superfile7')), // true
+  OUTPUT(FileServices.FileExists(prefix + 'subfile1')), // true
+  OUTPUT(FileServices.FileExists(prefix + 'subfile2')), // true
+  OUTPUT(FileServices.FileExists(prefix + 'subfile3')), // true
+  OUTPUT(FileServices.FileExists(prefix + 'subfile4')), // true
+  OUTPUT(FileServices.GetSuperFileSubCount(prefix + 'superfile7')), // 4
+  OUTPUT(dataset (prefix + 'superfile7', rec, flat)),
 
   // Delete Super + Commit (del subs, yes really)
   FileServices.StartSuperFileTransaction(),
-  FileServices.DeleteSuperFile('regress::superfile7', true), // del subs
+  FileServices.DeleteSuperFile(prefix + 'superfile7', true), // del subs
   FileServices.FinishSuperFileTransaction(),        // commit
-  OUTPUT(FileServices.SuperFileExists('regress::superfile7')), // false
-  OUTPUT(FileServices.FileExists('regress::subfile1')), // false
-  OUTPUT(FileServices.FileExists('regress::subfile2')), // false
-  OUTPUT(FileServices.FileExists('regress::subfile3')), // false
-  OUTPUT(FileServices.FileExists('regress::subfile4')), // false
+  OUTPUT(FileServices.SuperFileExists(prefix + 'superfile7')), // false
+  OUTPUT(FileServices.FileExists(prefix + 'subfile1')), // false
+  OUTPUT(FileServices.FileExists(prefix + 'subfile2')), // false
+  OUTPUT(FileServices.FileExists(prefix + 'subfile3')), // false
+  OUTPUT(FileServices.FileExists(prefix + 'subfile4')), // false
 );

@@ -16,11 +16,6 @@
 ############################################################################## */
 #include "jliball.hpp"
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 #include "hql.hpp"
 #include "platform.h"
 #include "jlib.hpp"
@@ -172,6 +167,16 @@ void HqlTransformStats::gatherTransformStats(IStatisticTarget & target, const ch
     target.addStatistic(SSTcompilestage, scope, StTimeTotalExecute, nullptr, cycle_to_nanosec(totalTime), 1, 0, StatsMergeSum);
     target.addStatistic(SSTcompilestage, scope, StTimeLocalExecute, nullptr, cycle_to_nanosec(totalTime-(childTime-recursiveTime)), 1, 0, StatsMergeSum);
 #endif
+#ifdef TRANSFORM_STATS_DETAILS
+    if (numAnalyseCalls)
+        target.addStatistic(SSTcompilestage, scope, StNumAnalyseExprs, nullptr, numAnalyseCalls, 1, 0, StatsMergeSum);
+    if (numAnalyse)
+        target.addStatistic(SSTcompilestage, scope, StNumUniqueAnalyseExprs, nullptr, numAnalyse, 1, 0, StatsMergeSum);
+    if (numTransformCalls)
+        target.addStatistic(SSTcompilestage, scope, StNumTransformExprs, nullptr, numTransformCalls, 1, 0, StatsMergeSum);
+    if (numTransforms)
+        target.addStatistic(SSTcompilestage, scope, StNumUniqueTransformExprs, nullptr, numTransforms, 1, 0, StatsMergeSum);
+#endif
 }
 
 StringBuffer & HqlTransformStats::getText(StringBuffer & out) const
@@ -241,7 +246,7 @@ void HqlTransformerInfo::gatherTransformStats(IStatisticTarget & target) const
     {
         StringBuffer scope;
         scope.append("compile:transform:").append(name);
-        target.addStatistic(SSTcompilestage, scope, StNumStarted, nullptr, numInstances, 1, 0, StatsMergeSum);
+        target.addStatistic(SSTcompilestage, scope, StNumStarts, nullptr, numInstances, 1, 0, StatsMergeSum);
         stats.gatherTransformStats(target, scope);
     }
 #endif

@@ -16,7 +16,14 @@
 ############################################################################## */
 
 //UseStandardFiles
-TOXMLPREFIX := '~REGRESS::' + __PLATFORM__ + '::RESULT::';
+//version forceLayoutTranslation=0
+//version forceLayoutTranslation=1
+//version forceLayoutTranslation=2
+
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
+TOXMLPREFIX := prefix + __PLATFORM__ + '_RESULT_';
 
 phoneRecord := 
             RECORD
@@ -64,16 +71,16 @@ output(U'<row>'+U8'εν αρχη ην ο λογος'+U'</row>');
 output(U8'<row>'+U8'εν αρχη ην ο λογος'+U8'</row>');
 output((utf8)(U'<row>'+U'εν αρχη ην ο λογος'+U'</row>'));
 
-output(namesTable,,TOXMLPREFIX+'toxml1.xml',expire(1),overwrite,xml(heading('<MyDataset>\n','</MyDataset>')));
-output(namesTable,,TOXMLPREFIX+'toxml2.flat',expire(1),overwrite);
+setup1 := output(namesTable,,TOXMLPREFIX+'toxml1.xml',expire(1),overwrite,xml(heading('<MyDataset>\n','</MyDataset>')));
+setup2 := output(namesTable,,TOXMLPREFIX+'toxml2.flat',expire(1),overwrite);
 
 //Read from xml and then write out again - should be possible to compare the results easily
 inf := dataset(TOXMLPREFIX+'toxml1.xml', personRecord, xml('/MyDataset/Row'));
-output(inf,,TOXMLPREFIX+'toxml3.xml',expire(1),overwrite,xml);
+setup3 := output(inf,,TOXMLPREFIX+'toxml3.xml',expire(1),overwrite,xml);
 
-output(inf,{string xml{maxlength(1024)} := (string)toxml(row(inf))},TOXMLPREFIX+'toxml4.utf8',expire(1),overwrite,csv(unicode));
-output(inf,{utf8 xml{maxlength(1024)} := ((utf8)U'<row>')+toxml(row(inf))+((utf8)U'</row>')},TOXMLPREFIX+'toxml5.utf8',expire(1),overwrite,csv(unicode));
-output(inf,{unicode xml{maxlength(1024)} := toxml(row(inf))},TOXMLPREFIX+'toxml6.utf8',expire(1),overwrite,csv(unicode));
+setup4 := output(inf,{string xml{maxlength(1024)} := (string)toxml(row(inf))},TOXMLPREFIX+'toxml4.utf8',expire(1),overwrite,csv(unicode));
+setup5 := output(inf,{utf8 xml{maxlength(1024)} := ((utf8)U'<row>')+toxml(row(inf))+((utf8)U'</row>')},TOXMLPREFIX+'toxml5.utf8',expire(1),overwrite,csv(unicode));
+setup6 := output(inf,{unicode xml{maxlength(1024)} := toxml(row(inf))},TOXMLPREFIX+'toxml6.utf8',expire(1),overwrite,csv(unicode));
 
 p := TABLE(namesTable,{unicode text{maxlength(1024)} := U'<row>'+toxml(row(namesTable))+U'</row>'});
 
@@ -87,12 +94,21 @@ z := parse(p, p.text, createRowFromXml(), xml('/row'));
 output(z);
 
 infraw := dataset(TOXMLPREFIX+'toxml2.flat', personRecord, thor);
-output(infraw,{string xml{maxlength(1024)} := (string)toxml(row(infraw))},TOXMLPREFIX+'toxml7.utf8',expire(1),overwrite,csv(unicode));
+setup7 := output(infraw,{string xml{maxlength(1024)} := (string)toxml(row(infraw))},TOXMLPREFIX+'toxml7.utf8',expire(1),overwrite,csv(unicode));
 
 //Now read each of the xml files and output to the work unit as csv so we can check the content!
+sequential(
+setup1;
+setup2;
+setup3;
+setup4;
+setup5;
+setup6;
+setup7;
 output(dataset(TOXMLPREFIX+'toxml1.xml', { unicode line{maxlength(4096)} }, csv(unicode))(line not in ['<MyDataset>','</MyDataset>']));
 output(dataset(TOXMLPREFIX+'toxml3.xml', { unicode line{maxlength(4096)} }, csv(unicode))(line not in ['<Dataset>','</Dataset>']));
 output(dataset(TOXMLPREFIX+'toxml4.utf8', { unicode line{maxlength(4096)} }, csv(unicode)));
 output(dataset(TOXMLPREFIX+'toxml5.utf8', { unicode line{maxlength(4096)} }, csv(unicode)));
 output(dataset(TOXMLPREFIX+'toxml6.utf8', { unicode line{maxlength(4096)} }, csv(unicode)));
 output(dataset(TOXMLPREFIX+'toxml7.utf8', { unicode line{maxlength(4096)} }, csv(unicode)));
+);

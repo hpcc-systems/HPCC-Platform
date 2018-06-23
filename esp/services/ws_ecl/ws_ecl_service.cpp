@@ -214,7 +214,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
             daliAddress.append(*daliServers++);
     }
 
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> environment = factory->openEnvironment();
     Owned<IPropertyTree> pRoot = &environment->getPTree();
 
@@ -231,6 +231,13 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         workunitTimeout *= 1000;
     else
         workunitTimeout = WAIT_FOREVER;
+
+    const char *headerName = serviceTree->queryProp("HttpGlobalIdHeader");
+    if (headerName && *headerName && !streq(headerName, "HPCC-Global-Id")) //default will be checked anyway
+        globalIdHttpHeader.set(headerName);
+    headerName = serviceTree->queryProp("HttpCallerIdHeader");
+    if (headerName && *headerName && !streq(headerName, "HPCC-Caller-Id")) //default will be checked anyway
+        callerIdHttpHeader.set(headerName);
 
     Owned<IPropertyTreeIterator> cfgTargets = serviceTree->getElements("Targets/Target");
     ForEach(*cfgTargets)
@@ -323,13 +330,6 @@ void CWsEclBinding::getNavigationData(IEspContext &context, IPropertyTree & data
 
     ensureNavDynFolder(data, "Targets", "Targets", "root=true", NULL);
 }
-
-IPropertyTree * getQueryRegistries()
-{
-    Owned<IRemoteConnection> conn = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-    return conn->getRoot();
-}
-
 
 void CWsEclBinding::getRootNavigationFolders(IEspContext &context, IPropertyTree & data)
 {
@@ -1658,9 +1658,12 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     return 0;
 };
 
-inline StringBuffer &buildWsEclTargetUrl(StringBuffer &url, WsEclWuInfo &wsinfo, const char *type, const char *params)
+inline StringBuffer &buildWsEclTargetUrl(StringBuffer &url, WsEclWuInfo &wsinfo, bool createWorkunit, const char *type, const char *params)
 {
-    url.append("/WsEcl/").append(type).append('/');
+    url.append("/WsEcl/").append(type);
+    if (createWorkunit)
+        url.append("run");
+    url.append('/');
     if (wsinfo.qsetname.length() && wsinfo.queryname.length())
         url.append("query/").append(wsinfo.qsetname.get()).append('/').append(wsinfo.queryname.get());
     else
@@ -1723,7 +1726,14 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
 
     StringBuffer url;
-    xform->setStringParameter("destination", buildWsEclTargetUrl(url, wsinfo, formtype, params.str()).str());
+    xform->setStringParameter("destination", buildWsEclTargetUrl(url, wsinfo, false, formtype, params.str()).str());
+
+    bool isRoxieReq = wsecl->connMap.getValue(wsinfo.qsetname.get())!=NULL;
+    if (isRoxieReq)
+    {
+        xform->setStringParameter("showJobType", "true()");
+        xform->setStringParameter("createWorkunitDestination", buildWsEclTargetUrl(url.clear(), wsinfo, true, formtype, params.str()).str());
+    }
 
     StringBuffer page;
     xform->transform(page);
@@ -1775,7 +1785,15 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
 
     StringBuffer url;
-    xform->setStringParameter("destination", buildWsEclTargetUrl(url, wsinfo, formtype, params.str()).str());
+    xform->setStringParameter("destination", buildWsEclTargetUrl(url, wsinfo, false, formtype, params.str()).str());
+
+    bool isRoxieReq = wsecl->connMap.getValue(wsinfo.qsetname.get())!=NULL;
+    if (isRoxieReq)
+    {
+        xform->setStringParameter("showJobType", "true()");
+        xform->setStringParameter("createWorkunitDestination", buildWsEclTargetUrl(url, wsinfo, true, formtype, params.str()).str());
+    }
+
 
     StringBuffer page;
     xform->transform(page);
@@ -1850,7 +1868,7 @@ int CWsEclBinding::getWsEcl2Form(CHttpRequest* request, CHttpResponse* response,
     return 0;
 }
 
-int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, IPropertyTree *reqTree, StringBuffer &out, unsigned flags, TextMarkupFormat fmt, const char *viewname, const char *xsltname)
+int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, IPropertyTree *reqTree, StringBuffer &out, unsigned flags, CHttpRequest *httpreq, TextMarkupFormat fmt, const char *viewname, const char *xsltname)
 {
     IConstWorkUnit *sourceWorkUnit = wsinfo.ensureWorkUnit();
 
@@ -1858,7 +1876,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     Owned <IWorkUnit> workunit = factory->createWorkUnit("wsecl", context.queryUserId(), context.querySecManager(), context.queryUser());
 
     IExtendedWUInterface *ext = queryExtendedWU(workunit);
-    ext->copyWorkUnit(sourceWorkUnit, false);
+    ext->copyWorkUnit(sourceWorkUnit, false, false);
 
     workunit->clearExceptions();
     workunit->resetWorkflow();
@@ -1870,6 +1888,23 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
         workunit->setJobName(jobname);
 
     StringAttr wuid(workunit->queryWuid());  // NB queryWuid() not valid after workunit,clear()
+
+    if (httpreq)
+    {
+        StringBuffer globalId, callerId;
+        wsecl->getHttpGlobalIdHeader(httpreq, globalId);
+        wsecl->getHttpCallerIdHeader(httpreq, callerId);
+        if (globalId.length())
+        {
+            workunit->setDebugValue("GlobalId", globalId.str(), true);
+
+            SocketEndpoint ep;
+            StringBuffer localId;
+            appendLocalId(localId, httpreq->getSocket()->getEndpoint(ep), 0);
+            workunit->setDebugValue("CallerId", localId.str(), true); //our localId becomes caller id for the next hop
+            DBGLOG("GlobalId: %s, CallerId: %s, LocalId: %s, Wuid: %s", globalId.str(), callerId.str(), localId.str(), wuid.str());
+        }
+    }
 
     SCMStringBuffer token;
     createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token);
@@ -1923,13 +1958,13 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     return true;
 }
 
-int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, TextMarkupFormat fmt, const char *viewname, const char *xsltname)
+int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, CHttpRequest *httpreq, TextMarkupFormat fmt, const char *viewname, const char *xsltname)
 {
     Owned<IPropertyTree> reqTree = createPTreeFromXMLString(xml, ipt_ordered, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
-    return submitWsEclWorkunit(context, wsinfo, reqTree, out, flags, fmt, viewname, xsltname);
+    return submitWsEclWorkunit(context, wsinfo, reqTree, out, flags, httpreq, fmt, viewname, xsltname);
 }
 
-void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, StringBuffer &resp, StringBuffer &status, const char *query, bool trim, const char *contentType)
+void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, StringBuffer &resp, StringBuffer &status, const char *query, bool trim, const char *contentType, CHttpRequest *httpreq)
 {
     ISmartSocketFactory *conn = NULL;
     SocketEndpoint ep;
@@ -1949,8 +1984,28 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
         if (!trim)
             url.append("?.trim=0");
 
+        Owned<IProperties> headers;
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
         httpclient->setTimeOut(wsecl->roxieTimeout);
+        if (httpreq)
+        {
+            StringBuffer globalId, callerId;
+            wsecl->getHttpGlobalIdHeader(httpreq, globalId);
+            wsecl->getHttpCallerIdHeader(httpreq, callerId);
+
+            if (globalId.length())
+            {
+                headers.setown(createProperties());
+                headers->setProp(wsecl->queryGlobalIdHeaderName(), globalId);
+
+                SocketEndpoint ep;
+                StringBuffer localId;
+                appendLocalId(localId, httpreq->getSocket()->getEndpoint(ep), 0);
+                if (localId.length())
+                    headers->setProp(wsecl->queryCallerIdHeaderName(), localId);
+                DBGLOG("GlobalId: %s, CallerId: %s, LocalId: %s", globalId.str(), callerId.str(), localId.str());
+            }
+        }
         if (0 > httpclient->sendRequest("POST", contentType, req, resp, status))
             throw MakeStringException(-1, "Roxie cluster communication error: %s", target);
     }
@@ -1982,25 +2037,25 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
     }
 }
 
-int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *format)
+int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *format, bool forceCreateWorkunit)
 {
     StringBuffer status;
     StringBuffer output;
 
     SCMStringBuffer clustertype;
     const char *contentType="application/xml";
-    bool isRoxieReq = wsecl->connMap.getValue(wsinfo.qsetname.get())!=NULL;
+    bool callRoxieQuery = !forceCreateWorkunit && wsecl->connMap.getValue(wsinfo.qsetname.get())!=NULL;
     bool outputJSON = (format && strieq(format, "json"));
     const char *jsonp = context.queryRequestParameters()->queryProp("jsonp");
     bool trim = context.queryRequestParameters()->getPropBool(".trim", true);
     bool trim2 = context.queryRequestParameters()->getPropBool("trim", true);
-    if (isRoxieReq && outputJSON)
+    if (callRoxieQuery && outputJSON)
     {
         StringBuffer jsonmsg;
         getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, REQSF_TRIM, false);
         if (jsonp && *jsonp)
             output.append(jsonp).append('(');
-        sendRoxieRequest(wsinfo.qsetname.get(), jsonmsg, output, status, wsinfo.queryname, trim, "application/json");
+        sendRoxieRequest(wsinfo.qsetname.get(), jsonmsg, output, status, wsinfo.queryname, trim, "application/json", request);
         if (jsonp && *jsonp)
             output.append(");");
     }
@@ -2016,12 +2071,12 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
             xmlflags |= WWV_USE_DISPLAY_XSLT;
         if (!format || !streq(format, "expanded"))
             xmlflags |= WWV_OMIT_SCHEMAS;
-        if (!isRoxieReq)
-            submitWsEclWorkunit(context, wsinfo, soapmsg.str(), output, xmlflags, outputJSON ? MarkupFmt_JSON : MarkupFmt_XML);
+        if (!callRoxieQuery)
+            submitWsEclWorkunit(context, wsinfo, soapmsg.str(), output, xmlflags, request, outputJSON ? MarkupFmt_JSON : MarkupFmt_XML);
         else
         {
             StringBuffer roxieresp;
-            sendRoxieRequest(wsinfo.qsetname, soapmsg, roxieresp, status, wsinfo.queryname, trim, "text/xml");
+            sendRoxieRequest(wsinfo.qsetname, soapmsg, roxieresp, status, wsinfo.queryname, trim, "text/xml", request);
             if (xmlflags & WWV_OMIT_SCHEMAS)
                 expandWuXmlResults(output, wsinfo.queryname, roxieresp.str(), xmlflags);
             else
@@ -2046,7 +2101,7 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
     return 0;
 }
 
-int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
+int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, bool forceCreateWorkunit)
 {
     IConstWorkUnit *wu = wsinfo.ensureWorkUnit();
 
@@ -2067,9 +2122,9 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     StringBuffer xsltfile(getCFD());
     xsltfile.append("xslt/wsecl3_result.xslt");
     const char *view = context.queryRequestParameters()->queryProp("view");
-    if (strieq(clustertype.str(), "roxie"))
+    if (!forceCreateWorkunit && strieq(clustertype.str(), "roxie"))
     {
-        sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status, wsinfo.queryname, false, "text/xml");
+        sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status, wsinfo.queryname, false, "text/xml", request);
         Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true, queryXsltConfig());
         if (!view)
             web->applyResultsXSLT(xsltfile.str(), output.str(), html);
@@ -2078,7 +2133,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     }
     else
     {
-        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), html, 0, MarkupFmt_XML, view, xsltfile.str());
+        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), html, 0, request, MarkupFmt_XML, view, xsltfile.str());
     }
 
     response->setContent(html.str());
@@ -2410,7 +2465,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         if (strieq(methodName, "async"))
         {
             parms->setProp("_async", 1);
-            methodName.set("submit");
+            methodName.set("run");
         }
 
         if(strieq(methodName.str(), "res"))
@@ -2484,7 +2539,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             StringBuffer status;
             if (getEspLogLevel()>LogNormal)
                 DBGLOG("roxie req: %s", soapreq.str());
-            sendRoxieRequest(target, soapreq, output, status, qid, parms->getPropBool(".trim", true), "text/xml");
+            sendRoxieRequest(target, soapreq, output, status, qid, parms->getPropBool(".trim", true), "text/xml", request);
             if (getEspLogLevel()>LogNormal)
                 DBGLOG("roxie resp: %s", output.str());
 
@@ -2506,9 +2561,9 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             response->setStatus("200 OK");
             response->send();
         }
-        else if (!stricmp(methodName.str(), "submit"))
+        else if (strieq(methodName, "submit") || strieq(methodName, "run"))
         {
-            context->addTraceSummaryValue(LogMin, "wseclMode", "submit");
+            context->addTraceSummaryValue(LogMin, "wseclMode", methodName);
 
             StringBuffer wuid;
             StringBuffer qs;
@@ -2521,9 +2576,9 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             setResponseFormatByName(context, format);
 
             WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
-            return onSubmitQueryOutput(*context, request, response, wsinfo, format.str());
+            return onSubmitQueryOutput(*context, request, response, wsinfo, format.str(), strieq(methodName, "run"));
         }
-        else if (!stricmp(methodName.str(), "xslt"))
+        else if (strieq(methodName.str(), "xslt") || strieq(methodName, "runxslt"))
         {
             context->addTraceSummaryValue(LogMin, "wseclMode", "xslt");
 
@@ -2534,7 +2589,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             splitLookupInfo(parms, thepath, wuid, qs, qid);
             WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
-            return onSubmitQueryOutputView(*context, request, response, wsinfo);
+            return onSubmitQueryOutputView(*context, request, response, wsinfo, strieq(methodName, "runxslt"));
         }
         else if (!stricmp(methodName.str(), "example"))
         {
@@ -2583,7 +2638,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         me->append(*MakeStringExceptionDirect(-1, "Unknown Exception"));
     }
     
-    response->handleExceptions(getXslProcessor(), me, "WsEcl", "", StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt").str());
+    response->handleExceptions(getXslProcessor(), me, "WsEcl", "", StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt").str(), false);
     return 0;
 }
 
@@ -2639,8 +2694,18 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
 
         StringBuffer action;
         nextPathNode(thepath, action);
+
+        bool forceCreateWorkunit = false;
         if (strieq(action, "async"))
             parms->setProp("_async", 1);
+        else if (strieq(action, "soaprun"))
+            forceCreateWorkunit = true;
+        else if (strieq(action, "asyncrun"))
+        {
+            parms->setProp("_async", 1);
+            forceCreateWorkunit = true;
+        }
+
 
         StringBuffer lookup;
         nextPathNode(thepath, lookup);
@@ -2671,8 +2736,8 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
             DBGLOG("json request: %s", content.str());
 
         StringBuffer status;
-        if (wsecl->connMap.getValue(queryset.str()))
-            sendRoxieRequest(queryset.str(), content, jsonresp, status, queryname.str(), trim, "application/json");
+        if (!forceCreateWorkunit && wsecl->connMap.getValue(queryset.str()))
+            sendRoxieRequest(queryset.str(), content, jsonresp, status, queryname.str(), trim, "application/json", request);
         else
         {
             WsEclWuInfo wsinfo(wuid.str(), queryset.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
@@ -2691,7 +2756,7 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
                     break;
                 }
             }
-            submitWsEclWorkunit(*ctx, wsinfo, reqTree, jsonresp, 0, MarkupFmt_JSON);
+            submitWsEclWorkunit(*ctx, wsinfo, reqTree, jsonresp, 0, request, MarkupFmt_JSON);
         }
         if (jsonp && *jsonp)
             jsonresp.append(");");
@@ -2750,8 +2815,17 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
 
     StringBuffer action;
     nextPathNode(thepath, action);
+
+    bool forceCreateWorkunit = false;
     if (strieq(action, "async"))
         parms->setProp("_async", 1);
+    else if (strieq(action, "soaprun"))
+        forceCreateWorkunit = true;
+    else if (strieq(action, "asyncrun"))
+    {
+        parms->setProp("_async", 1);
+        forceCreateWorkunit = true;
+    }
 
     StringBuffer lookup;
     nextPathNode(thepath, lookup);
@@ -2784,12 +2858,12 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
     else
         xmlflags |= WWV_OMIT_SCHEMAS;
 
-    if (wsecl->connMap.getValue(target))
+    if (!forceCreateWorkunit && wsecl->connMap.getValue(target))
     {
         bool trim = ctx->queryRequestParameters()->getPropBool(".trim", true);
         StringBuffer content(request->queryContent());
         StringBuffer output;
-        sendRoxieRequest(target, content, output, status, queryname, trim, "text/xml");
+        sendRoxieRequest(target, content, output, status, queryname, trim, "text/xml", request);
         if (!(xmlflags  & WWV_CDATA_SCHEMAS))
             soapresp.swapWith(output);
         else
@@ -2808,7 +2882,7 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
     else
     {
         WsEclWuInfo wsinfo(wuid.str(), target.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
-        submitWsEclWorkunit(*ctx, wsinfo, content.str(), soapresp, xmlflags);
+        submitWsEclWorkunit(*ctx, wsinfo, content.str(), soapresp, xmlflags, request);
     }
 
     if (getEspLogLevel()>LogNormal)

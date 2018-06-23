@@ -224,6 +224,7 @@ void EclCMDShell::usage()
            "   status      show workunit(s) current status for WUID or job name\n"
            "   getname     provide job name from WUID\n"
            "   getwuid     provide WUID from job name\n"
+           "   zapgen      provide ZAP file from WUID\n"
            "\nRun 'ecl help <command>' for more information on a specific command\n\n"
     );
 }

@@ -94,6 +94,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_SIGNED_CHAR "Build system with default char type is signed" OFF)
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
   option(USE_MYSQL "Enable mysql support" ON)
+  option(USE_LIBMEMCACHED "Enable libmemcached support" ON)
+  option(USE_PYTHON2 "Enable python2 language support for platform build" ON)
+  option(USE_PYTHON3 "Enable python3 language support for platform build" ON)
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
   option(JLIB_ONLY  "Build JLIB for other projects such as Configurator, Ganglia Monitoring, etc" OFF)
   # Generates code that is more efficient, but will cause problems if target platforms do not support it.
@@ -110,16 +113,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       option(USE_TBBMALLOC_ROXIE "Enable Threading Building Block scalable allocator proxy support in Roxie" OFF)
   endif()
   option(LOGGING_SERVICE "Configure use of logging service" ON)
-
-  option(MAKE_CONFIGURATOR "Build Configurator" ON)
-  option(CONFIGURATOR_LIB "Build Configurator static library (.a)" OFF)
-
-  if ( CONFIGURATOR_LIB )
-        set( MAKE_CONFIGURATOR ON )
-  endif()
+  option(WSSQL_SERVICE "Configure use of ws_sql service" ON)
+  option(USE_DIGISIGN "Use digisign" ON)
 
 
-    MACRO(SET_PLUGIN_PACKAGE plugin)
+
+     MACRO(SET_PLUGIN_PACKAGE plugin)
         string(TOLOWER "${plugin}" pname)
 	    if(DEFINED pluginname)
             message(FATAL_ERROR "Cannot enable ${pname}, already declared ${pluginname}")
@@ -144,8 +143,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     REMBED
     V8EMBED
     MEMCACHED
-    PY2EMBED
-    PY3EMBED
     REDIS
     SQS
     MYSQLEMBED
@@ -168,6 +165,22 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif()
     endforeach()
     #"cmake -DEXAMPLEPLUGIN=ON <path-to/HPCC-Platform/>" will configure the plugin makefiles to be built with "make".
+
+  set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
+
+  if ( NOT MAKE_DOCS_ONLY )
+    set(LIBMEMCACHED_MINVERSION "1.0.10")
+    if(USE_LIBMEMCACHED)
+      if(WIN32)
+        message(STATUS "libmemcached not available on windows.  Disabling for build")
+        set(USE_LIBMEMCACHED OFF)
+      else()
+        find_package(LIBMEMCACHED ${LIBMEMCACHED_MINVERSION} REQUIRED)
+        add_definitions(-DUSE_LIBMEMCACHED)
+        include_directories(${LIBMEMCACHED_INCLUDE_DIR})
+      endif()
+    endif()
+  endif()
 
   if (SIGN_MODULES)
       message(STATUS "GPG signing check")
@@ -236,7 +249,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
   if ( CLIENTTOOLS_ONLY )
-      set(PY2EMBED ON)
       set(PLATFORM OFF)
       set(DEVEL OFF)
   endif()
@@ -248,8 +260,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
   option(ICU_REQUIRES_CPP11 "Require C++11 for ICU support" OFF)
-
-  set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 
   if(UNIX AND SIGN_MODULES)
       execute_process(COMMAND bash "-c" "gpg --version | awk 'NR==1{print $3}'"
@@ -399,7 +409,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
       if (GENERATE_COVERAGE_INFO)
         message ("Build system with coverage.")
-        SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+        if (CMAKE_COMPILER_IS_CLANGXX)
+          SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+        else()
+          SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+        endif()
       endif()
       # Handle forced default char type
       if (USE_SIGNED_CHAR AND USE_UNSIGNED_CHAR )
@@ -683,13 +697,15 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       message(FATAL_ERROR "FOP requested but package not found")
     ENDIF()
 
-    if (DOCS_AUTO)
-       if ("${CONFIGURATOR_DIRECTORY}" STREQUAL "")
-         set(MAKE_CONFIGURATOR ON)
-         set(JLIB_ONLY ON)
-         set  (CONFIGURATOR_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})
-       endif()
-    endif()
+    IF ( DOCS_AUTO )
+      find_package(SAXON)
+      IF (SAXON_FOUND)
+        add_definitions (-D_USE_SAXON)
+      ELSE()
+        message(FATAL_ERROR "SAXON, a XSLT and XQuery processor, is required for documentation build but not found.")
+      ENDIF()
+    ENDIF()
+
   ENDIF(MAKE_DOCS)
 
   IF ( NOT MAKE_DOCS_ONLY )
@@ -910,7 +926,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
   set (CMAKE_SKIP_BUILD_RPATH  FALSE)
   set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-  set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_DIR};${CMAKE_INSTALL_PREFIX}/${PLUGINS_DIR}")
+  set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_DIR};${CMAKE_INSTALL_PREFIX}/${PLUGINS_DIR};${CMAKE_INSTALL_PREFIX}/${LIB_DIR}/external")
   set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
   MACRO (FETCH_GIT_TAG workdir edition result)
       execute_process(COMMAND "${GIT_COMMAND}" describe --tags --dirty --abbrev=6 --match ${edition}*

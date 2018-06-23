@@ -42,7 +42,7 @@ define([
     // Reference: http://es5.github.io/#x15.4.4.21
     // https://tc39.github.io/ecma262/#sec-array.prototype.reduce
     if (!Array.prototype.reduce) {
-        Array.prototype.reduce = function (callback /*, initialValue*/) {
+        Array.prototype.reduce = function (callback /*, initialValue*/) {   // jshint ignore:line
             if (this === null) {
                 throw new TypeError('Array.prototype.reduce called on null or undefined');
             }
@@ -60,7 +60,7 @@ define([
             var k = 0;
             var value;
 
-            if (arguments.length == 2) {
+            if (arguments.length === 2) {
                 value = arguments[1];
             } else {
                 while (k < len && !(k in o)) {
@@ -80,7 +80,7 @@ define([
                 // b. Let kPresent be ? HasProperty(O, Pk).
                 // c. If kPresent is true, then
                 //    i. Let kValue be ? Get(O, Pk).
-                //    ii. Let accumulator be ? Call(callbackfn, undefined, « accumulator, kValue, k, O »).
+                //    ii. Let accumulator be ? Call(callbackfn, undefined, "accumulator, kValue, k, O").
                 if (k in o) {
                     value = callback(value, o[k], k, o);
                 }
@@ -183,7 +183,9 @@ define([
             var target = registry.byId(id);
             if (target) {
                 target.set("disabled", disabled);
-                target.set("iconClass", disabled ? disabledIcon : icon);
+                if ((!disabled && icon) || (disabled && disabledIcon)) {
+                    target.set("iconClass", disabled ? disabledIcon : icon);
+                }
             }
         },
 
@@ -331,7 +333,7 @@ define([
                 for (var j = 0; j < indent; j++) {
                     padding += '  ';
                 }
-                if (fromTo == 'opening->closing')
+                if (fromTo === 'opening->closing')
                     formatted = formatted.substr(0, formatted.length - 1) + ln + '\n'; // substr removes line break (\n) from prev loop
                 else
                     formatted += padding + ln + '\n';

@@ -57,6 +57,8 @@ function print_usage {
     exit 0
 }
 
+cfggenpre=()
+
 source  ${INSTALL_DIR}/etc/init.d/lock.sh
 source  ${INSTALL_DIR}/etc/init.d/pid.sh
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common

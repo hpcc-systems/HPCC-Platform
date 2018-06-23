@@ -56,25 +56,53 @@ class RelaxedAtomic : public std::atomic<T>
 public:
     typedef std::atomic<T> BASE;
     RelaxedAtomic() noexcept = default;
-    constexpr RelaxedAtomic(T _value) noexcept : BASE(_value) { }
+    inline constexpr RelaxedAtomic(T _value) noexcept : BASE(_value) { }
     ~RelaxedAtomic() noexcept = default;
     RelaxedAtomic(const RelaxedAtomic&) = delete;
     RelaxedAtomic& operator=(const RelaxedAtomic&) = delete;
 
-    operator T() const noexcept { return load(); }
-    T operator=(T _value) noexcept { store(_value); return _value; }
-    T operator++() noexcept { return BASE::fetch_add(1, std::memory_order_relaxed)+1; }  // ++x
-    T operator--() noexcept { return BASE::fetch_sub(1, std::memory_order_relaxed)-1; }  // --x
-    T operator++(int) noexcept { return BASE::fetch_add(1, std::memory_order_relaxed); } // x++
-    T operator--(int) noexcept { return BASE::fetch_sub(1, std::memory_order_relaxed); } // x--
+    inline operator T() const noexcept { return load(); }
+    inline T operator=(T _value) noexcept { store(_value); return _value; }
+    inline T operator++() noexcept { return BASE::fetch_add(1, std::memory_order_relaxed)+1; }  // ++x
+    inline T operator--() noexcept { return BASE::fetch_sub(1, std::memory_order_relaxed)-1; }  // --x
+    inline T operator++(int) noexcept { return BASE::fetch_add(1, std::memory_order_relaxed); } // x++
+    inline T operator--(int) noexcept { return BASE::fetch_sub(1, std::memory_order_relaxed); } // x--
+    inline T operator+=(int v) noexcept { return BASE::fetch_add(v, std::memory_order_relaxed)+v; }
+    inline T operator-=(int v) noexcept { return BASE::fetch_sub(v, std::memory_order_relaxed)-v; }
 
-    void store(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { BASE::store(_value, order); }
-    T load(std::memory_order order = std::memory_order_relaxed) const noexcept { return BASE::load(order); }
-    T exchange(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return BASE::exchange(_value, order); }
-    T fetch_add(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return BASE::fetch_add(_value, order); }
-    T fetch_sub(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return BASE::fetch_add(_value, order); }
-    T add_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::add_fetch(*this, _value, order); }
-    T sub_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::sub_fetch(*this, _value, order); }
+    inline void store(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { BASE::store(_value, order); }
+    inline T load(std::memory_order order = std::memory_order_relaxed) const noexcept { return BASE::load(order); }
+    inline T exchange(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return BASE::exchange(_value, order); }
+    inline T fetch_add(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return BASE::fetch_add(_value, order); }
+    inline T fetch_sub(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return BASE::fetch_add(_value, order); }
+    inline T add_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::add_fetch(*this, _value, order); }
+    inline T sub_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::sub_fetch(*this, _value, order); }
+    inline void store_max(T _value) noexcept { while (_value > load()) _value = BASE::exchange(_value, std::memory_order_acq_rel); }
+    inline void store_min(T _value) noexcept { while (_value < load()) _value = BASE::exchange(_value, std::memory_order_acq_rel); }
+};
+
+// Class to accumulate values locally and only add atomically once
+
+template <typename T>
+class ScopedAtomic
+{
+public:
+    inline ScopedAtomic(RelaxedAtomic<T> &_gval) : lval(0), gval(_gval) {}
+    inline ~ScopedAtomic() { if (lval) gval.fetch_add(lval); }
+    ScopedAtomic(const ScopedAtomic&) = delete;
+    ScopedAtomic& operator=(const ScopedAtomic&) = delete;
+
+    inline operator T() const noexcept { return lval; }
+    inline T operator=(T _value) noexcept { lval = _value; return _value; }
+    inline T operator++() noexcept { return ++lval; }
+    inline T operator--() noexcept { return --lval; }
+    inline T operator++(int) noexcept { return lval++; }
+    inline T operator--(int) noexcept { return lval--; }
+    inline T operator+=(int v) noexcept { return lval += v; }
+    inline T operator-=(int v) noexcept { return lval -= v; }
+private:
+    T lval;
+    RelaxedAtomic<T> &gval;
 };
 
 //Currently compare_exchange_weak in gcc forces a write to memory which is painful in highly contended situations.  The

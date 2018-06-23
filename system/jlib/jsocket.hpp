@@ -281,7 +281,7 @@ public:
     //
     // log poll() errors
     //
-    virtual void logPollError(unsigned revents, const char *rwstr) = 0;
+    virtual int logPollError(unsigned revents, const char *rwstr) = 0;
 
     //
     // This method is called to check whether a socket has data ready

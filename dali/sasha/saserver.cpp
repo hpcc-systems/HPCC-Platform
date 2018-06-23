@@ -23,6 +23,7 @@
 #include "jlog.hpp"
 #include "jptree.hpp"
 #include "jmisc.hpp"
+#include "jutil.hpp"
 
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
@@ -152,11 +153,11 @@ class CSashaCmdThread : public CInterface, implements IPooledThread
     Owned<ISashaCommand> cmd;
 public:
     IMPLEMENT_IINTERFACE;
-    void init(void *param)
+    virtual void init(void *param) override
     {
         cmd.setown((ISashaCommand *)param);
     }
-    void main()
+    virtual void threadmain() override
     {
         StringAttrArray out;
         StringAttrArray outres;
@@ -182,11 +183,11 @@ public:
         else
             cmd->reply();
     }
-    bool stop() 
+    virtual bool stop() override
     { 
         return true; 
     }
-    bool canReuse() 
+    virtual bool canReuse() const override
     { 
         return false; 
     }
@@ -257,6 +258,15 @@ static struct CRequestStop : implements IExceptionHandler
 
 int main(int argc, const char* argv[])
 {
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
     InitModuleObjects();
     EnableSEHtoExceptionMapping();
 
@@ -277,7 +287,7 @@ int main(int argc, const char* argv[])
             coalescer = true;
             force = (argc>2)&&(stricmp(argv[2],"FORCE")==0);
         }
-        else {
+        else if (!streq(argv[1],"--daemon") || !streq(argv[1],"-d")) {
             usage();
             return 1;
         }
@@ -364,7 +374,7 @@ int main(int argc, const char* argv[])
                 public:
                     CStopThread() : threaded("CStopThread") { threaded.init(this); } 
                     ~CStopThread() { threaded.join(); }
-                    virtual void main()
+                    virtual void threadmain() override
                     {
                         stopSem.wait();
                         if (!stopped)

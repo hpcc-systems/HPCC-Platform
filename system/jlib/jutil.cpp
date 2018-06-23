@@ -29,6 +29,7 @@
 #include "jprop.hpp"
 #include "jerror.hpp"
 #include "jencrypt.hpp"
+#include "jerror.hpp"
 #ifdef _WIN32
 #include <mmsystem.h> // for timeGetTime 
 #include <float.h> //for _isnan and _fpclass
@@ -475,7 +476,6 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
     }
 
 #endif
-    scope.setSoContext(h);
 
 #if defined(_WIN32)
     SetErrorMode(oldMode);
@@ -483,6 +483,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
     // don't think anything to do here.
 #endif
 
+    scope.processInitialization(h);
     return h;
 }
 
@@ -1434,7 +1435,7 @@ void JBASE32_Decode(const char *bi,StringBuffer &out)
 }
 
 
-static void DelimToStringArray(const char *csl, StringArray &dst, const char *delim, bool deldup)
+static void DelimToStringArray(const char *csl, StringArray &dst, const char *delim, bool deldup, bool trimSpaces)
 {
     if (!csl)
         return;
@@ -1448,9 +1449,11 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
         c = 0;
     StringBuffer str;
     unsigned dstlen=dst.ordinality();
-    for (;;) {
-        while (isspace(*s))
-            s++;
+    for (;;)
+    {
+        if (trimSpaces)
+            while (isspace(*s))
+                s++;
         if (!*s&&(dst.ordinality()==dstlen)) // this check is to allow trailing separators (e.g. ",," is 3 (NULL) entries) but not generate an entry for ""
             break;
         const char *e = s;
@@ -1463,7 +1466,9 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
                 break;
             e++;
         }
-        str.clear().append((size32_t)(e-s),s).clip();
+        str.clear().append((size32_t)(e-s),s);
+        if (trimSpaces)
+            str.clip();
         if (deldup) {
             const char *s1 = str.str();
             unsigned i;
@@ -1481,14 +1486,14 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
     }
 }
 
-void StringArray::appendList(const char *list, const char *delim)
+void StringArray::appendList(const char *list, const char *delim, bool trimSpaces)
 {
-    DelimToStringArray(list, *this, delim, false);
+    DelimToStringArray(list, *this, delim, false, trimSpaces);
 }
 
-void StringArray::appendListUniq(const char *list, const char *delim)
+void StringArray::appendListUniq(const char *list, const char *delim, bool trimSpaces)
 {
-    DelimToStringArray(list, *this, delim, true);
+    DelimToStringArray(list, *this, delim, true, trimSpaces);
 }
 
 StringBuffer &StringArray::getString(StringBuffer &ret, const char *delim)
@@ -1599,56 +1604,21 @@ unsigned usTick()
 #endif
 
 
-int make_daemon(bool printpid) 
+int write_pidfile(const char * instance)
 {
 #ifndef _WIN32
-    pid_t   pid, sid;
-    pid = fork();
-    if (pid < 0) {
-        PrintLog("fork failed\n");
+    StringBuffer path;
+    path.append(PID_DIR).append(PATHSEPCHAR).append(instance).append(".pid");
+    FILE * fd = fopen(path.str(),"w");
+    if (fd==NULL) {
+        perror("Unable to open pidfile for writing");
         return(EXIT_FAILURE);
     }
-    if (pid > 0) {
-        if (printpid) {
-            int status;
-            waitpid(pid, &status, 0);
-            if (WEXITSTATUS(status)!=0) 
-                return EXIT_FAILURE;
-        }
-        exit(EXIT_SUCCESS); 
-    }
-
-    if ((sid = setsid()) < 0) {
-        PrintLog("error: set sid failed\n");
-        return(EXIT_FAILURE);
-    }
-
-    umask(0);
-
-
-    pid = fork();                           // To prevent zombies
-    if (pid < 0) {                          
-        PrintLog("fork failed (2)\n");
-        return(EXIT_FAILURE);
-    }
-    if (pid > 0) {
-        if (printpid)
-            fprintf(stdout,"%d\n",pid);
-        exit(EXIT_SUCCESS);
-    }
-
-    if (!freopen("/dev/null", "r", stdin) ||
-        !freopen("/dev/null", "w", stdout) ||
-        !freopen("/dev/null", "w", stderr)) {
-        PrintLog("reopen std in/out/err failed\n");
-        return(EXIT_FAILURE);
-    }
-
+    fprintf(fd,"%d",getpid());
+    fclose(fd);
     return(EXIT_SUCCESS);
-#else
-     return 0;
 #endif
-
+    return 0;
 }
 
 //Calculate the greatest common divisor using Euclid's method
@@ -2396,92 +2366,100 @@ jlib_decl const IProperties &queryEnvironmentConf()
     return *envConfFile;
 }
 
-static CriticalSection securitySettingsCrit;
-static DAFSConnectCfg connectMethod = SSLNone;
-static StringAttr certificate;
-static StringAttr privateKey;
-static StringAttr passPhrase;
-static bool retrieved = false;
+
+
+static StringBuffer DAFSpassPhraseDec;//deprecated
+static CriticalSection DAFSpassPhraseCrit;
+//Deprecated, please use queryHPCCPKIKeyFiles() instead
 jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
                                      unsigned short *_port,
                                      const char * *  _certificate,
                                      const char * *  _privateKey,
-                                     const char * *  _passPhrase)
+                                     const char * *  _passPhrase)//decrypted passphrase
 {
-    if (!retrieved)
+    if (_connectMethod)
+        *_connectMethod = SSLNone;//default
+    if (_port)
+        *_port = DAFILESRV_PORT;//default
+
+    const IProperties & conf = queryEnvironmentConf();
+    StringAttr sslMethod;
+    sslMethod.set(conf.queryProp("dfsUseSSL"));
+    if (!sslMethod.isEmpty())
     {
-        CriticalBlock b(securitySettingsCrit);
-        if (!retrieved)
-        {
-            try
-            {
-                StringBuffer configFileSpec;
-#ifndef _WIN32
-                configFileSpec.set(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
-#endif
-                Owned<IProperties> conf = createProperties(configFileSpec.str(), true);
-                StringAttr sslMethod;
-                sslMethod.set(conf->queryProp("dfsUseSSL"));
-                if (sslMethod)
-                {
-                    // checking for true | false for backward compatibility
-                    if ( strieq(sslMethod.str(), "SSLOnly") || strieq(sslMethod.str(), "true") )
-                        connectMethod = SSLOnly;
-                    else if ( strieq(sslMethod.str(), "SSLFirst") )
-                        connectMethod = SSLFirst;
-                    else if ( strieq(sslMethod.str(), "UnsecureFirst") )
-                        connectMethod = UnsecureFirst;
-                    else // SSLNone or false or ...
-                        connectMethod = SSLNone;
-                }
-                if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
-                {
-                    certificate.set(conf->queryProp("dfsSSLCertFile"));
-                    privateKey.set(conf->queryProp("dfsSSLPrivateKeyFile"));
-                    const char *passPhrasePtr = conf->queryProp("dfsSSLPassPhrase");
-                    if (!isEmptyString(passPhrasePtr))
-                    {
-                        StringBuffer passPhraseStr;
-                        decrypt(passPhraseStr, passPhrasePtr);
-                        passPhrase.set(passPhraseStr.str());
-                    }
-                }
-                retrieved = true;
-            }
-            catch (IException *e)
-            {
-                EXCLOG(e, "Error processing environment.conf\n");
-                throwUnexpected();
-            }
-        }
-    }
-    if (retrieved)
-    {
+        DAFSConnectCfg tmpMethod;
+        // checking for true | false for backward compatibility
+        if ( strieq(sslMethod.str(), "SSLOnly") || strieq(sslMethod.str(), "true") )
+            tmpMethod = SSLOnly;
+        else if ( strieq(sslMethod.str(), "SSLFirst") )
+            tmpMethod = SSLFirst;
+        else if ( strieq(sslMethod.str(), "UnsecureFirst") )
+            tmpMethod = UnsecureFirst;
+        else // SSLNone or false or ...
+            tmpMethod = SSLNone;
+
         if (_connectMethod)
-            *_connectMethod = connectMethod;
+            *_connectMethod = tmpMethod;
+
         if (_port)
         {
-            // port to try first (or only) ...
-            if ( (connectMethod == SSLNone) || (connectMethod == UnsecureFirst) )
-                *_port = DAFILESRV_PORT;
-            else
+            if (tmpMethod == SSLOnly || tmpMethod == SSLFirst)
                 *_port = SECURE_DAFILESRV_PORT;
         }
+
+        //Begin of deprecated code
+        bool dfsKeywords = false;
         if (_certificate)
-            *_certificate = certificate.get();
+        {
+            *_certificate = conf.queryProp("dfsSSLCertFile");
+            if (*_certificate)
+                dfsKeywords = true;
+        }
         if (_privateKey)
-            *_privateKey = privateKey.get();
+        {
+            *_privateKey = conf.queryProp("dfsSSLPrivateKeyFile");
+             if (*_privateKey)
+                 dfsKeywords = true;
+        }
+
+        StringBuffer DAFSpassPhraseEnc;
         if (_passPhrase)
-            *_passPhrase = passPhrase.get();
+        {
+            CriticalBlock b(DAFSpassPhraseCrit);
+            if (DAFSpassPhraseDec.isEmpty())//previously retrieved/decrypted it?
+            {
+                const char *passPhrasePtr = conf.queryProp("dfsSSLPassPhrase");
+                if (!isEmptyString(passPhrasePtr))
+                {
+                    DAFSpassPhraseEnc.append(passPhrasePtr);//got encrypted pwd
+                    dfsKeywords = true;
+                }
+            }
+        }
+
+        if (!dfsKeywords && (_certificate || _privateKey || _passPhrase))
+        {
+        //end of deprecated code
+            const char *passPhrasePtr = nullptr;
+            queryHPCCPKIKeyFiles(_certificate, nullptr, _privateKey, _passPhrase ? &passPhrasePtr : nullptr);//use new keywords
+            if (!isEmptyString(passPhrasePtr))
+            {
+                CriticalBlock b(DAFSpassPhraseCrit);
+                if (DAFSpassPhraseEnc.isEmpty())
+                    DAFSpassPhraseEnc.append(passPhrasePtr);//got encrypted pwd
+            }
+        }
+
+        if (_passPhrase)
+        {
+            CriticalBlock b(DAFSpassPhraseCrit);
+            if (DAFSpassPhraseDec.isEmpty()  &&  !DAFSpassPhraseEnc.isEmpty())
+                decrypt(DAFSpassPhraseDec, DAFSpassPhraseEnc.str());
+            *_passPhrase = DAFSpassPhraseDec.str();//return decrypted password. Note the preferred queryHPCCPKIKeyFiles() method returns it encrypted
+        }
     }
-    else
-    {
-        if (_connectMethod)
-            *_connectMethod = SSLNone;
-        if (_port)
-            *_port = DAFILESRV_PORT;
-    }
-    return retrieved;
+
+    return true;
 }
 
 jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
@@ -2492,12 +2470,32 @@ jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
                                     const char * *  _passPhrase)
 {
     bool ret = querySecuritySettings(_connectMethod, nullptr, _certificate, _privateKey, _passPhrase);
-    // these should really be in env, but currently they are not ...
-    if (_port)
-        *_port = DAFILESRV_PORT;
-    if (_sslport)
-        *_sslport = SECURE_DAFILESRV_PORT;
+    if (ret)
+    {
+        if (_port)
+            *_port = DAFILESRV_PORT;
+        if (_sslport)
+            *_sslport = SECURE_DAFILESRV_PORT;
+    }
     return ret;
+}
+
+//query PKI values from environment.conf
+jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertificateFile
+                                    const char * *  _publicKey,  //HPCCPublicKeyFile
+                                    const char * *  _privateKey, //HPCCPrivateKeyFile
+                                    const char * *  _passPhrase) //HPCCPassPhrase
+{
+    const IProperties & conf = queryEnvironmentConf();
+    if (_certificate)
+        *_certificate = conf.queryProp("HPCCCertificateFile");
+    if (_publicKey)
+        *_publicKey = conf.queryProp("HPCCPublicKeyFile");
+    if (_privateKey)
+        *_privateKey = conf.queryProp("HPCCPrivateKeyFile");
+    if (_passPhrase)
+        *_passPhrase = conf.queryProp("HPCCPassPhrase"); //return encrypted
+    return true;
 }
 
 static IPropertyTree *getOSSdirTree()
@@ -2690,6 +2688,25 @@ const char * queryCurrentProcessPath()
     return processPath.str();
 }
 
+bool getPackageFolder(StringBuffer & path)
+{
+    StringBuffer folder;
+    splitDirTail(queryCurrentProcessPath(), folder);
+    removeTrailingPathSepChar(folder);
+    if (folder.length())
+    {
+        StringBuffer foldersFolder;
+        splitDirTail(folder.str(), foldersFolder);
+        if (foldersFolder.length())
+        {
+            path = foldersFolder;
+            return true;
+        }
+    }
+    return false;
+}
+
+
 inline bool isOctChar(char c) 
 { 
     return (c>='0' && c<'8'); 
@@ -2819,16 +2836,54 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
     return target.set(dir);
 }
 
-jlib_decl const char *getEnumText(int value, const mapEnums *map)
+const char *getEnumText(int value, const EnumMapping *map)
 {
-    const char *defval = map->str;
     while (map->str)
     {
         if (value==map->val)
             return map->str;
         map++;
     }
-    assertex(!"Unexpected value in getEnumText");
+    throwUnexpectedX("Unexpected value in getEnumText");
+}
+
+int getEnum(const char *v, const EnumMapping *map)
+{
+    if (v && *v)
+    {
+        while (map->str)
+        {
+            if (stricmp(v, map->str)==0)
+                return map->val;
+            map++;
+        }
+        throwUnexpectedX("Unexpected value in getEnum");
+    }
+    return 0;
+}
+
+const char *getEnumText(int value, const EnumMapping *map, const char * defval)
+{
+    while (map->str)
+    {
+        if (value==map->val)
+            return map->str;
+        map++;
+    }
+    return defval;
+}
+
+int getEnum(const char *v, const EnumMapping *map, int defval)
+{
+    if (v && *v)
+    {
+        while (map->str)
+        {
+            if (stricmp(v, map->str)==0)
+                return map->val;
+            map++;
+        }
+    }
     return defval;
 }
 

@@ -106,7 +106,7 @@ public:
     void start() { threaded.start(); }
     void wait() { threaded.join(); }
 // IThreaded
-    virtual void main() { func(); }
+    virtual void threadmain() override { func(); }
 };
 
 class CAsyncCallStart : public CAsyncCall

@@ -68,7 +68,7 @@ void usage(const char *exe)
   printf("  export <branchxpath> <destfile>\n");
   printf("  import <branchxpath> <srcfile>\n");
   printf("  importadd <branchxpath> <srcfile>\n");
-  printf("  delete <branchxpath>\n");
+  printf("  delete <branchxpath> [nobackup] -- delete branch, 'nobackup' option suppresses writing copy of existing branch\n");
   printf("  set <xpath> <value>        -- set single value\n");
   printf("  get <xpath>                -- get single value\n");
   printf("  bget <xpath> <dest-file>   -- binary property\n");
@@ -80,6 +80,7 @@ void usage(const char *exe)
   printf("\n");
   printf("Logical File meta information commands:\n");
   printf("  dfsfile <logicalname>          -- get meta information for file\n");
+  printf("  setdfspartattr <logicalname> <part> <attribute> [<value>] -- set attribute of a file part to value, or delete the attribute if not provided\n");
   printf("  dfspart <logicalname> <part>   -- get meta information for part num\n");
   printf("  dfscheck                       -- verify dfs file information is valid\n");
   printf("  dfscsv <logicalnamemask>       -- get csv info. for files matching mask\n");
@@ -102,6 +103,7 @@ void usage(const char *exe)
   printf("  dfscompratio <logicalname>      -- returns compression ratio of file\n");
   printf("  dfsscopes <mask>                -- lists logical scopes (mask = * for all)\n");
   printf("  cleanscopes                     -- remove empty scopes\n");
+  printf("  normalizefilenames [<logicalnamemask>] -- normalize existing logical filenames that match, e.g. .::.::scope::.::name -> scope::name\n");
   printf("  dfsreplication <clustermask> <logicalnamemask> <redundancy-count> [dryrun] -- set redundancy for files matching mask, on specified clusters only\n");
   printf("  holdlock <logicalfile> <read|write> -- hold a lock to the logical-file until a key is pressed");
   printf("\n");
@@ -123,8 +125,6 @@ void usage(const char *exe)
   printf("  validatestore [fix=<true|false>]\n"
          "                [verbose=<true|false>]\n"
          "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
-  printf("  stats <workunit> [<creator-type> <creator> <scope-type> <scope> <kind>|category'['value']',...]\n"
-         "                                  -- dump the statistics for a workunit\n");
   printf("  workunit <workunit> [true]      -- dump workunit xml, if 2nd parameter equals true, will also include progress data\n");
   printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
   printf("  wuiddecompress <wildcard> <type> --  scan workunits that match <wildcard> and decompress resources of <type>\n");
@@ -171,7 +171,10 @@ static const char *splitpath(const char *path,StringBuffer &head,StringBuffer &t
 {
     if (path[0]!='/')
         path = tmp.append('/').append(path).str();
-    return splitXPath(path, head);
+    const char *tail = splitXPath(path, head);
+    if (!tail)
+        throw MakeStringException(0, "Expecting xpath tail node in: %s", path);
+    return tail;
 }
 
 // NB: there's strtoll under Linux
@@ -271,8 +274,6 @@ static void import(const char *path,const char *src,bool add)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     if (!add) {
         Owned<IRemoteConnection> bconn = querySDS().connect(remLeading(path),myProcessSession(),RTM_LOCK_READ|RTM_SUB, daliConnectTimeoutMs);
         if (bconn) {
@@ -330,8 +331,6 @@ static void _delete_(const char *path,bool backup)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -364,8 +363,6 @@ static void set(const char *path,const char *val)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -389,8 +386,6 @@ static void get(const char *path)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -411,8 +406,6 @@ static void bget(const char *path,const char *outfn)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -480,8 +473,6 @@ static void wget(const char *path)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -527,8 +518,6 @@ static void delv(const char *path)
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
@@ -588,6 +577,51 @@ static void dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnu
     UnsignedArray partslist;
     partslist.append(partnum);
     dfsfile(lname,userDesc,&partslist);
+}
+
+//=============================================================================
+
+static void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const char *value, IUserDescriptor *userDesc)
+{
+    StringBuffer str;
+    CDfsLogicalFileName lfn;
+    lfn.set(lname);
+    if (lfn.isExternal()) 
+        throw MakeStringException(0, "External file not supported");
+    if (lfn.isForeign()) 
+        throw MakeStringException(0, "Foreign file not supported");
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname, userDesc);
+    if (nullptr == file.get())
+        throw MakeStringException(0, "Could not find file: '%s'", lname);
+    if (file->querySuperFile())
+        throw MakeStringException(0, "Cannot be used on a superfile");
+    if (!partNum || partNum>file->numParts())
+        throw MakeStringException(0, "Invalid part number, must be in the range 1 - %u", file->numParts());
+
+    IDistributedFilePart &part = file->queryPart(partNum-1);
+
+    StringBuffer attrProp("@");
+    attrProp.append(attr);
+
+    part.lockProperties(10000);
+    StringBuffer oldValueSB;
+    const char *oldValue = nullptr;
+    if (part.queryAttributes().getProp(attrProp.str(), oldValueSB))
+        oldValue = oldValueSB.str();
+    if (value)
+    {
+        part.queryAttributes().setProp(attrProp.str(), value);
+        PROGLOG("Set property '%s' to '%s' for file %s, part# %u", attrProp.str(), value, lname, partNum);
+    }
+    else
+    {
+        part.queryAttributes().removeProp(attrProp.str());
+        PROGLOG("Removed property '%s' from file %s, part# %u", attrProp.str(), lname, partNum);
+    }
+    part.unlockProperties();
+
+    if (oldValue)
+        PROGLOG("Prev. value = '%s'", oldValue);
 }
 
 //=============================================================================
@@ -1756,6 +1790,56 @@ static void cleanscopes(IUserDescriptor *user)
     }
 }
 
+static void normalizeFileNames(IUserDescriptor *user, const char *name)
+{
+    if (!name)
+        name = "*";
+    Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(name, user, true, true);
+    ForEach(*iter)
+    {
+        IPropertyTree &attr = iter->query();
+        const char *lfn = attr.queryProp("@name");
+        CDfsLogicalFileName dlfn;
+        dlfn.enableSelfScopeTranslation(false);
+        dlfn.set(lfn);
+
+        Owned<IDistributedFile> dFile;
+        try
+        {
+            dFile.setown(queryDistributedFileDirectory().lookup(dlfn, user, true, false, false, nullptr, 30000)); // 30 sec timeout
+            if (!dFile)
+                WARNLOG("Could not find file lfn = %s", dlfn.get());
+        }
+        catch (IException *e)
+        {
+            if (SDSExcpt_LockTimeout != e->errorCode())
+                throw;
+            VStringBuffer msg("Connecting to '%s'", lfn);
+            EXCLOG(e, msg.str());
+            e->Release();
+        }
+        if (dFile)
+        {
+            CDfsLogicalFileName newDlfn;
+            newDlfn.set(lfn);
+            if (!streq(newDlfn.get(), dlfn.get()))
+            {
+                PROGLOG("File: '%s', renaming to: '%s'", dlfn.get(), newDlfn.get());
+                try
+                {
+                    dFile->rename(newDlfn.get(), user);
+                }
+                catch (IException *e)
+                {
+                    VStringBuffer msg("Failure to rename file '%s'", lfn);
+                    EXCLOG(e, msg.str());
+                    e->Release();
+                }
+            }
+        }
+    }
+}
+
 //=============================================================================
 
 static void listworkunits(const char *test, const char *min, const char *max)
@@ -2538,120 +2622,88 @@ static void dumpProgress(const char *wuid, const char * graph)
     saveXML("stdout:", tree);
 }
 
-static const char * checkDash(const char * s)
+/* Callback used to output the different scope properties as xml */
+class ScopeDumper : public IWuScopeVisitor
 {
-    //Supplying * on the command line is a pain because it needs quoting. Allow - instead.
-    if (streq(s, ".") || streq(s, "-"))
-        return "*";
-    return s;
-}
-
-static void dumpStats(IConstWorkUnit * workunit, const StatisticsFilter & filter, bool csv)
-{
-    Owned<IConstWUStatisticIterator> stats = &workunit->getStatistics(&filter);
-    if (!csv)
-        printf("<Statistics wuid=\"%s\">\n", workunit->queryWuid());
-    ForEach(*stats)
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
     {
-        IConstWUStatistic & cur = stats->query();
         StringBuffer xml;
         SCMStringBuffer curCreator;
-        SCMStringBuffer curScope;
         SCMStringBuffer curDescription;
         SCMStringBuffer curFormattedValue;
 
         StatisticCreatorType curCreatorType = cur.getCreatorType();
         StatisticScopeType curScopeType = cur.getScopeType();
         StatisticMeasure curMeasure = cur.getMeasure();
-        StatisticKind curKind = cur.getKind();
-        unsigned __int64 value = cur.getValue();
         unsigned __int64 count = cur.getCount();
         unsigned __int64 max = cur.getMax();
         unsigned __int64 ts = cur.getTimestamp();
+        const char * curScope = cur.queryScope();
         cur.getCreator(curCreator);
-        cur.getScope(curScope);
         cur.getDescription(curDescription, false);
         cur.getFormattedValue(curFormattedValue);
 
-        if (csv)
+        if (kind != StKindNone)
+            xml.append(" kind='").append(queryStatisticName(kind)).append("'");
+        xml.append(" value='").append(value).append("'");
+        xml.append(" formatted='").append(curFormattedValue).append("'");
+        if (curMeasure != SMeasureNone)
+            xml.append(" unit='").append(queryMeasureName(curMeasure)).append("'");
+        if (curCreatorType != SCTnone)
+            xml.append(" ctype='").append(queryCreatorTypeName(curCreatorType)).append("'");
+        if (curCreator.length())
+            xml.append(" creator='").append(curCreator.str()).append("'");
+        if (count != 1)
+            xml.append(" count='").append(count).append("'");
+        if (max)
+            xml.append(" max='").append(value).append("'");
+        if (ts)
         {
-            xml.append(workunit->queryWuid());
-            xml.append(",");
-            if (curCreatorType != SCTnone)
-                xml.append(queryCreatorTypeName(curCreatorType));
-            xml.append(",");
-            if (curCreator.length())
-                xml.append(curCreator.str());
-            xml.append(",");
-            if (curScopeType != SSTnone)
-                xml.append(queryScopeTypeName(curScopeType));
-            xml.append(",");
-            if (curScope.length())
-                xml.append(curScope.str());
-            xml.append(",");
-            if (curMeasure != SMeasureNone)
-                xml.append(queryMeasureName(curMeasure));
-            xml.append(",");
-            if (curKind != StKindNone)
-                xml.append(queryStatisticName(curKind));
-            xml.append(",");
-            xml.append(value);
-            xml.append(",");
-            xml.append(curFormattedValue);
-            xml.append(",");
-            if (count != 1)
-                xml.append(count);
-            xml.append(",");
-            if (max)
-                xml.append(max);
-            xml.append(",");
-            if (ts)
-                formatStatistic(xml, ts, SMeasureTimestampUs);
-            xml.append(",");
-            if (curDescription.length())
-                xml.append('"').append(curDescription.str()).append('"');
-            printf("%s\n", xml.str());
+            xml.append(" ts='");
+            formatStatistic(xml, ts, SMeasureTimestampUs);
+            xml.append("'");
         }
-        else
-        {
-            if (curCreatorType != SCTnone)
-                xml.append("<ctype>").append(queryCreatorTypeName(curCreatorType)).append("</ctype>");
-            if (curCreator.length())
-                xml.append("<creator>").append(curCreator.str()).append("</creator>");
-            if (curScopeType != SSTnone)
-                xml.append("<stype>").append(queryScopeTypeName(curScopeType)).append("</stype>");
-            if (curScope.length())
-                xml.append("<scope>").append(curScope.str()).append("</scope>");
-            if (curMeasure != SMeasureNone)
-                xml.append("<unit>").append(queryMeasureName(curMeasure)).append("</unit>");
-            if (curKind != StKindNone)
-                xml.append("<kind>").append(queryStatisticName(curKind)).append("</kind>");
-            xml.append("<rawvalue>").append(value).append("</rawvalue>");
-            xml.append("<value>").append(curFormattedValue).append("</value>");
-            if (count != 1)
-                xml.append("<count>").append(count).append("</count>");
-            if (max)
-                xml.append("<max>").append(value).append("</max>");
-            if (ts)
-            {
-                xml.append("<ts>");
-                formatStatistic(xml, ts, SMeasureTimestampUs);
-                xml.append("</ts>");
-            }
-            if (curDescription.length())
-                xml.append("<desc>").append(curDescription.str()).append("</desc>");
-            printf("<stat>%s</stat>\n", xml.str());
-        }
+        if (curDescription.length())
+            xml.append(" desc='").append(curDescription.str()).append("'");
+        printf(" <attr%s/>\n", xml.str());
     }
-    if (!csv)
-        printf("</Statistics>\n");
+    virtual void noteAttribute(WuAttr attr, const char * value)
+    {
+        StringBuffer xml;
+        xml.appendf("<attr kind='%s' value='", queryWuAttributeName(attr));
+        encodeXML(value, xml, ENCODE_NEWLINES, (unsigned)-1, true);
+        xml.append("'/>");
+        printf(" %s\n", xml.str());
+    }
+    virtual void noteHint(const char * kind, const char * value)
+    {
+        StringBuffer xml;
+        xml.appendf("<attr kind='hint:%s' value='%s'/>", kind, value);
+        printf(" %s\n", xml.str());
+    }
+};
+
+static void dumpWorkunitAttr(IConstWorkUnit * workunit, const WuScopeFilter & filter)
+{
+    ScopeDumper dumper;
+
+    printf("<Workunit wuid=\"%s\">\n", workunit->queryWuid());
+
+    Owned<IConstWUScopeIterator> iter = &workunit->getScopeIterator(filter);
+    ForEach(*iter)
+    {
+        printf("<scope scope='%s' type='%s'>\n", iter->queryScope(), queryScopeTypeName(iter->getScopeType()));
+        iter->playProperties(dumper);
+        printf("</scope>\n");
+    }
+
+    printf("</Workunit>\n");
 }
 
-static void dumpStats(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText, const char * userFilter, bool csv)
+static void dumpWorkunitAttr(const char *wuid, const char * userFilter)
 {
-    StatisticsFilter filter(checkDash(creatorTypeText), checkDash(creator), checkDash(scopeTypeText), checkDash(scope), NULL, checkDash(kindText));
-    if (userFilter)
-        filter.setFilter(userFilter);
+    WuScopeFilter filter(userFilter);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     const char * star = strchr(wuid, '*');
@@ -2668,7 +2720,7 @@ static void dumpStats(const char *wuid, const char * creatorTypeText, const char
         {
             Owned<IConstWorkUnit> workunit = factory->openWorkUnit(iter->query().queryWuid());
             if (workunit)
-                dumpStats(workunit, filter, csv);
+                dumpWorkunitAttr(workunit, filter);
         }
     }
     else
@@ -2676,7 +2728,7 @@ static void dumpStats(const char *wuid, const char * creatorTypeText, const char
         Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
         if (!workunit)
             return;
-        dumpStats(workunit, filter, csv);
+        dumpWorkunitAttr(workunit, filter);
     }
 }
 
@@ -3294,8 +3346,9 @@ int main(int argc, char* argv[])
                         import(params.item(1),params.item(2),true);
                     }
                     else if (strieq(cmd,"delete")) {
-                        CHECKPARAMS(1,1);
-                        _delete_(params.item(1),true);
+                        CHECKPARAMS(1,2);
+                        bool backup = np<2 || !strieq("nobackup", params.item(2));
+                        _delete_(params.item(1),backup);
                     }
                     else if (strieq(cmd,"set")) {
                         CHECKPARAMS(2,2);
@@ -3336,6 +3389,10 @@ int main(int argc, char* argv[])
                     else if (strieq(cmd,"dfspart")) {
                         CHECKPARAMS(2,2);
                         dfspart(params.item(1),userDesc,atoi(params.item(2)));
+                    }
+                    else if (strieq(cmd,"setdfspartattr")) {
+                        CHECKPARAMS(3,4);
+                        setdfspartattr(params.item(1), atoi(params.item(2)), params.item(3), np>3 ? params.item(4) : nullptr, userDesc);
                     }
                     else if (strieq(cmd,"dfscheck")) {
                         CHECKPARAMS(0,0);
@@ -3419,11 +3476,15 @@ int main(int argc, char* argv[])
                     }
                     else if (strieq(cmd,"dfsscopes")) {
                         CHECKPARAMS(0,1);
-                        dfsscopes((np>1)?params.item(1):"*",userDesc);
+                        dfsscopes((np>0)?params.item(1):"*",userDesc);
                     }
                     else if (strieq(cmd,"cleanscopes")) {
                         CHECKPARAMS(0,0);
                         cleanscopes(userDesc);
+                    }
+                    else if (strieq(cmd,"normalizefilenames")) {
+                        CHECKPARAMS(0,1);
+                        normalizeFileNames(userDesc, np>0 ? params.item(1) : nullptr);
                     }
                     else if (strieq(cmd,"listworkunits")) {
                         CHECKPARAMS(0,3);
@@ -3519,21 +3580,6 @@ int main(int argc, char* argv[])
                         CHECKPARAMS(2,2);
                         dumpProgress(params.item(1), params.item(2));
                     }
-                    else if (strieq(cmd, "stats")) {
-                        CHECKPARAMS(1, 7);
-                        if ((params.ordinality() >= 3) && (strchr(params.item(2), '[')))
-                        {
-                            bool csv = params.isItem(3) && strieq(params.item(3), "csv");
-                            dumpStats(params.item(1), "-", "-", "-", "-", "-", params.item(2), csv);
-                        }
-                        else
-                        {
-                            while (params.ordinality() < 7)
-                                params.append("*");
-                            bool csv = params.isItem(7) && strieq(params.item(7), "csv");
-                            dumpStats(params.item(1), params.item(2), params.item(3), params.item(4), params.item(5), params.item(6), nullptr, csv);
-                        }
-                    }
                     else if (strieq(cmd, "migratefiles"))
                     {
                         CHECKPARAMS(2, 7);
@@ -3551,6 +3597,13 @@ int main(int argc, char* argv[])
                             optArray.getString(options, ",");
                         }
                         migrateFiles(srcGroup, dstGroup, filemask, options);
+                    }
+                    else if (stricmp(cmd, "wuattr") == 0) {
+                        CHECKPARAMS(1, 2);
+                        if (params.ordinality() > 2)
+                            dumpWorkunitAttr(params.item(1), params.item(2));
+                        else
+                            dumpWorkunitAttr(params.item(1), nullptr);
                     }
                     else
                         ERRLOG("Unknown command %s",cmd);

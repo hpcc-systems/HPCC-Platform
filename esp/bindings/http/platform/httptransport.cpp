@@ -456,6 +456,7 @@ void CHttpMessage::addParameter(const char* paramname, const char *value)
 
     m_queryparams->setProp(paramname, value);
     m_paramCount++;
+    allParameterString.append("&").append(paramname).append("=").append(value);
 }
 
 StringBuffer& CHttpMessage::getParameter(const char* paramname, StringBuffer& paramval)
@@ -771,7 +772,14 @@ void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, const char *prefix)
             else if ((m_content_type.length() > 0) && (strieq(m_content_type.get(), "text/css") || strieq(m_content_type.get(), "text/javascript")))
                 DBGLOG("%s<content_type: %s>", prefix, m_content_type.get());
             else
-                logMessage(m_content.str(), prefix);
+            {
+                StringBuffer httpPath;
+                getPath(httpPath);
+                if (!strieq(httpPath.str(), "/esp/login"))
+                    logMessage(m_content.str(), prefix);
+                else
+                    logMessage(m_content.str(), prefix, "password=*", "password=(hidden)");
+            }
         }
     }
     catch (IException *e)
@@ -1092,16 +1100,6 @@ void CHttpRequest::setMethod(const char* method)
     m_httpMethod.set(method);
 }
 
-StringBuffer& CHttpRequest::getPath(StringBuffer & path)
-{
-    return path.append(m_httpPath.str());
-}
-
-void CHttpRequest::setPath(const char* path)
-{
-    m_httpPath.set(path);
-}
-
 void CHttpRequest::parseQueryString(const char* querystr)
 {
     if(!querystr || !*querystr)
@@ -1285,6 +1283,11 @@ int CHttpRequest::parseFirstLine(char* oneline)
         addParameter("__querystring", querystr); //MORE- requested by dimitri
         parseQueryString(querystr);
     }
+
+    StringBuffer verbuf;
+    curptr = Utils::getWord(curptr, verbuf);
+    if(verbuf.length() > 0)
+        m_version.set(verbuf);
 
     delete[] buff;
 
@@ -1815,6 +1818,33 @@ StringBuffer& CHttpRequest::constructHeaderBuffer(StringBuffer& headerbuf, bool 
     return headerbuf;
 }
 
+bool CHttpRequest::checkPersistentEligible()
+{
+    //Might be bad request
+    if(m_content_length == -1 && !(m_httpMethod.length() > 0 && stricmp(m_httpMethod.get(), "GET") == 0))
+        return false;
+
+    StringBuffer conheader;
+    getHeader("Connection", conheader);
+    conheader.trim().toLowerCase();
+    if(conheader.length() != 0)
+    {
+        if(strcmp(conheader.str(), "keep-alive") == 0)
+            return true;
+        else if(strcmp(conheader.str(), "close") == 0)
+            return false;
+    }
+
+    //HTTP 1.0 close by default
+    const char* httpver = nullptr;
+    if(m_version.length() > 5)
+        httpver = m_version.str() + 5;
+    if(httpver && strcmp(httpver, "1.0") == 0)
+        return false;
+
+    return true;
+}
+
 int CHttpRequest::processHeaders(IMultiException *me)
 {
     char oneline[MAX_HTTP_HEADER_LEN + 2];
@@ -1843,6 +1873,8 @@ int CHttpRequest::processHeaders(IMultiException *me)
 
     if(m_content_length > 0 && m_MaxRequestEntityLength > 0 && m_content_length > m_MaxRequestEntityLength && (!isUpload(false)))
         throw createEspHttpException(HTTP_STATUS_BAD_REQUEST_CODE, "The request length was too long.", HTTP_STATUS_BAD_REQUEST);
+
+    setPersistentEligible(checkPersistentEligible());
 
     return 0;
 }
@@ -2074,9 +2106,12 @@ StringBuffer& CHttpResponse::constructHeaderBuffer(StringBuffer& headerbuf, bool
 
     if(inclLen && m_content_length > 0)
         headerbuf.append("Content-Length: ").append(m_content_length).append("\r\n");
+    else
+        setPersistentEligible(false);
 
-    headerbuf.append("Connection: close\r\n");
-    
+    if(!(m_persistentEnabled && getPersistentEligible()))
+        headerbuf.append("Connection: close\r\n");
+
     ForEachItemIn(x, m_cookies)
     {
         CEspCookie* cookie = &m_cookies.item(x);
@@ -2272,6 +2307,15 @@ int CHttpResponse::processHeaders(IMultiException *me)
         parseOneHeader(oneline);
         lenread = m_bufferedsocket->readline(oneline, MAX_HTTP_HEADER_LEN, me);
     }
+
+    setPersistentEligible(true);
+    StringBuffer conheader;
+    getHeader("Connection", conheader);
+    if(conheader.length() != 0 && stricmp(conheader.str(), "Close") == 0)
+        setPersistentEligible(false);
+    if(m_content_length == 0)
+        setPersistentEligible(false);
+
     return 0;
 }
 
@@ -2447,4 +2491,10 @@ bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, c
         return true;
     }
     return false;
+}
+
+void CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt, bool logHandleExceptions)
+{
+    if (handleExceptions(xslp, me, serv, meth, errorXslt) && logHandleExceptions)
+        PROGLOG("Exception(s) handled");
 }

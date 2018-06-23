@@ -71,6 +71,7 @@ target_link_libraries (  thorslave_lcr
          environment 
          dllserver 
          nbcd 
+         hql
          eclrtl 
          deftype 
          workunit 

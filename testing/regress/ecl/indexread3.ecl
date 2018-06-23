@@ -20,7 +20,8 @@
 //version multiPart=false
 //version multiPart=true
 //version multiPart=true,useLocal=true
-//noversion multiPart=true,useTranslation=true,nothor  // investigate since very slow
+//version multiPart=true,useTranslation=true
+
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
@@ -29,7 +30,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 
 //--- end of version configuration ---
 
-#option ('layoutTranslationEnabled', useTranslation);
+#option ('layoutTranslation', useTranslation);
 #onwarning (4523, ignore);
 #onwarning (4527, ignore);
 #onwarning (4528, ignore);

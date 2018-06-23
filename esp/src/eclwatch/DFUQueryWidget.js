@@ -42,18 +42,18 @@ define([
     "dgrid/tree",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/WsDfu",
-    "hpcc/FileSpray",
-    "hpcc/ESPUtil",
-    "hpcc/ESPLogicalFile",
-    "hpcc/ESPDFUWorkunit",
+    "src/WsDfu",
+    "src/FileSpray",
+    "src/ESPUtil",
+    "src/ESPLogicalFile",
+    "src/ESPDFUWorkunit",
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/TargetComboBoxWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/SelectionGridWidget",
-    "hpcc/WsTopology",
-    "hpcc/Utility",
+    "src/WsTopology",
+    "src/Utility",
 
     "put-selector/put",
 
@@ -90,6 +90,8 @@ define([
         baseClass: "DFUQueryWidget",
         i18n: nlsHPCC,
         pathSepCharG: "/",
+        updatedFilter: null,
+        username: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -260,7 +262,7 @@ define([
         _onCopyOk: function (event) {
             var copyPreserveCompressionCheckbox = registry.byId(this.id + "CopyPreserveCompression");
             var value = copyPreserveCompressionCheckbox.get("checked") ? 1 : 0;
-            
+
             if (this.copyForm.validate()) {
                 var context = this;
                 arrayUtil.forEach(this.copyGrid.store.data, function (item, idx) {
@@ -377,7 +379,31 @@ define([
                     EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString().replace(/T.*Z/, '') + "T23:59:59Z"
                 });
             }
+           
+            this.updatedFilter = retVal;
+            this.checkIfWarning();
+           
             return retVal;
+        },
+
+        checkIfWarning: function () {
+            var context = this;
+
+            WsDfu.DFUQuery({
+                request: this.updatedFilter
+            }).then(function (response){
+                if (lang.exists("DFUQueryResponse", response)) {
+                    if (response.DFUQueryResponse.Warning) {
+                        context.filter.open();
+                        context.filter.setFilterMessage(context.i18n.FilesWarning);
+                        on(document, "click", function () {
+                            context.filter.close();
+                        });
+                    } else {
+                        context.filter.setFilterMessage("");
+                    }
+                }
+            });
         },
 
         //  Implementation  ---
@@ -424,20 +450,6 @@ define([
                 context.refreshGrid();
             });
 
-            WsDfu.DFUQuery({
-                request: {}
-            }).then(function (response) {
-                if (lang.exists("DFUQueryResponse.Warning", response)) {
-                    if (response.DFUQueryResponse.Warning) {
-                        dojo.publish("hpcc/brToaster", {
-                            Severity: "Error",
-                            Source: "WsDfu.DFUQuery",
-                            Exceptions: [{ Source: context.i18n.TooManyFiles, Message: context.i18n.TheReturnedResults + ": " + response.DFUQueryResponse.NumFiles + ", " + context.i18n.RepresentsASubset }]
-                        });
-                    }
-                }
-            });
-
             this.createNewSuperRadio.on('change', function (value) {
                 if (value) {
                     context.addToSuperfileTargetAppendRadio.set("checked", false);
@@ -449,12 +461,24 @@ define([
                     context.createNewSuperRadio.set("checked", false);
                 }
             });
+
+            this.userName = dojoConfig.username;
+        },
+
+        _onMine: function (event) {
+            if (event) {
+                this.filter.setValue(this.id + "Owner", this.userName);
+                this.filter._onFilterApply();
+            } else {
+                this.filter._onFilterClear();
+                this.filter._onFilterApply();
+            }
         },
 
         initTab: function() {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.workunitsTab.id) {
+                if (currSel.id === this.workunitsTab.id) {
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel._hpccParams);
@@ -552,6 +576,7 @@ define([
                 deselectOnRefresh: true,
                 store: this.listStore,
                 query: this.getFilter(),
+                sort: [{ attribute: "Modified", "descending": true }],
                 columns: {
                     col1: selector({
                         width: 27,
@@ -562,13 +587,13 @@ define([
                     }),
                     IsProtected: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("locked.png", context.i18n.Protected);
+                            node.innerHTML = Utility.getImageHTML("locked.png", context.i18n.Protected);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (_protected) {
                             if (_protected === true) {
-                                return dojoConfig.getImageHTML("locked.png");
+                                return Utility.getImageHTML("locked.png");
                             }
                             return "";
                         }
@@ -576,11 +601,11 @@ define([
                     IsCompressed: {
                         width: 25, sortable: false,
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("compressed.png", context.i18n.Compressed);
+                            node.innerHTML = Utility.getImageHTML("compressed.png", context.i18n.Compressed);
                         },
                         formatter: function (compressed) {
                             if (compressed === true) {
-                                return dojoConfig.getImageHTML("compressed.png");
+                                return Utility.getImageHTML("compressed.png");
                             }
                             return "";
                         }
@@ -588,11 +613,11 @@ define([
                     IsKeyFile: {
                         width: 25, sortable: false,
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("index.png", context.i18n.Index);
+                            node.innerHTML = Utility.getImageHTML("index.png", context.i18n.Index);
                         },
                         formatter: function (keyfile, row) {
                             if (row.ContentType === "key") {
-                                return dojoConfig.getImageHTML("index.png");
+                                return Utility.getImageHTML("index.png");
                             }
                             return "";
                         }

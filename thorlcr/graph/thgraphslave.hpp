@@ -66,6 +66,8 @@ public:
         owner.ActPrintLog("ITDL starting for output %d", outputId);
 #endif
 #ifdef _TESTING
+        bool started = hasStarted();
+        bool stopped = hasStopped();
         assertex(!hasStarted() || hasStopped());      // ITDL started twice
 #endif
         icount = 0;
@@ -400,6 +402,7 @@ public:
 interface ISlaveWatchdog;
 class graphslave_decl CJobSlave : public CJobBase
 {
+    typedef CJobBase PARENT;
     ISlaveWatchdog *watchdog;
     Owned<IPropertyTree> workUnitInfo;
     size32_t oldNodeCacheMem;
@@ -408,10 +411,11 @@ class graphslave_decl CJobSlave : public CJobBase
 public:
     IMPLEMENT_IINTERFACE;
 
-    CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *workUnitInfo, const char *graphName, ILoadedDllEntry *querySo, mptag_t _mptag, mptag_t _slavemptag);
+    CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *workUnitInfo, const char *graphName, ILoadedDllEntry *querySo, mptag_t _slavemptag);
 
     virtual void addChannel(IMPServer *mpServer);
-    virtual void startJob();
+    virtual void startJob() override;
+    virtual void endJob() override;
     const char *queryFindString() const { return key.get(); } // for string HT
 
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing);

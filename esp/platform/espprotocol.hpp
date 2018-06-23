@@ -24,6 +24,7 @@
 //SCM Interfaces
 #include "esp.hpp"
 #include "xslprocessor.hpp"
+#include "persistent.hpp"
 
 //STL
 #include <algorithm>
@@ -79,12 +80,12 @@ public:
     }
 };
 
+class CEspProtocol;
 
-//MAKEPointerArray(CEspBindingEntry*, CEspBindingArray);
-
+#define MAX_ESP_BINDINGS 512
 class CEspApplicationPort
 {
-    CEspBindingEntry* bindings[100];
+    CEspBindingEntry* bindings[512];
     int bindingCount;
     int defBinding;
 
@@ -99,13 +100,17 @@ class CEspApplicationPort
 
     HINSTANCE hxsl;
     Owned<IXslProcessor> xslp;
+    CEspProtocol* protocol = nullptr;
+    ReadWriteLock rwLock;
 public:
-    CEspApplicationPort(bool viewcfg);
+    CEspApplicationPort(bool viewcfg, CEspProtocol* prot);
 
     ~CEspApplicationPort()
     {
         while (bindingCount)
             bindings[--bindingCount]->Release();
+        if (hxsl)
+            FreeSharedObject(hxsl);
     }
 
     const StringBuffer &getAppFrameHtml(time_t &modified, const char *inner_url, StringBuffer &html, IEspContext* ctx);
@@ -120,15 +125,22 @@ public:
 
     int getBindingCount(){return bindingCount;}
     void appendBinding(CEspBindingEntry* entry, bool isdefault);
+    void removeBinding(IEspRpcBinding* binding);
 
     bool rootAuthRequired(){return rootAuth;}
 
-    CEspBindingEntry* queryBindingItem(int item){return (item<bindingCount) ? bindings[item] : NULL;}
+    CEspBindingEntry* queryBindingItem(int item)
+    {
+        ReadLockBlock rblock(rwLock);
+        return (item<bindingCount) ? bindings[item] : nullptr;
+    }
     CEspBindingEntry* getDefaultBinding(){return bindings[(defBinding>=0) ? defBinding : 0];}
+    CEspProtocol* queryProtocol() { return protocol; }
+    int countBindings() { return bindingCount; }
 #ifdef _USE_OPENLDAP
     unsigned updatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& message);
     void onUpdatePasswordInput(IEspContext &context, StringBuffer &html);
-    void onUpdatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& html);
+    unsigned onUpdatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& html);
 #endif
 };
 
@@ -138,7 +150,8 @@ typedef map<int, CEspApplicationPort*> CApplicationPortMap;
 
 class CEspProtocol : public CInterface,
     implements IEspProtocol,
-    implements ISocketSelectNotify
+    implements ISocketSelectNotify,
+    implements IPersistentSelectNotify
 {
 private:
     //map between socket port and one or more bindings
@@ -146,6 +159,9 @@ private:
     bool m_viewConfig;
     int m_MaxRequestEntityLength;
     IEspContainer *m_container;
+    unsigned m_nextSeq;
+    Owned<IPersistentHandler> m_persistentHandler;
+    ReadWriteLock rwLock;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -159,6 +175,7 @@ public:
 
     void clear()
     {
+        WriteLockBlock wblock(rwLock);
         map<int, CEspApplicationPort*>::iterator bndi = m_portmap.begin();
         for(;bndi!=m_portmap.end();bndi++)
             if(bndi->second)
@@ -175,16 +192,23 @@ public:
     bool getViewConfig(){return m_viewConfig;}
 
     virtual bool notifySelected(ISocket *sock,unsigned selected);
+    virtual bool notifySelected(ISocket *sock,unsigned selected, IPersistentHandler* persistentHandler) override { return false; };
 
     //IEspProtocol
     virtual const char * getProtocolName();
 
     virtual void addBindingMap(ISocket *sock, IEspRpcBinding* binding, bool isdefault);
+    virtual int removeBindingMap(int port, IEspRpcBinding* binding);
     virtual CEspApplicationPort* queryApplicationPort(int handle);
 
     virtual void setMaxRequestEntityLength(int len) {m_MaxRequestEntityLength = len;};
     virtual int getMaxRequestEntityLength() { return m_MaxRequestEntityLength; }
     virtual void setContainer(IEspContainer* container) { m_container = container; }
+    virtual void initPersistentHandler(IPropertyTree * proc_cfg);
+    virtual bool persistentEnabled() { return m_persistentHandler != nullptr; }
+    virtual void addPersistent(ISocket* sock);
+
+    virtual int countBindings(int port);
 };
 
 #endif

@@ -37,8 +37,9 @@ typedef CopyReferenceArrayOf<IEsdlDefMethod> EsdlDefMethodArray;
 #define IMPLEMENT_ESDL_DEFOBJ \
     virtual const char *queryName() { return EsdlDefObject::queryName(); } \
     virtual const char *queryProp(const char *name) { return EsdlDefObject::queryProp(name); } \
-virtual bool hasProp(const char* name) { return EsdlDefObject::hasProp(name); } \
+    virtual bool hasProp(const char* name) { return EsdlDefObject::hasProp(name); } \
     virtual int getPropInt(const char *pname, int def=0){return props->getPropInt(pname,def);} \
+    virtual bool getPropBool(const char *pname, bool def=false){return props->getPropBool(pname,def);} \
     virtual bool checkVersion(double ver) { return EsdlDefObject::checkVersion(ver); } \
     virtual bool checkFLVersion(double ver) { return EsdlDefObject::checkFLVersion(ver); } \
     virtual bool checkOptional(IProperties *opts ) { return EsdlDefObject::checkOptional(opts); }\
@@ -185,6 +186,7 @@ public:
     const char *queryProp(const char *pname){return props->queryProp(pname);}
     bool hasProp(const char*pname) { return props->hasProp(pname); }
     int getPropInt(const char *pname, int def=0){return props->getPropInt(pname,def);}
+    bool getPropBool(const char *pname, bool def=false){return props->getPropBool(pname,def);}
     const char *queryName(){return queryProp("name");}
 
     virtual IPropertyIterator* getProps()
@@ -1464,6 +1466,7 @@ public:
     unsigned walkChildrenDepthFirst( AddedObjs& foundByName, EsdlDefObjectWrapperArray& dependencies, IEsdlDefObject* esdlObj, double requestedVer, IProperties *opts, int level=0, unsigned flags=0);
     bool shouldGenerateArrayOf( IEsdlDefObject& child, unsigned flags, unsigned& stateOut );
     bool setWrapperFlagStringArray( AddedObjs& foundByName, EsdlDefObjectWrapper* wrapper, unsigned state );
+    virtual bool isShared() override { return IsShared(); }
 };
 
 bool EsdlDefinition::shouldGenerateArrayOf( IEsdlDefObject& child, unsigned flags, unsigned& stateOut )
@@ -1535,21 +1538,30 @@ IEsdlDefObjectIterator* EsdlDefinition::getDependencies( const char* service, co
     return getDependencies( service, methods, requestedVer, opts, flags );
 }
 
+void getServiceMethods(IEsdlDefService* serviceDef, EsdlDefObjectArray& methodArray, unsigned flags)
+{
+    Owned<IEsdlDefMethodIterator> methodIter = serviceDef->getMethods();
+    for( methodIter->first(); methodIter->isValid(); methodIter->next() )
+    {
+        if ((flags & DEPFLAG_ECL_ONLY) && methodIter->query().getPropBool("ecl_hide"))
+            continue;
+        methodArray.append( methodIter->query() );
+    }
+}
+
 IEsdlDefObjectIterator* EsdlDefinition::getDependencies( const char* service, StringArray &methods, double requestedVer, IProperties *opts, unsigned flags)
 {
-    IEsdlDefService* serviceDef;
-    IEsdlDefMethod* methodDef;
-    EsdlDefObjectArray serviceArray;
+    IEsdlDefService* serviceDef = nullptr;
     EsdlDefObjectArray methodArray;
-    EsdlDefObjectWrapperArray* dependencies = new EsdlDefObjectWrapperArray();
-    Owned<IEsdlDefMethodIterator> methodIter;
+    OwnedPtr<EsdlDefObjectWrapperArray> dependencies(new EsdlDefObjectWrapperArray());
 
     // I think it's just a namespace/xml_tag/structure name naming difference
     // but be sure to know where these structures listed in the schema are
     // coming from and how they're defined:
     // Exceptions, ArrayOfEspException, EspException
     TimeSection ts("EsdlDefinition::getDependencies");
-    if(service && *service)
+
+    if (service && *service)
     {
         serviceDef = this->queryService(service);
 
@@ -1558,30 +1570,30 @@ IEsdlDefObjectIterator* EsdlDefinition::getDependencies( const char* service, St
             throw( MakeStringException(0, "ESDL Service Definition not found for %s", service) );
         }
     }
-    else
+    else if (methods.length() != 0) //Only require service name when "methods" is provided
     {
         throw( MakeStringException(0, "No ESDL Service Definition provided, need to have a service to search in for methods") );
     }
 
-    if( methods.length() < 1 )
+    if (methods.length() == 0)
     {
-        methodIter.setown(serviceDef->getMethods());
-        for( methodIter->first(); methodIter->isValid(); methodIter->next() )
+        if (serviceDef)
+            getServiceMethods(serviceDef, methodArray, flags);
+        else
         {
-            if ((flags & DEPFLAG_ECL_ONLY) && methodIter->query().getPropInt("ecl_hide"))
-                continue;
-            methodArray.append( methodIter->query() );
+            ForEachItemIn(idx, this->services)
+                getServiceMethods(&this->services.item(idx), methodArray, flags);
         }
     }
     else
     {
         ForEachItemIn( i, methods )
         {
-            methodDef = serviceDef->queryMethodByName(methods.item(i));
+            IEsdlDefMethod* methodDef = serviceDef->queryMethodByName(methods.item(i));
 
-            if(!methodDef)
+            if (!methodDef)
                 throw( MakeStringException(0, "ESDL Method Definition not found for %s in service %s", methods.item(i), service) );
-            if ((flags & DEPFLAG_ECL_ONLY) && methodDef->getPropInt("ecl_hide"))
+            if ((flags & DEPFLAG_ECL_ONLY) && methodDef->getPropBool("ecl_hide"))
                 continue;
             methodArray.append( *methodDef );
         }
@@ -1590,13 +1602,24 @@ IEsdlDefObjectIterator* EsdlDefinition::getDependencies( const char* service, St
     this->gatherMethodDependencies( *dependencies, methodArray, requestedVer, opts, flags );
 
     bool allTypes = !(flags & DEPFLAG_INCLUDE_TYPES); //not asking for any explicit types indicates all types
-    if(serviceDef && (allTypes || (flags & DEPFLAG_INCLUDE_SERVICE)))
+    if (allTypes || (flags & DEPFLAG_INCLUDE_SERVICE))
     {
-        EsdlDefObjectWrapper* wrapper = new EsdlDefObjectWrapper( *serviceDef );
-        dependencies->append( *wrapper );
+        if (serviceDef)
+        {
+            EsdlDefObjectWrapper* wrapper = new EsdlDefObjectWrapper( *serviceDef );
+            dependencies->append( *wrapper );
+        }
+        else
+        {
+            ForEachItemIn(idx, this->services)
+            {
+                IEsdlDefService* oneServiceDef = &this->services.item(idx);
+                EsdlDefObjectWrapper* wrapper = new EsdlDefObjectWrapper( *oneServiceDef );
+                dependencies->append( *wrapper );
+            }
+        }
     }
-
-    return new OwnedEsdlDefObjectArrayIterator(dependencies);
+    return new OwnedEsdlDefObjectArrayIterator(dependencies.getClear());
 }
 
 void EsdlDefinition::gatherMethodDependencies( EsdlDefObjectWrapperArray& dependencies, EsdlDefObjectArray& methods, double requestedVer, IProperties *opts, unsigned flags )
@@ -1659,7 +1682,7 @@ unsigned EsdlDefinition::walkChildrenDepthFirst( AddedObjs& foundByName, EsdlDef
             while( children->isValid() )
             {
                 IEsdlDefObject& child = children->query();
-                if ((flags & DEPFLAG_ECL_ONLY) && child.getPropInt("ecl_hide"))
+                if ((flags & DEPFLAG_ECL_ONLY) && child.getPropBool("ecl_hide"))
                 {
                     children->next();
                     continue;

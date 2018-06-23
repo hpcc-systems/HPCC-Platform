@@ -308,7 +308,7 @@ interface ISerialStream: extends IInterface
     virtual void get(size32_t len, void * ptr) = 0;                 // exception if no data available
     virtual bool eos() = 0;                                         // no more data
     virtual void skip(size32_t sz) = 0;
-    virtual offset_t tell() = 0;
+    virtual offset_t tell() const = 0;
     virtual void reset(offset_t _offset,offset_t _flen=(offset_t)-1) = 0;       // input stream has changed - restart reading
 };
 
@@ -624,11 +624,15 @@ extern jlib_decl IFile * createSentinelTarget();
 extern jlib_decl void writeSentinelFile(IFile * file);
 extern jlib_decl void removeSentinelFile(IFile * file);
 extern jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blankIfFails);
+extern jlib_decl timestamp_type getTimeStamp(IFile * file);
 
 #ifdef _WIN32
 const static bool filenamesAreCaseSensitive = false;
 #else
 const static bool filenamesAreCaseSensitive = true;
 #endif
+
+extern jlib_decl IDirectoryIterator *getSortedDirectoryIterator(IFile *directory, SortDirectoryMode mode = SD_byname, bool rev = false, const char *mask = nullptr, bool sub = false, bool includedirs = false);
+extern jlib_decl IDirectoryIterator *getSortedDirectoryIterator(const char *dirName, SortDirectoryMode mode = SD_byname, bool rev = false, const char *mask = nullptr, bool sub = false, bool includedirs = false);
 
 #endif

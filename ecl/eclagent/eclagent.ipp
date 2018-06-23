@@ -23,8 +23,8 @@
 #include "deftype.hpp"
 #include "jthread.hpp"
 #include "dllserver.hpp"
+#include "rtldynfield.hpp"
 
-//#include "agentctx.hpp"
 #include "hthor.hpp"
 #include "thorxmlwrite.hpp"
 #include "workflow.hpp"
@@ -155,7 +155,7 @@ public:
     {
         ctx->reportProgress(msg, flags);
     }
-    virtual IConstWorkUnit *queryWorkUnit()
+    virtual IConstWorkUnit *queryWorkUnit() const override
     {
         return ctx->queryWorkUnit();
     }
@@ -199,10 +199,6 @@ public:
     {
         ctx->logFileAccess(file, component, type);
     }
-    virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const
-    {
-        return ctx->queryRecordLayoutTranslatorCache();
-    }
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source)
     {
         ctx->addWuException(text, code, severity, source);
@@ -236,6 +232,11 @@ public:
     }
 
     virtual void updateWULogfile()                  { return ctx->updateWULogfile(); }
+
+    virtual RecordTranslationMode getLayoutTranslationMode() const override
+    {
+        return ctx->getLayoutTranslationMode();
+    }
 
 protected:
     IAgentContext * ctx;
@@ -368,7 +369,6 @@ private:
     Owned<IDistributedFileTransaction> superfiletransaction;
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
     Owned<EclGraph> activeGraph;
-    Owned<IRecordLayoutTranslatorCache> rltCache;
     Owned<CHThorDebugContext> debugContext;
     Owned<IProbeManager> probeManager;
     StringAttr allowedPipeProgs;
@@ -473,8 +473,8 @@ public:
     virtual unsigned getResultHash(const char * name, unsigned sequence);
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer);
     virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence);
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer);
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher);
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override;
+    virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override;
     virtual char *getJobName();
     virtual char *getJobOwner();
     virtual char *getClusterName();
@@ -507,6 +507,7 @@ public:
     virtual IEngineContext *queryEngineContext() { return this; }
     virtual char *getDaliServers();
 
+    virtual RecordTranslationMode getLayoutTranslationMode() const override;
     unsigned __int64 queryStopAfter() { return stopAfter; }
 
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
@@ -560,7 +561,6 @@ public:
     //virtual void logException(IEclException *e);  
     virtual char *resolveName(const char *in, char *out, unsigned outlen);
     virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type);
-    virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const { return rltCache; }
     virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt=NULL, bool optional=false, bool noteRead=true, bool write=false, StringBuffer * expandedlfn=NULL);
 
     virtual void executeThorGraph(const char * graphName);
@@ -594,8 +594,8 @@ public:
     virtual const char *loadResource(unsigned id);
     virtual ICodeContext *queryCodeContext();
     virtual bool isResult(const char * name, unsigned sequence);
-    virtual unsigned getWorkflowId();// { return workflow->queryCurrentWfid(); }
-    virtual IConstWorkUnit *queryWorkUnit();  // no link
+    virtual unsigned getWorkflowId();
+    virtual IConstWorkUnit *queryWorkUnit() const override;  // no link
     virtual IWorkUnit *updateWorkUnit() const; // links
     virtual void unlockWorkUnit();      
     virtual void reloadWorkUnit();
@@ -695,12 +695,13 @@ public:
     virtual void destruct(byte * self) {}
     virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createDiskPrefetcher() { return NULL; }
     virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); }  // Could be implemented if needed
 };
 
 class EclBoundLoopGraph : implements IHThorBoundLoopGraph, public CInterface
@@ -739,7 +740,7 @@ public:
     void updateProgress(IAgentContext & agent);
     void updateProgress(IStatisticGatherer &progress);
 
-    void ready() { if (!alreadyUpdated) activity->ready(); }
+    void ready();
     void execute() { if (!alreadyUpdated) activity->execute(); }
     void stop() { if (!alreadyUpdated) activity->stop(); }
 
@@ -796,11 +797,11 @@ public:
     UninitializedGraphResult(unsigned _id) { id = _id; }
     IMPLEMENT_IINTERFACE
 
-    virtual void addRowOwn(const void * row);
-    virtual const void * queryRow(unsigned whichRow);
-    virtual void getLinkedResult(unsigned & count, byte * * & ret);
-    virtual const void * getOwnRow(unsigned whichRow);
-    virtual const void * getLinkedRowResult();
+    virtual void addRowOwn(const void * row) override;
+    virtual const void * queryRow(unsigned whichRow) override;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret) override;
+    virtual const void * getOwnRow(unsigned whichRow) override;
+    virtual const void * getLinkedRowResult() override;
 
 protected:
     unsigned id;
@@ -813,11 +814,11 @@ public:
     IMPLEMENT_IINTERFACE
 
 
-    virtual void addRowOwn(const void * row);
-    virtual const void * queryRow(unsigned whichRow);
-    virtual void getLinkedResult(unsigned & count, byte * * & ret);
-    virtual const void * getOwnRow(unsigned whichRow);
-    virtual const void * getLinkedRowResult();
+    virtual void addRowOwn(const void * row) override;
+    virtual const void * queryRow(unsigned whichRow) override;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret) override;
+    virtual const void * getOwnRow(unsigned whichRow) override;
+    virtual const void * getLinkedRowResult() override;
 
 protected:
     Owned<IEngineRowAllocator> rowsetAllocator;
@@ -836,24 +837,24 @@ public:
     void init(unsigned _maxResults);
 
     virtual void clear();
-    virtual IHThorGraphResult * queryResult(unsigned id);
-    virtual IHThorGraphResult * queryGraphLoopResult(unsigned id);
-    virtual IHThorGraphResult * createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator);
-    virtual IHThorGraphResult * createResult(IEngineRowAllocator * ownedRowsetAllocator);
-    virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator) { throwUnexpected(); }
+    virtual IHThorGraphResult * queryResult(unsigned id) override;
+    virtual IHThorGraphResult * queryGraphLoopResult(unsigned id) override;
+    virtual IHThorGraphResult * createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator) override;
+    virtual IHThorGraphResult * createResult(IEngineRowAllocator * ownedRowsetAllocator) override;
+    virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator) override { throwUnexpected(); }
 
-    virtual void setResult(unsigned id, IHThorGraphResult * result);
+    virtual void setResult(unsigned id, IHThorGraphResult * result) override;
 
 //interface IEclGraphResults
-    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id) override
     {
         queryResult(id)->getLinkedResult(count, ret);
     }
-    virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+    virtual void getDictionaryResult(unsigned & count, const byte * * & ret, unsigned id) override
     {
         queryResult(id)->getLinkedResult(count, ret);
     }
-    virtual const void * getLinkedRowResult(unsigned id)
+    virtual const void * getLinkedRowResult(unsigned id) override
     {
         return queryResult(id)->getLinkedRowResult();
     }
@@ -1026,8 +1027,8 @@ public:
     virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator);
     virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract);
 
-    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
-    virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id);
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id) override;
+    virtual void getDictionaryResult(size32_t & tcount, const byte * * & tgt, unsigned id) override;
     virtual const void * getLinkedRowResult(unsigned id);
     inline unsigned __int64 queryId() const
     {
@@ -1068,6 +1069,7 @@ public:
     IProbeManager * probeManager;
     CriticalSection evaluateCrit;
     bool isChildGraph;
+    bool isLoopBody;
 };
 
 typedef EclSubGraph * EclSubGraphPtr;
@@ -1114,7 +1116,8 @@ public:
     void createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, bool enableProbe);
     void execute(const byte * parentExtract);
     void executeLibrary(const byte * parentExtract, IHThorGraphResults * results);
-    IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned subgraph);
+    IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph);
+    void updateWUStatistic(IWorkUnit* lockedwu, StatisticScopeType scopeType, const char* scope, StatisticKind kind, const char* descr, long long unsigned int value);
 
     EclSubGraph * idToGraph(unsigned id);
     EclGraphElement * idToActivity(unsigned id);

@@ -136,6 +136,10 @@ extern WORKUNIT_API IWorkflowItemArray *createWorkflowItemArray(unsigned size);
 extern WORKUNIT_API IWorkflowItem *createWorkflowItem(IPropertyTree * ptree, unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor);
 extern WORKUNIT_API IWorkflowItemIterator *createWorkflowItemIterator(IPropertyTree * ptree);
 
+extern WORKUNIT_API const char * queryWorkflowTypeText(WFType type);
+extern WORKUNIT_API const char * queryWorkflowModeText(WFMode mode);
+extern WORKUNIT_API const char * queryWorkflowStateText(WFState state);
+
 #ifdef TRACE_WORKFLOW
 extern const WORKUNIT_API LogMsgCategory MCworkflow;       // Category used to inform enqueue/start/finish of workflow item
 #endif

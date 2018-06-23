@@ -107,21 +107,63 @@ public:
     StringArray targets;
     StringAttr auth_method;
     StringAttr portal_URL;
+    StringAttr globalIdHttpHeader;
+    StringAttr callerIdHttpHeader;
     unsigned roxieTimeout;
     unsigned workunitTimeout;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CWsEclService()
-    {
-    }
+    CWsEclService() {}
     ~CWsEclService();
 
     virtual const char * getServiceType(){return "ws_ecl";}
     virtual bool init(const char * name, const char * type, IPropertyTree * cfg, const char * process);
     virtual void setContainer(IEspContainer * container){}
 
+    StringBuffer &getHttpGlobalIdHeader(CHttpRequest *request, StringBuffer &value)
+    {
+        if (!globalIdHttpHeader.isEmpty())
+            request->getHeader(globalIdHttpHeader, value);
+        if (value.isEmpty())
+            request->getHeader("HPCC-Global-Id", value); //always support receiving HPCC default
+        return value;
+    }
+    StringBuffer &getHttpCallerIdHeader(CHttpRequest *request, StringBuffer &value)
+    {
+        if (!callerIdHttpHeader.isEmpty())
+            request->getHeader(callerIdHttpHeader, value);
+        if (value.isEmpty())
+            request->getHeader("HPCC-Caller-Id", value); //always support receiving HPCC default
+        return value;
+    }
+    const char *queryGlobalIdHeaderName()
+    {
+        if (!globalIdHttpHeader.isEmpty())
+            return globalIdHttpHeader;
+        return "HPCC-Global-Id"; //HPCC default
+    }
+    const char *queryCallerIdHeaderName()
+    {
+        if (!callerIdHttpHeader.isEmpty())
+            return callerIdHttpHeader;
+        return "HPCC-Caller-Id"; //HPCC default
+    }
+
+    bool unsubscribeServiceFromDali() override {return true;}
+    bool subscribeServiceToDali() override {return false;}
+    bool detachServiceFromDali() override
+    {
+        setIsDetached(true);
+        return true;
+    }
+    bool attachServiceToDali() override {return false;}
+
+    void setIsDetached(bool isDetached) { m_isDetached = isDetached;}
+    bool isDetached() { return m_isDetached;}
+private:
+    bool m_isDetached;
 };
 
 class CWsEclBinding : public CHttpSoapBinding
@@ -151,6 +193,22 @@ public:
     StringBuffer &generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns);
 
     virtual int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods){return 0;}
+    virtual unsigned getCacheMethodCount(){return 0;}
+
+    virtual bool canDetachFromDali() override
+    {
+        return false;
+    }
+
+    virtual bool subscribeBindingToDali() override
+    {
+        return true;
+    }
+
+    virtual bool unsubscribeBindingFromDali() override
+    {
+        return false;
+    }
 
     void getNavigationData(IEspContext &context, IPropertyTree & data);
     void getRootNavigationFolders(IEspContext &context, IPropertyTree & data);
@@ -184,11 +242,11 @@ public:
     void buildSampleResponseXml(StringBuffer& msg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo);
     void getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, unsigned flags, bool validate);
     int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  WsEclWuInfo &wsinfo);
-    int onSubmitQueryOutput(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    WsEclWuInfo &wsinfo, const char *format);
-    int onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
+    int onSubmitQueryOutput(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    WsEclWuInfo &wsinfo, const char *format, bool forceCreateWorkunit);
+    int onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, bool forceCreateWorkunit);
 
-    int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, IPropertyTree *reqTree, StringBuffer &out, unsigned flags, TextMarkupFormat fmt=MarkupFmt_XML, const char *viewname=NULL, const char *xsltname=NULL);
-    int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, TextMarkupFormat fmt=MarkupFmt_XML, const char *viewname=NULL, const char *xsltname=NULL);
+    int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, IPropertyTree *reqTree, StringBuffer &out, unsigned flags, CHttpRequest *httpreq, TextMarkupFormat fmt=MarkupFmt_XML, const char *viewname=NULL, const char *xsltname=NULL);
+    int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, CHttpRequest *httpreq, TextMarkupFormat fmt=MarkupFmt_XML, const char *viewname=NULL, const char *xsltname=NULL);
 
     void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
     void handleJSONPost(CHttpRequest *request, CHttpResponse *response);
@@ -212,7 +270,7 @@ public:
     void getWsEclJsonRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags, bool validate);
     void buildSampleResponseJSON(StringBuffer& msg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo);
 
-    void sendRoxieRequest(const char *process, StringBuffer &req, StringBuffer &resp, StringBuffer &status, const char *query, bool trim, const char *contentType);
+    void sendRoxieRequest(const char *process, StringBuffer &req, StringBuffer &resp, StringBuffer &status, const char *query, bool trim, const char *contentType, CHttpRequest *httpreq);
 };
 
 #endif //_WS_ECL_SERVICE_HPP__

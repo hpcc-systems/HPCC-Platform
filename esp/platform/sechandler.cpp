@@ -188,7 +188,7 @@ bool SecHandler::validateSecFeaturesAccess(MapStringTo<SecAccessFlags> & accessm
         for(unsigned i = 0; i < features.length(); i++)
         {
             int accessAllowed = pmap->queryValue(features.item(i));
-            if ((accessAllowed == -1) || (reqarray[i] && (accessAllowed < reqarray[i])))
+            if ((accessAllowed == -1) || (reqarray[i] && ((unsigned)accessAllowed < reqarray[i])))
             {
                 if (throwExcpt)
                     throw MakeStringException(-1, "Access Denied!");

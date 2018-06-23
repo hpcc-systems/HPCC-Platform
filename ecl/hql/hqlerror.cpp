@@ -36,17 +36,6 @@ ErrorSeverity getSeverity(IAtom * name)
     return SeverityUnknown;
 }
 
-ErrorSeverity queryDefaultSeverity(WarnErrorCategory category)
-{
-    if (category == CategoryError)
-        return SeverityFatal;
-    if (category == CategoryInformation)
-        return SeverityInformation;
-    if (category == CategoryMistake)
-        return SeverityError;
-    return SeverityWarning;
-}
-
 WarnErrorCategory getCategory(const char * category)
 {
     if (strieq(category, "all"))
@@ -93,21 +82,6 @@ ErrorSeverity getCheckSeverity(IAtom * name)
     ErrorSeverity severity = getSeverity(name);
     assertex(severity != SeverityUnknown);
     return severity;
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-
-void IErrorReceiver::reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int position)
-{
-    Owned<IError> err = createError(errNo,msg,filename,lineno,column,position);
-    report(err);
-}
-
-void IErrorReceiver::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int position)
-{
-    ErrorSeverity severity = queryDefaultSeverity(category);
-    Owned<IError> warn = createError(category, severity,warnNo,msg,filename,lineno,column,position);
-    report(warn);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -178,7 +152,16 @@ public:
         f = _f;
     }
 
-    virtual void report(IError* error)
+protected:
+    FILE *f;
+};
+
+class HQL_API StandardFileErrorReceiver : public FileErrorReceiver
+{
+public:
+    StandardFileErrorReceiver(FILE *_f) : FileErrorReceiver(_f) {}
+
+    virtual void report(IError* error) override
     {
         ErrorReceiverSink::report(error);
 
@@ -213,14 +196,32 @@ public:
         if (!filename) filename = isError(severity) ? "" : unknownAtom->queryStr();
         fprintf(f, "%s(%d,%d): %s C%04d: %s\n", filename, line, column, severityText, code, msg.str());
     }
+};
 
-protected:
-    FILE *f;
+class HQL_API XmlFileErrorReceiver : public FileErrorReceiver
+{
+public:
+    XmlFileErrorReceiver(FILE *_f) : FileErrorReceiver(_f) {}
+
+    virtual void report(IError* error) override
+    {
+        ErrorReceiverSink::report(error);
+        OwnedPTree tree = error->toTree();
+
+        StringBuffer msg;
+        toXML(tree, msg, 0, XML_Embed);
+        fprintf(f, "%s\n", msg.str());
+    }
 };
 
 extern HQL_API IErrorReceiver *createFileErrorReceiver(FILE *f)
 {
-    return new FileErrorReceiver(f);
+    return new StandardFileErrorReceiver(f);
+}
+
+extern HQL_API IErrorReceiver *createXmlFileErrorReceiver(FILE *f)
+{
+    return new XmlFileErrorReceiver(f);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

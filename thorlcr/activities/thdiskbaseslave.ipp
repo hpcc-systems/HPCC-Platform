@@ -56,6 +56,7 @@ public:
     {
         merged.merge(fileStats);
     }
+    virtual unsigned __int64 queryProgress() { return 0; }
 
 // IThorDiskCallback
     virtual offset_t getFilePosition(const void * row);
@@ -78,7 +79,7 @@ class CDiskReadSlaveActivityBase : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
-    Owned<IThorRowInterfaces> diskRowIf;
+    Owned<IThorRowInterfaces> projectedDiskRowIf;
 protected:
     StringAttr logicalFilename;
     StringArray subfileLogicalFilenames;
@@ -91,9 +92,9 @@ protected:
     rowcount_t diskProgress = 0;
 
 public:
-    CDiskReadSlaveActivityBase(CGraphElementBase *_container);
+    CDiskReadSlaveActivityBase(CGraphElementBase *_container, IHThorArg *_helper);
     const char *queryLogicalFilename(unsigned index);
-    IThorRowInterfaces * queryDiskRowInterfaces();
+    IThorRowInterfaces * queryProjectedDiskRowInterfaces();
     virtual void start() override;
 
     

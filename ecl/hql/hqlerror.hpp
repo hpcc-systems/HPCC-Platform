@@ -24,20 +24,6 @@
 #define DEFAULT_MAX_ERRORS 5
 #define HQLERR_ErrorAlreadyReported             4799            // special case...
 
-interface IWorkUnit;
-interface HQL_API IErrorReceiver : public IInterface
-{
-    virtual void report(IError* error) = 0;
-    virtual IError * mapError(IError * error) = 0;
-    virtual size32_t errCount() = 0;
-    virtual size32_t warnCount() = 0;
-    virtual void exportMappings(IWorkUnit * wu) const = 0;
-
-    //global helper functions
-    void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos);
-    void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
-};
-
 typedef IArrayOf<IError> IErrorArray;
 
 
@@ -118,22 +104,18 @@ private:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-extern HQL_API ErrorSeverity queryDefaultSeverity(WarnErrorCategory category);
 extern HQL_API WarnErrorCategory getCategory(const char * category);
 extern HQL_API ErrorSeverity getSeverity(IAtom * name);
 extern HQL_API ErrorSeverity getCheckSeverity(IAtom * name);
 
 //---------------------------------------------------------------------------------------------------------------------
 
-inline IError * createError(int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0)
-{
-    return createError(CategoryError, SeverityFatal, errNo, msg, filename, lineno, column, pos);
-}
 extern HQL_API void reportErrors(IErrorReceiver & receiver, IErrorArray & errors);
 void HQL_API reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char* format, va_list args) __attribute__((format(printf, 4, 0)));
 void HQL_API reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...) __attribute__((format(printf, 4, 5)));
 
 extern HQL_API IErrorReceiver * createFileErrorReceiver(FILE *f);
+extern HQL_API IErrorReceiver * createXmlFileErrorReceiver(FILE *f);
 extern HQL_API IErrorReceiver * createNullErrorReceiver();
 extern HQL_API IErrorReceiver * createThrowingErrorReceiver();
 extern HQL_API IErrorReceiver * createAbortingErrorReceiver(IErrorReceiver & prev);

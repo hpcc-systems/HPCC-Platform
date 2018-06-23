@@ -380,7 +380,7 @@ public:
                 if (canMatchAny(childType))
                     sawMatch = true;
             }
-            if (stricmp(str(fields[0]->name), searchFieldName)==0)
+            if (stricmp(fields[0]->name, searchFieldName)==0)
                 sawMatch = true;
             fields++;
         }
