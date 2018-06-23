@@ -22,11 +22,10 @@
 #    Cmake Input File for mptest
 #####################################################
 
-
 project( mptest ) 
 
 set (    SRCS 
-         mptest.cpp 
+         mptest_mpi.cpp 
     )
 
 include_directories ( 
@@ -38,10 +37,6 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-HPCC_ADD_EXECUTABLE ( mptest ${SRCS} )
-target_link_libraries ( mptest 
-         jlib
-         mp 
-    )
-
+HPCC_ADD_EXECUTABLE (mptest ${SRCS} ) 
+target_link_libraries (mptest jlib mp)
 
