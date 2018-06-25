@@ -1365,7 +1365,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
         //Remove virtual attributes from the record, so the crc will be compatible with the disk read record
         //can occur with a (highly unusual) full keyed join to a persist file... (see indexread14.ecl)
         OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(info.queryRawRhs()->queryRecord());
-        buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, noVirtualRecord, NULL, 0);
+        buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", noVirtualRecord);
         buildEncryptHelper(instance->startctx, info.queryFile()->queryAttribute(encryptAtom), "getFileEncryptKey");
     }
 
