@@ -2276,7 +2276,7 @@ void HqlGram::doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpr
                 else
                 {
                     IHqlExpression * child0 = queryRealChild(original, 0);
-                    if (child0 && (child0->isConstant() || isNullDataset(child0)))
+                    if (child0 && (child0->isConstant() || isNullDataset(child0) || lookupCtx.syntaxChecking()))
                     {
                         OwnedHqlExpr castChild = ensureExprType(child0, targetSelected->queryType());
                         if (assigns)
@@ -11183,6 +11183,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case SERVICE: msg.append("SERVICE"); break;
     case SET: msg.append("SET"); break;
     case SHARED: msg.append("SHARED"); break;
+    case __SIMPLIFIED__: msg.append("__SIMPLIFIED__"); break;
     case SIN: msg.append("SIN"); break;
     case SINGLE: msg.append("SINGLE"); break;
     case SINH: msg.append("SINH"); break;
@@ -11411,7 +11412,7 @@ void HqlGram::simplifyExpected(int *expected)
                        FAILCODE, FAILMESSAGE, FROMUNICODE, __GROUPED__, ISNULL, ISVALID, XMLDECODE, XMLENCODE, XMLTEXT, XMLUNICODE,
                        MATCHED, MATCHLENGTH, MATCHPOSITION, MATCHTEXT, MATCHUNICODE, MATCHUTF8, NOFOLD, NOHOIST, NOTHOR, OPT, REGEXFIND, REGEXREPLACE, RELATIONSHIP, SEQUENTIAL, SKIP, TOUNICODE, UNICODEORDER, UNSORTED,
                        KEYUNICODE, TOK_TRUE, TOK_FALSE, BOOL_CONST, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
-                       TOXML, TOJSON, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, LIKELY, UNLIKELY, 0);
+                       TOXML, TOJSON, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, LIKELY, UNLIKELY, __SIMPLIFIED__, 0);
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
     simplify(expected, DICTIONARY_ID, DICTIONARY_FUNCTION, DICTIONARY, 0);
@@ -12369,6 +12370,16 @@ bool verifySimpifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplif
     OwnedHqlExpr parsed = parseDefinition(ecl, simplifiedDefinition->queryId(), errors);
     if (!parsed)
     {
+#ifdef _DEBUG
+        DBGLOG("Failed to parse simplified definition");
+        StringBuffer orig;
+        EclIR::getIRText(orig, 0, queryLocationIndependent(origExpr));
+        DBGLOG("Original:\n%s\n", orig.str());
+        StringBuffer t1;
+        EclIR::getIRText(t1, 0, queryLocationIndependent(simplifiedDefinition));
+        DBGLOG("Simplified:\n%s\n", t1.str());
+        DBGLOG("Regenerated:\n---\n%s\n---\n", ecl.str());
+#endif
         ctx.errs->reportError(ERR_INTERNALEXCEPTION, "Failed to parse simplified definition",0,0,0,0);
         return false;
     }
@@ -12380,12 +12391,16 @@ bool verifySimpifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplif
 
         if (!streq(t1, t2))
         {
+#ifdef _DEBUG
             StringBuffer orig;
             EclIR::getIRText(orig, 0, queryLocationIndependent(origExpr));
             DBGLOG("Original:\n%s\n", orig.str());
-            DBGLOG("Simple:\n%s\n", t1.str());
+#endif
+            DBGLOG("Simplified:\n%s\n", t1.str());
+#ifdef _DEBUG
             DBGLOG("Regenerated:\n---\n%s\n---\n", ecl.str());
             DBGLOG("Parsed:\n%s", t2.str());
+#endif
 
             ctx.errs->reportError(ERR_INTERNALEXCEPTION, "Failed verification of simplified definition",0,0,0,0);
             return false;

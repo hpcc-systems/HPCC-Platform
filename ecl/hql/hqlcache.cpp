@@ -342,7 +342,7 @@ void convertSelectsToPath(StringBuffer & filename, const char * eclPath)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type, bool implicitConstantType=false)
+static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type)
 {
     switch (type->getTypeCode())
     {
@@ -355,23 +355,16 @@ static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type, boo
         return nullptr;
     case type_real:
     case type_decimal:
-        return createNullExpr(type);
     case type_int:
-        if (implicitConstantType)
         {
-            // This code is here to ensure the simplified definition is compatible with the expression parsed from
-            // its ECL representation. ECL integer constants cannot specify a type - and are always parsed as int8,
-            // so the constants are created as int8 for consistency.
-            Owned<ITypeInfo> tempType = makeIntType(8, true);
-            return createNullExpr(tempType);
+            return createValue(no_simplified, LINK(type));
         }
-        return createNullExpr(type);
     }
 
     return nullptr;
 }
 
-static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr, bool implicitConstantType=false)
+static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr)
 {
     if (expr->isFunction())
     {
@@ -417,7 +410,7 @@ static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr, bo
                     newDefaultsArray.append(*(LINK(defaultValue)));
                 else
                 {
-                    OwnedHqlExpr newDefault = createSimplifiedBodyDefinition(defaultValue->queryBody(), true);
+                    OwnedHqlExpr newDefault = createSimplifiedBodyDefinition(defaultValue->queryBody());
                     if (!newDefault)
                         return nullptr;
                     newDefaultsArray.append(*(newDefault.getClear()));
@@ -438,7 +431,7 @@ static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr, bo
     if (!type)
         return nullptr;
 
-    return createSimplifiedDefinitionFromType(type, implicitConstantType);
+    return createSimplifiedDefinitionFromType(type);
 }
 
 IHqlExpression * createSimplifiedDefinition(IHqlExpression * expr)
@@ -447,7 +440,12 @@ IHqlExpression * createSimplifiedDefinition(IHqlExpression * expr)
         return nullptr;
     OwnedHqlExpr simple = createSimplifiedBodyDefinition(expr);
     if (simple)
-        return expr->cloneAnnotation(simple);
+    {
+        if (simple==expr)
+            return nullptr;
+        OwnedHqlExpr newexpr =  expr->cloneAnnotation(simple);
+        return newexpr.getClear();
+    }
     return nullptr;
 }
 //---------------------------------------------------------------------------------------------------------------------

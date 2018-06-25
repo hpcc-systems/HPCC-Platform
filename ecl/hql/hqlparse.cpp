@@ -1938,7 +1938,16 @@ IValue *HqlLex::foldConstExpression(const YYSTYPE & errpos, IHqlExpression * exp
     }
 
     if (!value.get())
-        reportError(errpos, ERR_EXPECTED_CONST, "Constant expression expected"); // errpos could be better
+    {
+        if (yyParser->lookupCtx.syntaxChecking() && yyParser->lookupCtx.hasCacheLocation())
+        {
+            reportError(errpos, ERR_EXPECTED_CONST, "Unable to expand constant expression when using cache. Try disabling cache."); // errpos could be better
+        }
+        else
+        {
+            reportError(errpos, ERR_EXPECTED_CONST, "Constant expression expected"); // errpos could be better
+        }
+    }
 
     return value.getClear();
 }

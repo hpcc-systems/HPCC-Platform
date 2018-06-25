@@ -926,6 +926,7 @@ SERVICE             { RETURNHARD(SERVICE); }
 SET                 { RETURNSYM(SET); }
 __SET_DEBUG_OPTION__ { RETURNSYM(HASH_OPTION); }
 SHARED              { RETURNHARD(SHARED); }
+__SIMPLIFIED__      { RETURNSYM(__SIMPLIFIED__); }
 SIN                 { RETURNSYM(SIN); }
 SINGLE              { RETURNSYM(SINGLE); }
 SINH                { RETURNSYM(SINH); }
