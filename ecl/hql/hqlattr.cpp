@@ -556,7 +556,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_notify:
     case no_setgraphresult:
     case no_extractresult:
-    case no_unused81:
+    case no_simplified:
     case no_definesideeffect:
 
 // Scopes etc.
