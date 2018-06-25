@@ -1,0 +1,14 @@
+966a967,979
+>   <EspService build="_"
+>               buildSet="DynamicESDL"
+>               description="My ESDL Based Web Service Interface"
+>               LoggingManager=""
+>               name="dynamicesdl"
+>               namespaceBase="urn:hpccsystems:ws">
+>    <Properties bindingType="EsdlBinding"
+>                defaultPort="8043"
+>                defaultResourcesBasedn="ou=EspServices,ou=ecl"
+>                defaultSecurePort="18043"
+>                plugin="esdl_svc_engine"
+>                type="DynamicESDL"/>
+>   </EspService>

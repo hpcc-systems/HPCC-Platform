@@ -1,0 +1,19 @@
+#!/bin/bash
+
+
+rmv_computer()
+{
+   # Test remove_computer_ip_1
+   #--------------------------
+   test_id=computer_rmv_ip_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Remove computer . (localhost)
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -rmv-node computer@ip="."
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -rmv-node computer@ip="."
+
+}

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+run_setup()
+{
+   in_dir=${src_dir}/result_comparison
+   # default
+   #${bin_dir}/envgen2 -env-out ${out_dir}/env_base.xml -ip .
+
+   # dali
+   #${bin_dir}/envgen2 -env-out ${out_dir}/dali_mod_ip.xml -ip . -mod-node dali#mydali@ip=1.0.0.20
+
+   # roxie
+   ${bin_dir}/envgen2 -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/roxie_cluster_1.xml  -add-node roxie#myroxie@ip=1.0.0.30-31
+
+   # thor
+   ${bin_dir}/envgen2 -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/thor_cluster_1.xml  -add-node thor#mythor2:master@ip=1.0.0.26:slave@ip=1.0.0.32-33
+
+
+}

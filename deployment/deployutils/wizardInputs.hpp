@@ -105,6 +105,7 @@ public:
   void checkAndAddDependComponent(const char* key);
   unsigned getNumOfNodes(const char* compName);
   void setTopologyParam();
+  bool hasBaseInstantRequested();
 
  IMPLEMENT_IINTERFACE;
   bool generateEnvironment(StringBuffer& envXml);

@@ -1,0 +1,8 @@
+769c769
+<               enableSystemUseRewrite="false"
+---
+>               enableSystemUseRewrite="ture"
+913a914
+>               enableSystemUseRewrite="ture"
+942a944
+>               enableSystemUseRewrite="ture"

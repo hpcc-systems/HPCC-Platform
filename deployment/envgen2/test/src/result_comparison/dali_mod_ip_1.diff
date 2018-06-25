@@ -1,0 +1,21 @@
+35a36,39
+>   <Computer computerType="linuxmachine"
+>             domain="localdomain"
+>             name="node000020"
+>             netAddress="1.0.0.20"/>
+428a433,439
+>    <Instance computer="node000020"
+>              directory="/var/lib/HPCCSystems/mydafilesrv"
+>              name="s"
+>              netAddress="1.0.0.20"
+>              parallelRequestLimit="20"
+>              throttleCPULimit="75"
+>              throttleDelayMs="5000"/>
+435c446
+<    <Instance computer="node002015"
+---
+>    <Instance computer="node000020"
+438c449
+<              netAddress="."
+---
+>              netAddress="1.0.0.20"

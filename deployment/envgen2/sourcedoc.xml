@@ -18,15 +18,9 @@
 -->
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
 <section>
-    <title>deployment</title>
+  <title>deployment/envgen</title>
 
     <para>
-        The deployment directory contains the sources for the deployment library.
-    </para>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="configgen/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="deploy/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="deployutils/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="configenv/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="envgen/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="envgen2/sourcedoc.xml"/>
+    The deployment/envgen2 directory contains the sources for the deployment/envgen2 library.
+  </para>
 </section>
