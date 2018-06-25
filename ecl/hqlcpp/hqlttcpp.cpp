@@ -1453,17 +1453,22 @@ IHqlExpression * SequenceNumberAllocator::createTransformed(IHqlExpression * exp
             HqlExprArray args;
             ForEachChild(i, expr)
             {
-                OwnedHqlExpr next = transform(expr->queryChild(i));
-                if (!next->isAction())
+                LinkedHqlExpr cur = expr->queryChild(i);
+                if (!cur->isConstant())
                 {
-                    if (!next->isConstant())
-                        next.setown(createValue(no_evaluate_stmt, makeVoidType(), next.getClear()));
-                    else
-                        next.clear();
-                }
+                    if (!cur->isAction())
+                    {
+                        //For WHEN(a, b) generate WHEN(EVALUATE(a), b) instead of EVALUATE(WHEN(a,b))
+                        //since the code is generally cleaner and more efficient.
+                        HqlExprArray compoundArgs;
+                        cur->unwindList(compoundArgs, no_compound);
+                        unsigned last = compoundArgs.ordinality()-1;
+                        compoundArgs.replace(*createValue(no_evaluate_stmt, makeVoidType(), &OLINK(compoundArgs.item(last))), last);
+                        cur.setown(createCompound(compoundArgs));
+                    }
 
-                if (next)
-                    args.append(*next.getClear());
+                    args.append(*transform(cur));
+                }
             }
             return expr->clone(args);
         }
@@ -1533,6 +1538,98 @@ void HqlCppTranslator::allocateSequenceNumbers(HqlExprArray & exprs)
     transformer.transformRoot(exprs, sequenced);
     replaceArray(exprs, sequenced);
     maxSequence = transformer.getMaxSequence();
+}
+
+//---------------------------------------------------------------------------
+
+class NestedSequentialTransformer : public NewHqlTransformer
+{
+public:
+    NestedSequentialTransformer(HqlCppTranslator & _translator);
+
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
+
+protected:
+    virtual IHqlExpression * doTransformRootExpr(IHqlExpression * expr);
+
+protected:
+    HqlCppTranslator & translator; // should really be an error handler - could do with refactoring.
+};
+
+static HqlTransformerInfo nestedSequentialTransformerInfo("NestedSequentialTransformer");
+NestedSequentialTransformer::NestedSequentialTransformer(HqlCppTranslator & _translator) : NewHqlTransformer(nestedSequentialTransformerInfo), translator(_translator)
+{
+}
+
+IHqlExpression * NestedSequentialTransformer::doTransformRootExpr(IHqlExpression * expr)
+{
+    bool specialCase = expr->isAction();
+    switch (expr->getOperator())
+    {
+    case no_apply:
+        specialCase = false;
+        break;
+    case no_comma:
+    case no_stored:
+    case no_checkpoint:
+    case no_persist:
+    case no_critical:
+    case no_independent:
+    case no_once:
+    case no_success:
+    case no_failure:
+    case no_recovery:
+        specialCase = true;
+        break;
+    }
+
+    if (specialCase)
+    {
+        bool same = true;
+        HqlExprArray children;
+        ForEachChild(i, expr)
+        {
+            IHqlExpression * cur = expr->queryChild(i);
+            IHqlExpression * transformed = doTransformRootExpr(cur);
+            children.append(*transformed);
+            if (cur != transformed)
+                same = false;
+        }
+        if (!same)
+            return expr->clone(children);
+        return LINK(expr);
+    }
+    return transform(expr);
+}
+
+IHqlExpression * NestedSequentialTransformer::createTransformed(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_sequential:
+    {
+        translator.WARNINGAT(CategoryUnexpected, expr, HQLWRN_NestedSequentialUseOrdered);
+        HqlExprArray args;
+        transformChildren(expr, args);
+        return createAction(no_orderedactionlist, args);
+    }
+    case no_colon:
+    {
+        HqlExprArray args;
+        args.append(*transform(expr->queryChild(0)));
+        args.append(*doTransformRootExpr(expr->queryChild(1)));
+        return completeTransform(expr, args);
+    }
+    }
+    return NewHqlTransformer::createTransformed(expr);
+}
+
+void HqlCppTranslator::transformNestedSequential(HqlExprArray & exprs)
+{
+    HqlExprArray sequenced;
+    NestedSequentialTransformer transformer(*this);
+    transformer.transformRoot(exprs, sequenced);
+    replaceArray(exprs, sequenced);
 }
 
 //---------------------------------------------------------------------------
@@ -13709,6 +13806,13 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
     allocateSequenceNumbers(exprs);                                             // Added to all expressions/output statements etc.
 
     traceExpressions("allocate Sequence", exprs);
+
+    if (options.transformNestedSequential)
+    {
+        transformNestedSequential(exprs);
+        traceExpressions("transformNestedSequential", exprs);
+    }
+
     checkNormalized(exprs);
 }
 
