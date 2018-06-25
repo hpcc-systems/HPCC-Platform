@@ -1644,6 +1644,10 @@ void CTreeOptimizer::analyseExpr(IHqlExpression * expr)
         //only look at the filename - not the parent files.
         analyseExpr(expr->queryChild(0));
         return;
+    case no_attr_expr:
+        if (!isInternalAttributeName(expr->queryName()))
+            analyseChildren(expr);
+        return;
     }
 
     PARENT::analyseExpr(expr);

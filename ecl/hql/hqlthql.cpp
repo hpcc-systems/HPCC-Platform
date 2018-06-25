@@ -150,7 +150,7 @@ private:
                 return true;
             if (tryToRegenerate)
             {
-                if (name == jobTempAtom)
+                if (name == jobTempAtom || name == loopFirstAtom)
                     return true;
             }
         }

@@ -62,7 +62,6 @@ extern IAtom * insideOnCreateAtom;
 extern IAtom * insideOnStartAtom;
 extern IAtom * instanceAtom;
 extern IAtom * _loop_Atom;
-extern IAtom * _loopFirst_Atom;
 extern IAtom * mainprototypesAtom;
 extern IAtom * multiInstanceAtom;
 extern IAtom * _noAccess_Atom;

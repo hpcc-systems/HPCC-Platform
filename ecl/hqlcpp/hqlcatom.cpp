@@ -64,7 +64,6 @@ IAtom * insideOnCreateAtom;
 IAtom * insideOnStartAtom;
 IAtom * instanceAtom;
 IAtom * _loop_Atom;
-IAtom * _loopFirst_Atom;
 IAtom * mainprototypesAtom;
 IAtom * multiInstanceAtom;
 IAtom * _noAccess_Atom;
@@ -1504,7 +1503,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKESYSATOM(accessedFromChild);
     MAKESYSATOM(conditionalRowMarker);
     MAKESYSATOM(loop);
-    MAKESYSATOM(loopFirst);
     MAKESYSATOM(noAccess);
     MAKESYSATOM(noReplicate);
     MAKESYSATOM(noVirtual);

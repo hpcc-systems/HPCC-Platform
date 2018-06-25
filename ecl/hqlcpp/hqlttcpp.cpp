@@ -13437,7 +13437,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                     OwnedHqlExpr one = createConstant(createIntValue(1, counter->getType()));
                     firstCond.setown(quickFullReplaceExpression(firstCond, counter, one));
                 }
-                return appendOwnedOperand(transformed, createExprAttribute(_loopFirst_Atom, firstCond.getClear()));
+                return appendOwnedOperand(transformed, createExprAttribute(loopFirstAtom, firstCond.getClear()));
             }
             return transformed.getClear();
         }

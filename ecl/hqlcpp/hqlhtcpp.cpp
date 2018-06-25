@@ -8757,7 +8757,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
         buildReturn(func.ctx, loopCond);
     }
 
-    IHqlExpression * loopFirst = queryAttributeChild(expr, _loopFirst_Atom, 0);
+    IHqlExpression * loopFirst = queryAttributeChild(expr, loopFirstAtom, 0);
     if (loopFirst)
         doBuildBoolFunction(instance->startctx, "loopFirstTime", loopFirst);
 
@@ -9588,7 +9588,8 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     //expressions prevents child expressions from preventing fields from being removed.
     //Perform before the optimizeHqlExpression() so decisions about reducing row sizes are accurate
     traceExpression("BeforeImplicitProjectGraph", resourced);
-    resourced.setown(insertImplicitProjects(*this, resourced, false));
+    if (options.optimizeResourcedProjects)
+        resourced.setown(insertImplicitProjects(*this, resourced, false));
 
     // Call optimizer before resourcing so items get moved over conditions, and remove other items
     // which would otherwise cause extra spills.
