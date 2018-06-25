@@ -499,7 +499,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
             resp.updateStatus().setCode(m_esdlStore->bindService(espBindingName.str(),
                                                            methodstree.get(),
                                                            espProcName.str(),
-                                                           espPort,
+                                                           espPort.str(),
                                                            esdlDefIdSTR.str(),
                                                            esdlServiceName.str(),
                                                            msg,

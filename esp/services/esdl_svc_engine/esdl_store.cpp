@@ -456,6 +456,25 @@ public:
             return -1;
         }
 
+        if(espPort && *espPort)
+        {
+            while(*espPort == '0')
+                espPort++;
+
+            int ind = 0;
+            for ( ; espPort[ind]; ind++)
+            {
+                if (!isdigit(espPort[ind]))
+                    throw MakeStringException(-1, "Esp port can only be a positive integer.");
+            }
+            if(ind > 5)
+                throw MakeStringException(-1, "Esp port should be between 1 and 65535");
+
+            int port = atoi(espPort);
+            if(port <= 0 || port > 65535)
+                throw MakeStringException(-1, "Esp port should be between 1 and 65535");
+        }
+
         if (!definitionId || !*definitionId)
         {
             message.set("Could not configure DESDL service: Target Esdl definition id not available");
