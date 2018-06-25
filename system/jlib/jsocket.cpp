@@ -3016,6 +3016,48 @@ IpAddress &localHostToNIC(IpAddress &ip)
 
 // IpAddress
 
+bool getInterfaceName(StringBuffer &ifname)
+{
+#if defined(_WIN32) || defined(__APPLE__)
+    return false;
+#else
+    IpAddress myIp;
+    GetHostIp(myIp);
+
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);  // IPV6 TBD
+    if (fd<0)
+        return false;
+
+    MemoryAttr ma;
+    char *buf = (char *)ma.allocate(1024);
+
+    struct ifconf ifc;
+    ifc.ifc_len = 1024;
+    ifc.ifc_buf = buf;
+    if(ioctl(fd, SIOCGIFCONF, &ifc) < 0) // query interfaces
+    {
+        close(fd);
+        return false;
+    }
+
+    struct ifreq *ifr = ifc.ifc_req;
+    unsigned n = ifc.ifc_len/sizeof(struct ifreq);
+    for (unsigned i=0; i<n; i++)
+    {
+        struct ifreq *item = &ifr[i];
+        IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
+        if (iptest.ipequals(myIp))
+        {
+            ifname.set(item->ifr_name);
+            close(fd);
+            return true;
+        }
+    }
+
+    close(fd);
+    return false;
+#endif
+}
 
 inline bool isIp4(const unsigned *netaddr)
 {
@@ -3114,7 +3156,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
     // if IP4only or using MS V6 can only resolve IPv4 using 
     static bool recursioncheck = false; // needed to stop error message recursing
     unsigned retry=10;
-#if defined(__linux__) || defined (__APPLE__) ||defined(getaddrinfo)
+#if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
     if (IP4only) {
 #else
     {
