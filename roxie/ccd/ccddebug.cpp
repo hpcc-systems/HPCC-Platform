@@ -274,10 +274,10 @@ public:
         if (isOutput)
             totalTime += 10; // Fudge factor - I don't really know the times but this makes the graph more useable than not supplying a totalTime value
         if (totalTime)
-            putStatsValue(&node, "totalTime", "sum", totalTime);
+            putStatsValue(&node, "TimeTotalExecute", "sum", totalTime);
         unsigned localTime = isOutput ? 10 : (unsigned) (cycle_to_nanosec(in->queryActivity()->queryLocalCycles())/1000); // Fudge factor - I don't really know the times but this makes the graph more useable than not supplying a localTime value
         if (localTime)
-            putStatsValue(&node, "localTime", "sum", localTime);
+            putStatsValue(&node, "TimeLocalExecute", "sum", localTime);
     }
 
     void getEdgeProgressInfo(IPropertyTree &edge)
@@ -285,8 +285,8 @@ public:
         putStatsValue(&edge, "_roxieStarted", "sum", hasStarted);
         if (hasStarted)
         {
-            putStatsValue(&edge, "count", "sum", totalRowCount);
-            putStatsValue(&edge, "maxrowsize", "max", maxRowSize);
+            putStatsValue(&edge, "NumRowsProcessed", "sum", totalRowCount);
+            putStatsValue(&edge, "SizeMaxRowSize", "max", maxRowSize);
         }
     }
 };
