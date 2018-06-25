@@ -5139,7 +5139,8 @@ protected:
         // first renumber all above
         StringBuffer path;
         IPropertyTree *sub;
-        for (unsigned i=subfiles.ordinality();i>pos;i--) {
+        for (unsigned i=subfiles.ordinality();i>pos;i--)
+        {
             sub = root->queryPropTree(getSubPath(path.clear(),i-1).str());
             if (!sub)
                 throw MakeStringException(-1,"C(2): Corrupt subfile file part %d cannot be found",i);
@@ -5148,8 +5149,11 @@ protected:
         sub = createPTree();
         sub->setPropInt("@num",pos+1);
         sub->setProp("@name",file->queryLogicalName());
-        if (pos==0) {
-            resetFileAttr(createPTreeFromIPT(&file->queryAttributes()));
+        if (pos==0)
+        {
+            Owned<IPropertyTree> superAttrs = createPTreeFromIPT(&file->queryAttributes());
+            superAttrs->removeProp("Protect"); // do not automatically inherit protected status
+            resetFileAttr(superAttrs.getClear());
         }
         root->addPropTree("SubFile",sub);
         subfiles.add(*file.getClear(),pos);
@@ -5165,16 +5169,22 @@ protected:
             throw MakeStringException(-1,"CDistributedSuperFile(3): Corrupt subfile file part %d cannot be found",pos+1);
         root->removeTree(sub);
         // now renumber all above
-        for (unsigned i=pos+1; i<subfiles.ordinality(); i++) {
+        for (unsigned i=pos+1; i<subfiles.ordinality(); i++)
+        {
             sub = root->queryPropTree(getSubPath(path.clear(),i).str());
             if (!sub)
                 throw MakeStringException(-1,"CDistributedSuperFile(2): Corrupt subfile file part %d cannot be found",i+1);
             sub->setPropInt("@num",i);
         }
         subfiles.remove(pos);
-        if (pos==0) {
+        if (pos==0)
+        {
             if (subfiles.ordinality())
-                resetFileAttr(createPTreeFromIPT(&subfiles.item(0).queryAttributes()));
+            {
+                Owned<IPropertyTree> superAttrs = createPTreeFromIPT(&subfiles.item(0).queryAttributes());
+                superAttrs->removeProp("Protect"); // do not automatically inherit protected status
+                resetFileAttr(superAttrs.getClear());
+            }
             else
                 resetFileAttr(getEmptyAttr());
         }
