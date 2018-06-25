@@ -2239,34 +2239,6 @@ extern jhtree_decl void resetIndexMetrics()
     queryKeyStore()->resetMetrics();
 }
 
-extern jhtree_decl bool isKeyFile(const char *filename)
-{
-    OwnedIFile file = createIFile(filename);
-    OwnedIFileIO io = file->open(IFOread);
-    unsigned __int64 size = file->size();
-    if (size)
-    {
-        KeyHdr hdr;
-        if (io->read(0, sizeof(hdr), &hdr) == sizeof(hdr))
-        {
-            _WINREV(hdr.phyrec);
-            _WINREV(hdr.root);
-            _WINREV(hdr.nodeSize);
-            if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.root && hdr.root % hdr.nodeSize == 0)
-            {
-                NodeHdr root;
-                if (io->read(hdr.root, sizeof(root), &root) == sizeof(root))
-                {
-                    _WINREV(root.rightSib);
-                    _WINREV(root.leftSib);
-                    return root.leftSib==0 && root.rightSib==0;
-                }
-            }
-        }
-    }
-    return false;
-}
-
 extern jhtree_decl bool setNodeCachePreload(bool preload)
 {
     return queryNodeCache()->setNodeCachePreload(preload);

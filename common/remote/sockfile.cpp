@@ -4399,12 +4399,21 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
     const char *kindStr = actNode.queryProp("kind");
 
     ThorActivityKind kind = TAKnone;
-    if (strieq("diskread", kindStr))
-        kind = TAKdiskread;
-    else if (strieq("indexread", kindStr))
-        kind = TAKindexread;
-    else if (strieq("indexcount", kindStr))
-        kind = TAKindexcount;
+    if (kindStr)
+    {
+        if (strieq("diskread", kindStr))
+            kind = TAKdiskread;
+        else if (strieq("indexread", kindStr))
+            kind = TAKindexread;
+        else if (strieq("indexcount", kindStr))
+            kind = TAKindexcount;
+        // else - auto-detect
+    }
+
+    const char *fileName = actNode.queryProp("fileName");
+    if (isEmptyString(fileName))
+        throw MakeStringException(0, "createRemoteActivity: fileName missing");
+
     Owned<IRemoteActivity> activity;
     switch (kind)
     {
@@ -4423,8 +4432,35 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
             activity.setown(createRemoteIndexCount(actNode));
             break;
         }
-        default:
-            throwUnexpected(); // for now
+        default: // auto-detect file format
+        {
+            const char *action = actNode.queryProp("action");
+            if (isIndexFile(fileName))
+            {
+                if (!isEmptyString(action))
+                {
+                    if (streq("count", action))
+                        activity.setown(createRemoteIndexCount(actNode));
+                    else
+                        throwStringExceptionV(0, "Unknown action '%s' on index '%s'", action, fileName);
+                }
+                else
+                    activity.setown(createRemoteIndexRead(actNode));
+            }
+            else // flat file
+            {
+                if (!isEmptyString(action))
+                {
+                    if (streq("count", action))
+                        throwStringExceptionV(0, "Remote Disk Counts currently unsupported");
+                    else
+                        throwStringExceptionV(0, "Unknown action '%s' on flat file '%s'", action, fileName);
+                }
+                else
+                    activity.setown(createRemoteDiskRead(actNode));
+            }
+            break;
+        }
 
     }
     return activity.getClear();
@@ -6147,7 +6183,7 @@ public:
          *  "node" : {
          *   "kind" : "indexread",
          *   "fileName": "examplefilename",
-         *   "keyLilter" : "f1='1    '",
+         *   "keyFilter" : "f1='1    '",
          *   "rowLimit" : 5,
          *   "input" : {
          *    "f1" : "string5",
@@ -6163,8 +6199,8 @@ public:
          * {
          *  "format" : "xml",
          *  "node" : {
-         *   "kind" : "indexcount",
-         *   "fileName": "examplefilename",
+         *   "action" : "count",            // if present performs count with/without filter and returns count
+         *   "fileName": "examplefilename", // can be either index or flat file
          *   "keyFilter" : "f1='1    '",
          *   "rowLimit" : 5
          *   "input" : {

@@ -151,7 +151,8 @@ extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc,
 extern jhtree_decl IKeyIndex *createKeyIndex(IReplicatedFile &part, unsigned crc, bool isTLK, bool preloadAllowed);
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IDelayedFile &ifile, bool isTLK, bool preloadAllowed);
 
-extern jhtree_decl bool isKeyFile(const char *keyfile);
+extern jhtree_decl bool isIndexFile(const char *fileName);
+extern jhtree_decl bool isIndexFile(IFile *file);
 extern jhtree_decl void validateKeyFile(const char *keyfile, offset_t nodepos = 0);
 extern jhtree_decl IKeyIndexSet *createKeyIndexSet();
 extern jhtree_decl IKeyArray *createKeyArray();
@@ -305,6 +306,7 @@ public:
 };
 
 extern jhtree_decl bool isCompressedIndex(const char *filename);
+extern jhtree_decl bool isIndexFile(IFileIO *fileIO);
 extern jhtree_decl bool isIndexFile(IFile *filename);
 
 extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager);
