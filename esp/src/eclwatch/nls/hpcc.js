@@ -249,6 +249,7 @@ define({root:
     Finished: "Finished",
     FindNext: "Find Next",
     FindPrevious: "Find Previous",
+    FirstN: "First N",
     FirstName: "First Name",
     FirstNRows: "First N Rows",
     Fixed: "Fixed",
