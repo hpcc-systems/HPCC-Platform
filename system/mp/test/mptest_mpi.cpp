@@ -165,9 +165,13 @@ void TEST_one_from_all(ICommunicator* comm, rank_t nodeRank){
 
 CriticalSection sendCriticalSec;
 CriticalSection recvCriticalSec;
+CriticalSection validateCriticalSec;
 int getNextCount(CriticalSection &sect, int &count){
     CriticalBlock block(sect);
-    return count--;
+    if (count)
+        return count--;
+    else
+        return 0;
 }
 
 void TEST_MT_simple_send_recv(ICommunicator* comm){
@@ -220,14 +224,27 @@ void TEST_MT_simple_send_recv(ICommunicator* comm){
     }
     comm->barrier();
 }
+bool* validate;
+
+//validate that numbers from 1 to maxCounter are received only once
+void setValidate(int i, int maxCounter){
+    CriticalBlock block(validateCriticalSec);
+    assertex(i>0);
+    assertex(i<=maxCounter);
+    assertex(validate[i-1] == false);
+    validate[i-1] = true;
+}
 
 void TEST_MT_send_recv(ICommunicator* comm, int counter){
     assertex(comm->getGroup()->ordinality()>1);
     int SEND_THREADS, RECV_THREADS;
-    SEND_THREADS = RECV_THREADS = 1;
+    SEND_THREADS = RECV_THREADS = 8;
     rank_t rank = comm->getGroup()->rank();
+
     // nodes ranked 0 and 1 will be conducting this test
     if (rank<2){
+        validate = new bool[counter];
+        for(int i=0; i<counter; i++) validate[i] = false;
         class SWorker: public Thread{
         private:
             ICommunicator* comm;
@@ -241,17 +258,19 @@ void TEST_MT_send_recv(ICommunicator* comm, int counter){
                 rank_t destination_rank = 1 - rank;
 
                 CMessageBuffer sendMsg;
+                int served = 0;
                 while(true){
                     sendMsg.clear();
                     int v = getNextCount(sendCriticalSec, *counter);
                     if (v > 0){
                         sendMsg.append(v);
-                        printf("%d: b4 send\n", rank);
                         comm->send(sendMsg, destination_rank, MPTAG_TEST);
+                        served++;
                     } else {
                         break;
                     }
                 }
+                _T("This thread sent "<<served);
                 return 0;
             }
         };
@@ -259,32 +278,35 @@ void TEST_MT_send_recv(ICommunicator* comm, int counter){
         private:
             ICommunicator* comm;
             int* counter;
+            int maxCounter;
+
         public:
-            RWorker(ICommunicator* _comm, int* _counter):comm(_comm), counter(_counter){}
+            RWorker(ICommunicator* _comm, int* _counter):comm(_comm), counter(_counter), maxCounter(*_counter){}
             int run(){
                 IGroup *group = comm->getGroup();
                 rank_t p = group->ordinality();
                 rank_t rank = group->rank();
                 rank_t source_rank = 1 - rank;
-
+                int served = 0;
                 CMessageBuffer recvMsg;
                 int received_msg;
                 while (*counter){
                     recvMsg.clear();
-                    printf("%d: b4 recv\n", rank);
                     if (comm->recv(recvMsg, source_rank, MPTAG_TEST, NULL, 100)){
-                        printf("%d: recved\n", rank);
                         recvMsg.read(received_msg);
-                        //TODO validate received messge
+                        setValidate(received_msg, maxCounter);
                         getNextCount(recvCriticalSec, *counter);
+                        served++;
                     }
                 }
+                _T("This thread received "<<served);
                 return 0;
             }
         };
         std::vector<Thread*> workers;
         int s_counter, r_counter;
         s_counter = r_counter = counter;
+        _T("counter="<<counter);
         for(int i=0;i<SEND_THREADS; i++){
             workers.push_back(new SWorker(comm, &s_counter));
         }
@@ -297,11 +319,14 @@ void TEST_MT_send_recv(ICommunicator* comm, int counter){
         for(int i=0;i<workers.size(); i++){
             workers[i]->join();
         }
-//        for(int i=0;i<workers.size(); i++){
-//            delete workers[i];
-//        }
-        PrintLog("Rank %d sent %d messages", rank, s_counter);
-        PrintLog("Rank %d received %d messages", rank, r_counter);
+        for(int i=0;i<workers.size(); i++){
+            delete workers[i];
+        }
+        assertex(s_counter == 0);
+        assertex(r_counter == 0);
+        PrintLog("Rank %d sent %d messages", rank, (counter-s_counter));
+        PrintLog("Rank %d received %d messages", rank, (counter-r_counter));
+        delete validate;
     }
     comm->barrier();
 }
