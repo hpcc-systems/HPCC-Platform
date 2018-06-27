@@ -302,14 +302,10 @@ public:
 
     void cancel(rank_t srcrank, mptag_t tag)
     {
-        _TF("recv", srcrank, tag);
-        //TODO
-        UNIMPLEMENTED;
-//        assertex(srcrank!=RANK_NULL);
-//        std::vector<hpcc_mpi::CommRequest> req = group->getCommRequest(srcrank, tag);
-//        if (req.size() > 0){
-//            for(int i=0;i<req.size();i++) hpcc_mpi::cancelComm(req[i]);
-//        }
+        _TF("cancel", srcrank, tag);
+        assertex(srcrank!=RANK_NULL);
+        //cancel only recv calls?
+        hpcc_mpi::cancelComm(false, srcrank, tag, comm);
     }
 
     bool verifyConnection(rank_t rank,  unsigned timeout)
