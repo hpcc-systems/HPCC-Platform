@@ -436,6 +436,15 @@ public:
         return m_SecurityHandler.validateSecFeatureAccess(pszFeatureUrl, required, throwExcpt);
     }
 
+    virtual void ensureFeatureAccess(const char* pszFeatureUrl, unsigned required, unsigned excCode, const char* excMsg)
+    {
+        if (!validateFeatureAccess(pszFeatureUrl, required, false))
+        {
+            setAuthStatus(AUTH_STATUS_NOACCESS);
+            throw MakeStringException(excCode, "%s", excMsg);
+        }
+    }
+
     void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms, ...) __attribute__((format(printf, 5, 6)));
     void AuditMessage(AuditType type, const char *filterType, const char *title);
 
