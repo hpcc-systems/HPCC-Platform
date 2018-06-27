@@ -341,7 +341,7 @@ bool Cws_config2Ex::onGetNode(IEspContext &context, IEspNodeRequest &req, IEspGe
 
     getNodeResponse(pNode, resp);
     pNode->validate(status, false);  // validate this node only
-    addStatusToResponse(status, pSession, reinterpret_cast<IEspStatusResponse &>(resp));
+    buildStatusResponse(status, pSession, resp.updateStatus());
 
     //
     // Finalize the response
@@ -373,7 +373,7 @@ bool Cws_config2Ex::onInsertNode(IEspContext &context, IEspInsertNodeRequest &re
         throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "Environment node ID is not valid");
     }
 
-    addStatusToResponse(status, pSession, reinterpret_cast<IEspStatusResponse &>(resp));
+    buildStatusResponse(status, pSession, resp.updateStatus());
     return true;
 }
 
@@ -394,7 +394,7 @@ bool Cws_config2Ex::onRemoveNode(IEspContext &context, IEspRemoveNodeRequest &re
 
     pSession->modified = true;
     pSession->m_pEnvMgr->validate(status, false);
-    addStatusToResponse(status, pSession, resp);
+    buildStatusResponse(status, pSession, resp.updateStatus());
     return true;
 }
 
@@ -406,7 +406,7 @@ bool Cws_config2Ex::onValidateEnvironment(IEspContext &context, IEspValidateEnvi
     ConfigMgrSession *pSession = getConfigSession(sessionId, true);
 
     pSession->m_pEnvMgr->validate(status, req.getIncludeHiddenNodes());
-    addStatusToResponse(status, pSession, resp);
+    buildStatusResponse(status, pSession, resp.updateStatus());
     return true;
 }
 
@@ -441,7 +441,7 @@ bool Cws_config2Ex::onSetValues(IEspContext &context, IEspSetValuesRequest &req,
 
     pNode->setAttributeValues(values, status, allowInvalid, forceCreate);
     pSession->modified = true;
-    addStatusToResponse(status, pSession, resp);
+    buildStatusResponse(status, pSession, resp.updateStatus());
     return true;
 }
 
@@ -542,10 +542,10 @@ bool Cws_config2Ex::onFetchNodes(IEspContext &context, IEspFetchNodesRequest &re
     return true;
 }
 
-void Cws_config2Ex::addStatusToResponse(const Status &status, ConfigMgrSession *pSession, IEspStatusResponse &resp) const
+
+void Cws_config2Ex::buildStatusResponse(const Status &status, ConfigMgrSession *pSession, IEspStatusType &respStatus) const
 {
     std::vector<statusMsg> statusMsgs = status.getMessages();
-
 
     IArrayOf<IEspStatusMsgType> msgs;
     for (auto msgIt=statusMsgs.begin(); msgIt!=statusMsgs.end(); ++msgIt)
@@ -567,8 +567,8 @@ void Cws_config2Ex::addStatusToResponse(const Status &status, ConfigMgrSession *
         msgs.append(*pStatusMsg.getLink());
     }
 
-    resp.updateStatus().setStatus(msgs);
-    resp.updateStatus().setError(status.isError());
+    respStatus.setStatusMessages(msgs);
+    respStatus.setError(status.isError());
 }
 
 
@@ -644,7 +644,7 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
 
     //
     // Now the children
-    IArrayOf<IEspNodeType> childNodes;
+    IArrayOf<IEspNode> childNodes;
     if (pNode->hasChildren())
     {
         std::vector<std::shared_ptr<EnvironmentNode>> children;
@@ -653,7 +653,7 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
         {
             std::shared_ptr<EnvironmentNode> pChildEnvNode = *it;
             const std::shared_ptr<SchemaItem> pSchemaItem = pChildEnvNode->getSchemaItem();
-            Owned<IEspNodeType> pChildNode = createNodeType();
+            Owned<IEspNode> pChildNode = createNode();
             getNodeInfo(pChildEnvNode, pChildNode->updateNodeInfo());
             pChildNode->setNodeId(pChildEnvNode->getId().c_str());
             pChildNode->setNumChildren(pChildEnvNode->getNumChildren());
@@ -707,7 +707,11 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
 
         const std::shared_ptr<SchemaValue> &pNodeSchemaValue = pNodeSchemaItem->getItemSchemaValue();
         const std::shared_ptr<SchemaType> &pType = pNodeSchemaValue->getType();
-        resp.updateValue().updateType().setName(pType->getName().c_str());
+        resp.updateValue().updateType().setBaseType(pType->getBaseType().c_str());
+        resp.updateValue().updateType().setSubType(pType->getSubType().c_str());
+        resp.updateValue().setRequired(pNodeSchemaValue->isRequired());
+        resp.updateValue().setReadOnly(pNodeSchemaValue->isReadOnly());
+        resp.updateValue().setHidden(pNodeSchemaValue->isHidden());
 
         if (pType->getLimits()->isMaxSet())
         {
@@ -724,27 +728,6 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
         {
             const std::shared_ptr<EnvironmentValue> &pLocalValue = pNode->getLocalEnvValue();
             resp.updateValue().setCurrentValue(pLocalValue->getValue().c_str());
-
-            //
-            // Type information
-            const std::shared_ptr<SchemaValue> pLocalSchemaValue = pLocalValue->getSchemaValue();
-            const std::shared_ptr<SchemaType> &pLocalType = pLocalSchemaValue->getType();
-            std::shared_ptr<SchemaTypeLimits> &pLimits = pLocalType->getLimits();
-            resp.updateValue().updateType().setName(pLocalType->getName().c_str());
-            if (pLocalType->getLimits()->isMaxSet())
-            {
-                resp.updateValue().updateType().updateLimits().setMaxValid(true);
-                resp.updateValue().updateType().updateLimits().setMax(pLocalType->getLimits()->getMax());
-            }
-            if (pLocalType->getLimits()->isMinSet())
-            {
-                resp.updateValue().updateType().updateLimits().setMinValid(true);
-                resp.updateValue().updateType().updateLimits().setMin(pLocalType->getLimits()->getMin());
-            }
-
-            resp.updateValue().setRequired(pLocalSchemaValue->isRequired());
-            resp.updateValue().setReadOnly(pLocalSchemaValue->isReadOnly());
-            resp.updateValue().setHidden(pLocalSchemaValue->isHidden());
         }
     }
 }
@@ -758,8 +741,8 @@ void Cws_config2Ex::getNodeInfo(const std::shared_ptr<EnvironmentNode> &pNode, I
     // Fill in base node info struct
     getNodeInfo(pNodeSchemaItem, nodeInfo);      // fill it in based on schema
     getNodeDisplayName(pNode, nodeDisplayName);  // possibly override the displayname
-    nodeInfo.setName(nodeDisplayName.c_str());
-    nodeInfo.setNodeName(pNode->getName().c_str());
+    nodeInfo.setDisplayName(nodeDisplayName.c_str());
+    nodeInfo.setName(pNode->getName().c_str());
 }
 
 
@@ -767,12 +750,15 @@ void Cws_config2Ex::getNodeInfo(const std::shared_ptr<SchemaItem> &pNodeSchemaIt
 {
     //
     // Fill in base node info struct
-    nodeInfo.setName(pNodeSchemaItem->getProperty("displayName").c_str());
+    std::string displayName = pNodeSchemaItem->getProperty("displayName");
+    nodeInfo.setDisplayName(displayName.c_str());
     nodeInfo.setNodeType(pNodeSchemaItem->getItemType().c_str());
     nodeInfo.setClass(pNodeSchemaItem->getProperty("className").c_str());
-    nodeInfo.setCategory(pNodeSchemaItem->getProperty("category").c_str());
     nodeInfo.setTooltip(pNodeSchemaItem->getProperty("tooltip").c_str());
     nodeInfo.setHidden(pNodeSchemaItem->isHidden());
+
+    std::string category = pNodeSchemaItem->getProperty("category");
+    nodeInfo.setCategory((!category.empty()) ? category.c_str() : displayName.c_str());
 }
 
 
@@ -791,7 +777,8 @@ void Cws_config2Ex::getAttributes(const std::vector<std::shared_ptr<EnvironmentV
 
         const std::shared_ptr<SchemaType> &pType = pSchemaValue->getType();
         std::shared_ptr<SchemaTypeLimits> &pLimits = pType->getLimits();
-        pAttribute->updateType().setName(pType->getName().c_str());
+        pAttribute->updateType().setBaseType(pType->getBaseType().c_str());
+        pAttribute->updateType().setSubType(pType->getSubType().c_str());
         if (pType->getLimits()->isMaxSet())
         {
             pAttribute->updateType().updateLimits().setMaxValid(true);

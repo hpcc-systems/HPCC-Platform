@@ -75,6 +75,13 @@ void XMLEnvironmentLoader::parse(const pt::ptree &envTree, const std::shared_ptr
         if (!value.empty())
         {
             std::shared_ptr<SchemaValue> pCfgValue = pConfigItem->getItemSchemaValue();
+            if (!pCfgValue)
+            {
+                pCfgValue = std::make_shared<SchemaValue>("", false);
+                pCfgValue->setType(pConfigItem->getSchemaValueType("default"));
+                pConfigItem->setItemSchemaValue(pCfgValue);
+            }
+
             std::shared_ptr<EnvironmentValue> pEnvValue = std::make_shared<EnvironmentValue>(pEnvNode, pCfgValue, "");  // node's value has no name
             pEnvValue->setValue(value, nullptr);
             pEnvNode->setLocalEnvValue(pEnvValue);
