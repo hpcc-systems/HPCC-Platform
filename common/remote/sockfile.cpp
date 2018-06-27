@@ -6300,6 +6300,8 @@ public:
         {
             responseWriter.setown(createIXmlWriterExt(0, 0, nullptr, outFmt_Xml == outputFormat ? WTStandard : WTJSON));
             responseWriter->outputBeginNested("Response", true);
+            if (outFmt_Xml == outputFormat)
+                responseWriter->outputCString("urn:hpcc:dfs", "@xmlns:dfs");
             responseWriter->outputUInt(cursorHandle, sizeof(cursorHandle), "handle");
         }
         if (cursorHandle)
@@ -6376,9 +6378,11 @@ public:
             }
             else
             {
+                responseWriter->outputBeginArray("Row");
                 if (grouped)
                 {
                     bool pastFirstRow = outputActivity->queryProcessed()>0;
+                    bool first = true;
                     do
                     {
                         size32_t rowSz;
@@ -6392,23 +6396,29 @@ public:
                             }
                             else
                             {
-                                responseWriter->outputBeginNested("Eog", false);
-                                responseWriter->outputEndNested("Eog");
                                 row = outputActivity->nextRow(outBuilder, rowSz);
                                 if (!row)
                                 {
                                     eoi = true;
                                     break;
                                 }
+                                if (first) // possible if eog was 1st row on next packet
+                                    responseWriter->outputBeginNested("Row", false);
+                                responseWriter->outputBool(true, "dfs:Eog"); // field name cannot clash with an ecl field name
                             }
                         }
-                        responseWriter->outputBeginNested("Row", true);
+                        if (pastFirstRow)
+                            responseWriter->outputEndNested("Row"); // close last row
+
+                        responseWriter->outputBeginNested("Row", false);
                         out->toXML((const byte *)row, *responseWriter);
-                        responseWriter->outputEndNested("Row");
                         resultBuffer.clear();
                         pastFirstRow = true;
+                        first = false;
                     }
                     while (responseWriter->length() < replyLimit);
+                    if (pastFirstRow)
+                        responseWriter->outputEndNested("Row"); // close last row
                 }
                 else
                 {
@@ -6421,13 +6431,14 @@ public:
                             eoi = true;
                             break;
                         }
-                        responseWriter->outputBeginNested("Row", true);
+                        responseWriter->outputBeginNested("Row", false);
                         out->toXML((const byte *)row, *responseWriter);
                         responseWriter->outputEndNested("Row");
                         resultBuffer.clear();
                     }
                     while (responseWriter->length() < replyLimit);
                 }
+                responseWriter->outputEndArray("Row");
                 if (!eoi)
                 {
                     MemoryBuffer cursorMb;
