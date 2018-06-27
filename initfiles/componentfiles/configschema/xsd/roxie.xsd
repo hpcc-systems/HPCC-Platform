@@ -69,7 +69,7 @@
                                             <xs:attribute name="allow" type="yesno" hpcc:displayName="Allow" use="required" default="yes"/>
                                             <xs:attribute name="ip" type="ipV4Address" hpcc:displayName="IP Address" use="optional" default="0.0.0.0" hpcc:tooltip="IP Address of target system"/>
                                             <xs:attribute name="mask" type="ipV4Address" hpcc:displayName="Internet Mask" use="optional" default="255.255.255.255" hpcc:tooltip="Internet address mask"/>
-                                            <xs:attribute name="query" type="xs:string" hpcc:displayName="Query Wildcard" use="optional" hpcc:codeDefault=".*" hpcc:tooltip="wildcard for queries to allow/disallow"/>
+                                            <xs:attribute name="query" type="xs:string" hpcc:displayName="Query Wildcard" use="optional" hpcc:defaultInCode=".*" hpcc:tooltip="wildcard for queries to allow/disallow"/>
                                             <xs:attribute name="errorCode" type="xs:nonNegativeInteger" hpcc:displayName="Error Code" use="optional" hpcc:tooltip="optional error code to associate with the query"/>
                                             <xs:attribute name="error" type="xs:string" hpcc:displayName="Error Message" use="optional" hpcc:tooltip="optional error message to associate with the query"/>
                                             <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="ACLrule" hpcc:tooltip="Name of this Access Control Rule"/>
@@ -99,11 +99,11 @@
                     <xs:attribute name="description" type="xs:string" hpcc:displayName="Description" use="optional" default="Roxie cluster" hpcc:tooltip="Description for this process"/>
                     <xs:attribute name="daliServers" type="xs:string" hpcc:displayName="Dali Server" use="optional" hpcc:tooltip="Specifies the dali server to which this roxie is attached"/>
                     <xs:attribute name="lockDali" type="xs:boolean" hpcc:displayName="Lock Dali" use="optional" default="false" hpcc:tooltip="If set, Roxie will use cached info from dali only, and will not connect to dali or refresh the cache"/>
-                    <!-- hpcc:codeDefault instead? -->
+                    <!-- hpcc:defaultInCode instead? -->
                     <xs:attribute name="multicastBase" type="ipV4Address" hpcc:displayName="Multicast Base IP Address" use="optional" default="239.1.1.1" hpcc:tooltip="The base multicast IP for this roxie cluster. Multicast ranges must not overlap for any roxie clusters in the same multicast domain"/>
-                    <!-- hpcc:codeDefault instead? current default looks pretty specific -->
+                    <!-- hpcc:defaultInCode instead? current default looks pretty specific -->
                     <xs:attribute name="multicastLast" type="ipV4Address" hpcc:displayName="Multicast Last IP Address" use="optional" default="239.1.254.254" hpcc:tooltip="The last multicast IP available for this roxie cluster. Multicast ranges must not overlap for any roxie clusters in the same multicast domain"/>
-                    <!-- hpcc:codeDefault instead? current default looks pretty specific, should this be required if multicastBase is set? -->
+                    <!-- hpcc:defaultInCode instead? current default looks pretty specific, should this be required if multicastBase is set? -->
                     <xs:attribute name="multicastTTL" type="xs:nonNegativeInteger" hpcc:displayName="Multicat Time To Live" use="optional" default="1" hpcc:tooltip="The multicast TTL (Time To Live) setting for this roxie cluster.  Zero means do not explicitly set TTL, and use the default OS setting"/>
                     <xs:attribute name="directory" type="absolutePath" hpcc:displayName="Directory" use="optional" default="${EXEC_PREFIX}/lib/${DIR_NAME}/roxie/" hpcc:tooltip="Specifies the directory to which the software will be deployed"/>
                     <!-- @XSD_PLUGIN_DEFINITION@ LN injects an attribute!! -->

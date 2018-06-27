@@ -86,9 +86,18 @@ void EnvironmentValue::validate(Status &status, const std::string &myId) const
         // Will generate status based on current value and type
         m_pSchemaValue->validate(status, myId, this);
     }
-    else if (m_pSchemaValue->isRequired())
+    else
     {
-        status.addMsg(statusMsg::error, myId, m_name, "Required value has not been set");
+        if (m_pSchemaValue->isRequired())
+        {
+            status.addMsg(statusMsg::error, myId, m_name, "Required value has not been set");
+        }
+
+        if (m_pSchemaValue->hasDefaultValue())
+        {
+            std::string msg = "No value provided, default value of " + m_pSchemaValue->getDefaultValue() + " will be used.";
+            status.addMsg(statusMsg::warning, myId, m_name, msg);
+        }
     }
 }
 

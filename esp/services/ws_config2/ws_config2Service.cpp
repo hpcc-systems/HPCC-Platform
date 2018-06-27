@@ -873,8 +873,10 @@ void Cws_config2Ex::getAttributes(const std::shared_ptr<EnvironmentNode> &pEnvNo
             if (pEnvValue)
             {
                 pAttribute->setCurrentValue(pEnvValue->getValue().c_str());
-                pAttribute->setDefaultValue(pSchemaValue->getDefaultValue().c_str());
             }
+
+            pAttribute->setDefaultValue(pSchemaValue->getDefaultValue().c_str());
+            pAttribute->setDefaultInCode(pSchemaValue->getCodeDefault().c_str());
 
             pAttribute->setIsPresentInEnvironment(static_cast<bool>(pEnvValue));
             nodeAttributes.append(*pAttribute.getLink());
