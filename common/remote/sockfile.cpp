@@ -403,7 +403,6 @@ const char *RFCStrings[] =
     RFCText(RFCreadfilteredcount),
     RFCText(RFCreadfilteredblob),
     RFCText(RFCStreamRead),
-    RFCText(RFCunknown),
 };
 static const char *getRFCText(RemoteFileCommandType cmd)
 {
@@ -413,7 +412,7 @@ static const char *getRFCText(RemoteFileCommandType cmd)
     {
         unsigned elems = sizeof(RFCStrings) / sizeof(RFCStrings[0]);
         if (cmd >= elems)
-            cmd = RFCunknown;
+            return "RFCunknown";
         return RFCStrings[cmd];
     }
 }
