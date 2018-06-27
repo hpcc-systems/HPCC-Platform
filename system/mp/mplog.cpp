@@ -24,7 +24,30 @@
 LogMsgChildReceiverThread * childReceiver;
 LogMsgParentReceiverThread * parentReceiver;
 ILogMsgManager * listener;
-
+#ifdef DEBUG
+    #include <mutex>
+    int debug_thread_id_counter = 0;
+    std::mutex debug_thread_id_counter_m;
+    int get_unique_thread_id(){
+        int id;
+        debug_thread_id_counter_m.lock();
+        id = debug_thread_id_counter++;
+        debug_thread_id_counter_m.unlock();
+        return id;
+    }
+    thread_local int debug_counter = 0;
+    int global_proc_rank;
+    thread_local int debug_thread_id = get_unique_thread_id();
+    void trace_print_func_data(std::stringstream &stream, int first_arg){
+        stream << ")"<<nl;
+    }
+    std::string trace_prefix(){
+        std::stringstream stream;
+        debug_counter++;
+        stream << "TRACE: " << "[" << global_proc_rank << ":"<< debug_thread_id <<"] ("<< debug_counter << ") ";
+        return stream.str();
+    }
+#endif
 // PARENT-SIDE CLASSES
 
 // LogMsgLogReceiverThread

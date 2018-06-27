@@ -26,7 +26,7 @@
 
 #include "platform.h"
 #include "portlist.h"
-//#include "jlib.hpp"
+#include <vector>
 #include <limits.h>
 
 #include <unistd.h>
@@ -79,14 +79,63 @@
 #define _TRACING
 
 class NodeCommunicator: public ICommunicator, public CInterface{
+private:
+    class SelfMessage{
+        mptag_t mptag;
+        CMessageBuffer* message = NULL;
+    public:
+        SelfMessage(mptag_t _tag, CMessageBuffer* _message): mptag(_tag), message(_message){};
+        bool isTag(mptag_t _tag){
+            return mptag == _tag;
+        }
+        CMessageBuffer *getMessage(){
+            return message;
+        }
+        mptag_t tag(){
+            return mptag;
+        }
+
+        ~SelfMessage(){
+            if (message){
+                delete message;
+            }
+        }
+    };
     NodeGroup *group;
     bool outer;
     rank_t myrank;
+    std::vector<SelfMessage*> selfMessages;
+    CriticalSection selfMessagesLock;
+private:
+    void addSelfMessage(SelfMessage *selfMessage){
+        _TF("addSelfMessage", selfMessage->tag());
+        CriticalBlock block(selfMessagesLock);
+        selfMessages.push_back(selfMessage);
+    }
+
+    SelfMessage *popSelfMessage(mptag_t tag){
+        _TF("popSelfMessage", tag);
+        CriticalBlock block(selfMessagesLock);
+        int index = -1;
+        for(int i=0; i< selfMessages.size(); i++){
+            if (selfMessages[i]->isTag(tag)){
+                index = i;
+                break;
+            }
+        }
+        SelfMessage *ret = NULL;
+        if (index != -1){
+            ret = selfMessages[index];
+            selfMessages.erase(selfMessages.begin()+index);
+        }
+        return ret;
+    }
 
 public:
     IMPLEMENT_IINTERFACE;
 
     bool send(CMessageBuffer &mbuf, rank_t dstrank, mptag_t tag, unsigned timeout){ 
+        _TF("send", dstrank, tag, timeout);
         assertex(dstrank!=RANK_NULL);
         CTimeMon tm(timeout);
         rank_t myrank = group->rank();
@@ -109,14 +158,22 @@ public:
             endrank = startrank;
         }
         for (;startrank<=endrank;startrank++) {
-            if ((startrank!=RANK_ALL_OTHER) || (startrank!=myrank)) {
+            if (startrank==myrank) {
+                if (dstrank !=RANK_ALL_OTHER){
+                    CMessageBuffer *ret = mbuf.clone();
+                    addSelfMessage(new SelfMessage(tag, ret));
+//                    SelfMessage *msg = popSelfMessage(tag);
+//                    mptag_t reply = msg->getMessage()->getReplyTag();
+//                    _T("Reply tag of the message adding = "<<reply);
+//                    addSelfMessage(msg);
+                }
+            }else{
                 unsigned remaining;
                 if (tm.timedout(&remaining))
                     return false;
-                hpcc_mpi::CommRequest req = hpcc_mpi::sendData(startrank, tag, mbuf, *group, true);
-                if (hpcc_mpi::getCommStatus(req) == hpcc_mpi::CommStatus::ERROR)
+                hpcc_mpi::CommStatus status = hpcc_mpi::sendData(startrank, tag, mbuf, (*group)(), remaining);
+                if (status != hpcc_mpi::CommStatus::SUCCESS)
                     return false;
-                hpcc_mpi::releaseComm(req);
             }
         }
        
@@ -124,26 +181,56 @@ public:
     }
 
     bool recv(CMessageBuffer &mbuf, rank_t srcrank, mptag_t tag, rank_t *sender, unsigned timeout=MP_WAIT_FOREVER){
+        _TF("recv", srcrank, tag, timeout);
         CTimeMon tm(timeout);
-        hpcc_mpi::CommRequest req = hpcc_mpi::readData(srcrank, tag, mbuf, *group, true);
         unsigned remaining;
-        hpcc_mpi::CommStatus stat;
-        do {
-            usleep(100);
-            stat = hpcc_mpi::getCommStatus(req);
-        } while (stat == hpcc_mpi::CommStatus::INCOMPLETE && !tm.timedout(&remaining));
-//        printf("recv while existed %d\n",stat);
-        hpcc_mpi::releaseComm(req);
-//        printf("req released %d\n",stat);
-        return (stat == hpcc_mpi::CommStatus::SUCCESS);
+        bool messageFromSelf = (srcrank == group->rank());
+        bool completed = false;
+
+        if (messageFromSelf || srcrank == RANK_ALL){
+            SelfMessage *msg = NULL;
+            while (msg == NULL && !tm.timedout(&remaining)){
+                msg = popSelfMessage(tag);
+                if (!messageFromSelf){
+                    break; //if its not specifically from self, we should continue checking from other nodes
+                }
+            }
+            if (msg){
+                _T("Message found in self message list");
+                mbuf.clear();
+                _T("Buffer cleared");
+                assertex((msg->getMessage()) != NULL);
+                _T("Assert passed");
+                mptag_t reply = msg->getMessage()->getReplyTag();
+                _T("Reply tag from message = "<<reply);
+                mbuf.transferFrom(*(msg->getMessage()));
+                _T("Data copied to buffer");
+                mbuf.init(msg->getMessage()->getSender(),tag,reply);
+                _T("Initialized buffer");
+                delete msg;
+                completed = true;
+            }
+        }
+        if (!messageFromSelf){
+            tm.timedout(&remaining);
+            hpcc_mpi::CommStatus status = hpcc_mpi::readData(srcrank, tag, mbuf, (*group)(), remaining);
+            _T("recv status="<<status);
+            completed = (status == hpcc_mpi::CommStatus::SUCCESS);
+            //TODO what if no message received and selfMsg bcomes available now?
+        }
+        if (completed){
+            mbuf.reset();
+        }
+        return completed;
     }
     
     void barrier(void){
-        hpcc_mpi::barrier(*group);
+        hpcc_mpi::barrier((*group)());
     }
 
     unsigned probe(rank_t srcrank, mptag_t tag, rank_t *sender, unsigned timeout=0){
-        if (hpcc_mpi::hasIncomingMessage(srcrank, tag, *group)){
+        _TF("probe", srcrank, tag, timeout);
+        if (hpcc_mpi::hasIncomingMessage(srcrank, tag, (*group)())){
             if (sender)
                 *sender = srcrank;
         }
@@ -155,6 +242,7 @@ public:
     }
 
     bool sendRecv(CMessageBuffer &mbuff, rank_t sendrank, mptag_t sendtag, unsigned timeout=MP_WAIT_FOREVER){
+        _TF("sendRecv", sendrank, sendtag, timeout);
         //TODO share timeout between send/recv?
         mptag_t replytag = createReplyTag();
         CTimeMon tm(timeout);
@@ -169,6 +257,7 @@ public:
     }
 
     bool reply(CMessageBuffer &mbuf, unsigned timeout=MP_WAIT_FOREVER){
+        _TF("reply", mbuf.getReplyTag(), timeout);
         mptag_t replytag = mbuf.getReplyTag();
         rank_t dstrank = group->rank(mbuf.getSender());
         if (dstrank!=RANK_NULL) {
@@ -182,10 +271,11 @@ public:
     }
 
     void cancel(rank_t srcrank, mptag_t tag){
+        _TF("recv", srcrank, tag);
         assertex(srcrank!=RANK_NULL);       
-        hpcc_mpi::CommRequest req = group->getCommRequest(srcrank, tag);
-        if (req >= 0){
-            hpcc_mpi::cancelComm(req);
+        std::vector<hpcc_mpi::CommRequest> req = group->getCommRequest(srcrank, tag);
+        if (req.size() > 0){
+            for(int i=0;i<req.size();i++) hpcc_mpi::cancelComm(req[i]);
         }
     }
 
@@ -202,7 +292,7 @@ public:
     }
 
     IGroup &queryGroup() { 
-        UNIMPLEMENTED;
+        return *group;
     }
     
     IGroup *getGroup()  { 
@@ -236,7 +326,7 @@ MODULE_EXIT(){
 }
 
 void startMPServer(unsigned port, bool paused){
-    hpcc_mpi::initialize();
+    hpcc_mpi::initialize(true);
 }
 
 void stopMPServer(){
