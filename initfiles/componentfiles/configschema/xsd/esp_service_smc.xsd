@@ -146,7 +146,7 @@
                 </xs:complexType>
 
                 <xs:key name="espservice_name_key" hpcc:allowDuplicate="true">
-                    <xs:selector xpath="." />
+                    <xs:selector xpath="./" />
                     <xs:field xpath="@name" />
                 </xs:key>
 

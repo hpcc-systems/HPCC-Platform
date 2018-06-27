@@ -51,7 +51,7 @@
                         </xs:element>
                         <xs:element name="RoxieServerProcess" hpcc:displayName="Servers" maxOccurs="unbounded"> <!--special view type needed to collect together all of these somehow -->
                             <xs:complexType>
-                                <xs:attribute name="name" type="nodeName" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer@name"/>
+                                <xs:attribute name="name" type="nodeName" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"/>
                                 <xs:attributeGroup ref="computerNodeReference"/>
                             </xs:complexType>
                         </xs:element>

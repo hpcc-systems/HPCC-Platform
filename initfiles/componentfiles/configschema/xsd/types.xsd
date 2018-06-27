@@ -26,13 +26,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="yesno">
-        <xs:restriction base="xs:string">
-            <xs:minInclusive value="yes" hpcc:displayName="Yes"/>
-            <xs:maxInclusive value="no" hpcc:displayName="No"/>
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:simpleType name="nodeName">
         <xs:restriction base="xs:string">
             <xs:pattern value="[a-zA-z0-9_\-]+"/>
@@ -83,8 +76,8 @@
     </xs:attributeGroup>
 
     <xs:attributeGroup name="computerNodeReference">
-        <xs:attribute name="computer" type="nodeName" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer@name"/>
-        <xs:attribute name="netAddress" type="ipV4Address" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer@netAddress"/>
+        <xs:attribute name="computer" type="nodeName" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"/>
+        <xs:attribute name="netAddress" type="ipV4Address" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
     </xs:attributeGroup>
 
     <xs:complexType name="hwinstance">
@@ -180,7 +173,7 @@
                     <xs:attribute name="defaultResourcesBasedn" type="xs:string"/>
                     <xs:attribute name="defaultSecurePort" type="xs:string"/>
                     <xs:attribute name="type" type="xs:string"/>
-                </complexType>
+                </xs:complexType>
             </xs:element>
         </xs:sequence>
     </xs:complexType>

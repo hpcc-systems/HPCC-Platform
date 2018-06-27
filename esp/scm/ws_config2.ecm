@@ -123,6 +123,8 @@ ESPstruct ChoiceType
     string MsgType("");
     string Msg("");
     ESParray<ESPstruct DependentValueType, dependentValue> Dependencies;
+    ESParray<string, Attribute> OptionalAttributes;    // Attributes to be enabled, but are optional if this choice is selected (UI)
+    ESParray<string, Attribute> RequiredAttributes;    // Attributes to be enabled and must be filled in (UI)
 };
 
 
@@ -149,6 +151,7 @@ ESPstruct NodeInfoType
 {
     string    Name("");
     string    NodeType("");
+    string    NodeName;
     string    Class("");
     string    Category("");
     bool      Hidden(false);
@@ -189,7 +192,7 @@ ESPstruct AttributeType
     string     DisplayName;
     string     Name;
     string     Group("");
-    string     tooltip("");
+    string     Tooltip("");
     ESPstruct  TypeInfo Type;
     string     CurrentValue("");
     string     DefaultValue("");

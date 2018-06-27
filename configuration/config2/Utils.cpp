@@ -17,8 +17,11 @@ limitations under the License.
 
 #include <vector>
 #include <string>
+#include "Exceptions.hpp"
 
-std::vector<std::string> splitString(const std::string  &input, const std::string delim)
+bool getEnclosedString(const std::string source, std::string &result, std::size_t startPos, char endDelim, bool throwIfError);
+
+std::vector<std::string> splitString(const std::string &input, const std::string &delim)
 {
     size_t  start = 0, end = 0, delimLen = delim.length();
     std::vector<std::string> list;
@@ -32,4 +35,51 @@ std::vector<std::string> splitString(const std::string  &input, const std::strin
         start = ((end > (std::string::npos - delimLen)) ? std::string::npos : end + delimLen);
     }
     return list;
+}
+
+
+bool extractEnclosedString(const std::string source, std::string &result, char startDelim, char endDelim, bool optional)
+{
+    bool rc = false;
+    std::size_t startPos = source.find_first_of(startDelim);
+    if (startPos != std::string::npos)
+    {
+        rc = getEnclosedString(source, result, startPos, endDelim, true);
+    }
+    else if (!optional)
+    {
+        std::string msg = "Bad string parse, expected string enclosed in '" + std::string(1, startDelim) + std::string(1, endDelim) + "' at or around: " + source;
+        throw(ParseException(msg));
+    }
+    else
+    {
+        result = source;
+    }
+    return rc;
+}
+
+
+// throwIfError allows the caller to ignore an error finding the enclosed string and simply return the input string as the result string.
+// If true, the caller expects there to be an ending delimiter and wants an exception since this is an error condition as determined by the caller.
+// The return value will always reflect whether the result string was enclosed in the delimiter or not.
+bool getEnclosedString(const std::string source, std::string &result, std::size_t startPos, char endDelim, bool throwIfError)
+{
+    bool rc = false;
+    std::size_t endPos = source.find_first_of(endDelim, startPos+1);
+    if (endPos != std::string::npos)
+    {
+        result = source.substr(startPos+1, endPos-startPos-1);
+        rc = true;
+    }
+    else if (throwIfError)
+    {
+        std::string delim(1, endDelim);
+        std::string msg = "Bad string parse, expectd '" + delim + "' at or around: " + source;
+        throw(ParseException(msg));
+    }
+    else
+    {
+        result = source;
+    }
+    return rc;
 }

@@ -650,15 +650,29 @@ void XSDSchemaParser::parseAllowedValue(const pt::ptree &allowedValueTree, Schem
     //
     // Parse the value for the enumeration, the add to the allowed values for the limits for this type. Note that enumerations
     // are enhanced with additional information for the UI.
-    allowedValue.m_value = allowedValueTree.get("<xmlattr>.value", "");
+    allowedValue.m_value = allowedValueTree.get("<xmlattr>.value", "XXXmissingYYY");
     allowedValue.m_displayName = allowedValueTree.get("<xmlattr>.hpcc:displayName", allowedValue.m_value);
     allowedValue.m_description = allowedValueTree.get("<xmlattr>.hpcc:description", "");
     allowedValue.m_userMessage = allowedValueTree.get("<xmlattr>.hpcc:userMessage", "");
     allowedValue.m_userMessageType = allowedValueTree.get("<xmlattr>.hpcc:userMessageType", allowedValue.m_userMessage.empty() ? "" : "info");
 
     //
+    // Parse any attribute lists
+    std::string attrList = allowedValueTree.get("<xmlattr>.hpcc:optionalAttributes", "");
+    if (attrList.length())
+    {
+        allowedValue.m_optionalAttributes = splitString(attrList, ",");
+    }
+
+    attrList = allowedValueTree.get("<xmlattr>.hpcc:requiredAttributes", "");
+    if (attrList.length())
+    {
+        allowedValue.m_requiredAttributes = splitString(attrList, ",");
+    }
+
+    //
     // Value is required. Throw an exception if not found
-    if (allowedValue.m_value.empty())
+    if (allowedValue.m_value == "XXXmissingYYY")
     {
         std::string msg = "Missing value attribute for enumeration";
         throw(ParseException(msg));
@@ -685,7 +699,7 @@ std::shared_ptr<SchemaValue> XSDSchemaParser::getSchemaValue(const pt::ptree &at
     pCfgValue->setCodeDefault(attr.get("<xmlattr>.hpcc:codeDefault", ""));
     pCfgValue->setValueLimitRuleType(attr.get("<xmlattr>.hpcc:valueLimitRuleType", ""));
     pCfgValue->setValueLimitRuleData(attr.get("<xmlattr>.hpcc:valueLimitRuleData", ""));
-    pCfgValue->setRequiredIfSet(attr.get("<xmlattr>.hpcc:requiredIfSet", ""));
+    pCfgValue->setRequiredIf(attr.get("<xmlattr>.hpcc:requiredIf", ""));
 
     std::string modList = attr.get("<xmlattr>.hpcc:modifiers", "");
     if (modList.length())
