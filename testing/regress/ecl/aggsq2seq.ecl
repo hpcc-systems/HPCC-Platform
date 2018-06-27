@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noRoxie
 #option ('optimizeDiskSource',true);
 #option ('optimizeThorCounts',false);
 #option ('optimizeChildSource',true);

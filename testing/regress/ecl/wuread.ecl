@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noroxie 
 //doesn't make sense to read from other work units in roxie.
 
 namesRecord := 
