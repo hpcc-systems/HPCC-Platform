@@ -17,10 +17,13 @@
 
 #include <map>
 #include <vector>
+#include <algorithm>
 #include "mpi.h"
 #include "mpbase.hpp"
 #include "mptag.hpp"
 #include "mpbuff.hpp"
+#include "mplog.hpp"
+
 
 class NodeGroup;
 
@@ -32,14 +35,17 @@ namespace hpcc_mpi{
     // Status of a send/receive request
     enum CommStatus{
         INCOMPLETE = 0,
-        SUCCESS,
-        CANCELED,
-        ERROR 
+        SUCCESS = 1,
+        CANCELED = 2,
+        ERROR = 3,
+        TIMEDOUT = 4
     };
     
     /**
+     * Initialize MPI framework
      */
-    void initialize();
+    void initialize(bool withMultithreading = false);
+
     //tear-down the MPI framework
     void finalize();
 
@@ -48,42 +54,42 @@ namespace hpcc_mpi{
     * @param group      NodeGroup which the processor rank we want to get
     * @return           rank of the calling node/processor
     */
-    rank_t rank(NodeGroup &group);
+    rank_t rank(MPI_Comm comm);
 
     /**
     * Get the no of the processors within the MPI communicator in the NodeGroup
     * @param group      NodeGroup which the number of processors we want to get
     * @return           number of nodes/processors in the NodeGroup
     */
-    rank_t size(NodeGroup &group);
-
+    rank_t size(MPI_Comm comm);
+    
     /**
     * Send data to a destination node/processor
     * @param dstRank    Rank of the node which we want to send data to
-    * @param tag        Message tag 
+    * @param tag        Message tag
     * @param mbuf       The message
     * @param group      In which nodegroup the destination rank belongs to
-    * @param async      (optional; default=true) synchronous/asynchronous call
-    * @return           Return a CommRequest object which you can use to keep 
-    *                   track of the status of this communication call. Use 
-    *                   releaseComm(...) function to release this object once 
-    *                   done using it. 
+    * @param timeout    Time to complete the communication
+    * @return           Return a CommRequest object which you can use to keep
+    *                   track of the status of this communication call. Use
+    *                   releaseComm(...) function to release this object once
+    *                   done using it.
     */
-    CommRequest sendData(rank_t dstRank, mptag_t tag, CMessageBuffer &mbuf, NodeGroup &group, bool async = true);
-    
+    CommStatus sendData(rank_t dstRank, mptag_t tag, CMessageBuffer &mbuf, MPI_Comm comm, unsigned timeout);
+
     /**
     * Receive data from a node/processor
     * @param sourceRank Rank of the node which to receive data from
-    * @param tag        Message tag 
+    * @param tag        Message tag
     * @param mbuf       The CMessageBuffer to save the incoming message to
     * @param group      In which nodegroup the destination rank belongs to
-    * @param async      (optional; default=true) synchronous/asynchronous call
-    * @return           Return a CommRequest object which you can use to keep 
-    *                   track of the status of this communication call. Use 
-    *                   releaseComm(...) function to release this object once 
-    *                   done using it. 
-    */    
-    CommRequest readData(rank_t sourceRank, mptag_t tag, CMessageBuffer &mbuf, NodeGroup &group, bool async = true);    
+    * @param timeout    Time to complete the communication
+    * @return           Return a CommRequest object which you can use to keep
+    *                   track of the status of this communication call. Use
+    *                   releaseComm(...) function to release this object once
+    *                   done using it.
+    */
+    CommStatus readData(rank_t sourceRank, mptag_t tag, CMessageBuffer &mbuf, MPI_Comm comm, unsigned timeout);
     
     /**
     * Check to see if there's a incoming message
@@ -93,33 +99,20 @@ namespace hpcc_mpi{
     * @return           Returns true if there is a incoming message and both 
     *                   sourceRank and tag variables updated.
     */    
-    bool hasIncomingMessage(rank_t &sourceRank, mptag_t &tag, NodeGroup &group);
+    bool hasIncomingMessage(rank_t &sourceRank, mptag_t &tag, MPI_Comm comm);
     
     /**
     * Cancel a send/receive communication request
     * @param commReq    CommRequest object 
     * @return           True if successfully canceled
     */    
-    bool cancelComm(hpcc_mpi::CommRequest commReq);
+    bool cancelComm(CommRequest commReq);
     
-    /**
-    * Get the status of a send/receive communication request
-    * @param commReq    CommRequest object 
-    * @return           Communication Status
-    */    
-    CommStatus getCommStatus(hpcc_mpi::CommRequest commReq);
-    
-    /**
-    * Free a send/receive communication request
-    * @param commReq    CommRequest object 
-    */    
-    void releaseComm(CommRequest commReq);
-
     /**
     * Communication barrier 
     * @param group      NodeGroup to put barrier on
     */    
-    void barrier(NodeGroup &group);
+    void barrier(MPI_Comm comm);
 
 }
 
@@ -129,14 +122,13 @@ namespace hpcc_mpi{
 class NodeGroup: implements IGroup, public CInterface{
 private:
     MPI_Comm mpi_comm;
-		//TODO refactor the lists together
-    std::vector<std::map<mptag_t, hpcc_mpi::CommRequest> > commRequests;
-    std::map<int, std::map<mptag_t, hpcc_mpi::CommRequest> > commRequestsNonRank;
+        //TODO refactor the lists together
+    std::map<int, std::map<mptag_t, std::vector<hpcc_mpi::CommRequest> > > commRequests;
+    std::map<hpcc_mpi::CommRequest, std::pair<int, mptag_t> > requestMap;
     
     NodeGroup(const MPI_Comm &_mpi_comm): mpi_comm(_mpi_comm){
-        count = hpcc_mpi::size(*this);
-        self_rank = hpcc_mpi::rank(*this);
-        commRequests.resize(count);
+        count = hpcc_mpi::size((*this)());
+        self_rank = hpcc_mpi::rank((*this)());
     }
     
 protected: friend class CNodeIterator;
@@ -161,40 +153,37 @@ public:
         return mpi_comm;
     };
     
-    void addCommRequest(rank_t rank, mptag_t tag, hpcc_mpi::CommRequest req){
+    void addCommRequest(hpcc_mpi::CommRequest req, rank_t rank, mptag_t tag){
+        _TF("addCommRequest",req,rank,tag);
+
         int r = rank;
-        if (r < 0){
-            if (commRequestsNonRank.find(r)==commRequestsNonRank.end()){
-                commRequestsNonRank[r]=std::map<mptag_t, hpcc_mpi::CommRequest>();
-            }
-            commRequestsNonRank[r][tag] = req;
-        }else{
-            commRequests[r][tag] = req;
+        if (commRequests.find(r)==commRequests.end()){
+            commRequests[r]=std::map<mptag_t, std::vector<hpcc_mpi::CommRequest> >();
         }
+        if (commRequests[r].find(tag)==commRequests[r].end()){
+            commRequests[r][tag]=std::vector<hpcc_mpi::CommRequest>();
+        }
+        commRequests[r][tag].push_back(req);
+        requestMap[req] = std::pair<int, mptag_t>(r, tag);
     }
     
-    hpcc_mpi::CommRequest getCommRequest(rank_t rank, mptag_t tag){
+    std::vector<hpcc_mpi::CommRequest> getCommRequest(rank_t rank, mptag_t tag){
+        _TF("addCommRequest",rank,tag);
         int r = rank;
-        if (r < 0){
-            if (commRequestsNonRank.find(r)!=commRequestsNonRank.end()){
-                return commRequestsNonRank[r][tag];
-            }
-        }else if (commRequests[r].find(tag)!=commRequests[r].end()){
-            return commRequests[r][tag];
+        if (commRequests.find(r)!=commRequests.end()){
+            if (commRequests[r].find(tag)!=commRequests[r].end())
+                return commRequests[r][tag];
         }
-        return -1;
+        return std::vector<hpcc_mpi::CommRequest>();
     }
     
-    void removeCommRequest(rank_t rank, mptag_t tag){
-        int r = rank;
-        if (getCommRequest(rank, tag)>=0){
-            if (r < 0){
-                commRequestsNonRank[r].erase(tag);
-            }else{ 
-                commRequests[r].erase(tag);
-            }
-        }
-        
+    void removeCommRequest(hpcc_mpi::CommRequest req){
+        _TF("removeCommRequest",req);
+        int r = requestMap[req].first;
+        mptag_t tag = requestMap[req].second;
+        requestMap.erase(req);
+        std::vector<hpcc_mpi::CommRequest>* vec = &(commRequests[r][tag]);
+        vec->erase(std::remove(vec->begin(), vec->end(), req), vec->end());
     }
     
     rank_t rank(const SocketEndpoint &ep) const {

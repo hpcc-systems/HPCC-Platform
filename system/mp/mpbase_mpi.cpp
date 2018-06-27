@@ -45,7 +45,7 @@ IGroup *createIGroup(const char *endpointlist,unsigned short defport){
 
 class MPNode: implements INode, public CInterface
 {
-protected: friend class MPNodeCache;
+protected:
     SocketEndpoint ep;
 public:
     IMPLEMENT_IINTERFACE;
@@ -75,70 +75,12 @@ public:
 
 };
 
-class MPNodeCache: public SuperHashTableOf<MPNode,SocketEndpoint>
-{
-    CriticalSection sect;
-public:
-    ~MPNodeCache()
-    {
-        _releaseAll();
-    }
-
-    void onAdd(void *)
-    {
-        // not used
-    }
-
-    void onRemove(void *e)
-    {
-        MPNode &elem=*(MPNode *)e;      
-        elem.Release();
-    }
-
-    unsigned getHashFromElement(const void *e) const
-    {
-        const MPNode &elem=*(const MPNode *)e;      
-        return elem.ep.hash(0);
-    }
-
-    unsigned getHashFromFindParam(const void *fp) const
-    {
-        return ((const SocketEndpoint *)fp)->hash(0);
-    }
-
-    const void * getFindParam(const void *p) const
-    {
-        const MPNode &elem=*(const MPNode *)p;      
-        return &elem.ep;
-    }
-
-    bool matchesFindParam(const void * et, const void *fp, unsigned) const
-    {
-        return ((MPNode *)et)->ep.equals(*(SocketEndpoint *)fp);
-    }
-
-    IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(MPNode,SocketEndpoint);
-
-    MPNode *lookup(const SocketEndpoint &ep)
-    {
-        CriticalBlock block(sect);
-        MPNode *item=SuperHashTableOf<MPNode,SocketEndpoint>::find(&ep);
-        if (!item) {
-            item = new MPNode(ep);
-            add(*item);
-        }
-        return LINK(item);
-    }
-
-
-} *NodeCache = NULL;
-
 MPNode *MPNode::deserialize(MemoryBuffer &src)
 {
     SocketEndpoint ep;
     ep.deserialize(src);
-    if (NodeCache)
-        return NodeCache->lookup(ep);
+//    if (NodeCache)
+//        return NodeCache->lookup(ep);
     return new MPNode(ep);
 }
 
@@ -196,8 +138,8 @@ INode *deserializeINode(MemoryBuffer &src)
 
 INode *createINode(const SocketEndpoint &ep)
 {
-    if (NodeCache)
-        return NodeCache->lookup(ep);
+//    if (NodeCache)
+//        return NodeCache->lookup(ep);
     return new MPNode(ep);
 }
 
@@ -253,14 +195,6 @@ INode *queryNullNode()
 
 void setNodeCaching(bool on)
 {
-    if (on) {
-        if (!NodeCache)
-            NodeCache = new MPNodeCache();
-    }
-    else { 
-        MPNodeCache *nc = NodeCache;
-        NodeCache = NULL;
-        delete nc;
-    }
+
 }
 
