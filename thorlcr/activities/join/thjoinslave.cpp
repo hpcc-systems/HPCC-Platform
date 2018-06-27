@@ -184,7 +184,10 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         if (islocal)
+        {
             iLoaderL.setown(createThorRowLoader(*this, ::queryRowInterfaces(queryInput(0)), leftCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN));
+            iLoaderL->setTracingPrefix("Join left");
+        }
         else
         {
             mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
@@ -471,6 +474,7 @@ public:
         else
         {
             Owned<IThorRowLoader> iLoaderR = createThorRowLoader(*this, ::queryRowInterfaces(rightInput), rightCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
+            iLoaderR->setTracingPrefix("Join right");
             rightStream.setown(iLoaderR->load(rightInputStream, abortSoon));
             stopRightInput();
             mergeStats(spillStats, iLoaderR);
