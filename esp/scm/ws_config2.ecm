@@ -199,6 +199,7 @@ ESPstruct AttributeType
     string     CurrentValue("");
     string     DefaultValue("");
     string     CodeDefault("");
+    bool       IsPresentInEnvironment;
     bool       Required(true);
     bool       ReadOnly(false);
     bool       Hidden(false);
