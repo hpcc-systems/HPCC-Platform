@@ -106,10 +106,13 @@ namespace hpcc_mpi
     
     /**
     * Cancel a send/receive communication request
-    * @param commReq    CommRequest object 
+    * @param send       true=>Send communication, false=>Recv communication
+    * @param rank       Rank of the processor
+    * @param tag        Message tag
+    * @param comm       MPI communicator
     * @return           True if successfully canceled
     */    
-    bool cancelComm(CommRequest commReq);
+    bool cancelComm(bool send, int rank, int tag, MPI_Comm comm);
     
     /**
     * Communication barrier 
