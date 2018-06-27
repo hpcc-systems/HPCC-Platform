@@ -8877,7 +8877,6 @@ public:
             if (traceStartStop)
                 DBGLOG("%p init Input adaptor %d", this, oid);
             idx = 0;
-            processed = 0;
             eofpending = false;
             eof = false;
             stopped = false;
@@ -11087,6 +11086,7 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
     {
         CRoxieServerStrandedActivity::start(parentExtractSize, parentExtract, paused);
+        onStartStrands();
         if (combineStreams)
         {
             barrier.setown(createStrandBarrier());
