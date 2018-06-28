@@ -33,7 +33,9 @@ d2 := dataset([{'Jones','John',twentyone}], namesRecord);
 d3 := dataset([{'Jones','James',twentytwo}], namesRecord);
 d4 := dataset([{'Jones','Jimmy',twenty}], namesRecord);
 d5 := dataset([{'Jones','Jonnie',twentyone}], namesRecord);
+d6 := dataset([{'Jones','Jonnie',21}], namesRecord);
 
+sequential(
 output(nonempty(d1(age != 40), d2(age != 40)));
 output(nonempty(d1(age != 20), d2(age != 40)));
 output(nonempty(d1(age != 40), d2(age != 21)));
@@ -42,3 +44,15 @@ output(nonempty(d1, d2, d3, d4));
 output(nonempty(d1(age = 0), d2(age = 0), d3(age = 0), d4));
 output(nonempty(d1(age = 0), d2(age = 0), d3, d4));
 
+output(nonempty(d1, d2)(age != 20)); // Should be blank
+output(sum(nonempty(d1, d2), age)); // Should be 20
+output(sum(nonempty(d1(age != 20), d2), age)); // Should be 21
+output(exists(nonempty(d1(age != 20), d2))); // Should be 21
+
+output(nonempty(d1, d6)(age != 20)); // Should be blank
+output(sum(nonempty(d1, d6), age)); // Should be 20
+output(sum(nonempty(d1(age != 20), d6), age)); // Should be 21
+output(TABLE(nonempty(d1(age != 20), d6), { sumage := SUM(GROUP, age) })); // Should be 21
+output(exists(nonempty(d1(age != 20), d6))); // Should be true
+output(TABLE(nonempty(d1(age != 20), d6), { boolean x := exists(group)})); // Should be true
+);
