@@ -42,7 +42,6 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
-        info.fastThrough = true;
         info.canReduceNumRows = true;
         calcMetaInfoSize(info, queryInput(0));
     }

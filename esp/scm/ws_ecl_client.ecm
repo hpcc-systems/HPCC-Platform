@@ -16,7 +16,7 @@
 ############################################################################## */
 
 #ifndef WS_ECL_CLIENT_API
-#define WS_ECL_CLIENT_API __declspec(dllimport)
+#define WS_ECL_CLIENT_API DECL_IMPORT
 #endif
 
 SCMenum WsEclClientRequestState

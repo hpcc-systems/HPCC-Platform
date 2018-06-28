@@ -1604,8 +1604,9 @@ public:
                         if (needrep)
                             feedback.repmode=cProgressReporter::REPbefore;
                         fsys.import(fdesc, dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
-                        if (!abortnotify.abortRequested()) {
-                            if (needrep)
+                        if (!abortnotify.abortRequested())
+                        {
+                            if (needrep && !recovery->getPropBool("@noFileMatch"))
                                 replicating = true;
                             else
                                 dstFile->attach(dstName.get(), userdesc);
