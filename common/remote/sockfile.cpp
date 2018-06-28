@@ -4344,6 +4344,12 @@ IRemoteActivity *createRemoteIndexRead(IPropertyTree &actNode)
 }
 
 
+// create a { unsigned8 } output meta for the count
+static const RtlIntTypeInfo indexCountFieldType(type_unsigned|type_int, 8);
+static const RtlFieldStrInfo indexCountField("count", nullptr, &indexCountFieldType);
+static const RtlFieldInfo * const indexCountFields[2] = { &indexCountField, nullptr };
+static const RtlRecordTypeInfo indexCountRecord(type_record, 2, indexCountFields);
+
 class CRemoteIndexCountActivity : public CRemoteIndexBaseActivity
 {
     typedef CRemoteIndexBaseActivity PARENT;
@@ -4355,9 +4361,9 @@ public:
     {
         rowLimit = config.getPropInt64("chooseN");
 
-        // create helper
         inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
-        outMeta.set(inMeta);
+        outMeta.setown(new CDynamicOutputMetaData(indexCountRecord));
+
         initCommon(config);
     }
 // IRemoteActivity impl.
