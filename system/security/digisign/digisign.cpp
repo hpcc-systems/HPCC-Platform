@@ -266,6 +266,7 @@ static std::once_flag dsmInitFlag;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    OpenSSL_add_all_algorithms();
     return true;
 }
 MODULE_EXIT()
@@ -304,14 +305,28 @@ extern "C"
 
         if (!isEmptyString(_pubKey))
         {
-            publicKeyBuff.loadFile(_pubKey);
+            try
+            {
+                publicKeyBuff.loadFile(_pubKey);
+            }
+            catch (IException * e)
+            {
+                e->Release();
+            }
             if (publicKeyBuff.isEmpty())
                 throw MakeStringException(-1, "digiSign:Cannot load public key file");
         }
 
         if (!isEmptyString(_privKey))
         {
-            privateKeyBuff.loadFile(_privKey);
+            try
+            {
+                privateKeyBuff.loadFile(_privKey);
+            }
+            catch (IException * e)
+            {
+                e->Release();
+            }
             if (privateKeyBuff.isEmpty())
                 throw MakeStringException(-1, "digiSign:Cannot load private key file");
         }
