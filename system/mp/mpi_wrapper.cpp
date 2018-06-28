@@ -10,6 +10,9 @@
 #include <queue>
 #include "mputil.hpp"
 
+#define WAIT_DELAY 100
+#define PROBING_DELAY 100
+
 //----------Functions and Data structures managing communication data related to Send/Recv Communications in orogress-----------//
 
 // Data structure to keep the data relating to send/receive communications
@@ -149,7 +152,7 @@ MPI_Status waitToComplete(MPI_Request* req, bool& completed, bool& error, bool& 
     unsigned remaining;
     while (keepProbing && !(completed || error || (timedout = tm.timedout(&remaining))))
     {
-        usleep(100);
+        usleep(WAIT_DELAY);
         error = (MPI_Test(req, &flag, &stat) != MPI_SUCCESS);
         completed = (flag > 0);
     }
@@ -177,7 +180,7 @@ MPI_Status hasIncomingData(rank_t sourceRank, mptag_t mptag, MPI_Comm comm,
     unsigned remaining;
     while (!(incomingMessage || error || (timeout !=0 && tm.timedout(&remaining))))
     {
-        usleep(100);
+        usleep(PROBING_DELAY);
         error = (MPI_Iprobe(source, tag, comm, &flag, &stat) != MPI_SUCCESS);
         incomingMessage = (flag > 0);
         if (timeout == 0) break;
