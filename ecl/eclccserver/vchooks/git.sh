@@ -28,7 +28,20 @@
 
 originalDir=$PWD
 
-hash git 2>/dev/null || { echo >&2 "GIT: git command not found"; exit 4; }
+function report_error {
+    echo "<exception filename='git.sh' code='9999' severity='2' msg='$1'/>" 1>&2
+}
+
+function report_warning {
+    echo "<exception filename='git.sh' code='9998' severity='1' msg='$1'/>" 1>&2
+}
+
+function report_info {
+    echo "<exception filename='git.sh' code='9997' severity='0' msg='$1'/>" 1>&2
+}
+
+
+hash git 2>/dev/null || { report_error "GIT: git command not found"; exit 4; }
 
 ## Some options can be overridden per workunit, and should accept 0 to mean false
 
@@ -48,7 +61,7 @@ function fetch_repo {
     eval git_directory=\${${prefix}_DIRECTORY}
 
     if [ -z "$git_url" ]; then
-        echo "Need to set ${prefix}_URL" 1>&2
+        report_error "Need to set ${prefix}_URL"
         exit 2
     fi
 
@@ -56,7 +69,7 @@ function fetch_repo {
         if [ -z "$git_branch_locked" -o "$git_branch_locked" == "0" ]; then
             git_branch=$wu_git_branch
         else
-            echo "GIT: Overriding branch is not allowed" 1>&2
+            report_error "GIT: Overriding branch is not allowed"
             exit 2
         fi
     fi
@@ -64,11 +77,11 @@ function fetch_repo {
     if [ -z "$git_branch" ]; then
         git_branch=master
         if [ -n "$GIT_VERBOSE" ]; then
-            echo "GIT: No branch specified for $git_url - assuming master" 1>&2
+            report_warning "GIT: No branch specified for $git_url - assuming master"
         fi
     else
         if [ -n "$GIT_VERBOSE" ]; then
-            echo "GIT: using branch $git_branch for $git_url" 1>&2
+            report_info "GIT: using branch $git_branch for $git_url"
         fi
     fi
 
@@ -76,7 +89,7 @@ function fetch_repo {
         # We are executed in the eclccserver's home dir - typically /var/lib/HPCCSystems/myeclccserver
         mkdir -p $PWD/repos/
         if [ $? -ne 0 ]; then
-            echo "Unable to create directory $PWD/repos/" 1>&2
+            report_error "Unable to create directory $PWD/repos/"
             exit 2
         fi
         cd $PWD/repos/
@@ -92,12 +105,12 @@ function fetch_repo {
 
         if [ ! -d $git_directory ] ; then
             if [ -n "$GIT_VERBOSE" ]; then
-                echo "GIT: performing initial clone"
+                report_info "GIT: performing initial clone"
                 git clone --bare $git_url 1>&2 || exit $?
             else
                 git clone --bare $git_url 2>&1 >/dev/null
                 if [ $? -ne 0 ]; then
-                    echo "Failed to run git clone $git_url" 1>&2
+                    report_error "Failed to run git clone $git_url"
                     exit 2
                 fi
             fi
@@ -115,14 +128,14 @@ function fetch_repo {
     fi
     if [ -n "$fetch_needed" ]; then
         if [ -n "$GIT_VERBOSE" ]; then
-            echo "GIT: using directory $git_directory" 1>&2
-            echo "GIT: Running git fetch $git_url +refs/heads/*:refs/heads/* --prune" 1>&2
+            report_info "GIT: using directory $git_directory"
+            report_info "GIT: Running git fetch $git_url +refs/heads/*:refs/heads/* --prune"
             git fetch $git_url +refs/heads/*:refs/heads/* --prune 1>&2
         else
             git fetch $git_url +refs/heads/*:refs/heads/* --prune 2>&1 >/dev/null
         fi
         if [ $? -ne 0 ]; then
-            echo "Failed to run git fetch $git_url" 1>&2
+            report_warning "Failed to run git fetch $git_url"
             if [ -n "$GIT_IGNORE_FETCH_ERRORS" ]; then
                 exit 2
             fi
@@ -133,7 +146,7 @@ function fetch_repo {
     # while this one is compiling (not 100% failsafe, but good enough)
     last_commit=$(git rev-parse --short $git_branch)
     if [ $? -ne 0 ]; then
-        echo "Failed to run git rev-parse $git_branch" 1>&2
+        report_error "Failed to run git rev-parse $git_branch"
         exit 2
     fi
     export GIT_INCLUDE_PATH="${GIT_INCLUDE_PATH} -I${git_directory}/{$last_commit}/ -a${repo}_commit=${last_commit} -a${repo}_branch=${git_branch} -qa"
@@ -147,12 +160,12 @@ done
 cd $originalDir
 if [ -n "$IS_ECLSERVER" ]; then
   if [ -n "$GIT_VERBOSE" ]; then
-    echo GIT: returning settings $GIT_INCLUDE_PATH 1>&2
+    report_info "GIT: returning settings $GIT_INCLUDE_PATH"
   fi
   echo $GIT_INCLUDE_PATH
 else
   if [ -n "$GIT_VERBOSE" ]; then
-    echo GIT: calling eclcc $GIT_INCLUDE_PATH "$@"  1>&2
+    report_info "GIT: calling eclcc $GIT_INCLUDE_PATH $@"  
   fi
   eclcc $GIT_INCLUDE_PATH "$@"
 fi
