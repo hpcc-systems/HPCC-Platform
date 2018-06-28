@@ -9,6 +9,7 @@
 #include <jcrc.hpp>
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
+#include "mplog.hpp"
 
 using namespace std;
 
@@ -786,9 +787,19 @@ int main(int argc, char* argv[])
  *  -d for some additional debug output
  */
 
+    int argSize = argc;
+    char** argL = argv;
+    bool withMPI = false;
+
+    if ((argSize>1) && (strcmp(argL[1], "--with-mpi")==0)){
+        argSize--;
+        argL++;
+        withMPI = true;
+    }
+
 #ifndef MYMACHINES
-    if (argc<3) {
-        printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -n <numprocs> -d] | <ip:port> <ip:port>]\n\n", argv[0]);
+    if (argSize<3) {
+        printf("\nMPTEST: Usage: %s [--with-mpi] <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -n <numprocs> -d] | <ip:port> <ip:port>]\n\n", argv[0]);
         return 0;
     }
 #endif
@@ -800,7 +811,7 @@ int main(int argc, char* argv[])
 
 #ifndef MYMACHINES
         rank_t tot_ranks = 0;
-        int my_port = atoi(argv[1]);
+        int my_port = atoi(argL[1]);
         char logfile[256] = { "" };
         sprintf(logfile,"mptest-%d.log",my_port);
         // openLogFile(lf, logfile);
@@ -808,88 +819,92 @@ int main(int argc, char* argv[])
         IArrayOf<INode> nodes;
 
         const char * hostfile = nullptr;
-        if (argc > 3)
+        if (argSize > 3)
         {
-            if (strcmp(argv[2], "-f") == 0)
-                hostfile = argv[3];
+            if (strcmp(argL[2], "-f") == 0)
+                hostfile = argL[3];
         }
-
         unsigned i = 1;
         if (hostfile)
         {
 
             int j = 4;
-            while (j < argc)
+            while (j < argSize)
             {
-                if (streq(argv[j], "-t"))
+                if (streq(argL[j], "-t"))
                 {
-                    if ((j+1) < argc)
+                    if ((j+1) < argSize)
                     {
-                        strcpy(testname, argv[j+1]);
+                        strcpy(testname, argL[j+1]);
                         j++;
                     }
                 }
-                else if (streq(argv[j], "-d"))
+                else if (streq(argL[j], "-d"))
                 {
                     mpi_debug++;
                 }
-                else if (streq(argv[j], "-b"))
+                else if (streq(argL[j], "-b"))
                 {
-                    if ((j+1) < argc)
+                    if ((j+1) < argSize)
                     {
-                        buffsize = atoi(argv[j+1]);
+                        buffsize = atoi(argL[j+1]);
                         j++;
                     }
                 }
-                else if (streq(argv[j], "-i"))
+                else if (streq(argL[j], "-i"))
                 {
-                    if ((j+1) < argc)
+                    if ((j+1) < argSize)
                     {
-                        numiters = atoi(argv[j+1]);
+                        numiters = atoi(argL[j+1]);
                         j++;
                     }
                 }
-                else if ( streq(argv[j], "-n") || streq(argv[j], "-np") )
+                else if ( streq(argL[j], "-n") || streq(argL[j], "-np") )
                 {
-                    if ((j+1) < argc)
+                    if ((j+1) < argSize)
                     {
-                        max_ranks = atoi(argv[j+1]);
+                        max_ranks = atoi(argL[j+1]);
                         j++;
                     }
                 }
                 j++;
             }
-
-            char hoststr[256] = { "" };
-            FILE *fp = fopen(hostfile, "r");
-            if (fp == NULL)
+            if (!withMPI)
             {
-                PrintLog("MPTest: Error, cannot open hostfile <%s>", hostfile);
-                return 1;
-            }
-            char line[256] = { "" };
-            while(fgets(line, 255, fp) != NULL)
-            {
-                if ( (max_ranks > 0) && ((i-1) >= max_ranks) )
-                    break;
-                int srtn = sscanf(line,"%s",hoststr);
-                if (srtn == 1 && line[0] != '#')
+                char hoststr[256] = { "" };
+                FILE *fp = fopen(hostfile, "r");
+                if (fp == NULL)
                 {
-                    INode *newNode = createINode(hoststr, my_port);
-                    nodes.append(*newNode);
-                    i++;
+                    PrintLog("MPTest: Error, cannot open hostfile <%s>", hostfile);
+                    return 1;
                 }
+                char line[256] = { "" };
+                while(fgets(line, 255, fp) != NULL)
+                {
+                    if ( (max_ranks > 0) && ((i-1) >= max_ranks) )
+                        break;
+                    int srtn = sscanf(line,"%s",hoststr);
+                    if (srtn == 1 && line[0] != '#')
+                    {
+                        INode *newNode = createINode(hoststr, my_port);
+                        nodes.append(*newNode);
+                        i++;
+                    }
+                }
+                fclose(fp);
             }
-            fclose(fp);
         }
         else
         {
-            while (i+1 < argc)
+            if (!withMPI)
             {
-                PrintLog("MPTEST: adding node %u, port = <%s>", i-1, argv[i+1]);
-                INode *newNode = createINode(argv[i+1], my_port);
-                nodes.append(*newNode);
-                i++;
+                while (i+1 < argSize)
+                {
+                    PrintLog("MPTEST: adding node %u, port = <%s>", i-1, argL[i+1]);
+                    INode *newNode = createINode(argL[i+1], my_port);
+                    nodes.append(*newNode);
+                    i++;
+                }
             }
         }
 
@@ -899,22 +914,25 @@ int main(int argc, char* argv[])
 
         // stop if not meant for this host ...
 
-        IpAddress myIp;
-        GetHostIp(myIp);
-        SocketEndpoint myEp(my_port, myIp);
+        if (!withMPI){ //TODO validate ignoring following section for MPI implementation
+            IpAddress myIp;
+            GetHostIp(myIp);
+            SocketEndpoint myEp(my_port, myIp);
 
-        bool die = true;
-        for (rank_t k=0;k<tot_ranks;k++)
-        {
-            if (nodes.item(k).endpoint().equals(myEp))
-                die = false;
+            bool die = true;
+            for (rank_t k=0;k<tot_ranks;k++)
+            {
+                if (nodes.item(k).endpoint().equals(myEp))
+                    die = false;
+            }
+
+            if (die)
+                return 0;
         }
-
-        if (die)
-            return 0;
-
-        PrintLog("MPTEST: Starting, port = %d tot ranks = %u", my_port, tot_ranks);
-
+        if (!withMPI)
+        {
+            PrintLog("MPTEST: Starting, port = %d tot ranks = %u", my_port, tot_ranks);
+        }
         startMPServer(my_port);
 
         if (mpi_debug)
@@ -933,7 +951,12 @@ int main(int argc, char* argv[])
 #endif
 
         Owned<ICommunicator> mpicomm = createCommunicator(group);
+        group = Owned<IGroup>(mpicomm->getGroup());
 
+        if (withMPI)
+        {
+            PrintLog("MPTEST: Starting MPI Tests with tot ranks = %u", group->ordinality());
+        }
 #ifdef STREAMTEST
         StreamTest(group,mpicomm);
 #else
