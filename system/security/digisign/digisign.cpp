@@ -263,10 +263,10 @@ public:
 
 static IDigitalSignatureManager * dsm;
 static std::once_flag dsmInitFlag;
+static std::once_flag dsmAddAlgoFlag;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    OpenSSL_add_all_algorithms();
     return true;
 }
 MODULE_EXIT()
@@ -281,6 +281,10 @@ static void createDigitalSignatureManagerInstance(IDigitalSignatureManager * * p
     *ppDSM = createDigitalSignatureManagerInstanceFromFiles(pubKey, privKey, passPhrase);
 }
 
+static void addAlgorithms()
+{
+    OpenSSL_add_all_algorithms();
+}
 
 extern "C"
 {
@@ -342,6 +346,7 @@ extern "C"
     DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(StringBuffer & _pubKeyBuff, StringBuffer & _privKeyBuff, const char * _passPhrase)
     {
 #ifdef _USE_OPENSSL
+        std::call_once(dsmAddAlgoFlag, addAlgorithms);
         return new CDigitalSignatureManager(_pubKeyBuff, _privKeyBuff, _passPhrase);
 #else
         return nullptr;
