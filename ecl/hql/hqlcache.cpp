@@ -355,7 +355,7 @@ static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type, boo
         return nullptr;
     case type_real:
     case type_decimal:
-        return createNullExpr(type);
+        return createValue(no_simplified, LINK(type), createNullExpr(type));
     case type_int:
         if (implicitConstantType)
         {
@@ -363,9 +363,9 @@ static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type, boo
             // its ECL representation. ECL integer constants cannot specify a type - and are always parsed as int8,
             // so the constants are created as int8 for consistency.
             Owned<ITypeInfo> tempType = makeIntType(8, true);
-            return createNullExpr(tempType);
+            return createValue(no_simplified, tempType.getLink(), createNullExpr(tempType));
         }
-        return createNullExpr(type);
+        return createValue(no_simplified, LINK(type), createNullExpr(type));
     }
 
     return nullptr;
@@ -373,6 +373,8 @@ static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type, boo
 
 static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr, bool implicitConstantType=false)
 {
+    if (expr->isConstant())
+        return LINK(expr);
     if (expr->isFunction())
     {
         if (!expr->isFunctionDefinition())
@@ -413,7 +415,7 @@ static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr, bo
             ForEachChild(idx, origDefaults)
             {
                 IHqlExpression * defaultValue = origDefaults->queryChild(idx);
-                if (defaultValue->getOperator() == no_omitted)
+                if (defaultValue->getOperator() == no_omitted || defaultValue->isConstant())
                     newDefaultsArray.append(*(LINK(defaultValue)));
                 else
                 {

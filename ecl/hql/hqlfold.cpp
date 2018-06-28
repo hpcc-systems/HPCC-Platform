@@ -4285,6 +4285,10 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 return LINK(arg);
             break;
         }
+    case  no_simplified:  // Only used during syntax checking:
+        {                 // When syntax checking, some constant expressions are expanded during parsing
+            return LINK(expr->queryChild(0));
+        }
     }
 
     return LINK(expr);
