@@ -21,6 +21,8 @@ using namespace std;
 #define RECEIVE_ONE_FROM_ALL_TEST 6
 #define MT_SIMPLE_SEND_RECV 7
 #define MT_SEND_RECV 8
+#define RING_TEST 9
+#define MT_ALLTOALL_TEST 10
 
 rank_t myrank;
 
@@ -44,7 +46,9 @@ void printHelp(int argc, char** argv)
         printf("\t\t\t\t    parameters: [node_rank]\n");
         printf("\t\t %d - Multi-threaded simple send and receive\n",MT_SIMPLE_SEND_RECV);
         printf("\t\t %d - Multi-threaded competing send and receive\n",MT_SEND_RECV);
-        printf("<para_i>\t Test parameters\n");
+        printf("\t\t %d - Ring skip test\n",RING_TEST);
+        printf("\t\t %d - Multi-threaded All to all test\n",MT_ALLTOALL_TEST);
+        printf("\n<para_i>\t Test parameters for individual test\n");
         printf("\n\n");
     }
 }
@@ -371,6 +375,174 @@ void TEST_MT_send_recv(ICommunicator* comm, int counter)
     comm->barrier();
 }
 
+void MPRing(IGroup *group, ICommunicator *mpicomm, unsigned iters=0)
+{
+    CMessageBuffer smb;
+    CMessageBuffer rmb;
+    rank_t myrank = group->rank();
+    rank_t numranks = group->ordinality();
+
+    if (numranks < 2)
+        throw MakeStringException(-1, "MPTEST: MPRing Error, numranks (%u) must be > 1", numranks);
+
+    if (iters == 0)
+        iters = 1000;
+
+    unsigned pintvl = iters/10;
+    if (pintvl < 1)
+        pintvl = 1;
+
+    PrintLog("MPTEST: MPRing myrank=%u numranks=%u iters=%u", myrank, numranks, iters);
+
+    unsigned next = myrank;
+    unsigned prev = myrank;
+    unsigned k = 0;
+    do
+    {
+        next = (next+1) % numranks;
+        prev = prev > 0 ? prev-1 : numranks-1;
+
+        // skip self
+        if ( (next == prev) && (next == myrank) )
+            continue;
+
+        smb.clear();
+        smb.append(k);
+        if ((k%pintvl) == 0)
+            PrintLog("MPTEST: MPRing %u send to rank %u", myrank, next);
+        bool oksend = mpicomm->send(smb, next, MPTAG_TEST);
+        if (!oksend)
+            throw MakeStringException(-1, "MPTEST: MPRing %u send() to rank %u failed", myrank, next);
+
+        rmb.clear();
+        if ((k%pintvl) == 0)
+            PrintLog("MPTEST: MPRing %u recv from rank %u", myrank, prev);
+        bool okrecv = mpicomm->recv(rmb, prev, MPTAG_TEST);
+        if (!okrecv)
+            throw MakeStringException(-1, "MPTEST: MPRing %u recv() from rank %u failed", myrank, prev);
+        rmb.read(k);
+
+        k++;
+
+        if ((k%pintvl) == 0)
+            PrintLog("MPTEST: MPRing %u iteration %u complete", myrank, k);
+
+        if (k == iters)
+            break;
+    }
+    while (true);
+
+    PrintLog("MPTEST: MPRing complete");
+
+    mpicomm->barrier();
+
+    return;
+}
+
+#define MSGLEN 1048576
+
+void MPAlltoAll(IGroup *group, ICommunicator *mpicomm, size32_t buffsize=0, unsigned iters=0)
+{
+    rank_t myrank = group->rank();
+    rank_t numranks = group->ordinality();
+
+    if (numranks < 2)
+        throw MakeStringException(-1, "MPAlltoAll: MPRing Error, numranks (%u) must be > 1", numranks);
+
+    if (buffsize == 0)
+        buffsize = MSGLEN;
+    if (iters == 0)
+        iters = 1000;
+    if (iters < 1)
+        iters = 1;
+
+    PrintLog("MPTEST: MPAlltoAll myrank=%u numranks=%u buffsize=%u iters=%u", myrank, numranks, buffsize, iters);
+
+    // ---------
+
+    class Sender : public Thread
+    {
+    public:
+        Linked<ICommunicator> mpicomm;
+        rank_t numranks;
+        rank_t myrank;
+        size32_t buffsize;
+        unsigned iters;
+        Sender(ICommunicator *_mpicomm, rank_t _numranks, rank_t _myrank, size32_t _buffsize, unsigned _iters) : mpicomm(_mpicomm), numranks(_numranks), myrank(_myrank), buffsize(_buffsize), iters(_iters)
+        {
+        }
+
+        int run()
+        {
+            PrintLog("MPTEST: MPAlltoAll sender started, myrank = %u", myrank);
+
+            int pintvl = iters/10;
+            if (pintvl < 1)
+                pintvl = 1;
+
+            CMessageBuffer smb;
+            smb.appendBytes('a', buffsize);
+
+            for (unsigned k=1;k<=iters;k++)
+            {
+                bool oksend = mpicomm->send(smb, RANK_ALL_OTHER, MPTAG_TEST);
+                if (!oksend)
+                    throw MakeStringException(-1, "MPTEST: MPAlltoAll %u send() failed", myrank);
+                if ((k%pintvl) == 0)
+                    PrintLog("MPTEST: MPAlltoAll sender %u iteration %u complete", myrank, k);
+            }
+
+            mpicomm->barrier();
+            PrintLog("MPTEST: MPAlltoAll sender stopped");
+            return 0;
+        }
+    } sender(mpicomm, numranks, myrank, buffsize, iters);
+
+    unsigned startTime = msTick();
+
+    sender.start();
+
+    // ---------
+
+    PrintLog("MPTEST: MPAlltoAll receiver started, myrank = %u", myrank);
+
+    int pintvl = iters/10;
+    if (pintvl < 1)
+        pintvl = 1;
+
+    CMessageBuffer rmb(buffsize);
+
+    for (unsigned k=1;k<=iters;k++)
+    {
+        for (rank_t i=1;i<numranks;i++)
+        {
+            // rmb.clear();
+            bool okrecv = mpicomm->recv(rmb, RANK_ALL, MPTAG_TEST);
+            if (!okrecv)
+                throw MakeStringException(-1, "MPTEST: MPAlltoAll %u recv() failed", myrank);
+            if (i==1 && (k%pintvl) == 0)
+                PrintLog("MPTEST: MPAlltoAll receiver rank %u iteration %u complete", myrank, k);
+        }
+    }
+
+    mpicomm->barrier();
+
+    PrintLog("MPTEST: MPAlltoAll receiver finished");
+
+    // ---------
+
+    sender.join();
+
+    unsigned endTime = msTick();
+
+    double msgRateMB = (2.0*(double)buffsize*(double)iters*(double)(numranks-1)) / ((endTime-startTime)*1000.0);
+
+    PrintLog("MPTEST: MPAlltoAll complete %g MB/s", msgRateMB);
+
+    return;
+}
+
+
 void run_tests(ICommunicator* comm, int type, int paramCount, char* parameter[])
 {
     switch (type)
@@ -423,9 +595,19 @@ void run_tests(ICommunicator* comm, int type, int paramCount, char* parameter[])
             TEST_MT_simple_send_recv(comm);
             break;
         }
+        case RING_TEST:
+        {
+            MPRing(comm->getGroup(), comm);
+            break;
+        }
+        case MT_ALLTOALL_TEST:
+        {
+            MPAlltoAll(comm->getGroup(), comm);
+            break;
+        }
         default:
         {
-            //TODO run all tests
+            //TODO run all tests?
         }
     }
 }
