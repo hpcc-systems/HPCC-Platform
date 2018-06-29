@@ -8,6 +8,8 @@
       <primary>TRIM</primary>
     </indexterm><indexterm>
       <primary>TRIM Function</primary>
+    </indexterm><indexterm>
+      <primary>WHITESPACE</primary>
     </indexterm>(</emphasis><emphasis>string_value </emphasis><emphasis
   role="bold">[ </emphasis><emphasis>,flag</emphasis><emphasis role="bold"> ]
   )</emphasis></para>
@@ -29,10 +31,16 @@
             <entry><emphasis>flag</emphasis></entry>
 
             <entry>Optional. Specify which spaces to remove. Valid flag values
-            are: RIGHT (remove trailing spaces--this is the default), LEFT
-            (remove leading spaces), LEFT, RIGHT (remove leading and trailing
-            spaces), and ALL (remove all spaces, even those within the
-            string_value).</entry>
+            are: <para></para><para><emphasis role="bold">RIGHT</emphasis>
+            (remove trailing spaces--this is the
+            default)</para><para><emphasis role="bold">LEFT</emphasis> (remove
+            leading spaces)</para><para><emphasis role="bold">LEFT,
+            RIGHT</emphasis> (remove leading and trailing
+            spaces)</para><para><emphasis role="bold">ALL</emphasis> (remove
+            all spaces, even those within the
+            string_value)</para><para><emphasis
+            role="bold">WHITESPACE</emphasis> removes all white space
+            characters</para></entry>
           </row>
 
           <row>
@@ -46,7 +54,13 @@
 
   <para>The <emphasis role="bold">TRIM </emphasis>function returns the
   <emphasis>string_value </emphasis>with all trailing and/or leading spaces
-  removed.</para>
+  (0x20) removed. </para>
+
+  <para>The <emphasis role="bold">WHITESPACE</emphasis> option removes all
+  white space characters. In STRING, this is space (0x20), horizontal tab,
+  vertical tab, line feed, form feed, carriage return (0x09 to 0x0D), and
+  non-breaking space (0xA0). For UNICODE, it removes all characters with the
+  white space property. </para>
 
   <para>Example:</para>
 
@@ -63,5 +77,6 @@
   // MyVal is "ABC DEF" with no trailing spaces
 </programlisting>
 
-  <para>See Also: <link linkend="STRING">STRING</link>, <link linkend="VARSTRING">VARSTRING</link></para>
+  <para>See Also: <link linkend="STRING">STRING</link>, <link
+  linkend="VARSTRING">VARSTRING</link></para>
 </sect1>
