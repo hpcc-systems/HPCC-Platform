@@ -417,6 +417,8 @@ StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, Stati
     case SMeasureId:
     case SMeasureFilename:
         return out.append(value);
+    case SMeasureEnum:
+        return out.append("Enum{").append(value).append("}"); // JCS->GH for now, should map to known enum text somehow
     default:
         return out.append(value).append('?');
     }
@@ -729,6 +731,7 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 #define PERSTAT(y) STAT(Per, y, SMeasurePercent)
 #define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4)
 #define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, St##Time##y, St##Cycle##y##Cycles, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
+#define ENUMSTAT(y) STAT(Enum, y, SMeasureEnum)
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -842,6 +845,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(AttribsProcessed) },
     { NUMSTAT(AttribsSimplified) },
     { NUMSTAT(AttribsFromCache) },
+    { NUMSTAT(SmartJoinDegradedToLocal) },
+    { NUMSTAT(SmartJoinSlavesDegradedToStd) },
 };
 
 
