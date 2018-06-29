@@ -380,11 +380,6 @@ void calcMetaInfoSize(ThorDataLinkMetaInfo &info, const ThorDataLinkMetaInfo *in
     {
         if (1 == num)
             info = infos[0];
-        else
-        {
-            info.fastThrough = true;
-            info.totalRowsMin = info.totalRowsMax = 0;
-        }
         return;
     }
     if (!info.unknownRowsOutput)
