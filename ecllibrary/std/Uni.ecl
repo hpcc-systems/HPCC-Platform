@@ -506,7 +506,7 @@ EXPORT unsigned4 FindCount(unicode src, unicode sought, string form) :=
 
 /**
  * Returns the number of words that the string contains.  Words are separated by one or more separator strings. No 
- * spaces are stripped from either string before matching. allowBlankItems set to false by default.
+ * spaces are stripped from either string before matching. allow_blank set to false by default.
  *
  * @param src               The string being searched in.
  * @param separator         The string used to separate words
@@ -519,7 +519,7 @@ EXPORT unsigned4 CountWords(unicode src, unicode separator, boolean allow_blank 
 
 /**
  * Returns the delimited words that the string contains in a UnicodeSet.  Words are separated by one or more separator strings. No 
- * spaces are stripped from either string before matching. allowBlankItems set to false by default.
+ * spaces are stripped from either string before matching. allow_blank is set to false by default.
  *
  * @param src               The string being searched in.
  * @param separator         The string used to separate words
