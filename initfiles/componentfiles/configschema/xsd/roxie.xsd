@@ -137,6 +137,7 @@
                     <xs:attribute name="callbackTimeout" type="xs:nonNegativeInteger" hpcc:displayName="Callback Timeout" hpcc:group="Options" use="optional" default="5000" hpcc:tooltip="Timeout (in ms) before callbacks from agents to server are resent"/>
                     <!-- range? -->
                     <xs:attribute name="checkFileDate" type="xs:boolean" hpcc:displayName="Check File Date" hpcc:group="Options" use="optional" default="true" hpcc:tooltip="Compare file dates of physical files with the information in DFS"/>
+                    <xs:attribute name="collectFactoryStatistics" type="xs:boolean" hpcc:displayName="Gather Factory Statistics" hpcc:group="Options" use="optional" default="true" hpcc:tooltip="Accumulate summary statistics for all queries"/>
                     <xs:attribute name="copyResources" type="xs:boolean" hpcc:displayName="Copy Resources" hpcc:group="Options" use="optional" default="true" hpcc:tooltip="Copies any missing data files/keys from the position they were in when query was deployed"/>
                     <xs:attribute name="coresPerQuery" type="xs:nonNegativeInteger" hpcc:displayName="Cores Per Query" hpcc:group="options" use="optional" default="0" hpcc:tooltip="If non-zero, binds each incoming query to use the specified number of cores only"/>
                     <xs:attribute name="debugPermitted" type="xs:boolean" hpcc:displayName="Debug Permitted" hpcc:group="Options" use="optional" default="true" hpcc:tooltip="Allow the ECL query debugger to attach to queries on this Roxie"/>

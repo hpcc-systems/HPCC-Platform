@@ -497,7 +497,7 @@ public:
     virtual void noteProcessed(unsigned _idx, unsigned _processed) const
     {
         dbgassertex(!_idx);
-        if (_processed)
+        if (likely(_processed))
             processed += _processed;
     }
 
@@ -933,6 +933,7 @@ protected:
     bool timeActivities;
     bool aborted;
     bool connected = false;
+    bool collectFactoryStatistics = false;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IRoxieServerActivity>)
@@ -957,6 +958,7 @@ public:
         colocalParent = NULL;
         createPending = true;
         timeActivities = defaultTimeActivities;
+        collectFactoryStatistics = defaultCollectFactoryStatistics && !debugging && factory;
         aborted = false;
     }
     
@@ -978,6 +980,7 @@ public:
         colocalParent = NULL;
         createPending = true;
         timeActivities = defaultTimeActivities;
+        collectFactoryStatistics = false; // since no factory
         aborted = false;
     }
 
@@ -1050,7 +1053,7 @@ public:
         }
 
         //Update the statistics accumulated over all the queries
-        if (!debugging)
+        if (collectFactoryStatistics)
             factory->mergeStats(mergedStats);
 
         //Updates the query summary statistics
@@ -1275,7 +1278,10 @@ public:
         if (factory)
             factory->onCreateChildQueries(ctx, &basehelper, childGraphs, this, probeManager, *this, _numParallel);
         if (ctx)
+        {
             timeActivities = ctx->queryOptions().timeActivities;
+            collectFactoryStatistics = ctx->queryOptions().collectFactoryStatistics && !debugging && factory;
+        }
     }
 
     virtual void onCreate(IHThorArg *_colocalParent)
@@ -1321,7 +1327,7 @@ public:
             input->start(parentExtractSize, parentExtract, paused);
         ensureCreated();
         basehelper.onStart(parentExtract, NULL);
-        if (factory)
+        if (collectFactoryStatistics)
             factory->noteStarted();
         startJunction(junction);
     }
@@ -1637,7 +1643,7 @@ public:
             }
         }
 
-        if (factory && !debugging)
+        if (collectFactoryStatistics)
             factory->noteProcessed(oid, processed);
     }
 
@@ -9129,7 +9135,7 @@ public:
         CriticalBlock b(crit);
         if (error)
             throw error.getLink();
-        if (factory)
+        if (collectFactoryStatistics)
             factory->noteStarted(oid);
         if (traceStartStop)
             CTXLOG("SPLIT %p: start %d child %d activeOutputs %d numOutputs %d numOriginalOutputs %d state %s", this, activityId, oid, activeOutputs, numOutputs, numOriginalOutputs, queryStateText(state));
@@ -16356,7 +16362,7 @@ public:
         CriticalBlock b(crit);
         if (error)
             throw error.getLink();
-        if (factory)
+        if (collectFactoryStatistics)
             factory->noteStarted(oid);
         if (!started)
         {

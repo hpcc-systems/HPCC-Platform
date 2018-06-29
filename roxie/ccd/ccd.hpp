@@ -304,6 +304,7 @@ extern bool roxieMulticastEnabled;   // enable use of multicast for sending requ
 extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
 extern bool selfTestMode;
+extern bool defaultCollectFactoryStatistics;
 
 extern int backgroundCopyClass;
 extern int backgroundCopyPrio;

@@ -306,6 +306,7 @@ QueryOptions::QueryOptions()
     traceLimit = defaultTraceLimit;
     allSortsMaySpill = false; // No global default for this
     failOnLeaks = false;
+    collectFactoryStatistics = defaultCollectFactoryStatistics;
 }
 
 QueryOptions::QueryOptions(const QueryOptions &other)
@@ -336,6 +337,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     traceLimit = other.traceLimit;
     allSortsMaySpill = other.allSortsMaySpill;
     failOnLeaks = other.failOnLeaks;
+    collectFactoryStatistics = other.collectFactoryStatistics;
 }
 
 void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo)
@@ -376,6 +378,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(traceLimit, wu, "traceLimit");
     updateFromWorkUnit(allSortsMaySpill, wu, "allSortsMaySpill");
     updateFromWorkUnit(failOnLeaks, wu, "failOnLeaks");
+    updateFromWorkUnit(collectFactoryStatistics, wu, "collectFactoryStatistics");
 }
 
 void QueryOptions::updateFromWorkUnitM(memsize_t &value, IConstWorkUnit &wu, const char *name)
@@ -434,6 +437,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(traceLimit, ctx, "@traceLimit", "_TraceLimit");
         // Note: allSortsMaySpill is not permitted at context level (too late anyway, unless I refactored)
         updateFromContext(failOnLeaks, ctx, "@failOnLeaks", "_FailOnLeaks");
+        updateFromContext(collectFactoryStatistics, ctx, "@collectFactoryStatistics", "_CollectFactoryStatistics");
     }
 }
 
