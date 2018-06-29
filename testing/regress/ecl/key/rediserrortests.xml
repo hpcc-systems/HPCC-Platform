@@ -5,7 +5,7 @@
  <Row><value>Redis Plugin: ERROR - the requested key &apos;authTest1&apos; does not exist on database 0 on 127.0.0.1:6379</value></Row>
 </Dataset>
 <Dataset name='Result 3'>
- <Row><value>Redis Plugin: ERROR - connection for 127.0.0.1:9999 failed : Connection refused</value></Row>
+ <Row><value>Redis Plugin: ERROR - connection for 127.0.0.1:6378 failed : Connection refused</value></Row>
 </Dataset>
 <Dataset name='Result 4'>
  <Row><value>Redis Plugin: ERROR - unsupported option string &apos;blahblahblah&apos;</value></Row>
