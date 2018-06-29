@@ -63,15 +63,7 @@ bool Mutex::lockWait(unsigned timeout)
     while ((owner!=0) && !pthread_equal(owner, pthread_self())) {
         timespec abs;
         if (first) {
-            timeval cur;
-            gettimeofday(&cur, NULL);
-            unsigned tsec=(timeout/1000);
-            abs.tv_sec = cur.tv_sec + tsec;
-            abs.tv_nsec = (cur.tv_usec + timeout%1000*1000)*1000;
-            if (abs.tv_nsec>=1000000000) {
-                abs.tv_nsec-=1000000000;
-                abs.tv_sec++;
-            }
+            getEndTime(abs, timeout);
             first = false;
         }
         if (pthread_cond_timedwait(&lock_free, &mutex, &abs)==ETIMEDOUT) {
@@ -326,6 +318,44 @@ void Monitor::notifyAll()
         waiting = 0;
     }
 }
+
+//==================================================================================
+
+#ifdef USE_PTHREAD_RWLOCK
+
+bool ReadWriteLock::lockRead(unsigned timeout)
+{
+    if (timeout == (unsigned)-1)
+    {
+        lockRead();
+        return true;
+    }
+
+    if (pthread_rwlock_tryrdlock(&rwlock) == 0)
+        return true;
+
+    timespec endtime;
+    getEndTime(endtime, timeout);
+    return (pthread_rwlock_timedrdlock(&rwlock, &endtime) == 0);
+}
+
+bool ReadWriteLock::lockWrite(unsigned timeout)
+{
+    if (timeout == (unsigned)-1)
+    {
+        lockWrite();
+        return true;
+    }
+
+    if (pthread_rwlock_trywrlock(&rwlock) == 0)
+        return true;
+
+    timespec endtime;
+    getEndTime(endtime, timeout);
+    return (pthread_rwlock_timedwrlock(&rwlock, &endtime) == 0);
+}
+
+#endif
 
 //==================================================================================
 

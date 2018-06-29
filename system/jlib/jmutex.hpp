@@ -572,6 +572,13 @@ public:
     void notifyAll();   // only called when locked -- notifys for all waiting threads
 };
 
+//--------------------------------------------------------------------------------------------------------------------
+
+//Currently disabled since performance profile of own implementation is preferable, and queryWriteLocked() cannot be implemented
+//#define USE_PTHREAD_RWLOCK
+
+#ifndef USE_PTHREAD_RWLOCK
+
 class jlib_decl ReadWriteLock
 {
     bool lockRead(bool timed, unsigned timeout) { 
@@ -696,6 +703,29 @@ protected:
 #endif
 };
 
+#else
+
+class jlib_decl ReadWriteLock
+{
+public:
+    ReadWriteLock()         { pthread_rwlock_init(&rwlock, nullptr); }
+    ~ReadWriteLock()        { pthread_rwlock_destroy(&rwlock); }
+
+    void lockRead()         { pthread_rwlock_rdlock(&rwlock); }
+    void lockWrite()        { pthread_rwlock_wrlock(&rwlock); }
+    bool lockRead(unsigned timeout);
+    bool lockWrite(unsigned timeout);
+    void unlock()           { pthread_rwlock_unlock(&rwlock); }
+    void unlockRead()       { pthread_rwlock_unlock(&rwlock); }
+    void unlockWrite()      { pthread_rwlock_unlock(&rwlock); }
+    //  bool queryWriteLocked(); // I don't think this can be implemented on top of the pthread interface
+
+protected:
+    pthread_rwlock_t    rwlock;
+};
+
+#endif
+
 class ReadLockBlock
 {
     ReadWriteLock *lock;
@@ -727,6 +757,9 @@ public:
         }
     }
 };
+
+
+//--------------------------------------------------------------------------------------------------------------------
 
 class Barrier
 {

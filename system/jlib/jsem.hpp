@@ -22,6 +22,8 @@
 
 #include "jiface.hpp"
 
+void jlib_decl getEndTime(timespec & abs, unsigned timeout);
+
 #ifdef _WIN32
 
 class jlib_decl Semaphore
