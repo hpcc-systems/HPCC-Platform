@@ -283,7 +283,9 @@ static void createDigitalSignatureManagerInstance(IDigitalSignatureManager * * p
 
 static void addAlgorithms()
 {
+#ifdef _USE_OPENSSL
     OpenSSL_add_all_algorithms();
+#endif
 }
 
 extern "C"
