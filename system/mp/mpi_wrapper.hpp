@@ -112,7 +112,7 @@ namespace hpcc_mpi
     * @param comm       MPI communicator
     * @return           True if successfully canceled
     */    
-    bool cancelComm(bool send, int rank, int tag, MPI_Comm comm);
+    bool cancelComm(bool send, rank_t rank, mptag_t mptag, MPI_Comm comm);
     
     /**
     * Communication barrier 
