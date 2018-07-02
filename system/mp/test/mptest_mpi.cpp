@@ -65,6 +65,7 @@ void TEST_rank(ICommunicator* comm)
 
 void TEST_single_send(ICommunicator* comm)
 {
+    _TF("TEST_single_send");
     IGroup* group = comm->getGroup();
     int expected_msg = 42;
     int received_msg;
@@ -545,6 +546,7 @@ void MPAlltoAll(IGroup *group, ICommunicator *mpicomm, size32_t buffsize=0, unsi
 
 void run_tests(ICommunicator* comm, int type, int paramCount, char* parameter[])
 {
+    _T("Selected test "<<type);
     switch (type)
     {
         case RANK_TEST:
@@ -619,7 +621,6 @@ int main(int argc, char* argv[])
     {
         EnableSEHtoExceptionMapping();
         startMPServer(0);
-//        IGroup* group = createIGroup(0, (INode **) NULL);
         ICommunicator* comm = createCommunicator(NULL);
         myrank = comm->getGroup()->rank();
         int type;
@@ -630,6 +631,7 @@ int main(int argc, char* argv[])
         {
             throw makeStringException(0, "Invalid commandline parameters.");
         }
+        _T("Starting tests");
         run_tests(comm, type, argc-3, &argv[3]);
         stopMPServer();
     } catch (IException *e)

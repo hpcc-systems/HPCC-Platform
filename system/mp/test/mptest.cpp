@@ -789,12 +789,12 @@ int main(int argc, char* argv[])
 
     int argSize = argc;
     char** argL = argv;
-    bool withMPI = false;
+//    bool withMPI = false;
 
     if ((argSize>1) && (strcmp(argL[1], "--with-mpi")==0)){
         argSize--;
         argL++;
-        withMPI = true;
+//        withMPI = true;
     }
 
 #ifndef MYMACHINES
@@ -869,70 +869,58 @@ int main(int argc, char* argv[])
                 }
                 j++;
             }
-            if (!withMPI)
+            char hoststr[256] = { "" };
+            FILE *fp = fopen(hostfile, "r");
+            if (fp == NULL)
             {
-                char hoststr[256] = { "" };
-                FILE *fp = fopen(hostfile, "r");
-                if (fp == NULL)
-                {
-                    PrintLog("MPTest: Error, cannot open hostfile <%s>", hostfile);
-                    return 1;
-                }
-                char line[256] = { "" };
-                while(fgets(line, 255, fp) != NULL)
-                {
-                    if ( (max_ranks > 0) && ((i-1) >= max_ranks) )
-                        break;
-                    int srtn = sscanf(line,"%s",hoststr);
-                    if (srtn == 1 && line[0] != '#')
-                    {
-                        INode *newNode = createINode(hoststr, my_port);
-                        nodes.append(*newNode);
-                        i++;
-                    }
-                }
-                fclose(fp);
+                PrintLog("MPTest: Error, cannot open hostfile <%s>", hostfile);
+                return 1;
             }
-        }
-        else
-        {
-            if (!withMPI)
+            char line[256] = { "" };
+            while(fgets(line, 255, fp) != NULL)
             {
-                while (i+1 < argSize)
+                if ( (max_ranks > 0) && ((i-1) >= max_ranks) )
+                    break;
+                int srtn = sscanf(line,"%s",hoststr);
+                if (srtn == 1 && line[0] != '#')
                 {
-                    PrintLog("MPTEST: adding node %u, port = <%s>", i-1, argL[i+1]);
-                    INode *newNode = createINode(argL[i+1], my_port);
+                    INode *newNode = createINode(hoststr, my_port);
                     nodes.append(*newNode);
                     i++;
                 }
             }
+            fclose(fp);
         }
-
+        else
+        {
+            while (i+1 < argSize)
+            {
+                PrintLog("MPTEST: adding node %u, port = <%s>", i-1, argL[i+1]);
+                INode *newNode = createINode(argL[i+1], my_port);
+                nodes.append(*newNode);
+                i++;
+            }
+        }
         tot_ranks = i-1;
 
         Owned<IGroup> group = createIGroup(tot_ranks, nodes.getArray());
 
         // stop if not meant for this host ...
 
-        if (!withMPI){ //TODO validate ignoring following section for MPI implementation
-            IpAddress myIp;
-            GetHostIp(myIp);
-            SocketEndpoint myEp(my_port, myIp);
+        IpAddress myIp;
+        GetHostIp(myIp);
+        SocketEndpoint myEp(my_port, myIp);
 
-            bool die = true;
-            for (rank_t k=0;k<tot_ranks;k++)
-            {
-                if (nodes.item(k).endpoint().equals(myEp))
-                    die = false;
-            }
-
-            if (die)
-                return 0;
-        }
-        if (!withMPI)
+        bool die = true;
+        for (rank_t k=0;k<tot_ranks;k++)
         {
-            PrintLog("MPTEST: Starting, port = %d tot ranks = %u", my_port, tot_ranks);
+            if (nodes.item(k).endpoint().equals(myEp))
+                die = false;
         }
+
+        if (die)
+            return 0;
+        PrintLog("MPTEST: Starting, port = %d tot ranks = %u", my_port, tot_ranks);
         startMPServer(my_port);
 
         if (mpi_debug)
@@ -951,12 +939,7 @@ int main(int argc, char* argv[])
 #endif
 
         Owned<ICommunicator> mpicomm = createCommunicator(group);
-        group = Owned<IGroup>(mpicomm->getGroup());
 
-        if (withMPI)
-        {
-            PrintLog("MPTEST: Starting MPI Tests with tot ranks = %u", group->ordinality());
-        }
 #ifdef STREAMTEST
         StreamTest(group,mpicomm);
 #else
@@ -973,6 +956,7 @@ int main(int argc, char* argv[])
         MPTest2(group, mpicomm);
 #    else
 #     ifdef DYNAMIC_TEST
+        _T("hostfile="<<hostfile<<" port="<<my_port<<" testname="<<testname<<" tot_ranks="<<tot_ranks);
         if (strnicmp(testname, "Stream", 6)==0)
             StreamTest(group, mpicomm);
         else if (strnicmp(testname, "Multi", 5)==0)

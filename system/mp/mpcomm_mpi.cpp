@@ -109,6 +109,7 @@ private:
     };
     IGroup *group;
     rank_t myrank;
+    rank_t commSize;
     MPI_Comm comm;
     std::vector<SelfMessage*> selfMessages;
     CriticalSection selfMessagesLock;
@@ -150,20 +151,19 @@ public:
         _TF("send", dstrank, tag, timeout);
         assertex(dstrank!=RANK_NULL);
         CTimeMon tm(timeout);
-        rank_t myrank = group->rank();
         rank_t startrank = dstrank;
         rank_t endrank;
         if (dstrank==RANK_ALL || dstrank==RANK_ALL_OTHER)
         {
             startrank = 0;
-            endrank = group->ordinality()-1;
+            endrank = commSize-1;
         } else if (dstrank==RANK_RANDOM)
         {
-            if (group->ordinality()>1)
+            if (commSize>1)
             {
                 do
                 {
-                    startrank = getRandom()%group->ordinality();
+                    startrank = getRandom()%commSize;
                 } while (startrank==myrank);
             } else
             {
@@ -174,6 +174,7 @@ public:
         } else {
             endrank = startrank;
         }
+        _T("commSize="<<commSize);
         for (;startrank<=endrank;startrank++)
         {
             if (startrank==myrank)
@@ -202,7 +203,7 @@ public:
         _TF("recv", srcrank, tag, timeout);
         CTimeMon tm(timeout);
         unsigned remaining;
-        bool messageFromSelf = (srcrank == group->rank());
+        bool messageFromSelf = (srcrank == myrank);
         bool completed = false;
 
         if (messageFromSelf || srcrank == RANK_ALL)
@@ -337,7 +338,8 @@ public:
     {
         this->group = _group;
         this->comm = _comm;
-        myrank = this->group->rank();
+        commSize = hpcc_mpi::size(comm);
+        myrank = hpcc_mpi::rank(comm);
     }
     
     ~NodeCommunicator()
@@ -384,7 +386,6 @@ byte RTsalt = 0xff;
 int rettag;
 mptag_t createReplyTag()
 {
-    UNIMPLEMENTED;
     mptag_t ret;
     {
         CriticalBlock block(replyTagSect);
@@ -407,17 +408,20 @@ mptag_t createReplyTag()
 
 ICommunicator *createCommunicator(IGroup *group, bool outer)
 {
-    int size = hpcc_mpi::size(MPI_COMM_WORLD);
-    int rank = hpcc_mpi::rank(MPI_COMM_WORLD);
-    INode* nodes[size];
-    for(int i=0; i<size; i++)
+    if (!group)
     {
-        SocketEndpoint ep(i);
-        nodes[i] = createINode(ep);
+        int size = hpcc_mpi::size(MPI_COMM_WORLD);
+        INode* nodes[size];
+        for(int i=0; i<size; i++)
+        {
+            SocketEndpoint ep(i);
+            nodes[i] = createINode(ep);
+        }
+        group = createIGroup(size, nodes);
     }
+    int rank = hpcc_mpi::rank(MPI_COMM_WORLD);
     initMyNode(rank);
-    IGroup* _group = createIGroup(size, nodes);
-    return new NodeCommunicator(_group, MPI_COMM_WORLD);
+    return new NodeCommunicator(group, MPI_COMM_WORLD);
 }
 
 IInterCommunicator &queryWorldCommunicator()
