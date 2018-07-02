@@ -461,6 +461,7 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
     if (!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s", wuid.str());
+    ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
 
     resp.setWuid(wuid.str());
 
@@ -814,6 +815,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
     if (!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot find the workunit %s", wuid.str());
+    ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
 
     resp.setWuid(wuid.str());
 
@@ -1876,6 +1878,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.",wuid);
+        ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
 
         if (query->hasProp("@priority"))
             resp.setPriority(getQueryPriorityName(query->getPropInt("@priority")));

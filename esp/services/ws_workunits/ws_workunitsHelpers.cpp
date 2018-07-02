@@ -73,29 +73,36 @@ void getUserWuAccessFlags(IEspContext& context, SecAccessFlags& accessOwn, SecAc
 
     if (except && (accessOwn == SecAccess_None) && (accessOthers == SecAccess_None))
     {
+        context.setAuthStatus(AUTH_STATUS_NOACCESS);
         AuditSystemAccess(context.queryUserId(), false, "Access Denied: User can't view any workunits");
         VStringBuffer msg("Access Denied: User %s does not have rights to access workunits.", context.queryUserId());
         throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "%s", msg.str());
     }
 }
 
-SecAccessFlags getWsWorkunitAccess(IEspContext& cxt, IConstWorkUnit& cw)
+SecAccessFlags getWsWorkunitAccess(IEspContext& ctx, IConstWorkUnit& cw)
 {
     SecAccessFlags accessFlag = SecAccess_None;
-    cxt.authorizeFeature(getWuAccessType(cw, cxt.queryUserId()), accessFlag);
+    ctx.authorizeFeature(getWuAccessType(cw, ctx.queryUserId()), accessFlag);
     return accessFlag;
 }
 
-void ensureWsWorkunitAccessByOwnerId(IEspContext& cxt, const char* owner, SecAccessFlags minAccess)
+void ensureWsWorkunitAccessByOwnerId(IEspContext& ctx, const char* owner, SecAccessFlags minAccess)
 {
-    if (!cxt.validateFeatureAccess(getWuAccessType(owner, cxt.queryUserId()), minAccess, false))
+    if (!ctx.validateFeatureAccess(getWuAccessType(owner, ctx.queryUserId()), minAccess, false))
+    {
+        ctx.setAuthStatus(AUTH_STATUS_NOACCESS);
         throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to access workunit. Permission denied.");
+    }
 }
 
-void ensureWsWorkunitAccess(IEspContext& cxt, IConstWorkUnit& cw, SecAccessFlags minAccess)
+void ensureWsWorkunitAccess(IEspContext& ctx, IConstWorkUnit& cw, SecAccessFlags minAccess)
 {
-    if (!cxt.validateFeatureAccess(getWuAccessType(cw, cxt.queryUserId()), minAccess, false))
+    if (!ctx.validateFeatureAccess(getWuAccessType(cw, ctx.queryUserId()), minAccess, false))
+    {
+        ctx.setAuthStatus(AUTH_STATUS_NOACCESS);
         throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to access workunit. Permission denied.");
+    }
 }
 
 void ensureWsWorkunitAccess(IEspContext& context, const char* wuid, SecAccessFlags minAccess)
@@ -107,10 +114,13 @@ void ensureWsWorkunitAccess(IEspContext& context, const char* wuid, SecAccessFla
     ensureWsWorkunitAccess(context, *cw, minAccess);
 }
 
-void ensureWsCreateWorkunitAccess(IEspContext& cxt)
+void ensureWsCreateWorkunitAccess(IEspContext& ctx)
 {
-    if (!cxt.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
+    if (!ctx.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
+    {
+        ctx.setAuthStatus(AUTH_STATUS_NOACCESS);
         throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
+    }
 }
 
 StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logicalName, StringBuffer &wuid)
