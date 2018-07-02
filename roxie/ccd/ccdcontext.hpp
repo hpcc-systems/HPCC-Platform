@@ -82,7 +82,7 @@ interface IRoxieServerContext : extends IInterface
     virtual void process() = 0;
     virtual void done(bool failed) = 0;
     virtual void finalize(unsigned seqNo) = 0;
-    virtual unsigned getMemoryUsage() = 0;
+    virtual memsize_t getMemoryUsage() = 0;
     virtual unsigned getSlavesReplyLen() = 0;
 
     virtual unsigned getXmlFlags() const = 0;

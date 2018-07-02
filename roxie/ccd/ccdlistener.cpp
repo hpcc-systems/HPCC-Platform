@@ -1253,14 +1253,14 @@ public:
             try
             {
                 ctx->process();
-                memused = ctx->getMemoryUsage();
+                memused = (unsigned)(ctx->getMemoryUsage() / 0x100000);
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(false);
                 failed = false;
             }
             catch(...)
             {
-                memused = ctx->getMemoryUsage();
+                memused = (unsigned)(ctx->getMemoryUsage() / 0x100000);
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(true);
                 throw;
@@ -1719,7 +1719,7 @@ public:
             }
 
             protocol->finalize(idx);
-            memused += ctx->getMemoryUsage();
+            memused += (unsigned)(ctx->getMemoryUsage() / 0x100000);
             slavesReplyLen += ctx->getSlavesReplyLen();
         }
         else
@@ -1727,13 +1727,13 @@ public:
             try
             {
                 ctx->process();
-                memused = ctx->getMemoryUsage();
+                memused = (unsigned)(ctx->getMemoryUsage() / 0x100000);
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(false);
             }
             catch(...)
             {
-                memused = ctx->getMemoryUsage();
+                memused = (unsigned)(ctx->getMemoryUsage() / 0x100000);
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(true);
                 throw;

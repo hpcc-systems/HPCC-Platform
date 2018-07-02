@@ -2935,7 +2935,7 @@ public:
         }
         return NULL;
     }
-    virtual unsigned getMemoryUsage()
+    virtual memsize_t getMemoryUsage()
     {
         return rowManager->getMemoryUsage();
     }
