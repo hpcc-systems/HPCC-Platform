@@ -8,6 +8,8 @@
 #include "mpi_wrapper.hpp"
 #include <cstdlib>
 #include <queue>
+#include <typeinfo>
+
 #include "mputil.hpp"
 
 #define WAIT_DELAY 100
@@ -20,11 +22,11 @@ class CommData
 {
 private:
     bool send;                      // TRUE => relates to a send communication | FALSE => relates to receive communication
-//    bool probingProgress = false;
+    bool locked = false;
     bool cancellationInProgress = false;
     CriticalSection dataChangeLock;
-    void lock(){dataChangeLock.enter();}
-    void unlock(){dataChangeLock.leave();}
+    void lock(){dataChangeLock.enter(); locked=true;}
+    void unlock(){dataChangeLock.leave(); locked=false;}
 public:    
     bool isSend(){return send;}
     bool isReceive(){return !isSend();}
@@ -32,8 +34,8 @@ public:
 
 
 
-    void* data;                     // Data structure which points to the sent/recv buffer
-    int size;                       // size of 'data'
+    void* data = NULL;              // Data structure which points to the sent/recv buffer
+    int size = 0;                   // size of 'data'
     int rank;                       // source/destination rank of the processor
     int tag;                        // MPI tag information
     MPI_Request *request;           // persistent request object to keep track of ongoing MPI call
@@ -47,6 +49,11 @@ public:
         request = new MPI_Request();
     }
 
+    CommData(bool _send, int _rank, int _tag, MPI_Comm _comm):
+            send(_send), rank(_rank), tag(_tag), comm(_comm)
+    {
+        request = new MPI_Request();
+    }
     CommData(int _rank, int _tag, MPI_Comm _comm): rank(_rank), tag(_tag), comm(_comm)
     {
         request = NULL;
@@ -91,12 +98,12 @@ public:
         unlock();
     }
 
-//    bool hasActiveCommunication(){ return (request!=NULL);}
-
     ~CommData()
     {
+        _T("Is comm data locked? "<<locked);
         if (data) free(data);
         if (request) delete request;
+        _T("CommData destructor completed");
     }
 };
 
@@ -161,24 +168,28 @@ std::vector<CommData*> popCommData(bool send, int rank, int tag, MPI_Comm comm)
    return matchedResults;
 }
 
-std::vector<CommData*> popCommData(CommData * commData)
+CommData* popCommData(CommData * commData)
 {
     _TF("popCommData(CommData * commData)", commData->rank, commData->tag, commData->comm);
     CriticalBlock block(commDataLock);
-    std::vector<CommData*> matchedResults = std::vector<CommData*>();
     int size = asyncCommData.size();
     for(int i=(size-1); i>=0; i--)
     {
         if (asyncCommData[i]==commData)
-            matchedResults.push_back(_popCommData(i));
+        {
+            _popCommData(i);
+            break;
+        }
     }
-    return matchedResults;
+    return commData;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------//
 
+#define TAG_UB 100000 //INT_MAX //MPI_TAG_UB
 int getRank(rank_t sourceRank)
 {
+    _TF("getRank", sourceRank);
     if (sourceRank == RANK_ALL)
         return MPI_ANY_SOURCE;
     else
@@ -187,10 +198,41 @@ int getRank(rank_t sourceRank)
 
 int getTag(mptag_t mptag)
 {
+    _TF("getTag", mptag);
+    int returnVal;
+    unsigned tag = mptag;
     if (mptag == TAG_ALL)
-        return MPI_ANY_TAG;
+        returnVal = MPI_ANY_TAG;
     else
-        return mptag;
+    {
+        if (tag > TAG_UB)
+        {
+            tag= TAG_UB-((unsigned)-tag);                         //MPI doesn't allow custom tags with negative values or beyond MPI_TAG_UB. Thus we shift it to the MPI_TAG_UB range
+        }
+        returnVal = static_cast<int>(tag);
+
+    }
+    _T("returnVal="<<returnVal<<" MPI_TAG_UB="<<MPI_TAG_UB);
+    return returnVal;
+}
+
+mptag_t getTag(int tag)
+{
+    _TF("getTag", tag);
+    unsigned returnVal;
+    if (tag == MPI_ANY_TAG)
+        returnVal = TAG_ALL;
+    else
+    {
+        if (tag > (TAG_UB/2))
+        {
+            returnVal = (unsigned) - (TAG_UB-tag);                         //MPI doesn't allow custom tags with negative values
+        } else
+            returnVal = tag;
+
+    }
+    _T("returnVal="<<returnVal<<" type="<<typeid(tag).name());
+    return (mptag_t)returnVal;
 }
 
 MPI_Status waitToComplete(MPI_Request* req, bool& completed, bool& error, bool& canceled, bool& timedout, unsigned timeout, CommData *commData)
@@ -350,23 +392,27 @@ hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageB
     CTimeMon tm(timeout);
     unsigned remaining;
     int target = getRank(dstRank); int tag = getTag(mptag);
-
-    CommData* commData = new CommData(true, target, tag,mbuf.length(), comm);
+    CommData* commData = new CommData(true, target, tag, mbuf.length(), comm);
 
     mbuf.reset();
     mbuf.read(mbuf.length(), commData->data);
 
-    bool completed = false; bool error = false; bool canceled = false; bool timedout = false;
+    bool timedout = false; bool error = false;
 
     error  = (MPI_Isend(commData->data, mbuf.length(), MPI_BYTE, target, tag, comm, commData->request) != MPI_SUCCESS);
-    tm.timedout(&remaining);
+    timedout = tm.timedout(&remaining);
 
     //commData->probingProgress = true;             // Should only be called if we support blocking send
-
     addCommData(commData); //So that it can be cancelled from outside
+
+    if (!error && timedout){
+        popCommData(commData);
+        cancelComm(commData);
+    }
 
     /*-----------------We will not support a scenario for a blocking Send-------------------
      *
+            bool completed = false; bool canceled = false;
             if (timeout == MP_ASYNC_SEND)
             {
             //        commData->probingProgress = false;
@@ -389,11 +435,17 @@ hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageB
      *
      */
 
+//    hpcc_mpi::CommStatus status =
+//            error ? hpcc_mpi::CommStatus::ERROR
+//                    : (completed? (canceled? hpcc_mpi::CommStatus::CANCELED
+//                                             : hpcc_mpi::CommStatus::SUCCESS)
+//                                  : hpcc_mpi::CommStatus::TIMEDOUT);
+
     hpcc_mpi::CommStatus status =
             error ? hpcc_mpi::CommStatus::ERROR
-                    : (completed? (canceled? hpcc_mpi::CommStatus::CANCELED
-                                             : hpcc_mpi::CommStatus::SUCCESS)
-                                  : hpcc_mpi::CommStatus::TIMEDOUT);
+                    : (timedout?    hpcc_mpi::CommStatus::TIMEDOUT
+                                  : hpcc_mpi::CommStatus::SUCCESS);
+
     return status;
 }
 
@@ -439,7 +491,7 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, CMessa
                     mbuf.reset();
                     mbuf.append(size,commData->data);
                     SocketEndpoint ep(stat.MPI_SOURCE);
-                    mbuf.init(ep, (mptag_t)(stat.MPI_TAG), TAG_REPLY_BASE);
+                    mbuf.init(ep, (mptag_t)getTag(stat.MPI_TAG), TAG_REPLY_BASE);
                     commData->releaseCancellationLock();
                 }
                 canceled = !noCancellation;
@@ -483,8 +535,10 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, CMessa
     }
     if (!canceled)
     {
-//        popCommData(commData);
-//        delete commData;
+        popCommData(commData);
+        _T("After exit popCommData");
+        delete commData;
+        _T("Deleted comm data");
     }
     hpcc_mpi::CommStatus status =
             error ? hpcc_mpi::CommStatus::ERROR
