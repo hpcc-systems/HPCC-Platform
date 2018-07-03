@@ -283,7 +283,7 @@ static void createDigitalSignatureManagerInstance(IDigitalSignatureManager * * p
 
 static void addAlgorithms()
 {
-#ifdef _USE_OPENSSL
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
     OpenSSL_add_all_algorithms();
 #endif
 }
@@ -293,7 +293,7 @@ extern "C"
     //Returns reference to singleton instance created from environment.conf key file settings
     DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromEnv()
     {
-#ifdef _USE_OPENSSL
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
         std::call_once(dsmInitFlag, createDigitalSignatureManagerInstance, &dsm);
         return dsm;
 #else
@@ -305,7 +305,7 @@ extern "C"
     //Caller must release when no longer needed
     DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * _pubKey, const char *_privKey, const char * _passPhrase)
     {
-#ifdef _USE_OPENSSL
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
         StringBuffer privateKeyBuff;
         StringBuffer publicKeyBuff;
 
@@ -347,7 +347,7 @@ extern "C"
     //Caller must release when no longer needed
     DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(StringBuffer & _pubKeyBuff, StringBuffer & _privKeyBuff, const char * _passPhrase)
     {
-#ifdef _USE_OPENSSL
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
         std::call_once(dsmAddAlgoFlag, addAlgorithms);
         return new CDigitalSignatureManager(_pubKeyBuff, _privKeyBuff, _passPhrase);
 #else
