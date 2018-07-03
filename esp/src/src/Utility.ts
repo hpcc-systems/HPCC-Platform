@@ -444,9 +444,6 @@ export function resolve(hpccWidget, callback) {
         case "GraphTreeWidget":
             require(["hpcc/GraphTreeWidget"], doLoad);
             break;
-        case "GraphWidget":
-            require(["hpcc/GraphWidget"], doLoad);
-            break;
         case "Graph7Widget":
             require(["hpcc/Graph7Widget"], doLoad);
             break;
@@ -680,24 +677,6 @@ export function getImageURL(name) {
 
 export function getImageHTML(name, tooltip?) {
     return "<img src='" + this.getImageURL(name) + "'" + (tooltip ? " title='" + tooltip + "'" : "") + " class='iconAlign'/>";
-}
-
-export function isPluginInstalled() {
-    try {
-        var o = new ActiveXObject("HPCCSystems.HPCCSystemsGraphViewControl.1");
-        o = null;
-        o;
-        return true;
-    } catch (e) {
-    }
-    if (navigator.plugins) {
-        for (var i = 0, p = navigator.plugins, l = p.length; i < l; i++) {
-            if (p[i].name.indexOf("HPCCSystemsGraphViewControl") > -1) {
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 export function debounce(func, threshold, execAsap) {

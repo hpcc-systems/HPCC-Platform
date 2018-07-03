@@ -32,7 +32,6 @@ define([
     "src/ws_access",
     "src/WsSMC",
     "src/WsTopology",
-    "hpcc/GraphWidget",
     "hpcc/DelayLoadWidget",
     "src/ws_machine",
     "hpcc/LockDialogWidget",
@@ -62,7 +61,7 @@ define([
     registry, Tooltip,
     UpgradeBar, ColorPicker,
     CodeMirror,
-    _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget, WsMachine, LockDialogWidget,
+    _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, DelayLoadWidget, WsMachine, LockDialogWidget,
     template) {
 
         declare("HPCCColorPicker", [ColorPicker], {
@@ -431,14 +430,6 @@ define([
                 if (!this._onAboutLoaded) {
                     this._onAboutLoaded = true;
                     dom.byId(this.id + "ServerVersion").value = this.build.version;
-                    var gc = new GraphWidget({
-                        id: this.id + "GraphControl"
-                    }).placeAt(this.aboutDialog);
-                    var context = this;
-                    gc.checkPluginLoaded().then(function () {
-                        dom.byId(context.id + "GraphControlVersion").value = gc.getVersion();
-                        gc.destroyRecursive();
-                    })
                 }
                 this.aboutDialog.show();
             },

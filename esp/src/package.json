@@ -19,6 +19,8 @@
     "bundle-watch": "npm run bundle -- --watch",
     "build": "npm run copy-res && npm run compile && npm run bundle",
     "start:dev": "ws",
+    "dev-start": "ws",
+    "dev-link": "mklink /J .\\hpcc-js ..\\..\\..\\hpcc-js",
     "test": "npm run lint"
   },
   "main": "src/stub.js",

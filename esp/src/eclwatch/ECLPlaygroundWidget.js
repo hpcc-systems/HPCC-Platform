@@ -15,7 +15,6 @@ define([
     "hpcc/_Widget",
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
-    "hpcc/GraphWidget",
     "hpcc/JSGraphWidget",
     "hpcc/ECLPlaygroundResultsWidget",
     "src/ESPWorkunit",
@@ -28,14 +27,14 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, xhr, dom, query,
     BorderContainer, TabContainer, ContentPane, registry,
-    _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, JSGraphWidget, ResultsWidget, ESPWorkunit, ESPQuery, Utility,
+    _Widget, EclSourceWidget, TargetSelectWidget, JSGraphWidget, ResultsWidget, ESPWorkunit, ESPQuery, Utility,
     template) {
         return declare("ECLPlaygroundWidget", [_Widget], {
             templateString: template,
             baseClass: "ECLPlaygroundWidget",
             i18n: nlsHPCC,
 
-            graphType: Utility.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
+            graphType: "JSGraphWidget",
             wu: null,
             editorControl: null,
             graphControl: null,

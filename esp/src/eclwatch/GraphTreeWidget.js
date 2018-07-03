@@ -24,7 +24,6 @@ define([
     "dgrid/tree",
 
     "hpcc/_Widget",
-    "hpcc/GraphWidget",
     "hpcc/JSGraphWidget",
     "src/ESPUtil",
     "src/ESPWorkunit",
@@ -49,7 +48,7 @@ define([
     registry, Dialog, Menu, MenuItem, MenuSeparator, CheckedMenuItem,
     entities,
     tree,
-    _Widget, GraphWidget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits, Utility,
+    _Widget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits, Utility,
     template) {
 
         return declare("GraphTreeWidget", [_Widget], {
@@ -57,7 +56,7 @@ define([
             baseClass: "GraphTreeWidget",
             i18n: nlsHPCC,
 
-            graphType: Utility.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
+            graphType: "JSGraphWidget",
             graphName: "",
             wu: null,
             global: null,
@@ -71,12 +70,7 @@ define([
             found: [],
             foundIndex: 0,
 
-            constructor: function (args) {
-                if (args.forceNative) {
-                    this.graphType = "GraphWidget";
-                } else {
-                    this.graphType = "JSGraphWidget";
-                }
+            constructor: function () {
             },
 
             buildRendering: function (args) {

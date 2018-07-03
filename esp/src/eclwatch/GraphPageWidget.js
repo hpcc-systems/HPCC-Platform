@@ -16,7 +16,6 @@ define([
     "dojox/html/entities",
 
     "hpcc/_Widget",
-    "hpcc/GraphWidget",
     "hpcc/JSGraphWidget",
     "src/ESPUtil",
     "src/ESPWorkunit",
@@ -41,14 +40,14 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html,
     registry, Dialog,
     entities,
-    _Widget, GraphWidget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits, Utility,
+    _Widget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits, Utility,
     template) {
         return declare("GraphPageWidget", [_Widget], {
             templateString: template,
             baseClass: "GraphPageWidget",
             i18n: nlsHPCC,
 
-            graphType: Utility.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
+            graphType: "JSGraphWidget",
             borderContainer: null,
             rightBorderContainer: null,
             graphName: "",

@@ -23,9 +23,9 @@ define([
     hpccEclWatch,
     template) {
 
-        return declare("GraphWidget", [_Widget], {
+        return declare("Graph7Widget", [_Widget], {
             templateString: template,
-            baseClass: "GraphWidget",
+            baseClass: "Graph7Widget",
             i18n: nlsHPCC,
 
             KeyState_None: 0,
