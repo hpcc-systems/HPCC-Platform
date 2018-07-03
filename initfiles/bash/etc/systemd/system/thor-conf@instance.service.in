@@ -7,5 +7,6 @@ Requires=hpcc-conf@%i.service
 Type=oneshot
 User=@RUNTIME_USER@
 Group=@RUNTIME_GROUP@
-ExecStartPre=/bin/mkdir -p @RUNTIME_PATH@/%i @LOG_PATH@/%i @PID_PATH@ @LOCK_PATH@/%i
+ExecStart=@ADMIN_PATH@/check-component-exists.sh %i
+ExecStart=/bin/mkdir -p @RUNTIME_PATH@/%i @LOG_PATH@/%i @PID_PATH@ @LOCK_PATH@/%i
 ExecStart=/bin/bash -c "/bin/sed -e 's/export //g' @RUNTIME_PATH@/%i/setvars >> @RUNTIME_PATH@/%i/%i.cfg"
