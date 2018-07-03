@@ -87,13 +87,13 @@ ILogMsgManager * listener;
         free(messages);
         return addrlen - skipDepth;
     }
-    std::string trace_prefix(){
+    std::string trace_prefix(int skipDepth){
         std::stringstream stream;
         debug_counter++;
         stream << "TRACE: " << "[" << global_proc_rank << ":"<< debug_thread_id <<"] ("<< debug_counter << ")\t";
         char *funcname;
         size_t len;
-        int addrlen = _getFuncName(funcname, len, 2);
+        int addrlen = _getFuncName(funcname, len, skipDepth+1);
         for(int i=0; i<addrlen; i++) stream<<"  ";
         if (len)
         {

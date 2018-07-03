@@ -81,7 +81,7 @@ extern mp_decl bool disconnectLogMsgListenerFromChildOwn(INode * childNode);
     extern int global_proc_rank;
 //    int _getFuncName(char* &funcName, int &funcLength, int skipDepth);
     void trace_print_func_data(std::stringstream &stream, int first_arg);
-    std::string trace_prefix();
+    std::string trace_prefix(int skipDepth = 0);
     template<typename First, typename ...Rest>
     void trace_print_func_data(std::stringstream &stream, int first_arg, First && first, Rest && ...rest){
         stream << ((first_arg)?"":",") << first;
@@ -90,7 +90,7 @@ extern mp_decl bool disconnectLogMsgListenerFromChildOwn(INode * childNode);
     template<typename ...Rest>
     void trace_print_func(const char* funcName, Rest && ...rest){
         std::stringstream stream;
-        stream << trace_prefix() << funcName << "(";
+        stream << trace_prefix(1) << "["<<funcName << "]"<<": (";
         trace_print_func_data(stream, 1, std::forward<Rest>(rest)...);
         std::cout<<stream.str();
     }
