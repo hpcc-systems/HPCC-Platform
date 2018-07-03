@@ -789,17 +789,15 @@ int main(int argc, char* argv[])
 
     int argSize = argc;
     char** argL = argv;
-//    bool withMPI = false;
 
     if ((argSize>1) && (strcmp(argL[1], "--with-mpi")==0)){
         argSize--;
         argL++;
-//        withMPI = true;
     }
 
 #ifndef MYMACHINES
     if (argSize<3) {
-        printf("\nMPTEST: Usage: %s [--with-mpi] <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -n <numprocs> -d] | <ip:port> <ip:port>]\n\n", argv[0]);
+        printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -n <numprocs> -d] | <ip:port> <ip:port>]\n\n", argv[0]);
         return 0;
     }
 #endif
