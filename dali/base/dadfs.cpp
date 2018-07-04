@@ -6977,8 +6977,9 @@ public:
         SocketEndpointArray epa;
         StringBuffer gname(logicalgroupname);
         gname.trim();
+        groupType = grp_unknown;
         if (!gname.length())
-            return NULL;
+            return nullptr;
         gname.toLowerCase();
         logicalgroupname = gname.str();
         bool isiprange = (*logicalgroupname!=0);
@@ -7014,10 +7015,7 @@ public:
             }
             free(buf);
             if (epa.ordinality())
-            {
-                groupType = grp_unknown;
                 return createIGroup(epa);
-            }
         }
         StringBuffer range;
         StringBuffer parent;
@@ -7044,7 +7042,7 @@ public:
                     if (entry.exception)
                         throw LINK(entry.exception);
                     if (!entry.group)  //cache entry of a deleted groupname
-                        return NULL;
+                        return nullptr;
                     if (range.length()==0)
                     {
                         if (dirret)
@@ -7081,7 +7079,7 @@ public:
                                 CriticalBlock block(cachesect);
                                 cache.append(*new CNamedGroupCacheEntry(NULL, gname, NULL, grp_unknown));
                             }
-                            return NULL;
+                            return nullptr;
                         }
                     }
                 }
@@ -7104,12 +7102,12 @@ public:
                             CriticalBlock block(cachesect);
                             cache.append(*new CNamedGroupCacheEntry(NULL, gname, NULL, grp_unknown));
                         }
-                        return NULL;
+                        return nullptr;
                     }
                 }
                 Owned<IPropertyTree> pt = getNamedPropTree(conn->queryRoot(),"Group","@name",gname.str(),true);
                 if (!pt)
-                    return NULL;
+                    return nullptr;
                 type = translateGroupType(pt->queryProp("@kind"));
                 groupdir.set(pt->queryProp("@dir"));
                 if (groupdir.isEmpty())
