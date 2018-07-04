@@ -13,6 +13,13 @@
     </indexterm>(</emphasis> <emphasis>text, n</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
+  <para><emphasis role="bold">STD.Uni.ExcludeNthWord<indexterm>
+      <primary>STD.Uni.ExcludeNthWord</primary>
+    </indexterm><indexterm>
+      <primary>Uni.ExcludeNthWord</primary>
+    </indexterm>(</emphasis> <emphasis>text, n, localename</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec colwidth="80.50pt" />
@@ -34,9 +41,17 @@
         </row>
 
         <row>
+          <entry><emphasis>localename</emphasis></entry>
+
+          <entry>Optional. The locale to use for the break semantics. Defaults
+          to ''</entry>
+        </row>
+
+        <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry>ExcludeNthWord returns a STRING value.</entry>
+          <entry>ExcludeNthWord returns a STRING or UNICODE value, as
+          appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -44,9 +59,20 @@
 
   <para>The <emphasis role="bold">ExcludeNthWord </emphasis>function returns
   the <emphasis>text</emphasis> string with the <emphasis>n</emphasis>th word
-  removed. Words are separated by one or more whitespace characters.
-  Whitespace after the <emphasis>n</emphasis>th word is also removed (along
-  with whitespace before, if <emphasis>n</emphasis>=1).</para>
+  removed.</para>
+
+  <para>Words are separated by one or more whitespace characters. For the
+  Unicode version, words are marked by the Unicode break semantics.</para>
+
+  <para>Trailing whitespaces are always removed with the word. Leading
+  whitespaces are only removed with the word if the nth word is the first
+  word.</para>
+
+  <para>Returns a blank string if there are no words in the source string.
+  Returns the source string if the number of words in the string is less than
+  the n parameter's assigned value.</para>
+
+  <para></para>
 
   <para>Example:</para>
 
