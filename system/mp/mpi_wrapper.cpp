@@ -399,15 +399,6 @@ hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageB
 
     addCommData(commData); //So that it can be cancelled from outside
 
-    if (timeout == MP_WAIT_FOREVER) //if blocking send is requested
-    {
-        waitToComplete(completed, error, canceled, timedout, timeout, commData);
-        if (completed)
-        {
-            popCommData(commData);
-            delete commData;
-        }
-    }
     if (!error && timedout)
     {
         popCommData(commData);
