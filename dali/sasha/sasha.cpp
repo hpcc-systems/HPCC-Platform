@@ -405,10 +405,11 @@ int main(int argc, char* argv[])
 
     EnableSEHtoExceptionMapping();
     Thread::setDefaultStackSize(0x10000);
-    startMPServer(0);
-    attachStandardFileLogMsgMonitor("sasha.log", NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, false, true);
-    queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
     try {
+        startMPServer(0);
+        attachStandardFileLogMsgMonitor("sasha.log", NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, false, true);
+        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
+
         SocketEndpoint ep;
         Owned<ISashaCommand> cmd = createCommand(argc,argv,ep);
         if (cmd.get()) {
