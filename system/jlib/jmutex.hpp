@@ -290,7 +290,7 @@ public:
     inline ~CriticalSection()
     {
 #ifdef _ASSERT_LOCK_SUPPORT
-        assert(owner==0 && depth==0);
+//        assert(owner==0 && depth==0);
 #endif
         pthread_mutex_destroy(&mutex);
     }

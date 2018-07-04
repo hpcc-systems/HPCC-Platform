@@ -31,6 +31,29 @@ namespace hpcc_mpi
     // Variable type to keep track of send/receive requests
     typedef int CommRequest;
     
+//    class mp_decl SharedMessageBuffer: public CMessageBuffer
+//    {
+//    private:
+//        int count = 0;
+//        CriticalSection sect;
+//    public:
+//        int addShare()
+//        {
+//            sect.enter();
+//            count++;
+//            sect.leave();
+//        }
+//        inline void Release() const
+//        {
+//            sect.enter();
+//            count--;
+//            sect.leave();
+//            if (count == 0)
+//                delete this;
+//        }
+//
+//    };
+
     // Status of a send/receive request
     enum CommStatus
     {
