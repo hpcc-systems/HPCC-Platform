@@ -33,30 +33,32 @@ class CLoopSlaveActivityBase : public CSlaveActivity
     typedef CSlaveActivity PARENT;
 
 protected:
-    bool global;
+    bool syncIterations = false;
+    bool loopIsInGlobalGraph = false;
     bool sentEndLooping = true;
-    unsigned maxIterations;
+    unsigned maxIterations = 0;
     unsigned loopCounter = 0;
     rtlRowBuilder extractBuilder;
-    bool lastMaxEmpty;
-    unsigned maxEmptyLoopIterations;
+    bool lastMaxEmpty = false;
+    unsigned maxEmptyLoopIterations = 1000;
+    mptag_t syncMpTag = TAG_NULL;
 
     bool sendLoopingCount(unsigned n, unsigned emptyIterations)
     {
-        if (!container.queryLocalOrGrouped())
+        if (loopIsInGlobalGraph)
         {
-            if (global || (lastMaxEmpty && (0 == emptyIterations)) || (!lastMaxEmpty && (emptyIterations>maxEmptyLoopIterations)) || ((0 == n) && (0 == emptyIterations)))
+            if (syncIterations || (lastMaxEmpty && (0 == emptyIterations)) || (!lastMaxEmpty && (emptyIterations>maxEmptyLoopIterations)) || ((0 == n) && (0 == emptyIterations)))
             {
                 CMessageBuffer msg; // inform master starting
                 msg.append(n);
                 msg.append(emptyIterations);
-                queryJobChannel().queryJobComm().send(msg, 0, mpTag);
-                if (!global)
+                queryJobChannel().queryJobComm().send(msg, 0, syncMpTag);
+                if (!syncIterations)
                 {
                     lastMaxEmpty = emptyIterations>maxEmptyLoopIterations;
                     return true;
                 }
-                receiveMsg(msg, 0, mpTag);
+                receiveMsg(msg, 0, syncMpTag);
                 bool ok;
                 msg.read(ok);
                 return ok;
@@ -78,23 +80,21 @@ protected:
 public:
     CLoopSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        mpTag = TAG_NULL;
         maxEmptyLoopIterations = getOptUInt(THOROPT_LOOP_MAX_EMPTY, 1000);
-        if (container.queryLocalOrGrouped())
-            setRequireInitData(false);
+        loopIsInGlobalGraph = container.queryOwner().isGlobal();
         appendOutputLinked(this);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        if (!container.queryLocalOrGrouped())
-            mpTag = container.queryJobChannel().deserializeMPTag(data);
-        global = !queryContainer().queryLoopGraph()->queryGraph()->isLocalOnly();
+        syncIterations = !queryContainer().queryLoopGraph()->queryGraph()->isLocalOnly();
+        if (loopIsInGlobalGraph)
+            syncMpTag = container.queryJobChannel().deserializeMPTag(data);
     }
     void abort()
     {
         CSlaveActivity::abort();
-        if (!container.queryLocalOrGrouped())
-            cancelReceiveMsg(0, mpTag);
+        if (loopIsInGlobalGraph)
+            cancelReceiveMsg(0, syncMpTag);
     }
     virtual void start() override
     {
@@ -240,17 +240,21 @@ public:
     {
         helper = (IHThorLoopArg *) queryHelper();
         flags = helper->getFlags();
+        if (!loopIsInGlobalGraph || (0 == (flags & IHThorLoopArg::LFnewloopagain)))
+            setRequireInitData(false);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         CLoopSlaveActivityBase::init(data, slaveData);
-        if (!global && (flags & IHThorLoopArg::LFnewloopagain))
+        if (flags & IHThorLoopArg::LFnewloopagain)
         {
-            if (container.queryOwner().isGlobal())
-                global = true;
+            if (loopIsInGlobalGraph)
+            {
+                mpTag = container.queryJobChannel().deserializeMPTag(data);
+                barrier.setown(container.queryJobChannel().createBarrier(mpTag));
+                syncIterations = true;
+            }
         }
-        if (!container.queryLocalOrGrouped())
-            barrier.setown(container.queryJobChannel().createBarrier(mpTag));
     }
     virtual void kill()
     {
@@ -358,7 +362,7 @@ public:
                     }
                 }
 
-                if (global)
+                if (syncIterations)
                 {
                     // 0 signals this slave has finished, but don't stop until all have
                     if (!sendLoopingCount(finishedLooping ? 0 : loopCounter, finishedLooping ? 0 : emptyIterations))
@@ -398,7 +402,7 @@ public:
 
                 if (flags & IHThorLoopArg::LFnewloopagain)
                 {
-                    if (!container.queryLocalOrGrouped())
+                    if (barrier)
                     {
                         if (!barrier->wait(false))
                             return NULL; // aborted
@@ -451,6 +455,8 @@ public:
     {
         helper = (IHThorGraphLoopArg *)queryHelper();
         flags = helper->getFlags();
+        if (!loopIsInGlobalGraph)
+            setRequireInitData(false);
     }
     virtual void kill()
     {

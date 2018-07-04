@@ -1521,9 +1521,12 @@ IMPServer &CGraphBase::queryMPServer() const
 
 bool CGraphBase::syncInitData()
 {
-    CGraphElementBase *parentElement = queryOwner() ? queryOwner()->queryElement(queryParentActivityId()) : NULL;
-    if (parentElement && isLoopActivity(*parentElement) && loopBodySubgraph)
+    if (loopBodySubgraph)
+    {
+        CGraphElementBase *parentElement = queryOwner() ? queryOwner()->queryElement(queryParentActivityId()) : nullptr;
+        assertex(parentElement);
         return parentElement->queryLoopGraph()->queryGraph()->isGlobal();
+    }
     else
         return !isLocalChild();
 }
