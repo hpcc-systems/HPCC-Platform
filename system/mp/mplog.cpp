@@ -40,7 +40,7 @@ ILogMsgManager * listener;
     int global_proc_rank;
     thread_local int debug_thread_id = get_unique_thread_id();
     void trace_print_func_data(std::stringstream &stream, int first_arg){
-        stream << ")"<<nl;
+        stream << ")"<<_nl;
     }
     int _getFuncName(char* &funcName, size_t &funcLength, int skipDepth)
     {
