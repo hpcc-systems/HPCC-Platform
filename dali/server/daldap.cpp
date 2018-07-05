@@ -153,7 +153,7 @@ public:
         if (!isEmptyString(reqSignature))
         {
             if (nullptr == pDSM)
-                pDSM = createDigitalSignatureManagerInstanceFromEnv();
+                pDSM = queryDigitalSignatureManagerInstanceFromEnv();
             if (pDSM && pDSM->isDigiVerifierConfigured())
             {
                 StringBuffer requestTimestamp;
@@ -262,7 +262,7 @@ public:
         if (!isEmptyString(udesc->querySignature()))
         {
             if (nullptr == pDSM)
-                pDSM = createDigitalSignatureManagerInstanceFromEnv();
+                pDSM = queryDigitalSignatureManagerInstanceFromEnv();
             if (pDSM && pDSM->isDigiVerifierConfigured())
             {
                 StringBuffer b64Signature(udesc->querySignature());
