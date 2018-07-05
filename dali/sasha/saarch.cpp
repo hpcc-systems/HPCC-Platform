@@ -88,7 +88,11 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
     class CWUData : public CInterface
     {
     public:
+        CWUData(const char *_wuid, IPropertyTree *_wuTree) : wuid(_wuid), wuTree(_wuTree)
+        {
+        }
         CDateTime modifiedTime;
+        StringAttr wuid;
         Owned<IPropertyTree> wuTree;
     };
 
@@ -102,6 +106,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
         ISashaCommand* cmd;
         const char *fromDTDefinedByBeforeOrAfterWU = nullptr;
         const char *toDTDefinedByBeforeOrAfterWU = nullptr;
+        bool dfu = false;
 
         void getFileMasks(StringBuffer &dirMask, StringBuffer &fileMask)
         {
@@ -250,7 +255,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                 return false;
             return true;
         }
-        bool addOutput(bool outputModifiedTime, bool hasWUSOutput, IPropertyTree *wuTree,
+        bool addOutput(bool outputModifiedTime, bool hasWUSOutput, const char *wuid, IPropertyTree *wuTree,
             CDateTime &modifiedTime, MemoryBuffer &WUSbuf)
         {
             if (hasWUSOutput)
@@ -258,32 +263,33 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                 if (!serializeWUSrow(*wuTree, WUSbuf, WORKUNIT_SERVICES_BUFFER_MAX, false))
                     return false; //Log overflowed?
             }
-            else if (!addOutputFromWUTree(wuTree))
-                return false; //Log overflowed?
-            else if (outputModifiedTime)
-                cmd->addDT(modifiedTime);
+            else
+            {
+                if (!addOutputFromWUTree(wuid, wuTree))
+                    return false; //Log overflowed?
+
+                if (outputModifiedTime)
+                    cmd->addDT(modifiedTime);
+            }
             return true;
         }
-        bool addOutputFromWUTree(IPropertyTree *wuTree)
+        bool addOutputFromWUTree(const char *wuid, IPropertyTree *wuTree)
         {
+            if (outputFields.length() == 0)
+                cmd->addId(wuid);
+            else
+            {
+                StringBuffer output = wuTree->queryName();
+                //Append more into the output.
+                setWUDataTree(wuTree, output);
+                cmd->addId(output.str());
+            }
             if (outputXML)
             { //cmd->getAction()==SCA_GET
                 StringBuffer xml;
                 toXML(wuTree, xml);
                 if (!cmd->addResult(xml.str()))
                     return false; //Log overflowed?
-            }
-            else
-            {
-                if (outputFields.length() == 0)
-                    cmd->addId(wuTree->queryName());
-                else
-                {
-                    StringBuffer output = wuTree->queryName();
-                    //Append more into the output.
-                    setWUDataTree(wuTree, output);
-                    cmd->addId(output.str());
-                }
             }
             return true;
         }
@@ -293,19 +299,20 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
             {
                 const char* outputField = outputFields.item(i);
 
-                StringBuffer val;
-                bool found = true;
+                const char *val = nullptr;;
                 if (strieq(outputField, "owner"))
-                    wu->getProp("@submitID", val);
+                    val = wu->queryProp("@submitID");
                 else if (strieq(outputField, "cluster"))
-                    wu->getProp("@clusterName", val);
+                    val = wu->queryProp("@clusterName");
                 else if (strieq(outputField, "jobname"))
-                    wu->getProp("@jobName",val);
-                else if (strieq(outputField,"state"))
-                    wu->getProp("@state", val);
-                else
-                    found = false;
-                if (found)
+                    val = wu->queryProp("@jobName");
+                else if (strieq(outputField, "state"))
+                    val = wu->queryProp(dfu ? "Progress/@state" : "@state");
+                else if (strieq(outputField, "command"))
+                    val = wu->queryProp("@command");
+                else if (strieq(outputField, "wuid"))
+                    val = wu->queryName();
+                if (val)
                     output.append(',').append(val);
             }
         }
@@ -344,7 +351,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
 
                 if (countBackward)
                     wus.append(*LINK(pt));
-                else if (!addOutputFromWUTree(pt))
+                else if (!addOutputFromWUTree(pt->queryName(), pt))
                     break;
 
                 wuCount++;
@@ -355,7 +362,8 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
             {
                 ForEachItemInRev(i, wus)
                 {
-                    if (!addOutputFromWUTree(&wus.item(i)))
+                    IPropertyTree &wu = wus.item(i);
+                    if (!addOutputFromWUTree(wu.queryName(), &wu))
                         break;
                 }
             }
@@ -384,7 +392,8 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                         i = maxNumWUs;
                     for (; i--;)
                     {
-                        if (!addOutputFromWUTree(&wus.item(i)))
+                        IPropertyTree &wu = wus.item(i);
+                        if (!addOutputFromWUTree(wu.queryName(), &wu))
                             break;
                     }
                 }
@@ -393,7 +402,8 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                     unsigned wuCount = 0;
                     ForEachItemIn(i, wus)
                     {
-                        if (!addOutputFromWUTree(&wus.item(i)))
+                        IPropertyTree &wu = wus.item(i);
+                        if (!addOutputFromWUTree(wu.queryName(), &wu))
                             break;
                         wuCount++;
                         if (wuCount == maxNumWUs)
@@ -417,7 +427,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
             mask.set(_mask);
             isWild = mask.isEmpty() || isWildString(mask.str());
 
-            bool dfu = cmd->getDFU();
+            dfu = cmd->getDFU();
             baseXPath.set(dfu ? "DFU/WorkUnits" : "WorkUnits");
             owner.set(cmd->queryOwner());
             cluster.set(cmd->queryCluster());
@@ -504,6 +514,8 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                     if (isOnline(conn, wuid))
                         continue;
 
+                    // JCSMORE - future optimization: use pull parser to only parse min. required. e.g. often only attributes needed, which are at head of workunit.
+
                     Owned<IPropertyTree> wuTree;
                     if (outputXML || hasWUSOutput || (outputFields.length() > 0) || !owner.isEmpty()
                         || !state.isEmpty() || !cluster.isEmpty() || !jobName.isEmpty()
@@ -529,8 +541,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                     {   //The output should contain WUs in an order specified by the descendingReq.
                         //Since the getSortedDirectoryIterator() returns WUs in an order of the
                         //!descendingReq, we store them into the wus for now.
-                        Owned<CWUData> wu = new CWUData();
-                        wu->wuTree.setown(wuTree.getClear());
+                        Owned<CWUData> wu = new CWUData(wuid, wuTree.getClear());
                         if (outputModifiedTime)
                             fileIterator->getModifiedTime(wu->modifiedTime);
                         wus.append(*wu.getClear());
@@ -541,7 +552,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                         if (outputModifiedTime)
                             fileIterator->getModifiedTime(dt);
 
-                        if (!addOutput(outputModifiedTime, hasWUSOutput, wuTree, dt, WUSbuf))
+                        if (!addOutput(outputModifiedTime, hasWUSOutput, wuid, wuTree, dt, WUSbuf))
                         {
                             overflowed = true;
                             break;
@@ -559,7 +570,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                 ForEachItemInRev(i, wus)
                 {
                     CWUData &wuData = wus.item(i);
-                    if (!addOutput(outputModifiedTime, hasWUSOutput, wuData.wuTree, wuData.modifiedTime, WUSbuf))  //Log an error?
+                    if (!addOutput(outputModifiedTime, hasWUSOutput, wuData.wuid, wuData.wuTree, wuData.modifiedTime, WUSbuf))  //Log an error?
                         break;
                 }
             }
