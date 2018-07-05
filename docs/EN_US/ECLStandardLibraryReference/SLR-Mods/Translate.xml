@@ -10,7 +10,14 @@
       <primary>Str.Translate</primary>
     </indexterm><indexterm>
       <primary>Translate</primary>
-    </indexterm>(</emphasis> <emphasis>source, search, replacement</emphasis>
+    </indexterm>(</emphasis> <emphasis>src, search, replacement</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.Translate<indexterm>
+      <primary>STD.Uni.Translate</primary>
+    </indexterm><indexterm>
+      <primary>Uni.Translate</primary>
+    </indexterm>(</emphasis> <emphasis>src, search, replacement</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,7 +28,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the characters to search.</entry>
         </row>
@@ -43,22 +50,23 @@
         <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry>Translate returns a STRING value.</entry>
+          <entry>Translate returns a STRING or UNICODE value, as
+          appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
   <para>The <emphasis role="bold">Translate </emphasis>functions return the
-  <emphasis>source</emphasis> string with the <emphasis>replacement</emphasis>
-  character substituted for all characters in the <emphasis>source</emphasis>
+  <emphasis>src</emphasis> string with the <emphasis>replacement</emphasis>
+  character substituted for all characters in the <emphasis>src</emphasis>
   string. The <emphasis>search</emphasis> string characters are replaced by
   the characters in the equivalent position in the
   <emphasis>replacement</emphasis> string.</para>
 
   <para>If no <emphasis>search</emphasis> string characters are in the
-  <emphasis>source</emphasis> string, it returns the
-  <emphasis>source</emphasis> string unaltered.</para>
+  <emphasis>src</emphasis> string, it returns the <emphasis>src</emphasis>
+  string unaltered.</para>
 
   <para>Example:</para>
 

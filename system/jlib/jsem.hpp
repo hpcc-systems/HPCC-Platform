@@ -22,8 +22,6 @@
 
 #include "jiface.hpp"
 
-void jlib_decl getEndTime(timespec & abs, unsigned timeout);
-
 #ifdef _WIN32
 
 class jlib_decl Semaphore
@@ -127,6 +125,8 @@ protected:
 #else
 
 #include <semaphore.h>
+
+void jlib_decl getEndTime(timespec & abs, unsigned timeout);
 
 #ifdef __APPLE__
  // sem_timedwait is not available in OSX, so continue to use old code

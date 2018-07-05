@@ -10,7 +10,14 @@
       <primary>Str.FindCount</primary>
     </indexterm><indexterm>
       <primary>FindCount</primary>
-    </indexterm>(</emphasis> <emphasis>source, target</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src, sought</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.FindCount<indexterm>
+      <primary>STD.Uni.FindCount</primary>
+    </indexterm><indexterm>
+      <primary>Uni.FindCount</primary>
+    </indexterm>(</emphasis> <emphasis>src, sought, form</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,15 +28,22 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>target </emphasis></entry>
+          <entry><emphasis>sought</emphasis></entry>
 
           <entry>A string containing the substring to search for.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>form</emphasis></entry>
+
+          <entry>The type of Unicode normalization to be employed. (NFC, NFD,
+          NFKC, or NFKD)</entry>
         </row>
 
         <row>
@@ -42,8 +56,8 @@
   </informaltable>
 
   <para>The <emphasis role="bold">FindCount </emphasis>function returns the
-  number of non-overlapping instances of the <emphasis>target
-  </emphasis>string within the <emphasis>source</emphasis> string.</para>
+  number of non-overlapping instances of the <emphasis>sought
+  </emphasis>string within the <emphasis>src</emphasis> string.</para>
 
   <para>Example:</para>
 

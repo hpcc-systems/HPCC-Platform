@@ -3527,16 +3527,16 @@ public:
 };
 
 
-IDirectoryIterator * createDirectoryIterator(const char * path, const char * mask)
+IDirectoryIterator * createDirectoryIterator(const char * path, const char * mask, bool sub, bool includedirs)
 {
     if (mask&&!*mask)   // only NULL is wild
         return new CNullDirectoryIterator;
     if (!path || !*path) // cur directory so no point in checking for remote etc.
-        return new CWindowsDirectoryIterator(path, mask,false,true);
+        return new CWindowsDirectoryIterator(path, mask,sub,includedirs);
     OwnedIFile iFile = createIFile(path);
     if (!iFile||(iFile->isDirectory()!=foundYes))
         return new CNullDirectoryIterator;
-    return iFile->directoryFiles(mask, false, true);
+    return iFile->directoryFiles(mask, sub, includedirs);
 }
 
 IDirectoryIterator *CFile::directoryFiles(const char *mask,bool sub,bool includedirs)
@@ -3716,16 +3716,16 @@ public:
 
 };
 
-IDirectoryIterator * createDirectoryIterator(const char * path, const char * mask)
+IDirectoryIterator * createDirectoryIterator(const char * path, const char * mask, bool sub, bool includedirs)
 {
     if (mask&&!*mask)   // only NULL is wild
         return new CNullDirectoryIterator;
     if (!path || !*path) // no point in checking for remote etc.
-        return new CLinuxDirectoryIterator(path, mask,false,true);
+        return new CLinuxDirectoryIterator(path, mask,sub,includedirs);
     OwnedIFile iFile = createIFile(path);
     if (!iFile||(iFile->isDirectory()!=foundYes))
         return new CNullDirectoryIterator;
-    return iFile->directoryFiles(mask, false, true);
+    return iFile->directoryFiles(mask, sub, includedirs);
 }
 
 IDirectoryIterator *CFile::directoryFiles(const char *mask,bool sub,bool includedirs)
@@ -4049,6 +4049,8 @@ void setDefaultUser(const char * username,const char *password)
 bool recursiveCreateDirectory(const char * path)
 {
     Owned<IFile> file = createIFile(path);
+    if (!file)
+        return false;
     return file->createDirectory();
 }
 
@@ -4097,8 +4099,8 @@ size32_t DirectBufferIO::write(offset_t pos, size32_t len, const void * data)
 
 IFile * createIFile(const char * filename)
 {
-    if (!filename)
-        return NULL;
+    if (isEmptyString(filename))
+        return new CFile(""); // this is in effect a null implementation
     IFile *ret = createContainedIFileByHook(filename);
     if (ret)
         return ret;

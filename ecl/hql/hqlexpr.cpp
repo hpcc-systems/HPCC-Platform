@@ -14353,7 +14353,7 @@ void exportJsonType(StringBuffer &ret, IHqlExpression *table, bool forceIndex)
     }
     else
     {
-        Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
+        Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
         const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
         dumpTypeInfo(ret, typeInfo);
     }
@@ -14372,7 +14372,7 @@ bool exportBinaryType(MemoryBuffer &ret, IHqlExpression *table, bool forceIndex)
     {
         try
         {
-            Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
+            Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
             const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
             return dumpTypeInfo(ret, typeInfo);
         }

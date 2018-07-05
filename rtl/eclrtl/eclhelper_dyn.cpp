@@ -40,9 +40,9 @@
 class CDeserializedOutputMetaData : public COutputMetaData
 {
 public:
-    CDeserializedOutputMetaData(MemoryBuffer &binInfo, bool isGrouped, IThorIndexCallback *callback);
-    CDeserializedOutputMetaData(IPropertyTree &jsonInfo, bool isGrouped, IThorIndexCallback *callback);
-    CDeserializedOutputMetaData(const char *json, bool isGrouped, IThorIndexCallback *callback);
+    CDeserializedOutputMetaData(MemoryBuffer &binInfo, bool isGrouped);
+    CDeserializedOutputMetaData(IPropertyTree &jsonInfo, bool isGrouped);
+    CDeserializedOutputMetaData(const char *json, bool isGrouped);
     ~CDeserializedOutputMetaData();
 
     virtual const RtlTypeInfo * queryTypeInfo() const override { return typeInfo; }
@@ -54,25 +54,25 @@ protected:
 
 };
 
-CDeserializedOutputMetaData::CDeserializedOutputMetaData(MemoryBuffer &binInfo, bool isGrouped, IThorIndexCallback *callback)
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(MemoryBuffer &binInfo, bool isGrouped)
 {
-    deserializer.setown(createRtlFieldTypeDeserializer(callback));
+    deserializer.setown(createRtlFieldTypeDeserializer());
     typeInfo = deserializer->deserialize(binInfo);
     if (isGrouped)
         flags |= MDFgrouped;
 }
 
-CDeserializedOutputMetaData::CDeserializedOutputMetaData(IPropertyTree &jsonInfo, bool isGrouped, IThorIndexCallback *callback)
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(IPropertyTree &jsonInfo, bool isGrouped)
 {
-    deserializer.setown(createRtlFieldTypeDeserializer(callback));
+    deserializer.setown(createRtlFieldTypeDeserializer());
     typeInfo = deserializer->deserialize(jsonInfo);
     if (isGrouped)
         flags |= MDFgrouped;
 }
 
-CDeserializedOutputMetaData::CDeserializedOutputMetaData(const char *json, bool isGrouped, IThorIndexCallback *callback)
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(const char *json, bool isGrouped)
 {
-    deserializer.setown(createRtlFieldTypeDeserializer(callback));
+    deserializer.setown(createRtlFieldTypeDeserializer());
     typeInfo = deserializer->deserialize(json);
     if (isGrouped)
         flags |= MDFgrouped;
@@ -85,19 +85,19 @@ CDeserializedOutputMetaData::~CDeserializedOutputMetaData()
     recordAccessor[0] = recordAccessor[1] = nullptr;
 }
 
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &binInfo, bool isGrouped, IThorIndexCallback *callback)
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &binInfo, bool isGrouped)
 {
-    return new CDeserializedOutputMetaData(binInfo, isGrouped, callback);
+    return new CDeserializedOutputMetaData(binInfo, isGrouped);
 }
 
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonInfo, bool isGrouped, IThorIndexCallback *callback)
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonInfo, bool isGrouped)
 {
-    return new CDeserializedOutputMetaData(jsonInfo, isGrouped, callback);
+    return new CDeserializedOutputMetaData(jsonInfo, isGrouped);
 }
 
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json, bool isGrouped, IThorIndexCallback *callback)
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json, bool isGrouped)
 {
-    return new CDeserializedOutputMetaData(json, isGrouped, callback);
+    return new CDeserializedOutputMetaData(json, isGrouped);
 }
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -185,10 +185,14 @@ private:
 class ECLRTL_API CDynamicIndexReadArg : public CThorIndexReadArg, implements IDynamicIndexReadArg
 {
 public:
-    CDynamicIndexReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_projected, IOutputMetaData *_out, unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit)
-        : fileName(_fileName), in(_in), projected(_projected), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit)
+    CDynamicIndexReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_projected, IOutputMetaData *_out,
+                         unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit, IVirtualFieldCallback &_callback)
+        : fileName(_fileName), in(_in), projected(_projected), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit), callback(_callback)
     {
-        translator.setown(createRecordTranslator(out->queryRecordAccessor(true), projected->queryRecordAccessor(true)));
+        translator.setown(createRecordTranslator(out->queryRecordAccessor(true), in->queryRecordAccessor(true)));
+#ifdef _DEBUG
+        translator->describe();
+#endif
     }
     virtual bool needTransform() override final
     {
@@ -229,7 +233,7 @@ public:
     }
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * src) override final
     {
-        return translator->translate(rowBuilder, fieldCallback, (const byte *) src);
+        return translator->translate(rowBuilder, callback, (const byte *) src);
     }
     virtual unsigned __int64 getChooseNLimit() override final { return chooseN; }
     virtual unsigned __int64 getRowLimit() override final { return rowLimit; }
@@ -240,13 +244,13 @@ public:
     }
 
 private:
-    UnexpectedVirtualFieldCallback fieldCallback;
     StringAttr fileName;
     unsigned flags = 0;
     Owned<IOutputMetaData> in;
     Owned<IOutputMetaData> projected;
     Owned<IOutputMetaData> out;
     Owned<const IDynamicTransform> translator;
+    IVirtualFieldCallback &callback;
     RowFilter filters;
     unsigned __int64 chooseN = I64C(0x7fffffffffffffff); // constant(s) should be commoned up somewhere
     unsigned __int64 skipN = 0;
@@ -273,7 +277,7 @@ static IOutputMetaData *loadTypeInfo(IPropertyTree &xgmml, const char *key)
     assertex(binInfo.length());
     bool grouped = xgmml.getPropBool(xpath.setf("att[@name='%s_binary']/value", key), false);
 
-    return new CDeserializedOutputMetaData(binInfo, grouped, nullptr);
+    return new CDeserializedOutputMetaData(binInfo, grouped);
 }
 
 
@@ -282,9 +286,9 @@ extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(const char *fileName, IOu
     return new CDynamicDiskReadArg(fileName, in, projected, out, chooseN, skipN, rowLimit);
 }
 
-extern ECLRTL_API IHThorIndexReadArg *createIndexReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projected, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit)
+extern ECLRTL_API IHThorIndexReadArg *createIndexReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projected, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit, IVirtualFieldCallback &callback)
 {
-    return new CDynamicIndexReadArg(fileName, in, projected, out, chooseN, skipN, rowLimit);
+    return new CDynamicIndexReadArg(fileName, in, projected, out, chooseN, skipN, rowLimit, callback);
 }
 
 

@@ -614,19 +614,16 @@ size32_t RtlBlobTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const
 
 size32_t RtlBlobTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
-    assertex(callback);
     UNIMPLEMENTED;
 }
 
 size32_t RtlBlobTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
-    assertex(callback);
     UNIMPLEMENTED;
 }
 
 void RtlBlobTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
-    assertex(callback);
     UNIMPLEMENTED;
 }
 
@@ -637,7 +634,7 @@ void RtlBlobTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void 
 
 __int64 RtlBlobTypeInfo::getInt(const void * ptr) const
 {
-    UNIMPLEMENTED;
+    return *(offset_t *) ptr;
 }
 
 double RtlBlobTypeInfo::getReal(const void * ptr) const
@@ -653,11 +650,6 @@ bool RtlBlobTypeInfo::canTruncate() const
 bool RtlBlobTypeInfo::canExtend(char &fillChar) const
 {
     return false;
-}
-
-void RtlBlobTypeInfo::setCallback(IThorIndexCallback *_callback)
-{
-    callback = _callback;
 }
 
 int RtlBlobTypeInfo::compare(const byte * left, const byte * right) const

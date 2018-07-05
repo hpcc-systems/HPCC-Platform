@@ -10,7 +10,14 @@
       <primary>Str.RemoveSuffix</primary>
     </indexterm><indexterm>
       <primary>RemoveSuffix</primary>
-    </indexterm>(</emphasis> <emphasis>source, suffix</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src, suffix</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.RemoveSuffix<indexterm>
+      <primary>STD.Uni.RemoveSuffix</primary>
+    </indexterm><indexterm>
+      <primary>Uni.RemoveSuffix</primary>
+    </indexterm>(</emphasis> <emphasis>src, suffix, form</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,15 +28,22 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>The string to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>suffix</emphasis></entry>
+          <entry><emphasis>suffix </emphasis></entry>
 
           <entry>The ending string to remove.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>form</emphasis></entry>
+
+          <entry>The type of Unicode normalization to be employed. (NFC, NFD,
+          NFKC, or NFKD)</entry>
         </row>
 
         <row>
@@ -41,11 +55,13 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">RemoveSuffix</emphasis> function returns 
-  the <emphasis>source</emphasis> string with the ending text in the
-  <emphasis>suffix</emphasis> parameter removed. If the <emphasis>source</emphasis> string 
-  does not end with the <emphasis>suffix</emphasis>, then the <emphasis>source</emphasis> string 
-  is returned unchanged.</para>
+  <para>The <emphasis role="bold">RemoveSuffix</emphasis> function returns the
+  <emphasis>src</emphasis> string with the ending text in the
+  <emphasis>suffix</emphasis> parameter removed. If the
+  <emphasis>src</emphasis> string does not end with the
+  <emphasis>suffix</emphasis>, then the <emphasis>src</emphasis> string is
+  returned unchanged. Trailing spaces are stripped from both strings before
+  matching.</para>
 
   <para>Example:</para>
 

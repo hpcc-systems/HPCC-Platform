@@ -22,9 +22,9 @@
 #include "eclrtl.hpp"
 #include "eclhelper.hpp"
 
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &mb, bool isGroupedPersist, IThorIndexCallback *callback);
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonTree, bool isGroupedPersist, IThorIndexCallback *callback);
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json, bool isGroupedPersist, IThorIndexCallback *callback);
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &mb, bool isGroupedPersist);
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonTree, bool isGroupedPersist);
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json, bool isGroupedPersist);
 
 interface IDynamicIndexReadArg
 {
@@ -32,7 +32,7 @@ interface IDynamicIndexReadArg
 };
 
 extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projected, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit);
-extern ECLRTL_API IHThorIndexReadArg *createIndexReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projecte, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit);
+extern ECLRTL_API IHThorIndexReadArg *createIndexReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *projecte, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit, IVirtualFieldCallback &callback);
 extern ECLRTL_API IEclProcess* createDynamicEclProcess();
 
 #endif

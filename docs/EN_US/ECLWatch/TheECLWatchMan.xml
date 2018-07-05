@@ -1592,6 +1592,7 @@
         <title>Using Dynamic ESDL</title>
 
         <para>In order to use this interface choose an ESP service from the
+
         service list. Click on the triangle icon next to the ESP process
         (myesp) to expand and display the DESDL services. Check the box to
         select the desired DESDL service, then press the Open button.</para>
@@ -1613,11 +1614,13 @@
           <title>Viewing the binding information</title>
 
           <para>If the selected service contains an ESDL binding, you can
+
           select the binding tabs to view the binding definition (the service
           interface) or the configuration information.</para>
 
           <para>Select the <emphasis role="bold">Binding Definition</emphasis>
           to display the ESDL definition in XML format.</para>
+
 
           <para><figure>
               <title>Dynamic ESDL Binding Definition</title>
@@ -1688,9 +1691,11 @@
           <title>Delete a Binding</title>
 
           <para>To delete a service binding for a
+
           <emphasis>configured</emphasis> ESP Service. Expand the Process list
           as necessary and select the ESP service that contains the binding to
           delete.</para>
+
 
           <para><figure>
               <title>Deleting service binding</title>

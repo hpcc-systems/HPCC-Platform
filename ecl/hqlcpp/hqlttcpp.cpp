@@ -639,6 +639,30 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                 return expr->clone(actions);
             return transform(expr->queryChild(0));
         }
+    case no_if:
+    {
+        //Transform the whole expression since mapped expressions may be found on branches that are not taken
+        OwnedHqlExpr transformed = QuickHqlTransformer::createTransformed(expr);
+        if (transformed->getOperator() == no_if)
+        {
+            IHqlExpression * newCond = transformed->queryChild(0);
+            if (newCond->isConstant())
+            {
+                OwnedHqlExpr folded = quickFoldExpression(newCond);
+                IValue * foldedValue = folded->queryValue();
+                if (foldedValue)
+                {
+                    if (foldedValue->getBoolValue())
+                        return LINK(transformed->queryChild(1));
+                    IHqlExpression * elseExpr = transformed->queryChild(2);
+                    if (elseExpr)
+                        return LINK(elseExpr);
+                    return createNullExpr(expr);
+                }
+            }
+        }
+        break;
+    }
     }
     return QuickHqlTransformer::createTransformed(expr);
 }
@@ -13437,7 +13461,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                     OwnedHqlExpr one = createConstant(createIntValue(1, counter->getType()));
                     firstCond.setown(quickFullReplaceExpression(firstCond, counter, one));
                 }
-                return appendOwnedOperand(transformed, createExprAttribute(_loopFirst_Atom, firstCond.getClear()));
+                return appendOwnedOperand(transformed, createExprAttribute(loopFirstAtom, firstCond.getClear()));
             }
             return transformed.getClear();
         }

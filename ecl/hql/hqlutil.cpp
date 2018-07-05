@@ -424,7 +424,10 @@ IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpre
             physicalFields.append(*createPhysicalIndexRecord(mapper, cur, false, createKeyedTypes));
         else if (cur->hasAttribute(blobAtom))
         {
-            newField = createField(cur->queryId(), makeIntType(8, false), nullptr, createKeyedTypes ? createAttribute(_payload_Atom) : nullptr);
+            if (createKeyedTypes)
+                newField = createField(cur->queryId(), makeKeyedBlobType(cur->getType()), nullptr, createAttribute(_payload_Atom));
+            else
+                newField = createField(cur->queryId(), makeIntType(8, false), nullptr, nullptr);
         }
         else
         {

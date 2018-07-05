@@ -124,7 +124,7 @@ IndexDataSource::IndexDataSource(const char * _logicalName, IHqlExpression * _di
 {
     logicalName.set(_logicalName);
     diskRecord.set(_diskRecord);
-    deserializer.setown(createRtlFieldTypeDeserializer(nullptr));
+    deserializer.setown(createRtlFieldTypeDeserializer());
     diskRecordMeta.setown(new CDynamicOutputMetaData(* static_cast<const RtlRecordTypeInfo *>(queryRtlType(*deserializer.get(), diskRecord))));
     Owned<IUserDescriptor> udesc;
     if(_username != NULL && *_username != '\0')

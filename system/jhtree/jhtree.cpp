@@ -2084,6 +2084,7 @@ void IndexRowFilter::finish(size32_t _keyedSize)
         unsigned idx = numFilterFields();
         append(FFkeyed, createWildFieldFilter(idx, *recInfo.queryType(idx)));
     }
+    assertex(numFilterFields() == keySegCount);
 }
 
 void IndexRowFilter::describe(StringBuffer &out) const
@@ -3018,7 +3019,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
                                " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
                                " { \"name\": \"f2\", \"type\": \"ty2\", \"flags\": 4 } ] "
                                "}";
-            Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false, nullptr);
+            Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
             Owned <IKeyManager> tlk1 = createKeyMerger(meta->queryRecordAccessor(true), keyset, 7, NULL, false);
             Owned<IStringSet> sset1 = createStringSet(7);
             sset1->addRange("0000003", "0000003");
@@ -3210,7 +3211,7 @@ protected:
                 " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
                 " ] "
                 "}";
-        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false, nullptr);
+        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
         const RtlRecord &recInfo = meta->queryRecordAccessor(true);
         buildTestKeys(variable);
         {

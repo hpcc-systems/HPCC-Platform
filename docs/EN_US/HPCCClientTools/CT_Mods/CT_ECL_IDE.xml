@@ -719,18 +719,6 @@
                   example, when looking for workunits sent during a specific
                   year/month etc.</entry>
                 </row>
-
-                <row>
-                  <entry><emphasis role="bold">ECL Watch Graph
-                  Control</emphasis></entry>
-
-                  <entry>While the graph viewer control is built in to ECL
-                  IDE, ECL Watch requires this control to be installed so that
-                  it can display graphs properly. The currently installed
-                  version is identified and the version number of the new
-                  version shown. You should only adjust this setting if
-                  instructed to do so by customer support.</entry>
-                </row>
               </tbody>
             </tgroup>
           </informaltable>
@@ -2372,7 +2360,7 @@
                   <entry>Moves the selected ECL file to the Trash folder on
                   your desktop. You can also press the <emphasis
                   role="bold">Delete</emphasis> key to access this
-                  functionality. </entry>
+                  functionality.</entry>
                 </row>
 
                 <row>
