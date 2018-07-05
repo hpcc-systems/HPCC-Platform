@@ -30,6 +30,8 @@
 
 #define MIGRATE_JOIN_CONDITIONS             // This works, but I doubt it is generally worth the effort. - maybe on a flag.
 //#define TRACE_USAGE
+//#define VERIFY_SELECTORS_UPDATED          // Uncomment this to help catch problems when selectors become inconsistent
+
 #ifdef _DEBUG
 //#define TRACK_EXPR_SEQ  nnnnn
 #endif
@@ -44,8 +46,6 @@ void CHECK_EXPR_ID(IHqlExpression * expr)
 #else
 #define CHECK_EXPR_ID(expr)
 #endif
-
-
 
 /*
 Notes:
@@ -2106,6 +2106,16 @@ IHqlExpression * CTreeOptimizer::inheritSkips(IHqlExpression * newTransform, IHq
 
 IHqlExpression * CTreeOptimizer::createTransformed(IHqlExpression * expr)
 {
+    IHqlExpression * body = expr->queryBody();
+    if (expr != body)
+    {
+        OwnedHqlExpr transformed = transform(body);
+        if (transformed == body)
+            return LINK(expr);
+        return expr->cloneAllAnnotations(transformed);
+    }
+
+
     node_operator op = expr->getOperator();
     switch (op)
     {
@@ -2116,7 +2126,20 @@ IHqlExpression * CTreeOptimizer::createTransformed(IHqlExpression * expr)
 
     //Do this first, so that any references to a child dataset that changes are correctly updated, before proceeding any further.
     OwnedHqlExpr dft = defaultCreateTransformed(expr);
+
+#ifdef VERIFY_SELECTORS_UPDATED
+    LinkedHqlExpr savedDft = dft;
+#endif
+
     updateOrphanedSelectors(dft, expr);
+
+#ifdef VERIFY_SELECTORS_UPDATED
+    if (isIndependentOfScope(expr) && !isIndependentOfScope(dft))
+    {
+        EclIR::dump_irn(3, expr, savedDft.get(), dft.get());
+        throwUnexpectedX(!isIndependentOfScope(savedDft) ? "doCreateTransform" : "updateOrphan");
+    }
+#endif
 
     OwnedHqlExpr ret = doCreateTransformed(dft, expr);
     if (ret->queryBody() == expr->queryBody())
