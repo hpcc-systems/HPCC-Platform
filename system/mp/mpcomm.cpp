@@ -42,6 +42,9 @@
 #include "mputil.hpp"
 #include "mplog.hpp"
 
+//MPI implementation
+#include "mpicomm.hpp"
+
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
 #endif
@@ -3116,8 +3119,13 @@ mptag_t createReplyTag()
 
 ICommunicator *createCommunicator(IGroup *group, bool outer)
 {
-    assertex(globalMPServer);
-    return globalMPServer->createCommunicator(group, outer);
+    if (std::getenv(MPI_ENV))
+           return createMPICommunicator(group);
+    else
+    {
+        assertex(globalMPServer);
+        return globalMPServer->createCommunicator(group, outer);
+    }
 }
 
 StringBuffer &getReceiveQueueDetails(StringBuffer &buf)

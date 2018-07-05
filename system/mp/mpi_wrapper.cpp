@@ -503,7 +503,6 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, CMessa
                                              : hpcc_mpi::CommStatus::SUCCESS)
                                   : hpcc_mpi::CommStatus::TIMEDOUT);
     return status;
-
 }
 
 void hpcc_mpi::barrier(MPI_Comm comm)

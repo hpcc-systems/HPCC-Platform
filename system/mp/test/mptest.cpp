@@ -9,6 +9,8 @@
 #include <jcrc.hpp>
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
+#include <mpicomm.hpp>
+
 #include "mplog.hpp"
 
 using namespace std;
@@ -793,11 +795,14 @@ int main(int argc, char* argv[])
     if ((argSize>1) && (strcmp(argL[1], "--with-mpi")==0)){
         argSize--;
         argL++;
+        char *ev = (char *)MPI_ENV;
+        setenv(ev,"",0);
+        assertex(getenv(MPI_ENV)!=NULL);
     }
 
 #ifndef MYMACHINES
     if (argSize<3) {
-        printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -n <numprocs> -d] | <ip:port> <ip:port>]\n\n", argv[0]);
+        printf("\nMPTEST: Usage: %s [--with-mpi] <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -n <numprocs> -d] | <ip:port> <ip:port>]\n\n", argv[0]);
         return 0;
     }
 #endif

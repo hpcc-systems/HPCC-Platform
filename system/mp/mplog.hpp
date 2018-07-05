@@ -75,7 +75,7 @@ extern mp_decl bool disconnectLogMsgListenerFromChildOwn(INode * childNode);
     #include <iostream>
     #include <cxxabi.h>
     #include <execinfo.h>
-    #define nl std::endl
+    #define _nl std::endl
     extern thread_local int debug_counter;
     extern thread_local int debug_thread_id;
     extern int global_proc_rank;
@@ -102,10 +102,10 @@ extern mp_decl bool disconnectLogMsgListenerFromChildOwn(INode * childNode);
 //        std::cout<<stream.str();
 //    }
 
-    #define _T(x) { std::stringstream stream; stream << trace_prefix() << x << nl; std::cout << stream.str(); }
+    #define _T(x) { std::stringstream stream; stream << trace_prefix() << x << _nl; std::cout << stream.str(); }
     #define _TF(...) trace_print_func(__VA_ARGS__)
 #else
-    #define nl
+    #define _nl
     #define _T(x)
     #define _TF(...)
 #endif
