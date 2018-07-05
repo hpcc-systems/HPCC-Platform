@@ -7,5 +7,6 @@ Requires=hpcc-conf@configmgr.service
 Type=oneshot
 User=@RUNTIME_USER@
 Group=@RUNTIME_GROUP@
-ExecStartPre=/bin/mkdir -p @RUNTIME_PATH@/configmgr @LOG_PATH@/configmgr @PID_PATH@ @LOCK_PATH@/configmgr
+ExecStart=@ADMIN_PATH@/check-component-exists.sh %i
+ExecStart=/bin/mkdir -p @RUNTIME_PATH@/configmgr @LOG_PATH@/configmgr @PID_PATH@ @LOCK_PATH@/configmgr
 ExecStart=/bin/bash -c "/bin/cp @CONFIG_DIR@/configmgr/esp.xml @RUNTIME_PATH@/configmgr/esp.xml"
