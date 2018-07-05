@@ -143,12 +143,9 @@ struct ECLRTL_API RtlIntTypeInfo : public RtlTypeInfoBase
 
 struct ECLRTL_API RtlBlobTypeInfo : public RtlTypeInfoBase
 {
-    // Used for values stored in the fieldpos field of indexes
-    constexpr inline RtlBlobTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo *_child, IThorIndexCallback *_callback)
-    : RtlTypeInfoBase(_fieldType, _length), child(_child), callback(_callback)
-    {}
+    // Used for values stored in blobs. The child type represents the original type
     constexpr inline RtlBlobTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo *_child)
-    : RtlTypeInfoBase(_fieldType, _length), child(_child), callback(nullptr)
+    : RtlTypeInfoBase(_fieldType, _length), child(_child)
     {}
     virtual void doDelete() const final override { delete this; }
 
@@ -166,15 +163,13 @@ struct ECLRTL_API RtlBlobTypeInfo : public RtlTypeInfoBase
     virtual double getReal(const void * ptr) const override;
     virtual bool canTruncate() const override;
     virtual bool canExtend(char &fillChar) const override;
-    virtual bool isNumeric() const override { return true; }
+    virtual bool isNumeric() const override { return false; }
+    virtual bool isScalar() const override { return false; }
     virtual int compare(const byte * left, const byte * right) const override;
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
     virtual const RtlTypeInfo * queryChildType() const override { return child; }
-
-    void setCallback(IThorIndexCallback *_callback);
 private:
     const RtlTypeInfo *child = nullptr;
-    IThorIndexCallback *callback = nullptr;
 };
 
 struct ECLRTL_API RtlSwapIntTypeInfo : public RtlTypeInfoBase

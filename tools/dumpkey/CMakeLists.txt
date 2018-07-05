@@ -30,10 +30,14 @@ set (    SRCS
     )
 
 include_directories ( 
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
          ./../../system/jhtree 
          ./../../rtl/include
          ./../../rtl/eclrtl
          ./../../system/include 
+         ./../../ecl/hql 
+         ./../../common/deftype
          ./../../common/thorhelper 
          ./../../system/jlib 
     )
@@ -48,6 +52,7 @@ target_link_libraries ( dumpkey
          thorhelper
          jlib
          jhtree
+         hql
     )
 
 

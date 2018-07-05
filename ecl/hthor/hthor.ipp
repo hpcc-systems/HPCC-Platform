@@ -2301,6 +2301,7 @@ public:
     virtual unsigned __int64 getFilePosition(const void * row);
     virtual unsigned __int64 getLocalFilePosition(const void * row);
     virtual const char * queryLogicalFilename(const void * row) { return logicalFileName.get(); }
+    virtual const byte * lookupBlob(unsigned __int64 id) { UNIMPLEMENTED; }
 };
 
 class CHThorBinaryDiskReadBase : public CHThorDiskReadBaseActivity, implements IIndexReadContext

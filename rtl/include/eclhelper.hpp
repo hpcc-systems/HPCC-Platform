@@ -426,6 +426,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline bool isLinkCounted() const { return (fieldType & RFTMlinkcounted) != 0; }
     inline bool isSigned() const { return (fieldType & RFTMunsigned) == 0; }
     inline bool isUnsigned() const { return (fieldType & RFTMunsigned) != 0; }
+    inline bool isBlob() const { return getType() == type_blob; }
     inline unsigned getDecimalDigits() const { return (length & 0xffff); }
     inline unsigned getDecimalPrecision() const { return (length >> 16); }
     inline unsigned getBitfieldIntSize() const { return (length & 0xff); }
@@ -2302,6 +2303,7 @@ interface ISteppingMeta
 interface IThorDiskCallback : extends IFilePositionProvider
 {
     virtual const char * queryLogicalFilename(const void * row) = 0;
+    virtual const byte * lookupBlob(unsigned __int64 id) = 0;         // return reference, not freed by code generator, can dispose once transform() has returned.
 };
 
 interface IThorIndexCallback : extends IInterface

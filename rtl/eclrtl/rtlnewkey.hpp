@@ -58,7 +58,7 @@ class ECLRTL_API RowFilter
 {
 public:
     void addFilter(const IFieldFilter & filter);
-    void addFilter(const RtlRecord & record, const char * filter);
+    const IFieldFilter &addFilter(const RtlRecord & record, const char * filter);
     bool matches(const RtlRow & row) const;
 
     void createSegmentMonitors(IIndexReadContext *irc);

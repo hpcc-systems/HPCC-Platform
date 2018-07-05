@@ -22179,6 +22179,7 @@ public:
     {
         return reader->queryLogicalFilename(row);
     }
+    virtual const byte * lookupBlob(unsigned __int64 id) { UNIMPLEMENTED; }
 
     virtual const void *nextRow()
     {
