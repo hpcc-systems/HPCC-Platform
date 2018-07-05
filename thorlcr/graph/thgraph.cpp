@@ -2201,7 +2201,11 @@ static bool isLocalOnly(const CGraphElementBase &activity)
     Owned<IPropertyTreeIterator> inputs = activity.queryOwner().queryXGMML().getElements(match.str());
     ForEach(*inputs)
     {
-        CGraphElementBase *sourceAct = activity.queryOwner().queryElement(inputs->query().getPropInt("@source"));
+        IPropertyTree &edge = inputs->query();
+        //Ignore edges that represent dependencies from parent activities to child activities.
+        if (edge.getPropBool("att[@name=\"_childGraph\"]/@value", false))
+            continue;
+        CGraphElementBase *sourceAct = activity.queryOwner().queryElement(edge.getPropInt("@source"));
         if (!isLocalOnly(*sourceAct))
             return false;
     }
