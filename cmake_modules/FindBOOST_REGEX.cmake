@@ -110,6 +110,12 @@ IF (NOT BOOST_REGEX_FOUND)
         link_directories(${BOOST_REGEX_LIBRARY_DIR})
         set (BOOST_REGEX_LIBRARIES "")  # the actual library to use is controlled by boost header files
       ENDIF()
+      IF(EXISTS "${BOOST_REGEX_INCLUDE_DIR}/boost/version.hpp")
+        FILE (STRINGS "${BOOST_REGEX_INCLUDE_DIR}/boost/version.hpp" BOOST_REGEX_VERSION REGEX "#define *BOOST_VERSION [0-9]*")
+        STRING(REGEX REPLACE "#define *BOOST_VERSION *" "" BOOST_REGEX_VERSION "${BOOST_REGEX_VERSION}")
+        MESSAGE("BOOST_REGEX_VERSION is ${BOOST_REGEX_VERSION}")
+      ENDIF()
+      
     ENDIF()
     MARK_AS_ADVANCED(BOOST_REGEX_INCLUDE_DIR BOOST_REGEX_LIBRARIES)
   ENDIF (WIN32 AND USE_NATIVE_LIBRARIES)
