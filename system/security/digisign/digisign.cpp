@@ -291,7 +291,7 @@ static void addAlgorithms()
 extern "C"
 {
     //Returns reference to singleton instance created from environment.conf key file settings
-    DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromEnv()
+    DIGISIGN_API IDigitalSignatureManager * queryDigitalSignatureManagerInstanceFromEnv()
     {
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
         std::call_once(dsmInitFlag, createDigitalSignatureManagerInstance, &dsm);

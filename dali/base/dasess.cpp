@@ -460,7 +460,7 @@ class CDaliMessageSignatureHelper
 public:
     static void serializeSignature(const char * scope, IUserDescriptor *udesc, MemoryBuffer &mb)
     {
-		IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromEnv();
+		IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
 		if (pDSM && pDSM->isDigiSignerConfigured())
 		{
             //Serialize timestamp and signature of "scope;username;timestamp"

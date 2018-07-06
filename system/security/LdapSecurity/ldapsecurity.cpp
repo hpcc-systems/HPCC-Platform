@@ -673,7 +673,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     }
 
     //Verify provided signature if present
-    IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromEnv();
+    IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
     if (pDSM && pDSM->isDigiVerifierConfigured() && !isEmptyString(user->credentials().getSignature()))
     {
         StringBuffer b64Signature(user->credentials().getSignature());
