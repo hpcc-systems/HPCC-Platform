@@ -742,6 +742,34 @@ void testIPnodeHash()
     afor.For(100000,10);
 }
 
+void TEST_single_send(ICommunicator* comm)
+{
+    _TF("TEST_single_send");
+    IGroup* group = comm->getGroup();
+    int expected_msg = 42;
+    int received_msg;
+    CMessageBuffer testMsg;
+    assertex(group->ordinality() > 1);
+
+    if (group->rank() == 0)
+    {
+        rank_t target = 1;
+        testMsg.append(expected_msg);
+        comm->send(testMsg, target, MPTAG_TEST);
+    }
+    if (group->rank() == 1)
+    {
+        rank_t source = 0;
+        bool success = comm->recv(testMsg, source, MPTAG_TEST, NULL);
+        assertex(success == true);
+        _T("About to read message buffer");
+        testMsg.read(received_msg);
+        _T("read data");
+        assertex(expected_msg == received_msg);
+        PrintLog("Message sent from node 0 to 1.");
+    }
+}
+
 int main(int argc, char* argv[])
 {
     int mpi_debug = 0;
@@ -970,6 +998,8 @@ int main(int argc, char* argv[])
             MPAlltoAll(group, mpicomm, buffsize, numiters);
         else if ( strieq(testname, "MPTest2") || strieq(testname, "Test2") )
             MPTest2(group, mpicomm);
+        else if ( strieq(testname, "MPSingleSend") || strieq(testname, "SingleSend") )
+            TEST_single_send(mpicomm);
         else if ((int)strlen(testname) > 0)
             PrintLog("MPTEST: Error, invalid testname specified (-t %s)", testname);
         else  // default is MPRing ...

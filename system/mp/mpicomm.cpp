@@ -42,42 +42,6 @@
 #pragma warning (disable : 4355)
 #endif
 
-//#define _TRACE
-//#define _FULLTRACE
-
-//#define _TRACEMPSERVERNOTIFYCLOSED
-//#define _TRACEORPHANS
-//
-//
-//#define REFUSE_STALE_CONNECTION
-//
-//
-//#define MP_PROTOCOL_VERSION    0x102
-//#define MP_PROTOCOL_VERSIONV6   0x202                   // extended for IPV6
-//
-//// These should really be configurable
-//#define CANCELTIMEOUT       1000             // 1 sec
-//#define CONNECT_TIMEOUT          (5*60*1000) // 5 mins
-//#define CONNECT_READ_TIMEOUT     (10*1000)   // 10 seconds. NB: used by connect readtms loop (see loopCnt)
-//#define CONNECT_TIMEOUT_INTERVAL 1000        // 1 sec
-//#define CONNECT_RETRYCOUNT       180         // Overall max connect time is = CONNECT_RETRYCOUNT * CONNECT_READ_TIMEOUT
-//#define CONNECT_TIMEOUT_MINSLEEP 2000        // random range: CONNECT_TIMEOUT_MINSLEEP to CONNECT_TIMEOUT_MAXSLEEP milliseconds
-//#define CONNECT_TIMEOUT_MAXSLEEP 5000
-//
-//#define CONFIRM_TIMEOUT          (90*1000) // 1.5 mins
-//#define CONFIRM_TIMEOUT_INTERVAL 5000 // 5 secs
-//#define TRACESLOW_THRESHOLD      1000 // 1 sec
-//
-//#define VERIFY_DELAY            (1*60*1000)  // 1 Minute
-//#define VERIFY_TIMEOUT          (1*60*1000)  // 1 Minute
-//
-//#define DIGIT1 U64C(0x10000000000) // (256ULL*256ULL*256ULL*65536ULL)
-//#define DIGIT2 U64C(0x100000000)   // (256ULL*256ULL*65536ULL)
-//#define DIGIT3 U64C(0x1000000)     // (256ULL*65536ULL)
-//#define DIGIT4 U64C(0x10000)       // (65536ULL)
-
-#define _TRACING
-
 class NodeCommunicator: public ICommunicator, public CInterface
 {
 private:
@@ -110,7 +74,7 @@ private:
     IGroup *group;
     rank_t myrank;
     rank_t commSize;
-    MPI_Comm comm;
+    MPI::Comm* comm;
     std::vector<SelfMessage*> selfMessages;
     CriticalSection selfMessagesLock;
 private:
@@ -334,19 +298,20 @@ public:
         return group;
     }
 
-    NodeCommunicator(IGroup *_group, MPI_Comm _comm)
+    NodeCommunicator(IGroup *_group, MPI::Comm* _comm)
     {
-        hpcc_mpi::initialize(true);
+        initializeMPI();
         this->group = _group;
         this->comm = _comm;
         commSize = hpcc_mpi::size(comm);
         myrank = hpcc_mpi::rank(comm);
+        comm->Set_errhandler(MPI::ERRORS_THROW_EXCEPTIONS);
         assertex(group->ordinality()==commSize);
     }
     
     ~NodeCommunicator()
     {
-        hpcc_mpi::finalize();
+        terminateMPI();
     }
 };
 
@@ -354,7 +319,7 @@ ICommunicator *createMPICommunicator(IGroup *group)
 {
     if (!group)
     {
-        int size = hpcc_mpi::size(MPI_COMM_WORLD);
+        int size = hpcc_mpi::size(&MPI::COMM_WORLD);
         INode* nodes[size];
         for(int i=0; i<size; i++)
         {
@@ -363,9 +328,30 @@ ICommunicator *createMPICommunicator(IGroup *group)
         }
         group = createIGroup(size, nodes);
     }
-    ICommunicator* comm = new NodeCommunicator(group, MPI_COMM_WORLD);
-    int rank = hpcc_mpi::rank(MPI_COMM_WORLD);
+    ICommunicator* comm = new NodeCommunicator(group, &MPI::COMM_WORLD);
+    int rank = hpcc_mpi::rank(&MPI::COMM_WORLD);
     initMyNode(rank);
     return comm;
 }
 
+int mpiInitCounter = 0;
+CriticalSection initCounterBlock;
+
+void initializeMPI()
+{
+    //Only initialize the framework once
+    CriticalBlock block(initCounterBlock);
+    if (!mpiInitCounter)
+        hpcc_mpi::initialize(true);
+    mpiInitCounter++;
+}
+
+void terminateMPI()
+{
+    //Only finalize the framework once when everyone had requested to finalize it.
+    CriticalBlock block(initCounterBlock);
+    mpiInitCounter--;
+    if (mpiInitCounter == 0)
+        hpcc_mpi::finalize();
+    //TODO: throw error if mpiInitCounter<0
+}

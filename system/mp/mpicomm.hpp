@@ -14,4 +14,7 @@
 
 extern mp_decl ICommunicator *createMPICommunicator(IGroup *group);
 
+extern mp_decl void initializeMPI();
+extern mp_decl void terminateMPI();
+
 #endif /* SYSTEM_MP_MPICOMM_HPP_ */
