@@ -32,18 +32,21 @@ private:
 public:    
     bool isSend(){return send;}
     bool isReceive(){return !isSend();}
-    bool isEqual(bool _send, int _rank, int _tag, MPI::Comm* _comm) {return (send==_send) && (_rank==MPI_ANY_SOURCE || rank==_rank) && (_tag==MPI_ANY_TAG || tag==_tag) && (comm == _comm);}
+    bool isEqual(bool _send, int _rank, int _tag, MPI::Comm& _comm)
+    {
+        return (send==_send) && (_rank==MPI_ANY_SOURCE || rank==_rank) && (_tag==MPI_ANY_TAG || tag==_tag) && (comm == _comm);
+    }
 
     int rank;                       // source/destination rank of the processor
     int tag;                        // MPI tag information
     MPI::Request request;           // persistent request object to keep track of ongoing MPI call
-    MPI::Comm *comm = NULL;                  // MPI communicator
+    MPI::Comm& comm;                // MPI communicator
 
 
-    CommData(bool _send, int _rank, int _tag, MPI::Comm* _comm):
+    CommData(bool _send, int _rank, int _tag, MPI::Comm& _comm):
         send(_send), rank(_rank), tag(_tag), comm(_comm){}
 
-    CommData(int _rank, int _tag, MPI::Comm* _comm): rank(_rank), tag(_tag), comm(_comm), send(false){}
+    CommData(int _rank, int _tag, MPI::Comm& _comm): rank(_rank), tag(_tag), comm(_comm), send(false){}
 
 //    void loadBuffer(CMessageBuffer &buf)
 //    {
@@ -145,7 +148,7 @@ CommData* popCommData(int index)
     return _popCommData(index);
 }
 
-std::vector<CommData*> popCommData(bool send, int rank, int tag, MPI::Comm* comm)
+std::vector<CommData*> popCommData(bool send, int rank, int tag, MPI::Comm& comm)
 {
    _TF("popCommData", rank, tag);
    CriticalBlock block(commDataLock);
@@ -161,7 +164,7 @@ std::vector<CommData*> popCommData(bool send, int rank, int tag, MPI::Comm* comm
 
 CommData* popCommData(CommData * commData)
 {
-    _TF("popCommData(CommData * commData)", commData->rank, commData->tag, commData->comm);
+    _TF("popCommData(CommData * commData)", commData->rank, commData->tag);
     CriticalBlock block(commDataLock);
     int size = asyncCommData.size();
     for(int i=(size-1); i>=0; i--)
@@ -245,7 +248,7 @@ MPI::Status waitToComplete( bool& completed, bool& error, bool& canceled, bool& 
     return stat;
 }
 
-MPI::Status hasIncomingData(int sourceRank, int mptag, MPI::Comm* comm,
+MPI::Status hasIncomingData(int sourceRank, int mptag, MPI::Comm& comm,
         bool& incomingMessage, bool& error, bool& canceled, unsigned timeout, CommData *commData)
 {
     _TF("hasIncomingData", sourceRank, mptag, incomingMessage, error, timeout);
@@ -259,7 +262,7 @@ MPI::Status hasIncomingData(int sourceRank, int mptag, MPI::Comm* comm,
 
     while ((noCancellation = commData->lockFromCancellation()) && !(incomingMessage || error || (timeout !=0 && tm.timedout(&remaining))))
     {
-        incomingMessage = comm->Iprobe(sourceRank, mptag, stat);
+        incomingMessage = comm.Iprobe(sourceRank, mptag, stat);
         commData->releaseCancellationLock();
         if (timeout == 0) break;
         usleep(PROBING_DELAY);
@@ -272,7 +275,7 @@ MPI::Status hasIncomingData(int sourceRank, int mptag, MPI::Comm* comm,
 
 /** See mpi_wrapper.hpp header file for function descriptions of the following **/
 
-bool hpcc_mpi::hasIncomingMessage(rank_t &sourceRank, mptag_t &mptag, MPI::Comm* comm)
+bool hpcc_mpi::hasIncomingMessage(rank_t &sourceRank, mptag_t &mptag, MPI::Comm& comm)
 {
     _TF("hasIncomingMessage", sourceRank, mptag);
     bool incomingMessage = false; bool error = false; bool canceled = false;
@@ -307,9 +310,9 @@ bool cancelComm(CommData* commData)
     return ret;
 }
 
-bool hpcc_mpi::cancelComm(bool send, rank_t rank, mptag_t mptag, MPI::Comm* comm)
+bool hpcc_mpi::cancelComm(bool send, rank_t rank, mptag_t mptag, MPI::Comm& comm)
 {
-    _TF("cancelComm", send, rank, mptag, comm);
+    _TF("cancelComm", send, rank, mptag);
     int r = getRank(rank);
     int tag = getTag(mptag);
     std::vector<CommData*> commDataList = popCommData(send, r, tag, comm);
@@ -325,16 +328,16 @@ bool hpcc_mpi::cancelComm(bool send, rank_t rank, mptag_t mptag, MPI::Comm* comm
     return success;
 }
 
-rank_t hpcc_mpi::rank(MPI::Comm* comm)
+rank_t hpcc_mpi::rank(MPI::Comm& comm)
 {
     _TF("rank");
-    return comm->Get_rank();
+    return comm.Get_rank();
 }
 
-rank_t hpcc_mpi::size(MPI::Comm* comm)
+rank_t hpcc_mpi::size(MPI::Comm& comm)
 {
     _TF("size");
-    return comm->Get_size();
+    return comm.Get_size();
 }
 
 #define MPI_BUFFER_SIZE 16777216        // 16MB
@@ -359,6 +362,11 @@ void hpcc_mpi::initialize(bool withMultithreading)
 #endif
 }
 
+void hpcc_mpi::setErrorHandler(MPI::Comm& comm, MPI::Errhandler handler)
+{
+    comm.Set_errhandler(handler);
+}
+
 void hpcc_mpi::finalize()
 {
     _TF("finalize");
@@ -370,7 +378,7 @@ void hpcc_mpi::finalize()
     MPI::Finalize();
 }
 
-hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageBuffer &mbuf, MPI::Comm* comm, unsigned timeout)
+hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageBuffer &mbuf, MPI::Comm& comm, unsigned timeout)
 {
     _TF("sendData", dstRank, mptag, timeout);
     CTimeMon tm(timeout);
@@ -388,7 +396,7 @@ hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageB
             bool notCanceled = commData->lockFromCancellation();
             if (notCanceled)
             {
-                commData->request  = comm->Ibsend(mbuf.bufferBase(), mbuf.length(), MPI_BYTE, target, tag);
+                commData->request  = comm.Ibsend(mbuf.bufferBase(), mbuf.length(), MPI_BYTE, target, tag);
                 commData->releaseCancellationLock();
             }
             bufferedSendComplete = true;
@@ -421,7 +429,7 @@ hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageB
     return status;
 }
 
-hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, CMessageBuffer &mbuf, MPI::Comm* comm, unsigned timeout)
+hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t &sourceRank, mptag_t &mptag, CMessageBuffer &mbuf, MPI::Comm& comm, unsigned timeout)
 {
     _TF("readData", sourceRank, mptag, timeout);
     CTimeMon tm(timeout);
@@ -446,7 +454,7 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, CMessa
         bool notCanceled = commData->lockFromCancellation();
         if (notCanceled)
         {
-            commData->request  = comm->Irecv(mbuf.bufferBase(), mbuf.length(), MPI_BYTE, source, tag);
+            commData->request  = comm.Irecv(mbuf.bufferBase(), mbuf.length(), MPI_BYTE, source, tag);
             commData->releaseCancellationLock();
         }
         canceled = !notCanceled;
@@ -460,8 +468,10 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, CMessa
                 bool noCancellation = commData->lockFromCancellation();
                 if (noCancellation)
                 {
-                    SocketEndpoint ep(stat.Get_source());
-                    mbuf.init(ep, getTag(stat.Get_tag()), TAG_REPLY_BASE);
+                    sourceRank = stat.Get_source();
+                    mptag = getTag(stat.Get_tag());
+//                    SocketEndpoint ep(stat.Get_source());
+//                    mbuf.init(ep, getTag(stat.Get_tag()), TAG_REPLY_BASE);
                     commData->releaseCancellationLock();
                 }
                 canceled = !noCancellation;
@@ -486,8 +496,8 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t sourceRank, mptag_t mptag, CMessa
     return status;
 }
 
-void hpcc_mpi::barrier(MPI::Comm* comm)
+void hpcc_mpi::barrier(MPI::Comm& comm)
 {
     _TF("barrier");
-    comm->Barrier();
+    comm.Barrier();
 }

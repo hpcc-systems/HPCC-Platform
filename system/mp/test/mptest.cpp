@@ -770,6 +770,16 @@ void TEST_single_send(ICommunicator* comm)
     }
 }
 
+int getEnvMPIRank()
+{
+    // Would be better if program told rank, irrespective of MPI implementation.
+    const char *rank = getenv("PMI_RANK");
+    if (!rank)
+        return -1;
+    return atoi(rank);
+}
+
+
 int main(int argc, char* argv[])
 {
     int mpi_debug = 0;
@@ -777,6 +787,8 @@ int main(int argc, char* argv[])
     size32_t buffsize = 0;
     unsigned numiters = 0;
     rank_t max_ranks = 0;
+    bool useMPI = false;
+
     InitModuleObjects();
     EnableSEHtoExceptionMapping();
 
@@ -830,7 +842,7 @@ int main(int argc, char* argv[])
 
 #ifndef MYMACHINES
     if (argSize<3) {
-        printf("\nMPTEST: Usage: %s [--with-mpi] <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -n <numprocs> -d] | <ip:port> <ip:port>]\n\n", argv[0]);
+        printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -n <numprocs> -d] | <ip:port> <ip:port>]\n\n", argv[0]);
         return 0;
     }
 #endif
@@ -843,6 +855,19 @@ int main(int argc, char* argv[])
 #ifndef MYMACHINES
         rank_t tot_ranks = 0;
         int my_port = atoi(argL[1]);
+
+
+        int rank = getEnvMPIRank();
+        if (rank >= 0) // mpi launch
+        {
+            /* when launched via MPI, my_port is same
+             * Ideally MPI would pass in rank and the rest can be done internally.
+             * For now manipulate my_port in useMPI case to make different per process based on rank.
+             */
+
+            my_port += rank;
+        }
+
         char logfile[256] = { "" };
         sprintf(logfile,"mptest-%d.log",my_port);
         // openLogFile(lf, logfile);
@@ -897,6 +922,10 @@ int main(int argc, char* argv[])
                         max_ranks = atoi(argL[j+1]);
                         j++;
                     }
+                }
+                else if (streq(argL[j], "-mpi"))
+                {
+                    useMPI = true;
                 }
                 j++;
             }
@@ -969,7 +998,11 @@ int main(int argc, char* argv[])
         Owned<IGroup> group = createIGroup(MYMACHINES,MPPORT);
 #endif
 
-        Owned<ICommunicator> mpicomm = createCommunicator(group);
+        Owned<ICommunicator> mpicomm;
+        if (useMPI)
+            mpicomm.setown(createMPICommunicator(group));
+        else
+            mpicomm.setown(createCommunicator(group));
 
 #ifdef STREAMTEST
         StreamTest(group,mpicomm);
