@@ -47,6 +47,7 @@ namespace hpcc_mpi
      */
     void initialize(bool withMultithreading = false);
 
+    void setErrorHandler(MPI::Comm& comm, MPI::Errhandler handler = MPI::ERRORS_ARE_FATAL);
     /**
      * tear-down the MPI framework
      */
@@ -57,14 +58,14 @@ namespace hpcc_mpi
     * @param group      NodeGroup which the processor rank we want to get
     * @return           rank of the calling node/processor
     */
-    rank_t rank(MPI::Comm* comm);
+    rank_t rank(MPI::Comm& comm);
 
     /**
     * Get the no of the processors within the MPI communicator in the NodeGroup
     * @param group      NodeGroup which the number of processors we want to get
     * @return           number of nodes/processors in the NodeGroup
     */
-    rank_t size(MPI::Comm* comm);
+    rank_t size(MPI::Comm& comm);
     
     /**
     * Send data to a destination node/processor
@@ -78,7 +79,7 @@ namespace hpcc_mpi
     *                   releaseComm(...) function to release this object once
     *                   done using it.
     */
-    CommStatus sendData(rank_t dstRank, mptag_t tag, CMessageBuffer &mbuf, MPI::Comm* comm, unsigned timeout);
+    CommStatus sendData(rank_t dstRank, mptag_t tag, CMessageBuffer &mbuf, MPI::Comm& comm, unsigned timeout);
 
     /**
     * Receive data from a node/processor
@@ -92,7 +93,7 @@ namespace hpcc_mpi
     *                   releaseComm(...) function to release this object once
     *                   done using it.
     */
-    CommStatus readData(rank_t sourceRank, mptag_t tag, CMessageBuffer &mbuf, MPI::Comm* comm, unsigned timeout);
+    CommStatus readData(rank_t &sourceRank, mptag_t &tag, CMessageBuffer &mbuf, MPI::Comm& comm, unsigned timeout);
     
     /**
     * Check to see if there's a incoming message
@@ -102,7 +103,7 @@ namespace hpcc_mpi
     * @return           Returns true if there is a incoming message and both 
     *                   sourceRank and tag variables updated.
     */    
-    bool hasIncomingMessage(rank_t &sourceRank, mptag_t &tag, MPI::Comm* comm);
+    bool hasIncomingMessage(rank_t &sourceRank, mptag_t &tag, MPI::Comm& comm);
     
     /**
     * Cancel a send/receive communication request
@@ -112,13 +113,13 @@ namespace hpcc_mpi
     * @param comm       MPI communicator
     * @return           True if successfully canceled
     */    
-    bool cancelComm(bool send, rank_t rank, mptag_t mptag, MPI::Comm* comm);
+    bool cancelComm(bool send, rank_t rank, mptag_t mptag, MPI::Comm& comm);
     
     /**
     * Communication barrier 
     * @param group      NodeGroup to put barrier on
     */    
-    void barrier(MPI::Comm* comm);
+    void barrier(MPI::Comm& comm);
 
 }
 

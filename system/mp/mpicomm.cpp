@@ -71,10 +71,10 @@ private:
             }
         }
     };
-    IGroup *group;
+    Owned<IGroup> group;
     rank_t myrank;
     rank_t commSize;
-    MPI::Comm* comm;
+    MPI::Comm& comm;
     std::vector<SelfMessage*> selfMessages;
     CriticalSection selfMessagesLock;
 private:
@@ -206,6 +206,8 @@ public:
         }
         if (completed)
         {
+            const SocketEndpoint &ep = getGroup()->queryNode(srcrank).endpoint();
+            mbuf.init(ep, tag, TAG_REPLY_BASE);
             mbuf.reset();
         }
         return completed;
@@ -252,7 +254,7 @@ public:
     {
         _TF("reply", mbuf.getReplyTag(), timeout);
         mptag_t replytag = mbuf.getReplyTag();
-        rank_t dstrank = group->rank(mbuf.getSender());
+        rank_t dstrank = getGroup()->rank(mbuf.getSender());
         if (dstrank!=RANK_NULL)
         {
             if (send (mbuf, dstrank, replytag,timeout))
@@ -290,23 +292,24 @@ public:
 
     IGroup &queryGroup()
     {
-        return *group;
+        return *(getGroup());
     }
     
     IGroup *getGroup()
     {
-        return group;
+        return group.getLink();
     }
 
-    NodeCommunicator(IGroup *_group, MPI::Comm* _comm)
+    NodeCommunicator(IGroup *_group, MPI::Comm& _comm): comm(_comm),  group(_group)
     {
-        initializeMPI();
-        this->group = _group;
-        this->comm = _comm;
+//        group=LINK(_group);
+
+        initializeMPI(comm);
+
         commSize = hpcc_mpi::size(comm);
         myrank = hpcc_mpi::rank(comm);
-        comm->Set_errhandler(MPI::ERRORS_THROW_EXCEPTIONS);
-        assertex(group->ordinality()==commSize);
+
+        assertex(getGroup()->ordinality()==commSize);
     }
     
     ~NodeCommunicator()
@@ -317,9 +320,11 @@ public:
 
 ICommunicator *createMPICommunicator(IGroup *group)
 {
-    if (!group)
+    if (group)
+        group->Link();
+    else
     {
-        int size = hpcc_mpi::size(&MPI::COMM_WORLD);
+        int size = hpcc_mpi::size(MPI::COMM_WORLD);
         INode* nodes[size];
         for(int i=0; i<size; i++)
         {
@@ -328,21 +333,23 @@ ICommunicator *createMPICommunicator(IGroup *group)
         }
         group = createIGroup(size, nodes);
     }
-    ICommunicator* comm = new NodeCommunicator(group, &MPI::COMM_WORLD);
-    int rank = hpcc_mpi::rank(&MPI::COMM_WORLD);
-    initMyNode(rank);
+    ICommunicator* comm = new NodeCommunicator(group, MPI::COMM_WORLD);
+//    int rank = hpcc_mpi::rank(&MPI::COMM_WORLD);
+//    initMyNode(rank);
     return comm;
 }
 
 int mpiInitCounter = 0;
 CriticalSection initCounterBlock;
 
-void initializeMPI()
+void initializeMPI(MPI::Comm& comm)
 {
     //Only initialize the framework once
     CriticalBlock block(initCounterBlock);
     if (!mpiInitCounter)
         hpcc_mpi::initialize(true);
+    hpcc_mpi::setErrorHandler(comm, MPI::ERRORS_THROW_EXCEPTIONS);
+
     mpiInitCounter++;
 }
 
