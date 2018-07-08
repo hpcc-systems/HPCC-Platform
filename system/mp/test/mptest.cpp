@@ -10,8 +10,10 @@
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
 #include <mpicomm.hpp>
+#include <string>
 
 #include "mplog.hpp"
+#include "additionalmptests.cpp"
 
 using namespace std;
 
@@ -742,34 +744,6 @@ void testIPnodeHash()
     afor.For(100000,10);
 }
 
-void TEST_single_send(ICommunicator* comm)
-{
-    _TF("TEST_single_send");
-    IGroup* group = comm->getGroup();
-    int expected_msg = 42;
-    int received_msg;
-    CMessageBuffer testMsg;
-    assertex(group->ordinality() > 1);
-
-    if (group->rank() == 0)
-    {
-        rank_t target = 1;
-        testMsg.append(expected_msg);
-        comm->send(testMsg, target, MPTAG_TEST);
-    }
-    if (group->rank() == 1)
-    {
-        rank_t source = 0;
-        bool success = comm->recv(testMsg, source, MPTAG_TEST, NULL);
-        assertex(success == true);
-        _T("About to read message buffer");
-        testMsg.read(received_msg);
-        _T("read data");
-        assertex(expected_msg == received_msg);
-        PrintLog("Message sent from node 0 to 1.");
-    }
-}
-
 int getEnvMPIRank()
 {
     // Would be better if program told rank, irrespective of MPI implementation.
@@ -779,6 +753,11 @@ int getEnvMPIRank()
     return atoi(rank);
 }
 
+#define TEST_AlltoAll "AlltoAll"
+#define TEST_STREAM "Stream"
+#define TEST_MULTI "Multi"
+#define TEST_RING "Ring"
+#define TEST_RANK "PrintRank"
 
 int main(int argc, char* argv[])
 {
@@ -787,6 +766,7 @@ int main(int argc, char* argv[])
     size32_t buffsize = 0;
     unsigned numiters = 0;
     rank_t max_ranks = 0;
+    rank_t inputRank = 0;
     bool useMPI = false;
 
     InitModuleObjects();
@@ -842,7 +822,15 @@ int main(int argc, char* argv[])
 
 #ifndef MYMACHINES
     if (argSize<3) {
-        printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -n <numprocs> -d] | <ip:port> <ip:port>]\n\n", argv[0]);
+        printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -r <rank> -n <numprocs> -d] | <ip:port> <ip:port>] [-mpi]\n\n", argv[0]);
+        std::vector<std::string> tests = { TEST_RANK, TEST_MULTI, TEST_STREAM, TEST_RING, TEST_AlltoAll};
+        appendAdditionalTests(tests);
+        std::vector<std::string>::iterator it = tests.begin();
+        printf("\t <testname>\t%s\n", (*it).c_str());
+        it++;
+        for (; it != tests.end(); ++it)
+            printf("\t\t\t%s\n",(*it).c_str());
+        printf("\n");
         return 0;
     }
 #endif
@@ -920,6 +908,14 @@ int main(int argc, char* argv[])
                     if ((j+1) < argSize)
                     {
                         max_ranks = atoi(argL[j+1]);
+                        j++;
+                    }
+                }
+                else if (streq(argL[j], "-r"))
+                {
+                    if ((j+1) < argSize)
+                    {
+                        inputRank = atoi(argL[j+1]);
                         j++;
                     }
                 }
@@ -1020,19 +1016,18 @@ int main(int argc, char* argv[])
         MPTest2(group, mpicomm);
 #    else
 #     ifdef DYNAMIC_TEST
-        _T("hostfile="<<hostfile<<" port="<<my_port<<" testname="<<testname<<" tot_ranks="<<tot_ranks);
-        if (strnicmp(testname, "Stream", 6)==0)
+        if (strnicmp(testname, TEST_STREAM, 6)==0)
             StreamTest(group, mpicomm);
-        else if (strnicmp(testname, "Multi", 5)==0)
+        else if (strnicmp(testname, TEST_MULTI, 5)==0)
             MultiTest(mpicomm);
-        else if ( strieq(testname, "MPRing") || strieq(testname, "Ring") )
+        else if ( strieq(testname, "MPRing") || strieq(testname, TEST_RING) )
             MPRing(group, mpicomm, numiters);
-        else if ( strieq(testname, "MPAlltoAll") || strieq(testname, "AlltoAll") )
+        else if ( strieq(testname, "MPAlltoAll") || strieq(testname, TEST_AlltoAll) )
             MPAlltoAll(group, mpicomm, buffsize, numiters);
-        else if ( strieq(testname, "MPTest2") || strieq(testname, "Test2") )
+        else if ( strieq(testname, "MPTest2") || strieq(testname, TEST_RANK) )
             MPTest2(group, mpicomm);
-        else if ( strieq(testname, "MPSingleSend") || strieq(testname, "SingleSend") )
-            TEST_single_send(mpicomm);
+        else if (runAdditionalTests(testname, mpicomm, numiters, buffsize, inputRank ))
+            {if (mpicomm.get()->getGroup()->rank()==0) PrintLog("MPTEST: Additional test %s completed", testname);}
         else if ((int)strlen(testname) > 0)
             PrintLog("MPTEST: Error, invalid testname specified (-t %s)", testname);
         else  // default is MPRing ...

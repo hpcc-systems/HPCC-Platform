@@ -302,8 +302,6 @@ public:
 
     NodeCommunicator(IGroup *_group, MPI::Comm& _comm): comm(_comm),  group(_group)
     {
-//        group=LINK(_group);
-
         initializeMPI(comm);
 
         commSize = hpcc_mpi::size(comm);
@@ -320,23 +318,23 @@ public:
 
 ICommunicator *createMPICommunicator(IGroup *group)
 {
+    MPI::Comm& comm = MPI::COMM_WORLD;
     if (group)
         group->Link();
     else
     {
-        int size = hpcc_mpi::size(MPI::COMM_WORLD);
+        initializeMPI(comm);
+        int size = hpcc_mpi::size(comm);
+        terminateMPI();
         INode* nodes[size];
         for(int i=0; i<size; i++)
         {
             SocketEndpoint ep(i);
             nodes[i] = createINode(ep);
         }
-        group = createIGroup(size, nodes);
+        group = LINK(createIGroup(size, nodes));
     }
-    ICommunicator* comm = new NodeCommunicator(group, MPI::COMM_WORLD);
-//    int rank = hpcc_mpi::rank(&MPI::COMM_WORLD);
-//    initMyNode(rank);
-    return comm;
+    return new NodeCommunicator(group, comm);
 }
 
 int mpiInitCounter = 0;
@@ -360,5 +358,5 @@ void terminateMPI()
     mpiInitCounter--;
     if (mpiInitCounter == 0)
         hpcc_mpi::finalize();
-    //TODO: throw error if mpiInitCounter<0
+    assertex(mpiInitCounter>=0);
 }
