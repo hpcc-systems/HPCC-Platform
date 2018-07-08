@@ -719,7 +719,7 @@ void initMyNode(unsigned short port)
     setNodeCaching(port != 0);
     ::Release(MyNode);
     MyNode = NULL;
-    if (port >= 0) {
+    if (port) {
         SocketEndpoint ep(port);
         MyNode = new MPNode(ep);
         if (ep.isLoopBack()) {
