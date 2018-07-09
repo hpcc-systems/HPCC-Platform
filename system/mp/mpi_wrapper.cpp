@@ -48,24 +48,6 @@ public:
 
     CommData(int _rank, int _tag, MPI::Comm& _comm): rank(_rank), tag(_tag), comm(_comm), send(false){}
 
-//    void loadBuffer(CMessageBuffer &buf)
-//    {
-//        data  = &buf;
-//    }
-//
-//    void* buffer()
-//    {
-//        return data->bufferBase();
-//    }
-//    void updateBufferLength(size_t length)
-//    {
-//        data->setLength(length);
-//    }
-//    size_t bufferLength()
-//    {
-//        return data->length();
-//    }
-
     void notifyCancellation()
     {
         lock();
@@ -384,11 +366,19 @@ hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageB
     CTimeMon tm(timeout);
     unsigned remaining;
     int target = getRank(dstRank); int tag = getTag(mptag);
-
+//    mptag_t t = getTag(tag);
+//    assertex(t==tag);
+//    _T("Rank="<<target<<" Tag="<<tag);
     CommData* commData = new CommData(true, target, tag, comm);
     bool timedout = false; bool error = false; bool canceled = false; bool completed;
     bool bufferedSendComplete = false;
     addCommData(commData); //So that it can be cancelled from outside
+
+    //TODO: find a better way to send the reply tag
+    size_t orginalLength = mbuf.length();
+    unsigned replyTag = mbuf.getReplyTag();
+    mbuf.append(replyTag);
+    _T("Sending replyTag="<<replyTag);
     while(!bufferedSendComplete)
     {
         try
@@ -400,6 +390,8 @@ hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageB
                 commData->releaseCancellationLock();
             }
             bufferedSendComplete = true;
+            //remove reply tag from the buffer
+            mbuf.setLength(orginalLength);
             canceled = !notCanceled;
         } catch (MPI::Exception &e) {
             commData->releaseCancellationLock();
@@ -470,8 +462,15 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t &sourceRank, mptag_t &mptag, CMes
                 {
                     sourceRank = stat.Get_source();
                     mptag = getTag(stat.Get_tag());
-//                    SocketEndpoint ep(stat.Get_source());
-//                    mbuf.init(ep, getTag(stat.Get_tag()), TAG_REPLY_BASE);
+//                    int t = getTag(mptag);
+//                    assertex(t==mptag);
+                    size_t orginalLength = mbuf.length();
+                    size_t newLength = orginalLength - sizeof(mptag_t);
+                    mbuf.reset(newLength);
+                    unsigned replyTag;
+                    mbuf.read(replyTag);
+                    _T("Received replyTag="<<replyTag);
+                    mbuf.setReplyTag((mptag_t)replyTag);
                     commData->releaseCancellationLock();
                 }
                 canceled = !noCancellation;
