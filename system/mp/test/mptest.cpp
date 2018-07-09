@@ -759,10 +759,16 @@ int getEnvMPIRank()
 #define TEST_RING "Ring"
 #define TEST_RANK "PrintRank"
 
-void runTest(char testname[256], const Owned<IGroup>& group,
+void runTest(const char *caption, char testname[256], const Owned<IGroup>& group,
         const Owned<ICommunicator>& mpicomm, unsigned numiters,
         size32_t buffsize, rank_t inputRank)
 {
+    if (group.get()->rank()==0)
+    {
+        printf("\n\n");
+        PrintLog("%s", caption);
+        PrintLog("========================");
+    }
 #ifdef STREAMTEST
         StreamTest(group,mpicomm);
 #else
@@ -822,6 +828,7 @@ void runTest(char testname[256], const Owned<IGroup>& group,
 #  endif
 # endif
 #endif
+    mpicomm.get()->barrier();
 }
 
 int main(int argc, char* argv[])
@@ -833,6 +840,7 @@ int main(int argc, char* argv[])
     rank_t max_ranks = 0;
     rank_t inputRank = 0;
     bool useMPI = false;
+    bool useMP = false;
 
     InitModuleObjects();
     EnableSEHtoExceptionMapping();
@@ -887,7 +895,7 @@ int main(int argc, char* argv[])
 
 #ifndef MYMACHINES
     if (argSize<3) {
-        printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -r <rank> -n <numprocs> -d] | <ip:port> <ip:port>] [-mpi]\n\n", argv[0]);
+        printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -r <rank> -n <numprocs> -d] | <ip:port> <ip:port>] [-mpi] [-mp]\n\n", argv[0]);
         std::vector<std::string> tests = { TEST_RANK, TEST_MULTI, TEST_STREAM, TEST_RING, TEST_AlltoAll};
         appendAdditionalTests(tests);
         std::vector<std::string>::iterator it = tests.begin();
@@ -988,6 +996,10 @@ int main(int argc, char* argv[])
                 {
                     useMPI = true;
                 }
+                else if (streq(argL[j], "-mp"))
+                {
+                    useMP = true;
+                }
                 j++;
             }
             char hoststr[256] = { "" };
@@ -1059,18 +1071,18 @@ int main(int argc, char* argv[])
         Owned<IGroup> group = createIGroup(MYMACHINES,MPPORT);
 #endif
 
-        Owned<ICommunicator> mpicomm;
-        Owned<ICommunicator> mpcomm;
-//        if (useMPI)
-        mpicomm.setown(createMPICommunicator(group));
-//        else
-        mpcomm.setown(createCommunicator(group));
-        PrintLog("MPTEST: Running MP Test:");
-        PrintLog("=======================");
-        runTest(testname, group, mpcomm, numiters, buffsize, inputRank);
-        PrintLog("MPTEST: Running MPI Test:");
-        PrintLog("========================");
-        runTest(testname, group, mpicomm, numiters, buffsize, inputRank);
+        Owned<ICommunicator> comm;
+        if (useMP || !(useMP || useMPI))
+        {
+            comm.setown(createMPICommunicator(group));
+            runTest("MPTEST: Running MP Test:", testname, group, comm, numiters, buffsize, inputRank);
+        }
+        if (useMPI || !(useMP || useMPI))
+        {
+            comm.setown(createCommunicator(group));
+            runTest("MPTEST: Running MPI Test:", testname, group, comm, numiters, buffsize, inputRank);
+        }
+
         stopMPServer();
     }
     catch (IException *e) {
