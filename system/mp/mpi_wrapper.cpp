@@ -471,6 +471,7 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t &sourceRank, mptag_t &mptag, CMes
                     mbuf.read(replyTag);
                     _T("Received replyTag="<<replyTag);
                     mbuf.setReplyTag((mptag_t)replyTag);
+                    mbuf.setLength(newLength);
                     commData->releaseCancellationLock();
                 }
                 canceled = !noCancellation;
