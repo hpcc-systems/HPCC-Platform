@@ -168,7 +168,7 @@ public:
         CTimeMon tm(timeout);
         unsigned remaining;
         bool messageFromSelf = (srcrank == myrank);
-        bool completed = false;
+        bool success = false;
 
         if (messageFromSelf || srcrank == RANK_ALL)
         {
@@ -181,19 +181,13 @@ public:
             }
             if (msg)
             {
-                _T("Message found in self message list");
                 mbuf.clear();
-                _T("Buffer cleared");
                 assertex((msg->getMessage()) != NULL);
-                _T("Assert passed");
                 mptag_t reply = msg->getMessage()->getReplyTag();
-                _T("Reply tag from message = "<<reply);
                 mbuf.transferFrom(*(msg->getMessage()));
-                _T("Data copied to buffer");
                 mbuf.init(msg->getMessage()->getSender(),tag,reply);
-                _T("Initialized buffer");
                 delete msg;
-                completed = true;
+                success = true;
             }
         }
         if (!messageFromSelf)
@@ -201,16 +195,18 @@ public:
             tm.timedout(&remaining);
             hpcc_mpi::CommStatus status = hpcc_mpi::readData(srcrank, tag, mbuf, comm, remaining);
             _T("recv status="<<status);
-            completed = (status == hpcc_mpi::CommStatus::SUCCESS);
+            success = (status == hpcc_mpi::CommStatus::SUCCESS);
             //TODO what if no message received and selfMsg bcomes available now?
         }
-        if (completed)
+        if (success)
         {
             const SocketEndpoint &ep = getGroup()->queryNode(srcrank).endpoint();
             mbuf.init(ep, tag, TAG_REPLY_BASE);
+            if (sender)
+                *sender = srcrank;
             mbuf.reset();
         }
-        return completed;
+        return success;
     }
     
     void barrier(void)
@@ -239,6 +235,7 @@ public:
         _TF("sendRecv", sendrank, sendtag, timeout);
         //TODO share timeout between send/recv?
         mptag_t replytag = createReplyTag();
+        _T("replytag="<<replytag);
         CTimeMon tm(timeout);
         mbuff.setReplyTag(replytag);
         unsigned remaining;
