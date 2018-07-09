@@ -464,6 +464,7 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t &sourceRank, mptag_t &mptag, CMes
                     mptag = getTag(stat.Get_tag());
 //                    int t = getTag(mptag);
 //                    assertex(t==mptag);
+                    //pop the reply tag and resetting the length of the message without reply tag
                     size_t orginalLength = mbuf.length();
                     size_t newLength = orginalLength - sizeof(mptag_t);
                     mbuf.reset(newLength);
@@ -472,6 +473,7 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t &sourceRank, mptag_t &mptag, CMes
                     _T("Received replyTag="<<replyTag);
                     mbuf.setReplyTag((mptag_t)replyTag);
                     mbuf.setLength(newLength);
+
                     commData->releaseCancellationLock();
                 }
                 canceled = !noCancellation;
