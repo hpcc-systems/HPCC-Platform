@@ -134,14 +134,14 @@ static CSectionTimer STrecv("recv");
 
 void StreamTest(IGroup *group,ICommunicator *comm)
 {
-    void *bufs[18]; 
-    unsigned bi;
+//    void *bufs[18];
+//    unsigned bi;
 
-    for (bi=0;bi<16;bi++) {
-        bufs[bi] = malloc(1024*1024*100);
-        assertex(bufs[bi]);
-        memset(bufs[bi],bi,1024*1024*100);
-    }
+//    for (bi=0;bi<16;bi++) {
+//        bufs[bi] = malloc(1024*1024*100);
+//        assertex(bufs[bi]);
+//        memset(bufs[bi],bi,1024*1024*100);
+//    }
 
     CMessageBuffer mb;
     for (unsigned i=0;i<NITER;i++) {
@@ -181,8 +181,8 @@ void StreamTest(IGroup *group,ICommunicator *comm)
 
     comm->barrier();
 
-    for (bi=0;bi<16;bi++) 
-        free(bufs[bi]);
+//    for (bi=0;bi<16;bi++)
+//        free(bufs[bi]);
 
     STsend.print();
     STrecv.print();
@@ -419,7 +419,7 @@ void printtrc(char c)
 }
 
 // #define N 100
-#define N 20
+#define N 1
 
 void MultiTest(ICommunicator *_comm)
 {
@@ -759,6 +759,71 @@ int getEnvMPIRank()
 #define TEST_RING "Ring"
 #define TEST_RANK "PrintRank"
 
+void runTest(char testname[256], const Owned<IGroup>& group,
+        const Owned<ICommunicator>& mpicomm, unsigned numiters,
+        size32_t buffsize, rank_t inputRank)
+{
+#ifdef STREAMTEST
+        StreamTest(group,mpicomm);
+#else
+# ifdef MULTITEST
+        MultiTest(mpicomm);
+# else
+#  ifdef MPRING
+        MPRing(group, mpicomm, numiters);
+#  else
+#   ifdef MPALLTOALL
+        MPAlltoAll(group, mpicomm, buffsize, numiters);
+#   else
+#    ifdef MPTEST2
+        MPTest2(group, mpicomm);
+#    else
+#     ifdef DYNAMIC_TEST
+        if (strnicmp(testname, TEST_STREAM, 6) == 0)
+            StreamTest(group, mpicomm);
+        else if (strnicmp(testname, TEST_MULTI, 5) == 0)
+            MultiTest(mpicomm);
+        else if (strieq(testname, "MPRing") || strieq(testname, TEST_RING))
+            MPRing(group, mpicomm, numiters);
+        else if (strieq(testname, "MPAlltoAll") || strieq(testname, TEST_AlltoAll))
+            MPAlltoAll(group, mpicomm, buffsize, numiters);
+        else if (strieq(testname, "MPTest2") || strieq(testname, TEST_RANK))
+            MPTest2(group, mpicomm);
+        else if (runAdditionalTests(testname, mpicomm, numiters, buffsize,
+                inputRank)) {
+            if (mpicomm.get()->getGroup()->rank() == 0)
+                PrintLog("MPTEST: Additional test %s completed", testname);
+        } else if ((int) (strlen(testname)) > 0)
+            PrintLog("MPTEST: Error, invalid testname specified (-t %s)", testname);
+        else
+            // default is MPRing ...
+            MPRing(group, mpicomm, numiters);
+#     else
+        for (unsigned i = 0;i<1;i++)
+        {
+            Test1(group,mpicomm);
+            PrintLog("MPTEST: test1 done, waiting"); Sleep(aWhile);
+            Test2(group,mpicomm);
+            PrintLog("MPTEST: test2 done, waiting"); Sleep(aWhile);
+            Test3(group,mpicomm);
+            PrintLog("MPTEST: test3 done, waiting"); Sleep(aWhile);
+            Test4(group,mpicomm);
+            PrintLog("MPTEST: test4 done, waiting"); Sleep(aWhile);
+            Test5(group,mpicomm);
+            PrintLog("MPTEST: test5 done, waiting"); Sleep(aWhile);
+            Test6(group,mpicomm);
+            PrintLog("MPTEST: test6 done, waiting"); Sleep(aWhile);
+            Test7(group,mpicomm);
+            PrintLog("MPTEST: test7 done, waiting"); Sleep(aWhile);
+        }
+#     endif
+#    endif
+#   endif
+#  endif
+# endif
+#endif
+}
+
 int main(int argc, char* argv[])
 {
     int mpi_debug = 0;
@@ -995,68 +1060,17 @@ int main(int argc, char* argv[])
 #endif
 
         Owned<ICommunicator> mpicomm;
-        if (useMPI)
-            mpicomm.setown(createMPICommunicator(group));
-        else
-            mpicomm.setown(createCommunicator(group));
-
-#ifdef STREAMTEST
-        StreamTest(group,mpicomm);
-#else
-# ifdef MULTITEST
-        MultiTest(mpicomm);
-# else
-#  ifdef MPRING
-        MPRing(group, mpicomm, numiters);
-#  else
-#   ifdef MPALLTOALL
-        MPAlltoAll(group, mpicomm, buffsize, numiters);
-#   else
-#    ifdef MPTEST2
-        MPTest2(group, mpicomm);
-#    else
-#     ifdef DYNAMIC_TEST
-        if (strnicmp(testname, TEST_STREAM, 6)==0)
-            StreamTest(group, mpicomm);
-        else if (strnicmp(testname, TEST_MULTI, 5)==0)
-            MultiTest(mpicomm);
-        else if ( strieq(testname, "MPRing") || strieq(testname, TEST_RING) )
-            MPRing(group, mpicomm, numiters);
-        else if ( strieq(testname, "MPAlltoAll") || strieq(testname, TEST_AlltoAll) )
-            MPAlltoAll(group, mpicomm, buffsize, numiters);
-        else if ( strieq(testname, "MPTest2") || strieq(testname, TEST_RANK) )
-            MPTest2(group, mpicomm);
-        else if (runAdditionalTests(testname, mpicomm, numiters, buffsize, inputRank ))
-            {if (mpicomm.get()->getGroup()->rank()==0) PrintLog("MPTEST: Additional test %s completed", testname);}
-        else if ((int)strlen(testname) > 0)
-            PrintLog("MPTEST: Error, invalid testname specified (-t %s)", testname);
-        else  // default is MPRing ...
-            MPRing(group, mpicomm, numiters);
-#     else
-        for (unsigned i = 0;i<1;i++)
-        {
-            Test1(group,mpicomm);
-            PrintLog("MPTEST: test1 done, waiting"); Sleep(aWhile);
-            Test2(group,mpicomm);
-            PrintLog("MPTEST: test2 done, waiting"); Sleep(aWhile);
-            Test3(group,mpicomm);
-            PrintLog("MPTEST: test3 done, waiting"); Sleep(aWhile);
-            Test4(group,mpicomm);
-            PrintLog("MPTEST: test4 done, waiting"); Sleep(aWhile);
-            Test5(group,mpicomm);
-            PrintLog("MPTEST: test5 done, waiting"); Sleep(aWhile);
-            Test6(group,mpicomm);
-            PrintLog("MPTEST: test6 done, waiting"); Sleep(aWhile);
-            Test7(group,mpicomm);
-            PrintLog("MPTEST: test7 done, waiting"); Sleep(aWhile);
-        }
-#     endif
-#    endif
-#   endif
-#  endif
-# endif
-#endif
-
+        Owned<ICommunicator> mpcomm;
+//        if (useMPI)
+        mpicomm.setown(createMPICommunicator(group));
+//        else
+        mpcomm.setown(createCommunicator(group));
+        PrintLog("MPTEST: Running MP Test:");
+        PrintLog("=======================");
+        runTest(testname, group, mpcomm, numiters, buffsize, inputRank);
+        PrintLog("MPTEST: Running MPI Test:");
+        PrintLog("========================");
+        runTest(testname, group, mpicomm, numiters, buffsize, inputRank);
         stopMPServer();
     }
     catch (IException *e) {
