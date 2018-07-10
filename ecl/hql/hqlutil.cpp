@@ -1890,26 +1890,37 @@ IHqlExpression * getExpandSelectExpr(IHqlExpression * expr)
 
 IHqlExpression * replaceChildDataset(IHqlExpression * expr, IHqlExpression * newChild, unsigned whichChild)
 {
-    if (!(getChildDatasetType(expr) & childdataset_hasdataset))
+    if (getChildDatasetType(expr) & childdataset_hasdataset)
     {
-        HqlExprArray args;
+        IHqlExpression * oldChild = expr->queryChild(whichChild);
+        if (oldChild->queryNormalizedSelector() != newChild->queryNormalizedSelector())
+        {
+            HqlMapSelectorTransformer mapper(oldChild, newChild);
+            HqlExprArray args;
+            ForEachChild(i, expr)
+            {
+                IHqlExpression * cur = expr->queryChild(i);
+                if (i == whichChild)
+                    args.append(*LINK(newChild));
+                else
+                    args.append(*mapper.transformRoot(cur));
+            }
+
+            return expr->clone(args);
+        }
+    }
+
+    HqlExprArray args;
+    if (whichChild == 0)
+    {
+        args.append(*LINK(newChild));
+        unwindChildren(args, expr, 1);
+    }
+    else
+    {
         unwindChildren(args, expr);
         args.replace(*LINK(newChild), whichChild);
-        return expr->clone(args);
     }
-
-    IHqlExpression * oldChild = expr->queryChild(whichChild);
-    HqlMapSelectorTransformer mapper(oldChild, newChild);
-    HqlExprArray args;
-    ForEachChild(i, expr)
-    {
-        IHqlExpression * cur = expr->queryChild(i);
-        if (i == whichChild)
-            args.append(*LINK(newChild));
-        else
-            args.append(*mapper.transformRoot(cur));
-    }
-
     return expr->clone(args);
 }
 

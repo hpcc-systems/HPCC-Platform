@@ -4028,12 +4028,13 @@ IHqlExpression * CHqlExpression::calcNormalizedSelector() const
 {
     IHqlExpression * left = &operands.item(0);
     IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
-    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasAttribute(newAtom)))
+
+    //Normalized selector only has two arguments - remove any extra arguments including attr(newAtom)
+    if ((normalizedLeft != left) || (operands.ordinality() > 2))
     {
         HqlExprArray args;
-        appendArray(args, operands);
-        args.replace(*LINK(normalizedLeft), 0);
-        removeAttribute(args, newAtom);
+        args.append(*LINK(normalizedLeft));
+        args.append(OLINK(operands.item(1)));
         return doCreateSelectExpr(args);
     }
     return NULL;
@@ -6169,8 +6170,9 @@ IHqlExpression * CHqlSelectBaseExpression::makeSelectExpression(HqlExprArray & o
 #endif
     IHqlExpression * left = &ownedOperands.item(0);
     IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
-    bool needNormalize = (normalizedLeft != left) || ((ownedOperands.ordinality() > 2) && ::hasAttribute(newAtom, ownedOperands));
 
+    //Normalized selector only has two arguments - remove any extra arguments including attr(newAtom)
+    bool needNormalize = (normalizedLeft != left) || (ownedOperands.ordinality() > 2);
     CHqlSelectBaseExpression * select;
     if (needNormalize)
         select = new CHqlSelectExpression;
@@ -17249,6 +17251,15 @@ IHqlExpression * annotateIndexBlobs(IHqlExpression * expr)
 {
     CHqlBlobTransformer transformer;
     return transformer.transform(expr);
+}
+
+unsigned __int64 querySeqId(IHqlExpression * seq)
+{
+#ifdef DEBUG_TRACK_INSTANCEID
+    return static_cast<CHqlExpression *>(seq)->seqid;
+#else
+    return 0;
+#endif
 }
 
 /*
