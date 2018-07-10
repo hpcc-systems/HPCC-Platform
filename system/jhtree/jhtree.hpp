@@ -302,7 +302,7 @@ public:
         if (klManager)
             klManager->releaseBlobs(); 
     }
-    virtual byte * lookupBlob(unsigned __int64 id) { size32_t dummy; return (byte *) klManager->loadBlob(id, dummy); }
+    virtual const byte * lookupBlob(unsigned __int64 id) { size32_t dummy; return klManager->loadBlob(id, dummy); }
 };
 
 extern jhtree_decl bool isCompressedIndex(const char *filename);

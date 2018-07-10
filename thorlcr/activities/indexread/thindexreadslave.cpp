@@ -81,7 +81,7 @@ protected:
         IMPLEMENT_IINTERFACE_O_USING(CSimpleInterface)
 
     //IThorIndexCallback
-        virtual byte *lookupBlob(unsigned __int64 id) override
+        virtual const byte *lookupBlob(unsigned __int64 id) override
         { 
             size32_t dummy;
             if (!keyManager)
