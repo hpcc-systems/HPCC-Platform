@@ -64,6 +64,12 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
 
     <para>Notice the presence of the scope name in both of these definitions.
     This is required because the files are in another scope.</para>
+
+    <para>You should be frugal with file scope usage. The depth of file scopes
+    can have a performance cost in systems with File Scope Security enabled.
+    This cost is higher still when File Scope Scans are enabled because the
+    system must make an external LDAP call to check every level in the scope,
+    from the top to the bottom.</para>
   </sect2>
 
   <sect2 id="Foreign_Files">
