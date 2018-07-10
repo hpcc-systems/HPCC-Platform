@@ -678,7 +678,6 @@ class CRowSet : public CSimpleInterface, implements IInterface
     unsigned chunk;
     CThorExpandingRowArray rows;
     CSharedWriteAheadBase &sharedWriteAhead;
-    mutable SpinLock lock;
     mutable CriticalSection crit;
 public:
     CRowSet(CSharedWriteAheadBase &_sharedWriteAhead, unsigned _chunk, unsigned maxRows);
@@ -1177,7 +1176,7 @@ bool CRowSet::Release() const
 {
     {
         // NB: Occasionally, >1 thread may be releasing a CRowSet concurrently and miss a opportunity to reuse, but that's ok.
-        SpinBlock b(lock);
+        //No need to protect with a lock, because if not shared then it cannot be called at the same time by another thread,
         if (!IsShared())
             sharedWriteAhead.reuse((CRowSet *)this);
     }

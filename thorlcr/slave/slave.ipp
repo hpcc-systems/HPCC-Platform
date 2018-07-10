@@ -26,6 +26,7 @@
 #include "thormisc.hpp"
 
 #include "slave.hpp"
+#include <atomic>
 
 interface IInputSteppingMeta;
 interface IRangeCompare;
@@ -34,9 +35,8 @@ class ProcessSlaveActivity : public CSlaveActivity, implements IThreaded
 protected:
     Owned<IThorException> exception;
     CThreadedPersistent threaded;
-    rowcount_t processed;
-    unsigned __int64 lastCycles;
-    SpinLock cycleLock; // MORE: Could probably remove this and use atomic variables instead
+    rowcount_t processed = 0;
+    std::atomic<unsigned __int64> lastCycles{0};
 
     virtual void endProcess() = 0;
     virtual void process() { }

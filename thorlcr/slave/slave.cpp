@@ -51,8 +51,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 ProcessSlaveActivity::ProcessSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), threaded("ProcessSlaveActivity", this)
 {
-    processed = 0;
-    lastCycles = 0;
 }
 
 void ProcessSlaveActivity::beforeDispose()
@@ -83,16 +81,13 @@ void ProcessSlaveActivity::threadmain()
 #ifdef TIME_ACTIVITIES
         if (timeActivities)
         {
-            {
-                SpinBlock b(cycleLock);
-                lastCycles = get_cycles_now(); // serializeStats will reset
-            }
+            lastCycles = get_cycles_now(); // serializeStats will reset
+
             process();
-            {
-                SpinBlock b(cycleLock);
-                totalCycles.totalCycles += get_cycles_now()-lastCycles;
-                lastCycles = 0; // signal not processing
-            }
+
+            // set lastCycles to 0 to signal not processing
+            unsigned __int64 finalCycles = lastCycles.exchange(0);
+            totalCycles.totalCycles += get_cycles_now()-finalCycles;
         }
         else
             process();
@@ -173,12 +168,14 @@ void ProcessSlaveActivity::serializeStats(MemoryBuffer &mb)
 #ifdef TIME_ACTIVITIES
     if (timeActivities)
     {
-        SpinBlock b(cycleLock);
-        if (lastCycles)
+        unsigned __int64 curCycles = lastCycles;
+        if (curCycles)
         {
             unsigned __int64 nowCycles = get_cycles_now();
-            totalCycles.totalCycles += nowCycles-lastCycles;
-            lastCycles = nowCycles; // time accounted for
+            //Update lastCycles to the current number of cycles - unless it has been set to 0 in the meantime
+            //Use std::memory_order_relaxed because there is no requirement for other variables to be synchronized.
+            if (lastCycles.compare_exchange_strong(curCycles, nowCycles, std::memory_order_relaxed))
+                totalCycles.totalCycles += nowCycles-curCycles;
         }
     }
 #endif

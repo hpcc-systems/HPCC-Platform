@@ -23,6 +23,7 @@
 #include "fileview.hpp"
 #include "fvrelate.hpp"
 #include "dadfs.hpp"
+#include <atomic>
 
 class CThorNodeGroup: public CInterface
 {
@@ -134,8 +135,7 @@ private:
     Mutex m_superfilemutex;
     unsigned nodeGroupCacheTimeout;
     Owned<CThorNodeGroupCache> thorNodeGroupCache;
-    bool m_daliDetached = false;
-    SpinLock m_daliDetachedStateLock;
+    std::atomic<bool> m_daliDetached{false};
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -229,21 +229,18 @@ private:
     bool getQueryFile(const char *logicalName, const char *querySet, const char *queryID, IEspDFUFileDetail &fileDetails);
     bool attachServiceToDali() override
     {
-        SpinBlock b(m_daliDetachedStateLock);
         m_daliDetached = false;
         return true;
     }
 
     bool detachServiceFromDali() override
     {
-        SpinBlock b(m_daliDetachedStateLock);
         m_daliDetached = true;
         return true;
     }
 
     bool isDetachedFromDali()
     {
-        SpinBlock b(m_daliDetachedStateLock);
         return m_daliDetached;
     }
 
