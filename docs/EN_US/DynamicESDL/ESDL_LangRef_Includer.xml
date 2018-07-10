@@ -231,6 +231,11 @@
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_ver.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+                
+   <xi:include href="DynamicESDL/DESDL-Mods/ESDLping_min_ver.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                
 
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLdepr_ver.xml"
                 xpointer="element(/1)"
