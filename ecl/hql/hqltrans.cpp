@@ -3345,7 +3345,7 @@ IHqlExpression * newReplaceSelector(IHqlExpression * expr, IHqlExpression * oldS
     transformer.initSelectorMapping(oldSelector, newSelector);
     OwnedHqlExpr ret = transformer.transformRoot(expr);
     if (transformer.foundAmbiguity())
-        DBGLOG("Mapping introduces potential ambiguity into expression");
+        throwError(HQLERR_PotentialAmbiguity);
     return ret.getClear();
 }
 
@@ -3356,7 +3356,7 @@ void newReplaceSelector(HqlExprArray & target, const HqlExprArray & source, IHql
     ForEachItemIn(i, source)
         target.append(*transformer.transformRoot(&source.item(i)));
     if (transformer.foundAmbiguity())
-        DBGLOG("Mapping introduces potential ambiguity into expression");
+        throwError(HQLERR_PotentialAmbiguity);
 }
 
 IHqlExpression * queryNewReplaceSelector(IHqlExpression * expr, IHqlExpression * oldSelector, IHqlExpression * newSelector)

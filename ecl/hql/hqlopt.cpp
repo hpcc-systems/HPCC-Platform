@@ -1166,51 +1166,61 @@ IHqlExpression * CTreeOptimizer::getHoistedFilter(IHqlExpression * transformed, 
             }
         }
 
-        if (!matched && !expandMonitor.isComplex())
+        try
         {
-            OwnedHqlExpr leftMappedFilter = replaceSelector(expandedFilter, leftSelector, activeLeft);
-            OwnedHqlExpr rightMappedFilter = replaceSelector(expandedFilter, rightSelector, activeRight);
+            if (!matched && !expandMonitor.isComplex())
+            {
+                OwnedHqlExpr leftMappedFilter = replaceSelector(expandedFilter, leftSelector, activeLeft);
+                OwnedHqlExpr rightMappedFilter = replaceSelector(expandedFilter, rightSelector, activeRight);
 
-            //MORE: Could also take join conditions into account to sent filter up both sides;
-            if (rightMappedFilter==expandedFilter)
-            {
-                //Only contains LEFT.
-                if (canHoistLeft)
+                //MORE: Could also take join conditions into account to sent filter up both sides;
+                if (rightMappedFilter==expandedFilter)
                 {
-                    leftFilters.append(*LINK(leftMappedFilter));
-                    matched = true;
+                    //Only contains LEFT.
+                    if (canHoistLeft)
+                    {
+                        leftFilters.append(*LINK(leftMappedFilter));
+                        matched = true;
+                    }
+                    else if (canMergeLeft && (conditionIndex != NotFound))
+                    {
+                        expanded.append(*LINK(expandedFilter));
+                        matched = true;
+                    }
+                    //If the filter expression is invariant of left and right then hoist up both paths.
+                    if (leftMappedFilter==expandedFilter && canHoistRight)
+                    {
+                        rightFilters.append(*LINK(expandedFilter));
+                        matched = true;
+                    }
                 }
-                else if (canMergeLeft && (conditionIndex != NotFound))
+                else if (leftMappedFilter==expandedFilter)
+                {
+                    //Only contains RIGHT.
+                    if (canHoistRight)
+                    {
+                        rightFilters.append(*LINK(rightMappedFilter));
+                        matched = true;
+                    }
+                    else if (canMergeRight && (conditionIndex != NotFound))
+                    {
+                        expanded.append(*LINK(expandedFilter));
+                        matched = true;
+                    }
+                }
+                else if (canMergeLeft && canMergeRight && conditionIndex != NotFound)
                 {
                     expanded.append(*LINK(expandedFilter));
                     matched = true;
                 }
-                //If the filter expression is invariant of left and right then hoist up both paths.
-                if (leftMappedFilter==expandedFilter && canHoistRight)
-                {
-                    rightFilters.append(*LINK(expandedFilter));
-                    matched = true;
-                }
             }
-            else if (leftMappedFilter==expandedFilter)
-            {
-                //Only contains RIGHT.
-                if (canHoistRight)
-                {
-                    rightFilters.append(*LINK(rightMappedFilter));
-                    matched = true;
-                }
-                else if (canMergeRight && (conditionIndex != NotFound))
-                {
-                    expanded.append(*LINK(expandedFilter));
-                    matched = true;
-                }
-            }
-            else if (canMergeLeft && canMergeRight && conditionIndex != NotFound)
-            {
-                expanded.append(*LINK(expandedFilter));
-                matched = true;
-            }
+        }
+        catch (IException * e)
+        {
+            if (e->errorCode() != HQLERR_PotentialAmbiguity)
+                throw;
+            e->Release();
+            matched = false;
         }
 
         if (!matched)
