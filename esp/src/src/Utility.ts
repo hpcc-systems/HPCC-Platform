@@ -348,6 +348,14 @@ export function alphanumSort(arr, col, caseInsensitive, reverse) {
     }
 }
 
+export function stringLowerSort(arr: object[], col: string) {
+    arr.sort((a: { [col: string]: any }, b: { [col: string]: any }) => {
+        const c: string = ("" + a[col]).toLowerCase();
+        const d: string = ("" + b[col]).toLowerCase();
+        return c.localeCompare(d);
+    });
+}
+
 export function resolve(hpccWidget, callback) {
     function doLoad(widget) {
         if (widget.fixCircularDependency) {
