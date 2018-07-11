@@ -27,6 +27,13 @@ using namespace std;
 //#define GPF
 #define DYNAMIC_TEST
 
+#define TEST_AlltoAll "AlltoAll"
+#define TEST_STREAM "Stream"
+#define TEST_MULTI "Multi"
+#define TEST_RING "Ring"
+#define TEST_RANK "PrintRank"
+#define TEST_SELFSEND "SelfSend"
+
 #ifdef MULTITEST
 //#define MYMACHINES "10.150.10.16,10.150.10.17,10.150.10.18,10.150.10.19,10.150.10.20,10.150.10.21,10.150.10.22,10.150.10.23,10.150.10.47,10.150.10.48,10.150.10.49,10.150.10.50,10.150.10.51,10.150.10.52,10.150.10.53,10.150.10.54,10.150.10.55,10.150.10.73,10.150.10.75,10.150.10.79"
 //#define MYMACHINES "192.168.16.124,10.150.10.17,10.150.10.18,10.150.10.19,10.150.10.20,10.150.10.21,10.150.10.22,10.150.10.23,10.150.10.47,10.150.10.48,10.150.10.49,10.150.10.50,10.150.10.51,10.150.10.52,10.150.10.53,10.150.10.54,10.150.10.55,10.150.10.73,10.150.10.75,10.150.10.79"
@@ -718,6 +725,24 @@ void MPTest2(IGroup *group, ICommunicator *mpicomm)
     return;
 }
 
+void MPSelfSend(ICommunicator *mpcomm)
+{
+    CMessageBuffer mb;
+    int sendMessage = 1234;
+    int receivedMessage;
+
+    rank_t myrank = mpcomm->getGroup()->rank();
+    mb.append(sendMessage);
+    mpcomm->send(mb, myrank, MPTAG_TEST);
+
+    mb.clear();
+    mpcomm->recv(mb, myrank, MPTAG_TEST);
+    mb.read(receivedMessage);
+
+    assertex(sendMessage == receivedMessage);
+    PrintLog("MPTEST: %s: Message sent from %d to %d", TEST_SELFSEND, myrank, myrank);
+}
+
 void testIPnodeHash()
 {
     setNodeCaching(true);
@@ -753,14 +778,8 @@ int getEnvMPIRank()
     return atoi(rank);
 }
 
-#define TEST_AlltoAll "AlltoAll"
-#define TEST_STREAM "Stream"
-#define TEST_MULTI "Multi"
-#define TEST_RING "Ring"
-#define TEST_RANK "PrintRank"
-
 void runTest(const char *caption, char testname[256], const Owned<IGroup>& group,
-        const Owned<ICommunicator>& mpicomm, unsigned numiters,
+        ICommunicator* comm, unsigned numiters,
         size32_t buffsize, rank_t inputRank)
 {
     if (group.get()->rank()==0)
@@ -769,57 +788,59 @@ void runTest(const char *caption, char testname[256], const Owned<IGroup>& group
         PrintLog("%s", caption);
         PrintLog("========================");
     }
+    comm->barrier();
 #ifdef STREAMTEST
-        StreamTest(group,mpicomm);
+        StreamTest(group,comm);
 #else
 # ifdef MULTITEST
-        MultiTest(mpicomm);
+        MultiTest(comm);
 # else
 #  ifdef MPRING
-        MPRing(group, mpicomm, numiters);
+        MPRing(group, comm, numiters);
 #  else
 #   ifdef MPALLTOALL
-        MPAlltoAll(group, mpicomm, buffsize, numiters);
+        MPAlltoAll(group, comm, buffsize, numiters);
 #   else
 #    ifdef MPTEST2
-        MPTest2(group, mpicomm);
+        MPTest2(group, comm);
 #    else
 #     ifdef DYNAMIC_TEST
         if (strnicmp(testname, TEST_STREAM, 6) == 0)
-            StreamTest(group, mpicomm);
+            StreamTest(group, comm);
         else if (strnicmp(testname, TEST_MULTI, 5) == 0)
-            MultiTest(mpicomm);
+            MultiTest(comm);
         else if (strieq(testname, "MPRing") || strieq(testname, TEST_RING))
-            MPRing(group, mpicomm, numiters);
+            MPRing(group, comm, numiters);
         else if (strieq(testname, "MPAlltoAll") || strieq(testname, TEST_AlltoAll))
-            MPAlltoAll(group, mpicomm, buffsize, numiters);
+            MPAlltoAll(group, comm, buffsize, numiters);
         else if (strieq(testname, "MPTest2") || strieq(testname, TEST_RANK))
-            MPTest2(group, mpicomm);
-        else if (runAdditionalTests(testname, mpicomm, numiters, buffsize,
-                inputRank)) {
-            if (mpicomm.get()->getGroup()->rank() == 0)
+            MPTest2(group, comm);
+        else if (strieq(testname, TEST_SELFSEND))
+            MPSelfSend(comm);
+        else if (runAdditionalTests(testname, comm, numiters, buffsize, inputRank)) {
+            if (comm->getGroup()->rank() == 0)
                 PrintLog("MPTEST: Additional test %s completed", testname);
         } else if ((int) (strlen(testname)) > 0)
             PrintLog("MPTEST: Error, invalid testname specified (-t %s)", testname);
         else
             // default is MPRing ...
-            MPRing(group, mpicomm, numiters);
+            MPRing(group, comm, numiters);
 #     else
         for (unsigned i = 0;i<1;i++)
         {
-            Test1(group,mpicomm);
+            Test1(group,comm);
             PrintLog("MPTEST: test1 done, waiting"); Sleep(aWhile);
-            Test2(group,mpicomm);
+            Test2(group,comm);
             PrintLog("MPTEST: test2 done, waiting"); Sleep(aWhile);
-            Test3(group,mpicomm);
+            Test3(group,comm);
             PrintLog("MPTEST: test3 done, waiting"); Sleep(aWhile);
-            Test4(group,mpicomm);
+            Test4(group,comm);
             PrintLog("MPTEST: test4 done, waiting"); Sleep(aWhile);
-            Test5(group,mpicomm);
+            Test5(group,comm);
             PrintLog("MPTEST: test5 done, waiting"); Sleep(aWhile);
-            Test6(group,mpicomm);
+            Test6(group,comm);
             PrintLog("MPTEST: test6 done, waiting"); Sleep(aWhile);
-            Test7(group,mpicomm);
+            Test7(group,comm);
             PrintLog("MPTEST: test7 done, waiting"); Sleep(aWhile);
         }
 #     endif
@@ -828,7 +849,7 @@ void runTest(const char *caption, char testname[256], const Owned<IGroup>& group
 #  endif
 # endif
 #endif
-    mpicomm.get()->barrier();
+    comm->barrier();
 }
 
 int main(int argc, char* argv[])
@@ -896,7 +917,7 @@ int main(int argc, char* argv[])
 #ifndef MYMACHINES
     if (argSize<3) {
         printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -r <rank> -n <numprocs> -d] | <ip:port> <ip:port>] [-mpi] [-mp]\n\n", argv[0]);
-        std::vector<std::string> tests = { TEST_RANK, TEST_MULTI, TEST_STREAM, TEST_RING, TEST_AlltoAll};
+        std::vector<std::string> tests = { TEST_RANK, TEST_SELFSEND, TEST_MULTI, TEST_STREAM, TEST_RING, TEST_AlltoAll};
         appendAdditionalTests(tests);
         std::vector<std::string>::iterator it = tests.begin();
         printf("\t <testname>\t%s\n", (*it).c_str());
