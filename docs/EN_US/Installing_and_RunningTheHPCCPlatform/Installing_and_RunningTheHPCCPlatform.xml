@@ -37,7 +37,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -283,6 +283,19 @@
           <para>Optionally you can install the package with rpm (recommended
           using the -Uvh options), however then you would have to negotiate
           installing any additional dependencies.</para>
+
+          <para><variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>If you are using CentOS 6 you may need to run the following
+                  command to properly enable the installation.</para>
+
+                  <para><programlisting> wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
@@ -2007,8 +2020,8 @@ sudo /etc/init.d/hpcc-init -c esp start
         <para>HPCC Systems is extending support and development to more
         systemd services. We intend to continue support for Cent OS 6 and
         other System V based systems through the hpcc-init. The hpcc-init
-        system service will support "start", "stop" and "restart" options.
-        </para>
+        system service will support "start", "stop" and "restart"
+        options.</para>
 
         <para>The reporting and logging for HPCC systemd will differ from the
         previous hpcc-init type. The systemd logs do not have any output to
@@ -2235,8 +2248,6 @@ sudo /etc/init.d/hpcc-init -c esp start
                         xpointer="element(/1)"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-
- 
             <para>For more information see the <link
             linkend="Starting-and-stopping">Starting-and-stopping</link> the
             HPCC System in the <emphasis>Installing and Running The HPCC
