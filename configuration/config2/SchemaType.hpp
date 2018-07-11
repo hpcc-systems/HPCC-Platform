@@ -37,9 +37,13 @@ class DECL_EXPORT SchemaType
 
         std::shared_ptr<SchemaTypeLimits> &getLimits() { return m_pLimits; }
         void setLimits(const std::shared_ptr<SchemaTypeLimits> &pLimits) { m_pLimits = pLimits; }
-        bool isValid() const { return m_pLimits!=nullptr; }
+        bool isValid() const { return  m_pLimits!=nullptr && !m_baseType.empty(); }
+        void setSubType(const std::string &subType) { m_subType = subType; }
+        const std::string &getSubType() const { return m_subType; }
+        void setBaseType(const std::string &baseType) { m_baseType = baseType; }
+        const std::string &getBaseType() const { return m_baseType; }
+        void setName(const std::string &name) { m_name = name; }
         const std::string &getName() const { return m_name; }
-        void setName(const std::string &name) { m_name = name;  }
         bool isValueValid(const std::string &testValue) const { return m_pLimits->isValueValid(testValue); }
         bool isEnumerated() const { return m_pLimits->isEnumerated(); }
         const std::vector<AllowedValue> getEnumeratedValues() const { return m_pLimits->getEnumeratedValues(); }
@@ -51,6 +55,8 @@ class DECL_EXPORT SchemaType
     private:
 
         std::string m_name;
+        std::string m_subType;
+        std::string m_baseType;
         std::shared_ptr<SchemaTypeLimits> m_pLimits;
 
 };
