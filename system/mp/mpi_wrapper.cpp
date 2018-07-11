@@ -362,7 +362,7 @@ void hpcc_mpi::finalize()
 
 hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageBuffer &mbuf, MPI::Comm& comm, unsigned timeout)
 {
-    _TF("sendData", dstRank, mptag, timeout);
+    _TF("sendData", dstRank, mptag, mbuf.getReplyTag(), timeout);
     CTimeMon tm(timeout);
     unsigned remaining;
     int target = getRank(dstRank); int tag = getTag(mptag);
@@ -470,7 +470,7 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t &sourceRank, mptag_t &mptag, CMes
                     mbuf.reset(newLength);
                     unsigned replyTag;
                     mbuf.read(replyTag);
-                    _T("Received replyTag="<<replyTag);
+                    _T("Sender="<<sourceRank<<", Tag="<<mptag<<", replyTag="<<replyTag);
                     mbuf.setReplyTag((mptag_t)replyTag);
                     mbuf.setLength(newLength);
 

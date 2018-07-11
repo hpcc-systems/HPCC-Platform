@@ -419,7 +419,7 @@ void printtrc(char c)
 }
 
 // #define N 100
-#define N 1
+#define N 20
 
 void MultiTest(ICommunicator *_comm)
 {
@@ -1074,12 +1074,12 @@ int main(int argc, char* argv[])
         Owned<ICommunicator> comm;
         if (useMP || !(useMP || useMPI))
         {
-            comm.setown(createMPICommunicator(group));
+            comm.setown(createCommunicator(group));
             runTest("MPTEST: Running MP Test:", testname, group, comm, numiters, buffsize, inputRank);
         }
         if (useMPI || !(useMP || useMPI))
         {
-            comm.setown(createCommunicator(group));
+            comm.setown(createMPICommunicator(group));
             runTest("MPTEST: Running MPI Test:", testname, group, comm, numiters, buffsize, inputRank);
         }
 
