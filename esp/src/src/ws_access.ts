@@ -533,6 +533,10 @@ export function GroupMemberEditInput(params) {
     return _doCall("GroupMemberEditInput", params);
 }
 
+export function GroupMemberQuery(params) {
+    return _doCall("GroupMemberQuery", params);
+}
+
 export function Permissions(params?) {
     return _doCall("Permissions", params);
 }

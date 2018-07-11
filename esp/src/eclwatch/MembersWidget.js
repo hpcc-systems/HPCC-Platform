@@ -5,9 +5,11 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/promise/all",
+    "dojo/on",
 
     "dijit/registry",
     "dijit/form/Button",
+    "dijit/form/ValidationTextBox",
     "dijit/ToolbarSeparator",
     "dijit/Dialog",
 
@@ -16,12 +18,13 @@ define([
     "hpcc/GridDetailsWidget",
     "src/ws_access",
     "src/ESPUtil",
+    "src/Utility",
     "hpcc/TargetSelectWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, all,
-    registry, Button, ToolbarSeparator, Dialog,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, all, on,
+    registry, Button, ValidationTextBox, ToolbarSeparator, Dialog,
     selector,
-    GridDetailsWidget, WsAccess, ESPUtil, TargetSelectWidget) {
+    GridDetailsWidget, WsAccess, ESPUtil, Utility, TargetSelectWidget) {
         return declare("MembersWidget", [GridDetailsWidget], {
             i18n: nlsHPCC,
 
@@ -45,6 +48,7 @@ define([
             createGrid: function (domID) {
                 var context = this;
                 this.openButton = registry.byId(this.id + "Open");
+                this.newPage = registry.byId(this.id + "NewPage")
                 this.refreshButton = registry.byId(this.id + "Refresh");
                 this.addButton = new Button({
                     id: this.id + "Add",
@@ -61,6 +65,15 @@ define([
                         context._onDeleteMember(event);
                     }
                 }).placeAt(this.addButton.domNode, "after");
+                this.downloadButton = new Button({
+                    id: this.id + "DownloadtoCSV",
+                    style: "float:right;",
+                    label: this.i18n.DownloadToCSV,
+                    disabled: true,
+                    onClick: function (event) {
+                        context._onAddDownloadMember();
+                    }
+                }).placeAt(this.newPage.domNode, "after");
                 var tmpSplitter = new ToolbarSeparator().placeAt(this.addButton.domNode, "before");
 
                 this.dialog = new Dialog({
@@ -77,13 +90,30 @@ define([
 
                 var retVal = new declare([ESPUtil.Grid(true, true)])({
                     store: this.store,
+                    sort: [{ attribute: "fullname" }],
                     columns: {
                         check: selector({
                             width: 27,
                             label: " "
                         }, "checkbox"),
                         username: {
-                            label: this.i18n.Username
+                            width: 180,
+                            label: this.i18n.Username,
+                            sortable: true
+                        },
+                        employeeID: {
+                            width: 180,
+                            sortable: true,
+                            label: this.i18n.EmployeeID
+                        },
+                        fullname: {
+                            label: this.i18n.FullName,
+                            sortable: true
+                        },
+                        passwordexpiration: {
+                            width: 180,
+                            label: this.i18n.PasswordExpiration,
+                            sortable: true
                         }
                     }
                 }, domID);
@@ -133,6 +163,53 @@ define([
                 }
             },
 
+            _onAddDownloadMember: function (event) {
+                var context = this;
+
+                this.dialog = new Dialog({
+                    title: this.i18n.Members,
+                    style: "width: 480px; height: 100px"
+                });
+                this.dialog.show();
+
+                this.dialogValidationTextBox = new ValidationTextBox({
+                    placeHolder: context.i18n.FileName,
+                    required: true,
+                    style: "float:left; margin-left: 10px; width: 70%"
+                }).placeAt(this.dialog.domNode, "second");
+
+                this.dialogButton = new Button({
+                    style: "float:right; padding: 0 10px 10px 20px;",
+                    innerHTML: context.i18n.Submit,
+                    disabled: true,
+                    onClick: function () {
+                        context._buildCSV();
+                    }
+                }).placeAt(this.dialog.domNode, "last");
+
+                on(this.dialogValidationTextBox, "keyup", function(event){
+                    if (context.dialogValidationTextBox.get("value") != "") {
+                        context.dialogButton.set("disabled", false);
+                    } else {
+                        context.dialogButton.set("disabled", true);
+                    }
+                });
+            },
+
+            _buildCSV: function (event) {
+                var selections = this.grid.getSelected();
+                var row = [];
+                var fileName = this.dialogValidationTextBox.get("value") + ".csv";
+
+                arrayUtil.forEach(selections, function (cell, idx) {
+                    var rowData = [cell.username, cell.employeeID, cell.fullname, cell.passwordexpiration];
+                    row.push(rowData);
+                });
+
+                Utility.downloadToCSV(this.grid, row, fileName);
+                this.dialog.hide();
+            },
+
             _onRefresh: function () {
                 this.refreshGrid();
             },
@@ -143,19 +220,20 @@ define([
                 var hasUserSelection = selection.length;
 
                 this.deleteButton.set("disabled", !hasUserSelection);
+                this.downloadButton.set("disabled", !hasUserSelection);
             },
 
             refreshGrid: function () {
                 var context = this;
-                WsAccess.Members({
+                WsAccess.GroupMemberQuery({
                     request: {
-                        groupname: context.params.groupname
+                        GroupName: context.params.groupname
                     }
                 }).then(function (response) {
                     var results = [];
 
-                    if (lang.exists("GroupEditResponse.Users.User", response)) {
-                        results = response.GroupEditResponse.Users.User;
+                    if (lang.exists("GroupMemberQueryResponse.Users.User", response)) {
+                        results = response.GroupMemberQueryResponse.Users.User;
                         arrayUtil.forEach(results, function (row, idx) {
                             lang.mixin(row, {
                                 username: row.username
