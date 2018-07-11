@@ -112,7 +112,7 @@ public:
 
     bool send(CMessageBuffer &mbuf, rank_t dstrank, mptag_t tag, unsigned timeout)
     {
-        _TF("send", dstrank, tag, timeout);
+        _TF("send", dstrank, tag, mbuf.getReplyTag(), timeout);
         assertex(dstrank!=RANK_NULL);
         CTimeMon tm(timeout);
         rank_t startrank = dstrank;
@@ -201,7 +201,7 @@ public:
         if (success)
         {
             const SocketEndpoint &ep = getGroup()->queryNode(srcrank).endpoint();
-            mbuf.init(ep, tag, TAG_REPLY_BASE);
+            mbuf.init(ep, tag, mbuf.getReplyTag());
             if (sender)
                 *sender = srcrank;
             mbuf.reset();
@@ -235,7 +235,6 @@ public:
         _TF("sendRecv", sendrank, sendtag, timeout);
         //TODO share timeout between send/recv?
         mptag_t replytag = createReplyTag();
-        _T("replytag="<<replytag);
         CTimeMon tm(timeout);
         mbuff.setReplyTag(replytag);
         unsigned remaining;
