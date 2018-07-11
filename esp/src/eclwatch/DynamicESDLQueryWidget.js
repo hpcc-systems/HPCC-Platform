@@ -337,7 +337,6 @@ define([
             }).then(function (response) {
                 var results = [];
                 var newRows = [];
-                var serviceInformation;
                 if (lang.exists("ListESDLBindingsResponse.EspProcesses.EspProcess", response)) {
                     results = response.ListESDLBindingsResponse.EspProcesses.EspProcess;
                 }
@@ -346,28 +345,29 @@ define([
                     lang.mixin(row, {
                         __hpcc_parentName: null,
                         __hpcc_id: row.Name + idx,
-                        children: row ? true : false,
+                        children: row.Ports ? true : false,
                         type: "service"
                     });
-
-                    arrayUtil.forEach(row.Ports.Port, function (Port, portIndex) {
-                        newRows.push({
-                            __hpcc_parentName: row.Name + idx,
-                            __hpcc_id: row.Name + Port.Value + portIndex,
-                            Name: Port.Value,
-                            children: Port ? true : false,
-                            type: "port"
-                        });
-                        arrayUtil.forEach(Port.Bindings.Binding, function (Binding, bindingIdx) {
+                    if (row.Ports) {
+                        arrayUtil.forEach(row.Ports.Port, function (Port, portIndex) {
                             newRows.push({
-                                __hpcc_parentName: row.Name + Port.Value + portIndex,
-                                __hpcc_id: Binding.Id + bindingIdx,
-                                Name: Binding.Id,
-                                children: false,
-                                type: "binding"
+                                __hpcc_parentName: row.Name + idx,
+                                __hpcc_id: row.Name + Port.Value + portIndex,
+                                Name: Port.Value,
+                                children: Port ? true : false,
+                                type: "port"
+                            });
+                            arrayUtil.forEach(Port.Bindings.Binding, function (Binding, bindingIdx) {
+                                newRows.push({
+                                    __hpcc_parentName: row.Name + Port.Value + portIndex,
+                                    __hpcc_id: Binding.Id + bindingIdx,
+                                    Name: Binding.Id,
+                                    children: false,
+                                    type: "binding"
+                                });
                             });
                         });
-                    });
+                    }
                 });
 
                 arrayUtil.forEach(newRows, function (newRow) {
