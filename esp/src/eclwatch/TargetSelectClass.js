@@ -574,11 +574,11 @@ define([
 
             loadESDLESPProcesses: function () {
                 var context = this;
-                WsESDLConfig.ListDESDLEspBindings({
+                WsESDLConfig.ListESDLBindings({
                     request: {}
                 }).then(function (response) {
-                    if (lang.exists("ListDESDLEspBindingsResp.ESPServers.ESPServer", response)) {
-                        arrayUtil.forEach(response.ListDESDLEspBindingsResp.ESPServers.ESPServer, function (item, idx) {
+                    if (lang.exists("ListESDLBindingsResponse.EspProcesses.EspProcess", response)) {
+                        arrayUtil.forEach(response.ListESDLBindingsResponse.EspProcesses.EspProcess, function (item, idx) {
                             context.options.push({
                                 label: item.Name,
                                 value: item.Name

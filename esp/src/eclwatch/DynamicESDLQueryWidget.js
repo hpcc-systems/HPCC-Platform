@@ -32,7 +32,7 @@ define([
     registry, Button, ToolbarSeparator, Dialog, TextBox,
     tree, selector, ColumnHider,
     GridDetailsWidget, WsTopology, WsESDLConfig, Utility, DelayLoadWidget, ESPUtil, DynamicESDLDefinitionQueryWidget, TargetSelectWidget, DelayLoadWidget) {
-    return declare("DynamicESDLQueryWidget", [GridDetailsWidget], {
+    return declare("DynamicESDLQueryWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_DESDL,
@@ -145,7 +145,27 @@ define([
                         collapseOnRefresh: false,
                         label: this.i18n.Process,
                         sortable: false
-                    })
+                    }),
+                    PublishBy: {
+                        label: this.i18n.PublishedBy,
+                        sortable: false,
+                        width: 200
+                    },
+                    CreatedTime: {
+                        label: this.i18n.CreatedTime,
+                        sortable: false,
+                        width: 200
+                    },
+                    LastEditBy: {
+                        label: this.i18n.LastEditedBy,
+                        sortable: false,
+                        width: 200
+                    },
+                    LastEditTime: {
+                        label: this.i18n.LastEditTime,
+                        sortable: false,
+                        width: 200
+                    }
                 }
             }, domID);
 
@@ -337,7 +357,6 @@ define([
             }).then(function (response) {
                 var results = [];
                 var newRows = [];
-                var serviceInformation;
                 if (lang.exists("ListESDLBindingsResponse.EspProcesses.EspProcess", response)) {
                     results = response.ListESDLBindingsResponse.EspProcesses.EspProcess;
                 }
@@ -346,28 +365,35 @@ define([
                     lang.mixin(row, {
                         __hpcc_parentName: null,
                         __hpcc_id: row.Name + idx,
-                        children: row ? true : false,
+                        children: row.Ports ? true : false,
                         type: "service"
                     });
-
-                    arrayUtil.forEach(row.Ports.Port, function (Port, portIndex) {
-                        newRows.push({
-                            __hpcc_parentName: row.Name + idx,
-                            __hpcc_id: row.Name + Port.Value + portIndex,
-                            Name: Port.Value,
-                            children: Port ? true : false,
-                            type: "port"
-                        });
-                        arrayUtil.forEach(Port.Bindings.Binding, function (Binding, bindingIdx) {
+                    if (row.Ports) {
+                        arrayUtil.forEach(row.Ports.Port, function (Port, portIndex) {
                             newRows.push({
-                                __hpcc_parentName: row.Name + Port.Value + portIndex,
-                                __hpcc_id: Binding.Id + bindingIdx,
-                                Name: Binding.Id,
-                                children: false,
-                                type: "binding"
+                                __hpcc_parentName: row.Name + idx,
+                                __hpcc_id: row.Name + Port.Value + portIndex,
+                                Name: Port.Value,
+                                children: Port ? true : false,
+                                type: "port"
+                            });
+                            arrayUtil.forEach(Port.Bindings.Binding, function (Binding, bindingIdx) {
+                                newRows.push({
+                                    ESPProcessName: row.Name,
+                                    Port: Port.Value,
+                                    __hpcc_parentName: row.Name + Port.Value + portIndex,
+                                    __hpcc_id: Binding.Id + bindingIdx,
+                                    Name: Binding.Id,
+                                    PublishBy: Binding.History.PublishBy,
+                                    CreatedTime: Binding.History.CreatedTime,
+                                    LastEditBy:Binding.History.LastEditBy,
+                                    LastEditTime:Binding.History.LastEditTime,
+                                    children: false,
+                                    type: "binding"
+                                });
                             });
                         });
-                    });
+                    }
                 });
 
                 arrayUtil.forEach(newRows, function (newRow) {
