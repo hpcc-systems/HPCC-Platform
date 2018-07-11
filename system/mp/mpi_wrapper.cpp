@@ -360,6 +360,27 @@ void hpcc_mpi::finalize()
     MPI::Finalize();
 }
 
+void pushMPTag(CMessageBuffer &mbuf, mptag_t tag)
+{
+    mbuf.append((unsigned)tag);
+}
+
+mptag_t popMPTag(CMessageBuffer &mbuf)
+{
+    size_t currentPos = mbuf.getPos();
+    size_t newLength = mbuf.length() - sizeof(mptag_t);
+    mbuf.reset(newLength);
+    unsigned replyTag;
+    mbuf.read(replyTag);
+    mbuf.setLength(newLength);
+    if (currentPos > newLength)
+    {
+        currentPos = newLength;
+    }
+    mbuf.reset(currentPos);
+    return (mptag_t)replyTag;
+}
+
 hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageBuffer &mbuf, MPI::Comm& comm, unsigned timeout)
 {
     _TF("sendData", dstRank, mptag, mbuf.getReplyTag(), timeout);
@@ -375,10 +396,7 @@ hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageB
     addCommData(commData); //So that it can be cancelled from outside
 
     //TODO: find a better way to send the reply tag
-    size_t orginalLength = mbuf.length();
-    unsigned replyTag = mbuf.getReplyTag();
-    mbuf.append(replyTag);
-    _T("Sending replyTag="<<replyTag);
+    pushMPTag(mbuf, mbuf.getReplyTag());
     while(!bufferedSendComplete)
     {
         try
@@ -391,7 +409,7 @@ hpcc_mpi::CommStatus hpcc_mpi::sendData(rank_t dstRank, mptag_t mptag, CMessageB
             }
             bufferedSendComplete = true;
             //remove reply tag from the buffer
-            mbuf.setLength(orginalLength);
+            popMPTag(mbuf);
             canceled = !notCanceled;
         } catch (MPI::Exception &e) {
             commData->releaseCancellationLock();
@@ -462,18 +480,8 @@ hpcc_mpi::CommStatus hpcc_mpi::readData(rank_t &sourceRank, mptag_t &mptag, CMes
                 {
                     sourceRank = stat.Get_source();
                     mptag = getTag(stat.Get_tag());
-//                    int t = getTag(mptag);
-//                    assertex(t==mptag);
-                    //pop the reply tag and resetting the length of the message without reply tag
-                    size_t orginalLength = mbuf.length();
-                    size_t newLength = orginalLength - sizeof(mptag_t);
-                    mbuf.reset(newLength);
-                    unsigned replyTag;
-                    mbuf.read(replyTag);
-                    _T("Sender="<<sourceRank<<", Tag="<<mptag<<", replyTag="<<replyTag);
-                    mbuf.setReplyTag((mptag_t)replyTag);
-                    mbuf.setLength(newLength);
-
+                    //pop the reply tag
+                    mbuf.setReplyTag(popMPTag(mbuf));
                     commData->releaseCancellationLock();
                 }
                 canceled = !noCancellation;
