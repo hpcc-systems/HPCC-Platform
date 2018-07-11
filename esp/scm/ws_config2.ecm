@@ -94,7 +94,14 @@ ESPresponse [exceptions_inline] ListOpenSessionsResponse
 //
 // Node management
 
-ESPrequest NodeRequest
+ESPrequest GetNodeRequest
+{
+    string SessionId;
+    string NodeId;
+};
+
+
+ESPrequest GetParentsRequest
 {
     string SessionId;
     string NodeId;
@@ -265,7 +272,13 @@ ESPstruct EnvironmentFileType
 };
 
 
-ESPrequest CommonSessionRequest
+ESPrequest GetEnvironmentFileListRequest
+{
+    string SessionId;
+};
+
+
+ESPrequest LockSessionRequest
 {
     string SessionId;
 };
@@ -377,7 +390,7 @@ ESPservice [auth_feature("DEFERRED"),version("2.0"), default_client_version("2.0
     ESPMethod
         [
             description("Get a list of environment files available")
-        ] GetEnvironmentFileList(CommonSessionRequest, GetEnvironmentListResponse);
+        ] GetEnvironmentFileList(GetEnvironmentFileListRequest, GetEnvironmentListResponse);
     ESPMethod
         [
             description("Open an environment file")
@@ -393,7 +406,7 @@ ESPservice [auth_feature("DEFERRED"),version("2.0"), default_client_version("2.0
     ESPMethod
         [
             description("Lock a session's open environment for modification")
-        ] LockSession(CommonSessionRequest, LockSessionResponse);
+        ] LockSession(LockSessionRequest, LockSessionResponse);
     ESPMethod
         [
             description("Unlock a previously locked session")
@@ -401,7 +414,7 @@ ESPservice [auth_feature("DEFERRED"),version("2.0"), default_client_version("2.0
     ESPMethod
         [
             description("Get an environment node")
-        ] GetNode(NodeRequest, GetNodeResponse);
+        ] GetNode(GetNodeRequest, GetNodeResponse);
     ESPMethod
         [
             description("Set one or more of a node's attribute values,and/or the node's local value")
@@ -409,7 +422,7 @@ ESPservice [auth_feature("DEFERRED"),version("2.0"), default_client_version("2.0
     ESPMethod
         [
             description("Returns the nodes parents all the way to the root")
-        ] GetParents(NodeRequest, GetParentsResponse);
+        ] GetParents(GetParentsRequest, GetParentsResponse);
     ESPMethod
         [
             description("Insert a new node into the environment")

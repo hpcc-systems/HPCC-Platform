@@ -123,7 +123,7 @@ bool Cws_config2Ex::onGetOpenSessions(IEspContext &context, IEspListOpenSessions
 }
 
 
-bool Cws_config2Ex::onGetEnvironmentFileList(IEspContext &context, IEspCommonSessionRequest &req, IEspGetEnvironmentListResponse &resp)
+bool Cws_config2Ex::onGetEnvironmentFileList(IEspContext &context, IEspGetEnvironmentFileListRequest &req, IEspGetEnvironmentListResponse &resp)
 {
     std::string sessionId = req.getSessionId();
     ConfigMgrSession *pSession = getConfigSession(sessionId);
@@ -275,7 +275,7 @@ bool Cws_config2Ex::onSaveEnvironmentFile(IEspContext &context, IEspSaveEnvironm
 }
 
 
-bool Cws_config2Ex::onLockSession(IEspContext &context, IEspCommonSessionRequest &req, IEspLockSessionResponse &resp)
+bool Cws_config2Ex::onLockSession(IEspContext &context, IEspLockSessionRequest &req, IEspLockSessionResponse &resp)
 {
     std::string sessionId = req.getSessionId();
     ConfigMgrSession *pSession = getConfigSession(sessionId, true);
@@ -325,7 +325,7 @@ bool Cws_config2Ex::onUnlockSession(IEspContext &context, IEspUnlockSessionReque
 }
 
 
-bool Cws_config2Ex::onGetNode(IEspContext &context, IEspNodeRequest &req, IEspGetNodeResponse &resp)
+bool Cws_config2Ex::onGetNode(IEspContext &context, IEspGetNodeRequest &req, IEspGetNodeResponse &resp)
 {
     std::string sessionId = req.getSessionId();
     std::string id = req.getNodeId();
@@ -446,7 +446,7 @@ bool Cws_config2Ex::onSetValues(IEspContext &context, IEspSetValuesRequest &req,
 }
 
 
-bool Cws_config2Ex::onGetParents(IEspContext &context, IEspNodeRequest &req, IEspGetParentsResponse &resp)
+bool Cws_config2Ex::onGetParents(IEspContext &context, IEspGetParentsRequest &req, IEspGetParentsResponse &resp)
 {
     std::string nodeId = req.getNodeId();
     std::string sessionId = req.getSessionId();
