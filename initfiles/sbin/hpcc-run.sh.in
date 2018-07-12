@@ -348,7 +348,12 @@ RUN_CLUSTER_DISPLAY_OUTPUT=FALSE
 
 DEFAULT_OPTIONS="-e $configfile -s ${SECTION:-DEFAULT}"
 
-TEMP=`/usr/bin/getopt -o a:c:n:sShfd --long help,comp:,action:,save,concurrent:,sequentially,force,debug -n 'hpcc-run' -- "$@"`
+if use_systemd; then
+    TEMP=`/usr/bin/getopt -o c:n:sShfd --long help,comp:,save,concurrent:,sequentially,force,debug -n 'hpcc-run' -- "$@"`
+else
+    TEMP=`/usr/bin/getopt -o a:c:n:sShfd --long help,comp:,action:,save,concurrent:,sequentially,force,debug -n 'hpcc-run' -- "$@"`
+fi
+
 if [[ $? != 0 ]] ; then echo "Failure to parse commandline." >&2 ; end 1 ; fi
 eval set -- "$TEMP"
 while true ; do
