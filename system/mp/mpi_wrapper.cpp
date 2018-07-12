@@ -162,7 +162,7 @@ CommData* popCommData(CommData * commData)
 
 //----------------------------------------------------------------------------------------------------------------------------//
 
-#define TAG_UB 1000000 //INT_MAX //MPI_TAG_UB
+#define TAG_UB 100000 //INT_MAX //MPI_TAG_UB
 int getRank(rank_t sourceRank)
 {
     _TF("getRank", sourceRank);
