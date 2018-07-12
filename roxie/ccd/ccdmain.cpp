@@ -124,6 +124,7 @@ unsigned preabortIndexReadsThreshold = 100;
 bool preloadOnceData;
 bool reloadRetriesFailed;
 bool selfTestMode = false;
+bool defaultCollectFactoryStatistics = true;
 
 int backgroundCopyClass = 0;
 int backgroundCopyPrio = 0;
@@ -145,7 +146,7 @@ bool defaultCheckingHeap = false;
 bool defaultDisableLocalOptimizations = false;
 unsigned defaultStrandBlockSize = 512;
 unsigned defaultForceNumStrands = 0;
-unsigned defaultHeapFlags = roxiemem::RHFscanning;
+unsigned defaultHeapFlags = roxiemem::RHFnone;
 
 unsigned slaveQueryReleaseDelaySeconds = 60;
 unsigned coresPerQuery = 0;
@@ -862,6 +863,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
         mergeSlaveStatistics = topology->getPropBool("@mergeSlaveStatistics", true);
+        defaultCollectFactoryStatistics = topology->getPropBool("@collectFactoryStatistics", true);
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
 

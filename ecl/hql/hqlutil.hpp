@@ -202,6 +202,7 @@ extern HQL_API IHqlExpression * removeChildOp(IHqlExpression * expr, node_operat
 extern HQL_API IHqlExpression * removeChild(IHqlExpression * expr, unsigned child);
 extern HQL_API IHqlExpression * appendAttribute(IHqlExpression * expr, IAtom * attr);
 extern HQL_API IHqlExpression * appendOwnedOperand(IHqlExpression * expr, IHqlExpression * ownedOperand);
+extern HQL_API IHqlExpression * prependOwnedOperand(IHqlExpression * expr, IHqlExpression * ownedOperand);
 extern HQL_API IHqlExpression * replaceOwnedAttribute(IHqlExpression * expr, IHqlExpression * ownedAttribute);
 extern HQL_API IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...);
 extern HQL_API IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, IAtom * name);
@@ -689,6 +690,12 @@ inline IHqlExpression * queryDefaultValue(IHqlExpression * expr, unsigned idx)
 extern HQL_API IHqlExpression * getHozedBias(ITypeInfo * type);
 extern HQL_API ITypeInfo * getHozedKeyType(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getHozedKeyValue(IHqlExpression * _value);
+
+class HqlMapTransformer;
+extern HQL_API IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExpression * physicalSelect, bool allowTranslate);
+extern HQL_API IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * record, bool hasInternalFileposition, bool createKeyedTypes);
+extern HQL_API IHqlExpression * createMetadataIndexRecord(IHqlExpression * record, bool hasInternalFilePosition);
+extern HQL_API IHqlExpression * patchEclRecordDefinitionFromRecordLayout(IHqlExpression * record, MemoryBuffer &recordLayoutInfo);
 
 extern HQL_API bool hasNonNullRecord(ITypeInfo * type);
 

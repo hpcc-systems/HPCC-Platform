@@ -2828,7 +2828,7 @@ void CThorStats::tallyValue(unsigned __int64 thiscount, unsigned n)
     }
 }
 
-void CThorStats::processInfo()
+void CThorStats::processTotal()
 {
     reset();
     ForEachItemIn(n, counts)
@@ -2836,7 +2836,18 @@ void CThorStats::processInfo()
         unsigned __int64 thiscount = counts.item(n);
         tallyValue(thiscount, n+1);
     }
+}
+
+void CThorStats::processInfo()
+{
+    processTotal();
     calculateSkew();
+}
+
+void CThorStats::getTotalStat(IStatisticGatherer & stats)
+{
+    processTotal();
+    stats.addStatistic(kind, tot);
 }
 
 void CThorStats::getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual)

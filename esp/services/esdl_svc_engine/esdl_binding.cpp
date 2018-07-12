@@ -1050,7 +1050,7 @@ bool EsdlBindingImpl::loadDefinitions(const char * espServiceName, Owned<IEsdlDe
             else
                 PROGLOG("Esdl definition %s not found in shared cache, loading it from store", id);
             StringBuffer esdlXML;
-            m_pCentralStore->fetchDefinition(id, esdlXML);
+            m_pCentralStore->fetchDefinitionXML(id, esdlXML);
             if (!esdlXML.length())
             {
                 Owned<IPropertyTree> esdlDefintion;
@@ -1554,6 +1554,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
     IEspContext *ctx = request->queryContext();
     if(ctx->toBeAuthenticated()) //no HTTP basic auth info?
     {
+        ctx->setAuthStatus(AUTH_STATUS_FAIL);
         response->sendBasicChallenge("ESP", false);
         return 0;
     }

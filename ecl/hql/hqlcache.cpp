@@ -427,8 +427,13 @@ static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr, bo
         }
         return createFunctionDefinition(expr->queryId(), newBody.getClear(), formals.getClear(), newDefaults.getClear(), nullptr);
     }
-    if (expr->getOperator()==no_typedef || expr->getOperator()==no_enum)
+    switch (expr->getOperator())
+    {
+    case no_typedef:
+    case no_enum:
+    case no_macro:
         return nullptr;
+    }
     ITypeInfo * type = getFullyUnqualifiedType(expr->queryType());
     if (!type)
         return nullptr;

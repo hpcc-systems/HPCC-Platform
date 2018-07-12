@@ -44,8 +44,8 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      699
-#define MIN_ACTIVITY_INTERFACE_VERSION  699             //minimum value that is compatible with current interface
+#define ACTIVITY_INTERFACE_VERSION      650
+#define MIN_ACTIVITY_INTERFACE_VERSION  650             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
 
@@ -55,6 +55,10 @@ typedef unsigned char byte;
 #else
 #define I64C(n) n##LL
 #endif
+#endif
+
+#ifdef _WIN32
+typedef size_t memsize_t;
 #endif
 
 typedef unsigned __int64 __uint64;
@@ -259,6 +263,7 @@ interface IEngineRowAllocator : extends IInterface
 
 //Used for dynamically sizing rows.
     virtual void * createRow(size32_t & allocatedSize) = 0;
+    virtual void * createRow(size32_t initialSize, size32_t & allocatedSize) = 0;
     virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) = 0;            //NB: size is updated with the new size
     virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) = 0;
 
@@ -421,6 +426,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline bool isLinkCounted() const { return (fieldType & RFTMlinkcounted) != 0; }
     inline bool isSigned() const { return (fieldType & RFTMunsigned) == 0; }
     inline bool isUnsigned() const { return (fieldType & RFTMunsigned) != 0; }
+    inline bool isBlob() const { return getType() == type_blob; }
     inline unsigned getDecimalDigits() const { return (length & 0xffff); }
     inline unsigned getDecimalPrecision() const { return (length >> 16); }
     inline unsigned getBitfieldIntSize() const { return (length & 0xff); }
@@ -1966,10 +1972,6 @@ struct IHThorKeyPatchArg : public IHThorArg
 };
 
 
-#ifdef WIN32
-typedef unsigned char byte;
-#endif
-
 struct IHThorWorkunitReadArg : public IHThorArg
 {
     virtual const char * queryName() = 0;
@@ -2301,6 +2303,7 @@ interface ISteppingMeta
 interface IThorDiskCallback : extends IFilePositionProvider
 {
     virtual const char * queryLogicalFilename(const void * row) = 0;
+    virtual const byte * lookupBlob(unsigned __int64 id) = 0;         // return reference, not freed by code generator, can dispose once transform() has returned.
 };
 
 interface IThorIndexCallback : extends IInterface
@@ -2343,7 +2346,7 @@ struct IHThorIndexReadBaseArg : extends IHThorCompoundBaseArg
     virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;   // Projected layout
     virtual unsigned getFlags() = 0;
     virtual unsigned getProjectedFormatCrc() = 0;                   // Corresponding to projectedDiskRecordSize
-    virtual unsigned getDiskFormatCrc() { return getProjectedFormatCrc(); }  // Should correspond to queryDiskRecordSize() meta really - codegen needs to fix that
+    virtual unsigned getDiskFormatCrc() = 0;                        // Corresponding to diskRecordSize
     virtual void setCallback(IThorIndexCallback * callback) = 0;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
 

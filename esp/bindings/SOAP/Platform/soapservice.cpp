@@ -112,7 +112,11 @@ int CSoapService::processHeader(CHeader* header, IEspContext* ctx)
     if (returnValue == 0)
     {
         if (authenticated)
+        {
+            if (ctx->toBeAuthenticated())
+                ctx->setAuthStatus(AUTH_STATUS_OK); //May be changed to AUTH_STATUS_NOACCESS if failed in feature level authorization.
             return 0;
+        }
         returnValue = SOAP_AUTHENTICATION_REQUIRED;
     }
 
@@ -124,6 +128,7 @@ int CSoapService::processHeader(CHeader* header, IEspContext* ctx)
         msg.append(" User authentication failed");
     else
         msg.append(" User authentication required");
+    ctx->setAuthStatus(AUTH_STATUS_FAIL);
     DBGLOG("%s", msg.str());
 
     return returnValue;

@@ -1955,8 +1955,6 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         destination->getClusterPartDiskMapSpec(gName.str(), mspec);
         mspec.setDefaultBaseDir(defaultFolder.str());
         mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
-        if (!req.getReplicate())
-            mspec.defaultCopies = DFD_NoCopies;
         destination->setClusterPartDiskMapSpec(gName.str(), mspec);
 
         int repo = req.getReplicateOffset();
@@ -2131,8 +2129,6 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         destination->getClusterPartDiskMapSpec(gName.str(), mspec);
         mspec.setDefaultBaseDir(defaultFolder.str());
         mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
-        if (!req.getReplicate())
-            mspec.defaultCopies = DFD_NoCopies;
         destination->setClusterPartDiskMapSpec(gName.str(), mspec);
         const char * encryptkey = req.getEncrypt();
         if(req.getCompress()||(encryptkey&&*encryptkey))
@@ -2595,8 +2591,6 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             wuFSpecDest->getClusterPartDiskMapSpec(destNodeGroup.str(), mspec);
             mspec.setDefaultBaseDir(defaultFolder.str());
             mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
-            if (!req.getReplicate())
-                mspec.defaultCopies = DFD_NoCopies;
             wuFSpecDest->setClusterPartDiskMapSpec(destNodeGroup.str(), mspec);
         }
 

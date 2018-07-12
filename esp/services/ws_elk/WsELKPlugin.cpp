@@ -18,10 +18,14 @@
 
 #pragma warning (disable : 4786)
 
+#ifndef WsELK_API
+#define WsELK_API DECL_EXPORT
+#endif //WsELK_API
+
 #include "ws_elk_esp.ipp"
 
 //ESP Bindings
-#include "http/platform/httpprot.hpp"
+#include "httpprot.hpp"
 
 //ESP Service
 #include "WsELKService.hpp"
@@ -46,7 +50,12 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
 {
     if (strcmp(type, "ws_elkSoapBinding")==0)
     {
-        return new Cws_elkSoapBinding(cfg, name, process);
+#ifdef _DEBUG
+        http_soap_log_level log_level_ = hsl_all;
+#else
+        http_soap_log_level log_level_ = hsl_none;
+#endif
+        return new Cws_elkSoapBinding(cfg, name, process, log_level_);
     }
 
     return nullptr;
@@ -54,20 +63,7 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
 
 ESP_FACTORY IEspProtocol * esp_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-    if (strcmp(type, "http_protocol")==0)
-    {
-        return new CHttpProtocol;
-    }
-    else if(strcmp(type, "secure_http_protocol") == 0)
-    {
-        IPropertyTree *sslSettings;
-        sslSettings = cfg->getPropTree(StringBuffer("Software/EspProcess[@name=\"").append(process).append("\"]").append("/EspProtocol[@name=\"").append(name).append("\"]").str());
-        if(sslSettings != nullptr)
-        {
-            return new CSecureHttpProtocol(sslSettings);
-        }
-    }
-    return nullptr;
+    return http_protocol_factory(name, type, cfg, process);
 }
 
 } // extern "C"

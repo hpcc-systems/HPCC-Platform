@@ -143,6 +143,13 @@ extern jhtree_decl bool isIndexFile(IFile *file)
     return false;
 }
 
+extern jhtree_decl bool isIndexFile(const char *fileName)
+{
+    OwnedIFile iFile = createIFile(fileName);
+    if (!iFile)
+        return false;
+    return isIndexFile(iFile);
+}
 
 
 // CKeyHdr

@@ -10,8 +10,15 @@
       <primary>Str.CountWords</primary>
     </indexterm><indexterm>
       <primary>CountWords</primary>
-    </indexterm>(</emphasis> <emphasis>source, separator </emphasis><emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>source, separator, [allow_blank]
+  </emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.CountWords<indexterm>
+      <primary>STD.Uni.CountWords</primary>
+    </indexterm><indexterm>
+      <primary>Uni.CountWords</primary>
+    </indexterm>(</emphasis> <emphasis>source, separator, [allow_blank]
+  </emphasis><emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -33,6 +40,13 @@
         </row>
 
         <row>
+          <entry><emphasis>allow_blank</emphasis></entry>
+
+          <entry>Optional, A BOOLEAN value indicating if empty/blank string
+          items are included in the results. Defaults to FALSE</entry>
+        </row>
+
+        <row>
           <entry>Return:</entry>
 
           <entry>CountWords returns an integer value.</entry>
@@ -44,6 +58,9 @@
   <para>The <emphasis role="bold">CountWords </emphasis>function returns the
   number of words in the <emphasis>source</emphasis> string based on the
   specified <emphasis>separator</emphasis>.</para>
+
+  <para>Words are separated by one or more separator strings. No spaces are
+  stripped from either string before matching.</para>
 
   <para>Example:</para>
 

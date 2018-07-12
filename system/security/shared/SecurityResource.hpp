@@ -79,6 +79,12 @@ public:
         return NULL;
 
     }
+
+    virtual IPropertyIterator * getParameterIterator() const override
+    {
+        return (m_parameters.get() ? m_parameters->getIterator() : nullptr);
+    }
+
     virtual void setRequiredAccessFlags(SecAccessFlags flags)
     {
         m_required_access = flags;
@@ -99,7 +105,7 @@ public:
         return m_description.str();
     }
 
-    virtual void setValue(const char* Value)
+    virtual void setValue(const char* Value) override
     {
         m_value.clear().append(Value);
     }
@@ -139,22 +145,20 @@ public:
     {
         if(!from)
             return;
-        CSecurityResource* _res = (CSecurityResource*)(from);
-        if(!_res)
+
+        setDescription(from->getDescription());
+        setValue(from->getValue());
+        setAccessFlags(from->getAccessFlags());
+
+        if(m_parameters.get())
+            m_parameters.clear();
+        Owned<IPropertyIterator> Itr = from->getParameterIterator();
+        if(!Itr.get())
             return;
-
-        setDescription(_res->m_description.str());
-        setValue(_res->m_value.str());
-        setAccessFlags(_res->getAccessFlags());
-
-        if(!_res->m_parameters)
-            return;
-
-        Owned<IPropertyIterator> Itr = _res->m_parameters->getIterator();
         Itr->first();
         while(Itr->isValid())
         {
-            addParameter(Itr->getPropKey(), _res->m_parameters->queryProp(Itr->getPropKey()));
+            addParameter(Itr->getPropKey(), from->getParameter(Itr->getPropKey()));
             Itr->next();
         }
         return;

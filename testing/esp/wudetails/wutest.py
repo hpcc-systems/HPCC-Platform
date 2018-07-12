@@ -21,6 +21,9 @@ import logging
 import logging.config
 import datetime
 import requests.packages.urllib3
+import inspect
+import traceback
+import sys
 from requests import Session
 from requests.auth import HTTPBasicAuth
 from requests.auth import HTTPDigestAuth
@@ -63,9 +66,10 @@ requiredJobs = ( ('childds1',      ('roxie','thor','hthor')),
                  ('sort',          ('roxie','thor','hthor')),
                  ('key',           ('roxie','thor','hthor')),
                  ('dict1',         ('roxie','thor','hthor')),
-                 ('indexread2-multiPart(true)',('roxie', 'thor','hthor') ) )
+                 ('indexread2-multiPart(true)',('roxie', 'thor','hthor')),
+                 ('sets',           ('roxie','thor','hthor')) )
 
-maskValueFields = ('Definition','SizePeakMemory', 'WhenFirstRow', 'TimeElapsed', 'TimeTotalExecute', 'TimeFirstExecute', 'TimeLocalExecute',
+maskValueFields = ('Definition','DefinitionList','SizePeakMemory', 'WhenFirstRow', 'TimeElapsed', 'TimeTotalExecute', 'TimeFirstExecute', 'TimeLocalExecute',
                    'WhenStarted', 'TimeMinLocalExecute', 'TimeMaxLocalExecute', 'TimeAvgLocalExecute', 'SkewMinLocalExecute', 'SkewMaxLocalExecute',
                    'NodeMaxLocalExecute', 'NodeMaxDiskWrites', 'NodeMaxLocalExecute', 'NodeMaxLocalExecute', 'NodeMaxSortElapsed', 'NodeMinDiskWrites',
                    'NodeMinLocalExecute', 'NodeMinLocalExecute', 'NodeMinLocalExecute', 'NodeMinSortElapsed', 'SkewMaxDiskWrites', 'SkewMaxLocalExecute',
@@ -432,6 +436,20 @@ testCases = [
                  scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
                  propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
              ),
+             testCase(
+                 scopeFilter(ScopeTypes={'ScopeType':'workflow'}, MaxDepth='999',),
+                 nestedFilter(Depth='0'),
+                 propertiesToReturn(AllAttributes='1', Properties=[{'Property':'IdDependencyList'}]),
+                 scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
+                 propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
+             ),
+             testCase(
+                 scopeFilter(ScopeTypes={'ScopeType':'workflow'}, MaxDepth='999',),
+                 nestedFilter(Depth='0'),
+                 propertiesToReturn(Properties=[{'Property':'IdDependency'}]),
+                 scopeOptions(IncludeMatchedScopesInResults='1', IncludeScope='1', IncludeId='1', IncludeScopeType='1'),
+                 propertyOptions(IncludeName='1', IncludeRawValue='1', IncludeMeasure='1', IncludeCreator='1', IncludeCreatorType='1')
+             ),
             ]
 
 def ExecTestCase(jobname, wuid, tcase, tcasename):
@@ -510,10 +528,26 @@ class Statistics:
         else:
             self.failureCount += 1
 
+# To make this Python3.4 compatible
+def safeMkdir(path):
+    try:
+        path.mkdir(parents=True)
+    except FileExistsError as e:
+        # It is ok if alrady exists
+        pass
+    except (FileNotFoundError, PermissionError) as e:
+        logging.error("'%s' \nExit." % (str(e)))
+        exit(-1)
+    except:
+        print("Unexpected error:" + str(sys.exc_info()[0]) + " (line: " + str(inspect.stack()[0][2]) + ")" )
+        traceback.print_stack()
+        exit(-1)
+
 resultdir = Path(args.outdir)
-resultdir.mkdir(parents=True, exist_ok=True)
+safeMkdir(resultdir)
+
 tcasekeydir = Path(keydir)
-tcasekeydir.mkdir(parents=True, exist_ok=True)
+safeMkdir(tcasekeydir)
 
 logging.info('Gathering workunits')
 try:
@@ -541,6 +575,11 @@ for jobname, wuid in wu.items():
             tcasename = 'testcase' + str(index+1)
             success = ExecTestCase(jobname, wuid, t, tcasename)
             stats.addCount(success)
+    elif (jobname in ['sets_thor','sets_roxie', 'sets_hthor']):
+        success = ExecTestCase(jobname, wuid, testCases[30], 'testcase31')
+        stats.addCount(success)
+        success = ExecTestCase(jobname, wuid, testCases[31], 'testcase32')
+        stats.addCount(success)
     else:
         success = ExecTestCase(jobname, wuid, testCases[0], 'testcase1')
         stats.addCount(success)

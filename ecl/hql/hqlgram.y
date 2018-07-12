@@ -8885,13 +8885,6 @@ simpleDataSet
                             OwnedHqlExpr attrs;
                             OwnedHqlExpr grouping = parser->processSortList($7, no_usertable, dataset, sortItems, NULL, &attrs);
 
-                            if (grouping && !queryAttributeInList(groupedAtom, attrs))
-                            {
-                                parser->checkGrouping($7, dataset,record,grouping);
-                                if (dataset->getOperator() == no_group && isGrouped(dataset))
-                                    parser->reportWarning(CategoryIgnored, WRN_GROUPINGIGNORED, $3.pos, "Grouping of table input will have no effect, was this intended?");
-                            }
-
                             HqlExprArray args;
                             args.append(*LINK(dataset));
                             args.append(*LINK(record));

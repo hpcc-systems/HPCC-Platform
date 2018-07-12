@@ -641,6 +641,7 @@ public:
     bool isLocalOnly() const; // this graph and all upstream dependencies
     bool isLocalChild() const { return localChild; }
     bool isLoopSubGraph() const { return loopBodySubgraph; }
+    bool containsActivities() const { return containers.count() != 0; }
     void setCompleteEx(bool tf=true) { complete = tf; }
     void setGlobal(bool tf) { global = tf; }
     void setLogging(bool tf);
@@ -1271,6 +1272,7 @@ extern graph_decl CGraphElementBase *createGraphElement(IPropertyTree &node, CGr
 extern graph_decl IThorBoundLoopGraph *createBoundLoopGraph(CGraphBase *graph, IOutputMetaData *resultMeta, unsigned activityId);
 extern graph_decl bool isDiskInput(ThorActivityKind kind);
 extern graph_decl bool isLoopActivity(CGraphElementBase &container);
+extern graph_decl void traceMemUsage();
 
 
 #endif

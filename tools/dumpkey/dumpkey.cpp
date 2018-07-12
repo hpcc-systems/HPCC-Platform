@@ -20,7 +20,10 @@
 #include "ctfile.hpp"
 #include "rtlrecord.hpp"
 #include "rtlformat.hpp"
+#include "rtldynfield.hpp"
 #include "eclhelper_dyn.hpp"
+#include "hqlexpr.hpp"
+#include "hqlutil.hpp"
 
 void fatal(const char *format, ...) __attribute__((format(printf, 1, 2)));
 void fatal(const char *format, ...)
@@ -76,6 +79,33 @@ void doOption(const char *opt)
         usage();
 }
 
+class MyIndexVirtualFieldCallback : public CInterfaceOf<IVirtualFieldCallback>
+{
+public:
+    MyIndexVirtualFieldCallback(IKeyManager *_manager) : manager(_manager)
+    {
+    }
+    virtual const char * queryLogicalFilename(const void * row) override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual unsigned __int64 getFilePosition(const void * row) override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row) override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual const byte * lookupBlob(unsigned __int64 id) override
+    {
+        size32_t blobSize;
+        return manager->loadBlob(id, blobSize);
+    }
+private:
+    Linked<IKeyManager> manager;
+};
+
 int main(int argc, const char **argv)
 {
     InitModuleObjects();
@@ -116,6 +146,7 @@ int main(int argc, const char **argv)
             const char * keyName = files.item(idx);
             index.setown(createKeyIndex(keyName, 0, false, false));
             size32_t key_size = index->keySize();  // NOTE - in variable size case, this is 32767
+            size32_t keyedSize = index->keyedSize();
             unsigned nodeSize = index->getNodeSize();
             if (optFullHeader)
             {
@@ -128,7 +159,7 @@ int main(int argc, const char **argv)
                 io->read(0, sizeof(KeyHdr), (void *)block.get());
                 header->load(*(KeyHdr*)block.get());
 
-                printf("Key '%s'\nkeySize=%d NumParts=%x, Top=%d\n", keyName, key_size, index->numParts(), index->isTopLevelKey());
+                printf("Key '%s'\nkeySize=%d keyedSize = %d NumParts=%x, Top=%d\n", keyName, key_size, keyedSize, index->numParts(), index->isTopLevelKey());
                 printf("File size = %" I64F "d, nodes = %" I64F "d\n", in->size(), in->size() / nodeSize - 1);
                 printf("rootoffset=%" I64F "d[%" I64F "d]\n", header->getRootFPos(), header->getRootFPos()/nodeSize);
                 Owned<IPropertyTree> metadata = index->getMetadata();
@@ -171,30 +202,41 @@ int main(int argc, const char **argv)
                 ArrayOf<const RtlFieldInfo *> deleteFields;
                 ArrayOf<const RtlFieldInfo *> fields;  // Note - the lifetime of the array needs to extend beyond the lifetime of outmeta. The fields themselves are shared with diskmeta, and do not need to be released.
                 Owned<IOutputMetaData> outmeta;
-                Owned<IHThorIndexReadArg> helper;
                 Owned<IXmlWriterExt> writer;
-                class MyIndexCallback : public CInterfaceOf<IThorIndexCallback>
-                {
-                public:
-                    MyIndexCallback() {}
-                    virtual byte * lookupBlob(unsigned __int64 id) override
-                    {
-                        UNIMPLEMENTED;
-                    }
-                } callback;
+                Owned<const IDynamicTransform> translator;
+                RowFilter rowFilter;
                 unsigned __int64 count = globals->getPropInt("recs", 1);
                 const RtlRecordTypeInfo *outRecType = nullptr;
                 if (metadata && metadata->hasProp("_rtlType"))
                 {
                     MemoryBuffer layoutBin;
                     metadata->getPropBin("_rtlType", layoutBin);
-                    diskmeta.setown(createTypeInfoOutputMetaData(layoutBin, false, &callback));
+                    try
+                    {
+                        diskmeta.setown(createTypeInfoOutputMetaData(layoutBin, false));
+                    }
+                    catch (IException *E)
+                    {
+                        EXCLOG(E);
+                        E->Release();
+                    }
+                }
+                if (!diskmeta && metadata->hasProp("_record_ECL"))
+                {
+                    MultiErrorReceiver errs;
+                    Owned<IHqlExpression> expr = parseQuery(metadata->queryProp("_record_ECL"), &errs);
+                    if (errs.errCount() == 0)
+                    {
+                        MemoryBuffer layoutBin;
+                        if (exportBinaryType(layoutBin, expr, true))
+                            diskmeta.setown(createTypeInfoOutputMetaData(layoutBin, false));
+                    }
                 }
                 if (diskmeta)
                 {
                     writer.setown(new SimpleOutputWriter);
                     const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
-                    manager.setown(createLocalKeyManager(inrec, index, nullptr, false));
+                    manager.setown(createLocalKeyManager(inrec, index, nullptr, true));
                     size32_t minRecSize = 0;
                     if (globals->hasProp("fields"))
                     {
@@ -210,7 +252,6 @@ int main(int argc, const char **argv)
                             {
                                 // We can't just use the original source field in this case (as blobs are only supported in the input)
                                 // So instead, create a field in the target with the original type.
-                                //MORE: I'm not sure what this should do for a blob..., revisit when blobs are implemented
                                 field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
                                 deleteFields.append(field);
                             }
@@ -234,24 +275,23 @@ int main(int argc, const char **argv)
                             fields.append(field);
                             minRecSize += field->type->getMinSize();
                         }
-                        outmeta.set(diskmeta);
                     }
                     fields.append(nullptr);
                     outRecType = new RtlRecordTypeInfo(type_record, minRecSize, fields.getArray(0));
                     outmeta.setown(new CDynamicOutputMetaData(*outRecType));
-                    helper.setown(createIndexReadArg(keyName, diskmeta.getLink(), outmeta.getLink(), outmeta.getLink(), count, 0, (uint64_t) -1));
-                    helper->setCallback(&callback);
+                    translator.setown(createRecordTranslator(outmeta->queryRecordAccessor(true), inrec));
                     if (filters.ordinality())
                     {
-                        IDynamicIndexReadArg *arg = QUERYINTERFACE(helper.get(), IDynamicIndexReadArg);
-                        assertex(arg);
                         ForEachItemIn(idx, filters)
                         {
-                            arg->addFilter(filters.item(idx));
+                            const IFieldFilter &thisFilter = rowFilter.addFilter(diskmeta->queryRecordAccessor(true), filters.item(idx));
+                            unsigned idx = thisFilter.queryFieldIndex();
+                            const RtlFieldInfo *field = inrec.queryOriginalField(idx);
+                            if (field->flags & RFTMispayloadfield)
+                                throw MakeStringException(0, "Cannot filter on payload field '%s'", field->name);
                         }
                     }
-                    helper->createSegmentMonitors(manager);
-                    count = helper->getChooseNLimit(); // Just because this is testing out the createIndexReadArg functionality
+                    rowFilter.createSegmentMonitors(manager);
                 }
                 else
                 {
@@ -261,6 +301,7 @@ int main(int argc, const char **argv)
                 }
                 manager->finishSegmentMonitors();
                 manager->reset();
+                MyIndexVirtualFieldCallback callback(manager);
                 while (manager->lookup(true) && count--)
                 {
                     byte const * buffer = manager->queryKeyBuffer();
@@ -276,26 +317,22 @@ int main(int argc, const char **argv)
                             printf("%02x", ((unsigned char) buffer[i]) & 0xff);
                         printf("  :%" I64F "u\n", seq);
                     }
-                    else if (helper)
+                    else if (translator)
                     {
-                        if (helper->canMatch(buffer))
+                        MemoryBuffer buf;
+                        MemoryBufferBuilder aBuilder(buf, 0);
+                        if (translator->translate(aBuilder, callback, buffer))
                         {
-                            MemoryBuffer buf;
-                            MemoryBufferBuilder aBuilder(buf, 0);
-                            if (helper->transform(aBuilder, (const byte *) buffer))
-                            {
-                                outmeta->toXML((const byte *) buf.toByteArray(), *writer.get());
-                                printf("%s\n", writer->str());
-                                writer->clear();
-                            }
-                            else
-                                count++;  // Don't count this row as it was postfiltered
+                            outmeta->toXML((const byte *) buf.toByteArray(), *writer.get());
+                            printf("%s\n", writer->str());
+                            writer->clear();
                         }
                         else
-                            count++;
+                            count++;  // Row was postfiltered
                     }
                     else
                         printf("%.*s  :%" I64F "u\n", size, buffer, seq);
+                    manager->releaseBlobs();
                 }
                 if (outRecType)
                     outRecType->doDelete();

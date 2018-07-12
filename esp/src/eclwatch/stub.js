@@ -1,18 +1,3 @@
-/*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-############################################################################## */
 define([
     "dojo/_base/fx",
     "dojo/dom",
@@ -41,62 +26,62 @@ define([
     "css!hpcc/css/hpcc.css"
 
 ], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic, xhr, cookie, on,
-            Dialog, Button,
-            ESPUtil, Utility, LockDialogWidget,
-            entities, Toaster) {
+    Dialog, Button,
+    ESPUtil, Utility, LockDialogWidget,
+    entities, Toaster) {
 
-    var IDLE_TIMEOUT = cookie("ESPSessionTimeoutSeconds") * 1000;
-    var SESSION_RESET_FREQ = 30 * 1000;
-    var idleWatcher;
-    var monitorLockClick;
-    var _prevReset = Date.now();
-    var sessionIsActive = cookie("ESPSessionTimeoutSeconds");
+        var IDLE_TIMEOUT = cookie("ESPSessionTimeoutSeconds") * 1000;
+        var SESSION_RESET_FREQ = 30 * 1000;
+        var idleWatcher;
+        var monitorLockClick;
+        var _prevReset = Date.now();
+        var sessionIsActive = cookie("ESPSessionTimeoutSeconds");
 
-    function _resetESPTime(evt) {
-        if (Date.now() - _prevReset > SESSION_RESET_FREQ) {
-            _prevReset = Date.now();
-            xhr("esp/reset_session_timeout", {
+        function _resetESPTime(evt) {
+            if (Date.now() - _prevReset > SESSION_RESET_FREQ) {
+                _prevReset = Date.now();
+                xhr("esp/reset_session_timeout", {
+                    method: "post"
+                }).then(function (data) {
+                });
+            }
+        }
+
+        function _onLogout(evt) {
+            xhr("esp/logout", {
                 method: "post"
             }).then(function (data) {
+                if (data) {
+                    document.cookie = "ESPSessionID" + location.port + " = '' "; "expires=Thu, 01 Jan 1970 00:00:00 GMT"; // or -1
+                    window.location.reload();
+                }
             });
         }
-    }
 
-    function _onLogout(evt) {
-        xhr("esp/logout", {
-            method: "post"
-        }).then(function (data) {
-            if (data) {
-                document.cookie = "ESPSessionID" + location.port + " = '' "; "expires=Thu, 01 Jan 1970 00:00:00 GMT"; // or -1
-                window.location.reload();
-            }
-        });
-    }
+        function startLoading(targetNode) {
+            domStyle.set(dom.byId("loadingOverlay"), "display", "block");
+            domStyle.set(dom.byId("loadingOverlay"), "opacity", "255");
+        }
 
-    function startLoading(targetNode) {
-        domStyle.set(dom.byId("loadingOverlay"), "display", "block");
-        domStyle.set(dom.byId("loadingOverlay"), "opacity", "255");
-    }
+        function stopLoading() {
+            fx.fadeOut({
+                node: dom.byId("loadingOverlay"),
+                onEnd: function (node) {
+                    domStyle.set(node, "display", "none");
+                }
+            }).play();
+        }
 
-    function stopLoading() {
-        fx.fadeOut({
-            node: dom.byId("loadingOverlay"),
-            onEnd: function (node) {
-                domStyle.set(node, "display", "none");
-            }
-        }).play();
-    }
+        function initUnlockListener() {
+            var unlock = dom.byId("unlock");
+            on(unlock, "click", function (event) {
+                monitorLockClick.unlocked();
+            });
+        }
 
-    function initUnlockListener() {
-        var unlock = dom.byId("unlock");
-        on(unlock, "click", function (event) {
-            monitorLockClick.unlocked();
-        });
-    }
-
-    function initUI() {
-        var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
-        var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
+        function initUI() {
+            var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
+            var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
 
             Utility.resolve(hpccWidget, function (WidgetClass) {
                 var webParams = {
@@ -131,7 +116,7 @@ define([
                             var clipped = false;
                             if (item.Message) {
                                 var MAX_LINES = 10;
-                                if (item.Message.length > MAX_LINES * 80) { 
+                                if (item.Message.length > MAX_LINES * 80) {
                                     item.Message = item.Message.substr(0, MAX_LINES * 80);
                                     item.Message += "...";
                                     clipped = true;
@@ -166,12 +151,12 @@ define([
                     var lock = dom.byId("Lock");
                     idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
                     monitorLockClick = new ESPUtil.MonitorLockClick();
-                   if (lock){
+                    if (lock) {
                         on(lock, "click", function (event) {
                             monitorLockClick.locked();
                         });
                     }
-                    monitorLockClick.on("unlocked", function (){
+                    monitorLockClick.on("unlocked", function () {
                         idleWatcher.start();
                     });
                     monitorLockClick.on("locked", function () {
@@ -193,25 +178,25 @@ define([
                 }
                 stopLoading();
             }
-        );
-    }
+            );
+        }
 
-    function parseUrl() {
-        var baseHost = (typeof debugConfig !== "undefined") ? "http://" + debugConfig.IP + ":" + debugConfig.Port : "";
-        var hashNodes = location.hash.split("#");
-        var searchNodes = location.search.split("?");
+        function parseUrl() {
+            var baseHost = (typeof debugConfig !== "undefined") ? "http://" + debugConfig.IP + ":" + debugConfig.Port : "";
+            var hashNodes = location.hash.split("#");
+            var searchNodes = location.search.split("?");
 
-        dojoConfig.urlInfo = {
-            baseHost: baseHost,
-            pathname: location.pathname,
-            hash: hashNodes.length >= 2 ? hashNodes[1] : "",
-            resourcePath: baseHost + "/esp/files/eclwatch",
-            basePath: baseHost + "/esp/files"
-        };
-    }
+            dojoConfig.urlInfo = {
+                baseHost: baseHost,
+                pathname: location.pathname,
+                hash: hashNodes.length >= 2 ? hashNodes[1] : "",
+                resourcePath: baseHost + "/esp/files/eclwatch",
+                basePath: baseHost + "/esp/files"
+            };
+        }
 
-    ready(function () {
-        parseUrl();
-        initUI();
+        ready(function () {
+            parseUrl();
+            initUI();
+        });
     });
-});

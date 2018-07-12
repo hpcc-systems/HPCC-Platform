@@ -287,6 +287,18 @@ protected:
         return more;
     }
 
+    virtual void noteTiming(unsigned wfid, timestamp_type startTime, stat_type elapsedNs)
+    {
+        if (!workunit)
+            return;
+
+        WorkunitUpdate wu(&workunit->lock());
+        StringBuffer scope;
+        scope.append(WorkflowScopePrefix).append(wfid);
+        updateWorkunitStat(wu, SSTworkflow, scope, StWhenStarted, nullptr, startTime, 0);
+        updateWorkunitStat(wu, SSTworkflow, scope, StTimeElapsed, nullptr, elapsedNs, 0);
+    }
+
 
     virtual void reportContingencyFailure(char const * type, IException * e)
     {
@@ -1245,6 +1257,10 @@ public:
     }
 
     // interface IRoxieServerContext
+    virtual bool collectingDetailedStatistics() const
+    {
+        return (workUnit != nullptr);
+    }
 
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
@@ -1468,7 +1484,7 @@ public:
         graph->onCreate(NULL);  // MORE - is that right
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
-        if (workUnit)
+        if (collectingDetailedStatistics())
             graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), getWorkflowId(), 0));
     }
 
@@ -1511,14 +1527,18 @@ public:
 
     void cleanupGraphs()
     {
+        IStatisticGatherer * builder = nullptr;
+        if (graphStats)
+            builder = &graphStats->queryStatsBuilder();
+
         if (graph)
-            graph->updateFactoryStatistics();
+            graph->gatherStatistics(builder);
 
         SuperHashIteratorOf<decltype(childGraphs)::ELEMENT> iter(childGraphs);
         ForEach(iter)
         {
             IActivityGraph * curChildGraph = static_cast<IActivityGraph *>(iter.query().getValue());
-            curChildGraph->updateFactoryStatistics();
+            curChildGraph->gatherStatistics(builder);
         }
 
         graph.clear();
@@ -2499,7 +2519,6 @@ public:
         const SlaveContextLogger &slaveLogCtx = static_cast<const SlaveContextLogger &>(logctx);
         slaveLogCtx.putStats(subgraphId, activityId, fromStats);
     }
-
 };
 
 IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, IRoxieQueryPacket *packet, bool hasChildren)
@@ -2846,40 +2865,6 @@ public:
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
     }
 
-    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const
-    {
-        if (_processed)
-        {
-            if (graphStats)
-            {
-                CriticalBlock b(statsCrit);
-                IStatisticGatherer & builder = graphStats->queryStatsBuilder();
-                StatsSubgraphScope graphScope(builder, subgraphId);
-                StatsEdgeScope scope(builder, activityId, _idx);
-                if (_strands)
-                    builder.addStatistic(StNumStrands, _strands);
-                builder.addStatistic(StNumRowsProcessed, _processed);
-                builder.addStatistic(StNumStarts, 1);
-                builder.addStatistic(StNumStops, 1);
-                builder.addStatistic(StNumSlaves, 1);  // Arguable
-            }
-            logctx.noteStatistic(StNumRowsProcessed, _processed);
-        }
-    }
-
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId) const
-    {
-        if (graphStats)
-        {
-            CriticalBlock b(statsCrit);
-            IStatisticGatherer & builder = graphStats->queryStatsBuilder();
-            StatsSubgraphScope graphScope(builder, subgraphId);
-            StatsActivityScope scope(builder, activityId);
-            fromStats.recordStatistics(builder);
-        }
-        logctx.mergeStats(fromStats);
-    }
-
     virtual roxiemem::IRowManager &queryRowManager()
     {
         return *rowManager;
@@ -2950,7 +2935,7 @@ public:
         }
         return NULL;
     }
-    virtual unsigned getMemoryUsage()
+    virtual memsize_t getMemoryUsage()
     {
         return rowManager->getMemoryUsage();
     }

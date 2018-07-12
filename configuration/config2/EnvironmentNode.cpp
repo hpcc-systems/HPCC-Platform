@@ -18,6 +18,7 @@
 #include "EnvironmentNode.hpp"
 #include "Exceptions.hpp"
 #include "Utils.hpp"
+#include "ConfigPath.hpp"
 
 void EnvironmentNode::addChild(std::shared_ptr<EnvironmentNode> pNode)
 {
@@ -356,132 +357,111 @@ void EnvironmentNode::initialize()
 
 void EnvironmentNode::fetchNodes(const std::string &path, std::vector<std::shared_ptr<EnvironmentNode>> &nodes) const
 {
-    //
-    // If path starts with / and we are not the root, get the root and do the find
-    if (path[0] == '/')
-    {
-        std::string remainingPath = path.substr(1);
-        std::string rootName = remainingPath;
-        std::shared_ptr<const EnvironmentNode> pRoot = getRoot();
-        size_t slashPos = path.find_first_of('/', 1);
-        if (slashPos != std::string::npos)
-        {
-            rootName = path.substr(1, slashPos-1);
-            remainingPath = path.substr(slashPos + 1);
-            size_t atPos = rootName.find_first_of('@');
-            if (atPos != std::string::npos)
-            {
-                rootName.erase(atPos, std::string::npos);
-            }
-        }
+    ConfigPath configPath(path);
+    doFetchNodes(configPath, nodes);
+}
 
-        if (pRoot->getName() == rootName)
-        {
-            pRoot->fetchNodes(remainingPath, nodes);
-        }
-    }
-    else if (path[0] == '.')
+
+void EnvironmentNode::doFetchNodes(ConfigPath &configPath, std::vector<std::shared_ptr<EnvironmentNode>> &nodes) const
+{
+    std::shared_ptr<ConfigPathItem> pPathItem = configPath.getNextPathItem();
+
+    if (pPathItem)
     {
-        //
-        // Parent ?
-        if (path[1] == '.')
+        if (pPathItem->isRoot())
         {
-            //
-            // Path must be at least 4 characters in length to support the leading ../<remaining path>
-            if (!m_pParent.expired() && path.length() >= 4)
+            std::shared_ptr<const EnvironmentNode> pRoot = getRoot();
+            if (pRoot->getName() == pPathItem->getElementName())
             {
-                m_pParent.lock()->fetchNodes(path.substr(3), nodes);  // note skipping over '..'
+                pRoot->doFetchNodes(configPath, nodes);
             }
             else
             {
-                throw new ParseException("Attempt to navigate to parent with no parent or path is incomplete");
+                throw new ParseException("Invalid root element name ('" + pPathItem->getElementName() + "') specified in path");
             }
+        }
+        else if (pPathItem->isParentPathtItem())
+        {
+            getParent()->doFetchNodes(configPath, nodes);
+        }
+        else if (pPathItem->isCurrentPathItem())
+        {
+            doFetchNodes(configPath, nodes);
         }
         else
         {
-            fetchNodes(path.substr(1), nodes); // do the find from here stripping the '.' indicator
-        }
-    }
-
-    //
-    // Otherwise, start searching
-    else
-    {
-        std::string nodeName = path;
-        std::string remainingPath, searchAttrName, searchAttrValue;
-
-        //
-        // Get our portion of the path which is up to the next / or the remaining string and
-        // set the remaining portion of the path to search
-        size_t slashPos = nodeName.find_first_of('/');
-        if (slashPos != std::string::npos)
-        {
-            remainingPath = nodeName.substr(slashPos + 1);
-            nodeName.erase(slashPos, std::string::npos);  // truncate
-        }
-
-        //
-        // Any attributes we need to look for?
-        size_t atPos = nodeName.find_first_of('@');
-        if (atPos != std::string::npos)
-        {
-            searchAttrName = nodeName.substr(atPos + 1);
-            nodeName.erase(atPos, std::string::npos);
-            size_t equalPos = searchAttrName.find_first_of('=');
-            if (equalPos != std::string::npos)
+            //
+            // Get children nodes matching path element name (use this node if no element name)
+            std::vector<std::shared_ptr<EnvironmentNode>> childNodes;
+            if (pPathItem->getElementName().empty())
             {
-                searchAttrValue = searchAttrName.substr(equalPos + 1);
-                searchAttrName.erase(equalPos, std::string::npos);
+                childNodes.push_back(std::const_pointer_cast<EnvironmentNode>(shared_from_this()));
             }
-        }
-
-        //
-        // Now search the children for nodes matching the node name
-        std::vector<std::shared_ptr<EnvironmentNode>> childNodes;
-        getChildren(childNodes, nodeName);
-
-        //
-        // If there is an attribute specified, dig deeper
-        if (!searchAttrName.empty())
-        {
-            auto childNodeIt = childNodes.begin();
-            while (childNodeIt != childNodes.end())
+            else
             {
-                std::shared_ptr<EnvironmentValue> pValue = (*childNodeIt)->getAttribute(searchAttrName);
-                if (pValue)
+                getChildren(childNodes, pPathItem->getElementName());
+            }
+
+            //
+            // If there is an attribute and/or attribute values, search the child nodes from above
+            if (!pPathItem->getAttributeName().empty())
+            {
+                std::string attrName = pPathItem->getAttributeName();
+                auto childNodeIt = childNodes.begin();
+                while (childNodeIt != childNodes.end())
                 {
                     //
-                    // The attribute value must be present and, if necessary, must match the search value
-                    std::string curAttrValue = pValue->getValue();
-                    if (!curAttrValue.empty() && (searchAttrValue.empty() || (searchAttrValue == curAttrValue)))
+                    // If an attribute, then search attributes for those with the specified name, otherwise
+                    // get the schema item for this node and see if it has a property with the specified name.
+                    // In each case, if there is a value, check it too
+                    if (!pPathItem->isSchemaItem())
                     {
-                        ++childNodeIt;  // keep it
+                        std::shared_ptr<EnvironmentValue> pAttribute = (*childNodeIt)->getAttribute(attrName);
+                        if (pAttribute)
+                        {
+                            if (pPathItem->isValuePresentInValueList(pAttribute->getValue(), true))
+                            {
+                                ++childNodeIt;
+                            }
+                            else
+                            {
+                                childNodeIt = childNodes.erase(childNodeIt);
+                            }
+                        }
+                        else
+                        {
+                            childNodeIt = childNodes.erase(childNodeIt);
+                        }
                     }
                     else
                     {
-                        childNodeIt = childNodes.erase(childNodeIt);
+                        std::shared_ptr<SchemaItem> pSchemaItem = (*childNodeIt)->getSchemaItem();
+                        std::string propertyValue = (attrName == "itemType") ? pSchemaItem->getItemType() : pSchemaItem->getProperty(attrName);
+                        if (pPathItem->isValuePresentInValueList(propertyValue, true))
+                        {
+                            ++childNodeIt;
+                        }
+                        else
+                        {
+                            childNodeIt = childNodes.erase(childNodeIt);
+                        }
                     }
                 }
-                else
+            }
+
+            if (configPath.isPathRemaining())
+            {
+                //
+                // For all the matching nodes at this element, call each to continue the search
+                for (auto childNodeIt = childNodes.begin(); childNodeIt != childNodes.end(); ++childNodeIt)
                 {
-                    childNodeIt = childNodes.erase(childNodeIt);
+                    (*childNodeIt)->doFetchNodes(configPath, nodes);
                 }
             }
-        }
-
-        //
-        // If there is path remaining, call the children in childNodes with the remaining path, otherwise we've reached
-        // the end. Whatever nodes are in childNodes are appended to the input nodes vector for return
-        if (!remainingPath.empty())
-        {
-            for (auto childNodeIt = childNodes.begin(); childNodeIt != childNodes.end(); ++childNodeIt)
+            else
             {
-                (*childNodeIt)->fetchNodes(remainingPath, nodes);
+                nodes.insert(nodes.end(), childNodes.begin(), childNodes.end());
             }
-        }
-        else
-        {
-            nodes.insert(nodes.end(), childNodes.begin(), childNodes.end());
         }
     }
 }

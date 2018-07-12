@@ -81,6 +81,7 @@ include_directories (
          ./../../smc/SMCLib
          ./../../bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/dali/dfu
+         ./../../../testing/unittests
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS )
@@ -111,6 +112,7 @@ target_link_libraries ( ws_workunits
          jhtree
          fileview2
          thorhelper
+         ${CPPUNIT_LIBRARIES}
     )
 
 IF (USE_OPENSSL)

@@ -839,7 +839,8 @@ extern HQL_API IHqlExpression * queryLocation(IHqlExpression * expr)
             return best;
         if (kind == annotate_location)
             return expr;
-        best = expr;
+        if (kind == annotate_symbol)
+            best = expr;
         expr = expr->queryBody(true);
     }
 }
@@ -8438,6 +8439,18 @@ bool functionBodyUsesContext(IHqlExpression * body)
     }
 }
 
+IHqlExpression* getFunctionBodyAttribute(IHqlExpression* body, IAtom* atom) 
+{
+    switch (body->getOperator())
+    {
+    case no_outofline:
+    case no_funcdef:
+        return getFunctionBodyAttribute(body->queryChild(0),atom);
+    default:
+        return body->queryAttribute(atom);
+    }
+}
+
 bool functionBodyIsActivity(IHqlExpression * body)
 {
     switch (body->getOperator())
@@ -13047,6 +13060,10 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
         attrs.append(*LINK(cachedContextAttribute));
     if (functionBodyIsActivity(body))
         attrs.append(*createAttribute(activityAtom));
+    
+    IHqlExpression* passParamAttr = getFunctionBodyAttribute(body, passParameterMetaAtom);
+    if (getBoolAttributeValue(passParamAttr))
+        attrs.append(*createAttribute(passParameterMetaAtom));
 
     IHqlExpression *child = body->queryChild(0);
     if (child && child->getOperator()==no_embedbody)
@@ -14312,27 +14329,60 @@ void exportMap(IPropertyTree *dataNode, IHqlExpression *destTable, IHqlExpressio
     maps->addPropTree("MapTables", map);
 }
 
-void exportJsonType(StringBuffer &ret, IHqlExpression *table)
+bool hasTrailingFilePos(IHqlExpression *record)
 {
-    Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
-    const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
-    dumpTypeInfo(ret, typeInfo);
-}
-
-bool exportBinaryType(MemoryBuffer &ret, IHqlExpression *table)
-{
-    try
+    unsigned numFields = record->numChildren();
+    if (numFields>1)
     {
-        Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
-        const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
-        return dumpTypeInfo(ret, typeInfo);
-    }
-    catch (IException * e)
-    {
-        DBGLOG(e);
-        e->Release();
+        IHqlExpression * lastField = record->queryChild(numFields-1);
+        ITypeInfo * fileposType = lastField->queryType();
+        if (isSimpleIntegralType(fileposType))
+            return true;
     }
     return false;
+}
+
+void exportJsonType(StringBuffer &ret, IHqlExpression *table, bool forceIndex)
+{
+    if (forceIndex)
+    {
+        // When constructing from old index metadata, we don't know if FILEPOSITION(false) was specified on the index
+        // But we can have a reasonable guess - if no payload is specified, then there can't be a trailing fileposition field ...
+        OwnedHqlExpr indexRec = createMetadataIndexRecord(table, table->hasAttribute(_payload_Atom) && hasTrailingFilePos(table));
+        exportJsonType(ret, indexRec, false);
+    }
+    else
+    {
+        Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
+        const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
+        dumpTypeInfo(ret, typeInfo);
+    }
+}
+
+bool exportBinaryType(MemoryBuffer &ret, IHqlExpression *table, bool forceIndex)
+{
+    if (forceIndex)
+    {
+        // When constructing from old index metadata, we don't know if FILEPOSITION(false) was specified on the index
+        // But we can have a reasonable guess - if no payload is specified, then there can't be a trailing fileposition field ...
+        OwnedHqlExpr indexRec = createMetadataIndexRecord(table, table->hasAttribute(_payload_Atom) && hasTrailingFilePos(table));
+        return exportBinaryType(ret, indexRec, false);
+    }
+    else
+    {
+        try
+        {
+            Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
+            const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
+            return dumpTypeInfo(ret, typeInfo);
+        }
+        catch (IException * e)
+        {
+            DBGLOG(e);
+            e->Release();
+        }
+        return false;
+    }
 }
 
 const RtlTypeInfo *queryRtlType(IRtlFieldTypeDeserializer &deserializer, IHqlExpression *table)
@@ -16718,8 +16768,11 @@ bool isKeyedCountAggregate(IHqlExpression * aggregate)
 }
 
 
-static bool getBoolAttributeValue(IHqlExpression * attr)
+bool getBoolAttributeValue(IHqlExpression * attr, bool dft)
 {
+    if (attr == NULL)
+        return dft;
+
     IHqlExpression * value = attr->queryChild(0);
     //No argument implies true
     if (!value)
@@ -16742,9 +16795,8 @@ bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft)
     if (!expr)
         return dft;
     IHqlExpression * attr = expr->queryAttribute(name);
-    if (!attr)
-        return dft;
-    return getBoolAttributeValue(attr);
+
+    return getBoolAttributeValue(attr,dft);
 }
 
 IHqlExpression * queryBoolAttribute(IHqlExpression * expr, IAtom * name)
@@ -16765,9 +16817,7 @@ IHqlExpression * queryBoolExpr(bool value)
 bool getBoolAttributeInList(IHqlExpression * expr, IAtom * search, bool dft)
 {
     IHqlExpression * match = queryAttributeInList(search, expr);
-    if (!match)
-        return dft;
-    return getBoolAttributeValue(match);
+    return getBoolAttributeValue(match,dft);
 }
 
 IHqlExpression * queryOriginalRecord(IHqlExpression * expr)

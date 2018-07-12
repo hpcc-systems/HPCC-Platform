@@ -42,6 +42,7 @@
 #include "hqlalias.hpp"
 #include "hqlir.hpp"
 #include "hqliproj.hpp"
+#include "hqlgram.hpp"
 
 #define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea
@@ -638,6 +639,30 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                 return expr->clone(actions);
             return transform(expr->queryChild(0));
         }
+    case no_if:
+    {
+        //Transform the whole expression since mapped expressions may be found on branches that are not taken
+        OwnedHqlExpr transformed = QuickHqlTransformer::createTransformed(expr);
+        if (transformed->getOperator() == no_if)
+        {
+            IHqlExpression * newCond = transformed->queryChild(0);
+            if (newCond->isConstant())
+            {
+                OwnedHqlExpr folded = quickFoldExpression(newCond);
+                IValue * foldedValue = folded->queryValue();
+                if (foldedValue)
+                {
+                    if (foldedValue->getBoolValue())
+                        return LINK(transformed->queryChild(1));
+                    IHqlExpression * elseExpr = transformed->queryChild(2);
+                    if (elseExpr)
+                        return LINK(elseExpr);
+                    return createNullExpr(expr);
+                }
+            }
+        }
+        break;
+    }
     }
     return QuickHqlTransformer::createTransformed(expr);
 }
@@ -1452,17 +1477,22 @@ IHqlExpression * SequenceNumberAllocator::createTransformed(IHqlExpression * exp
             HqlExprArray args;
             ForEachChild(i, expr)
             {
-                OwnedHqlExpr next = transform(expr->queryChild(i));
-                if (!next->isAction())
+                LinkedHqlExpr cur = expr->queryChild(i);
+                if (!cur->isConstant())
                 {
-                    if (!next->isConstant())
-                        next.setown(createValue(no_evaluate_stmt, makeVoidType(), next.getClear()));
-                    else
-                        next.clear();
-                }
+                    if (!cur->isAction())
+                    {
+                        //For WHEN(a, b) generate WHEN(EVALUATE(a), b) instead of EVALUATE(WHEN(a,b))
+                        //since the code is generally cleaner and more efficient.
+                        HqlExprArray compoundArgs;
+                        cur->unwindList(compoundArgs, no_compound);
+                        unsigned last = compoundArgs.ordinality()-1;
+                        compoundArgs.replace(*createValue(no_evaluate_stmt, makeVoidType(), &OLINK(compoundArgs.item(last))), last);
+                        cur.setown(createCompound(compoundArgs));
+                    }
 
-                if (next)
-                    args.append(*next.getClear());
+                    args.append(*transform(cur));
+                }
             }
             return expr->clone(args);
         }
@@ -1532,6 +1562,98 @@ void HqlCppTranslator::allocateSequenceNumbers(HqlExprArray & exprs)
     transformer.transformRoot(exprs, sequenced);
     replaceArray(exprs, sequenced);
     maxSequence = transformer.getMaxSequence();
+}
+
+//---------------------------------------------------------------------------
+
+class NestedSequentialTransformer : public NewHqlTransformer
+{
+public:
+    NestedSequentialTransformer(HqlCppTranslator & _translator);
+
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
+
+protected:
+    virtual IHqlExpression * doTransformRootExpr(IHqlExpression * expr);
+
+protected:
+    HqlCppTranslator & translator; // should really be an error handler - could do with refactoring.
+};
+
+static HqlTransformerInfo nestedSequentialTransformerInfo("NestedSequentialTransformer");
+NestedSequentialTransformer::NestedSequentialTransformer(HqlCppTranslator & _translator) : NewHqlTransformer(nestedSequentialTransformerInfo), translator(_translator)
+{
+}
+
+IHqlExpression * NestedSequentialTransformer::doTransformRootExpr(IHqlExpression * expr)
+{
+    bool specialCase = expr->isAction();
+    switch (expr->getOperator())
+    {
+    case no_apply:
+        specialCase = false;
+        break;
+    case no_comma:
+    case no_stored:
+    case no_checkpoint:
+    case no_persist:
+    case no_critical:
+    case no_independent:
+    case no_once:
+    case no_success:
+    case no_failure:
+    case no_recovery:
+        specialCase = true;
+        break;
+    }
+
+    if (specialCase)
+    {
+        bool same = true;
+        HqlExprArray children;
+        ForEachChild(i, expr)
+        {
+            IHqlExpression * cur = expr->queryChild(i);
+            IHqlExpression * transformed = doTransformRootExpr(cur);
+            children.append(*transformed);
+            if (cur != transformed)
+                same = false;
+        }
+        if (!same)
+            return expr->clone(children);
+        return LINK(expr);
+    }
+    return transform(expr);
+}
+
+IHqlExpression * NestedSequentialTransformer::createTransformed(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_sequential:
+    {
+        translator.WARNINGAT(CategoryUnexpected, expr, HQLWRN_NestedSequentialUseOrdered);
+        HqlExprArray args;
+        transformChildren(expr, args);
+        return createAction(no_orderedactionlist, args);
+    }
+    case no_colon:
+    {
+        HqlExprArray args;
+        args.append(*transform(expr->queryChild(0)));
+        args.append(*doTransformRootExpr(expr->queryChild(1)));
+        return completeTransform(expr, args);
+    }
+    }
+    return NewHqlTransformer::createTransformed(expr);
+}
+
+void HqlCppTranslator::transformNestedSequential(HqlExprArray & exprs)
+{
+    HqlExprArray sequenced;
+    NestedSequentialTransformer transformer(*this);
+    transformer.transformRoot(exprs, sequenced);
+    replaceArray(exprs, sequenced);
 }
 
 //---------------------------------------------------------------------------
@@ -3660,8 +3782,7 @@ IHqlExpression * ThorHqlTransformer::normalizeMergeAggregate(IHqlExpression * ex
     OwnedHqlExpr mappedGrouping = mapper.collapseFields(groupBy, dataset, transformedFirstAggregate, &groupCanBeMapped);
     assertex(groupCanBeMapped);
 
-    OwnedHqlExpr sortOrder = getExistingSortOrder(transformedFirstAggregate, true, true);
-    OwnedHqlExpr mergeAttr = createExprAttribute(mergeAtom, replaceSelector(sortOrder, queryActiveTableSelector(), transformedFirstAggregate));
+    OwnedHqlExpr mergeAttr = createExprAttribute(mergeAtom, LINK(mappedGrouping));
     OwnedHqlExpr hashed = createValue(no_hash32, LINK(unsignedType), LINK(mappedGrouping), createAttribute(internalAtom));
     OwnedHqlExpr redistributed = createDatasetF(no_distribute, LINK(transformedFirstAggregate), LINK(hashed), mergeAttr.getClear(), NULL);
     redistributed.setown(cloneInheritedAnnotations(expr, redistributed));
@@ -11096,6 +11217,7 @@ static bool isSimpleSideeffect(IHqlExpression * expr)
     case no_attr:
     case no_attr_expr:
     case no_attr_link:
+    case no_assert:
         return true;
     case no_comma:
     case no_compound:
@@ -13339,7 +13461,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                     OwnedHqlExpr one = createConstant(createIntValue(1, counter->getType()));
                     firstCond.setown(quickFullReplaceExpression(firstCond, counter, one));
                 }
-                return appendOwnedOperand(transformed, createExprAttribute(_loopFirst_Atom, firstCond.getClear()));
+                return appendOwnedOperand(transformed, createExprAttribute(loopFirstAtom, firstCond.getClear()));
             }
             return transformed.getClear();
         }
@@ -13708,6 +13830,13 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
     allocateSequenceNumbers(exprs);                                             // Added to all expressions/output statements etc.
 
     traceExpressions("allocate Sequence", exprs);
+
+    if (options.transformNestedSequential)
+    {
+        transformNestedSequential(exprs);
+        traceExpressions("transformNestedSequential", exprs);
+    }
+
     checkNormalized(exprs);
 }
 
@@ -13976,6 +14105,9 @@ public:
             if (callIsActivity(expr))
                 checkEmbedActivity(expr);
             break;
+        case no_usertable:
+            checkGrouping(expr);
+            break;
         }
         QuickHqlTransformer::doAnalyse(expr);
     }
@@ -13985,6 +14117,8 @@ protected:
     void checkJoin(IHqlExpression * expr);
     void checkChoosen(IHqlExpression * expr);
     void checkEmbedActivity(IHqlExpression * expr);
+    void checkGrouping(IHqlExpression * expr);
+    void checkGrouping(HqlExprArray & parms, IHqlExpression * record, IHqlExpression * groups);
     void reportError(int errNo, const char * format, ...) __attribute__((format(printf, 3, 4)));
     void reportWarning(WarnErrorCategory category, int warnNo, const char * format, ...) __attribute__((format(printf, 4, 5)));
 protected:
@@ -14058,6 +14192,23 @@ void SemanticErrorChecker::checkJoin(IHqlExpression * join)
             }
         }
     }
+    IHqlExpression * keyed = join->queryAttribute(keyedAtom);
+    if (keyed)
+    {
+        //Ignore ,KEYED, only check ,KEYED(index)
+        IHqlExpression * index = keyed->queryChild(0);
+        if (index)
+        {
+            if (!getBoolAttribute(index, filepositionAtom, true))
+                reportError(ERR_BAD_JOINFLAG, "Cannot peform a full KEYED join with an index that has no fileposition");
+            else
+            {
+                IHqlExpression * lastField = queryLastField(index->queryRecord());
+                if (lastField && lastField->hasAttribute(_implicitFpos_Atom))
+                    reportError(ERR_BAD_JOINFLAG, "Cannot peform a full KEYED join with an index that has no fileposition");
+            }
+        }
+    }
 }
 
 void SemanticErrorChecker::checkChoosen(IHqlExpression * expr)
@@ -14080,6 +14231,109 @@ void SemanticErrorChecker::checkEmbedActivity(IHqlExpression * call)
         IHqlExpression * value = localAttr->queryChild(0);
         if (value && !value->isConstant())
             reportError(ECODETEXT(HQLERR_AttributeXMustBeConstant), "LOCAL");
+    }
+}
+
+void SemanticErrorChecker::checkGrouping(IHqlExpression * expr)
+{
+    if (expr->hasAttribute(groupedAtom))
+        return;
+
+    IHqlExpression * groups = queryDatasetGroupBy(expr);
+    if (!groups)
+        return;
+
+    IHqlExpression * ds = expr->queryChild(0);
+    IHqlExpression * record = expr->queryChild(1);
+    assertex(record->getOperator()==no_record);
+
+    if (ds->getOperator() == no_group && isGrouped(ds))
+        reportWarning(CategoryIgnored, WRN_GROUPINGIGNORED, "Grouping of table input will have no effect, was this intended?");
+
+    HqlExprArray parms1;
+    HqlExprArray parms;
+    groups->unwindList(parms1, no_sortlist);
+
+    //The expressions need normalizing because the selectors need to be normalized before checking for matches.
+    //The problem is that before the tree is tagged replaceSelector() doesn't work.  So have to use
+    //an approximation instead.
+    ForEachItemIn(idx, parms1)
+    {
+        IHqlExpression * cur = &parms1.item(idx);
+        if (cur->getOperator() == no_field)
+            reportError(ERR_GROUP_BADSELECT, "cannot use field of result record as a grouping parameter");
+        else
+        {
+            IHqlExpression * mapped = normalizeSelects(cur);
+            parms.append(*mapped);
+        }
+    }
+
+    checkGrouping(parms, record, groups);
+}
+
+void SemanticErrorChecker::checkGrouping(HqlExprArray & parms, IHqlExpression * record, IHqlExpression * groups)
+{
+    unsigned reckids = record->numChildren();
+    for (unsigned i = 0; i < reckids; i++)
+    {
+        IHqlExpression *field = record->queryChild(i);
+
+        switch(field->getOperator())
+        {
+        case no_record:
+            checkGrouping(parms, field, groups);
+            break;
+        case no_ifblock:
+            reportError(ERR_GROUP_BADSELECT, "IFBLOCKs are not supported inside grouped aggregates");
+            return;
+        case no_field:
+            {
+                IHqlExpression * rawValue = field->queryChild(0);
+                if (rawValue)
+                {
+                    OwnedHqlExpr value = normalizeSelects(rawValue);
+                    bool ok = checkGroupExpression(parms, value);
+
+                    if (!ok)
+                    {
+                        IIdAtom * id = NULL;
+
+                        switch(field->getOperator())
+                        {
+                        case no_select:
+                            id = field->queryChild(1)->queryId();
+                            break;
+                        case no_field:
+                            id = field->queryId();
+                            break;
+                        default:
+                            id = field->queryId();
+                            break;
+                        }
+
+                        StringBuffer msg("Field ");
+                        if (id)
+                            msg.append("'").append(str(id)).append("' ");
+                        msg.append("in TABLE does not appear to be properly defined by grouping conditions");
+                        reportWarning(CategoryUnexpected, ERR_GROUP_BADSELECT, "%s", msg.str());
+                    }
+                }
+                else if (field->isDatarow())
+                {
+                    checkGrouping(parms, field->queryRecord(), groups);
+                }
+                else
+                    throwUnexpected();
+            }
+            break;
+        case no_attr:
+        case no_attr_expr:
+        case no_attr_link:
+            break;
+        default:
+            assertex(false);
+        }
     }
 }
 

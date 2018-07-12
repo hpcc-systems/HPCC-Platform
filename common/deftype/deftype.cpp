@@ -134,87 +134,6 @@ unsigned promotedIntSize[9] = { 0, 1, 2, 4, 4, 8, 8, 8, 8 };
 
 //===========================================================================
 
-
-ITypeInfo *makeType(type_t type, int size)
-{
-    switch (type)
-    {
-    case type_string:
-        return makeStringType(size, NULL, NULL);            // MORE!!
-        
-    case type_varstring:
-        return makeVarStringType(size);
-        
-    case type_qstring:
-        return makeQStringType(size);
-        
-    case type_unicode:
-        return makeUnicodeType(size, 0);
-
-    case type_varunicode:
-        return makeVarUnicodeType(size, 0);
-
-    case type_utf8:
-        return makeUtf8Type(size, 0);
-
-    case type_data:
-        return makeDataType(size);
-        
-    case type_int:
-        return makeIntType(size, false);
-        
-    case type_swapint:
-        return makeSwapIntType(size, false);
-        
-    case type_packedint:
-        return makePackedIntType(size, false);
-        
-    case type_real:
-        return makeRealType(size);
-        
-    case type_bitfield:
-        return makeBitfieldType(size);
-        
-    case type_boolean:
-        return makeBoolType();
-
-    case type_blob:
-        return makeBlobType();
-
-    case type_void:
-        return makeVoidType();
-        
-    case type_null:
-        return makeNullType();
-        
-    case type_record:
-        return makeRecordType();
-        
-    case type_pattern:
-        return makePatternType();
-
-    case type_rule:
-        return makeRuleType(NULL);
-
-    case type_token:
-        return makeTokenType();
-
-    case type_feature:
-        return makeFeatureType();
-
-    case type_event:
-        return makeEventType();
-
-    case type_any:
-        return makeAnyType();
-        
-    case type_date:
-        return makeBoolType(); // JCSMORE: Todo.
-    }
-    return NULL;
-}
-
-
 static IValue * castViaString(ITypeInfo * type, size32_t len, const char * text)
 {
     Owned<IValue> temp = createStringValue(text, len);
@@ -1903,6 +1822,11 @@ static ITypeInfo * commonUpType(CHashedTypeInfo * candidate)
     }
     candidate->Release();
     return match;
+}
+
+extern DEFTYPE_API ITypeInfo *makeKeyedBlobType(ITypeInfo * basetype)
+{
+    return commonUpType(new CKeyedBlobTypeInfo(basetype));
 }
 
 extern DEFTYPE_API ITypeInfo *makeFilePosType(ITypeInfo *basetype)

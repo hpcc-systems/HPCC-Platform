@@ -345,9 +345,33 @@ public:
         for (int numHosts=0; numHosts < getHostCount(); numHosts++)
         {
             getLdapHost(hostbuf);
+            unsigned port = strieq("ldaps",m_protocol) ? m_ldap_secure_port : m_ldapport;
+            StringBuffer sysUserDN, decPwd;
+
+            {
+                StringBuffer pwd;
+                cfg->getProp(".//@systemPassword", pwd);
+                if (pwd.isEmpty())
+                    throw MakeStringException(-1, "systemPassword is empty");
+                decrypt(decPwd, pwd.str());
+
+                StringBuffer sysUserCN;
+                cfg->getProp(".//@systemCommonName", sysUserCN);
+                if (sysUserCN.isEmpty())
+                    throw MakeStringException(-1, "systemCommonName is empty");
+
+                StringBuffer sysBasedn;
+                cfg->getProp(".//@systemBasedn", sysBasedn);
+                if (sysBasedn.isEmpty())
+                    throw MakeStringException(-1, "systemBasedn is empty");
+
+                //Guesstimate system user baseDN based on config settings. It will be used if anonymous bind fails
+                sysUserDN.append("cn=").append(sysUserCN.str()).append(",").append(sysBasedn.str());
+            }
+
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
-                rc = LdapUtils::getServerInfo(hostbuf.str(), m_ldapport, dcbuf, m_serverType, ldapDomain, m_timeout);
+                rc = LdapUtils::getServerInfo(hostbuf.str(), sysUserDN.str(), decPwd.str(), m_protocol, port, dcbuf, m_serverType, ldapDomain, m_timeout);
                 if(!LdapServerDown(rc) || retries >= LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);

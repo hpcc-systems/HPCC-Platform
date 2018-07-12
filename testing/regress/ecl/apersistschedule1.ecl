@@ -19,7 +19,6 @@
 
 //no point testing this lots of times - testing the workflow engine once in hthor is enough
 //nothor
-//noroxie
 //nothorlcr
 
 ds := DATASET(['one','two','three'], { string text; });

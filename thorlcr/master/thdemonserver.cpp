@@ -67,16 +67,29 @@ private:
             }
         }
     }
+    void reportGraphContents(IStatisticGatherer & stats, CGraphBase *graph, bool finished)
+    {
+        if (graph->hasProgress()) // if there have ever been any progress, ensure they are republished
+            doReportGraph(stats, graph, finished);
+        Owned<IThorGraphIterator> graphIter = graph->getChildGraphIterator();
+        ForEach (*graphIter)
+            reportGraph(stats, &graphIter->query(), finished);
+    }
     void reportGraph(IStatisticGatherer & stats, CGraphBase *graph, bool finished)
     {
         try
         {
-            StatsSubgraphScope subgraph(stats, graph->queryGraphId());
-            if (graph->hasProgress()) // if there have ever been any progress, ensure they are republished
-                doReportGraph(stats, graph, finished);
-            Owned<IThorGraphIterator> graphIter = graph->getChildGraphIterator();
-            ForEach (*graphIter)
-                reportGraph(stats, &graphIter->query(), finished);
+            if (graph->queryParentActivityId() && !graph->containsActivities())
+            {
+                StatsActivityScope activity(stats, graph->queryParentActivityId());
+                StatsChildGraphScope subgraph(stats, graph->queryGraphId());
+                reportGraphContents(stats, graph, finished);
+            }
+            else
+            {
+                StatsSubgraphScope subgraph(stats, graph->queryGraphId());
+                reportGraphContents(stats, graph, finished);
+            }
         }
         catch (IException *e)
         {

@@ -105,9 +105,10 @@ class CountProjectActivity : public BaseCountProjectActivity, implements ILookAh
     typedef BaseCountProjectActivity PARENT;
     bool first = false; // until start
     Semaphore prevRecCountSem;
-    rowcount_t prevRecCount, localRecCount;
+    rowcount_t prevRecCount = 0;
+    std::atomic<rowcount_t> localRecCount = {RCUNSET};
+    bool onInputFinishSends = false;
 
-    bool haveLocalCount() { return RCUNSET != localRecCount; }
     void sendCount(rowcount_t _count)
     {
         // either called by onInputFinished(signaled by nextRow/stop) or by nextRow/stop itself
@@ -133,9 +134,9 @@ class CountProjectActivity : public BaseCountProjectActivity, implements ILookAh
     }
     void signalNext()
     {
-        if (haveLocalCount()) // if local total count known, send total now
+        if (!onInputFinishSends) // if local total count known at start() and lookahead not already sent, send now
         {
-            ActPrintLog("COUNTPROJECT: row count pre-known to be %" RCPF "d", localRecCount);
+            ActPrintLog("COUNTPROJECT: row count pre-known to be %" RCPF "d", localRecCount.load());
             sendCount(prevRecCount + localRecCount);
         }
         else
@@ -158,13 +159,21 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities);
+        localRecCount = RCUNSET;
+        onInputFinishSends = true;
+        PARENT::start();
         ActPrintLog( "COUNTPROJECT: Is Global");
         first = true;
         prevRecCount = 0;
         ThorDataLinkMetaInfo info;
         input->getMetaInfo(info);
-        localRecCount = (info.totalRowsMin == info.totalRowsMax) ? (rowcount_t)info.totalRowsMax : RCUNSET;
-        PARENT::start();
+        if (info.totalRowsMin == info.totalRowsMax)
+        {
+            // NB: onInputFinished could have already set localRecCount before it gets here.
+            rowcount_t expectedState = RCUNSET;
+            if (localRecCount.compare_exchange_strong(expectedState, info.totalRowsMax))
+                onInputFinishSends = false;
+        }
     }
     virtual void stop()
     {
@@ -207,15 +216,20 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void onInputFinished(rowcount_t localRecCount)
+    virtual void onInputFinished(rowcount_t _localRecCount)
     {
-        if (!haveLocalCount())
+        /* localRecCount may already be known/set by start()
+         * If it's known (set in start(), the count will be sent by nextRow() or stop()
+         * If not known, send now that input read and total count known.
+         */
+        rowcount_t expectedState = RCUNSET;
+        if (localRecCount.compare_exchange_strong(expectedState, _localRecCount))
         {
             prevRecCountSem.wait();
             if (!abortSoon)
             {
-                ActPrintLog("count is %" RCPF "d", localRecCount);
-                sendCount(prevRecCount + localRecCount);
+                ActPrintLog("count is %" RCPF "d", _localRecCount);
+                sendCount(prevRecCount + _localRecCount);
             }
         }
     }

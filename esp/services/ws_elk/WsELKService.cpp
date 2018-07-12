@@ -39,13 +39,13 @@ bool Cws_elkEx::onGetConfigDetails(IEspContext &context, IEspGetConfigDetailsReq
         resp.setKibanaEntryPointURI(kibanacfgentry.str());
         m_serviceCfg->getProp("ELKIntegration/ElasticSearch/@reportElasticHealth", kibanacfgentry.clear());
         resp.setReportElasticSearchHealth(kibanacfgentry.str());
-        m_serviceCfg->getProp("ELKIntegration/ElasticSearch/@elasticSearchAdresses", kibanacfgentry.clear());
-        resp.setElasticSearchAdresses(kibanacfgentry.str());
+        m_serviceCfg->getProp("ELKIntegration/ElasticSearch/@elasticSearchAddresses", kibanacfgentry.clear());
+        resp.setElasticSearchAddresses(kibanacfgentry.str());
         m_serviceCfg->getProp("ELKIntegration/ElasticSearch/@elasticSearchPort", kibanacfgentry.clear());
         resp.setElasticSearchPort(kibanacfgentry.str());
         m_serviceCfg->getProp("ELKIntegration/LogStash/@reportLogStashHealth", kibanacfgentry.clear());
         resp.setReportLogStashHealth(kibanacfgentry.str());
-        m_serviceCfg->getProp("ELKIntegration/LogStash/@logStashAdresses", kibanacfgentry.clear());
+        m_serviceCfg->getProp("ELKIntegration/LogStash/@logStashAddresses", kibanacfgentry.clear());
         resp.setLogStashAddress(kibanacfgentry.str());
         m_serviceCfg->getProp("ELKIntegration/LogStash/@logStashPort", kibanacfgentry.clear());
         resp.setLogStashPort(kibanacfgentry.str());

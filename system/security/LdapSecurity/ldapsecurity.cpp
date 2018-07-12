@@ -318,6 +318,11 @@ const char * CLdapSecResource::getParameter(const char * name)
 
 }
 
+IPropertyIterator * CLdapSecResource::getParameterIterator() const
+{
+    return (m_parameters.get() ? m_parameters->getIterator() : nullptr);
+}
+
 void CLdapSecResource::setDescription(const char* description)
 {
     m_description.clear().append(description);
@@ -668,7 +673,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     }
 
     //Verify provided signature if present
-    IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromEnv();
+    IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
     if (pDSM && pDSM->isDigiVerifierConfigured() && !isEmptyString(user->credentials().getSignature()))
     {
         StringBuffer b64Signature(user->credentials().getSignature());

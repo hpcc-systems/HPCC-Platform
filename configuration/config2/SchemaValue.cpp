@@ -35,6 +35,8 @@ SchemaValue::SchemaValue(const std::string &name, bool isDefined) :
 
 SchemaValue::SchemaValue(const SchemaValue &value)
 {
+    // Primary purpose of the copy constructor is for use when a complexType is referenced. A copy is made which includes a copy
+    // of each SchemaValue in the complexType SchemaItem.
     m_pType = value.m_pType;
     m_name = value.m_name;
     m_displayName = value.m_displayName;
@@ -47,7 +49,7 @@ SchemaValue::SchemaValue(const SchemaValue &value)
     m_modifiers = value.m_modifiers;
     m_valueLimitRuleType = value.m_valueLimitRuleType;
     m_valueLimitRuleData = value.m_valueLimitRuleData;
-    m_requiredIfSet = value.m_requiredIfSet;
+    m_requiredIf = value.m_requiredIf;
     m_group = value.m_group;
 
     // special processing? Maybe after inserting?
@@ -106,19 +108,21 @@ void SchemaValue::validate(Status &status, const std::string &id, const Environm
     {
         //
         // See if there is a dependency on another value being set.
-        if (!m_requiredIfSet.empty() && isValid)
+        if (!m_requiredIf.empty() && isValid)
         {
             //
-            // Required if set string format is path[@attribute[=value]]. Search this environment value's owning node
+            // Required if string format is an xpath. Search this environment value's owning node
             // for a match.
             std::vector<std::shared_ptr<EnvironmentNode>> nodes;
-            pEnvValue->getEnvironmentNode()->fetchNodes(m_requiredIfSet, nodes);
+            pEnvValue->getEnvironmentNode()->fetchNodes(m_requiredIf, nodes);
             if (!nodes.empty())
             {
+                //
+                // Since here is a match for a requiredIf, this value MUST be set
                 if (pEnvValue->getValue().empty())
                 {
                     isValid = false;
-                    std::string msg = "Environment value required based on requiredIf rule " + m_requiredIfSet + " being set.";
+                    std::string msg = "Environment value required based on requiredIf rule " + m_requiredIf + " being set.";
                     status.addMsg(statusMsg::error, pEnvValue->getNodeId(), pEnvValue->getName(), msg);
                 }
             }
@@ -133,7 +137,7 @@ void SchemaValue::validate(Status &status, const std::string &id, const Environm
                 msg = "Value was forced to an invalid value (" + curValue + ").";
             else
                 msg = "Value is invalid (" + curValue + ").";
-            msg += "Valid value (" + m_pType->getLimitString() + ")";
+            msg += " Valid value (" + m_pType->getLimitString() + ")";
 
             status.addMsg(pEnvValue->wasForced() ? statusMsg::warning : statusMsg::error, pEnvValue->getNodeId(), pEnvValue->getName(), msg);
         }
@@ -159,24 +163,22 @@ void SchemaValue::resetEnvironment()
 
 
 // replicates the new value throughout the environment
-void SchemaValue::mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue)
+void SchemaValue::mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue, Status *pStatus)
 {
+    std::string msg = "Value automatically changed from " + oldValue + " to " + newValue;
     for (auto mirrorCfgIt = m_mirrorToSchemaValues.begin(); mirrorCfgIt != m_mirrorToSchemaValues.end(); ++mirrorCfgIt)
     {
-        (*mirrorCfgIt)->setMirroredEnvironmentValues(oldValue, newValue);
-    }
-}
-
-
-// Worker method for replicating a mirrored value to the environment values for this config value
-void SchemaValue::setMirroredEnvironmentValues(const std::string &oldValue, const std::string &newValue)
-{
-    for (auto envIt = m_envValues.begin(); envIt != m_envValues.end(); ++envIt)
-    {
-        std::shared_ptr<EnvironmentValue> pEnvValue = (*envIt).lock();
-        if (pEnvValue && pEnvValue->getValue() == oldValue)
+        for (auto &envValueIt: m_envValues)
         {
-            pEnvValue->setValue(newValue, nullptr, true);
+            std::shared_ptr<EnvironmentValue> pEnvValue = envValueIt.lock();
+            if (pEnvValue && pEnvValue->getValue() == oldValue)
+            {
+                pEnvValue->setValue(newValue, nullptr, true);
+                if (pStatus != nullptr)
+                {
+                    pStatus->addMsg(statusMsg::change, msg, pEnvValue->getEnvironmentNode()->getId(), pEnvValue->getSchemaValue()->getDisplayName());
+                }
+            }
         }
     }
 }

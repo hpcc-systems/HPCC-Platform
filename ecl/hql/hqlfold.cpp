@@ -4446,19 +4446,34 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
 
             //JOIN with false condition - can occur once constants are folded.
             IValue * condValue = expr->queryChild(2)->queryValue();
-            if (condValue && !condValue->getBoolValue())
+            if (condValue)
             {
-                //Never matches, so either LHS is modified by the transform - like a project, or it never returns anything.
-                if (isLeftJoin(expr))
+                if (!condValue->getBoolValue())
                 {
-                    if (op == no_denormalize)
-                        return removeParentNode(expr);  // ok because this returns queryChild(0)
+                    //Never matches, so either LHS is modified by the transform - like a project, or it never returns anything.
+                    if (isLeftJoin(expr))
+                    {
+                        if (op == no_denormalize)
+                            return removeParentNode(expr);  // ok because this returns queryChild(0)
 
-                    cvtLeftProject = true;
-                    reason = "(false)";
+                        cvtLeftProject = true;
+                        reason = "(false)";
+                    }
+                    else if (isInnerJoin(expr))
+                        return replaceWithNull(expr);
                 }
                 else if (isInnerJoin(expr))
-                    return replaceWithNull(expr);
+                {
+                    IHqlExpression * transform = expr->queryChild(3);
+                    if (hasSingleRow(child) && hasSingleRow(rhs))
+                    {
+                        if (isConstantTransform(transform))
+                        {
+                            DBGLOG("Folder: Replace %s with ROW", getOpString(op));
+                            return createDataset(no_datasetfromrow, createRow(no_createrow, LINK(transform)));
+                        }
+                    }
+                }
             }
 
             //JOIN, left outer, keep(1) with no reference to RIGHT in the transform => convert to a project!

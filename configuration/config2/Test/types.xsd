@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+ -->
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+    xmlns:hpcc="someurl">
+
+    <!-- A simple type showing a range of integer values to represent a percent -->
+    <xs:simpleType name="percent">
+        <xs:restriction base="xs:integer">
+            <xs:minInclusive value="0"/>
+            <xs:maxInclusive value="100"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Simple type with restrictions to a specific set of characters -->
+    <xs:simpleType name="nodeName">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[a-zA-z0-9_\-]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- An IP address type -->
+    <xs:simpleType name="ipV4Address">
+        <xs:restriction base="xs:token">
+            <xs:pattern value="/^0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])$/"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="absolutePath">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="/^\\/.*/"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- Attribute groups for a node and for a reference to the node -->
+    <xs:attributeGroup name="computerNode">
+        <xs:attribute name="name" type="nodeName" use="required"/>
+        <xs:attribute name="netAddress" type="ipV4Address" use="required"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="computerNodeReference">
+        <xs:attribute name="computer" type="nodeName" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer@name"/>
+        <xs:attribute name="netAddress" type="ipV4Address" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer@netAddress"/>
+    </xs:attributeGroup>
+
+    <!-- A complex type that includes an element, enumerated value and an element with a value -->
+    <xs:complexType name="usernotes">
+        <xs:sequence>
+            <xs:element name="Note" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="severity" use="optional" default="Minor" hpcc:displayName="Severity" hpcc:tooltip="Significance of this note">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="Minor"/>
+                    <xs:enumeration value="Normal"/>
+                    <xs:enumeration value="Critical"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+    </xs:complexType>
+
+</xs:schema>

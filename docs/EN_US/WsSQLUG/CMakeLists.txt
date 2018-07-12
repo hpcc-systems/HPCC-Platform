@@ -15,6 +15,5 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-
-DOCBOOK_TO_PDF( ${FO_XSL} WsSQL_ESPWebServiceGuide.xml "WsSQL_ESP_Web_Service_Users_Guide")
-
+get_filename_component(DOC_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../BuildTools/cmake_config/${DOC_DIR_NAME}.txt)

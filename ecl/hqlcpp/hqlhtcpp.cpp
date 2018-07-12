@@ -8757,7 +8757,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
         buildReturn(func.ctx, loopCond);
     }
 
-    IHqlExpression * loopFirst = queryAttributeChild(expr, _loopFirst_Atom, 0);
+    IHqlExpression * loopFirst = queryAttributeChild(expr, loopFirstAtom, 0);
     if (loopFirst)
         doBuildBoolFunction(instance->startctx, "loopFirstTime", loopFirst);
 
@@ -9588,7 +9588,8 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     //expressions prevents child expressions from preventing fields from being removed.
     //Perform before the optimizeHqlExpression() so decisions about reducing row sizes are accurate
     traceExpression("BeforeImplicitProjectGraph", resourced);
-    resourced.setown(insertImplicitProjects(*this, resourced, false));
+    if (options.optimizeResourcedProjects)
+        resourced.setown(insertImplicitProjects(*this, resourced, false));
 
     // Call optimizer before resourcing so items get moved over conditions, and remove other items
     // which would otherwise cause extra spills.
@@ -10188,8 +10189,7 @@ void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * record
 void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name, bool removeFilepos, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta)
 {
     IHqlExpression * payload = expr ? expr->queryAttribute(_payload_Atom) : NULL;
-    // MORE - do we need to keep this consistent - if so will have to trim out the originals and the filepos
-    OwnedHqlExpr exprToCrc = getSerializedForm(dataset->queryRecord(), diskAtom);
+    OwnedHqlExpr exprToCrc = LINK(dataset->queryRecord());
 
     unsigned payloadSize = getBoolAttribute(expr, filepositionAtom, true) ? 1 : 0;
     if (payload)
@@ -10206,11 +10206,21 @@ void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name,
         exprToCrc.setown(exprToCrc->clone(args));
     }
 
-    exprToCrc.setown(createComma(exprToCrc.getClear(), getSizetConstant(payloadSize)));
+    buildFormatCrcFunction(ctx, name, exprToCrc, payloadSize);
+}
+
+void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * record, unsigned payloadSize)
+{
+    OwnedHqlExpr exprToCrc = createComma(LINK(record), getSizetConstant(payloadSize));
 
     traceExpression("crc:", exprToCrc);
     OwnedHqlExpr crc = getSizetConstant(getExpressionCRC(exprToCrc));
     doBuildUnsignedFunction(ctx, name, crc);
+}
+
+void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * record)
+{
+    buildFormatCrcFunction(ctx, name, record, 1);
 }
 
 static void createOutputIndexRecord(HqlMapTransformer & mapper, HqlExprArray & fields, IHqlExpression * record, bool hasFileposition, bool allowTranslate)
@@ -10593,7 +10603,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
         endNestedClass(classStmt);
         blooms++;
     }
-    instance->classctx.addQuoted(s.clear().appendf("const IBloomBuilderInfo * const bloomInfo [%d] = {", blooms+1).append(bloomNames+1).append(", nullptr };"));
+    instance->classctx.addQuoted(s.clear().appendf("const IBloomBuilderInfo * const bloomInfo [%d] = {", blooms+1).append(bloomNames.str()+1).append(", nullptr };"));
     instance->classctx.addQuoted(s.clear().append("virtual const IBloomBuilderInfo * const *queryBloomInfo() const override { return bloomInfo; }"));
 
     IHqlExpression * partitionAttr = expr->queryAttribute(hashAtom);
@@ -10965,7 +10975,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         if (!pipe)
         {
             OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(dataset->queryRecord());
-            buildFormatCrcFunction(instance->classctx, "getFormatCrc", false, noVirtualRecord, NULL, 0);
+            OwnedHqlExpr serializedRecord = getSerializedForm(noVirtualRecord, diskAtom);
+            buildFormatCrcFunction(instance->classctx, "getFormatCrc", serializedRecord);
         }
 
         bool grouped = isGrouped(dataset);
@@ -14587,7 +14598,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribute(BuildCtx & ctx, IHq
             buildHashClass(instance->nestedctx, "Hash", cond, DatasetReference(dataset));
         doBuildBoolFunction(instance->classctx, "isPulled", expr->hasAttribute(pulledAtom));
         buildSkewThresholdMembers(instance->classctx, expr);
-        if (mergeOrder)
+        //Do not generate a merge compare if it has been folded to a constant
+        if (mergeOrder && !mergeOrder->isConstant())
             buildCompareMember(instance->nestedctx, "MergeCompare", mergeOrder, DatasetReference(dataset));
 
         buildInstanceSuffix(instance);
@@ -19494,6 +19506,10 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_externalcall:
         if (isDistributedFunctionCall(expr))
             return true;
+
+        if (callIsActivity(expr))
+            return true;
+
         //MORE: check for streamed inputs.
         break;
 
@@ -19522,7 +19538,11 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
                 child0 = child0->queryChild(0);
             switch (child0->getOperator())
             {
+            case no_call:
             case no_externalcall:
+                if (callIsActivity(child0))
+                    return true;
+                break;
             case no_constant:
             case no_all:
                 return false;

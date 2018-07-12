@@ -79,6 +79,7 @@
 #   define EPOLLRDHUP 0x2000
 #  endif
 #  define MAX_RET_EVENTS  5000 // max events returned from epoll_wait() call
+   static unsigned epoll_hdlPerThrd = UINT_MAX;
 # endif
 #endif
 
@@ -487,6 +488,7 @@ private:
     #ifdef _WIN32
             return ::closesocket(s);
     #else
+            ::shutdown(s, SHUT_WR);
             return ::close(s);
     #endif
         }
@@ -3015,6 +3017,48 @@ IpAddress &localHostToNIC(IpAddress &ip)
 
 // IpAddress
 
+bool getInterfaceName(StringBuffer &ifname)
+{
+#if defined(_WIN32) || defined(__APPLE__)
+    return false;
+#else
+    IpAddress myIp;
+    GetHostIp(myIp);
+
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);  // IPV6 TBD
+    if (fd<0)
+        return false;
+
+    MemoryAttr ma;
+    char *buf = (char *)ma.allocate(1024);
+
+    struct ifconf ifc;
+    ifc.ifc_len = 1024;
+    ifc.ifc_buf = buf;
+    if(ioctl(fd, SIOCGIFCONF, &ifc) < 0) // query interfaces
+    {
+        close(fd);
+        return false;
+    }
+
+    struct ifreq *ifr = ifc.ifc_req;
+    unsigned n = ifc.ifc_len/sizeof(struct ifreq);
+    for (unsigned i=0; i<n; i++)
+    {
+        struct ifreq *item = &ifr[i];
+        IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
+        if (iptest.ipequals(myIp))
+        {
+            ifname.set(item->ifr_name);
+            close(fd);
+            return true;
+        }
+    }
+
+    close(fd);
+    return false;
+#endif
+}
 
 inline bool isIp4(const unsigned *netaddr)
 {
@@ -3113,7 +3157,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
     // if IP4only or using MS V6 can only resolve IPv4 using 
     static bool recursioncheck = false; // needed to stop error message recursing
     unsigned retry=10;
-#if defined(__linux__) || defined (__APPLE__) ||defined(getaddrinfo)
+#if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
     if (IP4only) {
 #else
     {
@@ -4624,12 +4668,15 @@ public:
 };
 
 #ifdef _HAS_EPOLL_SUPPORT
+# define SOCK_ADDED   0x1
+# define SOCK_REMOVED 0x2
 class CSocketEpollThread: public CSocketBaseThread
 {
     int epfd;
     SelectItem *sidummy;
     SelectItemArrayP items;
     struct epoll_event *epevents;
+    unsigned hdlPerThrd;
 
     void epoll_op(int efd, int op, SelectItem *si, unsigned int event_mask)
     {
@@ -4751,7 +4798,7 @@ class CSocketEpollThread: public CSocketBaseThread
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSocketEpollThread(const char *trc)
+    CSocketEpollThread(const char *trc, unsigned _hdlPerThrd)
         : CSocketBaseThread("CSocketEpollThread")
     {
         dummysockopen = false;
@@ -4762,7 +4809,8 @@ public:
         validateerrcount = 0;
         offset = 0;
         selecttrace = trc;
-        epfd = ::epoll_create(MAX_RET_EVENTS);
+        hdlPerThrd = _hdlPerThrd;
+        epfd = ::epoll_create(1); // NB: arg is not used in newer kernels
         if (epfd < 0)
         {
             int err = ERRNO();
@@ -4855,9 +4903,9 @@ public:
 
     bool remove(ISocket *sock)
     {
+        CriticalBlock block(sect);
         if (terminating)
             return false;
-        CriticalBlock block(sect);
         if (sock==NULL)
         { // wait until no changes outstanding
             while (selectvarschange)
@@ -4871,23 +4919,33 @@ public:
         if (removeSock(sock))
         {
             selectvarschange = true;
+            // NB: could set terminating here if no more hdls on
+            // this thread and at least one other thread is present
             triggerselect();
             return true;
         }
         return false;
     }
 
-    bool add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
+    unsigned add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
         if ( !sock || !nfy ||
              !(mode & (SELECTMODE_READ|SELECTMODE_WRITE|SELECTMODE_EXCEPT)) )
         {
             WARNLOG("EPOLL: adding fd but sock or nfy is NULL or mode is empty");
             dbgassertex(false);
-            return false;
+            return 0;
         }
         CriticalBlock block(sect);
-        removeSock(sock);
+        if (terminating)
+            return 0;
+        unsigned rm = 0;
+        if (removeSock(sock))
+            rm = SOCK_REMOVED;
+        unsigned n = items.ordinality();
+        // new handler thread
+        if (n >= hdlPerThrd)
+            return (0|rm);
         SelectItem *sn = new SelectItem;
         sn->nfy = LINK(nfy);
         sn->sock = LINK(sock);
@@ -4905,7 +4963,7 @@ public:
         epoll_op(epfd, EPOLL_CTL_ADD, sn, ep_mode);
         selectvarschange = true;
         triggerselect();
-        return true;
+        return (SOCK_ADDED|rm);
     }
 
     void updateEpollVars(unsigned &ni)
@@ -4963,7 +5021,10 @@ public:
                     continue;
                 }
 
+                int err = 0;
                 int n = ::epoll_wait(epfd, epevents, MAX_RET_EVENTS, 1000);
+                if (n < 0)
+                    err = ERRNO();
 
 # ifdef EPOLLTRACE
                 if(n > 0)
@@ -4975,7 +5036,6 @@ public:
                 if (n < 0)
                 {
                     CriticalBlock block(sect);
-                    int err = ERRNO();
                     if (err != JSE_INTR)
                     {
                         if (dummysockopen)
@@ -5109,84 +5169,131 @@ public:
 
 class CSocketEpollHandler: implements ISocketSelectHandler, public CInterface
 {
-    CSocketEpollThread *epollthread;
+    CIArrayOf<CSocketEpollThread> threads;
     CriticalSection sect;
+    bool started;
     StringAttr epolltrace;
+    unsigned hdlPerThrd;
 public:
     IMPLEMENT_IINTERFACE;
-    CSocketEpollHandler(const char *trc)
-        : epolltrace(trc)
+    CSocketEpollHandler(const char *trc, unsigned _hdlPerThrd)
+        : started(false), epolltrace(trc), hdlPerThrd(_hdlPerThrd)
     {
-        epollthread = new CSocketEpollThread(epolltrace);
     }
 
     ~CSocketEpollHandler()
     {
-        delete epollthread;
+        stop(true);
+        threads.kill();
     }
 
     void start()
     {
         CriticalBlock block(sect);
-        epollthread->start();
+        if (!started)
+        {
+            started = true;
+            ForEachItemIn(i,threads)
+            {
+                threads.item(i).start();
+            }
+        }
     }
 
     void add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
-        CriticalBlock block(sect); // JCS->MK - are these blocks necessary? epollthread->add() uses it's own CS.
+        if ( !sock || !nfy ||
+             !(mode & (SELECTMODE_READ|SELECTMODE_WRITE|SELECTMODE_EXCEPT)) )
+            throw MakeStringException(-1,"CSocketEpollHandler::add() invalid sock or nfy or mode");
 
-        /* JCS->MK, the CSocketSelectHandler variety, checks result of thread->add and spins up another handler
-         * Shouldn't epoll version do the same?
-         */
-        if (!epollthread->add(sock,mode,nfy))
-            throw MakeStringException(-1, "CSocketEpollHandler: failed to add socket to epollthread handler: sock # = %d", sock->OShandle());
+        CriticalBlock block(sect);
+        // Create new handler thread if current one has hdlPerThrd fds.
+        // epoll() handles many fds faster than select so this would
+        // seem not as important, but we are still serializing on
+        // nfy events and spreading those over threads may help,
+        // especially with SSL as avail_read() could block more.
+        unsigned addrm = 0;
+        ForEachItemIn(i,threads)
+        {
+            if (!(addrm & SOCK_ADDED))
+            {
+                addrm |= threads.item(i).add(sock,mode,nfy);
+                if (addrm & (SOCK_ADDED | SOCK_REMOVED))
+                    return;
+            }
+            else if (!(addrm & SOCK_REMOVED))
+            {
+                if (threads.item(i).remove(sock))
+                    return;
+            }
+        }
+        if (addrm & SOCK_ADDED)
+            return;
+
+        CSocketEpollThread *thread = new CSocketEpollThread(epolltrace, hdlPerThrd);
+        threads.append(*thread);
+        if (started)
+            thread->start();
+        thread->add(sock,mode,nfy);
     }
 
     void remove(ISocket *sock)
     {
-        CriticalBlock block(sect); // JCS->MK - are these blocks necessary? epollthread->add() uses it's own CS.
-        epollthread->remove(sock);
+        CriticalBlock block(sect);
+        ForEachItemIn(i,threads)
+        {
+            if (threads.item(i).remove(sock))
+                break;
+        }
     }
 
     void stop(bool wait)
     {
-        IException *e=NULL;
-        epollthread->stop(wait);           // not quite as quick as could be if wait true
-        if (wait && !e && epollthread->termexcept)
-            e = epollthread->termexcept.getClear();
-#if 0 // don't throw error as too late
-        if (e)
-            throw e;
-#else
-        ::Release(e);
-#endif
+        CriticalBlock block(sect);
+        ForEachItemIn(i,threads)
+        {
+            CSocketEpollThread &t=threads.item(i);
+            {
+                CriticalUnblock unblock(sect);
+                t.stop(wait);           // not quite as quick as could be if wait true
+            }
+        }
     }
 };
-#endif // _HAS_EPOLL_SUPPORT
 
-#ifdef _HAS_EPOLL_SUPPORT
 enum EpollMethod { EPOLL_INIT = 0, EPOLL_DISABLED, EPOLL_ENABLED };
 static EpollMethod epoll_method = EPOLL_INIT;
 static CriticalSection epollsect;
-#endif
 
-ISocketSelectHandler *createSocketSelectHandler(const char *trc)
+void check_epoll_cfg()
+{
+    CriticalBlock block(epollsect);
+    // DBGLOG("check_epoll_cfg(): epoll_method = %d",epoll_method);
+    if (epoll_method == EPOLL_INIT)
+    {
+        if (queryEnvironmentConf().getPropBool("use_epoll", true))
+            epoll_method = EPOLL_ENABLED;
+        else
+            epoll_method = EPOLL_DISABLED;
+        // DBGLOG("check_epoll_cfg(): after reading conf file, epoll_method = %d",epoll_method);
+        epoll_hdlPerThrd = (unsigned)queryEnvironmentConf().getPropInt("epoll_hdlperthrd", UINT_MAX);
+        if (epoll_hdlPerThrd == 0)
+            epoll_hdlPerThrd = UINT_MAX;
+        // DBGLOG("check_epoll_cfg(): after reading conf file, epoll_hdlPerThrd = %u",epoll_hdlPerThrd);
+    }
+}
+#endif // _HAS_EPOLL_SUPPORT
+
+ISocketSelectHandler *createSocketSelectHandler(const char *trc, unsigned hdlPerThrd)
 {
 #ifdef _HAS_EPOLL_SUPPORT
-    {
-        CriticalBlock block(epollsect);
-        // DBGLOG("createSocketSelectHandler(): epoll_method = %d",epoll_method);
-        if (epoll_method == EPOLL_INIT)
-        {
-            if (queryEnvironmentConf().getPropBool("use_epoll", true))
-                epoll_method = EPOLL_ENABLED;
-            else
-                epoll_method = EPOLL_DISABLED;
-        // DBGLOG("createSocketSelectHandler(): after reading conf file, epoll_method = %d",epoll_method);
-        }
-    }
+    check_epoll_cfg();
     if (epoll_method == EPOLL_ENABLED)
-        return new CSocketEpollHandler(trc);
+    {
+        if (hdlPerThrd == 0)
+            hdlPerThrd = epoll_hdlPerThrd;
+        return new CSocketEpollHandler(trc, hdlPerThrd);
+    }
     else
         return new CSocketSelectHandler(trc);
 #else
@@ -5194,10 +5301,13 @@ ISocketSelectHandler *createSocketSelectHandler(const char *trc)
 #endif
 }
 
-ISocketSelectHandler *createSocketEpollHandler(const char *trc)
+ISocketSelectHandler *createSocketEpollHandler(const char *trc, unsigned hdlPerThrd)
 {
 #ifdef _HAS_EPOLL_SUPPORT
-    return new CSocketEpollHandler(trc);
+    check_epoll_cfg();
+    if (hdlPerThrd == 0)
+        hdlPerThrd = epoll_hdlPerThrd;
+    return new CSocketEpollHandler(trc, hdlPerThrd);
 #else
     return new CSocketSelectHandler(trc);
 #endif

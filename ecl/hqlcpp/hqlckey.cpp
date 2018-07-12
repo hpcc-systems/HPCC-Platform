@@ -103,41 +103,6 @@ bool isKeyableType(ITypeInfo * type)
     }
 }
 
-IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExpression * physicalSelect, bool allowTranslate)
-{
-    if (cur->hasAttribute(blobAtom))
-    {
-        if (cur->isDataset())
-            return createDataset(no_id2blob, LINK(physicalSelect), LINK(cur->queryRecord()));
-        else if (cur->isDatarow())
-            return createRow(no_id2blob, LINK(physicalSelect), LINK(cur->queryRecord()));
-        else
-            return createValue(no_id2blob, cur->getType(), LINK(physicalSelect));
-    }
-    else if (allowTranslate)
-    {
-        LinkedHqlExpr newValue = physicalSelect;
-
-        OwnedHqlExpr target = createSelectExpr(getActiveTableSelector(), LINK(cur));            // select not used, just created to get correct types.
-        ITypeInfo * type = target->queryType();
-        type_t tc = type->getTypeCode();
-        if (tc == type_int || tc == type_swapint)
-        {
-            if (type->isSigned())
-            {
-                Owned<ITypeInfo> tempType = makeIntType(type->getSize(), false);
-                newValue.setown(ensureExprType(newValue, tempType));
-                newValue.setown(createValue(no_sub, newValue->getType(), LINK(newValue), getHozedBias(newValue->queryType())));
-            }
-        }
-
-        return ensureExprType(newValue, type);
-    }
-    else
-        return ensureExprType(physicalSelect, cur->queryType());
-}
-
-
 //--------------------------------------------------------------------------------------------------
 
 void HqlCppTranslator::buildJoinMatchFunction(BuildCtx & ctx, const char * name, IHqlExpression * left, IHqlExpression * right, IHqlExpression * match, IHqlExpression * selSeq)
@@ -1400,7 +1365,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
         //Remove virtual attributes from the record, so the crc will be compatible with the disk read record
         //can occur with a (highly unusual) full keyed join to a persist file... (see indexread14.ecl)
         OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(info.queryRawRhs()->queryRecord());
-        buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, noVirtualRecord, NULL, 0);
+        buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", noVirtualRecord);
         buildEncryptHelper(instance->startctx, info.queryFile()->queryAttribute(encryptAtom), "getFileEncryptKey");
     }
 

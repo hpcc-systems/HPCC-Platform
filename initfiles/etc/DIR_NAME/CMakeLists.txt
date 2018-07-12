@@ -57,15 +57,15 @@ if(NOT "${DESTDIR}" STREQUAL "")
         DEPENDS ${CONFIG_DIR}/genenvrules.conf)
 
     add_custom_command(OUTPUT ${INIT_PATH}/dafilesrv
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/initfiles/bash/etc/init.d/dafilesrv ${INIT_PATH}/dafilesrv
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/../../bash/etc/init.d/dafilesrv ${INIT_PATH}/dafilesrv
         DEPENDS configure_directories
         ProcessFiles-initfiles-bash-etc-init.d
-        ${CMAKE_BINARY_DIR}/initfiles/bash/etc/init.d/dafilesrv)
+        ${CMAKE_CURRENT_BINARY_DIR}/../../bash/etc/init.d/dafilesrv)
     add_custom_command(OUTPUT ${INIT_PATH}/hpcc-init
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/initfiles/bash/etc/init.d/hpcc-init ${INIT_PATH}/hpcc-init
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/../../bash/etc/init.d/hpcc-init ${INIT_PATH}/hpcc-init
         DEPENDS configure_directories
         ProcessFiles-initfiles-bash-etc-init.d
-        ${CMAKE_BINARY_DIR}/initfiles/bash/etc/init.d/hpcc-init)
+        ${CMAKE_CURRENT_BINARY_DIR}/../../bash/etc/init.d/hpcc-init)
     add_custom_target(configure_service_files
         DEPENDS ${INIT_PATH}/hpcc-init
         ${INIT_PATH}/dafilesrv)

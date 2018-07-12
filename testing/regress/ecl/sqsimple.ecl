@@ -16,6 +16,7 @@
 ############################################################################## */
 
 //version multiPart=false
+//version multiPart=true
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, false);

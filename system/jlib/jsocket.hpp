@@ -523,9 +523,9 @@ public:
     virtual void stop(bool wait)=0;
 };
 
-extern jlib_decl ISocketSelectHandler *createSocketSelectHandler(const char *trc=NULL);
+extern jlib_decl ISocketSelectHandler *createSocketSelectHandler(const char *trc=NULL, unsigned hdlPerThrd=0);
 
-extern jlib_decl ISocketSelectHandler *createSocketEpollHandler(const char *trc=NULL);
+extern jlib_decl ISocketSelectHandler *createSocketEpollHandler(const char *trc=NULL, unsigned hdlPerThrd=0);
 
 
 class MemoryBuffer;
@@ -615,6 +615,7 @@ extern jlib_decl StringBuffer lookupHostName(const IpAddress &ip,StringBuffer &r
 
 extern jlib_decl bool isInterfaceIp(const IpAddress &ip, const char *ifname);
 extern jlib_decl bool getInterfaceIp(IpAddress &ip, const char *ifname);
+extern jlib_decl bool getInterfaceName(StringBuffer &ifname);
 
 //Given a list of server sockets, wait until any one or more are ready to be read/written (wont block)
 //return array of ready sockets

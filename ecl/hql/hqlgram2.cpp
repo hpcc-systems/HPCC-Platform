@@ -1438,9 +1438,9 @@ bool HqlGram::checkAlreadyAssigned(const attribute & errpos, IHqlExpression * se
     }
     else
     {
-        reportWarning(CategorySyntax, ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" has already been specified", s.str());
-        // MORE: Report this as an error in 7.0
-        //reportWarning(CategorySyntax, SeverityError, ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" has already been specified", s.str());
+        StringBuffer selectText;
+        getFldName(select,selectText);
+        reportError(ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" is already specified by the assignment to \"%s\"", selectText.str(), s.str());
     }
 
     return true;
@@ -7427,21 +7427,9 @@ void HqlGram::checkSoapRecord(attribute & errpos)
 
 IHqlExpression * HqlGram::checkIndexRecord(IHqlExpression * record, const attribute & errpos, OwnedHqlExpr & indexAttrs)
 {
-    unsigned numFields = record->numChildren();
-    if (numFields && getBoolAttributeInList(indexAttrs, filepositionAtom, true))
+    if (record->numChildren() && getBoolAttributeInList(indexAttrs, filepositionAtom, true) && !hasTrailingFilePos(record))
     {
-        // if not, implies some error (already reported)
-        if (numFields == 1)
-        {
-            indexAttrs.setown(createComma(indexAttrs.getClear(), createExprAttribute(filepositionAtom, createConstant(false))));
-        }
-        else
-        {
-            IHqlExpression * lastField = record->queryChild(numFields-1);
-            ITypeInfo * fileposType = lastField->queryType();
-            if (!isSimpleIntegralType(fileposType))
-                indexAttrs.setown(createComma(indexAttrs.getClear(), createExprAttribute(filepositionAtom, createConstant(false))));
-        }
+        indexAttrs.setown(createComma(indexAttrs.getClear(), createExprAttribute(filepositionAtom, createConstant(false))));
     }
     return LINK(record);
 }
@@ -7960,107 +7948,10 @@ public:
 
 
 
-static IHqlExpression * normalizeSelects(IHqlExpression * expr)
+IHqlExpression * normalizeSelects(IHqlExpression * expr)
 {
     QuickSelectNormalizer transformer;
     return transformer.transform(expr);
-}
-
-
-void HqlGram::checkGrouping(const attribute& errpos, HqlExprArray & parms, IHqlExpression* record, IHqlExpression* groups)
-{
-    unsigned reckids = record->numChildren();
-    for (unsigned i = 0; i < reckids; i++)
-    {
-        IHqlExpression *field = record->queryChild(i);
-
-        switch(field->getOperator())
-        {
-        case no_record:
-            checkGrouping(errpos, parms, field, groups);
-            break;
-        case no_ifblock:
-            reportError(ERR_GROUP_BADSELECT, errpos, "IFBLOCKs are not supported inside grouped aggregates");
-            break;
-        case no_field:              
-            {
-                IHqlExpression * rawValue = field->queryChild(0);
-                if (rawValue)
-                {
-                    OwnedHqlExpr value = normalizeSelects(rawValue);
-                    bool ok = checkGroupExpression(parms, value);
-
-                    if (!ok)
-                    {
-                        IIdAtom * id = NULL;
-                        
-                        switch(field->getOperator())
-                        {
-                        case no_select:
-                            id = field->queryChild(1)->queryId();
-                            break;
-                        case no_field:  
-                            id = field->queryId();
-                            break;
-                        default:
-                            id = field->queryId();
-                            break;
-                        }
-
-                        StringBuffer msg("Field ");
-                        if (id)
-                            msg.append("'").append(str(id)).append("' ");
-                        msg.append("in TABLE does not appear to be properly defined by grouping conditions");
-                        reportWarning(CategoryUnexpected, ERR_GROUP_BADSELECT,errpos.pos, "%s", msg.str());
-                    }
-                }
-                else if (field->isDatarow())
-                {
-                    checkGrouping(errpos, parms, field->queryRecord(), groups);
-                }
-                else
-                    throwUnexpected();
-            }
-            break;
-        case no_attr:
-        case no_attr_expr:
-        case no_attr_link:
-            break;
-        default:
-            assertex(false);
-        }
-    }   
-}
-
-
-
-// MORE: how about child dataset?
-void HqlGram::checkGrouping(const attribute & errpos, IHqlExpression * dataset, IHqlExpression* record, IHqlExpression* groups)
-{
-    if (!groups) return;
-    assertex(record->getOperator()==no_record);
-
-    //match should be by structure!!
-    HqlExprArray parms1;
-    HqlExprArray parms;
-    groups->unwindList(parms1, no_sortlist);
-
-    //The expressions need normalizing because the selectors need to be normalized before checking for matches.
-    //The problem is that before the tree is tagged replaceSelector() doesn't work.  So have to use
-    //an approximation instead.
-    ForEachItemIn(idx, parms1)
-    {
-        IHqlExpression * cur = &parms1.item(idx);
-        if (cur->getOperator() == no_field)
-            reportError(ERR_GROUP_BADSELECT, errpos, "cannot use field of result record as a grouping parameter");
-        else
-        {
-            IHqlExpression * mapped = normalizeSelects(cur);
-            parms.append(*mapped);
-        }
-    }
-
-    checkGrouping(errpos, parms, record, groups);
 }
 
 
@@ -12425,7 +12316,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     ctx.incrementAttribsProcessed();
     if (canCache && (ctx.syntaxChecking() || ctx.hasCacheLocation()))
     {
-        OwnedHqlExpr simplified = createSimplifiedDefinition(parsed);
+        OwnedHqlExpr simplified = isMacro ? nullptr : createSimplifiedDefinition(parsed);
         if (ctx.hasCacheLocation())
             attrCtx.createCache(simplified, isMacro);
         if (simplified)

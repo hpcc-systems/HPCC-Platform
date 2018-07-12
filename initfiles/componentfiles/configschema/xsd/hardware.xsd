@@ -8,8 +8,7 @@
       <xs:element name="Hardware" hpcc:docid="????" hpcc:doc="Section to describe the hardware that composes the environment">
         <xs:complexType>
           <xs:sequence>
-            <xs:element name="ComputerType" maxOccurs="unbounded" hpcc:displayName="Defined computer types"  hpcc:class="valueSet"
-                        hpcc:doc="Defines a generalized type of computer that is used in the environment">
+            <xs:element name="ComputerType" maxOccurs="unbounded" hpcc:displayName="Defined computer types"  hpcc:class="valueSet">
               <xs:complexType>
                 <xs:attribute name="name" type="xs:string" use="required"/>
                 <xs:attribute name="nicSpeed" type="xs:nonNegativeInteger"/>
@@ -53,37 +52,37 @@
         </xs:complexType>
 
         <xs:key name="domainKey">
-          <xs:selector xpath="Domain" />
+          <xs:selector xpath="./Domain" />
           <xs:field xpath="@name" />
         </xs:key>
 
         <xs:key name="computerTypeKey">
-          <xs:selector xpath="ComputerType" />
+          <xs:selector xpath="./ComputerType" />
           <xs:field xpath="@name" />
         </xs:key>
 
         <xs:key name="computerIPAddressKey">
-          <xs:selector xpath="Computer" />
-          <xs:field xpath="netAddress" />
+          <xs:selector xpath="./Computer" />
+          <xs:field xpath="@netAddress" />
         </xs:key>
 
         <xs:key name="computerNameKey">
-          <xs:selector xpath="Computer" />
+          <xs:selector xpath="./Computer" />
           <xs:field xpath="@name" />
         </xs:key>
 
         <xs:keyref name="Computer_computerTypeRef" refer="computerTypeKey">
-          <xs:selector xpath="Computer"/>
+          <xs:selector xpath="./Computer"/>
           <xs:field xpath="@computerType" />
         </xs:keyref>
 
         <xs:keyref name="Computer_domainRef" refer="domainKey">
-          <xs:selector xpath="Computer"/>
+          <xs:selector xpath="./Computer"/>
           <xs:field xpath="@domain" />
         </xs:keyref>
 
         <xs:key name="switchNameKey">
-          <xs:selector xpath="Switch" />
+          <xs:selector xpath="./Switch" />
           <xs:field xpath="@name" />
         </xs:key>
 

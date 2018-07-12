@@ -20,9 +20,14 @@
 #include "thexception.hpp"
 #include "thbufdef.hpp"
 
+#include "thlookupjoincommon.hpp"
+
 class CLookupJoinActivityMaster : public CMasterActivity
 {
     mptag_t broadcast2MpTag, broadcast3MpTag, lhsDistributeTag, rhsDistributeTag;
+    unsigned failoversToLocal = 0;
+    Owned<CThorStats> localFailoverToStd;
+    bool isGlobal = false;
 
     bool isAll() const
     {
@@ -38,18 +43,23 @@ class CLookupJoinActivityMaster : public CMasterActivity
 public:
     CLookupJoinActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
     {
-        mpTag = container.queryJob().allocateMPTag(); // NB: base takes ownership and free's
-        if (!isAll())
+        isGlobal = !container.queryLocal() && (queryJob().querySlaves()>1);
+        if (isGlobal)
         {
-            broadcast2MpTag = container.queryJob().allocateMPTag();
-            broadcast3MpTag = container.queryJob().allocateMPTag();
-            lhsDistributeTag = container.queryJob().allocateMPTag();
-            rhsDistributeTag = container.queryJob().allocateMPTag();
+            mpTag = container.queryJob().allocateMPTag(); // NB: base takes ownership and free's
+            if (!isAll())
+            {
+                broadcast2MpTag = container.queryJob().allocateMPTag();
+                broadcast3MpTag = container.queryJob().allocateMPTag();
+                lhsDistributeTag = container.queryJob().allocateMPTag();
+                rhsDistributeTag = container.queryJob().allocateMPTag();
+            }
         }
+        localFailoverToStd.setown(new CThorStats(queryJob(), StNumSmartJoinSlavesDegradedToStd));
     }
     ~CLookupJoinActivityMaster()
     {
-        if (!isAll())
+        if (isGlobal && !isAll())
         {
             container.queryJob().freeMPTag(broadcast2MpTag);
             container.queryJob().freeMPTag(broadcast3MpTag);
@@ -58,8 +68,10 @@ public:
             // NB: if mpTag is allocated, the activity base class frees
         }
     }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) override
     {
+        if (!isGlobal)
+            return;
         serializeMPtag(dst, mpTag);
         if (!isAll())
         {
@@ -69,12 +81,37 @@ public:
             serializeMPtag(dst, rhsDistributeTag);
         }
     }
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
+    {
+        CMasterActivity::deserializeStats(node, mb);
+
+        if (isSmartJoin(*this))
+        {
+            if (isGlobal)
+            {
+                unsigned _failoversToLocal;
+                mb.read(_failoversToLocal);
+                dbgassertex(0 == failoversToLocal || (_failoversToLocal == failoversToLocal)); // i.e. sanity check, all slaves must have agreed.
+                failoversToLocal = _failoversToLocal;
+            }
+            unsigned failoversToStd;
+            mb.read(failoversToStd);
+            localFailoverToStd->set(node, failoversToStd);
+        }
+    }
+    virtual void getActivityStats(IStatisticGatherer & stats) override
+    {
+        CMasterActivity::getActivityStats(stats);
+        if (isSmartJoin(*this))
+        {
+            if (isGlobal)
+                stats.addStatistic(StNumSmartJoinDegradedToLocal, failoversToLocal);
+            localFailoverToStd->getTotalStat(stats);
+        }
+    }
 };
 
 CActivityBase *createLookupJoinActivityMaster(CMasterGraphElement *container)
 {
-    if (container->queryLocal() || 1 == container->queryJob().querySlaves())
-        return new CMasterActivity(container);
-    else
-        return new CLookupJoinActivityMaster(container);
+    return new CLookupJoinActivityMaster(container);
 }

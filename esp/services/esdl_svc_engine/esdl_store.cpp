@@ -52,7 +52,53 @@ public:
     }
     virtual ~CEsdlSDSStore() { }
 
-    virtual void fetchDefinition(const char* definitionId, StringBuffer& esxdl) override
+    virtual IPropertyTree* fetchDefinition(const char* definitionId) override
+    {
+        if (!definitionId || !*definitionId)
+            throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, definition id is not available");
+
+        if (!strchr (definitionId, '.')) //no name.ver delimiter, find latest version of name
+        {
+            Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+            if (!conn)
+                throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
+
+            IPropertyTree * esdlDefinitions = conn->queryRoot();
+
+            if (esdlDefinitions)
+            {
+                VStringBuffer xpath("%s[@name='%s']", ESDL_DEF_ENTRY, definitionId);
+                Owned<IPropertyTreeIterator> iter = esdlDefinitions->getElements(xpath.str());
+
+                unsigned latestSeq = 1;
+                ForEach(*iter)
+                {
+                    IPropertyTree &item = iter->query();
+                    unsigned thisSeq = item.getPropInt("@seq");
+                    if (thisSeq > latestSeq)
+                        latestSeq = thisSeq;
+                }
+                xpath.setf("%s[@id='%s.%d'][1]", ESDL_DEF_ENTRY, definitionId, latestSeq);
+                DBGLOG("ESDL Binding: Fetching ESDL Definition '%s.%d' from Dali", definitionId, latestSeq);
+                return esdlDefinitions->getPropTree(xpath);
+            }
+            else
+                throw MakeStringException(-1, "Unable to fetch ESDL definition '%s' from dali", definitionId);
+        }
+        else
+        {
+            //There shouldn't be multiple entries here, but if so, we'll use the first one
+            VStringBuffer xpath("%s[@id='%s'][1]", ESDL_DEF_PATH, definitionId);
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+            if (!conn)
+             throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", xpath.str());
+
+             return createPTreeFromIPT(conn->queryRoot());
+        }
+        return nullptr;
+    }
+
+    virtual void fetchDefinitionXML(const char* definitionId, StringBuffer& esxdl) override
     {
         if (!definitionId || !*definitionId)
             throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, definition id is not available");
@@ -68,7 +114,7 @@ public:
         toXML(conn->queryRoot(), esxdl, 0, 0);
     }
 
-    virtual void fetchLatestDefinition(const char* definitionName, StringBuffer& esxdl) override
+    virtual void fetchLatestDefinitionXML(const char* definitionName, StringBuffer& esxdl) override
     {
         if (!definitionName || !*definitionName)
             throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, definition name is not available");
@@ -410,6 +456,25 @@ public:
             return -1;
         }
 
+        if(espPort && *espPort)
+        {
+            while(*espPort == '0')
+                espPort++;
+
+            int ind = 0;
+            for ( ; espPort[ind]; ind++)
+            {
+                if (!isdigit(espPort[ind]))
+                    throw MakeStringException(-1, "Esp port can only be a positive integer.");
+            }
+            if(ind > 5)
+                throw MakeStringException(-1, "Esp port should be between 1 and 65535");
+
+            int port = atoi(espPort);
+            if(port <= 0 || port > 65535)
+                throw MakeStringException(-1, "Esp port should be between 1 and 65535");
+        }
+
         if (!definitionId || !*definitionId)
         {
             message.set("Could not configure DESDL service: Target Esdl definition id not available");
@@ -728,7 +793,19 @@ public:
         if (!conn)
            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
-        return createPTreeFromIPT(conn->queryRoot());
+        Owned<IPropertyTree> bindings = createPTreeFromIPT(conn->queryRoot());
+        Owned<IPropertyTreeIterator> iter = bindings->getElements("*");
+        ForEach (*iter)
+        {
+            IPropertyTree &binding = iter->query();
+            if (binding.getPropInt("@port", 0) == 0)
+            {
+                Owned<IPropertyTree> espbindingcfg = getEspBindingConfig(binding.queryProp("@espprocess"), nullptr, binding.queryProp("@espbinding"));
+                if(espbindingcfg)
+                    binding.setPropInt("@port", espbindingcfg->getPropInt("@port", 0));
+            }
+        }
+        return bindings.getLink();
     }
 
 private:

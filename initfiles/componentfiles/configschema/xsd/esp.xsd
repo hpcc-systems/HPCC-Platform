@@ -20,10 +20,10 @@
                                             <xs:attribute name="description" type="xs:string" use="optional" hpcc:displayName="Description"/>
                                             <xs:attribute name="path" type="xs:string" use="required" default="/" hpcc:displayName="Path" hpcc:tooltip="The logical path of a resource used for authentication"/>
                                             <xs:attribute name="resource" type="xs:string" use="required" hpcc:displayName="Resource" hpcc:tooltip="The physical resource for which access is checked"/>
-                                            <xs:attribute name="access" default="Read">
+                                            <xs:attribute name="access" hpcc:codeDefault="Read">
                                                 <xs:simpleType>
                                                     <xs:restriction base="xs:string">
-                                                        <xs:enumeration value="" hpcc:description=""/>
+                                                        <xs:enumeration value="" hpcc:displayName="Use default" hpcc:description=""/>
                                                         <xs:enumeration value="Access" hpcc:description=""/>
                                                         <xs:enumeration value="Read" hpcc:description=""/>
                                                         <xs:enumeration value="Write" hpcc:description=""/>
@@ -75,11 +75,11 @@
                                     hpcc:valueLimitRuleType="uniqueItemType_1" hpcc:valueLimitRuleData="EspBinding@service,/Environment/Software/EspService@name"/>
                                 <xs:attribute name="type" type="xs:string" use="optional" hpcc:displayName="Security Manager Plugin" hpcc:tooltip="The Security Manager to be used by the Esp Service"/>
                                 <xs:attribute name="workunitsBasedn" type="xs:string" use="optional" default="ou=workunits,ou=ecl" hpcc:displayName="WorkUnits BaseDn" hpcc:tooltip="Base location for workunit resources (used with ldap security)" hpcc:requiredIf="xpath,xpath..."/>
-                                <xs:attribute name="wsdlServiceAddress" type="xs:string" use="optional"hpcc:displayName="wsdlServiceAddress" hpcc:tooltip="Overrides the address used by client applications to connect to the service"/>
+                                <xs:attribute name="wsdlServiceAddress" type="xs:string" use="optional" hpcc:displayName="wsdlServiceAddress" hpcc:tooltip="Overrides the address used by client applications to connect to the service"/>
                             </xs:complexType>
 
                             <xs:key name="esp_custombindingparameter_key">
-                                <xs:selector xpath="CustomBindingParameter" />
+                                <xs:selector xpath="./CustomBindingParameter" />
                                 <xs:field xpath="@key" />
                             </xs:key>
 
@@ -87,19 +87,22 @@
 
                         <xs:element name="Authentication" hpcc:docid="ESP.t4" hpcc:class="valueSet" hpcc:displayName="Authentication">
                             <xs:complexType>
-                                <xs:attribute name="method" use="required" default="none" hpcc:displayName="Method" hpcc:tooltip="The protocol to use for authenticating the service">
+                                <xs:attribute name="method" use="required" default="none" hpcc:displayName="Method" hpcc:modifiers="variableAttributes" hpcc:tooltip="The protocol to use for authenticating the service">
                                     <xs:simpleType>
                                         <xs:restriction base="xs:string">
                                             <xs:enumeration value="none" hpcc:description=""/>
                                             <xs:enumeration value="local" hpcc:description=""/>
-                                            <xs:enumeration value="ldap" hpcc:description=""/>
-                                            <xs:enumeration value="ldaps" hpcc:description=""/>
+                                            <xs:enumeration value="ldap" hpcc:requiredAttributes="ldapServer,ldapAuthMethod,ldapConnections,passwordExpirationWarningDays,checkViewPermissions" hpcc:description=""/>
+                                            <xs:enumeration value="ldaps" hpcc:requiredAttributes="ldapServer,ldapAuthMethod,ldapConnections,passwordExpirationWarningDays,checkViewPermissions" hpcc:description=""/>
+                                            <xs:enumeration value="userNameOnly" hpcc:requiredAttributes="getUserNameURL,getUserNameUnrestrictedResources" hpcc:description=""/>
                                             <xs:enumeration value="secmgrPlugin" hpcc:description=""/>
                                         </xs:restriction>
                                     </xs:simpleType>
                                 </xs:attribute>
-                                <xs:attribute name="ldapServer" type="xs:string" use="optional" hpcc:displayName="LDAP Server" hpcc:tooltip="The ldap server to be used for authentication" hpcc:requiredIf="ldap chosen"/>
-                                <xs:attribute name="ldapAuthMethod" type="xs:string" use="required" default="kerberos" hpcc:displayName="LDAP Auth Method" hpcc:tooltip="The protocol to use for LDAP authentication">
+                                <xs:attribute name="ldapServer" type="xs:string" use="optional" hpcc:displayName="LDAP Server" hpcc:requiredIf=".[@method=('ldap','ldaps')]"
+                                    hpcc:tooltip="The ldap server to be used for authentication"/>
+                                <xs:attribute name="ldapAuthMethod" type="xs:string" use="optional" default="kerberos" hpcc:displayName="LDAP Auth Method"
+                                    hpcc:requiredIf=".[@method=('ldap','ldaps')]" hpcc:tooltip="The protocol to use for LDAP authentication">
                                     <xs:simpleType>
                                         <xs:restriction base="xs:string">
                                             <xs:enumeration value="kerberos" hpcc:description=""/>
@@ -107,12 +110,16 @@
                                         </xs:restriction>
                                     </xs:simpleType>
                                 </xs:attribute>
-                                <xs:attribute name="ldapConnections" type="xs:nonNegativeInteger" use="optional" default="10" hpcc:displayName=""
-                                              hpcc:tooltip="Maximum number of connections to the LDAP server" hpcc:requiredIf=""/>
-                                <xs:attribute name="passwordExpirationWarningDays" type="xs:nonNegativeInteger" use="optional" default="10"
-                                              hpcc:displayName="Passowrd Expiration Warning Days" hpcc:tooltip="In this time period, ESP displays a warning about password expiration"/>
+                                <xs:attribute name="ldapConnections" type="xs:nonNegativeInteger" use="optional" default="10" hpcc:displayName="LDAP Connections"
+                                    hpcc:tooltip="Maximum number of connections to the LDAP server" hpcc:requiredIf=".[@method=('ldap','ldaps')]"/>
+                                <xs:attribute name="passwordExpirationWarningDays" type="xs:nonNegativeInteger" use="optional" default="10" hpcc:requiredIf=".[@method=('ldap','ldaps')]"
+                                    hpcc:displayName="Passowrd Expiration Warning Days" hpcc:tooltip="In this time period, ESP displays a warning about password expiration"/>
                                 <xs:attribute name="checkViewPermissions" type="xs:boolean" use="optional" default="false" hpcc:displayName="Check View Permissions"
-                                              hpcc:tooltip="Enable file and column access permission checking for all view enabled queries"/>
+                                    hpcc:requiredIf=".[@method=('ldap','ldaps')]" hpcc:tooltip="Enable file and column access permission checking for all view enabled queries"/>
+                                <xs:attribute name="getUserNameURL" type="xs:string" hpcc:displayName="Username URL" use="optional" default="/esp/files/GetUserName.html"
+                                    hpcc:requiredIf=".[@method='userNameOnly']" hpcc:tooltip="URL to getUserName"/>
+                                <xs:attribute name="getUserNameUnrestrictedResources" type="xs:string" hpcc:displayName="Unrestricted Resources Name" use="optional" default="/favicon.ico,/esp/files/*,/esp/xslt/*"
+                                    hpcc:requiredIf=".[@method='userNameOnly']" hpcc:tooltip="unrestricted resources for getUserNameURL"/>
                             </xs:complexType>
                         </xs:element>
 
@@ -187,28 +194,28 @@
                 </xs:complexType>
 
                 <xs:key name="espprocess_name_key">
-                    <xs:selector xpath="." />
+                    <xs:selector xpath="./" />
                     <xs:field xpath="@name" />
                 </xs:key>
 
                 <xs:key name="espprocess_controlport_key">
-                    <xs:selector xpath="." />
+                    <xs:selector xpath="./" />
                     <xs:field xpath="@controlPort" />
                 </xs:key>
 
                 <xs:keyref name="esp_servicename_keyref" refer="espservice_name_key">
-                    <xs:selector xpath="EspBinding" />
+                    <xs:selector xpath="./EspBinding" />
                     <xs:field xpath="@service" />
                 </xs:keyref>
 
                 <xs:keyref name="espprocess_Instance_keyref" refer="computerNameKey">
-                    <xs:selector xpath="Instance"/>
+                    <xs:selector xpath="./Instance"/>
                     <xs:field xpath="@computer"/>
                 </xs:keyref>
 
                 <xs:keyref name="espprocess_Instance_ipref" refer="computerIPAddressKey">
-                    <xs:selector xpath="Instance"/>
-                    <xs:field xpath="netAddress"/>
+                    <xs:selector xpath="./Instance"/>
+                    <xs:field xpath="@netAddress"/>
                 </xs:keyref>
 
             </xs:element>

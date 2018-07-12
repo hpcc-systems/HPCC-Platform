@@ -263,6 +263,7 @@ public:
 
 static IDigitalSignatureManager * dsm;
 static std::once_flag dsmInitFlag;
+static std::once_flag dsmAddAlgoFlag;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -280,13 +281,19 @@ static void createDigitalSignatureManagerInstance(IDigitalSignatureManager * * p
     *ppDSM = createDigitalSignatureManagerInstanceFromFiles(pubKey, privKey, passPhrase);
 }
 
+static void addAlgorithms()
+{
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
+    OpenSSL_add_all_algorithms();
+#endif
+}
 
 extern "C"
 {
     //Returns reference to singleton instance created from environment.conf key file settings
-    DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromEnv()
+    DIGISIGN_API IDigitalSignatureManager * queryDigitalSignatureManagerInstanceFromEnv()
     {
-#ifdef _USE_OPENSSL
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
         std::call_once(dsmInitFlag, createDigitalSignatureManagerInstance, &dsm);
         return dsm;
 #else
@@ -298,20 +305,34 @@ extern "C"
     //Caller must release when no longer needed
     DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * _pubKey, const char *_privKey, const char * _passPhrase)
     {
-#ifdef _USE_OPENSSL
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
         StringBuffer privateKeyBuff;
         StringBuffer publicKeyBuff;
 
         if (!isEmptyString(_pubKey))
         {
-            publicKeyBuff.loadFile(_pubKey);
+            try
+            {
+                publicKeyBuff.loadFile(_pubKey);
+            }
+            catch (IException * e)
+            {
+                e->Release();
+            }
             if (publicKeyBuff.isEmpty())
                 throw MakeStringException(-1, "digiSign:Cannot load public key file");
         }
 
         if (!isEmptyString(_privKey))
         {
-            privateKeyBuff.loadFile(_privKey);
+            try
+            {
+                privateKeyBuff.loadFile(_privKey);
+            }
+            catch (IException * e)
+            {
+                e->Release();
+            }
             if (privateKeyBuff.isEmpty())
                 throw MakeStringException(-1, "digiSign:Cannot load private key file");
         }
@@ -326,7 +347,8 @@ extern "C"
     //Caller must release when no longer needed
     DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(StringBuffer & _pubKeyBuff, StringBuffer & _privKeyBuff, const char * _passPhrase)
     {
-#ifdef _USE_OPENSSL
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
+        std::call_once(dsmAddAlgoFlag, addAlgorithms);
         return new CDigitalSignatureManager(_pubKeyBuff, _privKeyBuff, _passPhrase);
 #else
         return nullptr;

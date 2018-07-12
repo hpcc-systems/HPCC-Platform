@@ -111,6 +111,7 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRemoveSuffix(unsigned & tgtLe
 UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRepeat(unsigned & tgtLen, UChar * & tgt, unsigned srcLen, UChar const * src, unsigned n);
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleFindCount(unsigned srcLen, UChar const * src, unsigned hitLen, UChar const * hit, unsigned formLen, char const * form);
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleCountWords(unsigned srcLen, UChar const * src, unsigned delimLen, UChar const * delim, bool allowBlankItems);
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleSplitWords(bool & isAllResult,size32_t & lenResult,void * & result, unsigned srcLen, UChar const * src, unsigned delimLen, UChar const * delim, bool allowBlankItems);
 }
 
 #endif

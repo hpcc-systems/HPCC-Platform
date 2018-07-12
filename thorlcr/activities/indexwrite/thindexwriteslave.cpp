@@ -268,10 +268,9 @@ public:
         init();
 
         IRowStream *stream = inputStream;
-        ThorDataLinkMetaInfo info;
-        input->getMetaInfo(info);
         outRowAllocator.setown(getRowAllocator(helper->queryDiskRecordSize()));
         start();
+
         if (refactor)
         {
             assertex(isLocal);

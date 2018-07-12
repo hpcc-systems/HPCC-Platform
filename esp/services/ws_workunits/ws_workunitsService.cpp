@@ -47,6 +47,7 @@
 #include "fvdatasource.hpp"
 #include "fvresultset.ipp"
 #include "ws_wudetails.hpp"
+#include "wuerror.hpp"
 
 #include "rtlformat.hpp"
 
@@ -136,6 +137,8 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                 {
                 case CECLWUActions_Restore:
                 {
+                    ensureWsWorkunitAccess(context, wuid, SecAccess_Full);
+
                     SocketEndpoint ep;
                     if (params->hasProp("sashaServerIP"))
                         ep.set(params->queryProp("sashaServerIP"), params->getPropInt("sashaServerPort"));
@@ -161,7 +164,6 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                     cmd->getId(0,reply);
 
                     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
-                    ensureWsWorkunitAccess(context, wuid, SecAccess_Write);
                     break;
                 }
                 case CECLWUActions_EventDeschedule:
@@ -231,11 +233,13 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                     break;
                 case CECLWUActions_Protect:
                 case CECLWUActions_Unprotect:
+                    ensureWsWorkunitAccess(context, *cw, SecAccess_Write);
                     cw->protect((action == CECLWUActions_Protect) ? true:false);
                     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
                     break;
                 case CECLWUActions_SetToFailed:
                     {
+                        ensureWsWorkunitAccess(context, *cw, SecAccess_Write);
                         WorkunitUpdate wu(&cw->lock());
                         wu->setState(WUStateFailed);
                         AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
@@ -243,6 +247,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                     break;
                 case CECLWUActions_EventReschedule:
                     {
+                        ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                         WorkunitUpdate wu(&cw->lock());
                         wu->schedule();
                         AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
@@ -452,6 +457,8 @@ bool CWsWorkunitsEx::onWUCreate(IEspContext &context, IEspWUCreateRequest &req, 
 {
     try
     {
+        ensureWsCreateWorkunitAccess(context);
+
         NewWsWorkunit wu(context);
         resp.updateWorkunit().setWuid(wu->queryWuid());
         AuditSystemAccess(context.queryUserId(), true, "Updated %s", wu->queryWuid());
@@ -639,6 +646,8 @@ bool CWsWorkunitsEx::onWUCreateAndUpdate(IEspContext &context, IEspWUUpdateReque
         const char* wuid = req.getWuid();
         if (!wuid || !*wuid)
         {
+            ensureWsCreateWorkunitAccess(context);
+
             NewWsWorkunit wu(context);
             req.setWuid(wu->queryWuid());
         }
@@ -967,6 +976,7 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
+        ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
         if (cw->getAction()==WUActionExecuteExisting)
         {
             ExecuteExistingQueryInfo info(cw);
@@ -1030,6 +1040,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
             if (!looksLikeAWuid(runWuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", runWuid);
 
+            ensureWsWorkunitAccess(context, runWuid, SecAccess_Full);
             PROGLOG("WURun: %s", runWuid);
             if (req.getCloneWorkunit())
                 WsWuHelpers::runWsWorkunit(context, wuid, runWuid, cluster, req.getInput(), &req.getVariables(),
@@ -1146,7 +1157,9 @@ bool CWsWorkunitsEx::onWUWaitCompiled(IEspContext &context, IEspWUWaitRequest &r
     {
         StringBuffer wuid = req.getWuid();
         WsWuHelpers::checkAndTrimWorkunit("WUWaitCompiled", wuid);
+        ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUWaitCompiled: %s", wuid.str());
+
         secWaitForWorkUnitToCompile(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getWait());
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
@@ -1167,6 +1180,7 @@ bool CWsWorkunitsEx::onWUWaitComplete(IEspContext &context, IEspWUWaitRequest &r
     {
         StringBuffer wuid = req.getWuid();
         WsWuHelpers::checkAndTrimWorkunit("WUWaitComplete", wuid);
+        ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUWaitComplete: %s", wuid.str());
         resp.setStateID(secWaitForWorkUnitToComplete(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getWait(), req.getReturnOnWait()));
     }
@@ -1183,6 +1197,7 @@ bool CWsWorkunitsEx::onWUCDebug(IEspContext &context, IEspWUDebugRequest &req, I
     {
         StringBuffer wuid = req.getWuid();
         WsWuHelpers::checkAndTrimWorkunit("WUCDebug", wuid);
+        ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUCDebug: %s", wuid.str());
         StringBuffer result;
         secDebugWorkunit(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getCommand(), result);
@@ -1199,6 +1214,8 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
 {
     try
     {
+        ensureWsCreateWorkunitAccess(context);
+
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         NewWsWorkunit wu(factory, context);
         wu->setAction(WUActionCheck);
@@ -1359,6 +1376,8 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
 {
     try
     {
+        ensureWsCreateWorkunitAccess(context);
+
         unsigned int timeMilliSec = 500;
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -1392,7 +1411,6 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
         wu->commit();
         wu.clear();
 
-        ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
         WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false, false);
 
         int state = waitForWorkUnitToComplete(wuid.str(), timeMilliSec);
@@ -4013,70 +4031,88 @@ bool CWsWorkunitsEx::onWUDetails(IEspContext &context, IEspWUDetailsRequest &req
     return true;
 }
 
+static void getWUDetailsMetaProperties(IArrayOf<IEspWUDetailsMetaProperty> & properties)
+{
+    for (unsigned sk=StKindAll+1; sk<StMax;++sk)
+    {
+        const char * s = queryStatisticName((StatisticKind)sk);
+        if (s && *s)
+        {
+            Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
+            property->setName(s);
+            property->setValueType(CWUDetailsAttrValueType_Single);
+            properties.append(*property.getClear());
+        }
+    }
+    for (WuAttr attr=WaKind; attr<WaMax; ++attr)
+    {
+        Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
+        const char * s = queryWuAttributeName(attr);
+        assertex(s && *s);
+        property->setName(s);
+        if (isListAttribute(attr))
+            property->setValueType(CWUDetailsAttrValueType_List);
+        else if (isMultiAttribute(attr))
+            property->setValueType(CWUDetailsAttrValueType_Multi);
+        else
+            property->setValueType(CWUDetailsAttrValueType_Single);
+        properties.append(*property.getClear());
+    }
+}
+
+static void getWUDetailsMetaScopeTypes(StringArray & scopeTypes)
+{
+    for (unsigned sst=SSTall+1; sst<SSTmax; ++sst)
+    {
+        const char * s = queryScopeTypeName((StatisticScopeType)sst);
+        if (s && *s)
+            scopeTypes.append(s);
+    }
+}
+
+static void getWUDetailsMetaMeasures(StringArray & measures)
+{
+    for (unsigned measure=SMeasureAll+1; measure<SMeasureMax; ++measure)
+    {
+        const char *s = queryMeasureName((StatisticMeasure)measure);
+        if (s && *s)
+            measures.append(s);
+    }
+}
+static void getWUDetailsMetaActivities(IArrayOf<IConstWUDetailsActivityInfo> & activities)
+{
+    for (unsigned kind=((unsigned)ThorActivityKind::TAKnone)+1; kind< TAKlast; ++kind)
+    {
+        Owned<IEspWUDetailsActivityInfo> activity = createWUDetailsActivityInfo("","");
+        const char * name = getActivityText(static_cast<ThorActivityKind>(kind));
+        assertex(name && *name);
+        activity->setKind(kind);
+        activity->setName(name);
+        activity->setIsSink(isActivitySink(static_cast<ThorActivityKind>(kind)));
+        activity->setIsSource(isActivitySource(static_cast<ThorActivityKind>(kind)));
+        activities.append(*activity.getClear());
+    }
+}
+
 bool CWsWorkunitsEx::onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequest &req, IEspWUDetailsMetaResponse &resp)
 {
     try
     {
         IArrayOf<IEspWUDetailsMetaProperty> properties;
-        for (unsigned sk=StKindAll+1; sk<StMax;++sk)
-        {
-            const char * s = queryStatisticName((StatisticKind)sk);
-            if (s && *s)
-            {
-                Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
-                property->setName(s);
-                property->setValueType(CWUDetailsAttrValueType_Single);
-                properties.append(*property.getClear());
-            }
-        }
-
-        for (WuAttr attr=WaKind; attr<WaMax; ++attr)
-        {
-            Owned<IEspWUDetailsMetaProperty> property = createWUDetailsMetaProperty("","");
-            const char * s = queryWuAttributeName(attr);
-            assertex(s && *s);
-            property->setName(s);
-            if (isListAttribute(attr))
-                property->setValueType(CWUDetailsAttrValueType_List);
-            else if (isMultiAttribute(attr))
-                property->setValueType(CWUDetailsAttrValueType_Multi);
-            else
-                property->setValueType(CWUDetailsAttrValueType_Single);
-            properties.append(*property.getClear());
-        }
+        getWUDetailsMetaProperties(properties);
         resp.setProperties(properties);
 
         StringArray scopeTypes;
-        for (unsigned sst=SSTall+1; sst<SSTmax; ++sst)
-        {
-            const char * s = queryScopeTypeName((StatisticScopeType)sst);
-            if (s && *s)
-                scopeTypes.append(s);
-        }
+        getWUDetailsMetaScopeTypes(scopeTypes);
         resp.setScopeTypes(scopeTypes);
 
         StringArray measures;
-        for (unsigned measure=SMeasureAll+1; measure<SMeasureMax; ++measure)
-        {
-            const char *s = queryMeasureName((StatisticMeasure)measure);
-            if (s && *s)
-                measures.append(s);
-        }
+        getWUDetailsMetaMeasures(measures);
         resp.setMeasures(measures);
-        IArrayOf<IConstWUDetailsActivityInfo> activities;
-        for (unsigned kind=((unsigned)ThorActivityKind::TAKnone)+1; kind< TAKlast; ++kind)
-        {
-            Owned<IEspWUDetailsActivityInfo> activity = createWUDetailsActivityInfo("","");
-            const char * name = getActivityText(static_cast<ThorActivityKind>(kind));
-            assertex(name && *name);
-            activity->setKind(kind);
-            activity->setName(name);
-            activity->setIsSink(isActivitySink(static_cast<ThorActivityKind>(kind)));
-            activity->setIsSource(isActivitySource(static_cast<ThorActivityKind>(kind)));
-            activities.append(*activity.getClear());
-        }
-        resp.setActivities(activities);
 
+        IArrayOf<IConstWUDetailsActivityInfo> activities;
+        getWUDetailsMetaActivities(activities);
+        resp.setActivities(activities);
     }
     catch(IException* e)
     {
@@ -4084,6 +4120,47 @@ bool CWsWorkunitsEx::onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequ
     }
     return true;
 }
+
+#ifdef _USE_CPPUNIT
+
+#include "unittests.hpp"
+
+class WUDetailsMetaTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( WUDetailsMetaTest );
+        CPPUNIT_TEST(testWUDetailsMeta);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testWUDetailsMeta()
+    {
+        // These calls also check that all the calls required to build WUDetailsMeta
+        // are successful.
+        IArrayOf<IEspWUDetailsMetaProperty> properties;
+        getWUDetailsMetaProperties(properties);
+        unsigned expectedOrdinalityProps = StMax - (StKindAll + 1) + (WaMax-WaKind);
+        ASSERT(properties.ordinality()==expectedOrdinalityProps);
+
+        StringArray scopeTypes;
+        getWUDetailsMetaScopeTypes(scopeTypes);
+        unsigned expectedOrdinalityScopeTypes = SSTmax - (SSTall+1);
+        ASSERT(scopeTypes.ordinality()==expectedOrdinalityScopeTypes);
+
+        StringArray measures;
+        getWUDetailsMetaMeasures(measures);
+        unsigned expectedOrdinalityMeasures = SMeasureMax - (SMeasureAll+1);
+        ASSERT(measures.ordinality()==expectedOrdinalityMeasures);
+
+        IArrayOf<IConstWUDetailsActivityInfo> activities;
+        getWUDetailsMetaActivities(activities);
+        unsigned expectedOrdinalityActivities = TAKlast - (TAKnone+1);
+        ASSERT(activities.ordinality()==expectedOrdinalityActivities);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( WUDetailsMetaTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( WUDetailsMetaTest, "WUDetailsMetaTest" );
+
+#endif // _USE_CPPUNIT
 
 bool CWsWorkunitsEx::onWUGraphInfo(IEspContext &context,IEspWUGraphInfoRequest &req, IEspWUGraphInfoResponse &resp)
 {
@@ -4201,7 +4278,10 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
 
                 xml.append("<WUQuery>");
                 if ((accessOwn == SecAccess_None) && (accessOthers == SecAccess_None))
+                {
+                    context.setAuthStatus(AUTH_STATUS_NOACCESS);
                     xml.appendf("<ErrorMessage>Access to workunit is denied.</ErrorMessage>");
+                }
                 else
                 {
                     MapStringTo<bool> added;
@@ -4227,21 +4307,33 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
                 request->getParameter("Range",range);
                 Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
                 xml.append("<WUJobList>");
-                if (range.length())
-                    appendXMLTag(xml, "Range", range.str());
-                if (clusterInfo)
+
+                SecAccessFlags accessOwn;
+                SecAccessFlags accessOthers;
+                getUserWuAccessFlags(context, accessOwn, accessOthers, false);
+                if ((accessOwn == SecAccess_None) && (accessOthers == SecAccess_None))
                 {
-                    const StringArray &thorInstances = clusterInfo->getThorProcesses();
-                    ForEachItemIn(i, thorInstances)
-                    {
-                        const char* instance = thorInstances.item(i);
-                        if (defaultProcess.length() && strieq(instance, defaultProcess.str()))
-                            xml.append("<Cluster selected=\"1\">").append(instance).append("</Cluster>");
-                        else
-                            xml.append("<Cluster>").append(instance).append("</Cluster>");
-                    }
+                    context.setAuthStatus(AUTH_STATUS_NOACCESS);
+                    xml.appendf("<ErrorMessage>Access to workunit is denied.</ErrorMessage>");
                 }
-                xml.append("<TargetCluster>").append(cluster).append("</TargetCluster>");
+                else
+                {
+                    if (range.length())
+                        appendXMLTag(xml, "Range", range.str());
+                    if (clusterInfo)
+                    {
+                        const StringArray &thorInstances = clusterInfo->getThorProcesses();
+                        ForEachItemIn(i, thorInstances)
+                        {
+                            const char* instance = thorInstances.item(i);
+                            if (defaultProcess.length() && strieq(instance, defaultProcess.str()))
+                                xml.append("<Cluster selected=\"1\">").append(instance).append("</Cluster>");
+                            else
+                                xml.append("<Cluster>").append(instance).append("</Cluster>");
+                        }
+                    }
+                    xml.append("<TargetCluster>").append(cluster).append("</TargetCluster>");
+                }
                 xml.append("</WUJobList>");
                 xslt.append(getCFD()).append("./smc_xslt/jobs_search.xslt");
                 response->addHeader("Expires", "0");
@@ -4506,8 +4598,7 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     const char *type = skipCompressedTypeQualifier(req.getObjType());
     try
     {
-        if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
+        ensureWsCreateWorkunitAccess(context);
 
         if (notEmpty(req.getCluster()) && !isValidCluster(req.getCluster()))
             throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", req.getCluster());
@@ -4535,6 +4626,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         zapInfoReq.wuid = req.getWuid();
 
         WsWuHelpers::checkAndTrimWorkunit("WUCreateZAPInfo", zapInfoReq.wuid);
+
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cwu = factory->openWorkUnit(zapInfoReq.wuid.str());
         if(!cwu.get())
@@ -5172,8 +5264,7 @@ bool CWsWorkunitsEx::onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefi
         if (action == EclDefinitionActions_Undefined)
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"Action not defined in onWUEclDefinitionAction.");
 
-        if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to do WUEclDefinitionAction %s. Permission denied.", req.getActionTypeAsString());
+        ensureWsCreateWorkunitAccess(context);
 
         StringBuffer target = req.getTarget();
         if (target.trim().isEmpty())

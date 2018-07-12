@@ -462,111 +462,6 @@ static void createPhysicalLogicalAssigns(HqlExprArray & assigns, IHqlExpression 
 }
 
 
-static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * cur);
-static IHqlExpression * mapIfBlockRecord(HqlMapTransformer & mapper, IHqlExpression * record)
-{
-    HqlExprArray mapped;
-    ForEachChild(i, record)
-    {
-        IHqlExpression * cur = record->queryChild(i);
-        if (cur->getOperator() == no_ifblock)
-            mapped.append(*mapIfBlock(mapper, cur));
-        else
-            mapped.append(*LINK(cur));
-    }
-    return record->clone(mapped);
-}
-
-
-static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * cur)
-{
-    HqlExprArray args;
-    unwindChildren(args, cur);
-    args.replace(*mapper.transformRoot(&args.item(0)), 0);
-    args.replace(*mapIfBlockRecord(mapper, &args.item(1)), 1);
-    return cur->clone(args);
-}
-
-
-static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * record, bool hasInternalFileposition, bool createKeyedTypes)
-{
-    HqlExprArray physicalFields;
-    unsigned max = record->numChildren() - (hasInternalFileposition ? 1 : 0);
-    for (unsigned idx=0; idx < max; idx++)
-    {
-        IHqlExpression * cur = record->queryChild(idx);
-        IHqlExpression * newField = NULL;
-
-        if (cur->isAttribute())
-            physicalFields.append(*LINK(cur));
-        else if (cur->getOperator() == no_ifblock)
-            physicalFields.append(*mapIfBlock(mapper, cur));
-        else if (cur->getOperator() == no_record)
-            physicalFields.append(*createPhysicalIndexRecord(mapper, cur, false, createKeyedTypes));
-        else if (cur->hasAttribute(blobAtom))
-        {
-            newField = createField(cur->queryId(), makeIntType(8, false), nullptr, createKeyedTypes ? createAttribute(_payload_Atom) : nullptr);
-        }
-        else
-        {
-            //This should support other non serialized formats.  E.g., link counted strings.
-            //Simplest would be to move getSerializedForm code + call that first.
-            if (cur->hasAttribute(_linkCounted_Atom) || cur->isDatarow())
-            {
-                newField = getSerializedForm(cur, diskAtom);
-                assertex(newField != cur || cur->isDatarow());
-            }
-            else
-            {
-                Owned<ITypeInfo> hozedType = getHozedKeyType(cur);
-                if (hozedType == cur->queryType())
-                    newField = LINK(cur);
-                else if (createKeyedTypes)
-                    newField = createField(cur->queryId(), makeKeyedType(cur->getType()), nullptr, extractFieldAttrs(cur));
-                else
-                    newField = createField(cur->queryId(), hozedType.getClear(), nullptr, extractFieldAttrs(cur));
-            }
-        }
-
-        if (newField)
-        {
-            physicalFields.append(*newField);
-            if (cur != newField)
-            {
-                IHqlExpression * self = querySelfReference();
-                OwnedHqlExpr select = createSelectExpr(LINK(self), LINK(cur));
-                OwnedHqlExpr physicalSelect = createSelectExpr(LINK(self), LINK(newField));
-                OwnedHqlExpr newValue = convertIndexPhysical2LogicalValue(cur, physicalSelect, true);
-                mapper.setMapping(select, newValue);
-            }
-        }
-    }
-    if (hasInternalFileposition)
-    {
-        if (createKeyedTypes)
-        {
-            IHqlExpression * cur = record->queryChild(record->numChildren()-1);
-            IHqlExpression *fposField = createField(cur->queryId(), makeFilePosType(cur->getType()), nullptr, extractFieldAttrs(cur));
-            physicalFields.append(*fposField);
-        }
-        else
-        {
-            IHqlExpression * cur = record->queryChild(record->numChildren()-1);
-            IHqlExpression *fposField = createField(cur->queryId(), makeSwapIntType(8, false), nullptr, extractFieldAttrs(cur));
-            physicalFields.append(*fposField);
-        }
-    }
-
-    return createRecord(physicalFields);
-}
-
-IHqlExpression * createMetadataIndexRecord(IHqlExpression * record, bool hasInternalFilePosition)
-{
-    HqlMapTransformer mapper;
-    return createPhysicalIndexRecord(mapper, record, hasInternalFilePosition, true);
-}
-
-
 IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * tableExpr)
 {
     LinkedHqlExpr * match = physicalIndexCache.getValue(tableExpr);
@@ -969,11 +864,9 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     {
     case no_table:
     case no_newkeyindex:
-        if (fieldInfo.hasVirtuals() && !newDiskReadMapping)
+        if (!newDiskReadMapping)
         {
-            assertex(fieldInfo.simpleVirtualsAtEnd);
-            needToCallTransform = true;
-            needDefaultTransform = false;
+            assertex(!fieldInfo.hasVirtuals());
         }
         if (newDiskReadMapping)
         {
@@ -1270,17 +1163,7 @@ void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression *
         }
         else
         {
-            if (newDiskReadMapping)
-            {
-                translator.bindTableCursor(transformCtx, projectedSelector, "left");
-            }
-            else
-            {
-                //NOTE: The source is not link counted - it comes from a prefetched row, and does not include any virtual file position field.
-                OwnedHqlExpr boundSrc = createVariable("left", makeRowReferenceType(physicalRecord));
-                IHqlExpression * accessor = NULL;
-                transformCtx.associateOwn(*new BoundRow(tableExpr->queryNormalizedSelector(), boundSrc, accessor, translator.queryRecordOffsetMap(physicalRecord, (accessor != NULL)), no_none, NULL));
-            }
+            translator.bindTableCursor(transformCtx, projectedSelector, "left");
         }
         transformCtx.addGroup();
     }
@@ -1383,53 +1266,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
         }
         else
         {
-            if (fieldInfo.hasVirtuals())
-            {
-                IHqlExpression * record = expr->queryRecord();
-                assertex(fieldInfo.simpleVirtualsAtEnd);
-                assertex(!recordRequiresSerialization(record, diskAtom));
-                CHqlBoundExpr bound;
-                StringBuffer s;
-                translator.getRecordSize(ctx, expr, bound);
-
-                size32_t virtualSize = 0;
-                ForEachChild(idx, record)
-                {
-                    IHqlExpression * field = record->queryChild(idx);
-                    IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
-                    if (virtualAttr)
-                    {
-                        size32_t fieldSize = field->queryType()->getSize();
-                        assertex(fieldSize != UNKNOWN_LENGTH);
-                        virtualSize += fieldSize;
-                    }
-                }
-
-                if (!isFixedSizeRecord(record))
-                {
-                    OwnedHqlExpr ensureSize = adjustValue(bound.expr, virtualSize);
-                    s.clear().append("crSelf.ensureCapacity(");
-                    translator.generateExprCpp(s, ensureSize).append(", NULL);");
-                    ctx.addQuoted(s);
-                }
-
-                s.clear().append("memcpy(crSelf.row(), left, ");
-                translator.generateExprCpp(s, bound.expr).append(");");
-                ctx.addQuoted(s);
-
-                ForEachChild(idx2, record)
-                {
-                    IHqlExpression * field = record->queryChild(idx2);
-                    IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
-                    if (virtualAttr)
-                    {
-                        IHqlExpression * self = rootSelfRow->querySelector();
-                        OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(field));
-                        OwnedHqlExpr value = getVirtualReplacement(field, virtualAttr->queryChild(0), expr);
-                        translator.buildAssign(ctx, target, value);
-                    }
-                }
-            }
+            assertex(!fieldInfo.hasVirtuals());
         }
         break;
     case no_null:
@@ -2558,14 +2395,10 @@ void SourceBuilder::buildGlobalGroupAggregateHelpers(IHqlExpression * expr)
     }
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
+    //Only meaningful for a dataset, and even then I'm not sure it is ever used.
+    if (!isKey(tableExpr))
     {
         OwnedHqlExpr newTableExpr = LINK(tableExpr);
-        if (isKey(tableExpr))
-        {
-            IHqlExpression * record = tableExpr->queryRecord();
-            OwnedHqlExpr newRecord = removeChild(record, record->numChildren()-1);
-            newTableExpr.setown(replaceChild(tableExpr, 1, newRecord));
-        }
 
         MemberFunction func(translator, instance->startctx, "virtual void processRows(size32_t srcLen, const void * _left, IHThorGroupAggregateCallback * callback) override");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
@@ -2997,12 +2830,12 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     {
         //Spill files can still have virtual attributes in their physical records => remove them.
         OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(expectedRecord);
-        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, noVirtualRecord, NULL, 0);
+        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", noVirtualRecord);
 
         if (newDiskReadMapping)
-            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", false, projectedRecord, NULL, 0);
+            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", projectedRecord);
         else
-            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", false, noVirtualRecord, NULL, 0);
+            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", noVirtualRecord);
     }
 
     translator.buildMetaMember(instance->classctx, expectedRecord, isGrouped(tableExpr), "queryDiskRecordSize");
@@ -3309,8 +3142,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
     }
     else
     {
-        if (!info.fieldInfo.simpleVirtualsAtEnd || info.fieldInfo.requiresDeserialize ||
-            (info.recordHasVirtuals() && (modeOp == no_csv || !isSimpleSource(expr))))
+        if (info.recordHasVirtuals() || info.fieldInfo.requiresDeserialize)
         {
             OwnedHqlExpr transformed = buildTableWithoutVirtuals(info.fieldInfo, expr);
             //Need to wrap a possible no_usertable, otherwise the localisation can go wrong.
@@ -3986,6 +3818,7 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
 
     buildKeyedLimitHelper(expr);
 
+    translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", true, tableExpr, tableExpr, 1);
     translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", true, tableExpr, tableExpr, 1);
     IHqlExpression * originalKey = queryAttributeChild(tableExpr, _original_Atom, 0);
     translator.buildSerializedLayoutMember(instance->classctx, originalKey->queryRecord(), "getIndexLayout", numKeyedFields(originalKey));
@@ -4296,24 +4129,8 @@ void IndexAggregateBuilder::buildMembers(IHqlExpression * expr)
         rowctx.addQuotedLiteral("doProcessRow(crSelf, (const byte *)src);");
     }
 
-    {
-        IHqlExpression * record = tableExpr->queryRecord();
-        OwnedHqlExpr newRecord = removeChild(record, record->numChildren()-1);
-        OwnedHqlExpr newTableExpr = replaceChild(tableExpr, 1, newRecord);
-
-        MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left) override");
-        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-        OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(newTableExpr->getType()));
-        OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
-        OwnedHqlExpr fullDs = createTranslated(ds, len);
-
-        Owned<IHqlCppDatasetCursor> iter = translator.createDatasetSelector(func.ctx, fullDs);
-        BoundRow * curRow = iter->buildIterateLoop(func.ctx, false);
-        s.clear().append("doProcessRow(crSelf, ");
-        translator.generateExprCpp(s, curRow->queryBound());
-        s.append(");");
-        func.ctx.addQuoted(s);
-    }
+    //virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left)
+    //is meaningless for an index - uses the default error implementation in the base class
 }
 
 
@@ -4906,7 +4723,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
     case no_json:
         break;
     default:
-        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, physicalRecord, NULL, 0);
+        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", physicalRecord);
         break;
     }
 

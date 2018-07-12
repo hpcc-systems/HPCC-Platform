@@ -4754,7 +4754,7 @@ public:
         return original;
     }
 
-    virtual unsigned getMemoryUsage()
+    virtual memsize_t getMemoryUsage()
     {
         Owned<IActivityMemoryUsageMap> map;
         {
@@ -4763,7 +4763,7 @@ public:
         }
         if (map)
             map->report(logctx, allocatorCache);
-        return peakPages;
+        return ((memsize_t)peakPages)*HEAP_ALIGNMENT_SIZE;
     }
 
     virtual bool attachDataBuff(DataBuffer *dataBuff) 
@@ -7224,7 +7224,7 @@ protected:
         Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
         ReleaseRoxieRow(rm1->allocate(1800000, 0));
         ASSERT(rm1->numPagesAfterCleanup(false)==0); // page should be freed even if force not specified
-        ASSERT(rm1->getMemoryUsage()== PAGES(1800000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE));
+        ASSERT(rm1->getMemoryUsage()== PAGES(1800000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE)*HEAP_ALIGNMENT_SIZE);
     }
 
     void testSizes()
@@ -7265,7 +7265,7 @@ protected:
         Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
         ReleaseRoxieRow(rm1->allocate(1000, 0));
         ASSERT(rm1->numPagesAfterCleanup(true)==0);
-        ASSERT(rm1->getMemoryUsage()==1);
+        ASSERT(rm1->getMemoryUsage()==HEAP_ALIGNMENT_SIZE);
 
         void *r1 = rm1->allocate(1000, 0);
         void *r2 = rm1->allocate(1000, 0);
@@ -7276,13 +7276,13 @@ protected:
         ReleaseRoxieRow(r1);
         ReleaseRoxieRow(r2);
         ASSERT(rm1->numPagesAfterCleanup(true)==0);
-        ASSERT(rm1->getMemoryUsage()==1);
+        ASSERT(rm1->getMemoryUsage()==HEAP_ALIGNMENT_SIZE);
 
 
         Owned<IRowManager> rm2 = createRowManager(0, NULL, logctx, NULL);
         ReleaseRoxieRow(rm2->allocate(4000000, 0));
         ASSERT(rm2->numPagesAfterCleanup(true)==0);
-        ASSERT(rm2->getMemoryUsage()==PAGES(4000000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE));
+        ASSERT(rm2->getMemoryUsage()==PAGES(4000000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE)*HEAP_ALIGNMENT_SIZE);
 
         r1 = rm2->allocate(4000000, 0);
         r2 = rm2->allocate(4000000, 0);
@@ -7293,7 +7293,7 @@ protected:
         ReleaseRoxieRow(r1);
         ReleaseRoxieRow(r2);
         ASSERT(rm2->numPagesAfterCleanup(true)==0);
-        ASSERT(rm2->getMemoryUsage()==2*PAGES(4000000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE));
+        ASSERT(rm2->getMemoryUsage()==2*PAGES(4000000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE)*HEAP_ALIGNMENT_SIZE);
 
         for (unsigned d = 0; d < 50; d++)
         {

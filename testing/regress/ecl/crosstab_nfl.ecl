@@ -69,7 +69,7 @@ NFLConferenceRecord := RECORD
     GroupMax    := MAX(GROUP,NFLfile.Salary_cap);
 END;
 
-NFLConferenceTable := TABLE(NFLFile,NFLConferenceRecord,Conference,Team);
+NFLConferenceTable := TABLE(NFLFile,NFLConferenceRecord,Conference,Team, SORTED);
 
 OUTPUT(NFLConferenceTable);
 
@@ -82,7 +82,7 @@ NFLDivisionRecord := RECORD
     GroupMax    := MAX(GROUP,NFLfile.Salary_cap);
 END;
 
-NFLDivisionTable    := TABLE(NFLFile,NFLDivisionRecord,Division,Team);
+NFLDivisionTable    := TABLE(NFLFile,NFLDivisionRecord,Division,Team,SORTED);
 
 OUTPUT(NFLDivisionTable);
 
@@ -104,8 +104,8 @@ NFLLeagueDivisionRecord := RECORD
     GroupMax    := MAX(GROUP,NFLfile.Salary_cap);
 END;
 
-NFLLeagueConferenceTable := TABLE(NFLFile,NFLLeagueConferenceRecord,Conference,Division);
-NFLLeagueDivisionTable := TABLE(NFLFile,NFLLeagueDivisionRecord ,Division,Conference);
+NFLLeagueConferenceTable := TABLE(NFLFile,NFLLeagueConferenceRecord,Conference,Division, SORTED);
+NFLLeagueDivisionTable := TABLE(NFLFile,NFLLeagueDivisionRecord ,Division,Conference, SORTED);
 
 OUTPUT(NFLLeagueConferenceTable);
 OUTPUT(NFLLeagueDivisionTable);
@@ -119,7 +119,7 @@ NFLLeagueCategoryConferenceRecord := RECORD
     GroupMax    := MAX(GROUP,NFLfile.Salary_cap);
 END;
 
-NFLLeagueCategoryConferenceTable := TABLE(NFLFile,NFLLeagueCategoryConferenceRecord,Nickname_category,Conference);
+NFLLeagueCategoryConferenceTable := TABLE(NFLFile,NFLLeagueCategoryConferenceRecord,Nickname_category,Conference, SORTED);
 OUTPUT(NFLLeagueCategoryConferenceTable);
 
 NFLLeagueCategoryRecord := RECORD
@@ -130,7 +130,7 @@ NFLLeagueCategoryRecord := RECORD
     GroupMax    := MAX(GROUP,NFLfile.Salary_cap);
 END;
 
-NFLLeagueCategoryTable := TABLE(NFLFile,NFLLeagueCategoryRecord,Nickname_category);
+NFLLeagueCategoryTable := TABLE(NFLFile,NFLLeagueCategoryRecord,Nickname_category, SORTED);
 OUTPUT(NFLLeagueCategoryTable);
 
 

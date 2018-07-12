@@ -433,8 +433,8 @@ EXPORT unicode ExcludeLastWord(unicode text, varstring localename = '') :=
  * @return              The string containing the source string but with the translated characters.
  */
 
-EXPORT Translate(unicode text, unicode sear, unicode repl) :=
-    lib_unicodelib.UnicodeLib.UnicodeLocaleTranslate(text, sear, repl);
+EXPORT Translate(unicode text, unicode search, unicode replacement) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleTranslate(text, search, replacement);
 
 /**
  * Returns true if the prefix string matches the leading characters in the source string.  Trailing and Leading spaces
@@ -442,12 +442,12 @@ EXPORT Translate(unicode text, unicode sear, unicode repl) :=
  * then converted to Unicode using TRANSFER, ecl will perform its own normalization on your declared Unicode string.
  *
  * @param src           The string being searched in.
- * @param pref          The prefix to search for.
+ * @param prefix        The prefix to search for.
  * @param form          The type of Normalization to be employed.
  */
 
-EXPORT BOOLEAN StartsWith(unicode src, unicode pref, string form) :=
-	lib_unicodelib.UnicodeLib.UnicodeLocaleStartsWith(src, pref, form);
+EXPORT BOOLEAN StartsWith(unicode src, unicode prefix, string form) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleStartsWith(src, prefix, form);
 
 /**
  * Returns true if the suffix string matches the trailing characters in the source string.  Trailing and Leading spaces
@@ -455,12 +455,12 @@ EXPORT BOOLEAN StartsWith(unicode src, unicode pref, string form) :=
  * then converted to Unicode using TRANSFER, ecl will perform its own normalization on your declared Unicode string.
  *
  * @param src           The string being searched in.
- * @param suff          The suffix to search for.
+ * @param suffix        The suffix to search for.
  * @param form          The type of Normalization to be employed.
  */
 
-EXPORT BOOLEAN EndsWith(unicode src, unicode suff, string form) :=
-	lib_unicodelib.UnicodeLib.UnicodeLocaleEndsWith(src, suff, form);
+EXPORT BOOLEAN EndsWith(unicode src, unicode suffix, string form) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleEndsWith(src, suffix, form);
 
 /**
  * Returns a string containing the version of icu being used to implement the unicode library.
@@ -478,43 +478,56 @@ EXPORT STRING Version() := lib_unicodelib.UnicodeLib.UnicodeVersion();
  * @return              The string excluding the suffix, if endsWith is true
  */
 
-EXPORT RemoveSuffix(unicode src, unicode suff, string form) :=
-    lib_unicodelib.UnicodeLib.UnicodeLocaleRemoveSuffix(src, suff, form);
+EXPORT RemoveSuffix(unicode src, unicode suffix, string form) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleRemoveSuffix(src, suffix, form);
 
 /*
  * Returns a string containing text repeated n times.
  *
- * @param src           The string to be repeated.
+ * @param text          The string to be repeated.
  * @param n             Number of repetitions.
  * @return              A string containing n concatenations of the string text.
  */
 
-EXPORT Repeat(unicode src, unsigned4 n) :=
-    lib_unicodelib.UnicodeLib.UnicodeLocaleRepeat(src, n);
+EXPORT Repeat(unicode text, unsigned4 n) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleRepeat(text, n);
 
 /**
  * Returns the number of occurences of the second string within the first string.
  *
  * @param src           The string that is searched.
- * @param hit           The string being sought.
+ * @param sought        The string being sought.
  * @param form          The optional, specified normalization form.
  * @return              The number of occurences, matches.
  */
 
-EXPORT unsigned4 FindCount(unicode src, unicode hit, string form) :=
-    lib_unicodelib.UnicodeLib.UnicodeLocaleFindCount(src, hit, form);
+EXPORT unsigned4 FindCount(unicode src, unicode sought, string form) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleFindCount(src, sought, form);
 
 /**
  * Returns the number of words that the string contains.  Words are separated by one or more separator strings. No 
- * spaces are stripped from either string before matching. allowBlankItems set to false by default.
+ * spaces are stripped from either string before matching. allow_blank set to false by default.
  *
  * @param src               The string being searched in.
- * @param delim             The string used to separate words
- * @param allowBlankItems   Indicates if empty/blank string items are included in the results.
+ * @param separator         The string used to separate words
+ * @param allow_blank       Indicates if empty/blank string items are included in the results.
  * @return                  The number of delimited tokens in the source string
  */
 
-EXPORT unsigned4 CountWords(unicode src, unicode delim, boolean allowBlankItems = FALSE) :=
-    lib_unicodelib.UnicodeLib.UnicodeLocaleCountWords(src, delim, allowBlankItems);
+EXPORT unsigned4 CountWords(unicode src, unicode separator, boolean allow_blank = FALSE) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleCountWords(src, separator, allow_blank);
+
+/**
+ * Returns the delimited words that the string contains in a UnicodeSet.  Words are separated by one or more separator strings. No 
+ * spaces are stripped from either string before matching. allow_blank is set to false by default.
+ *
+ * @param src               The string being searched in.
+ * @param separator         The string used to separate words
+ * @param allow_blank       Indicates if empty/blank string items are included in the results.
+ * @return                  A UnicodeSet whose members are the delimited words
+ */
+
+EXPORT SplitWords(unicode src, unicode separator, boolean allow_blank = FALSE) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleSplitWords(src, separator, allow_blank);
 
 END;

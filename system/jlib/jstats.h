@@ -87,6 +87,7 @@ protected:
 };
 
 interface IStatisticCollectionIterator;
+interface IStatisticGatherer;
 interface IStatisticCollection : public IInterface
 {
 public:
@@ -102,6 +103,7 @@ public:
     virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const = 0;
     virtual void serialize(MemoryBuffer & out) const = 0;
     virtual unsigned __int64 queryWhenCreated() const = 0;
+    virtual void mergeInto(IStatisticGatherer & target) const = 0;
 };
 
 interface IStatisticCollectionIterator : public IIteratorOf<IStatisticCollection>
@@ -214,6 +216,24 @@ public:
     }
 };
 
+class StatsOptScope
+{
+public:
+    inline StatsOptScope(IStatisticGatherer & _gatherer, const StatsScopeId & _id) : gatherer(_gatherer), id(_id)
+    {
+        if (id.queryScopeType() != SSTnone)
+            gatherer.beginScope(id);
+    }
+    inline ~StatsOptScope()
+    {
+        if (id.queryScopeType() != SSTnone)
+            gatherer.endScope();
+    }
+
+protected:
+    IStatisticGatherer & gatherer;
+    const StatsScopeId & id;
+};
 
 //---------------------------------------------------------------------------------------------------------------------
 

@@ -62,6 +62,7 @@
                                         <AuthenticateFeature description="Access to others&apos; workunits" path="OthersWorkunitsAccess" resource="OthersWorkunitsAccess" service="ws_workunits"/>
                                         <AuthenticateFeature description="Access to ECL direct service" path="EclDirectAccess" resource="EclDirectAccess" service="ecldirect"/>
                                         <AuthenticateFeature description="Access to ESDL configuration service" path="ESDLConfigAccess" resource="ESDLConfigAccess" service="ws_esdlconfig"/>
+                                        <AuthenticateFeature description="Access to ELK integration service" path="WsELKAccess" resource="WsELKAccess" service="ws_elk"/>
                                         <ProcessFilters>
                                             <Platform name="Windows">
                                                 <ProcessFilter name="any">
@@ -145,7 +146,7 @@
                 </xs:complexType>
 
                 <xs:key name="espservice_name_key" hpcc:allowDuplicate="true">
-                    <xs:selector xpath="." />
+                    <xs:selector xpath="./" />
                     <xs:field xpath="@name" />
                 </xs:key>
 

@@ -31,6 +31,7 @@
 #include "rtldynfield.hpp"
 #include "eclhelper_dyn.hpp"
 #include "hqlexpr.hpp"
+#include "hqlutil.hpp"
 #include <algorithm>
 #ifdef _USE_NUMA
 #include <numa.h>
@@ -2000,31 +2001,46 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
 {
     try
     {
+        Owned<IException> error;
         bool isGrouped = props.getPropBool("@grouped", false);
         if (props.hasProp("_rtlType"))
         {
             MemoryBuffer layoutBin;
             props.getPropBin("_rtlType", layoutBin);
-            return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+            try
+            {
+                return createTypeInfoOutputMetaData(layoutBin, isGrouped);
+            }
+            catch (IException *E)
+            {
+                EXCLOG(E);
+                error.setown(E); // Save to throw later if we can't recover via ECL
+            }
         }
-        else if (props.hasProp("ECL"))
+        if (props.hasProp("ECL"))
         {
             const char *kind = props.queryProp("@kind");
-            if (kind && streq(kind, "key"))
-            {
-                DBGLOG("Cannot deserialize file metadata: index too old");
-                return nullptr;
-            }
+            bool isIndex = (kind && streq(kind, "key"));
             StringBuffer layoutECL;
             props.getProp("ECL", layoutECL);
             MultiErrorReceiver errs;
             Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
             if (errs.errCount() == 0)
             {
+                if (props.hasProp("_record_layout"))  // Some old indexes need the payload count patched in from here
+                {
+                    MemoryBuffer mb;
+                    props.getPropBin("_record_layout", mb);
+                    expr.setown(patchEclRecordDefinitionFromRecordLayout(expr, mb));
+                }
                 MemoryBuffer layoutBin;
-                if (exportBinaryType(layoutBin, expr))
-                    return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+                if (exportBinaryType(layoutBin, expr, isIndex))
+                    return createTypeInfoOutputMetaData(layoutBin, isGrouped);
             }
+        }
+        if (error)
+        {
+            throw(error.getClear());
         }
     }
     catch (IException *E)

@@ -67,7 +67,8 @@ OUTPUT(JOIN(Files.DG_FlatFileEvens, Files.DG_FlatFile, KEYED(LEFT.DG_Firstname =
 OUTPUT(JOIN(Files.DG_FlatFileEvens, Files.DG_FlatFile, KEYED(LEFT.DG_Firstname = RIGHT.DG_firstname),KEYED(no_trans_needed),KEEP(1)));
 
 // Test removing some fields
-OUTPUT(JOIN(Files.DG_FlatFileEvens, Files.DG_FlatFile, KEYED(LEFT.DG_Firstname = RIGHT.DG_firstname),KEYED(slimmed),KEEP(1)));
+slimmed2 := INDEX(Files.DG_FlatFile, { DG_firstname, DG_lastname, unsigned dummyFpos := 0  }, DG_IndexName, LOOKUP(TRUE));
+OUTPUT(JOIN(Files.DG_FlatFileEvens, Files.DG_FlatFile, KEYED(LEFT.DG_Firstname = RIGHT.DG_firstname),KEYED(slimmed2),KEEP(1)));
 
 // Test adding/changing some fields
 OUTPUT(JOIN(Files.DG_FlatFileEvens, Files.DG_FlatFile, KEYED(LEFT.DG_Firstname = RIGHT.DG_firstname),KEYED(added),KEEP(1)));

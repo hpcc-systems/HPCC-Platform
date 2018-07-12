@@ -30,7 +30,7 @@
 //#define TRACE_TRANSLATION
 #define VALIDATE_TYPEINFO_HASHES
 
-#define RTLTYPEINFO_FORMAT_1   80   // In case we ever want to support more than one format
+#define RTLTYPEINFO_FORMAT_1   81   // In case we ever want to support more than one format or change how it is stored
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo(IThorIndexCallback *_callback) const
+const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo() const
 {
     const RtlTypeInfo *ret = nullptr;
     switch (fieldType & RFTMkind)
@@ -72,15 +72,12 @@ const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo(IThorIndexCallback *_c
     case type_keyedint:
         ret = new RtlKeyedIntTypeInfo(fieldType, length, childType);
         break;
-    case type_blob:  // MORE - will need its own type (see code below)
     case type_int:
         ret = new RtlIntTypeInfo(fieldType, length);
         break;
-#if 0 // Later when implemented
     case type_blob:
-        ret = new RtlBlobTypeInfo(fieldType, length, childType, _callback);
+        ret = new RtlBlobTypeInfo(fieldType, length, childType);
         break;
-#endif
     case type_filepos:
 #if __BYTE_ORDER == __LITTLE_ENDIAN
         ret = new RtlSwapIntTypeInfo(fieldType, length);
@@ -515,8 +512,7 @@ public:
      *
      * @param  _callback Supplies a callback to be used for blobs/filepositions.
      */
-    CRtlFieldTypeDeserializer(IThorIndexCallback *_callback)
-    : callback(_callback)
+    CRtlFieldTypeDeserializer()
     {
     }
     /**
@@ -645,7 +641,7 @@ public:
             return *found;
         savedTypes.append(LINK(typeOrIfblock));
         info.locale = keep(info.locale);
-        const RtlTypeInfo * ret = info.createRtlTypeInfo(callback);
+        const RtlTypeInfo * ret = info.createRtlTypeInfo();
         types.setValue(name, ret);
         unsigned baseType = (info.fieldType & RFTMkind);
         if (baseType == type_record)
@@ -672,7 +668,6 @@ private:
     KeptAtomTable atoms;     // Used to ensure proper lifetime of strings used in type structures
     MapStringTo<const RtlTypeInfo *> types;  // Ensures structures only generated once
     const RtlTypeInfo *base = nullptr;       // Holds the resulting type
-    IThorIndexCallback *callback = nullptr;
     IConstPointerArray savedTypes; // ensure types remain alive for subsequent lookups
     void deleteType(const RtlTypeInfo *type)
     {
@@ -788,7 +783,7 @@ private:
             info.filter = deserializeFieldFilter(fieldId, *fieldType, filterText);
         }
 
-        const RtlTypeInfo * result = info.createRtlTypeInfo(callback);
+        const RtlTypeInfo * result = info.createRtlTypeInfo();
         if (baseType == type_record)
             patchIfBlockParentRow(result, static_cast<const RtlRecordTypeInfo *>(result));
         return result;
@@ -861,31 +856,12 @@ private:
             }
         }
         info.fieldType &= ~RFTMserializerFlags;
-        const RtlTypeInfo * result = info.createRtlTypeInfo(callback);
+        const RtlTypeInfo * result = info.createRtlTypeInfo();
         if (baseType == type_record)
             patchIfBlockParentRow(result, static_cast<const RtlRecordTypeInfo *>(result));
         return result;
     }
-    void patchIndexFilePos()
-    {
-        if (callback && (base->fieldType & RFTMkind) == type_record)
-        {
-            // Yukky hack time
-            // Assumes that the fieldinfo is not shared...
-            // But that is also assumed by the code that cleans them up.
-            const RtlFieldInfo * const *fields = base->queryFields();
-            for(;;)
-            {
-                const RtlFieldInfo *field = *fields++;
-                if (!field)
-                    break;
-                if (field->type->getType() == type_blob)
-                {
-                    static_cast<RtlBlobTypeInfo *>(const_cast<RtlTypeInfo *>(field->type))->setCallback(callback);
-                }
-            }
-        }
-    }
+
     void patchIfBlockParentRow(const RtlTypeInfo * fieldType, const RtlRecordTypeInfo * parentRow)
     {
         const RtlFieldInfo * const * fields = fieldType->queryFields();
@@ -907,9 +883,9 @@ private:
     }
 };
 
-extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer(IThorIndexCallback *callback)
+extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer()
 {
-    return new CRtlFieldTypeDeserializer(callback);
+    return new CRtlFieldTypeDeserializer();
 }
 
 extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInfo *t)
@@ -956,12 +932,12 @@ extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,I
 
 #ifdef _DEBUG
         StringBuffer ret2;
-        CRtlFieldTypeDeserializer deserializer(nullptr);
+        CRtlFieldTypeDeserializer deserializer;
         CRtlFieldTypeSerializer::serialize(ret2, deserializer.deserialize(ret));
         assert(streq(ret, ret2));
         MemoryBuffer out;
         CRtlFieldTypeBinSerializer::serialize(out, metaVal.queryTypeInfo());
-        CRtlFieldTypeDeserializer bindeserializer(nullptr);
+        CRtlFieldTypeDeserializer bindeserializer;
         CRtlFieldTypeSerializer::serialize(ret2.clear(), bindeserializer.deserialize(out));
         assert(streq(ret, ret2));
 #endif
@@ -1016,6 +992,7 @@ enum FieldMatchType {
 
     // This flag may be set in conjunction with the others
     match_inifblock   = 0x400,   // matching to a field in an ifblock - may not be present
+    match_deblob      = 0x1000,  // source needs fetching from a blob prior to translation
 };
 
 StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
@@ -1035,6 +1012,7 @@ StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
     if (flags & match_keychange) out.append("|keychange");
     if (flags & match_fail) out.append("|fail");
     if (flags & match_virtual) out.append("|virtual");
+    if (flags & match_deblob) out.append("|blob");
     assertex(out.length() > origlen);
     return out.remove(origlen, 1);
 }
@@ -1050,6 +1028,9 @@ public:
     {
         matchInfo = new MatchInfo[destRecInfo.getNumFields()];
         createMatchInfo();
+#ifdef _DEBUG
+        //describe();
+#endif
     }
     ~GeneralRecordTranslator()
     {
@@ -1126,6 +1107,7 @@ private:
         byte * destConditions = (byte *)alloca(destRecInfo.getNumIfBlocks() * sizeof(byte));
         memset(destConditions, 2, destRecInfo.getNumIfBlocks() * sizeof(byte));
         size32_t estimate = destRecInfo.getFixedSize();
+        bool hasBlobs = false;
         if (!estimate)
         {
             estimate = estimateNewSize(sourceRow);
@@ -1170,29 +1152,41 @@ private:
                 size_t sourceOffset = sourceRow.getOffset(matchField);
                 const byte *source = sourceRow.queryRow() + sourceOffset;
                 size_t copySize = sourceRow.getSize(matchField);
+                if (match.matchType & match_deblob)
+                {
+                    offset_t blobId = sourceType->getInt(source);
+                    sourceType = sourceType->queryChildType();
+                    sourceOffset = 0;
+                    source = callback.lookupBlob(blobId);
+                    copySize = sourceType->size(source, source);
+                    hasBlobs = true;
+                }
                 if (copySize == 0 && (match.matchType & match_inifblock))  // Field is missing because of an ifblock - use default value
                 {
                     offset = type->buildNull(builder, offset, field);
                 }
                 else
                 {
-                    switch (match.matchType & ~match_inifblock)
+                    switch (match.matchType & ~(match_inifblock|match_deblob))
                     {
                     case match_perfect:
                     {
                         // Look ahead for other perfect matches and combine the copies
-                        while (idx < destRecInfo.getNumFields()-1)
+                        if (!(match.matchType & match_deblob))
                         {
-                            const MatchInfo &nextMatch = matchInfo[idx+1];
-                            if (nextMatch.matchType == match_perfect && nextMatch.matchIdx == matchField+1)
+                            while (idx < destRecInfo.getNumFields()-1)
                             {
-                                idx++;
-                                matchField++;
+                                const MatchInfo &nextMatch = matchInfo[idx+1];
+                                if (nextMatch.matchType == match_perfect && nextMatch.matchIdx == matchField+1)
+                                {
+                                    idx++;
+                                    matchField++;
+                                }
+                                else
+                                    break;
                             }
-                            else
-                                break;
+                            copySize = sourceRow.getOffset(matchField+1) - sourceOffset;
                         }
-                        size_t copySize = sourceRow.getOffset(matchField+1) - sourceOffset;
                         builder.ensureCapacity(offset+copySize, field->name);
                         memcpy(builder.getSelf()+offset, source, copySize);
                         offset += copySize;
@@ -1201,7 +1195,7 @@ private:
                     case match_truncate:
                     {
                         assert(type->isFixedSize());
-                        size32_t copySize = type->getMinSize();
+                        copySize = type->getMinSize();
                         builder.ensureCapacity(offset+copySize, field->name);
                         memcpy(builder.getSelf()+offset, source, copySize);
                         offset += copySize;
@@ -1318,13 +1312,21 @@ private:
         }
         if (estimate && offset-origOffset != estimate)
         {
-            // Note - ifblocks make this assertion invalid. We do not account for potentially omitted fields
-            // when estimating target record size.
-            if (!destRecInfo.getNumIfBlocks())
-                assert(offset-origOffset > estimate);  // Estimate is always supposed to be conservative
-#ifdef TRACE_TRANSLATION
-            DBGLOG("Wrote %u bytes to record (estimate was %u)\n", offset-origOffset, estimate);
-#endif
+            if (offset == origOffset)
+            {
+                //Zero size records are treated as single byte to avoid confusion with sizes returned from transforms etc.
+                offset++;
+            }
+            else
+            {
+                // Note - ifblocks make this assertion invalid. We do not account for potentially omitted fields
+                // when estimating target record size.
+                if (!destRecInfo.getNumIfBlocks() && !hasBlobs)
+                    assert(offset-origOffset > estimate);  // Estimate is always supposed to be conservative
+    #ifdef TRACE_TRANSLATION
+                DBGLOG("Wrote %u bytes to record (estimate was %u)\n", offset-origOffset, estimate);
+    #endif
+            }
         }
         return offset;
     }
@@ -1412,7 +1414,19 @@ private:
             }
             else
             {
+                bool deblob = false;
                 const RtlTypeInfo *sourceType = sourceRecInfo.queryType(info.matchIdx);
+                if (sourceType->isBlob())
+                {
+                    if (type->isBlob())
+                    {
+                    }
+                    else
+                    {
+                        sourceType = sourceType->queryChildType();
+                        deblob = true;
+                    }
+                }
                 if (!type->isScalar() || !sourceType->isScalar())
                 {
                     if (type->getType() != sourceType->getType())
@@ -1465,6 +1479,12 @@ private:
                                 info.matchType = match_fail;
                             break;
                         }
+                        case type_blob:
+                            if (sourceType->isBlob())
+                                info.matchType = match_perfect;  // We don't check that the child type matches
+                            else
+                                info.matchType = match_fail;
+                            break;
                         default:
                             info.matchType = match_fail;
                             break;
@@ -1503,6 +1523,8 @@ private:
                 }
                 else
                     info.matchType = match_typecast;
+                if (deblob)
+                    info.matchType |= match_deblob;
                 unsigned sourceFlags = sourceRecInfo.queryField(info.matchIdx)->flags;
                 if (sourceFlags & RFTMinifblock)
                     info.matchType |= match_inifblock;  // Avoids incorrect commoning up of adjacent matches
@@ -1758,6 +1780,11 @@ unsigned __int64 NullVirtualFieldCallback::getLocalFilePosition(const void * row
     return 0;
 }
 
+const byte * NullVirtualFieldCallback::lookupBlob(unsigned __int64 id)
+{
+    return nullptr;
+}
+
 const char * UnexpectedVirtualFieldCallback::queryLogicalFilename(const void * row)
 {
     throwUnexpectedX("VIRTUAL(LOGICALFILENAME)");
@@ -1771,6 +1798,11 @@ unsigned __int64 UnexpectedVirtualFieldCallback::getFilePosition(const void * ro
 unsigned __int64 UnexpectedVirtualFieldCallback::getLocalFilePosition(const void * row)
 {
     throwUnexpectedX("VIRTUAL(LOCALFILEPOSITION)");
+}
+
+const byte * UnexpectedVirtualFieldCallback::lookupBlob(unsigned __int64 id)
+{
+    throwUnexpectedX("BLOB");
 }
 
 unsigned __int64 FetchVirtualFieldCallback::getFilePosition(const void * row)
@@ -1791,5 +1823,10 @@ unsigned __int64 LocalVirtualFieldCallback::getFilePosition(const void * row)
 unsigned __int64 LocalVirtualFieldCallback::getLocalFilePosition(const void * row)
 {
     return localfilepos;
+}
+
+const byte * LocalVirtualFieldCallback::lookupBlob(unsigned __int64 id)
+{
+    throwUnexpectedX("BLOB");
 }
 

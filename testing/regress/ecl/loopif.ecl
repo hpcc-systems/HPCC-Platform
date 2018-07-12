@@ -14,7 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-#onwarning(2168, ignore); // Disabled warning until it is moved out of parser
 
 rec := RECORD
  unsigned4 i;

@@ -920,6 +920,9 @@ extern void updateAffinity(unsigned __int64 affinity)
                 CPU_SET(core, &cpus);
             affinity >>= 1;
         }
+
+        //MORE: I think this only sets the affinity of the process, not of the threads.
+        //It would require code to iterate through /proc/<pid>/task/*
         if (sched_setaffinity(0, sizeof(cpu_set_t), &cpus))
             throw makeStringException(errno, "Failed to set affinity");
         clearAffinityCache();
@@ -1250,14 +1253,14 @@ public:
             try
             {
                 ctx->process();
-                memused = ctx->getMemoryUsage();
+                memused = (unsigned)(ctx->getMemoryUsage() / 0x100000);
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(false);
                 failed = false;
             }
             catch(...)
             {
-                memused = ctx->getMemoryUsage();
+                memused = (unsigned)(ctx->getMemoryUsage() / 0x100000);
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(true);
                 throw;
@@ -1716,7 +1719,7 @@ public:
             }
 
             protocol->finalize(idx);
-            memused += ctx->getMemoryUsage();
+            memused += (unsigned)(ctx->getMemoryUsage() / 0x100000);
             slavesReplyLen += ctx->getSlavesReplyLen();
         }
         else
@@ -1724,13 +1727,13 @@ public:
             try
             {
                 ctx->process();
-                memused = ctx->getMemoryUsage();
+                memused = (unsigned)(ctx->getMemoryUsage() / 0x100000);
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(false);
             }
             catch(...)
             {
-                memused = ctx->getMemoryUsage();
+                memused = (unsigned)(ctx->getMemoryUsage() / 0x100000);
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(true);
                 throw;

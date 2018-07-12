@@ -232,9 +232,12 @@ public:
 
     virtual void checkOnceDone(const IQueryFactory *factory, const IRoxieContextLogger &logctx) const
     {
+        if (calculatingOnce)   // NOTE - this must be outside the critsec or you deadlock. It is still effectively protected by the critsec
+            return;
         CriticalBlock b(onceCrit);
         if (!onceContext)
         {
+            calculatingOnce = true;
             onceContext.setown(createPTree(ipt_lowmem));
             onceResultStore.setown(createDeserializedResultStore());
             Owned <IRoxieServerContext> ctx = createOnceServerContext(factory, logctx);
@@ -254,6 +257,7 @@ public:
                 ctx->done(true);
                 onceException.setown(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception in ONCE code"));
             }
+            calculatingOnce = false;
         }
         if (onceException)
             throw onceException.getLink();
@@ -265,6 +269,7 @@ protected:
     mutable Owned<IPropertyTree> onceContext;
     mutable Owned<IDeserializedResultStore> onceResultStore;
     mutable Owned<IException> onceException;
+    mutable bool calculatingOnce = false;
 
 };
 
@@ -301,6 +306,7 @@ QueryOptions::QueryOptions()
     traceLimit = defaultTraceLimit;
     allSortsMaySpill = false; // No global default for this
     failOnLeaks = false;
+    collectFactoryStatistics = defaultCollectFactoryStatistics;
 }
 
 QueryOptions::QueryOptions(const QueryOptions &other)
@@ -331,6 +337,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     traceLimit = other.traceLimit;
     allSortsMaySpill = other.allSortsMaySpill;
     failOnLeaks = other.failOnLeaks;
+    collectFactoryStatistics = other.collectFactoryStatistics;
 }
 
 void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo)
@@ -371,6 +378,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(traceLimit, wu, "traceLimit");
     updateFromWorkUnit(allSortsMaySpill, wu, "allSortsMaySpill");
     updateFromWorkUnit(failOnLeaks, wu, "failOnLeaks");
+    updateFromWorkUnit(collectFactoryStatistics, wu, "collectFactoryStatistics");
 }
 
 void QueryOptions::updateFromWorkUnitM(memsize_t &value, IConstWorkUnit &wu, const char *name)
@@ -429,6 +437,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(traceLimit, ctx, "@traceLimit", "_TraceLimit");
         // Note: allSortsMaySpill is not permitted at context level (too late anyway, unless I refactored)
         updateFromContext(failOnLeaks, ctx, "@failOnLeaks", "_FailOnLeaks");
+        updateFromContext(collectFactoryStatistics, ctx, "@collectFactoryStatistics", "_CollectFactoryStatistics");
     }
 }
 

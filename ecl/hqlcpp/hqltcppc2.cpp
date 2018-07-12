@@ -652,8 +652,7 @@ IHqlExpression * CChildLinkedDatasetColumnInfo::buildSizeOfUnbound(HqlCppTransla
 
 void CChildLinkedDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeFormat)
 {
-    if (isConditional())
-        checkAssignOk(translator, ctx, selector, queryZero(), sizeof(size32_t) + sizeof(const byte * *));
+    //There is no need to check for enough space in the row because that has been done in CIfBlockInfo::buildDeserialize
 
     OwnedHqlExpr addressSize = getColumnAddress(translator, ctx, selector, sizetType, 0);
     OwnedHqlExpr addressData = getColumnAddress(translator, ctx, selector, queryType(), sizeof(size32_t));
@@ -746,6 +745,8 @@ bool CChildLinkedDatasetColumnInfo::modifyColumn(HqlCppTranslator & translator, 
 
 void CChildLinkedDatasetColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * _value)
 {
+    checkConditionalAssignOk(translator, ctx, selector, sizeof(size32_t) + sizeof(const byte * *));
+
     OwnedHqlExpr addressSize = getColumnAddress(translator, ctx, selector, sizetType, 0);
     OwnedHqlExpr addressData = getColumnAddress(translator, ctx, selector, queryType(), sizeof(size32_t));
 

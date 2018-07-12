@@ -33,12 +33,28 @@ ESPStruct ESDLConfiguration
 {
     ESParray<ESPStruct MethodConfig, Method> Methods;
 };
+
+ESPstruct PublishHistory
+{
+    string PublishBy;
+    string CreatedTime;
+    string LastEditBy;
+    string LastEditTime;
+};
+
 ESPstruct ESDLBinding
 {
     string Id;
     string EspProcess;
     [min_ver("1.4")] int Port;
     [max_ver("1.3")] string EspBinding;
+    [min_ver("1.4")] ESPStruct PublishHistory History;
+};
+
+ESPstruct ESDLService
+{
+    ESParray<ESPStruct MethodConfig, Method> Methods;
+    String Name;
 };
 
 ESPstruct ESDLDefinition
@@ -47,13 +63,17 @@ ESPstruct ESDLDefinition
     int Seq;
     string Id;
     [min_ver("1.1")] string Interface;
-    [min_ver("1.2")] ESParray<string, Name> ESDLServices;
+    [min_ver("1.2"), max_ver("1.3")] ESParray<string, Name> ESDLServices;
+    [min_ver("1.4")] ESParray<ESPStruct ESDLService, Service> Services;
+    [min_ver("1.4")] ESPStruct PublishHistory History;
 };
 
+//ESPStruct ESDLBindingContents : ESDLBinding
 ESPStruct ESDLBindingContents
 {
     ESPStruct ESDLDefinition Definition;
     ESPStruct ESDLConfiguration Configuration;
+    [min_ver("1.4")] ESPStruct PublishHistory History;
 };
 
 ESPrequest [nil_remove] GetESDLDefinitionRequest
@@ -67,11 +87,13 @@ ESPrequest [nil_remove] GetESDLDefinitionRequest
 
 ESPresponse [nil_remove, exceptions_inline] GetESDLDefinitionResponse
 {
-    string Id;
-    [min_ver("1.2")] ESParray<string, Name> ESDLServices;
-    string XMLDefinition;
+    [max_ver("1.3")] string Id; //moves to definition struct
+    [min_ver("1.2"), max_ver("1.3")] ESParray<string, Name> ESDLServices; //moves to definition struct
+    [max_ver("1.3")] string XMLDefinition; //moves to definition struct as Interface
     ESPstruct BaseESDLStatus status;
-    ESParray<ESPStruct MethodConfig, Method> Methods;
+    [max_ver("1.3")] ESParray<ESPStruct MethodConfig, Method> Methods; //moves to definition/services/service
+
+    [min_ver("1.4")] ESPStruct ESDLDefinition Definition;
 };
 
 ESPrequest PublishESDLDefinitionRequest
@@ -88,9 +110,10 @@ ESPresponse [nil_remove, exceptions_inline] PublishESDLDefinitionResponse
     int EsdlVersion;
     boolean DeletePrevious;
     ESPstruct BaseESDLStatus status;
-    [min_ver("1.2")] ESParray<string, Name> ESDLServices;
-    [min_ver("1.2")] string XMLDefinition;
-    [min_ver("1.2")] ESParray<ESPStruct MethodConfig, Method> Methods;
+    [min_ver("1.2"), max_ver("1.3")] ESParray<string, Name> ESDLServices; //moves to definition struct
+    [min_ver("1.2"), max_ver("1.3")] string XMLDefinition; //moves to definition struct as Interface
+    [min_ver("1.2"), max_ver("1.3")] ESParray<ESPStruct MethodConfig, Method> Methods; //moves to definition/services/service
+    [min_ver("1.4")] ESPStruct ESDLDefinition Definition;
 };
 
 ESPrequest [nil_remove] PublishESDLBindingRequest
@@ -260,7 +283,6 @@ ESPresponse [exceptions_inline] ListESDLBindingsResponse
 };
 
 #define VERSION_FOR_ESDLCMD "1.4"
-
 ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.4"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
 {
     ESPmethod Echo(EchoRequest, EchoResponse);

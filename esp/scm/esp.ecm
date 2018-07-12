@@ -199,6 +199,7 @@ interface IEspContext : extends IInterface
     virtual AuthType getDomainAuthType()=0;
     virtual void setAuthError(AuthError error)=0;
     virtual AuthError getAuthError()=0;
+    virtual void setAuthStatus(const char * status)=0;
     virtual const char * getRespMsg()=0;
     virtual void setRespMsg(const char * msg)=0;
 };

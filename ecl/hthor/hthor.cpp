@@ -166,12 +166,15 @@ ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logica
     return ldFile.getClear();
 }
 
+// NB: If returns true, localPath contains the local path of rfn
 bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn, StringBuffer &localPath)
 {
     if (!agent.queryWorkUnit()->getDebugValueBool("forceRemoteDisabled", false))
     {
-        if (!rfn.isLocal() || agent.queryWorkUnit()->getDebugValueBool("forceRemoteRead", testForceRemote(rfn.getLocalPath(localPath))))
+        rfn.getLocalPath(localPath);
+        if (!rfn.isLocal() || agent.queryWorkUnit()->getDebugValueBool("forceRemoteRead", testForceRemote(localPath)))
             return true;
+        localPath.clear();
     }
     return false;
 }

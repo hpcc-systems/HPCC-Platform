@@ -46,12 +46,18 @@ void checkUser(IEspContext& context, const char* rtype = NULL, const char* rtitl
     if (rtype && rtitle && strieq(rtype, FILE_SCOPE_RTYPE) && strieq(rtitle, FILE_SCOPE_RTITLE))
     {
         if (!context.validateFeatureAccess(FILE_SCOPE_URL, SecAccessFlags, false))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to File Scope is denied.");
+        }
         return;
     }
 
     if(!secmgr->isSuperUser(context.queryUser()))
+    {
+        context.setAuthStatus(AUTH_STATUS_NOACCESS);
         throw MakeStringException(ECLWATCH_ADMIN_ACCESS_DENIED, "Access denied, administrators only.");
+    }
 }
 
 void Cws_accessEx::init(IPropertyTree *cfg, const char *process, const char *service)
@@ -1750,7 +1756,7 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
         {
             Owned<IUserDescriptor> userdesc;
             userdesc.setown(createUserDescriptor());
-            userdesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
+            userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
             int retCode;
             StringBuffer retMsg;
             bool isEnabled = querySessionManager().queryScopeScansEnabled(userdesc, &retCode, retMsg);
@@ -2774,7 +2780,7 @@ bool Cws_accessEx::onClearPermissionsCache(IEspContext &context, IEspClearPermis
     {
         Owned<IUserDescriptor> userdesc;
         userdesc.setown(createUserDescriptor());
-        userdesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
+        userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
         ok = querySessionManager().clearPermissionsCache(userdesc);
     }
 
@@ -2790,7 +2796,7 @@ bool Cws_accessEx::onQueryScopeScansEnabled(IEspContext &context, IEspQueryScope
 
     Owned<IUserDescriptor> userdesc;
     userdesc.setown(createUserDescriptor());
-    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
+    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
     int retCode;
     StringBuffer retMsg;
     bool isEnabled = querySessionManager().queryScopeScansEnabled(userdesc, &retCode, retMsg);
@@ -2835,7 +2841,7 @@ int Cws_accessEx::enableDisableScopeScans(IEspContext &context, bool doEnable, S
 
     Owned<IUserDescriptor> userdesc;
     userdesc.setown(createUserDescriptor());
-    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
+    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
     int retCode;
     bool rc = querySessionManager().enableScopeScans(userdesc, doEnable, &retCode, retMsg);
     if (!rc || retCode != 0)

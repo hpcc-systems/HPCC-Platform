@@ -67,7 +67,7 @@ if(USE_CASSANDRA)
   add_dependencies(cassandra libuv)
   set(CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
 
-  install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/cassandra\")")
+  install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/.libs:${PROJECT_BINARY_DIR}/cassandra\")")
   if(APPLE)
     install(
       FILES ${LIBUV_LIBRARY} ${PROJECT_BINARY_DIR}/libuv/.libs/libuv.1${CMAKE_SHARED_LIBRARY_SUFFIX}

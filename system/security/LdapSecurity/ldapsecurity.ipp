@@ -149,6 +149,7 @@ public:
 
     virtual void setPropertyInt(const char* name, int value){}
     virtual int getPropertyInt(const char* name){ return 0;}
+    IPropertyIterator * getPropertyIterator() const override { return nullptr;}
 
 
 //interface ISecCredentials
@@ -270,10 +271,11 @@ public:
     virtual SecAccessFlags getAccessFlags();
     virtual int addParameter(const char* name, const char* value);
     virtual const char * getParameter(const char * name);
+    virtual IPropertyIterator * getParameterIterator() const override;
     virtual void setDescription(const char* description);
     virtual const char* getDescription();
 
-    virtual void setValue(const char* value);
+    virtual void setValue(const char* value) override;
     virtual const char* getValue();
 
     virtual ISecResource * clone();

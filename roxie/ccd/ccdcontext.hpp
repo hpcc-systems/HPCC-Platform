@@ -58,8 +58,6 @@ interface IRoxieSlaveContext : extends IRoxieContextLogger
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters) = 0;
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal) = 0;
     virtual IActivityGraph * getLibraryGraph(const LibraryCallFactoryExtra &extra, IRoxieServerActivity *parentActivity) = 0;
-    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const = 0;
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId) const = 0;
     virtual IProbeManager *queryProbeManager() const = 0;
     virtual IDebuggableContext *queryDebugContext() const = 0;
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) = 0;
@@ -84,7 +82,7 @@ interface IRoxieServerContext : extends IInterface
     virtual void process() = 0;
     virtual void done(bool failed) = 0;
     virtual void finalize(unsigned seqNo) = 0;
-    virtual unsigned getMemoryUsage() = 0;
+    virtual memsize_t getMemoryUsage() = 0;
     virtual unsigned getSlavesReplyLen() = 0;
 
     virtual unsigned getXmlFlags() const = 0;

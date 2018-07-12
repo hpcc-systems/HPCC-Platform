@@ -1419,7 +1419,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     unsigned __int64 totalTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
     instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
-    //MORE: This is done too late..
     updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
 }
 
@@ -1472,6 +1471,9 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     if (optExpandPath)
     {
         expandArchive(optExpandPath, instance.srcArchive, true);
+        const char * queryText = instance.srcArchive->queryProp("Query");
+        if (queryText)
+            printf("%s", queryText);
         return;
     }
 
@@ -2265,21 +2267,11 @@ IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &err
                     else
                     {
                         diskRecord.set(diskRecord->queryBody());  // Remove location info - it's meaningless
-                        // MORE - if we already have the payload size info from the parsing of the ECL (we should, for all files built since 2017)
-                        // then don't parse _record_layout (which we expect to remove, eventually).
                         if (dfsFile->queryAttributes().hasProp("_record_layout"))
                         {
                             MemoryBuffer mb;
                             dfsFile->queryAttributes().getPropBin("_record_layout", mb);
-                            Owned<IDefRecordMeta> meta = deserializeRecordMeta(mb, true);
-                            int numKeyed = meta->numKeyedFields();
-                            if (numKeyed)
-                            {
-                                // NOTE - the index puts the payload on the no_newkeyindex, not on the record - so we will have to migrate it there
-                                int dfsPayload = getFlatFieldCount(diskRecord) - numKeyed;
-                                assertex(dfsPayload >= 0);
-                                diskRecord.setown(appendOwnedOperand(diskRecord, createAttribute(_payload_Atom, createConstant(dfsPayload))));
-                            }
+                            diskRecord.setown(patchEclRecordDefinitionFromRecordLayout(diskRecord, mb));
                         }
                     }
                 }

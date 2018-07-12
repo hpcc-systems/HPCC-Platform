@@ -242,55 +242,6 @@ testCase(ScopeFilter={
                 }
             },
             {
-                'ScopeName': 'w1:graph1:e16_3',
-                'Id': 'e16_3',
-                'ScopeType': 'edge',
-                'Properties': {
-                    'Property': [
-                        {
-                            'Name': 'Label',
-                            'RawValue': 'Child',
-                            'Formatted': 'Child',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'IdSource',
-                            'RawValue': 'a16',
-                            'Formatted': 'a16',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'IdTarget',
-                            'RawValue': 'a3',
-                            'Formatted': 'a3',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'SourceIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'TargetIndex',
-                            'RawValue': '0',
-                            'Formatted': '0',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        }
-                    ]
-                }
-            },
-            {
                 'ScopeName': 'w1:graph1:sg1',
                 'Id': 'sg1',
                 'ScopeType': 'subgraph',
@@ -478,6 +429,55 @@ testCase(ScopeFilter={
                 }
             },
             {
+                'ScopeName': 'w1:graph1:sg1:e16_3',
+                'Id': 'e16_3',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Child',
+                            'Formatted': 'Child',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdSource',
+                            'RawValue': 'a16',
+                            'Formatted': 'a16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IdTarget',
+                            'RawValue': 'a3',
+                            'Formatted': 'a3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
                 'ScopeName': 'w1:graph1:sg1:a2',
                 'Id': 'a2',
                 'ScopeType': 'activity',
@@ -492,22 +492,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'in',
-                            'Formatted': 'in',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '133',
                             'Formatted': '133',
@@ -517,8 +501,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "DATASET([{'Anderson       '},...], { string15 fname });\n",
-                            'Formatted': "DATASET([{'Anderson       '},...], { string15 fname });\n",
+                            'RawValue': 'DATASET([{&apos;Anderson       &apos;},...], { string15 fname });\n',
+                            'Formatted': 'DATASET([{&apos;Anderson       &apos;},...], { string15 fname });\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -538,6 +522,22 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["in"]',
+                            'Formatted': '["in"]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -552,22 +552,6 @@ testCase(ScopeFilter={
                             'Name': 'Label',
                             'RawValue': 'Project',
                             'Formatted': 'Project',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'p1',
-                            'Formatted': 'p1',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -600,6 +584,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '3',
                             'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["p1"]',
+                            'Formatted': '["p1"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1035,16 +1035,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Index Read\n'...::DG_FetchIndex1'",
-                            'Formatted': "Index Read\n'...::DG_FetchIndex1'",
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
+                            'RawValue': 'Index Read\n&apos;...::DG_FetchIndex1&apos;',
+                            'Formatted': 'Index Read\n&apos;...::DG_FetchIndex1&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1075,8 +1067,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'EclText',
-                            'RawValue': "INDEX({ string25 lname, string15 fname }, RECORD\n  string tfn;\n  string2 state;\n  unsigned8 blobfield;\n  big_endian unsigned integer8 __filepos;\n END, '~regress::multi::DG_FetchIndex1');\nFILTER(lname != LEFT.fname);\n",
-                            'Formatted': "INDEX({ string25 lname, string15 fname }, RECORD\n  string tfn;\n  string2 state;\n  unsigned8 blobfield;\n  big_endian unsigned integer8 __filepos;\n END, '~regress::multi::DG_FetchIndex1');\nFILTER(lname != LEFT.fname);\n",
+                            'RawValue': 'INDEX({ string25 lname, string15 fname }, RECORD\n  string tfn;\n  string2 state;\n  unsigned8 blobfield;\n  big_endian unsigned integer8 __filepos;\n END, &apos;~regress::multi::DG_FetchIndex1&apos;);\nFILTER(lname != LEFT.fname);\n',
+                            'Formatted': 'INDEX({ string25 lname, string15 fname }, RECORD\n  string tfn;\n  string2 state;\n  unsigned8 blobfield;\n  big_endian unsigned integer8 __filepos;\n END, &apos;~regress::multi::DG_FetchIndex1&apos;);\nFILTER(lname != LEFT.fname);\n',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1104,6 +1096,14 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -1118,14 +1118,6 @@ testCase(ScopeFilter={
                             'Name': 'Label',
                             'RawValue': 'Sort',
                             'Formatted': 'Sort',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1177,6 +1169,14 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -1191,14 +1191,6 @@ testCase(ScopeFilter={
                             'Name': 'Label',
                             'RawValue': 'Dedup',
                             'Formatted': 'Dedup',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1250,6 +1242,14 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -1264,14 +1264,6 @@ testCase(ScopeFilter={
                             'Name': 'Label',
                             'RawValue': 'Spill Local Result',
                             'Formatted': 'Spill Local Result',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1328,6 +1320,14 @@ testCase(ScopeFilter={
                             'Name': 'IsSpill',
                             'RawValue': '1',
                             'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1740,14 +1740,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '93',
                             'Formatted': '93',
@@ -1802,6 +1794,14 @@ testCase(ScopeFilter={
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
                         }
                     ]
                 }
@@ -1816,22 +1816,6 @@ testCase(ScopeFilter={
                             'Name': 'Label',
                             'RawValue': 'Project',
                             'Formatted': 'Project',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'deduped',
-                            'Formatted': 'deduped',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1880,6 +1864,22 @@ testCase(ScopeFilter={
                             'Name': 'PredictedCount',
                             'RawValue': '0..?[disk]',
                             'Formatted': '0..?[disk]',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["deduped"]',
+                            'Formatted': '["deduped"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -1935,24 +1935,8 @@ testCase(ScopeFilter={
                         },
                         {
                             'Name': 'Label',
-                            'RawValue': "Keyed Join\n'~regress::multi::DG_FetchIndex1'",
-                            'Formatted': "Keyed Join\n'~regress::multi::DG_FetchIndex1'",
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
-                            'Name': 'EclName',
-                            'RawValue': 'joinedchildren',
-                            'Formatted': 'joinedchildren',
+                            'RawValue': 'Keyed Join\n&apos;~regress::multi::DG_FetchIndex1&apos;',
+                            'Formatted': 'Keyed Join\n&apos;~regress::multi::DG_FetchIndex1&apos;',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2017,6 +2001,22 @@ testCase(ScopeFilter={
                             'Name': 'Indexname',
                             'RawValue': '~regress::multi::DG_FetchIndex1',
                             'Formatted': '~regress::multi::DG_FetchIndex1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclNameList',
+                            'RawValue': '["joinedchildren"]',
+                            'Formatted': '["joinedchildren"]',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None
@@ -2096,14 +2096,6 @@ testCase(ScopeFilter={
                             'CreatorType': None
                         },
                         {
-                            'Name': 'Definition',
-                            'RawValue': '{masked}',
-                            'Formatted': '{masked}',
-                            'Measure': None,
-                            'Creator': '{masked}',
-                            'CreatorType': None
-                        },
-                        {
                             'Name': 'Kind',
                             'RawValue': '16',
                             'Formatted': '16',
@@ -2123,6 +2115,14 @@ testCase(ScopeFilter={
                             'Name': 'RecordSize',
                             'RawValue': '27',
                             'Formatted': '27',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'DefinitionList',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
                             'Measure': None,
                             'Creator': '{masked}',
                             'CreatorType': None

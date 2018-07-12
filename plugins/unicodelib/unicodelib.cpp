@@ -94,7 +94,8 @@ static const char * EclDefinition =
 "  unicode UnicodeLocaleRemoveSuffix(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleRemoveSuffix';\n"
 "  unicode UnicodeLocaleRepeat(const unicode src, unsigned4 n) : c, pure,entrypoint='ulUnicodeLocaleRepeat'; \n"
 "  unsigned4 UnicodeLocaleFindCount(const unicode src, const unicode hit, const string form) :c,pure,entrypoint='ulUnicodeLocaleFindCount';\n"
-"  unsigned4 UnicodeLocaleCountWords(const unicode src, const unicode delim, boolean allowBlankItems) : c,pure,entrypoint='ulUnicodeLocaleCountWords', hole;\n"
+"  unsigned4 UnicodeLocaleCountWords(const unicode src, const unicode delim, boolean allowBlankItems) : c,pure,entrypoint='ulUnicodeLocaleCountWords';\n"
+"  SET OF UNICODE UnicodeLocaleSplitWords(const unicode src, const unicode delim, boolean allowBlankItems) : c,pure,entrypoint='ulUnicodeLocaleSplitWords';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -954,12 +955,12 @@ unsigned findCount(UnicodeString const & source, UnicodeString const & seek)
 unsigned countDelimitedWords(UnicodeString const & source, unsigned delimLen, UChar const * delim, bool allowBlankItems)
 {
     UnicodeString const delimiter(delim, delimLen);
-    if (source.isEmpty() || delimiter.isEmpty())
+    if (source.isEmpty())
         return 0;
 
     int32_t sourceLength = source.countChar32();
     int32_t delimiterLength = delimiter.countChar32();
-    if (sourceLength < delimiterLength)
+    if ((sourceLength < delimiterLength) || (delimLen == 0))
         return 1;
 
     bool startedWord = false;
@@ -1004,6 +1005,66 @@ unsigned countDelimitedWords(UnicodeString const & source, unsigned delimLen, UC
         wordCount++;
 
     return wordCount;
+}
+
+static void appendUnicode(MemoryBuffer & result, const UnicodeString & source, int32_t from, int32_t length)
+{
+    result.append((unsigned)length);
+    UChar * target = (UChar *)result.reserve(length * sizeof(UChar));
+#if U_ICU_VERSION_MAJOR_NUM>=58
+    source.extractBetween(from, from+length, (char16_t *) target, 0);
+#else
+    source.extractBetween(from, from+length, target, 0);
+#endif
+}
+
+void splitWords(MemoryBuffer & result, const UnicodeString & source, unsigned delimLen, UChar const * delim, bool allowBlankItems)
+{
+    if (source.isEmpty())
+        return;
+
+    const UnicodeString delimiter(delim, delimLen);
+    int32_t sourceLength = source.countChar32();
+    int32_t delimiterLength = delimiter.countChar32();
+    if ((sourceLength < delimiterLength) || (delimLen == 0))
+    {
+        appendUnicode(result, source, 0, source.length());
+        return;
+    }
+
+    int32_t startWord = 0;
+    int32_t idx = 0;
+    int32_t max = source.length() - delimiterLength;
+    StringCharacterIterator it(source);
+    while (idx <= max)
+    {
+        if (source.char32At(idx) == delimiter.char32At(0))
+        {
+            int32_t endPos = source.moveIndex32(idx, delimiterLength);
+            if (source.compareCodePointOrder(idx, endPos - idx, delimiter) == 0)
+            {
+                if ((startWord != idx)|| allowBlankItems)
+                    appendUnicode(result, source, startWord, idx - startWord);
+
+                startWord = endPos;
+                idx = it.move32(delimiterLength, CharacterIterator::kCurrent);
+            }
+            else
+            {
+                idx = it.move32(1, CharacterIterator::kCurrent);
+            }
+        }
+        else
+        {
+            idx = it.move32(1, CharacterIterator::kCurrent);
+        }
+    }
+
+    /*source.length() used instead of sourceLength because the iterator's value is representative of code units
+     *despite incrementing by code points
+     */
+    if ((startWord != idx) || (idx != source.length()) || allowBlankItems)
+        appendUnicode(result, source, startWord, source.length() - startWord);
 }
 
 
@@ -1904,4 +1965,14 @@ UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleCountWords(unsigned srcLe
 {
     UnicodeString const processed(src, srcLen);
     return countDelimitedWords(processed, delimLen, delim, allowBlankItems);
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleSplitWords(bool & isAllResult,size32_t & lenResult,void * & result, unsigned srcLen, UChar const * src, unsigned delimLen, UChar const * delim, bool allowBlankItems)
+{
+    const UnicodeString source(src, srcLen);
+    MemoryBuffer out;
+    splitWords(out, source, delimLen, delim, allowBlankItems);
+    isAllResult = false;
+    lenResult = out.length();
+    result = out.detach();
 }

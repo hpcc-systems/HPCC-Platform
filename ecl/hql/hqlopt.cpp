@@ -1644,6 +1644,10 @@ void CTreeOptimizer::analyseExpr(IHqlExpression * expr)
         //only look at the filename - not the parent files.
         analyseExpr(expr->queryChild(0));
         return;
+    case no_attr_expr:
+        if (!isInternalAttributeName(expr->queryName()))
+            analyseChildren(expr);
+        return;
     }
 
     PARENT::analyseExpr(expr);
@@ -2224,6 +2228,7 @@ IHqlExpression * CTreeOptimizer::queryMoveKeyedExpr(IHqlExpression * transformed
     case no_if:
         return swapIntoIf(transformed, true);
     case no_nonempty:
+        return nullptr;
     case no_addfiles:
     case no_chooseds:
         return swapIntoAddFiles(transformed, true);
@@ -3058,9 +3063,24 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 }
             case no_if:
                 return swapIntoIf(transformed);
-            case no_nonempty:
             case no_chooseds:
                 return swapIntoAddFiles(transformed);
+            case no_nonempty:
+            {
+                //NOEMPTY(a,b)(filter).  If b(filter) is [] then this can be simplified to a(filter)
+                unsigned max = getNumActivityArguments(child);
+                if (max == 2)
+                {
+                    //It would be valid to special case NONEMPTY(a,b,c,d) to remove trailing expressions that evaluate to
+                    //empty datasets, but that is left to a later change - catch the common case.
+                    IHqlExpression * lastChild = child->queryChild(max-1);
+                    OwnedHqlExpr filteredLast = replaceChild(transformed, lastChild);
+                    OwnedHqlExpr transformedLast = transform(filteredLast);
+                    if (isNull(transformedLast))
+                        return swapIntoAddFiles(transformed);
+                }
+                break;
+            }
             case no_fetch:
                 if (isPureActivity(child) && !hasUnknownTransform(child))
                 {
@@ -3241,6 +3261,9 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     break;
                 return swapIntoIf(transformed);
             case no_nonempty:
+                if (assignsContainSkip(transform))
+                    break;
+                //fallthrough
             case no_chooseds:
                 if (isComplexTransform(transform))
                     break;
@@ -3438,6 +3461,11 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     break;
                 return swapIntoIf(transformed);
             case no_nonempty:
+                if (isAggregateDataset(child))
+                    break;
+                if (assignsContainSkip(transformed->queryChild(2)))
+                    break;
+                //fallthrough
             case no_chooseds:
                 if (isComplexTransform(transformed->queryChild(2)))
                     break;
@@ -3749,7 +3777,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             {
             case no_if:
                 return swapIntoIf(transformed);
-            case no_nonempty:
             case no_chooseds:
                 return swapIntoAddFiles(transformed);
             case no_compound_diskread:

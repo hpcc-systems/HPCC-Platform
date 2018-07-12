@@ -243,7 +243,6 @@ public:
 
 
 unsigned getVirtualFieldSize(IHqlExpression * record);
-IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExpression * physicalSelect, bool allowTranslate);
 bool requiresHozedTransform(ITypeInfo * type);
 bool isKeyableType(ITypeInfo * type);
 IHqlExpression * getFilepos(IHqlExpression * dataset, bool isLocal);

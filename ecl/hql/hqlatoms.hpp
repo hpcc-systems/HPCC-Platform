@@ -264,6 +264,7 @@ extern HQL_API IAtom * _location_Atom;
 extern HQL_API IAtom * logAtom;
 extern HQL_API IAtom * logicalFilenameAtom;
 extern HQL_API IAtom * lookupAtom;
+extern HQL_API IAtom * loopFirstAtom;
 extern HQL_API IAtom * lzwAtom;
 extern HQL_API IAtom * macroAtom;
 extern HQL_API IAtom * manyAtom;

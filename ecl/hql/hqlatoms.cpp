@@ -260,6 +260,7 @@ IAtom * _location_Atom;
 IAtom * logAtom;
 IAtom * logicalFilenameAtom;
 IAtom * lookupAtom;
+IAtom * loopFirstAtom;
 IAtom * lzwAtom;
 IAtom * macroAtom;
 IAtom * manyAtom;
@@ -724,6 +725,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(log);
     MAKEATOM(logicalFilename);
     MAKEATOM(lookup);
+    MAKEATOM(loopFirst);
     MAKEATOM(lzw);
     MAKEATOM(macro);
     MAKEATOM(many);

@@ -280,24 +280,32 @@ public:
         heap.setown(rowManager.createFixedRowHeap(meta.getFixedSize()+CHECKER::extraSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED | CHECKER::allocatorCheckFlag, (roxiemem::RoxieHeapFlags)flags));
     }
 
-    virtual void * createRow()
+    virtual void * createRow() override
     {
         return heap->allocate();
     }
 
-    virtual void * createRow(size32_t & allocatedSize)
+    virtual void * createRow(size32_t & allocatedSize) override
     {
         allocatedSize = meta.getFixedSize();
         return heap->allocate();
     }
 
-    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
+    virtual void * createRow(size32_t initialSize, size32_t & allocatedSize) override
+    {
+        size32_t fixedSize = meta.getFixedSize();
+        assertex(initialSize == fixedSize);
+        allocatedSize = fixedSize;
+        return heap->allocate();
+    }
+
+    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) override
     {
         throwUnexpected();
         return NULL;
     }
 
-    virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
+    virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize) override
     {
         if (!meta.needsDestruct() && !CHECKER::allocatorCheckFlag)
             return row;
@@ -332,26 +340,24 @@ public:
         heap.setown(rowManager.createVariableRowHeap(allocatorId | ACTIVITY_FLAG_ISREGISTERED | CHECKER::allocatorCheckFlag, (roxiemem::RoxieHeapFlags)flags));
     }
 
-    virtual void * createRow()
+    virtual void * createRow() override
     {
         memsize_t allocSize = meta.getInitialSize();
         memsize_t capacity;
         return heap->allocate(allocSize+CHECKER::extraSize, capacity);
     }
 
-    virtual void * createRow(size32_t & allocatedSize)
+    virtual void * createRow(size32_t & allocatedSize) override
     {
-        const memsize_t allocSize = meta.getInitialSize();
-        memsize_t newCapacity; // always initialised by allocate
-        void * row = heap->allocate(allocSize+CHECKER::extraSize, newCapacity);
-        //This test should get constant folded to avoid the decrement when not checked.
-        if (CHECKER::extraSize)
-            newCapacity -= CHECKER::extraSize;
-        allocatedSize = (size32_t)newCapacity;
-        return row;
+        return doCreateRow(meta.getInitialSize(), allocatedSize);
     }
 
-    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
+    virtual void * createRow(size32_t initialSize, size32_t & allocatedSize) override
+    {
+        return doCreateRow(initialSize, allocatedSize);
+    }
+
+    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) override
     {
         const size32_t oldsize = size;  // don't need to include the extra checking bytes
         memsize_t newCapacity; // always initialised by resizeRow
@@ -362,7 +368,7 @@ public:
         return newrow;
     }
 
-    virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
+    virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize) override
     {
         if (!meta.needsDestruct() && !CHECKER::allocatorCheckFlag)
             return row;
@@ -381,6 +387,19 @@ public:
         //It is not legal to call releaseAllRows on a variable size allocator - they are not allocated in a single heap
         throwUnexpected();
     }
+
+protected:
+    void * doCreateRow(size32_t initialSize, size32_t & allocatedSize)
+    {
+        memsize_t newCapacity; // always initialised by allocate
+        void * row = heap->allocate(initialSize + CHECKER::extraSize, newCapacity);
+        //This test should get constant folded to avoid the decrement when not checked.
+        if (CHECKER::extraSize)
+            newCapacity -= CHECKER::extraSize;
+        allocatedSize = (size32_t)newCapacity;
+        return row;
+    }
+
 
 protected:
     Owned<roxiemem::IVariableRowHeap> heap;

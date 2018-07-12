@@ -2084,6 +2084,7 @@ void IndexRowFilter::finish(size32_t _keyedSize)
         unsigned idx = numFilterFields();
         append(FFkeyed, createWildFieldFilter(idx, *recInfo.queryType(idx)));
     }
+    assertex(numFilterFields() == keySegCount);
 }
 
 void IndexRowFilter::describe(StringBuffer &out) const
@@ -2237,34 +2238,6 @@ extern jhtree_decl StringBuffer &getIndexMetrics(StringBuffer &ret)
 extern jhtree_decl void resetIndexMetrics()
 {
     queryKeyStore()->resetMetrics();
-}
-
-extern jhtree_decl bool isKeyFile(const char *filename)
-{
-    OwnedIFile file = createIFile(filename);
-    OwnedIFileIO io = file->open(IFOread);
-    unsigned __int64 size = file->size();
-    if (size)
-    {
-        KeyHdr hdr;
-        if (io->read(0, sizeof(hdr), &hdr) == sizeof(hdr))
-        {
-            _WINREV(hdr.phyrec);
-            _WINREV(hdr.root);
-            _WINREV(hdr.nodeSize);
-            if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.root && hdr.root % hdr.nodeSize == 0)
-            {
-                NodeHdr root;
-                if (io->read(hdr.root, sizeof(root), &root) == sizeof(root))
-                {
-                    _WINREV(root.rightSib);
-                    _WINREV(root.leftSib);
-                    return root.leftSib==0 && root.rightSib==0;
-                }
-            }
-        }
-    }
-    return false;
 }
 
 extern jhtree_decl bool setNodeCachePreload(bool preload)
@@ -3046,7 +3019,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
                                " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
                                " { \"name\": \"f2\", \"type\": \"ty2\", \"flags\": 4 } ] "
                                "}";
-            Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false, nullptr);
+            Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
             Owned <IKeyManager> tlk1 = createKeyMerger(meta->queryRecordAccessor(true), keyset, 7, NULL, false);
             Owned<IStringSet> sset1 = createStringSet(7);
             sset1->addRange("0000003", "0000003");
@@ -3238,7 +3211,7 @@ protected:
                 " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
                 " ] "
                 "}";
-        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false, nullptr);
+        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
         const RtlRecord &recInfo = meta->queryRecordAccessor(true);
         buildTestKeys(variable);
         {

@@ -648,7 +648,7 @@
               <para>Use the hpcc-run.sh script below to start all components
               on the nodes.</para>
 
-              <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start </programlisting></para>
+              <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh systemctl start hpccsystems-platform.target</programlisting></para>
             </listitem>
 
             <listitem>
@@ -2069,7 +2069,7 @@
           <para>Use the <emphasis role="bluebold">hpcc-run.sh</emphasis>
           script below to start all components on the nodes.</para>
 
-          <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para>
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh systemctl start hpccsystems-platform.target</programlisting></para>
         </listitem>
 
         <listitem>

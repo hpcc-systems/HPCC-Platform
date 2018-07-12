@@ -26,10 +26,11 @@ ESPstruct StatusMsgType
     ESParray<string, parentId> ParentIdList;
 };
 
+
 ESPstruct StatusType
 {
     bool Error(false);    // true if a message exsits in status (below) with a message level of error or higher
-    ESParray<ESPstruct StatusMsgType, StatusMsg> Status;
+    ESParray<ESPstruct StatusMsgType, StatusMsg> StatusMessages;
 };
 
 
@@ -123,6 +124,8 @@ ESPstruct ChoiceType
     string MsgType("");
     string Msg("");
     ESParray<ESPstruct DependentValueType, dependentValue> Dependencies;
+    ESParray<string, Attribute> OptionalAttributes;    // Attributes to be enabled, but are optional if this choice is selected (UI)
+    ESParray<string, Attribute> RequiredAttributes;    // Attributes to be enabled and must be filled in (UI)
 };
 
 
@@ -140,16 +143,17 @@ ESPstruct LimitsType
 
 ESPstruct TypeInfo
 {
-    string Name;
+    string BaseType;
+    string SubType;
     ESPstruct LimitsType Limits;
-    ESParray<string, Modifier> Modifiers;
 };
 
 
 ESPstruct NodeInfoType
 {
-    string    Name("");
+    string    DisplayName("");
     string    NodeType("");
+    string    Name;
     string    Class("");
     string    Category("");
     bool      Hidden(false);
@@ -157,7 +161,7 @@ ESPstruct NodeInfoType
 };
 
 
-ESPstruct NodeType
+ESPstruct Node
 {
     string    NodeId;
     int       NumChildren(0);
@@ -190,7 +194,7 @@ ESPstruct AttributeType
     string     DisplayName;
     string     Name;
     string     Group("");
-    string     tooltip("");
+    string     Tooltip("");
     ESPstruct  TypeInfo Type;
     string     CurrentValue("");
     string     DefaultValue("");
@@ -199,6 +203,7 @@ ESPstruct AttributeType
     bool       ReadOnly(false);
     bool       Hidden(false);
     bool       Deprecated(false);
+    ESParray<string, Modifier> Modifiers;
 };
 
 
@@ -209,13 +214,14 @@ ESPstruct AttributeValueType
 };
 
 
-ESPresponse [exceptions_inline] GetNodeResponse : StatusResponse
+ESPresponse [exceptions_inline] GetNodeResponse
 {
     string NodeId;
     ESPstruct NodeInfoType NodeInfo;
     ESParray<ESPstruct AttributeType, Attribute> Attributes;
-    ESParray<ESPstruct NodeType, Child> Children;
+    ESParray<ESPstruct Node, Child> Children;
     ESParray<ESPstruct InsertItemType, Item> Insertable;         // list of insertable elements under this node
+    ESPstruct StatusType Status;
     bool LocalValueDefined(false);                               // true if the node is configured to have a value (not usually true)
     ESPstruct AttributeType Value;                               // this would be <element>value</element> not normal, see valueDefined
 };
@@ -333,7 +339,7 @@ ESPstruct TreeElementType
     string    NodeId;
     ESPstruct NodeInfoType NodeInfo;
     ESParray<ESPstruct AttributeType, attribute> Attributes;
-    ESParray<ESPstruct TreeElementType, Node> Children;
+    ESParray<ESPstruct TreeElementType, Element> Children;
 };
 
 

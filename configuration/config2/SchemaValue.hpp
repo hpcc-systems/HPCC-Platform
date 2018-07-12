@@ -67,10 +67,9 @@ class DECL_EXPORT SchemaValue
         const std::string &getMirrorFromPath() const { return m_mirrorFromPath;  }
         bool isMirroredValue() const { return m_mirrorFromPath.length() != 0; }
         void addMirroredSchemaValue(const std::shared_ptr<SchemaValue> &pVal) { m_mirrorToSchemaValues.push_back(pVal); }
-        void mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue);
+        void mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue, Status *pStatus = nullptr);
         void addEnvironmentValue(const std::shared_ptr<EnvironmentValue> &pEnvValue) { m_envValues.push_back(pEnvValue); }
         void getAllEnvironmentValues(std::vector<std::shared_ptr<EnvironmentValue>> &envValues) const;
-        void setMirroredEnvironmentValues(const std::string &oldValue, const std::string &newValue);
         void validate(Status &status, const std::string &id, const EnvironmentValue *pEnvValue = nullptr) const;
         void getAllowedValues(std::vector<AllowedValue> &allowedValues, const std::shared_ptr<const EnvironmentNode> &pEnvNode) const;
         void setAutoGenerateType(const std::string &type) { m_autoGenerateType = type; }
@@ -84,8 +83,8 @@ class DECL_EXPORT SchemaValue
         const std::string &getValueLimitRuleType() { return m_valueLimitRuleType; }
         void setValueLimitRuleData(const std::string &data) { m_valueLimitRuleData = data; }
         const std::string &getValueLimitRuleData() { return m_valueLimitRuleData; }
-        void setRequiredIfSet(const std::string &reqIf) { m_requiredIfSet = reqIf; }
-        const std::string &getRequiredIfSet() const { return m_requiredIfSet; }
+        void setRequiredIf(const std::string &reqIf) { m_requiredIf = reqIf; }
+        const std::string &getRequiredIf() const { return m_requiredIf; }
         void setGroup(const std::string &group) { m_group = group; }
         const std::string &getGroup() const { return m_group; }
 
@@ -103,7 +102,7 @@ class DECL_EXPORT SchemaValue
         std::string m_autoGenerateType;
         std::string m_valueLimitRuleType;
         std::string m_valueLimitRuleData;
-        std::string m_requiredIfSet;
+        std::string m_requiredIf;
         std::string m_group;
         // DON'T FORGET IF DATA ADDED, IT MAY MAY TO BE COPIED IN THE COPY CONSTRUCTOR!!
 

@@ -733,7 +733,7 @@ protected:
         // When workflow is root element, it is just a container.  Ignore the workflow element here
         // as WorkUnitStatisticsScopeIterator will produce workflow scope - don't want duplicates.
         // (Note: workflow element never contains stats).
-        if (collection->queryScopeType() == SSTworkflow)
+        if (collections.tos().queryScopeType() == SSTworkflow)
         {
             if (!next())
                 return false;
@@ -1779,17 +1779,13 @@ public:
     {
         if (whichProperties & PTattributes)
         {
-#if 0
-            //Enable this code when the mapping from multiple instance attributes to lists is implemented in the service layer above
-            //At that point remove WaDependencyList from the list below.
             {
                 StringBuffer scratchpad;
                 Owned<IWorkflowDependencyIterator> depends = workflow.item(curWorkflow).getDependencies();
                 ForEach(*depends)
                         visitor.noteAttribute(WaIdDependency, getValueText(depends->query(), scratchpad, WorkflowScopePrefix));
             }
-#endif
-            play(visitor, { WaIdDependencyList, WaIsScheduled, WaIdSuccess, WaIdFailure, WaIdRecovery, WaIdPersist, WaIdScheduled,
+            play(visitor, { WaIsScheduled, WaIdSuccess, WaIdFailure, WaIdRecovery, WaIdPersist, WaIdScheduled,
                             WaPersistName, WaLabel, WaMode, WaType, WaState, WaCluster, WaCriticalSection });
         }
     }
@@ -2609,10 +2605,17 @@ WuScopeFilter & WuScopeFilter::addId(const char * id)
 
 WuScopeFilter & WuScopeFilter::addOutput(const char * prop)
 {
-    if (queryStatisticKind(prop, StMax) != StMax)
+    WuAttr attr = queryWuAttribute(prop, WaNone);
+    if (attr != WaNone)
+    {
+        WuAttr singleKindAttr = getSingleKindOfListAttribute(attr);
+        if (singleKindAttr != WaNone)
+            addOutputAttribute(singleKindAttr);
+        else
+            addOutputAttribute(attr);
+
+    } else if (queryStatisticKind(prop, StMax) != StMax)
         addOutputStatistic(prop);
-    else if (queryWuAttribute(prop, WaMax) != WaMax)
-        addOutputAttribute(prop);
     else
         addOutputHint(prop);
     return *this;

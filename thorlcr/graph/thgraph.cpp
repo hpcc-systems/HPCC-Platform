@@ -1160,6 +1160,19 @@ static void addDependencies(IPropertyTree *xgmml, bool failIfMissing, CGraphTabl
     }
 }
 
+void traceMemUsage()
+{
+    StringBuffer memStatsStr;
+    roxiemem::memstats(memStatsStr);
+    PROGLOG("Roxiemem stats: %s", memStatsStr.str());
+    memsize_t heapUsage = getMapInfo("heap");
+    if (heapUsage) // if 0, assumed to be unavailable
+    {
+        memsize_t rmtotal = roxiemem::getTotalMemoryLimit();
+        PROGLOG("Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
+    }
+}
+
 /////
 
 CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob()), progressUpdated(false)
@@ -1508,9 +1521,12 @@ IMPServer &CGraphBase::queryMPServer() const
 
 bool CGraphBase::syncInitData()
 {
-    CGraphElementBase *parentElement = queryOwner() ? queryOwner()->queryElement(queryParentActivityId()) : NULL;
-    if (parentElement && isLoopActivity(*parentElement) && loopBodySubgraph)
+    if (loopBodySubgraph)
+    {
+        CGraphElementBase *parentElement = queryOwner() ? queryOwner()->queryElement(queryParentActivityId()) : nullptr;
+        assertex(parentElement);
         return parentElement->queryLoopGraph()->queryGraph()->isGlobal();
+    }
     else
         return !isLocalChild();
 }
@@ -2185,7 +2201,11 @@ static bool isLocalOnly(const CGraphElementBase &activity)
     Owned<IPropertyTreeIterator> inputs = activity.queryOwner().queryXGMML().getElements(match.str());
     ForEach(*inputs)
     {
-        CGraphElementBase *sourceAct = activity.queryOwner().queryElement(inputs->query().getPropInt("@source"));
+        IPropertyTree &edge = inputs->query();
+        //Ignore edges that represent dependencies from parent activities to child activities.
+        if (edge.getPropBool("att[@name=\"_childGraph\"]/@value", false))
+            continue;
+        CGraphElementBase *sourceAct = activity.queryOwner().queryElement(edge.getPropInt("@source"));
         if (!isLocalOnly(*sourceAct))
             return false;
     }
@@ -2700,15 +2720,7 @@ CJobBase::~CJobBase()
     ::Release(userDesc);
     ::Release(pluginMap);
 
-    StringBuffer memStatsStr;
-    roxiemem::memstats(memStatsStr);
-    PROGLOG("Roxiemem stats: %s", memStatsStr.str());
-    memsize_t heapUsage = getMapInfo("heap");
-    if (heapUsage) // if 0, assumed to be unavailable
-    {
-        memsize_t rmtotal = roxiemem::getTotalMemoryLimit();
-        PROGLOG("Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
-    }
+    traceMemUsage();
 }
 
 CJobChannel &CJobBase::queryJobChannel(unsigned c) const

@@ -302,15 +302,11 @@ public:
                     LogRemoteConn(conn);
 #endif
                     unsigned tt = msTick()-start;
-                    if (timeout!=INFINITE) {
-                        StringBuffer tmp;
-                        e->errorMessage(tmp);
-                        CDFS_Exception *dfse = new CDFS_Exception(DFSERR_LookupConnectionTimout,tmp.str());
-                        e->Release();
-                        throw dfse;
-                    }
+                    if (timeout!=INFINITE)
+                        throw;
                     WARNLOG("CConnectLock on %s waiting for %ds",name,tt/1000);
-                    if (first) {
+                    if (first)
+                    {
                         PrintStackReport();
                         first = false;
                     }
@@ -321,7 +317,8 @@ public:
                 else
                     throw;
             }
-            catch (IException *e) {
+            catch (IException *e)
+            {
                 StringBuffer tmp("CConnectLock ");
                 tmp.append(caller).append(' ').append(name);
                 EXCLOG(e, tmp.str());
@@ -4684,9 +4681,9 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     // Must validate before locking for update below, to check sub is not already in parent (and therefore locked already)
                     transaction->validateAddSubFile(parent, sub, subfile);
                 }
-                catch (IDFS_Exception *e)
+                catch (ISDSException *e)
                 {
-                    if (e->errorCode()!=DFSERR_LookupConnectionTimout)
+                    if (e->errorCode()!=SDSExcpt_LockTimeout)
                         throw;
                     e->Release();
                     return false;
@@ -4755,9 +4752,9 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 {
                     sub.setown(transaction->lookupFile(subfile,SDS_SUB_LOCK_TIMEOUT));
                 }
-                catch (IDFS_Exception *e)
+                catch (ISDSException *e)
                 {
-                    if (e->errorCode()!=DFSERR_LookupConnectionTimout)
+                    if (e->errorCode()!=SDSExcpt_LockTimeout)
                         throw;
                     e->Release();
                     return false;
@@ -5142,7 +5139,8 @@ protected:
         // first renumber all above
         StringBuffer path;
         IPropertyTree *sub;
-        for (unsigned i=subfiles.ordinality();i>pos;i--) {
+        for (unsigned i=subfiles.ordinality();i>pos;i--)
+        {
             sub = root->queryPropTree(getSubPath(path.clear(),i-1).str());
             if (!sub)
                 throw MakeStringException(-1,"C(2): Corrupt subfile file part %d cannot be found",i);
@@ -5151,8 +5149,11 @@ protected:
         sub = createPTree();
         sub->setPropInt("@num",pos+1);
         sub->setProp("@name",file->queryLogicalName());
-        if (pos==0) {
-            resetFileAttr(createPTreeFromIPT(&file->queryAttributes()));
+        if (pos==0)
+        {
+            Owned<IPropertyTree> superAttrs = createPTreeFromIPT(&file->queryAttributes());
+            superAttrs->removeProp("Protect"); // do not automatically inherit protected status
+            resetFileAttr(superAttrs.getClear());
         }
         root->addPropTree("SubFile",sub);
         subfiles.add(*file.getClear(),pos);
@@ -5168,16 +5169,22 @@ protected:
             throw MakeStringException(-1,"CDistributedSuperFile(3): Corrupt subfile file part %d cannot be found",pos+1);
         root->removeTree(sub);
         // now renumber all above
-        for (unsigned i=pos+1; i<subfiles.ordinality(); i++) {
+        for (unsigned i=pos+1; i<subfiles.ordinality(); i++)
+        {
             sub = root->queryPropTree(getSubPath(path.clear(),i).str());
             if (!sub)
                 throw MakeStringException(-1,"CDistributedSuperFile(2): Corrupt subfile file part %d cannot be found",i+1);
             sub->setPropInt("@num",i);
         }
         subfiles.remove(pos);
-        if (pos==0) {
+        if (pos==0)
+        {
             if (subfiles.ordinality())
-                resetFileAttr(createPTreeFromIPT(&subfiles.item(0).queryAttributes()));
+            {
+                Owned<IPropertyTree> superAttrs = createPTreeFromIPT(&subfiles.item(0).queryAttributes());
+                superAttrs->removeProp("Protect"); // do not automatically inherit protected status
+                resetFileAttr(superAttrs.getClear());
+            }
             else
                 resetFileAttr(getEmptyAttr());
         }
@@ -6970,8 +6977,9 @@ public:
         SocketEndpointArray epa;
         StringBuffer gname(logicalgroupname);
         gname.trim();
+        groupType = grp_unknown;
         if (!gname.length())
-            return NULL;
+            return nullptr;
         gname.toLowerCase();
         logicalgroupname = gname.str();
         bool isiprange = (*logicalgroupname!=0);
@@ -7007,10 +7015,7 @@ public:
             }
             free(buf);
             if (epa.ordinality())
-            {
-                groupType = grp_unknown;
                 return createIGroup(epa);
-            }
         }
         StringBuffer range;
         StringBuffer parent;
@@ -7037,7 +7042,7 @@ public:
                     if (entry.exception)
                         throw LINK(entry.exception);
                     if (!entry.group)  //cache entry of a deleted groupname
-                        return NULL;
+                        return nullptr;
                     if (range.length()==0)
                     {
                         if (dirret)
@@ -7074,7 +7079,7 @@ public:
                                 CriticalBlock block(cachesect);
                                 cache.append(*new CNamedGroupCacheEntry(NULL, gname, NULL, grp_unknown));
                             }
-                            return NULL;
+                            return nullptr;
                         }
                     }
                 }
@@ -7097,12 +7102,12 @@ public:
                             CriticalBlock block(cachesect);
                             cache.append(*new CNamedGroupCacheEntry(NULL, gname, NULL, grp_unknown));
                         }
-                        return NULL;
+                        return nullptr;
                     }
                 }
                 Owned<IPropertyTree> pt = getNamedPropTree(conn->queryRoot(),"Group","@name",gname.str(),true);
                 if (!pt)
-                    return NULL;
+                    return nullptr;
                 type = translateGroupType(pt->queryProp("@kind"));
                 groupdir.set(pt->queryProp("@dir"));
                 if (groupdir.isEmpty())
@@ -7514,10 +7519,10 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                     ret->setSuperOwnerLock(superOwnerLock.detach());
                     return ret;
                 }
-                catch (IDFS_Exception *e)
+                catch (ISDSException *e)
                 {
                     elapsed = msTick()-start;
-                    if ((e->errorCode()!=DFSERR_LookupConnectionTimout)||(elapsed>((timeout==INFINITE)?SDS_CONNECT_TIMEOUT:timeout)))
+                    if ((e->errorCode()!=SDSExcpt_LockTimeout)||(elapsed>((timeout==INFINITE)?SDS_CONNECT_TIMEOUT:timeout)))
                         throw;
                     EXCLOG(e,"Superfile lookup");
                     e->Release();
@@ -9765,6 +9770,8 @@ static IGroup *getClusterNodeGroup(const char *clusterName, const char *type, bo
     Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(nodeGroupName);
     CInitGroups init(timems);
     Owned<IGroup> expandedClusterGroup = init.getGroupFromCluster(type, cluster, true);
+    if (!expandedClusterGroup)
+        throwStringExceptionV(0, "Failed to get group for '%s' cluster '%s'", type, clusterName);
     if (!expandedClusterGroup->equals(nodeGroup))
         throwStringExceptionV(0, "DFS cluster topology for '%s', does not match existing DFS group layout for group '%s'", clusterName, nodeGroupName.str());
     Owned<IGroup> clusterGroup = init.getGroupFromCluster(type, cluster, false);

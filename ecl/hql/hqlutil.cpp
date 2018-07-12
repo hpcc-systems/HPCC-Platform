@@ -347,6 +347,165 @@ IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
     return ensureExprType(value, hozedType);
 }
 
+IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExpression * physicalSelect, bool allowTranslate)
+{
+    if (cur->hasAttribute(blobAtom))
+    {
+        if (cur->isDataset())
+            return createDataset(no_id2blob, LINK(physicalSelect), LINK(cur->queryRecord()));
+        else if (cur->isDatarow())
+            return createRow(no_id2blob, LINK(physicalSelect), LINK(cur->queryRecord()));
+        else
+            return createValue(no_id2blob, cur->getType(), LINK(physicalSelect));
+    }
+    else if (allowTranslate)
+    {
+        LinkedHqlExpr newValue = physicalSelect;
+
+        OwnedHqlExpr target = createSelectExpr(getActiveTableSelector(), LINK(cur));            // select not used, just created to get correct types.
+        ITypeInfo * type = target->queryType();
+        type_t tc = type->getTypeCode();
+        if (tc == type_int || tc == type_swapint)
+        {
+            if (type->isSigned())
+            {
+                Owned<ITypeInfo> tempType = makeIntType(type->getSize(), false);
+                newValue.setown(ensureExprType(newValue, tempType));
+                newValue.setown(createValue(no_sub, newValue->getType(), LINK(newValue), getHozedBias(newValue->queryType())));
+            }
+        }
+
+        return ensureExprType(newValue, type);
+    }
+    else
+        return ensureExprType(physicalSelect, cur->queryType());
+}
+
+static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * cur);
+static IHqlExpression * mapIfBlockRecord(HqlMapTransformer & mapper, IHqlExpression * record)
+{
+    HqlExprArray mapped;
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        if (cur->getOperator() == no_ifblock)
+            mapped.append(*mapIfBlock(mapper, cur));
+        else
+            mapped.append(*LINK(cur));
+    }
+    return record->clone(mapped);
+}
+
+
+static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * cur)
+{
+    HqlExprArray args;
+    unwindChildren(args, cur);
+    args.replace(*mapper.transformRoot(&args.item(0)), 0);
+    args.replace(*mapIfBlockRecord(mapper, &args.item(1)), 1);
+    return cur->clone(args);
+}
+
+
+IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * record, bool hasInternalFileposition, bool createKeyedTypes)
+{
+    HqlExprArray physicalFields;
+    unsigned max = record->numChildren() - (hasInternalFileposition ? 1 : 0);
+    for (unsigned idx=0; idx < max; idx++)
+    {
+        IHqlExpression * cur = record->queryChild(idx);
+        IHqlExpression * newField = NULL;
+
+        if (cur->isAttribute())
+            physicalFields.append(*LINK(cur));
+        else if (cur->getOperator() == no_ifblock)
+            physicalFields.append(*mapIfBlock(mapper, cur));
+        else if (cur->getOperator() == no_record)
+            physicalFields.append(*createPhysicalIndexRecord(mapper, cur, false, createKeyedTypes));
+        else if (cur->hasAttribute(blobAtom))
+        {
+            if (createKeyedTypes)
+                newField = createField(cur->queryId(), makeKeyedBlobType(cur->getType()), nullptr, createAttribute(_payload_Atom));
+            else
+                newField = createField(cur->queryId(), makeIntType(8, false), nullptr, nullptr);
+        }
+        else
+        {
+            //This should support other non serialized formats.  E.g., link counted strings.
+            //Simplest would be to move getSerializedForm code + call that first.
+            if (cur->hasAttribute(_linkCounted_Atom) || cur->isDatarow())
+            {
+                newField = getSerializedForm(cur, diskAtom);
+                assertex(newField != cur || cur->isDatarow());
+            }
+            else
+            {
+                Owned<ITypeInfo> hozedType = getHozedKeyType(cur);
+                if (hozedType == cur->queryType())
+                    newField = LINK(cur);
+                else if (createKeyedTypes)
+                    newField = createField(cur->queryId(), makeKeyedType(cur->getType()), nullptr, extractFieldAttrs(cur));
+                else
+                    newField = createField(cur->queryId(), hozedType.getClear(), nullptr, extractFieldAttrs(cur));
+            }
+        }
+
+        if (newField)
+        {
+            physicalFields.append(*newField);
+            if (cur != newField)
+            {
+                IHqlExpression * self = querySelfReference();
+                OwnedHqlExpr select = createSelectExpr(LINK(self), LINK(cur));
+                OwnedHqlExpr physicalSelect = createSelectExpr(LINK(self), LINK(newField));
+                OwnedHqlExpr newValue = convertIndexPhysical2LogicalValue(cur, physicalSelect, true);
+                mapper.setMapping(select, newValue);
+            }
+        }
+    }
+    if (hasInternalFileposition)
+    {
+        if (createKeyedTypes)
+        {
+            IHqlExpression * cur = record->queryChild(record->numChildren()-1);
+            IHqlExpression *fposField = createField(cur->queryId(), makeFilePosType(cur->getType()), nullptr, extractFieldAttrs(cur));
+            physicalFields.append(*fposField);
+        }
+        else
+        {
+            IHqlExpression * cur = record->queryChild(record->numChildren()-1);
+            IHqlExpression *fposField = createField(cur->queryId(), makeSwapIntType(8, false), nullptr, extractFieldAttrs(cur));
+            physicalFields.append(*fposField);
+        }
+    }
+
+    return createRecord(physicalFields);
+}
+
+IHqlExpression * createMetadataIndexRecord(IHqlExpression * record, bool hasInternalFilePosition)
+{
+    HqlMapTransformer mapper;
+    return createPhysicalIndexRecord(mapper, record, hasInternalFilePosition, true);
+}
+
+extern HQL_API IHqlExpression * patchEclRecordDefinitionFromRecordLayout(IHqlExpression * record, MemoryBuffer &mb)
+{
+    if (!record->hasAttribute(_payload_Atom))
+    {
+        Owned<IDefRecordMeta> meta = deserializeRecordMeta(mb, true);
+        int numKeyed = meta->numKeyedFields();
+        if (numKeyed)
+        {
+            // NOTE - the index puts the payload on the no_newkeyindex, not on the record - so we will have to migrate it there
+            int dfsPayload = getFlatFieldCount(record) - numKeyed;
+            assertex(dfsPayload >= 0);
+            if (dfsPayload)
+                return prependOwnedOperand(record, createAttribute(_payload_Atom, createConstant(dfsPayload)));
+        }
+    }
+    return LINK(record);
+}
+
 //---------------------------------------------------------------------------
 
 bool containsAggregate(IHqlExpression * expr)
@@ -5199,6 +5358,16 @@ IHqlExpression * appendOwnedOperand(IHqlExpression * expr, IHqlExpression * owne
     return expr->clone(args);
 }
 
+IHqlExpression * prependOwnedOperand(IHqlExpression * expr, IHqlExpression * ownedOperand)
+{
+    if (!ownedOperand)
+        return LINK(expr);
+    HqlExprArray args;
+    args.append(*ownedOperand);
+    unwindChildren(args, expr);
+    return expr->clone(args);
+}
+
 IHqlExpression * removeOperand(IHqlExpression * expr, IHqlExpression * operand)
 {
     HqlExprArray args;
@@ -7911,7 +8080,9 @@ public:
 
         if (formals->numChildren())
         {
-            bool hasMeta = getBoolAttribute(body, passParameterMetaAtom, false);
+            IHqlExpression* passParamAttr = getFunctionBodyAttribute(body, passParameterMetaAtom);
+            bool hasMeta = getBoolAttributeValue(passParamAttr);
+
             ForEachChild(i, formals)
             {
                 IHqlExpression * param = formals->queryChild(i);

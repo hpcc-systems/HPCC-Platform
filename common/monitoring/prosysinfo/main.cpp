@@ -126,7 +126,7 @@ int main(int argc, char** argv)
     //Physical and virtual memory usage.
     MEMORYSTATUS memstatus;
     GlobalMemoryStatus(&memstatus);
-    printf("Physical Memory: %d %d\nVirtual Memory: %d %d\n", 
+    printf("Physical Memory: %zu %zu\nVirtual Memory: %zu %zu\n",
         (memstatus.dwTotalPhys - memstatus.dwAvailPhys)/1024, memstatus.dwAvailPhys/1024,
         (memstatus.dwTotalVirtual - memstatus.dwAvailVirtual)/1024, memstatus.dwAvailVirtual/1024);
 

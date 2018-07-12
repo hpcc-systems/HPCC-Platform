@@ -176,7 +176,9 @@ PARSELIB_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx; }
 PARSELIB_API void plGetXmlParseTree(IMatchWalker * walker, unsigned & len, char * & text)
 {
     StringBuffer s;
+    s.append("<matches>");
     getXmlParseTree(s, walker, 0);
+    s.append("</matches>");
     len = s.length();
     text = s.detach();
 }

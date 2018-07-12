@@ -32,10 +32,10 @@ ds := dataset([
 
 simple := dedup(nofold(ds), f1);
 
-osum := output(TABLE(simple, { s := sum(group, f1) }, f3));
+osum := output(TABLE(simple, { s := sum(group, f1) }, f3, SORTED));
 
 x1 := when(simple, osum);
 
 o1 := output(TABLE(x1, { f1 }));
-o2 := output(TABLE(simple, { c := count(group) }, f3));
+o2 := output(TABLE(simple, { c := count(group) }, f3, SORTED));
 when(o1, o2);

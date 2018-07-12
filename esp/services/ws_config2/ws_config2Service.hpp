@@ -59,8 +59,8 @@ public:
 
 private:
 
-    void addStatusToResponse(const Status &status, ConfigMgrSession *pSession, IEspStatusResponse &resp) const;
-    ConfigMgrSession *getConfigSession(const std::string &sessionId);
+    void buildStatusResponse(const Status &status, ConfigMgrSession *pSession, IEspStatusType &respStatus) const;
+    ConfigMgrSession *getConfigSession(const std::string &sessionId, bool environmentRequired = false);
     ConfigMgrSession *getConfigSessionForUpdate(const std::string &sessionId, const std::string &lockKey);
     bool deleteConfigSession(const std::string &sessionId);
     void getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNode, IEspGetNodeResponse &resp) const;

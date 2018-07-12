@@ -10,9 +10,17 @@
       <primary>Str.SplitWords</primary>
     </indexterm><indexterm>
       <primary>SplitWords</primary>
-    </indexterm>(</emphasis> <emphasis>source, separator </emphasis><emphasis
-  role="bold">[ </emphasis><emphasis>, allowblank</emphasis><emphasis
+    </indexterm>(</emphasis> <emphasis>src, separator </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>, allow_blank</emphasis><emphasis
   role="bold"> ] )</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.SplitWords<indexterm>
+      <primary>STD.Uni.SplitWords</primary>
+    </indexterm><indexterm>
+      <primary>Uni.SplitWords</primary>
+    </indexterm><indexterm></indexterm>(</emphasis> <emphasis>src, separator
+  </emphasis><emphasis role="bold">[ </emphasis><emphasis>,
+  allow_blank</emphasis><emphasis role="bold"> ] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,7 +30,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the words to extract.</entry>
         </row>
@@ -34,7 +42,7 @@
         </row>
 
         <row>
-          <entry><emphasis>allowblank</emphasis></entry>
+          <entry><emphasis>allow_blank</emphasis></entry>
 
           <entry>Optional. If TRUE, specifies allowing blank items in the
           result. If omitted, the default is FALSE.</entry>
@@ -43,15 +51,17 @@
         <row>
           <entry>Return:</entry>
 
-          <entry>SplitWords returns a SET OF STRING values.</entry>
+          <entry>SplitWords returns a SET OF STRING or a UnicodeSet, as
+          appropriate .</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
   <para>The <emphasis role="bold">SplitWords</emphasis> function returns the
-  list of words in the <emphasis>source</emphasis> string split out by the
-  specified <emphasis>separator</emphasis>.</para>
+  list of words in the <emphasis>src</emphasis> string split out by the
+  specified <emphasis>separator</emphasis>. No spaces are stripped from either
+  string before matching.</para>
 
   <para>Example:</para>
 

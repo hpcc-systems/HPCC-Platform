@@ -1293,12 +1293,12 @@ public:
                         {
                             unsigned publishedFormatCrc;
                             msg.read(publishedFormatCrc);
-                            Owned<IOutputMetaData> publishedFormat = createTypeInfoOutputMetaData(msg, false, nullptr);
+                            Owned<IOutputMetaData> publishedFormat = createTypeInfoOutputMetaData(msg, false);
                             Owned<IOutputMetaData> projectedFormat;
                             bool projected;
                             msg.read(projected);
                             if (projected)
-                                projectedFormat.setown(createTypeInfoOutputMetaData(msg, false, nullptr));
+                                projectedFormat.setown(createTypeInfoOutputMetaData(msg, false));
                             else
                                 projectedFormat.set(publishedFormat);
                             if (created) // translation for the key context will already have been setup and do not want to free existing
@@ -1365,12 +1365,12 @@ public:
                         {
                             unsigned publishedFormatCrc;
                             msg.read(publishedFormatCrc);
-                            Owned<IOutputMetaData> publishedFormat = createTypeInfoOutputMetaData(msg, false, nullptr);
+                            Owned<IOutputMetaData> publishedFormat = createTypeInfoOutputMetaData(msg, false);
                             Owned<IOutputMetaData> projectedFormat;
                             bool projected;
                             msg.read(projected);
                             if (projected)
-                                projectedFormat.setown(createTypeInfoOutputMetaData(msg, false, nullptr));
+                                projectedFormat.setown(createTypeInfoOutputMetaData(msg, false));
                             else
                                 projectedFormat.set(publishedFormat);
 
@@ -1623,6 +1623,7 @@ public:
         else
             virtStr.append("slave:");
         PROGLOG("Slave log %u contains %s %s", slaveProc+1, virtStr.str(), slaveStr.str());
+        traceMemUsage();
 
         if (channelsPerSlave>1)
         {

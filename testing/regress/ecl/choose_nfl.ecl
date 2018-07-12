@@ -113,7 +113,7 @@ NFLLeagueCategoryConferenceRecord := RECORD
 END;
 
 NFLLeagueCategoryConferenceTable := TABLE(NFLFile,NFLLeagueCategoryConferenceRecord,Nickname_category,Conference);
-OUTPUT(NFLLeagueCategoryConferenceTable);
+OUTPUT(SORT(NFLLeagueCategoryConferenceTable, Nickname_category, Conference));
 
 NFLLeagueCategoryRecord := RECORD
     NFLFile.NickName_category;
@@ -123,7 +123,7 @@ NFLLeagueCategoryRecord := RECORD
     GroupMax    := MAX(GROUP,NFLfile.Salary_cap);
 END;
 
-NFLLeagueCategoryTable := TABLE(NFLFile,NFLLeagueCategoryRecord,Nickname_category);
+NFLLeagueCategoryTable := SORT(TABLE(NFLFile,NFLLeagueCategoryRecord,Nickname_category),Nickname_category);
 
 output('------ CHOOSEN --- First 5');
 output(CHOOSEN(NFLFile,5));

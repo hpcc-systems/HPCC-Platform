@@ -1,24 +1,14 @@
-/*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-############################################################################## */
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
+
+    "dijit/registry",
+    "dijit/form/CheckBox",
+
+    "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
     "src/WsESDLConfig",
@@ -27,7 +17,9 @@ define([
     "src/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
-                GridDetailsWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget, Utility) {
+    registry, Checkbox,
+    selector,
+    GridDetailsWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget, Utility) {
     return declare("DynamicESDLWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -61,8 +53,17 @@ define([
             var context = this;
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
+                selectionMode: "single",
                 columns: {
-                    Name: {label: this.i18n.Name, sortable: true, width:200}
+                    col1: selector({
+                        width: 27,
+                        selectorType: 'checkbox'
+                    }),
+                    Name: {
+                        label: this.i18n.Name,
+                        sortable: true,
+                        width: 200
+                    }
                 }
             }, domID);
 
@@ -81,12 +82,10 @@ define([
             this.refreshGrid();
         },
 
-         refreshGrid: function (args) {
+        refreshGrid: function (args) {
             var context = this;
             WsESDLConfig.ListESDLDefinitions({
-                request: {
-                    ver_: "1.3"
-                }
+                request: {}
             }).then(function (response) {
                 var results = [];
                 if (lang.exists("ListESDLDefinitionsResponse.Definitions.Definition", response)) {
@@ -102,9 +101,13 @@ define([
                 context.store.setData(results);
                 context.grid.refresh();
                 if (context.params.firstLoad && results.length) {
-                    var firstRowSelection = context.store.query({Id: results[0].Id});
+                    var firstRowSelection = context.store.query({
+                        Id: results[0].Id
+                    });
                     if (firstRowSelection.length) {
-                        context.grid.select({Name:firstRowSelection[0].Name});
+                        context.grid.select({
+                            Name: firstRowSelection[0].Name
+                        });
                     }
                 }
             });

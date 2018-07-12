@@ -46,12 +46,12 @@
                                 </xs:attribute>
                                 <xs:attribute name="passphrase" hpcc:displayName="Pass Phrase" hpcc:modifiers="mask,verify" type="xs:string" use="optional" hpcc:tooltip="Pass phrase for cert"/>
                                 <xs:attribute name="certificateFileName" hpcc:displayName="Certificate Filename" type="xs:string" use="optional" hpcc:tooltip="Path to certificate filename"/>
-                                <xs:attribute name="privateKeyFileName" hpcc:displayName="Private Key Filename" type="xs:string" use="optional" hpcc:displayName="Path to private key filename"/> <!-- perhaps a type for filepath that verifies well formed path -->
+                                <xs:attribute name="privateKeyFileName" hpcc:displayName="Private Key Filename" type="xs:string" use="optional" hpcc:tooltip="Path to private key filename"/> <!-- perhaps a type for filepath that verifies well formed path -->
                             </xs:complexType>
                         </xs:element>
                         <xs:element name="RoxieServerProcess" hpcc:displayName="Servers" maxOccurs="unbounded"> <!--special view type needed to collect together all of these somehow -->
                             <xs:complexType>
-                                <xs:attribute name="name" type="nodeName" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer@name"/>
+                                <xs:attribute name="name" type="nodeName" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"/>
                                 <xs:attributeGroup ref="computerNodeReference"/>
                             </xs:complexType>
                         </xs:element>
@@ -79,13 +79,13 @@
                                 <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="ACL"/>
                             </xs:complexType>
                         </xs:element>
-                        <xs:element name="PreferredCluster" mpcc:displayName="Preferred Clusters" maxOccurs="unbounded">
+                        <xs:element name="PreferredCluster" hpcc:displayName="Preferred Clusters" maxOccurs="unbounded">
                             <xs:complexType>
                                 <xs:attribute name="name" type="xs:string" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="PreferredCluster" hpcc:tooltip="Name of the cluster"/>
                                 <xs:attribute name="priority" type="xs:integer" use="required" hpcc:tooltip="Priority (negative to disable)"/>
                             </xs:complexType>
                         </xs:element>
-                        <xs:element name="UserMetric" mpcc:displayName="User Metrics" maxOccurs="unbounded">
+                        <xs:element name="UserMetric" hpcc:displayName="User Metrics" maxOccurs="unbounded">
                             <xs:complexType>
                                 <xs:attribute name="name" type="xs:string" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="UserMetric" hpcc:tooltip="Name of this metric"/>
                                 <xs:attribute name="regex" type="xs:integer" use="required" hpcc:tooltip="Expression to match"/>
@@ -137,6 +137,7 @@
                     <xs:attribute name="callbackTimeout" type="xs:nonNegativeInteger" hpcc:displayName="Callback Timeout" hpcc:group="Options" use="optional" default="5000" hpcc:tooltip="Timeout (in ms) before callbacks from agents to server are resent"/>
                     <!-- range? -->
                     <xs:attribute name="checkFileDate" type="xs:boolean" hpcc:displayName="Check File Date" hpcc:group="Options" use="optional" default="true" hpcc:tooltip="Compare file dates of physical files with the information in DFS"/>
+                    <xs:attribute name="collectFactoryStatistics" type="xs:boolean" hpcc:displayName="Gather Factory Statistics" hpcc:group="Options" use="optional" default="true" hpcc:tooltip="Accumulate summary statistics for all queries"/>
                     <xs:attribute name="copyResources" type="xs:boolean" hpcc:displayName="Copy Resources" hpcc:group="Options" use="optional" default="true" hpcc:tooltip="Copies any missing data files/keys from the position they were in when query was deployed"/>
                     <xs:attribute name="coresPerQuery" type="xs:nonNegativeInteger" hpcc:displayName="Cores Per Query" hpcc:group="options" use="optional" default="0" hpcc:tooltip="If non-zero, binds each incoming query to use the specified number of cores only"/>
                     <xs:attribute name="debugPermitted" type="xs:boolean" hpcc:displayName="Debug Permitted" hpcc:group="Options" use="optional" default="true" hpcc:tooltip="Allow the ECL query debugger to attach to queries on this Roxie"/>
@@ -217,7 +218,7 @@
                     <xs:attribute name="cyclicOffset" type="xs:nonNegativeInteger" hpcc:displayName="Cyclic Offset" hpcc:group="Redundancy" use="optional" default="1" hpcc:tooltip="Offset for cyclic redundancy mode"/>
                     <xs:attribute name="channelsPerNode" type="xs:nonNegativeInteger" hpcc:displayName="Channels Per Node" hpcc:group="Redundancy" use="optional" default="1" hpcc:tooltip="Number of channels/data locations to use per node, in overloaded mode"/>
                     <xs:attribute name="numDataCopies" type="xs:nonNegativeInteger" hpcc:displayName="Number Data Copies" hpcc:group="Redundancy" use="optional" default="1" hpcc:tooltip="Number of copies of the data in redundant modes"/>
-                    <xs:attribute name="slaveConfig" hpcc:displayName="Slave Config" hpcc:group="Redundancy" use="optional" default="" hpcc:tooltip="Roxie data redundancy mode"/>
+                    <xs:attribute name="slaveConfig" hpcc:displayName="Slave Config" hpcc:group="Redundancy" use="optional" default="" hpcc:tooltip="Roxie data redundancy mode">
                         <xs:simpleType>
                             <xs:restriction base="xs:string">
                                 <xs:enumeration value="simple" hpcc:displayName="Simple" hpcc:description=""/>
@@ -228,7 +229,7 @@
                         </xs:simpleType>
                     </xs:attribute>
                     <!-- Tracing attributes -->
-                    <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" hpcc:displayName="Trace Level" hpcc:group="Tracing"use="optional" default="1" hpcc:tooltip="Level of detail in reporting (set to 0 for none, 1 for normal, > 1 or more for extended)"/>
+                    <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" hpcc:displayName="Trace Level" hpcc:group="Tracing" use="optional" default="1" hpcc:tooltip="Level of detail in reporting (set to 0 for none, 1 for normal, > 1 or more for extended)"/>
                     <xs:attribute name="logFullQueries" type="xs:boolean" hpcc:displayName="Log Full Queries" hpcc:group="Tracing" use="optional" default="false" hpcc:tooltip="Log full text (unless blindLogging) and resource usage of all queries received"/>
                     <xs:attribute name="blindLogging" type="xs:boolean" hpcc:displayName="Blind Logging" hpcc:group="Tracing" use="optional" default="false" hpcc:tooltip="Suppress all logging of any data or query text"/>
                     <xs:attribute name="memTraceLevel" type="xs:nonNegativeInteger" hpcc:displayName="Memory Trace Level" hpcc:group="Tracing" use="optional" default="1" hpcc:tooltip="Level of detail in reporting mem mgr information(set to 0 for none, 1 for normal, >1 or more for extended)"/>
@@ -246,7 +247,7 @@
                     <xs:attribute name="udpInlineCollation" type="xs:boolean" hpcc:displayName="UDP Inline Collation" hpcc:group="UDP" use="optional" default="false" hpcc:tooltip="Controls whether UDP packets are collated on the reading thread or queued up for collation on a separate thread"/>
                     <xs:attribute name="udpInlineCollationPacketLimit" type="xs:nonNegativeInteger" hpcc:displayName="UDP Inline Colation Packet Limit" hpcc:group="UDP" use="optional" default="50" hpcc:tooltip="Controls how many UDP packets requested at once when inline collation selected"/>
                     <xs:attribute name="udpLocalWriteSocketSize" type="xs:nonNegativeInteger" hpcc:displayName="UDP Local Write Socket Size (bytes)" hpcc:group="UDP" use="optional" default="131071" hpcc:tooltip="Controls the write socket buffer size of the local UDP sockets (Agent to Server on same node)"/>
-                    <xs:attribute name="udpMaxRetryTimedoutReqs" type="xs:nonNegativeInteger" hpcc:displayName="UDP Max Retry Timedout Reqs" hpcc:group="UDP" use="optional" default="0" hpcc:tooltip="Controls the Max number of agent "request to send" to be retried. 0 means keep retrying forever"/>
+                    <xs:attribute name="udpMaxRetryTimedoutReqs" type="xs:nonNegativeInteger" hpcc:displayName="UDP Max Retry Timedout Reqs" hpcc:group="UDP" use="optional" default="0" hpcc:tooltip="Controls the Max number of agent 'request to send' to be retried. 0 means keep retrying forever"/>
                     <xs:attribute name="udpMaxSlotsPerClient" type="xs:nonNegativeInteger" hpcc:displayName="Log Queue Length" hpcc:group="UDP" use="optional" default="2147483647" hpcc:tooltip="UDP transport layer slots per client"/>
                     <xs:attribute name="udpMulticastBufferSize" type="xs:nonNegativeInteger" hpcc:displayName="UDP Multicast Buffer Size (bytes)" hpcc:group="UDP" use="optional" default="131071" hpcc:tooltip="Controls the read socket buffer size of the UDP multicast sockets"/>
                     <xs:attribute name="udpOutQsPriority" type="xs:nonNegativeInteger" hpcc:displayName="UDP Quality of Service Priority" hpcc:group="UDP" use="optional" default="0" hpcc:tooltip="Turns on/off Priority weight-based for output queues (0 round-robin no priority - old logic, 1 round-robin new logic, 2 and higher is factor of priority)"/>

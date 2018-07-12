@@ -405,7 +405,8 @@
                          path="ESDLConfigAccess"
                          resource="ESDLConfigAccess"
                          service="ws_esdlconfig"/>
-    <AuthenticateFeature description="Access to ELK integration service"
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to ELK integration service"
                          path="WsELKAccess"
                          resource="WsELKAccess"
                          service="ws_elk"/>
@@ -695,6 +696,10 @@
                          path="ESDLConfigAccess"
                          resource="ESDLConfigAccess"
                          service="ws_esdlconfig"/>
+    <AuthenticateFeature description="Access to ELK integration service"
+                         path="WsELKAccess"
+                         resource="WsELKAccess"
+                         service="ws_elk"/>
     <ProcessFilters>
      <Platform name="Windows">
       <ProcessFilter name="any">
@@ -1022,6 +1027,10 @@
                           path="ESDLConfigAccess"
                           resource="ESDLConfigAccess"
                           service="ws_esdlconfig"/>
+     <AuthenticateFeature description="Access to ELK integration service"
+                          path="WsELKAccess"
+                          resource="WsELKAccess"
+                          service="ws_elk"/>
      <ProcessFilters>
       <Platform name="Windows">
        <ProcessFilter name="any">

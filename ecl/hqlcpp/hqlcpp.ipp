@@ -797,6 +797,7 @@ struct HqlCppOptions
     bool                implicitKeyedDiskFilter;
     bool                addDefaultBloom;
     bool                newDiskReadMapping;
+    bool                transformNestedSequential;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1195,6 +1196,7 @@ public:
     IHqlCppDatasetBuilder * createLimitedDatasetBuilder(IHqlExpression * record, IHqlExpression * maxCount);
     IHqlCppDatasetBuilder * createLinkedDatasetBuilder(IHqlExpression * record, IHqlExpression * choosenLimit = NULL);
     IHqlCppDatasetBuilder * createLinkedDictionaryBuilder(IHqlExpression * record);
+    IHqlCppDatasetBuilder * createStreamedDatasetBuilder(IHqlExpression * record);
     IReferenceSelector * createSelfSelect(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr, IHqlExpression * rootSelector);
     IReferenceSelector * createReferenceSelector(BoundRow * cursor, IHqlExpression * path);
     IReferenceSelector * createReferenceSelector(BoundRow * cursor);
@@ -1830,6 +1832,8 @@ public:
 
     void buildEncryptHelper(BuildCtx & ctx, IHqlExpression * encryptAttr, const char * funcname = NULL);
     void buildFormatCrcFunction(BuildCtx & ctx, const char * name, bool removeFilepos, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta);
+    void buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * record, unsigned payloadSize);
+    void buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * record);
     void buildLimitHelpers(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * filename, unique_id_t id);
     void buildLimitHelpers(BuildCtx & ctx, IHqlExpression * rowLimit, IHqlExpression * failAction, bool isSkip, IHqlExpression * filename, unique_id_t id);
 
@@ -1918,6 +1922,7 @@ protected:
     void optimizePersists(HqlExprArray & exprs);
     IHqlExpression * convertSetResultToExtract(IHqlExpression * expr);
     void allocateSequenceNumbers(HqlExprArray & exprs);
+    void transformNestedSequential(HqlExprArray & exprs);
     void convertLogicalToActivities(WorkflowItem & curWorkflow);
     void flattenDatasets(WorkflowArray & array);
 

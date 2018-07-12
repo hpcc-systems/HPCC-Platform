@@ -38,7 +38,7 @@ count(p2);
 output(p2(f='NOT'));
 count(p2(f='NOT'));
 
-i := INDEX(d,{f},{},prefix + 'nor_this', OPT);
+i := INDEX(d,{f},{ unsigned dummyFpos := 0 },prefix + 'nor_this', OPT);
 output(i);
 count(i);
 output(i(f='NOT'));

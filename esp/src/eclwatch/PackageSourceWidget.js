@@ -1,18 +1,3 @@
-/*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems®.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-############################################################################## */
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
@@ -35,10 +20,10 @@ define([
     "dojo/text!../templates/PackageSourceWidget.html"
 ],
     function (declare, lang, i18n, nlsHPCC, dom, topic,
-            _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
-            BorderContainer, ContentPane, registry,
-            CodeMirror,
-            WsPackageMaps, template) {
+        _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
+        BorderContainer, ContentPane, registry,
+        CodeMirror,
+        WsPackageMaps, template) {
         return declare("PackageSourceWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
             baseClass: "PackageSourceWidget",
@@ -118,14 +103,14 @@ define([
                 topic.publish("hpcc/brToaster", {
                     Severity: "Error",
                     Source: err.message,
-                Exceptions: [{ Message: err.stack }]
+                    Exceptions: [{ Message: err.stack }]
                 });
             },
 
             addArrayToText: function (arrayTitle, arrayItems, text) {
                 if ((arrayItems.Item !== undefined) && (arrayItems.Item.length > 0)) {
                     text += arrayTitle + ":\n";
-                    for (var i=0;i<arrayItems.Item.length;i++)
+                    for (var i = 0; i < arrayItems.Item.length; i++)
                         text += "  " + arrayItems.Item[i] + "\n";
                     text += "\n";
                 }

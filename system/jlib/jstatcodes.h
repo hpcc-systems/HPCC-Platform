@@ -210,6 +210,8 @@ enum StatisticKind
     StNumAttribsProcessed,
     StNumAttribsSimplified,
     StNumAttribsFromCache,
+    StNumSmartJoinDegradedToLocal,      // number of times global smart join degraded to local smart join (<=1 unless in loop)
+    StNumSmartJoinSlavesDegradedToStd,  // number of times a slave in smart join degraded from local smart join to standard hash join
     StMax,
 
     //For any quantity there is potentially the following variants.

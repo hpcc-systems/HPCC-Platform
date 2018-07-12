@@ -205,7 +205,7 @@ doStatus() {
 }
 
 doStop() {
-    echo "$action stop in the cluster ..."
+    echo "$action stopping the cluster ..."
     init stop
     scriptFile=~/${action}_stop_$$
     if [[ -n "${comp}" ]]; then
@@ -250,7 +250,7 @@ doStart() {
     if [[ -e $startFile ]]; then
         local numIPs=$(wc -l $startFile | awk '{ print $1 }')
         if [[ $numIPs -gt 0 ]]; then
-            echo "$action start in the cluster ..."
+            echo "$action starting the cluster ..."
             scriptFile=~/${action}_start_$$
             createScript $scriptFile $action $args start
             OPTIONS="${DEFAULT_OPTIONS} -h $startFile"

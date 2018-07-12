@@ -1700,7 +1700,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.foldStored,"foldStored", false),
         DebugOption(options.spotTopN,"spotTopN", true),
         DebugOption(options.topnLimit, "topnLimit", 10000),
-        DebugOption(options.groupAllDistribute,"groupAllDistribute", false),
+        DebugOption(options.groupAllDistribute,"groupAllDistribute", true),
         DebugOption(options.spotLocalMerge,"spotLocalMerge", true),
         DebugOption(options.spotPotentialKeyedJoins,"spotPotentialKeyedJoins", false),
         DebugOption(options.combineTrivialStored,"combineTrivialStored", true),
@@ -1812,6 +1812,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.implicitKeyedDiskFilter,"implicitKeyedDiskFilter", false),
         DebugOption(options.addDefaultBloom,"addDefaultBloom", true),
         DebugOption(options.newDiskReadMapping, "newDiskReadMapping", true),
+        DebugOption(options.transformNestedSequential, "transformNestedSequential", true),
     };
 
     //get options values from workunit
@@ -6163,15 +6164,18 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         case type_table:
         case type_groupedtable:
             {
-                if (getBoolAttribute(external, passParameterMetaAtom, false))
+                IHqlExpression* passParamAttr = getFunctionBodyAttribute(external, passParameterMetaAtom);
+                if (getBoolAttributeValue(passParamAttr))
                     args.append(*buildMetaParameter(curParam));
                 ExpressionFormat format = queryNaturalFormat(argType);
-                buildDataset(ctx, castParam, bound, format);
+                doBuildDataset(ctx, castParam, bound, format);
+                ensureDatasetFormat(ctx, argType, bound, format);
                 break;
             }
         case type_row:
             {
-                if (getBoolAttribute(external, passParameterMetaAtom, false))
+                IHqlExpression* passParamAttr = getFunctionBodyAttribute(external, passParameterMetaAtom);
+                if (getBoolAttributeValue(passParamAttr))
                     args.append(*buildMetaParameter(curParam));
                 Owned<IReferenceSelector> selector = buildNewRow(ctx, castParam);
 
@@ -12039,7 +12043,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
                 args.append(*createActualFromFormal(queryParam));
             else
                 args.append(*LINK(bodyCode->queryChild(0)));
-            args.append(*createConstant(createUtf8Value(fieldlist.length()-1, fieldlist+1, makeUtf8Type(UNKNOWN_LENGTH, NULL))));
+            args.append(*createConstant(createUtf8Value(fieldlist.length()-1, fieldlist.str()+1, makeUtf8Type(UNKNOWN_LENGTH, NULL))));
             args.append(*LINK(substSearch));
             scriptArgs.append(*bindFunctionCall(substituteEmbeddedScriptId, args,makeUtf8Type(UNKNOWN_LENGTH, NULL)));
         }
