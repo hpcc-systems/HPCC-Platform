@@ -895,12 +895,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         ICommunicator *comm = nullptr;
         std::vector<unsigned> handles;
 
-        void readErrorCode(CMessageBuffer &msg)
+        KJServiceErrorCode readErrorCode(CMessageBuffer &msg)
         {
             byte errorCode;
             msg.read(errorCode);
-            if (errorCode)
+            if (kjse_exception == errorCode)
                 throw deserializeException(msg);
+            return (KJServiceErrorCode)errorCode;
         }
         void writeRowData(CThorExpandingRowArray &rows, MemoryBuffer &mb)
         {
@@ -976,18 +977,23 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             byte cmd = handle ? kjs_keyread : kjs_keyopen;
             msg.append(cmd);
             msg.append(replyTag);
-            IPartDescriptor &part = activity.allIndexParts.item(partNo);
-            unsigned crc;
-            part.getCrc(crc);
-            RemoteFilename rfn;
-            part.getFilename(copy, rfn);
-            StringBuffer fname;
-            rfn.getLocalPath(fname);
-            msg.append(activity.queryId()).append(fname).append(crc); // lookup key
             if (handle)
                 msg.append(handle);
             else
             {
+                IPartDescriptor &part = activity.allIndexParts.item(partNo);
+                unsigned crc;
+                part.getCrc(crc);
+                RemoteFilename rfn;
+                part.getFilename(copy, rfn);
+                StringBuffer fname;
+                rfn.getLocalPath(fname);
+                msg.append(activity.queryId()).append(fname).append(crc); // lookup key
+                // serialize onCreate context
+                DelayedSizeMarker sizeMark(msg);
+                activity.queryHelper()->serializeCreateContext(msg);
+                sizeMark.write();
+
                 msg.append(activity.messageCompression);
                 // NB: potentially translation per part could be different if dealing with superkeys
                 IPropertyTree &props = part.queryOwner().queryProperties();
@@ -1021,6 +1027,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     msg.append(static_cast<std::underlying_type<RecordTranslationMode>::type>(RecordTranslationMode::None));
             }
         }
+        void prepAndSend(CMessageBuffer &msg, CThorExpandingRowArray &processing, unsigned selected, unsigned partNo, unsigned copy)
+        {
+            initRead(msg, selected, partNo, copy);
+            writeRowData(processing, msg);
+
+            if (!comm->send(msg, lookupSlave, kjServiceMpTag, LONGTIMEOUT))
+                throw MakeActivityException(&activity, 0, "CKeyLookupRemoteHandler - comm send failed");
+            msg.clear();
+        }
     public:
         CKeyLookupRemoteHandler(CKeyedJoinSlave &_activity, unsigned _lookupSlave) : PARENT(_activity, _activity.keyLookupRowWithJGRowIf, _lookupSlave), replyRows(_activity, _activity.keyLookupReplyOutputMetaRowIf)
         {
@@ -1038,24 +1053,29 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             unsigned partNo = partCopy & partMask;
             unsigned copy = partCopy >> 24;
 
-            CMessageBuffer msg;
-            // JCSMORE - don't _need_ filename in general after 1st call, but avoids challenge/response handling if other side has closed, and relatively small vs msg size
-            initRead(msg, selected, partNo, copy);
             unsigned numRows = processing.ordinality();
-            writeRowData(processing, msg);
 
-            if (!comm->send(msg, lookupSlave, kjServiceMpTag, LONGTIMEOUT))
-                throw MakeActivityException(&activity, 0, "CKeyLookupRemoteHandler - comm send failed");
-
-            msg.clear();
+            CMessageBuffer msg;
+            prepAndSend(msg, processing, selected, partNo, copy);
 
             // read back results and feed in to appropriate join groups.
             unsigned received = 0;
+            bool resent = false;
             while (true)
             {
                 if (!comm->recv(msg, lookupSlave, replyTag))
                     break;
-                readErrorCode(msg);
+                KJServiceErrorCode errorCode = readErrorCode(msg);
+                if (kjse_unknownhandle == errorCode)
+                {
+                    if (resent)
+                        throwUnexpected();
+                    msg.clear();
+                    resent = true;
+                    handles[selected] = 0;
+                    prepAndSend(msg, processing, selected, partNo, copy);
+                    continue;
+                }
                 MemoryBuffer tmpMB;
                 MemoryBuffer &mb = doUncompress(tmpMB, msg);
                 if (0 == received)
@@ -1256,10 +1276,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             {
                 msg.append(activity.queryId()).append(partNo); // fetch key
 
-                /* JCSMORE consider not sending info. below with each packet,
-                 * and instead expect challenge response from server-side, then send.
-                 * But not sure worth it, as requests are batched, so this overhead is small
-                 */
+                // serialize onCreate context
+                DelayedSizeMarker sizeMark(msg);
+                activity.queryHelper()->serializeCreateContext(msg);
+                sizeMark.write();
+
                 msg.append(flags);
                 IPartDescriptor &part = activity.allDataParts.item(partNo);
                 RemoteFilename rfn;
@@ -1301,6 +1322,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     msg.append(static_cast<std::underlying_type<RecordTranslationMode>::type>(RecordTranslationMode::None));
             }
         }
+        void prepAndSend(CMessageBuffer &msg, CThorExpandingRowArray &processing, unsigned selected, unsigned partNo, unsigned copy)
+        {
+            initRead(msg, selected, partNo, copy);
+            writeRowData(processing, msg);
+
+            if (!comm->send(msg, lookupSlave, kjServiceMpTag, LONGTIMEOUT))
+                throw MakeActivityException(&activity, 0, "CFetchRemoteLookupHandler - comm send failed");
+            msg.clear();
+        }
     public:
         CFetchRemoteLookupHandler(CKeyedJoinSlave &_activity, unsigned _lookupSlave)
             : PARENT(_activity, _activity.fetchInputMetaRowIf, _lookupSlave), replyRows(_activity, _activity.fetchOutputMetaRowIf)
@@ -1324,13 +1354,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             unsigned copy = partCopy >> 24;
 
             CMessageBuffer msg;
-            // JCSMORE - don't _need_ filename in general after 1st call, but avoids challenge/response handling if other side has closed, and relatively small vs overall msg size
-            initRead(msg, selected, partNo, copy);
-            writeRowData(processing, msg);
-
-            if (!comm->send(msg, lookupSlave, kjServiceMpTag, LONGTIMEOUT))
-                throw MakeActivityException(&activity, 0, "CFetchRemoteLookupHandler - comm send failed");
-            msg.clear();
+            prepAndSend(msg, processing, selected, partNo, copy);
 
             ScopedAtomic<unsigned __int64> diskSeeks(activity.statsArr[AS_DiskSeeks]);
             unsigned numRows = processing.ordinality();
@@ -1339,11 +1363,23 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             unsigned rejected = 0;
 
             unsigned received = 0;
+            bool resent = false;
             while (true)
             {
                 if (!comm->recv(msg, lookupSlave, replyTag))
                     break;
-                readErrorCode(msg);
+                KJServiceErrorCode errorCode = readErrorCode(msg);
+                if (kjse_unknownhandle == errorCode)
+                {
+                    if (resent)
+                        throwUnexpected();
+                    msg.clear();
+                    resent = true;
+                    handles[selected] = 0;
+                    prepAndSend(msg, processing, selected, partNo, copy);
+                    continue;
+                }
+
                 MemoryBuffer tmpMB;
                 MemoryBuffer &mb = doUncompress(tmpMB, msg);
                 if (0 == received)
