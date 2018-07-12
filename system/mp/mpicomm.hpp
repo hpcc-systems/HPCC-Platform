@@ -12,11 +12,11 @@
 #include <mpi.h>
 #include "mpcomm.hpp"
 
-#define MPI_ENV "hpcc-withmpi"
-
 extern mp_decl ICommunicator *createMPICommunicator(IGroup *group);
 
 extern mp_decl void initializeMPI(MPI::Comm& comm);
 extern mp_decl void terminateMPI();
+
+extern mp_decl int getMPIGlobalRank();
 
 #endif /* SYSTEM_MP_MPICOMM_HPP_ */

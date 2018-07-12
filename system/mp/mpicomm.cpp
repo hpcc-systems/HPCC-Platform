@@ -38,10 +38,6 @@
 
 #include "mpi_wrapper.hpp"
 
-#ifdef _MSC_VER
-#pragma warning (disable : 4355)
-#endif
-
 class NodeCommunicator: public ICommunicator, public CInterface
 {
 private:
@@ -355,4 +351,9 @@ void terminateMPI()
     if (mpiInitCounter == 0)
         hpcc_mpi::finalize();
     assertex(mpiInitCounter>=0);
+}
+
+int getMPIGlobalRank()
+{
+    return hpcc_mpi::rank(MPI::COMM_WORLD);
 }
