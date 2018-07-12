@@ -1078,6 +1078,15 @@ static inline bool isValidRoxiePtr(const void *_ptr)
     return ptr >= heapBase && ptr < heapEnd;
 }
 
+size_t getRelativeRoxiePtr(const void *_ptr)
+{
+    const char *ptr = (const char *) _ptr;
+    if (ptr >= heapBase && ptr < heapEnd)
+        return ptr - heapBase;
+    return -1;
+}
+
+
 inline static HeapletBase *findBase(const void *ptr)
 {
     return (HeapletBase *) ((memsize_t) ptr & HEAP_ALIGNMENT_MASK);
@@ -1968,7 +1977,7 @@ private:
 #endif
         if (unlikely((header->allocatorId & ~ACTIVITY_MASK) != ACTIVITY_MAGIC))
         {
-            DBGLOG("%s: Invalid pointer %p id(%x) cnt(%x)", reason, ptr, header->allocatorId, header->count.load());
+            DBGLOG("%s: Invalid pointer %p(%zu) id(%x) cnt(%x)", reason, ptr, getRelativeRoxiePtr(ptr), header->allocatorId, header->count.load());
             PrintStackReport();
             PrintMemoryReport();
             HEAPERROR("Invalid pointer");
