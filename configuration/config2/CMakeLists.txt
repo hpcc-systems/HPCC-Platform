@@ -17,40 +17,46 @@
 
 project ( config2 )
 
-SET(  SRCS
-      EnvironmentMgr.cpp
-      XMLEnvironmentMgr.cpp
-      XMLEnvironmentLoader.cpp
-      SchemaParser.cpp
-      SchemaItem.cpp
-      SchemaValue.cpp
-      SchemaTypeLimits.cpp
-      SchemaTypeIntegerLimits.cpp
-      SchemaTypeStringLimits.cpp
-      EnvironmentNode.cpp
-      EnvironmentValue.cpp
-      XSDComponentParser.cpp
-      XSDSchemaParser.cpp
-      XSDValueSetParser.cpp
-      Status.cpp
-      EnvironmentEventHandlers.cpp
-      Utils.cpp
-      InsertableItem.cpp
-      ConfigPath.cpp
-)
+if (USE_BOOST_REGEX)
 
-INCLUDE_DIRECTORIES(
-      ${HPCC_SOURCE_DIR}/system/include
-      ${HPCC_SOURCE_DIR}/system/jlib
-      ${HPCC_SOURCE_DIR}/deployment/deploy
-      ${CMAKE_PREFIX_PATH}/mkspecs/linux-g++
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${CMAKE_BINARY_DIR}
-      ${CMAKE_BINARY_DIR}/oss
-)
+    SET(  SRCS
+        EnvironmentMgr.cpp
+        XMLEnvironmentMgr.cpp
+        XMLEnvironmentLoader.cpp
+        SchemaParser.cpp
+        SchemaItem.cpp
+        SchemaValue.cpp
+        SchemaTypeLimits.cpp
+        SchemaTypeIntegerLimits.cpp
+        SchemaTypeStringLimits.cpp
+        EnvironmentNode.cpp
+        EnvironmentValue.cpp
+        XSDComponentParser.cpp
+        XSDSchemaParser.cpp
+        XSDValueSetParser.cpp
+        Status.cpp
+        EnvironmentEventHandlers.cpp
+        Utils.cpp
+        InsertableItem.cpp
+        ConfigPath.cpp
+    )
 
-ADD_DEFINITIONS( -D_USRDLL -DCONFIG2_LIB)
-HPCC_ADD_LIBRARY( config2 SHARED ${SRCS} )
-TARGET_LINK_LIBRARIES( config2 jlib )
+    INCLUDE_DIRECTORIES(
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/system/jlib
+        ${HPCC_SOURCE_DIR}/deployment/deploy
+        ${CMAKE_PREFIX_PATH}/mkspecs/linux-g++
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/oss
+    )
 
-INSTALL ( TARGETS config2 RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+    ADD_DEFINITIONS( -D_USRDLL -DCONFIG2_LIB)
+    HPCC_ADD_LIBRARY( config2 SHARED ${SRCS} )
+    TARGET_LINK_LIBRARIES( config2 jlib ${BOOST_REGEX_LIBRARIES})
+
+    INSTALL ( TARGETS config2 RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+
+else ()
+    message(warning "skipping config2 - USE_BOOST_REGEX not defined")
+endif ()
