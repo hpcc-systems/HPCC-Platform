@@ -190,9 +190,8 @@ public:
         {
             tm.timedout(&remaining);
             hpcc_mpi::CommStatus status = hpcc_mpi::readData(srcrank, tag, mbuf, comm, remaining);
-            _T("recv status="<<status);
             success = (status == hpcc_mpi::CommStatus::SUCCESS);
-            //TODO what if no message received and selfMsg bcomes available now?
+            //TODO what if no message received and selfMsg bcomes available now for sender=RANK_ALL?
         }
         if (success)
         {
@@ -329,6 +328,10 @@ ICommunicator *createMPICommunicator(IGroup *group)
     return new NodeCommunicator(group, comm);
 }
 
+/** MPI framework should be initialized only once. But incase it is initialized
+    multiple times we need to keep track of it such that it gets finalized only
+    at the last call for finalize
+    **/
 int mpiInitCounter = 0;
 CriticalSection initCounterBlock;
 

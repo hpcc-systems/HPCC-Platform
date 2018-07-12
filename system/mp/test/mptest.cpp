@@ -715,24 +715,6 @@ void MPTest2(IGroup *group, ICommunicator *mpicomm)
     return;
 }
 
-void MPSelfSend(ICommunicator *mpcomm)
-{
-    CMessageBuffer mb;
-    int sendMessage = 1234;
-    int receivedMessage;
-
-    rank_t myrank = mpcomm->getGroup()->rank();
-    mb.append(sendMessage);
-    mpcomm->send(mb, myrank, MPTAG_TEST);
-
-    mb.clear();
-    mpcomm->recv(mb, myrank, MPTAG_TEST);
-    mb.read(receivedMessage);
-
-    assertex(sendMessage == receivedMessage);
-    PrintLog("MPTEST: %s: Message sent from %d to %d", TEST_SELFSEND, myrank, myrank);
-}
-
 void testIPnodeHash()
 {
     setNodeCaching(true);
@@ -786,6 +768,31 @@ void setValidate(int i, int maxCounter)
 
 //-------------------------------------------------------------//
 
+
+/**
+ * Test sending a message to its self
+ */
+void MPSelfSend(ICommunicator *mpcomm)
+{
+    CMessageBuffer mb;
+    int sendMessage = 1234;
+    int receivedMessage;
+
+    rank_t myrank = mpcomm->getGroup()->rank();
+    mb.append(sendMessage);
+    mpcomm->send(mb, myrank, MPTAG_TEST);
+
+    mb.clear();
+    mpcomm->recv(mb, myrank, MPTAG_TEST);
+    mb.read(receivedMessage);
+
+    assertex(sendMessage == receivedMessage);
+    PrintLog("MPTEST: %s: Message sent from %d to %d", TEST_SELFSEND, myrank, myrank);
+}
+
+/**
+ * Test sending message to next (wrap-around) processor
+ */
 void MPRightShift(ICommunicator* comm)
 {
     IGroup* group = comm->getGroup();
@@ -806,6 +813,9 @@ void MPRightShift(ICommunicator* comm)
     PrintLog("Message received from node %d to node %d.", source_rank, rank);
 }
 
+/**
+ * Test receiving message from an unknown node
+ */
 void MPReceiveFromAny(ICommunicator* comm, rank_t nodeRank)
 {
     IGroup* group = comm->getGroup();
@@ -835,6 +845,9 @@ void MPReceiveFromAny(ICommunicator* comm, rank_t nodeRank)
     }
 }
 
+/**
+ * Test one node sending a message to all nodes
+ */
 void MPSendToAll(ICommunicator* comm, rank_t nodeRank)
 {
     IGroup* group = comm->getGroup();
@@ -855,6 +868,9 @@ void MPSendToAll(ICommunicator* comm, rank_t nodeRank)
     PrintLog("Message received from node %d to node %d.", nodeRank, rank);
 }
 
+/**
+ * Test multiple threads calling send and recv functions
+ */
 void MPMultiMTSendRecv(ICommunicator* comm, int counter)
 {
     assertex(comm->getGroup()->ordinality()>1);
