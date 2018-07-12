@@ -24,8 +24,6 @@
 #include "mpbuff.hpp"
 #include "mplog.hpp"
 
-class NodeGroup;
-
 namespace hpcc_mpi
 {
     // Variable type to keep track of send/receive requests

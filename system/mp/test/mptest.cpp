@@ -13,7 +13,6 @@
 #include <string>
 
 #include "mplog.hpp"
-#include "additionalmptests.cpp"
 
 using namespace std;
 
@@ -33,6 +32,11 @@ using namespace std;
 #define TEST_RING "Ring"
 #define TEST_RANK "PrintRank"
 #define TEST_SELFSEND "SelfSend"
+#define TEST_SINGLE_SEND "SingleSend"
+#define TEST_RIGHT_SHIFT "RightShift"
+#define TEST_RECV_FROM_ANY "RecvFromAny"
+#define TEST_SEND_TO_ALL "SendToAll"
+#define TEST_MULTI_MT "MTMultiSendRecv"
 
 #ifdef MULTITEST
 //#define MYMACHINES "10.150.10.16,10.150.10.17,10.150.10.18,10.150.10.19,10.150.10.20,10.150.10.21,10.150.10.22,10.150.10.23,10.150.10.47,10.150.10.48,10.150.10.49,10.150.10.50,10.150.10.51,10.150.10.52,10.150.10.53,10.150.10.54,10.150.10.55,10.150.10.73,10.150.10.75,10.150.10.79"
@@ -141,14 +145,6 @@ static CSectionTimer STrecv("recv");
 
 void StreamTest(IGroup *group,ICommunicator *comm)
 {
-//    void *bufs[18];
-//    unsigned bi;
-
-//    for (bi=0;bi<16;bi++) {
-//        bufs[bi] = malloc(1024*1024*100);
-//        assertex(bufs[bi]);
-//        memset(bufs[bi],bi,1024*1024*100);
-//    }
 
     CMessageBuffer mb;
     for (unsigned i=0;i<NITER;i++) {
@@ -175,9 +171,6 @@ void StreamTest(IGroup *group,ICommunicator *comm)
                 mb.read(str);
             }
             PrintLog("MPTEST: StreamTest received(%u) '%s' length %u",r,str.get(),mb.length());
-            //if (i==0)
-            //  Sleep(1000*1000); // 15 mins or so
-            //Sleep(READDELAY);
         }
         else
         {
@@ -187,9 +180,6 @@ void StreamTest(IGroup *group,ICommunicator *comm)
     }
 
     comm->barrier();
-
-//    for (bi=0;bi<16;bi++)
-//        free(bufs[bi]);
 
     STsend.print();
     STrecv.print();
@@ -769,13 +759,213 @@ void testIPnodeHash()
     afor.For(100000,10);
 }
 
-int getEnvMPIRank()
+//-----------Utility classes and global variables---------------//
+CriticalSection sendCriticalSec;
+CriticalSection recvCriticalSec;
+CriticalSection validateCriticalSec;
+bool* validate;
+
+int getNextCount(CriticalSection &sect, int &count)
 {
-    // Would be better if program told rank, irrespective of MPI implementation.
-    const char *rank = getenv("PMI_RANK");
-    if (!rank)
-        return -1;
-    return atoi(rank);
+    CriticalBlock block(sect);
+    if (count)
+        return count--;
+    else
+        return 0;
+}
+
+//validate that numbers from 1 to maxCounter are received only once
+void setValidate(int i, int maxCounter)
+{
+    CriticalBlock block(validateCriticalSec);
+    assertex(i>0);
+    assertex(i<=maxCounter);
+    assertex(validate[i-1] == false);
+    validate[i-1] = true;
+}
+
+//-------------------------------------------------------------//
+
+void MPRightShift(ICommunicator* comm)
+{
+    IGroup* group = comm->getGroup();
+    rank_t p = group->ordinality();
+    rank_t rank = group->rank();
+    rank_t source_rank = (rank - 1 + p) % p;
+    rank_t destination_rank = (rank + 1) % p;
+
+    CMessageBuffer sendMsg;
+    sendMsg.append(rank);
+    comm->send(sendMsg, destination_rank, MPTAG_TEST);
+
+    CMessageBuffer recvMsg;
+    int received_msg;
+    comm->recv(recvMsg, source_rank, MPTAG_TEST);
+    recvMsg.read(received_msg);
+    assertex(source_rank == received_msg);
+    PrintLog("Message received from node %d to node %d.", source_rank, rank);
+}
+
+void MPReceiveFromAny(ICommunicator* comm, rank_t nodeRank)
+{
+    IGroup* group = comm->getGroup();
+    rank_t p = group->ordinality();
+    rank_t rank = group->rank();
+    rank_t destinationRank = (p-1);
+    double expectedValue = 1234.0;
+    _T("nodeRank="<<nodeRank);
+    if (rank == nodeRank)
+    {
+        CMessageBuffer sendMsg;
+        sendMsg.append(expectedValue);
+        comm->send(sendMsg, destinationRank, MPTAG_TEST);
+        PrintLog("Message sent by node %d to node %d.", rank, destinationRank);
+    }
+    if (rank == destinationRank)
+    {
+        CMessageBuffer recvMsg;
+        bool success = comm->recv(recvMsg, RANK_ALL, MPTAG_TEST);
+        assertex(success);
+        double receivedValue;
+        recvMsg.read(receivedValue);
+        _T("rank="<<comm->getGroup()->rank(recvMsg.getSender())<<" nodeRank="<<nodeRank);
+        assertex(nodeRank == comm->getGroup()->rank(recvMsg.getSender()));
+        assertex(expectedValue == receivedValue);
+        PrintLog("Message successfully received from node %d to node %d.", comm->getGroup()->rank(recvMsg.getSender()), rank);
+    }
+}
+
+void MPSendToAll(ICommunicator* comm, rank_t nodeRank)
+{
+    IGroup* group = comm->getGroup();
+    rank_t p = group->ordinality();
+    rank_t rank = group->rank();
+    double expectedValue = 1234.0;
+    double receivedValue;
+    if (rank == nodeRank)
+    {
+        CMessageBuffer sendMsg;
+        sendMsg.append(expectedValue);
+        comm->send(sendMsg, RANK_ALL, MPTAG_TEST);
+    }
+    CMessageBuffer recvMsg;
+    comm->recv(recvMsg, nodeRank, MPTAG_TEST, NULL);
+    recvMsg.read(receivedValue);
+    assertex(expectedValue == receivedValue);
+    PrintLog("Message received from node %d to node %d.", nodeRank, rank);
+}
+
+void MPMultiMTSendRecv(ICommunicator* comm, int counter)
+{
+    assertex(comm->getGroup()->ordinality()>1);
+    counter = (counter? counter: 100);
+    int SEND_THREADS, RECV_THREADS;
+    SEND_THREADS = RECV_THREADS = 8;
+    rank_t rank = comm->getGroup()->rank();
+
+    // nodes ranked 0 and 1 will be conducting this test
+    if (rank<2)
+    {
+        validate = new bool[counter];
+        for(int i=0; i<counter; i++) validate[i] = false;
+        class SWorker: public Thread
+        {
+        private:
+            ICommunicator* comm;
+            int* counter;
+        public:
+            SWorker(ICommunicator* _comm, int* _counter):comm(_comm), counter(_counter){}
+            int run()
+            {
+                IGroup *group = comm->getGroup();
+                rank_t p = group->ordinality();
+                rank_t rank = group->rank();
+                rank_t destination_rank = 1 - rank;
+
+                CMessageBuffer sendMsg;
+                int served = 0;
+                while(true)
+                {
+                    sendMsg.clear();
+                    int v = getNextCount(sendCriticalSec, *counter);
+                    if (v > 0)
+                    {
+                        sendMsg.append(v);
+                        comm->send(sendMsg, destination_rank, MPTAG_TEST);
+                        served++;
+                    } else
+                    {
+                        break;
+                    }
+                }
+                _T("This thread sent "<<served);
+                return 0;
+            }
+        };
+        class RWorker: public Thread
+        {
+        private:
+            ICommunicator* comm;
+            int* counter;
+            int maxCounter;
+
+        public:
+            RWorker(ICommunicator* _comm, int* _counter):comm(_comm), counter(_counter), maxCounter(*_counter){}
+            int run()
+            {
+                IGroup *group = comm->getGroup();
+                rank_t p = group->ordinality();
+                rank_t rank = group->rank();
+                rank_t source_rank = 1 - rank;
+                int served = 0;
+                CMessageBuffer recvMsg;
+                int received_msg;
+                while (*counter)
+                {
+                    recvMsg.clear();
+                    if (comm->recv(recvMsg, source_rank, MPTAG_TEST, NULL, 100))
+                    {
+                        recvMsg.read(received_msg);
+                        setValidate(received_msg, maxCounter);
+                        getNextCount(recvCriticalSec, *counter);
+                        served++;
+                    }
+                }
+                _T("This thread received "<<served);
+                return 0;
+            }
+        };
+        std::vector<Thread*> workers;
+        int s_counter, r_counter;
+        s_counter = r_counter = counter;
+        _T("counter="<<counter);
+        for(int i=0;i<SEND_THREADS; i++)
+        {
+            workers.push_back(new SWorker(comm, &s_counter));
+        }
+        for(int i=0;i<RECV_THREADS; i++)
+        {
+            workers.push_back(new RWorker(comm, &r_counter));
+        }
+        for(int i=0;i<workers.size(); i++)
+        {
+            workers[i]->start();
+        }
+        for(int i=0;i<workers.size(); i++)
+        {
+            workers[i]->join();
+        }
+        for(int i=0;i<workers.size(); i++)
+        {
+            delete workers[i];
+        }
+        assertex(s_counter == 0);
+        assertex(r_counter == 0);
+        PrintLog("Rank %d sent %d messages", rank, (counter-s_counter));
+        PrintLog("Rank %d received %d messages", rank, (counter-r_counter));
+        delete validate;
+    }
+    comm->barrier();
 }
 
 void runTest(const char *caption, char testname[256], const Owned<IGroup>& group,
@@ -817,10 +1007,17 @@ void runTest(const char *caption, char testname[256], const Owned<IGroup>& group
             MPTest2(group, comm);
         else if (strieq(testname, TEST_SELFSEND))
             MPSelfSend(comm);
-        else if (runAdditionalTests(testname, comm, numiters, buffsize, inputRank)) {
-            if (comm->getGroup()->rank() == 0)
-                PrintLog("MPTEST: Additional test %s completed", testname);
-        } else if ((int) (strlen(testname)) > 0)
+        else if (strieq(testname, TEST_SINGLE_SEND) )
+            Test1(group, comm);
+        else if ( strieq(testname, TEST_RIGHT_SHIFT) )
+            MPRightShift(comm);
+        else if ( strieq(testname, TEST_RECV_FROM_ANY) )
+            MPReceiveFromAny(comm, inputRank);
+        else if ( strieq(testname, TEST_SEND_TO_ALL) )
+            MPSendToAll(comm, inputRank);
+        else if ( strieq(testname, TEST_MULTI_MT) )
+            MPMultiMTSendRecv(comm, numiters);
+        else if ((int) (strlen(testname)) > 0)
             PrintLog("MPTEST: Error, invalid testname specified (-t %s)", testname);
         else
             // default is MPRing ...
@@ -850,6 +1047,58 @@ void runTest(const char *caption, char testname[256], const Owned<IGroup>& group
 # endif
 #endif
     comm->barrier();
+}
+
+bool createNodeList(IArrayOf<INode> &nodes, const char* hostfile, int my_port, rank_t max_ranks) {
+    unsigned i = 1;
+    char hoststr[256] = { "" };
+    FILE* fp = fopen(hostfile, "r");
+    if (fp == NULL) {
+        PrintLog("MPTest: Error, cannot open hostfile <%s>", hostfile);
+        return false;
+    }
+    char line[256] = { "" };
+    while (fgets(line, 255, fp) != NULL) {
+        if ((max_ranks > 0) && ((i - 1) >= max_ranks))
+            break;
+
+        int srtn = sscanf(line, "%s", hoststr);
+        if (srtn == 1 && line[0] != '#') {
+            INode* newNode = createINode(hoststr, my_port);
+            nodes.append(*newNode);
+            i++;
+        }
+    }
+    fclose(fp);
+    return true;
+}
+
+int getServerPort(int basePort) {
+    int my_port = basePort;
+    int rank = getMPIGlobalRank();
+    if (rank >= 0)            // mpi launch
+    {
+        /* when launched via MPI, my_port is same
+         * Ideally MPI would pass in rank and the rest can be done internally.
+         * For now manipulate my_port in useMPI case to make different per process based on rank.
+         */
+        my_port += rank;
+    }
+    return my_port;
+}
+
+void printHelp(char* executableName) {
+    printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -r <rank> -n <numprocs> -d] | <ip:port> <ip:port>] [-mpi] [-mp]\n\n",executableName);
+    std::vector<std::string> tests = { TEST_RANK, TEST_SELFSEND, TEST_MULTI,
+            TEST_STREAM, TEST_RING, TEST_AlltoAll, TEST_SINGLE_SEND,
+            TEST_RIGHT_SHIFT, TEST_RECV_FROM_ANY, TEST_SEND_TO_ALL,
+            TEST_MULTI_MT };
+    std::vector<std::string>::iterator it = tests.begin();
+    printf("\t <testname>\t%s\n", (*it).c_str());
+    it++;
+    for (; it != tests.end(); ++it)
+        printf("\t\t\t%s\n", (*it).c_str());
+    printf("\n");
 }
 
 int main(int argc, char* argv[])
@@ -906,25 +1155,9 @@ int main(int argc, char* argv[])
     int argSize = argc;
     char** argL = argv;
 
-    if ((argSize>1) && (strcmp(argL[1], "--with-mpi")==0)){
-        argSize--;
-        argL++;
-        char *ev = (char *)MPI_ENV;
-        setenv(ev,"",0);
-        assertex(getenv(MPI_ENV)!=NULL);
-    }
-
 #ifndef MYMACHINES
     if (argSize<3) {
-        printf("\nMPTEST: Usage: %s <myport> [-f <hostfile> [-t <testname> -b <buffsize> -i <iters> -r <rank> -n <numprocs> -d] | <ip:port> <ip:port>] [-mpi] [-mp]\n\n", argv[0]);
-        std::vector<std::string> tests = { TEST_RANK, TEST_SELFSEND, TEST_MULTI, TEST_STREAM, TEST_RING, TEST_AlltoAll};
-        appendAdditionalTests(tests);
-        std::vector<std::string>::iterator it = tests.begin();
-        printf("\t <testname>\t%s\n", (*it).c_str());
-        it++;
-        for (; it != tests.end(); ++it)
-            printf("\t\t\t%s\n",(*it).c_str());
-        printf("\n");
+        printHelp(argv[0]);
         return 0;
     }
 #endif
@@ -932,27 +1165,15 @@ int main(int argc, char* argv[])
     try {
         EnableSEHtoExceptionMapping();
         StringBuffer lf;
-        // PrintLog("MPTEST Starting");
 
 #ifndef MYMACHINES
         rank_t tot_ranks = 0;
-        int my_port = atoi(argL[1]);
+        int basePort = atoi(argL[1]);
 
 
-        int rank = getEnvMPIRank();
-        if (rank >= 0) // mpi launch
-        {
-            /* when launched via MPI, my_port is same
-             * Ideally MPI would pass in rank and the rest can be done internally.
-             * For now manipulate my_port in useMPI case to make different per process based on rank.
-             */
-
-            my_port += rank;
-        }
-
+        int my_port = getServerPort(basePort);
         char logfile[256] = { "" };
         sprintf(logfile,"mptest-%d.log",my_port);
-        // openLogFile(lf, logfile);
 
         IArrayOf<INode> nodes;
 
@@ -962,7 +1183,6 @@ int main(int argc, char* argv[])
             if (strcmp(argL[2], "-f") == 0)
                 hostfile = argL[3];
         }
-        unsigned i = 1;
         if (hostfile)
         {
 
@@ -1023,30 +1243,12 @@ int main(int argc, char* argv[])
                 }
                 j++;
             }
-            char hoststr[256] = { "" };
-            FILE *fp = fopen(hostfile, "r");
-            if (fp == NULL)
-            {
-                PrintLog("MPTest: Error, cannot open hostfile <%s>", hostfile);
+            if (!createNodeList(nodes, hostfile, my_port, max_ranks))
                 return 1;
-            }
-            char line[256] = { "" };
-            while(fgets(line, 255, fp) != NULL)
-            {
-                if ( (max_ranks > 0) && ((i-1) >= max_ranks) )
-                    break;
-                int srtn = sscanf(line,"%s",hoststr);
-                if (srtn == 1 && line[0] != '#')
-                {
-                    INode *newNode = createINode(hoststr, my_port);
-                    nodes.append(*newNode);
-                    i++;
-                }
-            }
-            fclose(fp);
         }
         else
         {
+            unsigned i = 1;
             while (i+1 < argSize)
             {
                 PrintLog("MPTEST: adding node %u, port = <%s>", i-1, argL[i+1]);
@@ -1055,7 +1257,7 @@ int main(int argc, char* argv[])
                 i++;
             }
         }
-        tot_ranks = i-1;
+        tot_ranks = nodes.length();
 
         Owned<IGroup> group = createIGroup(tot_ranks, nodes.getArray());
 

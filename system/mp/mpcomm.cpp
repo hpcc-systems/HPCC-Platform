@@ -3039,11 +3039,13 @@ static CGlobalMPServer *globalMPServer;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    initializeMPI(MPI::COMM_WORLD);
     globalMPServer = NULL;
     return true;
 }
 MODULE_EXIT()
 {
+    terminateMPI();
     ::Release(globalMPServer);
 }
 
