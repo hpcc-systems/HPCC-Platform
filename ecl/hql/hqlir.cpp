@@ -17,6 +17,7 @@
 
 #include "jstring.hpp"
 #include "jiface.hpp"
+#include "hqlutil.hpp"
 #include "hqlir.hpp"
 
 //#define ADD_ACTIVE_SCOPE_AS_COMMENT
@@ -2031,6 +2032,7 @@ id_t ExpressionIRPlayer::doProcessExpr(IHqlExpression * expr)
         {
             HqlExprArray scopeSymbols;
             expr->queryScope()->getSymbols(scopeSymbols);
+            scopeSymbols.sort(compareSymbolsByName);
             ForEachItemIn(i, scopeSymbols)
                 info.special.append(processExpr(&scopeSymbols.item(i)));
             break;
