@@ -951,4 +951,3 @@ Full contents of the generated C++ (as a single file)
 
         return new MyEclProcess;
     }
-

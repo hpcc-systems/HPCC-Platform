@@ -7,7 +7,7 @@ Introduction
 ************
 
 Purpose
-=======
+========
 The primary purpose of the code generator is to take an ECL query and convert it into a work unit
 that is suitable for running by one of the engines.
 
@@ -229,14 +229,14 @@ The key data structure within eclcc is the graph representation.  The design has
 
 * The expression classes use interfaces and a type field rather than polymorphism.
   This could be argued to be bad object design...but.
-  
+
   There are more than 500 different possible operators.  If a class was created for each of them the
   system would quickly become unwieldy.  Instead there are several different classes which model the
   different types of expression (dataset/expression/scope).
-  
+
   The interfaces contain everything needed to create and interrogate an expression tree, but they do
   not contain functionality for directly processing the graph.
-  
+
   To avoid some of the shortcomings of type fields there are various mechanisms for accessing derived attributes which avoid interrogating the type field.
 
 * Memory consumption is critical.
@@ -273,7 +273,7 @@ must be added to the end).
 
 IHqlSimpleScope
 ---------------
-This interface is implemented by records, and is used to map names to the fields within the records. 
+This interface is implemented by records, and is used to map names to the fields within the records.
 If a record contains IFBLOCKs then each of the fields in the ifblock is defined in the
 IHqlSimpleScope for the containing record.
 
@@ -308,7 +308,7 @@ Properties and attributes
 -------------------------
 There are two related by slightly different concepts.  An attribute refers to the explicit flags that
 are added to operators (e.g., , LOCAL, KEEP(n) etc. specified in the ECL or some internal attributes
-added by the code generator).  There are a couple of different functions for creating attributes. 
+added by the code generator).  There are a couple of different functions for creating attributes.
 createExtraAttribute() should be used by default.  createAttribute() is reserved for an attribute
 that never has any arguments, or in unusual situations where it is important that the arguments are
 never transformed.  They are tested using queryAttribute()/hasAttribute() and represented by nodes of
@@ -323,10 +323,10 @@ Fields can be selected from active rows of a dataset in three main ways:
 
 * Some operators define LEFT/RIGHT to represent an input or processed dataset.  Fields from these
   active rows are referenced with LEFT.<field-name>.  Here LEFT or RIGHT is the "selector".
-  
+
 * Other operators use the input dataset as the selector.  E.g., myFile(myFile.id != 0).  Here the
   input dataset is the "selector".
-  
+
 * Often when the input dataset is used as the selector it can be omitted.  E.g., myFile(id != 0).
   This is implicitly expanded by the PARSER to the second form.
   A reference to a field is always represented in the expression graph as a node of kind no_select
@@ -457,7 +457,7 @@ mechanisms for caching derived information so it is available efficiently.
 * Active datasets - gatherTablesUsed().
 
   It is very common to want to know which datasets an expression references.  This information is
-  calculated and cached on demand and accessed via the IHqlExpression::gatherTablesUsed() functions. 
+  calculated and cached on demand and accessed via the IHqlExpression::gatherTablesUsed() functions.
   There are a couple of other functions IHqlExpression::isIndependentOfScope() and
   IHqlExpression::usesSelector() which provide efficient functions for common uses.
 
@@ -495,7 +495,7 @@ shouldn't repeat the work - otherwise the execution time may be exponential with
 Other things to bear in mind
 
 * If a node isn't modified don't create a new one - return a link to the old one.
-* You generally need to walk the graph and gather some information before creating a modified graph. 
+* You generally need to walk the graph and gather some information before creating a modified graph.
   Sometimes creating a new graph can be short-circuited if no changes will be required.
 * Sometimes you can be tempted to try and short-circuit transforming part of a graph (e.g., the
   arguments to a dataset activity), but because of the way references to fields within dataset work
@@ -537,7 +537,8 @@ Some more details on the individual transforms are given below..
 Key Stages
 **********
 Parsing
-=======
+========
+
 The first job of eclcc is to parse the ECL into an expression graph.  The source for the ECL can come
 from various different sources (archive, source files, remote repository).  The details are hidden
 behind the IEclSource/IEclSourceCollection interfaces.  The createRepository() function is then used
@@ -551,11 +552,11 @@ Several things occur while the ECL is being parsed:
   which is better suited to processing and optimizing.
 
 * Some limited constant folding occurs.
-  
+
   When a function is expanded, often it means that some of the
   test conditions are always true/false.  To reduce the transformations the condition may be folded
-  early on.  
-  
+  early on.
+
 * When a symbol is referenced from another module this will recursively cause the ECL for that module
   (or definition within that module) to be parsed.
 
@@ -572,7 +573,7 @@ There are various problems with the expression graph that comes out of the parse
 * Records can have values as children (e.g., { myField := infield.value} ), but it causes chaos if
   record definitions can change while other transformations are going on.  So the normalization
   removes values from fields.
-* Some activities use records to define the values that output records should contain (e.g., TABLE). 
+* Some activities use records to define the values that output records should contain (e.g., TABLE).
   These are now converted to another form (e.g., no_newusertable).
 * Sometimes expressions have multiple definition names.  Symbols and annotations are rationalized and
   commoned up to aid commoning up other expressions.
@@ -580,7 +581,7 @@ There are various problems with the expression graph that comes out of the parse
   symbols are removed.
 * The CASE/MAP representation for a dataset/action is awkward for the transforms to process.  They
   are converted to nested Ifs.
-  
+
   (At some point a different representation might be a good idea.)
 * EVALUATE is a weird syntax.  Instances are replaced with equivalent code which is much easier to
   subsequently process.
@@ -667,7 +668,7 @@ Workflow
 ========
 
 The actions in a workunit are divided up into individual workflow items.  Details of when each
-workflow item is executed, what its dependencies are stored in the <Workflow> section of the xml. 
+workflow item is executed, what its dependencies are stored in the <Workflow> section of the xml.
 The generated code also contains a class definition, with a method perform() which is used to execute
 the actions associated with a particular workflow item. (The class instances are created by calling
 the exported createProcess() factory function).
@@ -678,7 +679,7 @@ point to execute a graph.
 Graph
 =====
 The activity graphs are stored in the xml.  The graph contains details of which activities are
-required, how those activities link together, what dependencies there are between the activities. 
+required, how those activities link together, what dependencies there are between the activities.
 For each activity it might contain the following information:
 
 * A unique id.
@@ -900,7 +901,7 @@ Most dataset operations are only implemented as activities (e.g., PARSE, DEDUP).
 within a transform/filter then eclcc will generate a call to a child query.  An activity helper for the
 appropriate operation will then be generated.
 
-However a subset of the dataset operations can also be evaluated inline without calling a child query. 
+However a subset of the dataset operations can also be evaluated inline without calling a child query.
 Some examples are filters, projects, and simple aggregation.  It removes the overhead of the child query
 call in the simple cases, and often generates more concise code.
 
