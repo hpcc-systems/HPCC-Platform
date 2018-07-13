@@ -42,6 +42,9 @@
 #include "mputil.hpp"
 #include "mplog.hpp"
 
+//MPI implementation
+#include "mpicomm.hpp"
+
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
 #endif
@@ -3036,11 +3039,13 @@ static CGlobalMPServer *globalMPServer;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    initializeMPI(MPI::COMM_WORLD);
     globalMPServer = NULL;
     return true;
 }
 MODULE_EXIT()
 {
+    terminateMPI();
     ::Release(globalMPServer);
 }
 

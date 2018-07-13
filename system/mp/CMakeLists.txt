@@ -24,19 +24,23 @@
 
 
 project( mp ) 
-
+find_package(MPI REQUIRED)
 set (    SRCS 
          mpbase.cpp 
-         mpcomm.cpp 
+         mpcomm.cpp
+         mpicomm.cpp 
          mplog.cpp 
          mptag.cpp 
+         mpi_wrapper.cpp         
     )
 
 include_directories ( 
          ./../include 
          .
          ./../jlib
+         ${MPI_CXX_INCLUDE_PATH}         
     )
+
 
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=2 -D_USRDLL -DMP_EXPORTS )
 
@@ -44,6 +48,8 @@ HPCC_ADD_LIBRARY( mp SHARED ${SRCS} )
 install ( TARGETS mp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( mp 
          jlib
+         ${MPI_CXX_LIBRARIES}
     )
+
 
 HPCC_ADD_SUBDIRECTORY(test "PLATFORM")
