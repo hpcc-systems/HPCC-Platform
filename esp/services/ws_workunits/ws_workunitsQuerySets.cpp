@@ -692,6 +692,9 @@ static inline void updateQueryPriority(IPropertyTree *queryTree, const char *val
 
 void gatherFileErrors(IReferencedFileList *files, IArrayOf<IConstLogicalFileError> &errors)
 {
+    if (!files)
+        return;
+
     Owned<IReferencedFileIterator> it = files->getFiles();
     ForEach(*it)
     {
@@ -2669,7 +2672,8 @@ public:
     }
     void gatherFileErrors(IArrayOf<IConstLogicalFileError> &errors)
     {
-        ::gatherFileErrors(wufiles, errors);
+        if (wufiles)
+            ::gatherFileErrors(wufiles, errors);
     }
 
 private:
