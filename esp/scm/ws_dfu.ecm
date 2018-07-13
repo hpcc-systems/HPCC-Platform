@@ -42,6 +42,20 @@ ESPStruct SpaceItem
     int64 SmallestSizeInt;
 };
 
+ESPStruct DFUFilePartition
+{
+    int64 FieldMask;
+    ESParray<string> FieldNames;
+};
+
+ESPStruct DFUFileBloom
+{
+    int64 FieldMask;
+    ESParray<string> FieldNames;
+    int64 Limit;
+    string Probability;
+};
+
 ESPStruct DFULogicalFile
 {
     string Prefix;
@@ -160,6 +174,8 @@ ESPStruct [nil_remove] DFUFileDetail
     [min_ver("1.37"), json_inline(1)] string jsonInfo;
     [min_ver("1.37")] binary binInfo;
     [min_ver("1.38")] string PackageID;
+    [min_ver("1.39")] ESPstruct DFUFilePartition Partitions;
+    [min_ver("1.39")] ESPstruct DFUFileBloom Blooms;
 };
 
 ESPStruct DFUSpaceItem
@@ -793,7 +809,7 @@ ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.38"),
+    version("1.39"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

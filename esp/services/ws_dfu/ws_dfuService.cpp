@@ -1977,6 +1977,51 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
     }
 }
 
+void CWsDfuEx::parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray)
+{
+    if (fieldMask == 0)
+        return;
+
+    fieldCount++;
+    if (fieldMask % 2)
+        fieldIndexArray.append(fieldCount);
+    parseFieldMask(fieldMask/2, fieldCount, fieldIndexArray);
+}
+
+void CWsDfuEx::queryFieldNames(IEspContext &context, const char *fileName, const char *cluster,
+    unsigned __int64 fieldMask, StringArray &fieldNames)
+{
+    if (!fileName || !*fileName)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
+
+    Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
+    Owned<INewResultSet> result = resultSetFactory->createNewFileResultSet(fileName, cluster);
+    if (!result)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to access FileResultSet for %s.", fileName);
+
+    unsigned fieldCount = 0;
+    IntArray fieldIndexArray;
+    parseFieldMask(fieldMask, fieldCount, fieldIndexArray);
+
+    const IResultSetMetaData& metaData = result->getMetaData();
+    unsigned totalColumns = (unsigned) metaData.getColumnCount();
+    if (fieldCount > totalColumns)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid FieldMask %" I64F "u: total fields %u, ask for %u.",
+            fieldMask, totalColumns, fieldCount);
+
+    ForEachItemIn(i, fieldIndexArray)
+    {
+        int fieldIndex = fieldIndexArray.item(i);
+
+        SCMStringBuffer columnLabel;
+        if (metaData.hasSetTranslation(fieldIndex))
+            metaData.getNaturalColumnLabel(columnLabel, fieldIndex);
+        if (columnLabel.length() < 1)
+            metaData.getColumnLabel(columnLabel, fieldIndex);
+        fieldNames.append(columnLabel.str());
+    }
+}
+
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, const char *name, const char *cluster,
     const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo, IEspDFUFileDetail &FileDetails)
 {
@@ -2106,6 +2151,34 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
 
     FileDetails.setOwner(df->queryAttributes().queryProp("@owner"));
     FileDetails.setJobName(df->queryAttributes().queryProp("@job"));
+
+    if (version >= 1.39)
+    {
+        if (df->queryAttributes().hasProp("@partitionFieldMask"))
+        {
+            StringArray partitionFieldNames;
+            unsigned __int64 partitionFieldMask = df->queryAttributes().getPropInt64("@partitionFieldMask");
+            queryFieldNames(context, name, cluster, partitionFieldMask, partitionFieldNames);
+
+            IEspDFUFilePartition &partition = FileDetails.updatePartitions();
+            partition.setFieldMask(partitionFieldMask);
+            partition.setFieldNames(partitionFieldNames);
+        }
+
+        IPropertyTree *bloom = df->queryAttributes().queryPropTree("Bloom");
+        if (bloom)
+        {
+            StringArray bloomFieldNames;
+            unsigned __int64 bloomFieldMask = bloom->getPropInt64("@bloomFieldMask");
+            queryFieldNames(context, name, cluster, bloomFieldMask, bloomFieldNames);
+
+            IEspDFUFileBloom &blooms = FileDetails.updateBlooms();
+            blooms.setFieldMask(bloomFieldMask);
+            blooms.setFieldNames(bloomFieldNames);
+            blooms.setLimit(bloom->getPropInt64("@bloomLimit"));
+            blooms.setProbability(bloom->queryProp("@bloomProbability"));
+        }
+    }
 
     //#14280
     IDistributedSuperFile *sf = df->querySuperFile();

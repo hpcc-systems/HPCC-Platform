@@ -227,6 +227,9 @@ private:
     void getFilePartsOnClusters(IEspContext &context, const char* clusterReq, StringArray& clusters, IDistributedFile* df, IEspDFUFileDetail& FileDetails,
         offset_t& mn, offset_t& mx, offset_t& sum, offset_t& count);
     bool getQueryFile(const char *logicalName, const char *querySet, const char *queryID, IEspDFUFileDetail &fileDetails);
+    void queryFieldNames(IEspContext &context, const char *fileName, const char *cluster,
+        unsigned __int64 fieldMask, StringArray &fieldNames);
+    void parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray);
     bool attachServiceToDali() override
     {
         SpinBlock b(m_daliDetachedStateLock);
