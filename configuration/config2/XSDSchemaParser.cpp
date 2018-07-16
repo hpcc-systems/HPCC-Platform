@@ -701,7 +701,7 @@ std::shared_ptr<SchemaValue> XSDSchemaParser::getSchemaValue(const pt::ptree &at
     pCfgValue->setAutoGenerateType(attr.get("<xmlattr>.hpcc:autoGenerateType", ""));
     pCfgValue->setAutoGenerateValue(attr.get("<xmlattr>.hpcc:autoGenerateValue", ""));
     pCfgValue->setDefaultValue(attr.get("<xmlattr>.default", ""));
-    pCfgValue->setCodeDefault(attr.get("<xmlattr>.hpcc:codeDefault", ""));
+    pCfgValue->setCodeDefault(attr.get("<xmlattr>.hpcc:defaultInCode", ""));
     pCfgValue->setValueLimitRuleType(attr.get("<xmlattr>.hpcc:valueLimitRuleType", ""));
     pCfgValue->setValueLimitRuleData(attr.get("<xmlattr>.hpcc:valueLimitRuleData", ""));
     pCfgValue->setRequiredIf(attr.get("<xmlattr>.hpcc:requiredIf", ""));

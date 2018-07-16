@@ -198,8 +198,8 @@ ESPstruct AttributeType
     ESPstruct  TypeInfo Type;
     string     CurrentValue("");
     string     DefaultValue("");
-    string     CodeDefault("");
     bool       IsPresentInEnvironment;
+    string     DefaultInCode("");
     bool       Required(true);
     bool       ReadOnly(false);
     bool       Hidden(false);

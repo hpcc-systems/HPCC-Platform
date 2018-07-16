@@ -20,7 +20,7 @@
                                             <xs:attribute name="description" type="xs:string" use="optional" hpcc:displayName="Description"/>
                                             <xs:attribute name="path" type="xs:string" use="required" default="/" hpcc:displayName="Path" hpcc:tooltip="The logical path of a resource used for authentication"/>
                                             <xs:attribute name="resource" type="xs:string" use="required" hpcc:displayName="Resource" hpcc:tooltip="The physical resource for which access is checked"/>
-                                            <xs:attribute name="access" hpcc:codeDefault="Read">
+                                            <xs:attribute name="access" hpcc:defaultInCode="Read">
                                                 <xs:simpleType>
                                                     <xs:restriction base="xs:string">
                                                         <xs:enumeration value="" hpcc:displayName="Use default" hpcc:description=""/>
@@ -71,7 +71,7 @@
                                     </xs:simpleType>
                                 </xs:attribute>
                                 <xs:attribute name="resourcesBasedn" type="xs:string" use="optional" hpcc:displayName="" hpcc:tooltip="Base location for resources (used with ldap security)"/>
-                                <xs:attribute name="service" type="xs:string" use="required" hpcc:codeDefault="123abc" hpcc:hidden="true" hpcc:displayName="Service"
+                                <xs:attribute name="service" type="xs:string" use="required" hpcc:defaultInCode="123abc" hpcc:hidden="true" hpcc:displayName="Service"
                                     hpcc:valueLimitRuleType="uniqueItemType_1" hpcc:valueLimitRuleData="EspBinding@service,/Environment/Software/EspService@name"/>
                                 <xs:attribute name="type" type="xs:string" use="optional" hpcc:displayName="Security Manager Plugin" hpcc:tooltip="The Security Manager to be used by the Esp Service"/>
                                 <xs:attribute name="workunitsBasedn" type="xs:string" use="optional" default="ou=workunits,ou=ecl" hpcc:displayName="WorkUnits BaseDn" hpcc:tooltip="Base location for workunit resources (used with ldap security)" hpcc:requiredIf="xpath,xpath..."/>
