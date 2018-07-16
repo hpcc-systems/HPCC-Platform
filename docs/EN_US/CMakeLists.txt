@@ -1,4 +1,4 @@
-################################################################################
+﻿################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,6 +68,7 @@ add_subdirectory(HPCCDataHandling)
 add_subdirectory(HPCCDataTutorial)
 add_subdirectory(HPCCMonitoring)
 add_subdirectory(HPCCSystemAdmin)
+add_subdirectory(HPCCSpark)
 add_subdirectory(IMDB)
 add_subdirectory(InstantCloud)
 add_subdirectory(Installing_and_RunningTheHPCCPlatform)
