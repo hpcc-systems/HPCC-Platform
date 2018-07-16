@@ -119,7 +119,7 @@ int CSessionCleaner::run()
         PROGLOG("CSessionCleaner Thread started.");
 
         VStringBuffer xpath("%s*", PathSessionSession);
-        int checkSessionTimeoutMillSeconds = checkSessionTimeoutSeconds * 60;
+        int checkSessionTimeoutMillSeconds = checkSessionTimeoutSeconds * 1000;
         while(!stopping)
         {
             if (!m_isDetached)
