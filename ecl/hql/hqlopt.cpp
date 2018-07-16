@@ -30,6 +30,22 @@
 
 #define MIGRATE_JOIN_CONDITIONS             // This works, but I doubt it is generally worth the effort. - maybe on a flag.
 //#define TRACE_USAGE
+#ifdef _DEBUG
+//#define TRACK_EXPR_SEQ  nnnnn
+#endif
+//#define CHECK_USAGE_COUNT                 // For tracking down issues where usage count is inconsistent (may fail for datasets child queries)
+
+#ifdef TRACK_EXPR_SEQ
+void CHECK_EXPR_ID(IHqlExpression * expr)
+{
+    if (querySeqId(expr->queryBody()) == TRACK_EXPR_SEQ)
+        expr->numChildren(); // Add a breakpoint on this line to check whenever usage count for the expression changes
+}
+#else
+#define CHECK_EXPR_ID(expr)
+#endif
+
+
 
 /*
 Notes:
@@ -1668,6 +1684,8 @@ bool CTreeOptimizer::decUsage(IHqlExpression * expr)
     if (expr->isDataset() || expr->isDatarow())
         DBGLOG("%lx dec %d [%s]", (unsigned)expr, extra->useCount, queryNode0Text(expr));
 #endif
+    CHECK_EXPR_ID(expr);
+
     if (extra->useCount)
         return extra->useCount-- == 1;
     return false;
@@ -1686,6 +1704,7 @@ bool CTreeOptimizer::incUsage(IHqlExpression * expr)
     if (expr->isDataset() || expr->isDatarow())
         DBGLOG("%lx inc %d [%s]", (unsigned)expr, extra->useCount, queryNode0Text(expr));
 #endif
+    CHECK_EXPR_ID(expr);
     return (extra->useCount++ != 0);
 }
 
@@ -1704,6 +1723,7 @@ IHqlExpression * CTreeOptimizer::inheritUsage(IHqlExpression * newExpr, IHqlExpr
     if ((oldExtra->useCount == 0) && (newExpr->isDataset() || newExpr->isDatarow()))
         DBGLOG("Inherit0: %lx inherit %d,%d (from %lx)", (unsigned)newExpr, newExtra->useCount, oldExtra->useCount, (unsigned)oldExpr);
 #endif
+    CHECK_EXPR_ID(newExpr);
     newExtra->useCount += oldExtra->useCount;
     return newExpr;
 }
@@ -1813,7 +1833,11 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateCompound(IHqlExpression * tran
         }
     }
     if (newOp)
-        return createDataset(newOp, removeChildNode(transformed));
+    {
+        OwnedHqlExpr modified = removeChildNode(transformed);
+        incUsage(modified);
+        return createDataset(newOp, modified.getClear());
+    }
     return NULL;
 }
 
@@ -2425,7 +2449,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             }
 
             //MORE: The OHOinsidecompound isn't really good enough - because might remove projects from
-            //nested child aggregates which could benifit from them.  Probably not as long as all compound 
+            //nested child aggregates which could benefit from them.  Probably not as long as all compound
             //activities support aggregation.  In fact test should be removable everywhere once all 
             //engines support the new activities.
             if (isGrouped(transformed->queryChild(0)) || (queryRealChild(transformed, 3) && !(options & HOOinsidecompound)))
@@ -4068,6 +4092,22 @@ bool CTreeOptimizer::isShared(IHqlExpression * expr)
     case no_commonspill:
         return true;
     }
+
+#ifdef CHECK_USEAGE_COUNT
+    //Note: This currently fails when transforms are merged, because the new datasets in the merged transforms do not
+    //inherit the usage counts from datasets that have new expressions.
+    if (queryBodyExtra(expr)->useCount == 0)
+        throwUnexpected();
+#endif
+
+#if 0
+    //If enabled this prevents transformed datasets in child queries from being optimized.  In some cases that is correct
+    //in others it is invalid.  Some false positives can be avoided by repeatedly optimizing expressions.
+    //Revisit again with HPCC-20054.
+    if (queryBodyExtra(expr)->useCount == 0)
+        return true;
+#endif
+
     return (queryBodyExtra(expr)->useCount > 1);
 }
 
