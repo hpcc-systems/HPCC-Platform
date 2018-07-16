@@ -186,12 +186,48 @@ void CRpcMessage::add_attr(const char * path, const char * name, const char * va
     }
 }
 
-void CRpcMessage::unmarshall(XmlPullParser* xpp)
+void CRpcMessage::preunmarshall(XJXPullParser* xpp)
+{
+    if(!xpp)
+        return;
+    int type;
+    StartTag stag;
+    while((type = xpp->next()) != XmlPullParser::END_DOCUMENT)
+    {
+        if(type == XmlPullParser::START_TAG)
+        {
+            xpp->readStartTag(stag);
+            const char* localname = stag.getLocalName();
+            if(!localname || strieq(localname, "__object__"))
+                continue;
+            set_name(localname);
+
+            StringBuffer ns;
+            const char* qname = stag.getQName();
+
+            if(strlen(qname) > strlen(localname))
+            {
+                const char* semcol = strchr(qname, ':');
+                if(semcol != NULL)
+                {
+                    ns.append(qname, 0, semcol - qname);
+                }
+            }
+            const char* nsuri = stag.getUri();
+
+            set_ns(ns.str());
+            set_nsuri(nsuri);
+            return;
+        }
+    }
+}
+
+void CRpcMessage::unmarshall(XJXPullParser* xpp)
 {
     unmarshall(xpp, m_params, m_name);
 }
 
-void CRpcMessage::unmarshall(XmlPullParser* xpp, CSoapValue* soapvalue, const char* tagname)
+void CRpcMessage::unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const char* tagname)
 {
     int type;
     StartTag stag;
@@ -244,12 +280,12 @@ void CRpcMessage::unmarshall(XmlPullParser* xpp, CSoapValue* soapvalue, const ch
     }
 }
 
-void CRpcMessage::unmarshall(XmlPullParser* xpp, CMimeMultiPart* multipart)
+void CRpcMessage::unmarshall(XJXPullParser* xpp, CMimeMultiPart* multipart)
 {
     unmarshall(xpp, m_params, m_name, multipart);
 }
 
-void CRpcMessage::unmarshall(XmlPullParser* xpp, CSoapValue* soapvalue, const char* tagname, CMimeMultiPart* multipart)
+void CRpcMessage::unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const char* tagname, CMimeMultiPart* multipart)
 {
     int type;
 
@@ -322,17 +358,19 @@ void CRpcMessage::unmarshall(XmlPullParser* xpp, CSoapValue* soapvalue, const ch
     }
 }
 
+/*
 IRpcMessage* createRpcMessage(const char* rootTag, StringBuffer& xml)
 {
     CRpcMessage* rpc = new  CRpcMessage(rootTag);
 
-    std::unique_ptr<XmlPullParser> xpp(new XmlPullParser(xml.str(), xml.length()));
+    std::unique_ptr<XJXPullParser> xpp(new XmlPullParser(xml.str(), xml.length()));
     xpp->setSupportNamespaces(true);
 
     rpc->unmarshall(xpp.get());
 
     return rpc;
 }
+*/
 
 bool CRpcResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt)
 {
@@ -444,7 +482,7 @@ StringBuffer& CHeader::marshall(StringBuffer& str, CMimeMultiPart* multipart)
     return str;
 }
 
-void CHeader::unmarshall(XmlPullParser* xpp)
+void CHeader::unmarshall(XJXPullParser* xpp)
 {
     int type;
     StartTag stag;
@@ -480,7 +518,7 @@ void CHeader::unmarshall(XmlPullParser* xpp)
     }
 }
 
-void CEnvelope::unmarshall(XmlPullParser* xpp)
+void CEnvelope::unmarshall(XJXPullParser* xpp)
 {
     int type;
     StartTag stag;

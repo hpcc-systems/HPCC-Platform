@@ -62,6 +62,7 @@ public:
     void * getThunkHandle(){return thunk_;}
 
     virtual void appendContent(IEspContext* ctx, MemoryBuffer& buffer, StringBuffer& mimetype);
+    virtual void appendContent(IEspContext* ctx, StringBuffer& buffer, StringBuffer& mimetype);
     virtual void serializeJSONStruct(IEspContext* ctx, StringBuffer& s, const char *name);
     virtual void serializeStruct(IEspContext * ctx, StringBuffer & buffer, const char * rootname=NULL);
     virtual void serializeItem(IEspContext* ctx, StringBuffer& s, const char *name);

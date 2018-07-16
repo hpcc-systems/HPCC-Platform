@@ -32,6 +32,8 @@
 #include "http/platform/httpprot.hpp"
 #include "http/platform/httpservice.hpp"
 #include "SOAP/Platform/soapservice.hpp"
+#include "SOAP/Platform/soapmessage.hpp"
+#include "SOAP/xpp/xjx/xjxpp.hpp"
 
 #define ESP_FACTORY DECL_EXPORT
 
@@ -108,35 +110,71 @@ static CSoapFault* makeSoapFault(CHttpRequest* request, IMultiException* me, con
 
 int CHttpSoapBinding::onSoapRequest(CHttpRequest* request, CHttpResponse* response)
 {
-    Owned<CSoapFault> soapFault;
-    try
+    IEspContext* ctx = request->queryContext();
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
     {
-        return HandleSoapRequest(request,response);
+        int errcode = 0;
+        StringBuffer msgbuf;
+        try
+        {
+            return HandleSoapRequest(request,response);
+        }
+        catch (IMultiException* mex)
+        {
+            errcode = mex->errorCode();
+            mex->serializeJSON(msgbuf, 0, true, true, true);
+            mex->Release();
+        }
+        catch (IException* e)
+        {
+            errcode = e->errorCode();
+            Owned<IMultiException> mex = MakeMultiException("Esp");
+            mex->append(*e); // e is owned by mex
+            mex->serializeJSON(msgbuf, 0, true, true, true);
+        }
+        catch (...)
+        {
+            errcode = 500;
+            Owned<IMultiException> mex = MakeMultiException("Esp");
+            mex->append(*MakeStringException(500, "Internal Server Error"));
+            mex->serializeJSON(msgbuf, 0, true, true, true);
+        }
+        SetHTTPErrorStatus(errcode, response);
+        response->setContentType(HTTP_TYPE_APPLICATION_JSON_UTF8);
+        response->setContent(msgbuf.str());
     }
-    catch (IMultiException* mex)
+    else
     {
-        StringBuffer ns;
-        soapFault.setown(makeSoapFault(request,mex, generateNamespace(*request->queryContext(), request, request->queryServiceName(), request->queryServiceMethod(), ns).str()));
-        //SetHTTPErrorStatus(mex->errorCode(),response);
-        SetHTTPErrorStatus(500,response);
-        mex->Release();
+        Owned<CSoapFault> soapFault;
+        try
+        {
+            return HandleSoapRequest(request,response);
+        }
+        catch (IMultiException* mex)
+        {
+            StringBuffer ns;
+            soapFault.setown(makeSoapFault(request,mex, generateNamespace(*request->queryContext(), request, request->queryServiceName(), request->queryServiceMethod(), ns).str()));
+            //SetHTTPErrorStatus(mex->errorCode(),response);
+            SetHTTPErrorStatus(500,response);
+            mex->Release();
+        }
+        catch (IException* e)
+        {
+            StringBuffer ns;
+            Owned<IMultiException> mex = MakeMultiException("Esp");
+            mex->append(*e); // e is owned by mex
+            soapFault.setown(makeSoapFault(request,mex, generateNamespace(*request->queryContext(), request, request->queryServiceName(), request->queryServiceMethod(), ns).str()));
+            SetHTTPErrorStatus(500,response);
+        }
+        catch (...)
+        {
+            soapFault.setown(new CSoapFault(500,"Internal Server Error"));
+            SetHTTPErrorStatus(500,response);
+        }
+        //response->setContentType(soapFault->get_content_type());
+        response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
+        response->setContent(soapFault->get_text());
     }
-    catch (IException* e)
-    {
-        StringBuffer ns;
-        Owned<IMultiException> mex = MakeMultiException("Esp");
-        mex->append(*e); // e is owned by mex 
-        soapFault.setown(makeSoapFault(request,mex, generateNamespace(*request->queryContext(), request, request->queryServiceName(), request->queryServiceMethod(), ns).str()));
-        SetHTTPErrorStatus(500,response);
-    }
-    catch (...)
-    { 
-        soapFault.setown(new CSoapFault(500,"Internal Server Error"));
-        SetHTTPErrorStatus(500,response);
-    }
-    //response->setContentType(soapFault->get_content_type());
-    response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
-    response->setContent(soapFault->get_text());
     response->send();
     return -1;
 }
@@ -145,15 +183,15 @@ int CHttpSoapBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* re
 {
     StringBuffer requeststr;
     request->getContent(requeststr);
-    
-    if(requeststr.length() == 0)
+    if (requeststr.length() == 0)
         throw MakeStringException(-1, "Content read is empty");
+
+    IEspContext* ctx = request->queryContext();
 
     Owned<CSoapService> soapservice;
     Owned<CSoapRequest> soaprequest;
     Owned<CSoapResponse> soapresponse;
 
-    //soapservice.setown(new CSoapService((IEspSoapBinding*)(this)));
     soapservice.setown(new CSoapService(this));
     soaprequest.setown(new CSoapRequest);
     soaprequest->set_text(requeststr.str());
@@ -161,54 +199,62 @@ int CHttpSoapBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* re
     StringBuffer contenttype;
     request->getContentType(contenttype);
     soaprequest->set_content_type(contenttype.str());
-    soaprequest->setContext(request->queryContext());
+    soaprequest->setContext(ctx);
 
     CMimeMultiPart* multipart = request->queryMultiPart();
-    if(multipart != NULL)
-    {
+    if (multipart != nullptr)
         soaprequest->setOwnMultiPart(LINK(multipart));
-    }
-    
+
     soapresponse.setown(new CSoapResponse);
+
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
+    {
+        soaprequest->setHttpReq(request);
+        soapresponse->setHttpResp(response);
+    }
 
     StringBuffer reqPath;
     request->getPath(reqPath);
     setRequestPath(reqPath.str());
-    
+
     soapservice->processRequest(*soaprequest.get(), *soapresponse.get());
 
-    response->setVersion(HTTP_VERSION);
-    int status = soapresponse->get_status();
-    if(status == SOAP_OK)
-        response->setStatus(HTTP_STATUS_OK);
-    else if(status == SOAP_SERVER_ERROR || status == SOAP_RPC_ERROR || status == SOAP_CONNECTION_ERROR)
+    //For JSON the response would have been sent except for certain errors, which will be thrown below
+    if (!soapresponse->getHttpResp() || !soapresponse->getHttpResp()->getRespSent())
     {
-        StringBuffer msg("Internal Server Error");
-        const char* detail = soapresponse->get_err();
-        if (detail && *detail)
-            msg.appendf(" [%s]", detail);
-        throw MakeStringExceptionDirect(500, msg.str());
-    }
-    else if(status == SOAP_CLIENT_ERROR || status == SOAP_REQUEST_TYPE_ERROR)
-    {
-        StringBuffer msg("Bad Request");
-        const char* detail = soapresponse->get_err();
-        if (detail && *detail)
-            msg.appendf(" [%s]", detail);
-        throw MakeStringExceptionDirect(400, msg.str());
-    }
-    else if(status == SOAP_AUTHENTICATION_REQUIRED)
-        response->sendBasicChallenge(m_challenge_realm.str(), false);
-    else if(status == SOAP_AUTHENTICATION_ERROR)
-    {
-        throw MakeStringExceptionDirect(401,"Unauthorized Access");
-    }
-    else
-        response->setStatus(HTTP_STATUS_OK);
+        response->setVersion(HTTP_VERSION);
+        int status = soapresponse->get_status();
+        if (status == SOAP_OK)
+            response->setStatus(HTTP_STATUS_OK);
+        else if (status == SOAP_SERVER_ERROR || status == SOAP_RPC_ERROR || status == SOAP_CONNECTION_ERROR)
+        {
+            StringBuffer msg("Internal Server Error");
+            const char* detail = soapresponse->get_err();
+            if (detail && *detail)
+                msg.appendf(" [%s]", detail);
+            throw MakeStringExceptionDirect(500, msg.str());
+        }
+        else if (status == SOAP_CLIENT_ERROR || status == SOAP_REQUEST_TYPE_ERROR)
+        {
+            StringBuffer msg("Bad Request");
+            const char* detail = soapresponse->get_err();
+            if (detail && *detail)
+                msg.appendf(" [%s]", detail);
+            throw MakeStringExceptionDirect(400, msg.str());
+        }
+        else if (status == SOAP_AUTHENTICATION_REQUIRED)
+            response->sendBasicChallenge(m_challenge_realm.str(), false);
+        else if (status == SOAP_AUTHENTICATION_ERROR)
+        {
+            throw MakeStringExceptionDirect(401,"Unauthorized Access");
+        }
+        else
+            response->setStatus(HTTP_STATUS_OK);
 
-    response->setContentType(soapresponse->get_content_type());
-    response->setContent(soapresponse->get_text());
-    response->send();
+        response->setContentType(soapresponse->get_content_type());
+        response->setContent(soapresponse->get_text());
+        response->send();
+    }
 
     return 0;
 }
@@ -272,6 +318,28 @@ void CSoapComplexType::appendContent(IEspContext* ctx, MemoryBuffer& buffer, Str
     }
 
     buffer.append(content.length(), content.str());
+}
+
+void CSoapComplexType::appendContent(IEspContext* ctx, StringBuffer& buffer, StringBuffer& mimetype)
+{
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
+    {
+        const char *jsonp = ctx->queryRequestParameters()->queryProp("jsonp");
+        if (jsonp && *jsonp)
+            buffer.append(jsonp).append('(');
+        buffer.append('{');
+        serializeStruct(ctx, buffer, (const char *)nullptr);
+        buffer.append('}');
+        if (jsonp && *jsonp)
+            buffer.append(");");
+        mimetype.set("application/json; charset=UTF-8");
+    }
+    else
+    {
+        buffer.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        serializeStruct(ctx, buffer, (const char *)nullptr);
+        mimetype.set("text/xml; charset=UTF-8");
+    }
 }
 
 inline void open_element(IEspContext *ctx, StringBuffer &xml, const char *name, const char *uri, const char *prefix)

@@ -4342,7 +4342,12 @@ void EspMessageInfo::write_esp()
         outs(
             "\tconst IMultiException& exceptions = getExceptions();\n"
             "\tif (exceptions.ordinality() > 0)\n"
-            "\t\texceptions.serialize(buffer, 0, true);\n"
+            "\t{\n"
+            "\t\tif(ctx && ctx->getResponseFormat()==ESPSerializationJSON)\n"
+            "\t\t\texceptions.serializeJSON(buffer, 0, true);\n"
+            "\t\telse\n"
+            "\t\t\texceptions.serialize(buffer, 0, true);\n"
+            "\t}\n"
             "\telse\n"
             "\t{\n");
         if (parent)
@@ -5705,7 +5710,9 @@ void EspServInfo::write_esp_binding()
     outs(1, "double clientVer=(ctx) ? ctx->getClientVersion() : 0.0;\n");
     outs(1, "qualifyServiceName(*ctx, ctx->queryServiceName(NULL), NULL, serviceName, NULL);\n");
     outs(1, "CRpcCall* thecall = static_cast<CRpcCall *>(rpc_call);\n"); //interface must be from a class derived from CRpcCall
-    outs(1, "CRpcResponse* response = static_cast<CRpcResponse*>(rpc_response);\n\n");  //interface must be from a class derived from CRpcResponse
+    outs(1, "CRpcResponse* response = static_cast<CRpcResponse*>(rpc_response);\n");  //interface must be from a class derived from CRpcResponse
+    outs(1, "CHttpRequest* httprequest = thecall->getHttpReq();\n");
+    outs(1, "CHttpResponse* httpresponse = response->getHttpResp();\n\n");
     
     outf("\tOwned<IEsp%s> iserv = (IEsp%s*)getService();\n", name_, name_);
     outs("\tif(iserv == NULL)\n");
@@ -5806,10 +5813,24 @@ void EspServInfo::write_esp_binding()
         }
 
         outf("\t\tresponse->set_name(\"%s\");\n", mthi->getResp());
-        outs("\t\tesp_response->serialize(*response);\n");
+        outs("\t\tif(!httprequest || !httpresponse)\n");
+        outs("\t\t{\n");
+        outs("\t\t\tesp_response->serialize(*response);\n");
+        outs("\t\t}\n");
+        outs("\t\telse\n");
+        outs("\t\t{\n");
+        outs("\t\t\tMemoryBuffer content;\n");
+        outs("\t\t\tStringBuffer mimetype;\n");
+        outs("\t\t\tesp_response->appendContent(&context,content, mimetype);\n");
+        outs("\t\t\tonBeforeSendResponse(context,httprequest,content,serviceName.str(),thecall->get_name());\n");
+        outs("\t\t\thttpresponse->setContent(content.length(), content.toByteArray());\n");
+        outs("\t\t\thttpresponse->setContentType(mimetype.str());\n");
+        outs("\t\t\thttpresponse->send();\n");
+        outs("\t\t\thttpresponse->setRespSent(true);\n");
+        outs("\t\t}\n");
         outs("\t\treturn 0;\n\t}\n\n");
     }
-    
+
     outs("\tresponse->set_status(SOAP_CLIENT_ERROR);\n");
     outs("\tStringBuffer msg, svcName;\n");
     outs("\tmsg.appendf(\"Method %s not available in service %s\",thecall->get_name(),getServiceName(svcName).str());\n");

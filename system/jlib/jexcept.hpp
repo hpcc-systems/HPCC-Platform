@@ -50,6 +50,7 @@ interface jlib_thrown_decl IMultiException : extends IException
    virtual void append(IMultiException& e) = 0;
 
    virtual StringBuffer& serialize(StringBuffer& ret, unsigned indent = 0, bool simplified=false, bool root=true) const = 0;
+   virtual StringBuffer& serializeJSON(StringBuffer& ret, unsigned indent = 0, bool simplified=false, bool root=true, bool enclose=false) const = 0;
    virtual void deserialize(const char* xml) = 0; //throws IException on failure!
 
    //the following methods override those in IIException

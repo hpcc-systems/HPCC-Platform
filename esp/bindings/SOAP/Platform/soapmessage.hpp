@@ -26,14 +26,13 @@
 #include "esp.hpp"
 
 #include "http/platform/mime.hpp"
-
 #ifdef ESPHTTP_EXPORTS
     #define esp_http_decl DECL_EXPORT
 #else
     #define esp_http_decl DECL_IMPORT
 #endif
 
-#include "http/platform/httptransport.hpp"
+#include "http/platform/httptransport.ipp"
 
 #include <xpp/XmlPullParser.h>
 
@@ -179,9 +178,13 @@ public:
 
 class CSoapRequest : public CSoapMessage
 {
+private:
+    CHttpRequest* m_httpReq;
 public:
-    CSoapRequest() {};
+    CSoapRequest() : m_httpReq(nullptr) {};
     virtual ~CSoapRequest() {};
+    CHttpRequest* getHttpReq() { return m_httpReq; }
+    void setHttpReq(CHttpRequest* httpReq) { m_httpReq = httpReq; }
 };
 
 class CSoapResponse : public CSoapMessage
@@ -189,14 +192,17 @@ class CSoapResponse : public CSoapMessage
 private:
     int          m_status;
     StringBuffer m_err;
+    CHttpResponse* m_httpResp;
 public:
-    CSoapResponse(){m_status = SOAP_OK;};
+    CSoapResponse() : m_httpResp(nullptr) {m_status = SOAP_OK;};
     virtual ~CSoapResponse() {};
 
     virtual void set_status(int status);
     virtual int get_status();
     virtual void set_err(const char* err);
     virtual const char* get_err();
+    CHttpResponse* getHttpResp() { return m_httpResp; }
+    void setHttpResp(CHttpResponse* httpResp) { m_httpResp = httpResp; }
 };
 
 
@@ -509,10 +515,11 @@ public:
     virtual void set_text(const char* text) {m_text.clear(); m_text.append(text);};
     virtual void append_text(const char* text) {m_text.append(text);};
 
-    virtual void unmarshall(XmlPullParser* xpp);
-    virtual void unmarshall(XmlPullParser* xpp, CSoapValue* soapvalue, const char* tagname);
-    virtual void unmarshall(XmlPullParser* xpp, CMimeMultiPart* multipart);
-    virtual void unmarshall(XmlPullParser* xpp, CSoapValue* soapvalue, const char* tagname, CMimeMultiPart* multipart);
+    void preunmarshall(XJXPullParser* xpp);
+    virtual void unmarshall(XJXPullParser* xpp);
+    virtual void unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const char* tagname);
+    virtual void unmarshall(XJXPullParser* xpp, CMimeMultiPart* multipart);
+    virtual void unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const char* tagname, CMimeMultiPart* multipart);
 
     virtual void marshall(StringBuffer & outbuf)
     {
@@ -528,10 +535,11 @@ class CRpcCall : public CRpcMessage
 private:
     StringBuffer m_proxy;
     StringAttr m_url;
+    CHttpRequest* m_httpReq;
 
 public:
-    CRpcCall() {};
-    CRpcCall(const char* url) {m_url.set(url);}
+    CRpcCall() : m_httpReq(nullptr) {};
+    CRpcCall(const char* url) : m_httpReq(nullptr) {m_url.set(url);}
 
    virtual ~CRpcCall(){}
     
@@ -540,6 +548,9 @@ public:
 
     virtual const char* getProxy() {return m_proxy.str();}
     virtual void setProxy(const char* proxy) {m_proxy.clear().append(proxy);}
+
+    CHttpRequest* getHttpReq() { return m_httpReq; }
+    void setHttpReq(CHttpRequest* httpReq) { m_httpReq = httpReq; }
 };
 
 class CRpcResponse : public CRpcMessage
@@ -547,15 +558,19 @@ class CRpcResponse : public CRpcMessage
 private:
     int m_status;
     StringBuffer m_err;
+    CHttpResponse* m_httpResp;
 public:
-    CRpcResponse(){ }
-    CRpcResponse(const char* name):CRpcMessage(name) { }
+    CRpcResponse() : m_httpResp(nullptr) { }
+    CRpcResponse(const char* name) : CRpcMessage(name), m_httpResp(nullptr) { }
     virtual ~CRpcResponse(){ }
 
     virtual int get_status() { return m_status; }
     virtual void set_status(int status) { m_status = status; }
     void set_err(const char* err) { m_err.clear().append(err); }
     const char* get_err() {  return m_err.str(); }
+
+    CHttpResponse* getHttpResp() { return m_httpResp; }
+    void setHttpResp(CHttpResponse* httpResp) { m_httpResp = httpResp; }
 
     bool handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt);
 };
@@ -572,7 +587,7 @@ public:
     virtual int getNumBlocks();
     virtual IRpcMessage* getHeaderBlock(int seq);
     virtual IRpcMessage* getHeaderBlock(const char* name);
-    virtual void unmarshall(XmlPullParser* xpp);
+    virtual void unmarshall(XJXPullParser* xpp);
     virtual StringBuffer& marshall(StringBuffer& str, CMimeMultiPart* multipart);
     virtual const char * getMessageType() {return "EnvelopeHeader";};
 };
@@ -580,15 +595,15 @@ public:
 class CBody : public CInterface
 {
 private:
-    XmlPullParser* m_xpp;
+    XJXPullParser* m_xpp;
     IArrayOf<IRpcMessage> m_rpcmessages;
 
 public:
     CBody() : m_xpp(NULL) { }
     virtual ~CBody() { }
 
-    virtual XmlPullParser* get_xpp() {return m_xpp;};
-    virtual void set_xpp(XmlPullParser* xpp) {m_xpp = xpp;};
+    virtual XJXPullParser* get_xpp() {return m_xpp;};
+    virtual void set_xpp(XJXPullParser* xpp) {m_xpp = xpp;};
     
     virtual void add_rpcmessage(IRpcMessage* rpcmessage) {
         if(rpcmessage)
@@ -628,7 +643,7 @@ public:
     virtual ~CEnvelope(){};
     virtual CHeader* get_header() {return m_header.get();}
     virtual CBody* get_body() {return m_body.get();}
-    virtual void unmarshall(XmlPullParser* xpp);
+    virtual void unmarshall(XJXPullParser* xpp);
 
     virtual const char * getMessageType() {return "SoapEnvelope";};
 

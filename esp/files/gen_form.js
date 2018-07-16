@@ -349,6 +349,29 @@ function onSubmit(reqType)  // reqType: 0: regular form, 1: soap, 2: form param 
         }
     }
 
+    // remove "json_builder_" (somehow FF (not IE) remembers this changed form.action )
+    if (reqType != 4)
+    {
+        var action = form.action;
+        var idx = action.indexOf('json_builder_');
+        if (idx>0)
+        {
+            if (action.length <= idx + 13) // no more char after 'json_builder_'
+            {
+                var ch = action.charAt(idx-1);
+                if (ch == '&' || ch == '?')
+                    action = action.substring(0,idx-1);
+            } else {
+                var ch = action.charAt(idx+13) // the char after 'json_builder_';
+                if (ch == '&')
+                   action = action.substring(0,idx) + action.substring(idx+13);
+            }
+
+            // alert("Old action: " + form.action + "\nNew action: " + action);
+            form.action = action;
+        }
+    }
+
     // --  change action if user wants to
     var dest = document.getElementById('esp_dest');
     if (dest && dest.checked)

@@ -21,7 +21,7 @@
 
 #include <string>
 
-#include <xpp/XmlPullParser.h>
+#include <sxt/XmlTokenizer.h>
 
 using namespace std;
 
@@ -37,6 +37,7 @@ namespace xpp {
   class EndTag {
 
     friend class XmlPullParser;
+    friend class CXJXPullParser;
 
   public:
     EndTag() { init(); }
@@ -84,7 +85,7 @@ namespace xpp {
     const SXT_CHAR* uri;
     const SXT_CHAR* localName;
     const SXT_CHAR* qName;
-   
+    SXT_STRING nameBuf;
   };
   
 inline ostream& operator<<(ostream& output, 

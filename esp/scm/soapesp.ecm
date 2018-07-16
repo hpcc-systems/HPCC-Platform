@@ -103,7 +103,7 @@ SCMinterface IRpcMessage (IInterface)
     void add_value(const char* path, const char* name, const char* value, IProperties& attrs);
     void add_attr(const char* path, const char* name, const char* value, IProperties& attrs);
 
-   void unmarshall(XmlPullParser* xpp);
+    void unmarshall(XJXPullParser* xpp);
     //void marshall(StringBuffer& outbuf);
     void marshall(StringBuffer& outbuf, CMimeMultiPart* multipart);
     void simple_marshall(StringBuffer& outbuf);
