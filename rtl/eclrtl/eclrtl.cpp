@@ -2766,8 +2766,8 @@ const static UChar nullUStr = 0;
 #ifdef _USE_ICU
 int rtlCompareUnicodeUnicode(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale)
 {
-    while(l1 && u_isUWhiteSpace(p1[l1-1])) l1--;
-    while(l2 && u_isUWhiteSpace(p2[l2-1])) l2--;
+    while(l1 && (p1[l1-1] == ' ')) l1--;
+    while(l2 && (p2[l2-1] == ' ')) l2--;
     if (!p1) p1 = &nullUStr;
     if (!p2) p2 = &nullUStr;
     return ucol_strcoll(queryRTLLocale(locale)->queryCollator(), p1, l1, p2, l2);
@@ -2775,8 +2775,8 @@ int rtlCompareUnicodeUnicode(unsigned l1, UChar const * p1, unsigned l2, UChar c
 
 int rtlCompareUnicodeUnicodeStrength(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale, unsigned strength)
 {
-    while(l1 && u_isUWhiteSpace(p1[l1-1])) l1--;
-    while(l2 && u_isUWhiteSpace(p2[l2-1])) l2--;
+    while(l1 && (p1[l1-1] == ' ')) l1--;
+    while(l2 && (p2[l2-1] == ' ')) l2--;
     if (!p1) p1 = &nullUStr;
     if (!p2) p2 = &nullUStr;
     return ucol_strcoll(queryRTLLocale(locale)->queryCollator(strength), p1, l1, p2, l2);
@@ -4912,34 +4912,21 @@ static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32
 #ifdef _USE_ICU
 int rtlCompareUtf8Utf8(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)
 {
-    //MORE: Do a simple comparison as long as there are no non->0x80 characters around
-    //      fall back to a full unicode comparison if we hit one - or in the next character to allow for accents etc.
-    const byte * bleft = (const byte *)left;
-    const byte * bright = (const byte *)right;
-    unsigned len = llen > rlen ? rlen : llen;
-    for (unsigned i = 0; i < len; i++)
-    {
-        byte nextLeft = bleft[i];
-        byte nextRight = bright[i];
-        if (nextLeft >= 0x80 || nextRight >= 0x80)
-            return rtlCompareUtf8Utf8ViaUnicode(llen-i, left+i, rlen-i, right+i, locale);
-        if ((i+1 != len) && ((bleft[i+1] >= 0x80) || bright[i+1] >= 0x80))
-            return rtlCompareUtf8Utf8ViaUnicode(llen-i, left+i, rlen-i, right+i, locale);
-        if (nextLeft != nextRight)
-            return nextLeft - nextRight;
-    }
-    int diff = 0;
-    if (len != llen)
-    {
-        for (;(diff == 0) && (len != llen);len++)
-            diff = bleft[len] - ' ';
-    }
-    else if (len != rlen)
-    {
-        for (;(diff == 0) && (len != rlen);len++)
-            diff = ' ' - bright[len];
-    }
-    return diff;
+#if U_ICU_VERSION_MAJOR_NUM>=50
+    size_t lSize = rtlUtf8Size(llen, left);
+    while (lSize && (left[lSize-1] == ' '))
+        lSize--;
+
+    size_t rSize = rtlUtf8Size(rlen, right);
+    while (rSize && (right[rSize-1] == ' '))
+        rSize--;
+
+    UCollator * collator = queryRTLLocale(locale)->queryCollator();
+    UErrorCode status = U_ZERO_ERROR; // Not documented, but this needs to be cleared otherwise the function can fail
+    return ucol_strcollUTF8(collator, left, lSize, right, rSize, &status);
+#else
+    return rtlCompareUtf8Utf8ViaUnicode(llen, left, rlen, right, locale);
+#endif
 }
 
 int rtlCompareUtf8Utf8Strength(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale, unsigned strength)
