@@ -46,11 +46,13 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
 
-      <para></para>
+      <para />
 
-      <para><emphasis role="redbold">BETA 2</emphasis></para>
+      <para>
+        <emphasis role="redbold">BETA 2</emphasis>
+      </para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -146,14 +148,13 @@
               </listitem>
 
               <listitem>
-                <para><emphasis>Linux workstation with the Eclipse IDE and the
-                ECL plugin for Eclipse (available soon)</emphasis></para>
+                <para><emphasis>Linux workstation with the Eclipse IDE or VS
+                Code </emphasis></para>
               </listitem>
 
               <listitem>
-                <para><emphasis>Mac<superscript>*</superscript> workstation
-                with the Eclipse IDE and the ECL plugin for Eclipse (available
-                soon)</emphasis></para>
+                <para><emphasis>Mac<superscript>®</superscript> workstation
+                with the Eclipse IDE or VS Code </emphasis></para>
               </listitem>
             </itemizedlist></para>
         </listitem>
@@ -2475,8 +2476,8 @@ OUTPUT(L);</programlisting></para>
           <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is
           the relocation of a data file from one location (such as a Landing
           Zone) to a Data Refinery cluster. The term spray was adopted due to
-          the nature of the file movement -- the file is partitioned across all
-          nodes within a cluster.</para>
+          the nature of the file movement -- the file is partitioned across
+          all nodes within a cluster.</para>
         </footnote> that file to our Thor cluster, then validate our anagrams
       against that file so that we determine which are valid words. The
       validation step uses a JOIN of the anagram list to the dictionary file.
@@ -3182,9 +3183,9 @@ s3cmd --configure
           </question>
 
           <answer>
-            <para>Yes, you can use the Eclipse IDE with the ECL plugin instead
-            of the ECL IDE. Another option is to run the ECL IDE under WINE.
-            See the Client Tools Manual for details.</para>
+            <para>Yes, you can use Visual Studio Code with the ECL extension
+            instead of the ECL IDE. Another option is to run the ECL IDE under
+            WINE. See the Client Tools Manual for details.</para>
           </answer>
         </qandaentry>
 
