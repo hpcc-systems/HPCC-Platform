@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "thorsort.hpp"
 #include "jset.hpp"
+#include "jlog.hpp"
 #include "errorlist.h"
 #include <exception>
 
@@ -187,7 +188,7 @@ inline void clonePartition(void * * result, size_t n, void * * src)
 {
     void * * tgt = result;
     while (n--)
-       *tgt++ = *src++;
+        *tgt++ = *src++;
 }
 
 inline void * * mergePartitionsRev(const ICompare & compare, void * * result, size_t n1, void * * ret1, size_t n2, void * * ret2, size_t n)
@@ -197,19 +198,7 @@ inline void * * mergePartitionsRev(const ICompare & compare, void * * result, si
     ret2 += (n2-1);
     while (n--)
     {
-       if (compare.docompare(*ret1, *ret2) >= 0)
-       {
-           *tgt-- = *ret1--;
-           if (--n1 == 0)
-           {
-               while (n--)
-               {
-                   *tgt-- = *ret2--;
-               }
-               return result;
-           }
-       }
-       else
+       if (compare.docompare(*ret1, *ret2) <= 0)
        {
            *tgt-- = *ret2--;
            if (--n2 == 0)
@@ -218,6 +207,18 @@ inline void * * mergePartitionsRev(const ICompare & compare, void * * result, si
                while (n--)
                {
                    *tgt-- = *ret1--;
+               }
+               return result;
+           }
+       }
+       else
+       {
+           *tgt-- = *ret1--;
+           if (--n1 == 0)
+           {
+               while (n--)
+               {
+                   *tgt-- = *ret2--;
                }
                return result;
            }
@@ -473,7 +474,7 @@ class TbbParallelMergeSorter
                 clonePartition(result + delta, n, src1 + delta);
             }
             else
-                mergePartitionsRev(compare, result, n2, src2, n1, src1, n);
+                mergePartitionsRev(compare, result, n1, src1, n2, src2, n);
             return NULL;
         }
     };
@@ -549,7 +550,8 @@ class TbbParallelMergeSorter
                     {
                         if (c <= 0)
                         {
-                            //value in left is smallest.  Find the position of the value <= the left value
+                            //value in left is smallest.  Find the position of the first value >= the left value
+                            //do not include it since there may be more left matches to merge first
                             posLeft[part] = leftPos;
                             size_t matchRight = findFirstGE(src1[leftPos], prevRight, rightPos, src2);
                             posRight[part] = matchRight;
@@ -586,7 +588,7 @@ class TbbParallelMergeSorter
                 size_t start = posLeft[i] + posRight[i];
                 size_t end = posLeft[i+1] + posRight[i+1];
                 size_t num = end - start;
-                size_t numFwd = num/2;
+                size_t numFwd = (num+1)/2;
 #ifdef TRACE_PARTITION
                 DBGLOG("  ([%d..%d],[%d..%d] %d,%d = %d)",
                         (unsigned)posLeft[i], (unsigned)posLeft[i+1], (unsigned)posRight[i], (unsigned)posRight[i+1],
