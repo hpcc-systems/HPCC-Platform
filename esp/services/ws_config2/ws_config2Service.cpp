@@ -341,7 +341,7 @@ bool Cws_config2Ex::onGetNode(IEspContext &context, IEspNodeRequest &req, IEspGe
 
     getNodeResponse(pNode, resp);
     pNode->validate(status, false);  // validate this node only
-    addStatusToResponse(status, pSession, reinterpret_cast<IEspStatusResponse &>(resp));
+    buildStatusResponse(status, pSession, resp.updateStatus());
 
     //
     // Finalize the response
@@ -373,7 +373,7 @@ bool Cws_config2Ex::onInsertNode(IEspContext &context, IEspInsertNodeRequest &re
         throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "Environment node ID is not valid");
     }
 
-    addStatusToResponse(status, pSession, reinterpret_cast<IEspStatusResponse &>(resp));
+    buildStatusResponse(status, pSession, resp.updateStatus());
     return true;
 }
 
@@ -394,7 +394,7 @@ bool Cws_config2Ex::onRemoveNode(IEspContext &context, IEspRemoveNodeRequest &re
 
     pSession->modified = true;
     pSession->m_pEnvMgr->validate(status, false);
-    addStatusToResponse(status, pSession, resp);
+    buildStatusResponse(status, pSession, resp.updateStatus());
     return true;
 }
 
@@ -406,7 +406,7 @@ bool Cws_config2Ex::onValidateEnvironment(IEspContext &context, IEspValidateEnvi
     ConfigMgrSession *pSession = getConfigSession(sessionId, true);
 
     pSession->m_pEnvMgr->validate(status, req.getIncludeHiddenNodes());
-    addStatusToResponse(status, pSession, resp);
+    buildStatusResponse(status, pSession, resp.updateStatus());
     return true;
 }
 
@@ -441,7 +441,7 @@ bool Cws_config2Ex::onSetValues(IEspContext &context, IEspSetValuesRequest &req,
 
     pNode->setAttributeValues(values, status, allowInvalid, forceCreate);
     pSession->modified = true;
-    addStatusToResponse(status, pSession, resp);
+    buildStatusResponse(status, pSession, resp.updateStatus());
     return true;
 }
 
@@ -542,10 +542,10 @@ bool Cws_config2Ex::onFetchNodes(IEspContext &context, IEspFetchNodesRequest &re
     return true;
 }
 
-void Cws_config2Ex::addStatusToResponse(const Status &status, ConfigMgrSession *pSession, IEspStatusResponse &resp) const
+
+void Cws_config2Ex::buildStatusResponse(const Status &status, ConfigMgrSession *pSession, IEspStatusType &respStatus) const
 {
     std::vector<statusMsg> statusMsgs = status.getMessages();
-
 
     IArrayOf<IEspStatusMsgType> msgs;
     for (auto msgIt=statusMsgs.begin(); msgIt!=statusMsgs.end(); ++msgIt)
@@ -567,8 +567,8 @@ void Cws_config2Ex::addStatusToResponse(const Status &status, ConfigMgrSession *
         msgs.append(*pStatusMsg.getLink());
     }
 
-    resp.updateStatus().setStatus(msgs);
-    resp.updateStatus().setError(status.isError());
+    respStatus.setStatusMessages(msgs);
+    respStatus.setError(status.isError());
 }
 
 
@@ -636,15 +636,13 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
     IArrayOf<IEspAttributeType> nodeAttributes;
     if (pNode->hasAttributes())
     {
-        std::vector<std::shared_ptr<EnvironmentValue>> attributes;
-        pNode->getAttributes(attributes);
-        getAttributes(attributes, nodeAttributes);
+        getAttributes(pNode, nodeAttributes, true);
     }
     resp.setAttributes(nodeAttributes);
 
     //
     // Now the children
-    IArrayOf<IEspNodeType> childNodes;
+    IArrayOf<IEspNode> childNodes;
     if (pNode->hasChildren())
     {
         std::vector<std::shared_ptr<EnvironmentNode>> children;
@@ -653,7 +651,7 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
         {
             std::shared_ptr<EnvironmentNode> pChildEnvNode = *it;
             const std::shared_ptr<SchemaItem> pSchemaItem = pChildEnvNode->getSchemaItem();
-            Owned<IEspNodeType> pChildNode = createNodeType();
+            Owned<IEspNode> pChildNode = createNode();
             getNodeInfo(pChildEnvNode, pChildNode->updateNodeInfo());
             pChildNode->setNodeId(pChildEnvNode->getId().c_str());
             pChildNode->setNumChildren(pChildEnvNode->getNumChildren());
@@ -707,44 +705,28 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
 
         const std::shared_ptr<SchemaValue> &pNodeSchemaValue = pNodeSchemaItem->getItemSchemaValue();
         const std::shared_ptr<SchemaType> &pType = pNodeSchemaValue->getType();
-        resp.updateValue().updateType().setName(pType->getName().c_str());
+        resp.updateValue().updateType().setBaseType(pType->getBaseType().c_str());
+        resp.updateValue().updateType().setSubType(pType->getSubType().c_str());
+        resp.updateValue().setRequired(pNodeSchemaValue->isRequired());
+        resp.updateValue().setReadOnly(pNodeSchemaValue->isReadOnly());
+        resp.updateValue().setHidden(pNodeSchemaValue->isHidden());
 
-        if (pType->getLimits()->isMaxSet())
+        std::shared_ptr<SchemaTypeLimits> &pLimits = pType->getLimits();
+        if (pLimits->isMaxSet())
         {
             resp.updateValue().updateType().updateLimits().setMaxValid(true);
-            resp.updateValue().updateType().updateLimits().setMax(pType->getLimits()->getMax());
+            resp.updateValue().updateType().updateLimits().setMax(pLimits->getMax());
         }
-        if (pType->getLimits()->isMinSet())
+        if (pLimits->isMinSet())
         {
             resp.updateValue().updateType().updateLimits().setMinValid(true);
-            resp.updateValue().updateType().updateLimits().setMin(pType->getLimits()->getMin());
+            resp.updateValue().updateType().updateLimits().setMin(pLimits->getMin());
         }
 
         if (pNode->isLocalValueSet())
         {
             const std::shared_ptr<EnvironmentValue> &pLocalValue = pNode->getLocalEnvValue();
             resp.updateValue().setCurrentValue(pLocalValue->getValue().c_str());
-
-            //
-            // Type information
-            const std::shared_ptr<SchemaValue> pLocalSchemaValue = pLocalValue->getSchemaValue();
-            const std::shared_ptr<SchemaType> &pLocalType = pLocalSchemaValue->getType();
-            std::shared_ptr<SchemaTypeLimits> &pLimits = pLocalType->getLimits();
-            resp.updateValue().updateType().setName(pLocalType->getName().c_str());
-            if (pLocalType->getLimits()->isMaxSet())
-            {
-                resp.updateValue().updateType().updateLimits().setMaxValid(true);
-                resp.updateValue().updateType().updateLimits().setMax(pLocalType->getLimits()->getMax());
-            }
-            if (pLocalType->getLimits()->isMinSet())
-            {
-                resp.updateValue().updateType().updateLimits().setMinValid(true);
-                resp.updateValue().updateType().updateLimits().setMin(pLocalType->getLimits()->getMin());
-            }
-
-            resp.updateValue().setRequired(pLocalSchemaValue->isRequired());
-            resp.updateValue().setReadOnly(pLocalSchemaValue->isReadOnly());
-            resp.updateValue().setHidden(pLocalSchemaValue->isHidden());
         }
     }
 }
@@ -758,8 +740,8 @@ void Cws_config2Ex::getNodeInfo(const std::shared_ptr<EnvironmentNode> &pNode, I
     // Fill in base node info struct
     getNodeInfo(pNodeSchemaItem, nodeInfo);      // fill it in based on schema
     getNodeDisplayName(pNode, nodeDisplayName);  // possibly override the displayname
-    nodeInfo.setName(nodeDisplayName.c_str());
-    nodeInfo.setNodeName(pNode->getName().c_str());
+    nodeInfo.setDisplayName(nodeDisplayName.c_str());
+    nodeInfo.setName(pNode->getName().c_str());
 }
 
 
@@ -767,123 +749,138 @@ void Cws_config2Ex::getNodeInfo(const std::shared_ptr<SchemaItem> &pNodeSchemaIt
 {
     //
     // Fill in base node info struct
-    nodeInfo.setName(pNodeSchemaItem->getProperty("displayName").c_str());
+    std::string displayName = pNodeSchemaItem->getProperty("displayName");
+    nodeInfo.setDisplayName(displayName.c_str());
     nodeInfo.setNodeType(pNodeSchemaItem->getItemType().c_str());
     nodeInfo.setClass(pNodeSchemaItem->getProperty("className").c_str());
-    nodeInfo.setCategory(pNodeSchemaItem->getProperty("category").c_str());
     nodeInfo.setTooltip(pNodeSchemaItem->getProperty("tooltip").c_str());
     nodeInfo.setHidden(pNodeSchemaItem->isHidden());
+
+    std::string category = pNodeSchemaItem->getProperty("category");
+    nodeInfo.setCategory((!category.empty()) ? category.c_str() : displayName.c_str());
 }
 
 
-void Cws_config2Ex::getAttributes(const std::vector<std::shared_ptr<EnvironmentValue>> &attributes, IArrayOf<IEspAttributeType> &nodeAttributes) const
+void Cws_config2Ex::getAttributes(const std::shared_ptr<EnvironmentNode> &pEnvNode, IArrayOf<IEspAttributeType> &nodeAttributes, bool includeMissing) const
 {
-    for (auto it=attributes.begin(); it!=attributes.end(); ++it)
+    std::vector<std::shared_ptr<SchemaValue>> schemaValues;
+    pEnvNode->getSchemaItem()->getAttributes(schemaValues);
+
+    for (auto it=schemaValues.begin(); it!=schemaValues.end(); ++it)
     {
-        std::shared_ptr<EnvironmentValue> pAttr = *it;
+        const std::shared_ptr<SchemaValue> pSchemaValue = *it;
+        std::shared_ptr<EnvironmentValue> pEnvValue = pEnvNode->getAttribute(pSchemaValue->getName());
         Owned<IEspAttributeType> pAttribute = createAttributeType();
 
-        const std::shared_ptr<SchemaValue> &pSchemaValue = pAttr->getSchemaValue();
-        std::string attributeName = pAttr->getName();
-        pAttribute->setName(attributeName.c_str());
-        pAttribute->setDisplayName(pSchemaValue->getDisplayName().c_str());
-        pAttribute->setTooltip(pSchemaValue->getTooltip().c_str());
+        if (pEnvValue || includeMissing)
+        {
+            pAttribute->setName(pSchemaValue->getName().c_str());
+            pAttribute->setDisplayName(pSchemaValue->getDisplayName().c_str());
+            pAttribute->setTooltip(pSchemaValue->getTooltip().c_str());
 
-        const std::shared_ptr<SchemaType> &pType = pSchemaValue->getType();
-        std::shared_ptr<SchemaTypeLimits> &pLimits = pType->getLimits();
-        pAttribute->updateType().setName(pType->getName().c_str());
-        if (pType->getLimits()->isMaxSet())
-        {
-            pAttribute->updateType().updateLimits().setMaxValid(true);
-            pAttribute->updateType().updateLimits().setMax(pType->getLimits()->getMax());
-        }
-        if (pType->getLimits()->isMinSet())
-        {
-            pAttribute->updateType().updateLimits().setMinValid(true);
-            pAttribute->updateType().updateLimits().setMin(pType->getLimits()->getMin());
-        }
-        pAttribute->setRequired(pSchemaValue->isRequired());
-        pAttribute->setReadOnly(pSchemaValue->isReadOnly());
-        pAttribute->setHidden(pSchemaValue->isHidden());
-        pAttribute->setDeprecated(pSchemaValue->isDeprecated());
-        std::string groupName = pSchemaValue->getGroup();
-        pAttribute->setGroup(groupName.empty() ? "Attributes" : groupName.c_str());
-
-        std::vector<AllowedValue> allowedValues;
-        pSchemaValue->getAllowedValues(allowedValues, pAttr->getEnvironmentNode());
-        if (!allowedValues.empty())
-        {
-            IArrayOf<IEspChoiceType> choices;
-            for (auto valueIt=allowedValues.begin(); valueIt!=allowedValues.end(); ++valueIt)
+            const std::shared_ptr<SchemaType> &pType = pSchemaValue->getType();
+            std::shared_ptr<SchemaTypeLimits> &pLimits = pType->getLimits();
+            pAttribute->updateType().setBaseType(pType->getBaseType().c_str());
+            pAttribute->updateType().setSubType(pType->getSubType().c_str());
+            if (pLimits->isMaxSet())
             {
-                Owned<IEspChoiceType> pChoice = createChoiceType();
-                pChoice->setDisplayName((*valueIt).m_displayName.c_str());
-                pChoice->setValue((*valueIt).m_value.c_str());
-                pChoice->setDesc((*valueIt).m_description.c_str());
-                pChoice->setMsg((*valueIt).m_userMessage.c_str());
-                pChoice->setMsgType((*valueIt).m_userMessageType.c_str());
-
-                //
-                // Add dependencies
-                if ((*valueIt).hasDependencies())
-                {
-                    IArrayOf<IEspDependentValueType> dependencies;
-                    for (auto &depIt: (*valueIt).getDependencies())
-                    {
-                        Owned<IEspDependentValueType> pDep = createDependentValueType();
-                        pDep->setAttributeName(depIt.m_attribute.c_str());
-                        pDep->setAttributeValue(depIt.m_value.c_str());
-                        dependencies.append(*pDep.getLink());
-                    }
-                    pChoice->setDependencies(dependencies);
-                }
-
-                //
-                // Add optional/required attributes.
-                if (!(*valueIt).m_optionalAttributes.empty())
-                {
-                    StringArray attributeNames;
-                    for (auto &attr: (*valueIt).m_optionalAttributes)
-                    {
-                        StringBuffer atrrname(attr.c_str());
-                        attributeNames.append(atrrname);
-                    }
-                    pChoice->setOptionalAttributes(attributeNames);
-                }
-
-                if (!(*valueIt).m_requiredAttributes.empty())
-                {
-                    StringArray attributeNames;
-                    for (auto &attr: (*valueIt).m_requiredAttributes)
-                    {
-                        StringBuffer atrrname(attr.c_str());
-                        attributeNames.append(atrrname);
-                    }
-                    pChoice->setRequiredAttributes(attributeNames);
-                }
-
-                choices.append(*pChoice.getLink());
+                pAttribute->updateType().updateLimits().setMaxValid(true);
+                pAttribute->updateType().updateLimits().setMax(pLimits->getMax());
             }
-            pAttribute->updateType().updateLimits().setChoiceList(choices);
-        }
-
-        const std::vector<std::string> &mods = pSchemaValue->getModifiers();
-        if (!mods.empty())
-        {
-            StringArray modifiers;
-            StringBuffer modifier;
-            for (auto &modIt: mods)
+            if (pLimits->isMinSet())
             {
-                modifier.set(modIt.c_str());
-                modifiers.append(modifier);
+                pAttribute->updateType().updateLimits().setMinValid(true);
+                pAttribute->updateType().updateLimits().setMin(pLimits->getMin());
             }
-            pAttribute->setModifiers(modifiers);
+            pAttribute->setRequired(pSchemaValue->isRequired());
+            pAttribute->setReadOnly(pSchemaValue->isReadOnly());
+            pAttribute->setHidden(pSchemaValue->isHidden());
+            pAttribute->setDeprecated(pSchemaValue->isDeprecated());
+            std::string groupName = pSchemaValue->getGroup();
+            pAttribute->setGroup(groupName.empty() ? "Attributes" : groupName.c_str());
+
+            std::vector<AllowedValue> allowedValues;
+            pSchemaValue->getAllowedValues(allowedValues, pEnvNode);
+            if (!allowedValues.empty())
+            {
+                IArrayOf<IEspChoiceType> choices;
+                for (auto valueIt=allowedValues.begin(); valueIt!=allowedValues.end(); ++valueIt)
+                {
+                    Owned<IEspChoiceType> pChoice = createChoiceType();
+                    pChoice->setDisplayName((*valueIt).m_displayName.c_str());
+                    pChoice->setValue((*valueIt).m_value.c_str());
+                    pChoice->setDesc((*valueIt).m_description.c_str());
+                    pChoice->setMsg((*valueIt).m_userMessage.c_str());
+                    pChoice->setMsgType((*valueIt).m_userMessageType.c_str());
+
+                    //
+                    // Add dependencies
+                    if ((*valueIt).hasDependencies())
+                    {
+                        IArrayOf<IEspDependentValueType> dependencies;
+                        for (auto &depIt: (*valueIt).getDependencies())
+                        {
+                            Owned<IEspDependentValueType> pDep = createDependentValueType();
+                            pDep->setAttributeName(depIt.m_attribute.c_str());
+                            pDep->setAttributeValue(depIt.m_value.c_str());
+                            dependencies.append(*pDep.getLink());
+                        }
+                        pChoice->setDependencies(dependencies);
+                    }
+
+                    //
+                    // Add optional/required attributes.
+                    if (!(*valueIt).m_optionalAttributes.empty())
+                    {
+                        StringArray attributeNames;
+                        for (auto &attr: (*valueIt).m_optionalAttributes)
+                        {
+                            StringBuffer atrrname(attr.c_str());
+                            attributeNames.append(atrrname);
+                        }
+                        pChoice->setOptionalAttributes(attributeNames);
+                    }
+
+                    if (!(*valueIt).m_requiredAttributes.empty())
+                    {
+                        StringArray attributeNames;
+                        for (auto &attr: (*valueIt).m_requiredAttributes)
+                        {
+                            StringBuffer atrrname(attr.c_str());
+                            attributeNames.append(atrrname);
+                        }
+                        pChoice->setRequiredAttributes(attributeNames);
+                    }
+
+                    choices.append(*pChoice.getLink());
+                }
+                pAttribute->updateType().updateLimits().setChoiceList(choices);
+            }
+
+            const std::vector<std::string> &mods = pSchemaValue->getModifiers();
+            if (!mods.empty())
+            {
+                StringArray modifiers;
+                StringBuffer modifier;
+                for (auto &modIt: mods)
+                {
+                    modifier.set(modIt.c_str());
+                    modifiers.append(modifier);
+                }
+                pAttribute->setModifiers(modifiers);
+            }
+
+            if (pEnvValue)
+            {
+                pAttribute->setCurrentValue(pEnvValue->getValue().c_str());
+            }
+
+            pAttribute->setDefaultValue(pSchemaValue->getDefaultValue().c_str());
+            pAttribute->setDefaultInCode(pSchemaValue->getCodeDefault().c_str());
+
+            pAttribute->setIsPresentInEnvironment(static_cast<bool>(pEnvValue));
+            nodeAttributes.append(*pAttribute.getLink());
         }
-
-        pAttribute->setCurrentValue(pAttr->getValue().c_str());
-        pAttribute->setDefaultValue(pSchemaValue->getDefaultValue().c_str());
-
-        nodeAttributes.append(*pAttribute.getLink());
     }
 }
 
@@ -928,9 +925,7 @@ void Cws_config2Ex::getNodeTree(const std::shared_ptr<EnvironmentNode> &pNode, I
     if (includeAttributes && pNode->hasAttributes())
     {
         IArrayOf<IEspAttributeType> nodeAttributes;
-        std::vector<std::shared_ptr<EnvironmentValue>> attributes;
-        pNode->getAttributes(attributes);
-        getAttributes(attributes, nodeAttributes);
+        getAttributes(pNode, nodeAttributes, true);
         treeElement.setAttributes(nodeAttributes);
     }
 

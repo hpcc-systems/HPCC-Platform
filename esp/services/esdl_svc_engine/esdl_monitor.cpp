@@ -145,7 +145,7 @@ class CEsdlMonitor : implements IEsdlMonitor, public CInterface, implements IEsd
 private:
     MapStringTo<EsdlBindingImpl*> m_esdlBindingMap;
     CriticalSection m_CritSect;
-    StringBuffer mEnvptHeader;
+    Owned<IPropertyTree> m_envptTemplate;
     Owned<IEsdlStore> m_pCentralStore;
     Owned<IEsdlSubscription> m_pSubscription;
     Owned<CEsdlShare> m_esdlShare;
@@ -156,7 +156,7 @@ public:
 
     CEsdlMonitor() : m_isSubscribed(false)
     {
-        constructEnvptHeader();
+        constructEnvptTemplate();
         m_pCentralStore.setown(createEsdlCentralStore());
         m_esdlShare.setown(new CEsdlShare());
         m_esdlShare->start();
@@ -454,23 +454,17 @@ private:
         return (strcmp(espProcess, queryEspServer()->getProcName()) == 0);
     }
 
-    void constructEnvptHeader()
+    void constructEnvptTemplate()
     {
-        mEnvptHeader.set("<Environment><Software><EspProcess ");
+        m_envptTemplate.setown(createPTreeFromXMLString("<Environment><Software/></Environment>"));
         IPropertyTree* procpt = queryEspServer()->queryProcConfig();
         if (procpt)
         {
-            Owned<IAttributeIterator> attrs = procpt->getAttributes(false);
-            for (attrs->first(); attrs->isValid(); attrs->next())
-            {
-                StringBuffer name(attrs->queryName());
-                StringBuffer value;
-                encodeXML(attrs->queryValue(), value);
-                if (name.length() > 1)
-                    mEnvptHeader.appendf("%s=\"%s\" ", name.str()+1, value.str());
-            }
+            Owned<IPropertyTree> proctemplate = createPTreeFromIPT(procpt);
+            proctemplate->removeProp("EspBinding");
+            proctemplate->removeProp("EspService");
+            m_envptTemplate->addPropTree("Software/EspProcess", proctemplate.getClear());
         }
-        mEnvptHeader.append(">");
     }
 
     IPropertyTree* getEnvpt(EsdlNotifyData* notifyData, StringBuffer& protocol, StringBuffer& serviceName)
@@ -498,19 +492,19 @@ private:
                 return LINK(procpt);
             }
             //Otherwise check if there's binding configured on the same port
-            xpath.clear().appendf("EspBinding[@type='EsdlBinding'][@port='%s'][1]", port);
+            xpath.setf("EspBinding[@type='EsdlBinding'][@port=%s][1]", port);
             bindingtree = procpt->queryPropTree(xpath.str());
             if (!bindingtree)
             {
                 //Otherwise check if there's binding configured with port 0
-                xpath.clear().appendf("EspBinding[@type='EsdlBinding'][@port='0']");
+                xpath.setf("EspBinding[@type='EsdlBinding'][@port=0]");
                 bindingtree = procpt->queryPropTree(xpath.str());
             }
             if (bindingtree)
             {
                 bindingtree->getProp("@protocol", protocol);
                 const char* service = bindingtree->queryProp("@service");
-                xpath.clear().appendf("EspService[@name='%s']", service);
+                xpath.setf("EspService[@name='%s']", service);
                 IPropertyTree* servicetree = procpt->queryPropTree(xpath.str());
                 if (servicetree)
                 {
@@ -521,8 +515,7 @@ private:
                     bindingtree->setProp("@port", port);
                     servicetree->setProp("@name", serviceName.str());
                     servicetree->setProp("@type", "DynamicESDL");
-                    envxmlbuf.appendf("%s</EspProcess></Software></Environment>", mEnvptHeader.str());
-                    Owned<IPropertyTree> envpttree = createPTreeFromXMLString(envxmlbuf.str());
+                    Owned<IPropertyTree> envpttree = createPTreeFromIPT(m_envptTemplate.get());
                     envpttree->addPropTree("Software/EspProcess/EspBinding", bindingtree);
                     envpttree->addPropTree("Software/EspProcess/EspService", servicetree);
                     return envpttree.getClear();

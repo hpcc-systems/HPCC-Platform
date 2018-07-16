@@ -284,7 +284,7 @@ public:
     IMPLEMENT_IINTERFACE_O
 
 //IThorIndexCallback
-    virtual byte * lookupBlob(unsigned __int64 id) override
+    virtual const byte * lookupBlob(unsigned __int64 id) override
     { 
         size32_t dummy; 
         cleanupRequired = true;

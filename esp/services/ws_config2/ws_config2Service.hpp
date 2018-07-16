@@ -59,14 +59,14 @@ public:
 
 private:
 
-    void addStatusToResponse(const Status &status, ConfigMgrSession *pSession, IEspStatusResponse &resp) const;
+    void buildStatusResponse(const Status &status, ConfigMgrSession *pSession, IEspStatusType &respStatus) const;
     ConfigMgrSession *getConfigSession(const std::string &sessionId, bool environmentRequired = false);
     ConfigMgrSession *getConfigSessionForUpdate(const std::string &sessionId, const std::string &lockKey);
     bool deleteConfigSession(const std::string &sessionId);
     void getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNode, IEspGetNodeResponse &resp) const;
     void getNodeInfo(const std::shared_ptr<EnvironmentNode> &pNode, IEspNodeInfoType &nodeInfo) const;
     void getNodeInfo(const std::shared_ptr<SchemaItem> &pNodeSchemaItem, IEspNodeInfoType &nodeInfo) const;
-    void getAttributes(const std::vector<std::shared_ptr<EnvironmentValue>> &attributes, IArrayOf<IEspAttributeType> &nodeAttributes) const;
+    void getAttributes(const std::shared_ptr<EnvironmentNode> &pEnvNode, IArrayOf<IEspAttributeType> &nodeAttributes, bool includeMissing = false) const;
     void getNodeDisplayName(const std::shared_ptr<EnvironmentNode> &pNode, std::string &nodeDisplayName) const;
     void getNodeParents(const std::string &nodeId, ConfigMgrSession *pSession, StringArray &parentNodeIds) const;
     void getNodeTree(const std::shared_ptr<EnvironmentNode> &pNode, IEspTreeElementType &treeElement, int levels, bool includeAttributes) const;

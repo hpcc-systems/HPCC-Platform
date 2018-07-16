@@ -242,8 +242,9 @@ fi
 if [ ! -e ${homePath}/certificate/key.pem ]; then
     ssh-keygen -t rsa -N hpccsystems-platform -f ${homePath}/certificate/key.pem \
         1>/dev/null 2>&1
-    ssh-keygen -f ${homePath}/certificate/key.pem.pub -e -m PEM > ${homePath}/certificate/key.pub
-    chmod 0644 ${homePath}/certificate/key.pub
+    openssl rsa -in ${homePath}/certificate/key.pem -pubout \
+        -out ${homePath}/certificate/public.key.pem -passin pass:hpccsystems-platform
+    chmod 0644 ${homePath}/certificate/public.key.pem
     rm -f ${homePath}/certificate/key.pem.pub
     printf "RSA key installed for user %-28s ..." "$user"
     log_success_msg

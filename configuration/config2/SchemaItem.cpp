@@ -22,9 +22,6 @@
 #include <algorithm>
 
 
-// static class variables
-//std::map<std::string, std::vector<std::shared_ptr<SchemaValue>>> SchemaItem::m_uniqueAttributeValueSets;
-
 SchemaItem::SchemaItem(const std::string &name, const std::string &className, const std::shared_ptr<SchemaItem> &pParent) :
     m_pParent(pParent),
     m_hidden(false),
@@ -44,6 +41,7 @@ SchemaItem::SchemaItem(const std::string &name, const std::string &className, co
         //
         // Create a default type so that all values have a type
         std::shared_ptr<SchemaType> pDefaultType = std::make_shared<SchemaType>("default");
+        pDefaultType->setBaseType("string");
         std::shared_ptr<SchemaTypeLimits> pDefaultLimits = std::make_shared<SchemaTypeLimits>();
         pDefaultType->setLimits(pDefaultLimits);
         addSchemaValueType(pDefaultType);
@@ -58,7 +56,6 @@ SchemaItem::SchemaItem(const SchemaItem &item)
     m_hidden = item.m_hidden;
     m_maxInstances = item.m_maxInstances;
     m_minInstances = item.m_minInstances;
-    //m_nodeInsertData = item.m_nodeInsertData;
     m_properties = item.m_properties;
     m_types = item.m_types;
     m_schemaTypes = item.m_schemaTypes;
@@ -92,7 +89,15 @@ SchemaItem::SchemaItem(const SchemaItem &item)
 
 void SchemaItem::addSchemaValueType(const std::shared_ptr<SchemaType> &pType)
 {
-    m_types[pType->getName()] = pType;
+    auto it = m_types.find(pType->getName());
+    if (it == m_types.end())
+    {
+        m_types[pType->getName()] = pType;
+    }
+    else
+    {
+        throw(ParseException("Element: " + getProperty("name") + ", duplicate schema value type found: " + pType->getName()));
+    }
 }
 
 
@@ -140,7 +145,7 @@ void SchemaItem::addSchemaType(const std::shared_ptr<SchemaItem> &pItem, const s
     }
     else
     {
-        throw(ParseException("Element: " + getProperty("name") + ", duplicate config type found: " + typeName));
+        throw(ParseException("Element: " + getProperty("name") + ", duplicate schema complex type found: " + typeName));
     }
 }
 

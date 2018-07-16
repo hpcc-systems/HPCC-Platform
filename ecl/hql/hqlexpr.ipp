@@ -164,7 +164,9 @@ protected:
     unsigned hashcode;          // CInterface is 4 byte aligned in 64bits, so use this to pad
                                 // Worth storing because it significantly speeds up equality checking
 #ifdef DEBUG_TRACK_INSTANCEID
+public:
     unsigned __int64 seqid;
+protected:
 #endif
     IInterface * transformExtra[NUM_PARALLEL_TRANSFORMS];
     HqlExprArray operands;

@@ -555,6 +555,16 @@ public:
                     bindingName = bn;
                 }
             }
+            else
+            {
+                bindingcfg.setown(getEspBindingConfig(espProcName, "0", nullptr));
+                if (!bindingcfg)
+                {
+                    message.setf("Could not configure service '%s' because there's no template esp binding configured on port %s or port 0 for esp process '%s'", esdlServiceName, espPort, espProcName);
+                    DBGLOG("%s", message.str());
+                    return -1;
+                }
+            }
         }
         Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
@@ -855,7 +865,7 @@ private:
             throw MakeStringException(-1, "Unable to connect to ESP configuration information in dali %s", xpath.str());
 
         if (espbindingport && *espbindingport)
-            xpath.setf("EspProcess/[@name='%s']/EspBinding[@port='%s']", espprocname, espbindingport);
+            xpath.setf("EspProcess/[@name='%s']/EspBinding[@port=%s]", espprocname, espbindingport);
         else
             xpath.setf("EspProcess/[@name='%s']/EspBinding[@name='%s']", espprocname, bindingname);
         Owned<IPropertyTreeIterator> iter = globalLock->queryRoot()->getElements(xpath.str());

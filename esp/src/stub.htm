@@ -34,6 +34,46 @@
             document.write("<script type=\"text/javascript\" src=\"/esp/files/dist/node_modules.js\" charset=\"utf-8\"><" + "/script>");
             document.write("<script type=\"text/javascript\" src=\"/esp/files/dist/stub.eclwatch.js\" charset=\"utf-8\"><" + "/script>");
         }
+        getAuthType();
+        function getAuthType(){
+            if (document.cookie.indexOf ("ESPSessionState=true") > -1){
+                checkCookie();
+            } else if (document.cookie.indexOf ("ESPSessionState=false") > -1) {
+                window.location();
+            } else {
+                sendAuthRequest();
+            }
+
+            function checkCookie(){
+                    document.cookie.indexOf ("ESPAuthenticated=true") > -1 ? window.location() : window.location = location.origin + "/esp/files/Login.html";
+                }
+
+            function sendAuthRequest(){
+                var xhttp = new XMLHttpRequest();
+                xhttp.open ('GET', 'esp/getauthtype', true);
+                xhttp.send();
+                xhttp.onload = function(){
+                    var responseType = (this.responseXML.childNodes[0].textContent);
+                    if (this.readyState == 4 && this.status == 200 && this.responseXML.childNodes[0].textContent == responseType){
+                        switch (responseType) {
+                            case 'Mixed':
+                            case 'PerSessionOnly':
+                            case 'PerRequestOnly':
+                                document.cookie = ("ESPSessionState=true");
+                                break;
+                            case 'UserNameOnly':
+                            case 'None':
+                                document.cookie = ("ESPSessionState=false");
+                                break;
+                            default:
+                                document.cookie = ("ESPSessionState=false");
+                            }
+                    } else {
+                        alert ('Authorization Request Error.')
+                    }
+                }
+            }
+        }
     </script>
 </head>
 

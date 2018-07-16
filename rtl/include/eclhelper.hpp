@@ -2308,7 +2308,7 @@ interface IThorDiskCallback : extends IFilePositionProvider
 
 interface IThorIndexCallback : extends IInterface
 {
-    virtual byte * lookupBlob(unsigned __int64 id) = 0;         // return reference, not freed by code generator, can dispose once transform() has returned.
+    virtual const byte * lookupBlob(unsigned __int64 id) = 0;         // return reference, not freed by code generator, can dispose once transform() has returned.
 };
 
 enum

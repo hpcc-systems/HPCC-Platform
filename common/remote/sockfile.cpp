@@ -4021,7 +4021,7 @@ public:
     {
         throwUnexpected();
     }
-    virtual byte * lookupBlob(unsigned __int64 id) override
+    virtual const byte * lookupBlob(unsigned __int64 id) override
     {
         throwUnexpected();
     }
@@ -4218,7 +4218,7 @@ public:
     {
         return makeLocalFposOffset(partNum, prefetchBuffer.tell());
     }
-    virtual byte * lookupBlob(unsigned __int64 id) override
+    virtual const byte * lookupBlob(unsigned __int64 id) override
     {
         throwUnexpected();
     }
