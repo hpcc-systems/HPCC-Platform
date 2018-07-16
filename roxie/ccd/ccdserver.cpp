@@ -27132,11 +27132,14 @@ protected:
 
         virtual void notifyAbort(IException *E)
         {
-            SpinBlock b(abortLock);
-            if (!aborted && QUERYINTERFACE(E, InterruptedSemaphoreException) == NULL)
+            if (QUERYINTERFACE(E, InterruptedSemaphoreException) == NULL)
             {
-                aborted = true;
-                exception.set(E);
+                SpinBlock b(abortLock);
+                if (!aborted)
+                {
+                    aborted = true;
+                    exception.set(E);
+                }
             }
         }
 

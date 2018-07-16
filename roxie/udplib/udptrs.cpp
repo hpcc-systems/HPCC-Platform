@@ -29,6 +29,7 @@
 #include <sys/resource.h>
 #endif
 #include <math.h>
+#include <atomic>
 
 unsigned udpOutQsPriority = 0;
 unsigned udpMaxRetryTimedoutReqs = 0; // 0 means off (keep retrying forever)
@@ -720,8 +721,7 @@ class CSendManager : implements ISendManager, public CInterface
     send_data         *data;
     Linked<TokenBucket> bucket;
     
-    SpinLock msgSeqLock;
-    unsigned msgSeq;
+    std::atomic<unsigned> msgSeq{0};
 
     static bool comparePacket(void *pkData, void *key) 
     {
@@ -732,10 +732,11 @@ class CSendManager : implements ISendManager, public CInterface
 
     inline unsigned getNextMessageSequence()
     {
-        SpinBlock b(msgSeqLock);
-        unsigned res = ++msgSeq;
-        if (!res)
+        unsigned res;
+        do
+        {
             res = ++msgSeq;
+        } while (unlikely(!res));
         return res;
     }
         
@@ -761,7 +762,6 @@ public:
         data = new send_data(*this, sniffer_port, sniffer_multicast_ip, bucket);
         send_flow = new send_send_flow(*this, numNodes);
         receive_flow = new send_receive_flow(*this, client_flow_port);
-        msgSeq = 0;
     }
 
 
