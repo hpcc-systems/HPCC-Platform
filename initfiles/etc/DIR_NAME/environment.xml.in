@@ -489,6 +489,26 @@
                resource="WsEspControlAccess"
                service="espcontrol"/>
    </EspControlBinding>
+   <EspBinding defaultForPort="true"
+               defaultServiceVersion=""
+               name="DESDLBindingTemplate"
+               port="0"
+               protocol="http"
+               resourcesBasedn="ou=DynamicESDL,ou=EspServices,ou=ecl"
+               service="DESDLServiceTemplate"
+               type=""
+               wsdlServiceAddress="">
+    <Authenticate access="Read"
+               description="Root access to DynamicESDL service"
+               path="/"
+               required="Read"
+               resource="DynamicESDL"/>
+    <AuthenticateFeature authenticate="Yes"
+               description="Access to DynamicESDL service"
+               path="DynamicESDL"
+               resource="DynamicESDL"
+               service="DynamicESDLTemplate"/>
+   </EspBinding>
   </EspProcess>
   <Directories name="${DIR_NAME}">
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/log/[NAME]/[INST]" name="log"/>
@@ -788,7 +808,19 @@
    </Properties>
   </EspService>
   @WSSQL_SERVICE_BLOCK_E@
-  
+  <EspService build="_"
+              buildSet="DynamicESDL"
+              description="My DynamicESDL Based Web Service Interface"
+              LoggingManager=""
+              name="DESDLServiceTemplate"
+              namespaceBase="urn:hpccsystems:ws">
+   <Properties bindingType="EsdlBinding"
+               defaultPort="8043"
+               defaultResourcesBasedn="ou=DynamicESDL,ou=EspServices,ou=ecl"
+               defaultSecurePort="18043"
+               plugin="esdl_svc_engine"
+               type="DynamicESDL"/>
+  </EspService>
   <DafilesrvProcess build="_"
                     buildSet="dafilesrv"
                     description="DaFileSrv process"
