@@ -51,6 +51,8 @@ const char* THORQUEUE_FEATURE = "ThorQueueAccess";
 static const char* ROXIE_CONTROL_URL = "RoxieControlAccess";
 static const char* OWN_WU_ACCESS = "OwnWorkunitsAccess";
 static const char* OTHERS_WU_ACCESS = "OthersWorkunitsAccess";
+static const char* SMC_ACCESS_DENIED = "Access Denied";
+static const char* QUEUE_ACCESS_DENIED = "Failed to access the queue functions. Permission denied.";
 
 const char* PERMISSIONS_FILENAME = "espsmc_permissions.xml";
 const unsigned DEFAULTACTIVITYINFOCACHETIMEOUTSECOND = 10;
@@ -1107,10 +1109,10 @@ void CWsSMCEx::setClusterStatus(IEspContext& context, const CWsSMCTargetCluster&
 
 bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspActivityResponse& resp)
 {
-    context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, true);
-
     try
     {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_SMC_ACCESS_DENIED, SMC_ACCESS_DENIED);
+
         const char* build_ver = getBuildVersion();
         resp.setBuild(build_ver);
 
@@ -1336,18 +1338,11 @@ void CWsSMCEx::addCapabilities(IPropertyTree* pFeatureNode, const char* access,
     }
 }
 
-static void checkAccess(IEspContext &context, const char* feature,int level)
-{
-    if (!context.validateFeatureAccess(feature, level, false))
-        throw MakeStringException(ECLWATCH_THOR_QUEUE_ACCESS_DENIED, "Failed to access the queue functions. Permission denied.");
-}
-
-
 bool CWsSMCEx::onMoveJobDown(IEspContext &context, IEspSMCJobRequest &req, IEspSMCJobResponse &resp)
 {
     try
     {
-        checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
+        context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
 
         {
             Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
@@ -1376,7 +1371,7 @@ bool CWsSMCEx::onMoveJobUp(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
 {
     try
     {
-        checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
+        context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
 
         {
             Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
@@ -1405,7 +1400,7 @@ bool CWsSMCEx::onMoveJobBack(IEspContext &context, IEspSMCJobRequest &req, IEspS
 {
     try
     {
-        checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
+        context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
 
         {
             Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
@@ -1451,7 +1446,7 @@ bool CWsSMCEx::onMoveJobFront(IEspContext &context, IEspSMCJobRequest &req, IEsp
 {
     try
     {
-        checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
+        context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
 
         {
             Owned<IJobQueue> queue=createJobQueue(req.getQueueName());
@@ -1498,7 +1493,7 @@ bool CWsSMCEx::onRemoveJob(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
 {
     try
     {
-        checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
+        context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
 
         abortWorkUnit(req.getWuid(), context.querySecManager(), context.queryUser());
 
@@ -1528,7 +1523,7 @@ bool CWsSMCEx::onStopQueue(IEspContext &context, IEspSMCQueueRequest &req, IEspS
 {
     try
     {
-        checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
+        context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
 
         {
             Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
@@ -1554,7 +1549,7 @@ bool CWsSMCEx::onResumeQueue(IEspContext &context, IEspSMCQueueRequest &req, IEs
 {
     try
     {
-        checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
+        context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
 
         {
             Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
@@ -1597,7 +1592,7 @@ bool CWsSMCEx::onPauseQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
 {
     try
     {
-        checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
+        context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
 
         {
             Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
@@ -1623,7 +1618,7 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
 {
     try
     {
-        checkAccess(context,THORQUEUE_FEATURE,SecAccess_Full);
+        context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
         {
             Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
             QueueLock lock(queue);
@@ -1678,6 +1673,8 @@ bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &re
 {
     try
     {
+        context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
+
         WUPriorityClass priority = PriorityClassNormal;
         if(strieq(req.getPriority(),"high"))
             priority = PriorityClassHigh;
@@ -1716,8 +1713,7 @@ bool CWsSMCEx::onGetThorQueueAvailability(IEspContext &context, IEspGetThorQueue
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_SMC_ACCESS_DENIED, "Failed to get Thor Queue availability. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
 
         StringArray thorNames, groupNames, targetNames, queueNames;
         getEnvironmentThorClusterNames(thorNames, groupNames, targetNames, queueNames);
@@ -1768,7 +1764,10 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
 #ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if(!secmgr || !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "access denied, administrators only.");
+        }
 #endif
         StringBuffer chatURLStr, bannerStr;
         const char* chatURL = req.getChatURL();
@@ -1848,8 +1847,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_SMC_ACCESS_DENIED, "Failed to Browse Resources. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_SMC_ACCESS_DENIED, SMC_ACCESS_DENIED);
 
         double version = context.getClientVersion();
 
@@ -2149,8 +2147,7 @@ inline const char *controlCmdMessage(int cmd)
 
 bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdRequest &req, IEspRoxieControlCmdResponse &resp)
 {
-    if (!context.validateFeatureAccess(ROXIE_CONTROL_URL, SecAccess_Full, false))
-       throw MakeStringException(ECLWATCH_SMC_ACCESS_DENIED, "Cannot Access Roxie Control. Permission denied.");
+    context.ensureFeatureAccess(ROXIE_CONTROL_URL, SecAccess_Full, ECLWATCH_SMC_ACCESS_DENIED, SMC_ACCESS_DENIED);
 
     const char *process = req.getProcessCluster();
     if (!process || !*process)
@@ -2185,6 +2182,7 @@ bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdReques
 
 bool CWsSMCEx::onGetStatusServerInfo(IEspContext &context, IEspGetStatusServerInfoRequest &req, IEspGetStatusServerInfoResponse &resp)
 {
+    context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_SMC_ACCESS_DENIED, SMC_ACCESS_DENIED);
     getStatusServerInfo(context, req.getServerType(), req.getServerName(), req.getNetworkAddress(), req.getPort(), resp.updateStatusServerInfo());
     return true;
 }
@@ -2514,6 +2512,8 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
 
     try
     {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_SMC_ACCESS_DENIED, SMC_ACCESS_DENIED);
+
         CLockPostFilter postFilter(req);
         StringBuffer xPath;
         if (req.getAllFileLocks())
