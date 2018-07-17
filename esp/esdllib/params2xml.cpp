@@ -24,6 +24,22 @@
 
 void child2xml(IEsdlDefinition *esdl, IEsdlDefObject &child, StringBuffer &flexpath, IProperties *params, StringBuffer &xmlstr, StringBuffer &path, unsigned flags, double ver, int flexpath_setpoint);
 
+void paramsBaseStruct2xml(IEsdlDefinition *esdl, IEsdlDefStruct *est, IProperties *params, StringBuffer &xmlstr, StringBuffer &path, StringBuffer &flexpath, unsigned flexpath_setpoint, unsigned flags, double ver)
+{
+    if (esdl && est && est->queryProp("base_type"))
+    {
+        IEsdlDefStruct *base = esdl->queryStruct(est->queryProp("base_type"));
+        if (base)
+        {
+            if (base->queryProp("base_type"))
+                paramsBaseStruct2xml(esdl, base, params, xmlstr, path, flexpath, flexpath_setpoint, flags, ver);
+
+            Owned<IEsdlDefObjectIterator> bt = base->getChildren();
+            ForEach(*bt)
+                child2xml(esdl, bt->query(), flexpath, params, xmlstr, path, flags, ver, flexpath_setpoint);
+        }
+    }
+}
 
 void paramsStruct2xml(IEsdlDefinition *esdl, IEsdlDefStruct *est, const char *tagname, IProperties *params, StringBuffer &xmlstr, StringBuffer &path, unsigned flags, double ver, bool isroot)
 {
@@ -35,13 +51,7 @@ void paramsStruct2xml(IEsdlDefinition *esdl, IEsdlDefStruct *est, const char *ta
         flexpath.append(".");
     unsigned flexpath_setpoint = flexpath.length();
 
-    if (est->queryProp("base_type"))
-    {
-        IEsdlDefStruct *base = esdl->queryStruct(est->queryProp("base_type"));
-        Owned<IEsdlDefObjectIterator> bt = base->getChildren();
-        ForEach(*bt)
-            child2xml(esdl, bt->query(), flexpath, params, xmlstr, path, flags, ver, flexpath_setpoint);
-    }
+    paramsBaseStruct2xml(esdl, est, params, xmlstr, path, flexpath, flexpath_setpoint, flags, ver);
 
     Owned<IEsdlDefObjectIterator> it = est->getChildren();
     ForEach(*it)
