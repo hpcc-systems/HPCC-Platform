@@ -75,7 +75,7 @@ add_subdirectory(Installing_and_RunningTheHPCCPlatform)
 add_subdirectory(RoxieReference)
 add_subdirectory(RunningHPCCinaVirtualMachine)
 
-add_subdirectory(ECLPluginForEclipse)
+#add_subdirectory(ECLPluginForEclipse)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
 add_subdirectory(VisualizingECL)
