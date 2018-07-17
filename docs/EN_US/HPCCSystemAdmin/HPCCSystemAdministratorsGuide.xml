@@ -39,7 +39,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -331,17 +331,6 @@
         <para>The following Client Interfaces are available to interact with
         the HPCC Platform.</para>
 
-        <sect3 id="SysAdm_Eclipse">
-          <title>Eclipse</title>
-
-          <para>With the ECL plugin for Eclipse, you can use the Eclipse IDE
-          to create and execute queries into your data on an HPCC platform
-          using Enterprise Control Language (ECL). Eclipse is open-source, and
-          multi-platform and it can be used to interface with your data and
-          workunits on HPCC. The ECL plugin for Eclipse is also
-          open-source.</para>
-        </sect3>
-
         <sect3 id="SysAdm_ECLIDE">
           <title>ECL IDE</title>
 
@@ -394,6 +383,14 @@
           details.</para>
         </sect3>
 
+        <sect3 id="SysAdm_Eclipse">
+          <title>ECL for Visual Studio</title>
+
+          <para>You can find and add the extension, ECL for Visual Studio Code
+          in the Visual Studio Marketplace. This extension adds rich language
+          support for the ECL language to VS Code. </para>
+        </sect3>
+
         <sect3 id="SysAdm_ComLine">
           <title><emphasis role="bold">Command Line Tools</emphasis></title>
 
@@ -407,9 +404,10 @@
           details.</para>
         </sect3>
       </sect2>
-	      <xi:include href="HPCCSystemAdmin/SA-Mods/DAFtslave.xml"
-                xpointer="xpointer(//*[@id='SA_SupportUtilities'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="HPCCSystemAdmin/SA-Mods/DAFtslave.xml"
+                  xpointer="xpointer(//*[@id='SA_SupportUtilities'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <!--Inclusion-from-ClientTool-As-Sect1: REMOVED-->

@@ -1,4 +1,4 @@
-################################################################################
+﻿################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +13,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+#
+#
+##Deprecated 7/2018 
+#  per HPCC-19988 
+#   Once Merged This file could be deleted
+##################
 
 DOCBOOK_TO_PDF( ${FO_XSL} ECL_Plugin_for_Eclipse.xml "ECL_Plugin_for_EclipseIDE_${DOC_LANG}")
 

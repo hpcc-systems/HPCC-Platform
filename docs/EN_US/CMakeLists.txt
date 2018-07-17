@@ -1,5 +1,5 @@
 ﻿################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -17,9 +17,12 @@
 ###
 #  This CMakeLists intended to be used in docs/EN
 #    Refactored for internationalization
-##
-#GHACKED THIS 
+###
+# Last Mod GP 7/2018
+#  Removed ECL Plugin For Eclipse
+#
 # Doc dirs to include.
+#
 
 
 cmake_minimum_required(VERSION 2.8)
@@ -75,7 +78,7 @@ add_subdirectory(Installing_and_RunningTheHPCCPlatform)
 add_subdirectory(RoxieReference)
 add_subdirectory(RunningHPCCinaVirtualMachine)
 
-add_subdirectory(ECLPluginForEclipse)
+#add_subdirectory(ECLPluginForEclipse)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
 add_subdirectory(VisualizingECL)
