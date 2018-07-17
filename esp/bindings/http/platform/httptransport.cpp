@@ -1053,6 +1053,14 @@ bool isSoapContentType(const char* contenttype)
             Utils::strncasecmp(contenttype, HTTP_TYPE_SOAP, strlen(HTTP_TYPE_SOAP)) == 0;
 }
 
+bool isJsonContentType(const char* contenttype)
+{
+    if (contenttype == NULL)
+        return false;
+    else
+        return Utils::strncasecmp(contenttype, HTTP_TYPE_JSON, strlen(HTTP_TYPE_JSON)) == 0;
+}
+
 bool CHttpMessage::isSoapMessage()
 {
     if(m_content_type.get() == NULL)
@@ -1070,6 +1078,25 @@ bool CHttpMessage::isSoapMessage()
     }
     else
         return isSoapContentType(m_content_type.get());
+}
+
+bool CHttpMessage::isJsonMessage()
+{
+    if (m_content_type.get() == NULL)
+        return false;
+    else if (Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_MULTIPART_RELATED, strlen(HTTP_TYPE_MULTIPART_RELATED)) == 0)
+    {
+        CMimeMultiPart* mpart = queryMultiPart();
+        if (mpart == NULL)
+            return false;
+        CMimeBodyPart* bpart = mpart->queryRootPart();
+        if (bpart != NULL && isJsonContentType(bpart->getContentType()))
+            return true;
+        else
+            return false;
+    }
+    else
+        return isJsonContentType(m_content_type.get());
 }
 
 bool CHttpMessage::isFormSubmission()
@@ -2063,7 +2090,7 @@ int CHttpRequest::readContentToFiles(StringBuffer netAddress, StringBuffer path,
               CHttpResponse Implementation
 *******************************************************************************/
 
-CHttpResponse::CHttpResponse(ISocket& socket) : CHttpMessage(socket), m_timeout(BSOCKET_CLIENT_READ_TIMEOUT)
+CHttpResponse::CHttpResponse(ISocket& socket) : CHttpMessage(socket), m_timeout(BSOCKET_CLIENT_READ_TIMEOUT), m_respSent(false)
 {
 }
 

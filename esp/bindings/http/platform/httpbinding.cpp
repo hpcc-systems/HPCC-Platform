@@ -41,6 +41,7 @@
 #include  "seclib.hpp"
 #include "../../../system/security/shared/secloader.hpp"
 #include  "../../SOAP/Platform/soapmessage.hpp"
+#include  "../../SOAP/Platform/soapbind.hpp"
 #include "xmlvalidator.hpp"
 #include "xsdparser.hpp"
 #include "espsecurecontext.hpp"
@@ -105,6 +106,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     m_viewConfig = proc_cfg ? proc_cfg->getPropBool("@httpConfigAccess") : false;   
     m_formOptions = proc_cfg ? proc_cfg->getPropBool("@formOptionsAccess") : false;
     m_includeSoapTest = true;
+    m_includeJsonTest = true;
     m_configFile.set(tree ? tree->queryProp("@config") : "esp.xml");
     Owned<IPropertyTree> bnd_cfg = getBindingConfig(tree, bindname, procname);
     m_wsdlVer=0.0;
@@ -871,9 +873,11 @@ void EspHttpBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respon
             return;
     }
 
-    if(request->isSoapMessage()) 
+    if (request->isSoapMessage() || request->isJsonMessage())
     {
         request->queryParameters()->setProp("__wsdl_address", m_wsdlAddress.str());
+        if(request->isJsonMessage())
+            context.setResponseFormat(ESPSerializationJSON);
         onSoapRequest(request, response);
     }
     else if(request->isFormSubmission())
@@ -968,6 +972,8 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             return onGetInstantQuery(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_soap_builder:
             return onGetSoapBuilder(context, request, response, serviceName.str(), methodName.str());
+        case sub_serv_json_builder:
+            return onGetJsonBuilder(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_reqsamplexml:
             return onGetReqSampleXml(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_respsamplexml:
@@ -1166,6 +1172,20 @@ void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHt
         );
 }
 
+void EspHttpBinding::getJsonMessage(StringBuffer& jsonmsg, IEspContext& ctx, CHttpRequest* request, const char *serv, const char *method)
+{
+    ESPSerializationFormat orig_format = ctx.getResponseFormat();
+    ctx.setResponseFormat(ESPSerializationJSON);
+    Owned<IRpcRequestBinding> rpcreq = createReqBinding(ctx, request, serv, method);
+    CSoapRequestBinding* reqbind = dynamic_cast<CSoapRequestBinding*>(rpcreq.get());
+    if (reqbind)
+    {
+        StringBuffer mime;
+        reqbind->appendContent(&ctx, jsonmsg, mime);
+    }
+    ctx.setResponseFormat(orig_format);
+}
+
 #else
 
 //=========================================================
@@ -1329,6 +1349,59 @@ int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request
 
     StringBuffer page;
     xform->transform(page);     
+
+    response->setContent(page);
+    response->setContentType("text/html; charset=UTF-8");
+    response->setStatus(HTTP_STATUS_OK);
+    response->send();
+
+    return 0;
+}
+
+int EspHttpBinding::onGetJsonBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  const char *serv, const char *method)
+{
+    StringBuffer jsonmsg, serviceQName, methodQName;
+
+    if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName)
+        || methodQName.length()==0)
+        throw createEspHttpException(HTTP_STATUS_BAD_REQUEST_CODE, "Bad Request", HTTP_STATUS_BAD_REQUEST);
+
+    getJsonMessage(jsonmsg,context,request,serviceQName,methodQName);
+
+    //put all URL parameters into dest
+
+    StringBuffer params;
+    const char* excludes[] = {"json_builder_",NULL};
+    getEspUrlParams(context,params,excludes);
+
+    StringBuffer header("Content-Type: application/json; charset=UTF-8");
+
+    Owned<IXslProcessor> xslp = getXslProcessor();
+    Owned<IXslTransform> xform = xslp->createXslTransform();
+    xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_jsontest.xsl").str());
+
+    StringBuffer encodedMsg;
+    StringBuffer srcxml;
+    srcxml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><srcxml><jsonreq><![CDATA[");
+    srcxml.append(encodeJSON(encodedMsg, jsonmsg.str())); //encode the whole thing for javascript embedding
+    srcxml.append("]]></jsonreq></srcxml>");
+    xform->setXmlSource(srcxml.str(), srcxml.length());
+    xform->setStringParameter("showhttp", "true()");
+
+    // params
+    xform->setStringParameter("pageName", "JSON Test");
+    xform->setStringParameter("serviceName", serviceQName.str());
+    xform->setStringParameter("methodName", methodQName.str());
+    xform->setStringParameter("header", header.str());
+    xform->setStringParameter("jsonbody", encodedMsg.str());
+
+    ISecUser* user = context.queryUser();
+    bool inhouse = user && (user->getStatus()==SecUserStatus_Inhouse);
+    xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
+    xform->setStringParameter("destination", methodQName.str());
+
+    StringBuffer page;
+    xform->transform(page);
 
     response->setContent(page);
     response->setContentType("text/html; charset=UTF-8");
@@ -2279,6 +2352,7 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
 
         xform->setParameter("formOptionsAccess", m_formOptions?"1":"0");
         xform->setParameter("includeSoapTest", m_includeSoapTest?"1":"0");
+        xform->setParameter("includeJsonTest", m_includeJsonTest?"1":"0");
 
         // set the prop noDefaultValue param
         IProperties* props = context.queryRequestParameters();

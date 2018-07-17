@@ -43,7 +43,7 @@
         <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
 
         <script>dojoConfig = {async:true, parseOnLoad:false}</script>
-        <script src='/esp/files/dojo/dojo.js'></script>
+        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js"></script>
         <script type="text/javascript">
 <xsl:text disable-output-escaping="yes">
 <![CDATA[
@@ -141,7 +141,8 @@
               }).then(function(data){
                 dom.byId("resp_body").value = jsonPretty(data);
               }, function(err){
-                dom.byId("resp_body").value = err.toString() + ": \n\n" + err.response.text;
+                dom.byId("resp_body").value = jsonPretty(err.response.text);
+                alert(err.toString());
               });
             });
           });

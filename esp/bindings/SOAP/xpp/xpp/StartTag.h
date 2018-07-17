@@ -20,8 +20,7 @@
 #define XPP_START_TAG_H_
 
 #include <string>
-#include <xpp/XmlPullParser.h>
-
+#include <sxt/XmlTokenizer.h>
 /**
  * Encapsulate XML STag and EmptyElement
  * 
@@ -35,6 +34,7 @@ namespace xpp {
 
   class StartTag {
     friend class XmlPullParser;
+    friend class CXJXPullParser;
 
   public:
     StartTag() { init(); }
@@ -213,9 +213,11 @@ namespace xpp {
     const SXT_CHAR *uri;
     const SXT_CHAR *localName;
     const SXT_CHAR *qName;
+    SXT_STRING nameBuf;
 
     class Attribute { 
       friend class XmlPullParser;
+      friend class CXJXPullParser;
       friend class StartTag;
     public:
       Attribute() {

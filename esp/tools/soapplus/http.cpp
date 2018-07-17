@@ -1364,15 +1364,21 @@ StringBuffer& HttpClient::insertSoapHeaders(StringBuffer& request)
         return request;
 
     const char* ptr = request.str();
-    while(*ptr != '\0' && *ptr == ' ')
+    while(*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')
         ptr++;
-    if(*ptr != '<')
+
+    StringBuffer contenttype;
+    if(*ptr == '<')
+        contenttype.set("text/xml");
+    else if(*ptr == '{')
+        contenttype.set("application/json");
+    else
         return request;
 
     StringBuffer headers;
 
     headers.appendf("POST %s HTTP/1.1\r\n", m_path.str());
-    headers.append("Content-Type: text/xml\r\n");
+    headers.appendf("Content-Type: %s\r\n", contenttype.str());
     headers.append("User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)\r\n");
     headers.appendf("Content-Length: %d\r\n", request.length());
     headers.append("Host: ").append(m_host.str());

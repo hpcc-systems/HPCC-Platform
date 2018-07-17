@@ -401,7 +401,75 @@ public:
             buffer.append("</Exceptions>");
         return buffer;
     }
-    
+
+    StringBuffer& serializeJSON(StringBuffer& buffer, unsigned indent = 0, bool simplified=false, bool root=true, bool enclose=false) const
+    {
+        synchronized block(m_mutex);
+        if (enclose)
+        {
+            buffer.append("{");
+            if (indent) buffer.append("\n");
+        }
+
+        if (root)
+            buffer.append("\"Exceptions\": {");
+
+        if (!simplified)
+        {
+            if (indent) buffer.append("\n\t");
+            buffer.appendf("\"Source\": \"%s\"", source_.str());
+        }
+        ForEachItemIn(i, array_)
+        {
+            if (i == 0 && !simplified)
+                buffer.appendf(", ");
+            else if (i > 0)
+                buffer.append(", ");
+            IException& exception = array_.item(i);
+
+            if (indent) buffer.append("\n\t");
+            if (i == 0)
+                buffer.append("\"Exception\": [");
+            if (indent) buffer.append("\n\t");
+            buffer.append("{");
+
+            if (indent) buffer.append("\n\t\t");
+            buffer.appendf("\"Code\": %d,", exception.errorCode());
+
+            if (indent) buffer.append("\n\t\t");
+            buffer.appendf("\"Audience\": \"%s\",", serializeMessageAudience( exception.errorAudience() ));
+
+            if (!simplified)
+            {
+                if (indent) buffer.append("\n\t\t");
+                buffer.appendf("\"Source\": \"%s\",", source_.str());
+            }
+
+            if (indent) buffer.append("\n\t\t");
+            StringBuffer msg;
+            StringBuffer encoded;
+            encodeJSON(encoded, exception.errorMessage(msg).str());
+            buffer.appendf("\"Message\": \"%s\"", encoded.str());
+
+            if (indent) buffer.append("\n\t");
+            buffer.append("}");
+        }
+
+        if (indent) buffer.append("\n\t");
+        buffer.append("]");
+        if (root)
+        {
+            if (indent) buffer.append("\n");
+            buffer.append("}");
+        }
+        if (enclose)
+        {
+            if (indent) buffer.append("\n");
+            buffer.append("}");
+        }
+        return buffer;
+    }
+
     virtual void deserialize(const char* xml)
     {
         synchronized block(m_mutex);

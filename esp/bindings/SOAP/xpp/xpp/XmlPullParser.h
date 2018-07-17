@@ -28,7 +28,7 @@
 #include <xpp/EndTag.h>
 #include <xpp/StartTag.h>
 #include <xpp/XmlPullParserException.h>
-
+#include "xjx.hpp"
 #include "jliball.hpp"
 
 /**
@@ -76,7 +76,7 @@ using namespace sxt;
 #define XPP_DEBUG false
 
 namespace xpp {
-  class XmlPullParser {
+  class XmlPullParser : implements XJXPullParser {
     
       
   // public 
@@ -87,7 +87,7 @@ namespace xpp {
       END_TAG = 3,
       CONTENT = 4
     };
- 
+
     XmlPullParser() 
     {
       init();
@@ -373,7 +373,7 @@ namespace xpp {
     }
   
   
-    void readEndTag(EndTag& etag) const   {
+    void readEndTag(EndTag& etag)  {
       if(eventType != END_TAG)
         throw XmlPullParserException("no end tag available to read");
       etag.qName = elStack[elStackDepth].qName;

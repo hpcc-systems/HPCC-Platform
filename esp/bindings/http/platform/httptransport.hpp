@@ -49,6 +49,7 @@
 #define HTTP_TYPE_IMAGE_JPEG                    "image/jpeg"
 #define HTTP_TYPE_OCTET_STREAM                  "application/octet-stream"
 #define HTTP_TYPE_SOAP                          "application/soap"
+#define HTTP_TYPE_JSON                          "application/json"
 #define HTTP_TYPE_MULTIPART_RELATED             "Multipart/Related"
 #define HTTP_TYPE_MULTIPART_FORMDATA            "multipart/form-data"
 #define HTTP_TYPE_FORM_ENCODED                  "application/x-www-form-urlencoded"
