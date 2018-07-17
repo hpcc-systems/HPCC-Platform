@@ -5814,7 +5814,7 @@ rangeOrIndices
 rangeExpr
     : expression        {
                             IHqlExpression * expr = $1.queryExpr();
-                            if (expr->isConstant() && !expr->queryType()->isInteger())
+                            if (expr->isConstant() && expr->queryValue() && !expr->queryType()->isInteger())
                                 parser->reportWarning(CategoryMistake, WRN_INT_OR_RANGE_EXPECTED, $1.pos, "Floating point index used. Was an index range intended instead?");
                             parser->normalizeExpression($1, type_int, false);
                             parser->checkPositive($1);
@@ -5822,6 +5822,9 @@ rangeExpr
                         }
     | expression DOTDOT expression
                         {
+                            IHqlExpression * expr = $3.queryExpr();
+                            if (expr->isConstant() && expr->queryValue() && !expr->queryType()->isInteger())
+                                parser->reportWarning(CategoryMistake, WRN_INT_OR_RANGE_EXPECTED, $3.pos, "Floating point index used. Was an extra . added?");
                             parser->normalizeExpression($1, type_int, false);
                             parser->normalizeExpression($3, type_int, false);
                             parser->checkPositive($1);
@@ -5829,6 +5832,9 @@ rangeExpr
                             $$.setExpr(createValue(no_range, makeNullType(), $1.getExpr(), $3.getExpr()));
                         }
     | DOTDOT expression {
+                            IHqlExpression * expr = $2.queryExpr();
+                            if (expr->isConstant() && expr->queryValue() && !expr->queryType()->isInteger())
+                                parser->reportWarning(CategoryMistake, WRN_INT_OR_RANGE_EXPECTED, $2.pos, "Floating point index used. Was an extra . added?");
                             parser->normalizeExpression($2, type_int, false);
                             parser->checkPositive($2);
                             $$.setExpr(createValue(no_rangeto, makeNullType(), $2.getExpr()));
