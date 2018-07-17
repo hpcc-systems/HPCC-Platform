@@ -20,6 +20,7 @@
 
 #option('layoutTranslation', true);
 
+import Std.File AS FileServices;
 import ^ as root;
 optRemoteRead := #IFDEFINED(root.optRemoteRead, false);
 #option('forceRemoteRead', optRemoteRead);
@@ -31,10 +32,11 @@ optRemoteRead := #IFDEFINED(root.optRemoteRead, false);
 IMPORT STD;
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
+suffix := '-' + WORKUNIT;
 
-fname := prefix + 'remoteread';
-fname_comp := prefix + 'remoteread_comp';
-fname_index := prefix + 'remoteread_index';
+fname := prefix + 'remoteread' + suffix;
+fname_comp := prefix + 'remoteread_comp' + suffix;
+fname_index := prefix + 'remoteread_index' + suffix;
 
 rec := RECORD
  string10 fname;
@@ -59,9 +61,13 @@ rec_vf_trans := RECORD
  string logicalFile{virtual(logicalfilename)};
 END;
 
-ds := DATASET(fname, rec_vf, FLAT);
-ds_comp := DATASET(fname_comp, rec_vf, FLAT);
-ds_trans := DATASET(fname, rec_vf_trans, FLAT);
+string trimmedLogicalFilename(STRING filename) := FUNCTION
+    return filename[1..(std.str.find(std.str.ToLowerCase(trim(filename)), '-w')-1)];
+end;
+
+ds := project(DATASET(fname, rec_vf, FLAT), transform(rec_vf, SELF.logicalFile := trimmedLogicalFilename(LEFT.logicalFile); SELF := LEFT;));
+ds_comp := project(DATASET(fname_comp, rec_vf, FLAT), transform(rec_vf, SELF.logicalFile := trimmedLogicalFilename(LEFT.logicalFile); SELF := LEFT;));
+ds_trans := project(DATASET(fname, rec_vf_trans, FLAT), transform(rec_vf_trans, SELF.logicalFile := trimmedLogicalFilename(LEFT.logicalFile); SELF := LEFT;));
 
 SEQUENTIAL(
  OUTPUT(inds, , fname, OVERWRITE);
@@ -72,6 +78,11 @@ SEQUENTIAL(
  OUTPUT(ds_comp);
  OUTPUT(i);
  OUTPUT(ds_trans);
+
+ // Clean-up
+ FileServices.DeleteLogicalFile(fname),
+ FileServices.DeleteLogicalFile(fname_comp),
+ FileServices.DeleteLogicalFile(fname_index),
 );
 
 
