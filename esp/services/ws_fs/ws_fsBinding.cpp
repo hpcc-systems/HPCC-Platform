@@ -107,6 +107,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
         Owned<IProperties> params(createProperties());
         if (!permission)
         {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
             params->setProp("@method", methodbuf.str());
             xml.append("<Environment><ErrorMessage>Permission denied.</ErrorMessage></Environment>");
         }

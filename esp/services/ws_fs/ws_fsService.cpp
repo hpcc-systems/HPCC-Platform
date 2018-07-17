@@ -659,8 +659,7 @@ bool CFileSprayEx::onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & 
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> environment = factory->openEnvironment();
@@ -922,8 +921,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
         StringBuffer wuidStr = req.getWuid();
         const char* wuid = wuidStr.trim().str();
@@ -1374,8 +1372,7 @@ bool CFileSprayEx::onGetDFUWorkunit(IEspContext &context, IEspGetDFUWorkunit &re
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
         const char* wuid = req.getWuid();
         if (!wuid || !*wuid)
@@ -1418,8 +1415,7 @@ bool CFileSprayEx::onGetDFUProgress(IEspContext &context, IEspProgressRequest &r
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
         const char* wuid = req.getWuid();
         if(!wuid || !*wuid)
@@ -1468,8 +1464,7 @@ bool CFileSprayEx::onCreateDFUWorkunit(IEspContext &context, IEspCreateDFUWorkun
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to create DFU workunit. Permission denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Write, ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to create DFU workunit. Permission denied.");
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
@@ -1494,8 +1489,7 @@ bool CFileSprayEx::onUpdateDFUWorkunit(IEspContext &context, IEspUpdateDFUWorkun
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to update DFU workunit. Permission denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Write, ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to update DFU workunit. Permission denied.");
 
         IConstDFUWorkunit & reqWU = req.getWu();
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -1568,8 +1562,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to update DFU workunit. Permission denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Write, ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to update DFU workunit. Permission denied.");
 
         CDFUWUActions action = req.getType();
         if (action == DFUWUActions_Undefined)
@@ -1690,8 +1683,7 @@ bool CFileSprayEx::onDeleteDFUWorkunits(IEspContext &context, IEspDeleteDFUWorku
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to delete DFU workunit. Permission denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Write, ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to delete DFU workunit. Permission denied.");
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         StringArray & wuids = req.getWuids();
@@ -1718,8 +1710,7 @@ bool CFileSprayEx::onDeleteDFUWorkunit(IEspContext &context, IEspDeleteDFUWorkun
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to delete DFU workunit. Permission denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Write, ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to delete DFU workunit. Permission denied.");
 
         const char* wuid = req.getWuid();
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -1745,8 +1736,7 @@ bool CFileSprayEx::onSubmitDFUWorkunit(IEspContext &context, IEspSubmitDFUWorkun
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to submit DFU workunit. Permission denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Write, ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to submit DFU workunit. Permission denied.");
 
         if (!req.getWuid() || !*req.getWuid())
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Workunit ID required");
@@ -1768,8 +1758,7 @@ bool CFileSprayEx::onAbortDFUWorkunit(IEspContext &context, IEspAbortDFUWorkunit
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to abort DFU workunit. Permission denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Write, ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to abort DFU workunit. Permission denied.");
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(req.getWuid());
@@ -1792,8 +1781,7 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_EX_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_EX_ACCESS_DENIED, "Failed to get DFU Exceptions. Permission denied.");
+        context.ensureFeatureAccess(DFU_EX_URL, SecAccess_Read, ECLWATCH_DFU_EX_ACCESS_DENIED, "Failed to get DFU Exceptions. Permission denied.");
 
         IArrayOf<IEspDFUException> result;
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -1846,8 +1834,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Spray. Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Spray. Permission denied.");
 
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
 
@@ -2012,8 +1999,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Spray. Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Spray. Permission denied.");
 
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
 
@@ -2185,8 +2171,7 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Replicate. Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Replicate. Permission denied.");
 
         const char* srcname = req.getSourceLogicalName();
         if(!srcname || !*srcname)
@@ -2323,8 +2308,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_DESPRAY_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_FILE_DESPRAY_ACCESS_DENIED, "Failed to do Despray. Permission denied.");
+        context.ensureFeatureAccess(FILE_DESPRAY_URL, SecAccess_Write, ECLWATCH_FILE_DESPRAY_ACCESS_DENIED, "Failed to do Despray. Permission denied.");
 
         const char* srcname = req.getSourceLogicalName();
         if(!srcname || !*srcname)
@@ -2439,8 +2423,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Copy. Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Copy. Permission denied.");
 
         const char* srcname = req.getSourceLogicalName();
         const char* dstname = req.getDestLogicalName();
@@ -2609,8 +2592,7 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Rename. Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Write, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do Rename. Permission denied.");
 
         const char* srcname = req.getSrcname();
         const char* dstname = req.getDstname();
@@ -2683,8 +2665,7 @@ bool CFileSprayEx::onDFUWUFile(IEspContext &context, IEspDFUWUFileRequest &req, 
 {
     try
     {
-        if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
         if (*req.getWuid())
         {
@@ -2725,8 +2706,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do FileList. Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do FileList. Permission denied.");
 
         const char* path = req.getPath();
         if (!path || !*path)
@@ -2939,8 +2919,7 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Access, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do FileList. Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Access, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do FileList. Permission denied.");
 
         const char* dropZoneName = req.getDropZoneName();
         if (isEmptyString(dropZoneName))
@@ -2995,8 +2974,7 @@ bool CFileSprayEx::onDfuMonitor(IEspContext &context, IEspDfuMonitorRequest &req
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do DfuMonitor. Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do DfuMonitor. Permission denied.");
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
@@ -3051,8 +3029,7 @@ bool CFileSprayEx::onOpenSave(IEspContext &context, IEspOpenSaveRequest &req, IE
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
         const char* location = req.getLocation();
         const char* path = req.getPath();
@@ -3142,8 +3119,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
         IpAddress ipToMatch;
         const char* netAddress = req.getNetAddress();
@@ -3246,8 +3222,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Full, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Full, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
         double version = context.getClientVersion();
         const char* dzName = req.getDropZoneName();
@@ -3346,8 +3321,7 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> environment = factory->openEnvironment();
@@ -3427,8 +3401,7 @@ bool CFileSprayEx::onGetDFUServerQueues(IEspContext &context, IEspGetDFUServerQu
 {
     try
     {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
+        context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
         StringArray qlist;
         getDFUServerQueueNames(qlist, req.getDFUServerName());
