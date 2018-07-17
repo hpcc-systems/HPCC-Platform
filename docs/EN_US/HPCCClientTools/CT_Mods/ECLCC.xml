@@ -119,8 +119,7 @@
     <sect1 id="Stand-Alone-ECL-Compiler">
       <title>Using the ECL Compiler as a Stand Alone option</title>
 
-      <para>The ECL Compiler is normally used through the ECL IDE or Eclipse
-      using the ECL plugin for Eclipse, however, you can use the ECL Compiler
+      <para>The ECL Compiler is normally used through the ECL IDE, however, you can use the ECL Compiler
       in a stand alone manner, to create stand alone programs, or workunits.
       The ECL Compiler can read ECL code from standard input, or can read it
       from a specified input file. It compiles the code into an executable
