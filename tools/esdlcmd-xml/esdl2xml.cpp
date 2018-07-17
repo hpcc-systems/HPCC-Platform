@@ -75,7 +75,7 @@ void parseCommandLine(int argc, char* argv[], Esdl2Esxdl * cmd)
             }
             else
             {
-                fprintf(stdout, "Unknown option: %s\n", argv[i]);
+                fprintf(stderr, "Unknown option: %s\n", argv[i]);
                 usage(argv[0]);
             }
         }

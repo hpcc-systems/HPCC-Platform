@@ -61,11 +61,10 @@ void es_createDirectory(const char* dir)
 int es_createFile(const char* src, const char* ext)
 {
     char * path = es_changeext(src,ext);
-    //printf("Target: %s\n", path);
     int h = open(path,_O_WRONLY | _O_CREAT | _O_TRUNC | _O_TEXT  , _S_IREAD|_S_IWRITE);
     if (h==-1)
     {
-        printf("Could not open file for write: %s (current dir: %s)\n",path,getcwd(NULL,0));
+        fprintf(stderr, "Could not open file for write: %s (current dir: %s)\n",path,getcwd(NULL,0));
     }
     free(path);
     return h;
@@ -161,7 +160,7 @@ int es_createFile(const char* src, const char* tail, const char* ext)
     int h = open(path,_O_WRONLY | _O_CREAT | _O_TRUNC | _O_TEXT  , _S_IREAD|_S_IWRITE);
     if (h==-1)
     {
-        printf("Could not open file for write: %s (current dir: %s)\n",path,getcwd(NULL,0));
+        fprintf(stderr, "Could not open file for write: %s (current dir: %s)\n",path,getcwd(NULL,0));
     }
     free(path);
     return h;
