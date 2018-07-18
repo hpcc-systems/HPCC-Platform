@@ -112,7 +112,7 @@ SegMonitorList::SegMonitorList(const SegMonitorList &from, const char *fixedVals
 
 void SegMonitorList::describe(StringBuffer &out) const
 {
-    for (unsigned idx=0; idx < lastRealSeg(); idx++)
+    for (unsigned idx=0; idx <= lastRealSeg() && idx < segMonitors.length(); idx++)
     {
         auto &filter = segMonitors.item(idx);
         if (idx)
@@ -1725,8 +1725,8 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats)
         else
             eof = true;
     }
-    if (logExcessiveSeeks && lwildseeks > 1000)
-        reportExcessiveSeeks(lwildseeks, lastSeg, stats);
+    if (logExcessiveSeeks && lwildseeks > 1000 && ret)
+        reportExcessiveSeeks(lwildseeks, lastSeg, getSize(), stats);
     stats.noteSeeks(lseeks, lscans, lwildseeks);
     return ret;
 }
@@ -1837,17 +1837,17 @@ bool CKeyCursor::nextRange(unsigned groupSegCount)
     return true;
 }
 
-void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeyStatsCollector &stats)
+void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, size32_t recSize, KeyStatsCollector &stats)
 {
     StringBuffer recstr;
     unsigned i;
-    for (i = 0; i < key.keySize(); i++)
+    for (i = 0; i < recSize; i++)
     {
         unsigned char c = ((unsigned char *) keyBuffer)[i];
         recstr.appendf("%c", isprint(c) ? c : '.');
     }
     recstr.append ("\n");
-    for (i = 0; i < key.keySize(); i++)
+    for (i = 0; i < recSize; i++)
     {
         recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
     }
@@ -2089,7 +2089,7 @@ void IndexRowFilter::finish(size32_t _keyedSize)
 
 void IndexRowFilter::describe(StringBuffer &out) const
 {
-    for (unsigned idx=0; idx < lastRealSeg(); idx++)
+    for (unsigned idx=0; idx <= lastRealSeg() && idx < numFilterFields(); idx++)
     {
         auto &filter = queryFilter(idx);
         if (idx)
