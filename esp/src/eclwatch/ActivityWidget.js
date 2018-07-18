@@ -388,7 +388,7 @@ define([
                         },
                         DisplayName: tree({
                             label: this.i18n.TargetWuid,
-                            width: 270,
+                            width: 300,
                             sortable: true,
                             shouldExpand: function (row, level, previouslyExpanded) {
                                 if (context.firstLoad === true) {
