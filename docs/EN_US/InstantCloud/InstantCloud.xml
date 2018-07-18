@@ -46,9 +46,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
-
-      <para><emphasis role="redbold"></emphasis></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -167,14 +165,14 @@
               </listitem>
 
               <listitem>
-                <para><emphasis>Linux workstation with the Eclipse IDE and the
-                ECL plugin for Eclipse (available soon)</emphasis></para>
+                <para><emphasis>A Linux workstation with Visual Studio Code
+                and the ECL for VS Code extension.</emphasis></para>
               </listitem>
 
               <listitem>
-                <para><emphasis>Mac<superscript></superscript> workstation
-                with the Eclipse IDE and the ECL plugin for Eclipse (available
-                soon)</emphasis></para>
+                <para><emphasis>Mac<superscript>®</superscript> workstation
+                with Visual Studio Code and the ECL for VS Code extension.
+                </emphasis></para>
               </listitem>
             </itemizedlist></para>
         </listitem>
@@ -1015,8 +1013,8 @@ OUTPUT(L);</programlisting></para>
           <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is
           the relocation of a data file from one location (such as a Landing
           Zone) to a Data Refinery cluster. The term spray was adopted due to
-          the nature of the file movement -- the file is partitioned across all
-          nodes within a cluster.</para>
+          the nature of the file movement -- the file is partitioned across
+          all nodes within a cluster.</para>
         </footnote> that file to our Thor cluster, then validate our anagrams
       against that file so that we determine which are valid words. The
       validation step uses a JOIN of the anagram list to the dictionary file.
@@ -1117,7 +1115,7 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <para>A dialog opens. <emphasis role="bold">Browse</emphasis> to
             and select the file to upload and then press the <emphasis
-            role="bold">Open</emphasis> button. </para>
+            role="bold">Open</emphasis> button.</para>
 
             <para>The file you selected should appear in the <emphasis
             role="bold">File Name</emphasis> field. The data file is named:
