@@ -102,17 +102,15 @@ public:
         if (config.usesDali())
         {
             m_useDali = true;
-            bool daliOk = false;
+            bool pollForDali = false;
             while (!m_exiting)
             {
                 {
                     synchronized sync(abortMutex);
-                    if (!config.isDetachedFromDali())
-                        daliOk=config.checkDali();
-                    //else
-                    //    daliOk=true;
+                    pollForDali = config.isDetachedFromDali() || config.checkDali();
                 }
-                if (config.isDetachedFromDali() || daliOk)
+
+                if (pollForDali)
                     m_waitForExit.wait(1000); //if detached, should we wait longer?
                 else
                 {
