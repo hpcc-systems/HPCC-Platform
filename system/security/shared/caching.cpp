@@ -79,14 +79,14 @@ int CResPermissionsCache::lookup( IArrayOf<ISecResource>& resources, bool* pFoun
         if (it != m_resAccessMap.end())//exists in cache
         {
             ResPermCacheEntry& resParamCacheEntry = (*it).second;
-            const time_t timestamp = resParamCacheEntry.first;
+            const time_t timeExpiry = resParamCacheEntry.first + m_pParentCache->getCacheTimeout();
 
-            if (timestamp < tstamp)//entry was not stale during last cleanup but is stale now
+            if (timeExpiry < tstamp)//entry was not stale during last cleanup but is stale now
                 *pFound++ = false;
             else if(!m_pParentCache->isCacheEnabled() && m_pParentCache->isTransactionalEnabled())//m_pParentCache->getOriginalTimeout() == 0)
             {
                 time_t tctime = getThreadCreateTime();
-                if(tctime <= 0 || timestamp < tctime)
+                if(tctime <= 0 || timeExpiry < tctime)
                 {
                     *pFound++ = false;
                 }
