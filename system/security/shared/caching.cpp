@@ -536,7 +536,7 @@ static CriticalSection msCacheSyncCS;//for managed scopes cache syncronization
 bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, SecAccessFlags * accessFlags)
 {
 #ifdef _DEBUG
-	unsigned start = msTick();
+    unsigned start = msTick();
 #endif
     if (!fullScope || !*fullScope)
     {
@@ -557,8 +557,7 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
             if (count)
                 addManagedFileScopes(scopes);
             m_defaultPermission = SecAccess_Unknown;//trigger refresh
-            time(&now);
-            m_lastManagedFileScopesRefresh = now;
+            time(&m_lastManagedFileScopesRefresh);
         }
     }
 
