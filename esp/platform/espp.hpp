@@ -102,9 +102,9 @@ public:
         if (config.usesDali())
         {
             m_useDali = true;
+            bool daliOk = false;
             while (!m_exiting)
             {
-                bool daliOk;
                 {
                     synchronized sync(abortMutex);
                     if (!config.isDetachedFromDali())
