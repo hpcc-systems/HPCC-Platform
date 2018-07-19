@@ -37,10 +37,10 @@
                 respWithLodData.append(" <Row><Description>[&#xe01a;] back</Description><NumberListOut><number1>2</number1><number2>1</number2></NumberListOut><NumberListOut><number1>2</number1><number2>1</number2></NumberListOut><StringListOut>back</StringListOut><StringListOut> back</StringListOut><NumberArrayOut><TwoNumbers><number1>2</number1><number2>1</number2></TwoNumbers><TwoNumbers><number1>2</number1><number2>1</number2></TwoNumbers></NumberArrayOut><StringArrayOut><MyString> back</MyString><MyString>&#xe01a;&#xe01a; back</MyString></StringArrayOut></Row>\n");
                 respWithLodData.append("</Dataset>\n");
                 respWithLodData.append("</Result></Results></ExchangeNumbersResponse></soap:Body></soap:Envelope>");
-                Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSON : WTStandard);
+                Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
                 m_pEsdlTransformer->processHPCCResult(context, mthdef, respWithLodData.str(), respWriter.get(), logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
 #else
-//                Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSON : WTStandard);
+//                Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
 //                m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), respWriter.get(), logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
 #endif
 //------------------------------------------------------------------------------

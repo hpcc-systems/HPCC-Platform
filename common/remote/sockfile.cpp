@@ -6298,7 +6298,7 @@ public:
             reply.append(cursorHandle);
         else // outFmt_Xml || outFmt_Json
         {
-            responseWriter.setown(createIXmlWriterExt(0, 0, nullptr, outFmt_Xml == outputFormat ? WTStandard : WTJSON));
+            responseWriter.setown(createIXmlWriterExt(0, 0, nullptr, outFmt_Xml == outputFormat ? WTStandard : WTJSONObject));
             responseWriter->outputBeginNested("Response", true);
             responseWriter->outputUInt(cursorHandle, sizeof(cursorHandle), "handle");
         }
@@ -6442,6 +6442,7 @@ public:
         if (outFmt_Binary != outputFormat)
         {
             responseWriter->outputEndNested("Response");
+            responseWriter->finalize();
             PROGLOG("Response: %s", responseWriter->str());
             reply.append(responseWriter->length(), responseWriter->str());
         }
