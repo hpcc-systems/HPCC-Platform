@@ -2026,7 +2026,7 @@ void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf, const
     }
 }
 
-void WsWuInfo::getWorkunitThorSlaveLog(const char *instanceName, const char *ipAddress, const char* logDate,
+void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char *ipAddress, const char* logDate,
     const char* logDir, int slaveNum, MemoryBuffer& buf, const char* outFile, bool forDownload)
 {
     if (isEmpty(logDir))
@@ -2037,17 +2037,12 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *instanceName, const char *ipA
     StringBuffer slaveIPAddress, logName;
     if (slaveNum > 0)
     {
-        if (isEmpty(instanceName))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Thor instance not specified.");
+        if (isEmpty(groupName))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Thor Group Name not specified.");
 
-        StringBuffer groupName;
-        getClusterThorGroupName(groupName, instanceName);
-        if (groupName.isEmpty())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", instanceName);
-
-        Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName.str());
+        Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName);
         if (!nodeGroup || (nodeGroup->ordinality() == 0))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Node group %s not found", groupName.str());
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Node group %s not found", groupName);
 
         nodeGroup->queryNode(slaveNum-1).endpoint().getIpText(slaveIPAddress);
         if (slaveIPAddress.length() < 1)
@@ -3723,7 +3718,7 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, Owned<IConstWorkUnit
     createZAPWUGraphProgressFile(request.wuid.str(), inFileNamePrefixWithPath.str());
     createProcessLogfile(cwu, winfo, "EclAgent", folderToZIP.str());
     createProcessLogfile(cwu, winfo, "Thor", folderToZIP.str());
-    if (request.includeThorSlaveLog)
+    if (strieq(request.includeThorSlaveLog.str(), "on"))
         createThorSlaveLogfile(cwu, winfo, folderToZIP.str());
 
     //Write out to ZIP file
@@ -3900,12 +3895,17 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         break;
     case CWUFileType_ThorSlaveLog:
     {
-        StringBuffer logDir;
+        StringBuffer logDir, groupName;
+        const char* instanceName = item.getClusterGroup();
+        getClusterThorGroupName(groupName, instanceName);
+        if (groupName.isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", instanceName);
+
         fileName.set("ThorSlave.log");
         fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
         getConfigurationDirectory(directories, "log", "thor", item.getProcess(), logDir);
         fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
-        winfo.getWorkunitThorSlaveLog(item.getClusterGroup(), item.getIPAddress(), item.getLogDate(), logDir.str(), item.getSlaveNumber(), mb, fileNameWithPath.str(), false);
+        winfo.getWorkunitThorSlaveLog(groupName.str(), item.getIPAddress(), item.getLogDate(), logDir.str(), item.getSlaveNumber(), mb, fileNameWithPath.str(), false);
         break;
     }
     case CWUFileType_EclAgentLog:
