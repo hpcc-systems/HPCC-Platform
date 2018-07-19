@@ -499,7 +499,7 @@ public:
         }
         catch(...)
         {
-            fprintf(stdout, "Error transforming Esdl to ECL file %s", filename);
+            fprintf(stderr, "Error transforming Esdl to ECL file %s", filename);
         }
     }
 

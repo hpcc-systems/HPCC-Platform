@@ -146,10 +146,13 @@ public:
             return 1;
         }
 
+        StringBuffer message;
         if (optESDLService.length() > 0)
-            fprintf(stdout, "\nESDL Service: %s: %s\n", optESDLService.get(), resp->getStatus().getDescription());
+            message.setf("ESDL Service: %s: %s", optESDLService.get(), resp->getStatus().getDescription());
         else
-            fprintf(stdout, "\n%s\n", resp->getStatus().getDescription());
+            message.set(resp->getStatus().getDescription());
+
+        outputWsStatus(resp->getStatus().getCode(), message.str());
 
         return 0;
     }
@@ -291,7 +294,7 @@ public:
             return 1;
         }
 
-        fprintf(stdout, "\n %s.\n", resp->getStatus().getDescription());
+        outputWsStatus(resp->getStatus().getCode(), resp->getStatus().getDescription());
 
         return 0;
     }
@@ -465,7 +468,7 @@ public:
             return 1;
         }
 
-        fprintf(stdout, "\n %s.\n", resp->getStatus().getDescription());
+        outputWsStatus(resp->getStatus().getCode(), resp->getStatus().getDescription());
 
         return 0;
     }
@@ -570,7 +573,7 @@ public:
             return 1;
         }
 
-        fprintf(stdout, "\n %s.\n", resp->getStatus().getDescription());
+        outputWsStatus(resp->getStatus().getCode(), resp->getStatus().getDescription());
 
         return 0;
     }
@@ -831,7 +834,7 @@ public:
             return 1;
         }
 
-        fprintf(stdout, "\n %s.\n", resp->getStatus().getDescription());
+        outputWsStatus(resp->getStatus().getCode(), resp->getStatus().getDescription());
 
         return 0;
     }
@@ -956,7 +959,7 @@ public:
 
         if (getresp->getStatus().getCode()!=0)
         {
-            fprintf(stdout, "\n Failed to retrieve ESDL Binding configuration for %s: %s.\n", optBindingId.get(), getresp->getStatus().getDescription());
+            fprintf(stderr, "\n Failed to retrieve ESDL Binding configuration for %s: %s.\n", optBindingId.get(), getresp->getStatus().getDescription());
             return success;
         }
 
@@ -1001,19 +1004,19 @@ public:
                             success = 0;
                         }
                         else
-                            fprintf(stdout, "\nCould not unbound method %s from ESDL Binding %s: %s\n", optMethod.get(), optBindingId.get(), resp->getStatus().getDescription());
+                            fprintf(stderr, "\nCould not unbound method %s from ESDL Binding %s: %s\n", optMethod.get(), optBindingId.get(), resp->getStatus().getDescription());
                     }
                     else
-                        fprintf(stdout, "\n Could not remove Method %s from ESDL Binding %s configuration.\n", optMethod.get(), optBindingId.get());
+                        fprintf(stderr, "\n Could not remove Method %s from ESDL Binding %s configuration.\n", optMethod.get(), optBindingId.get());
                 }
                 else
-                    fprintf(stdout, "\n Method %s doesn't seem to be associated with ESDL Binding %s.\n", optMethod.get(), optBindingId.get());
+                    fprintf(stderr, "\n Method %s doesn't seem to be associated with ESDL Binding %s.\n", optMethod.get(), optBindingId.get());
             }
             else
-                fprintf(stdout, "\n Could not interpret configuration for ESDL Binding %s :  %s.\n", optBindingId.get(), currentconfig );
+                fprintf(stderr, "\n Could not interpret configuration for ESDL Binding %s :  %s.\n", optBindingId.get(), currentconfig );
         }
         else
-            fprintf(stdout, "\n Received empty configuration for ESDL Binding %s.\n", optBindingId.get());
+            fprintf(stderr, "\n Received empty configuration for ESDL Binding %s.\n", optBindingId.get());
 
         return success;
     }
@@ -1183,8 +1186,10 @@ class EsdlGetDefinitionCmd : public EsdlGetCmd
             if (definition.length()==0) //as of wsesdlconfig 1.4 getxmldef moves to definition/Interface
                 definition.set(resp->getDefinition().getInterface());
 
-            fprintf(stdout, "\n%s", definition.str());
-            fprintf(stdout, "\n%s.\n", resp->getStatus().getDescription());
+            if (definition.length()!=0)
+                fprintf(stdout, "\n%s", definition.str());
+
+            outputWsStatus(resp->getStatus().getCode(), resp->getStatus().getDescription());
 
             return 0;
         }
@@ -1230,7 +1235,7 @@ public:
         }
 
         fprintf(stdout, "\n%s", resp->getConfigXML());
-        fprintf(stdout, "\n%s.\n", resp->getStatus().getDescription());
+        outputWsStatus(resp->getStatus().getCode(), resp->getStatus().getDescription());
 
         return 0;
     }
