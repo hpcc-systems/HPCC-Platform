@@ -1877,7 +1877,11 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
 
     StringBuffer peer;
     const char* sessionStartIP = sessionTree->queryProp(PropSessionNetworkAddress);
-    if (!streq(m_request->getPeer(peer).str(), sessionStartIP))
+    IpAddress peerIp;
+    IpAddress sessIp;
+    peerIp.ipset(m_request->getPeer(peer).str());
+    sessIp.ipset(sessionStartIP);
+    if (!peerIp.ipequals(sessIp))
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);

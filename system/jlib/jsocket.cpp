@@ -764,6 +764,7 @@ inline void getSockAddrEndpoint(const J_SOCKADDR &u, socklen_t ul, SocketEndpoin
 }
 
 
+StringBuffer & getIpTextAddr(const unsigned *netaddr, StringBuffer & out);
 
 /* might need fcntl(F_SETFL), or ioctl(FIONBIO) */
 /* Posix.1g says fcntl */
@@ -2932,7 +2933,11 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
             getnameinfo(&item->ifr_addr, sizeof(item->ifr_addr), host, sizeof(host), 0, 0, NI_NUMERICHOST);
             IpAddress iptest(host);
 #else
-            IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
+            IpAddress iptest;
+            if (((struct sockaddr *)&item->ifr_addr)->sa_family == AF_INET6)
+                iptest.setNetAddress(sizeof(in_addr6),&(((struct sockaddr_in6 *)&item->ifr_addr)->sin6_addr));
+            else
+                iptest.setNetAddress(sizeof(in_addr),&(((struct sockaddr_in *)&item->ifr_addr)->sin_addr));
 #endif
             if (ioctl(fd, SIOCGIFFLAGS, item) < 0)
             {
@@ -2966,27 +2971,27 @@ static StringAttr cachehostname;
 static IpAddress cachehostip;
 static IpAddress localhostip;
 static CriticalSection hostnamesect;
+static StringAttr cacheifs;
+static bool resolveHostnamesInit = false;
+static bool resolveHostnames = true;
+
+void CheckResolveHN()
+{
+    // while holding hostnamesect CS ...
+    if (!resolveHostnamesInit)
+    {
+        resolveHostnamesInit = true;
+        if (!queryEnvironmentConf().getPropBool("resolve_hostnames", true))
+            resolveHostnames = false;
+    }
+}
 
 const char * GetCachedHostName()
 {
     CriticalBlock c(hostnamesect);
     if (!cachehostname.get())
     {
-#ifndef _WIN32
-        IpAddress ip;
-        const char *ifs = queryEnvironmentConf().queryProp("interface");
-        if (getInterfaceIp(ip, ifs))
-        {
-            StringBuffer ips;
-            ip.getIpText(ips);
-            if (ips.length())
-            {
-                cachehostname.set(ips.str());
-                cachehostip.ipset(ip);
-                return cachehostname.get();
-            }
-        }
-#endif
+        CheckResolveHN();
         char temp[1024];
         if (gethostname(temp, sizeof(temp))==0)
             cachehostname.set(temp);                
@@ -3002,6 +3007,7 @@ IpAddress & queryLocalIP()
     CriticalBlock c(hostnamesect);
     if (localhostip.isNull())
     {
+        CheckResolveHN();
         if (IP6preferred)
             localhostip.ipset("::1");   //IPv6 
         else
@@ -3013,12 +3019,17 @@ IpAddress & queryLocalIP()
 IpAddress & queryHostIP()
 {
     CriticalBlock c(hostnamesect);
-    if (cachehostip.isNull()) {
-        if (!cachehostip.ipset(GetCachedHostName())) {
-            cachehostip.ipset(queryLocalIP());          
-            // printf("hostname %s not resolved, using localhost\n",GetCachedHostName()); // don't use jlog in case recursive
-        }
+    if (!cacheifs.get())
+    {
+        CheckResolveHN();
+        const char *ifs = queryEnvironmentConf().queryProp("interface");
+        cacheifs.set(ifs);
     }
+    IpAddress ip;
+    if (getInterfaceIp(ip, cacheifs.get()))
+        cachehostip.ipset(ip);
+    else
+        cachehostip.ipset(queryLocalIP());
     return cachehostip;
 }
 
@@ -3093,6 +3104,13 @@ inline bool isIp4(const unsigned *netaddr)
     return false;
 }
 
+inline bool isLoopBack(const unsigned *netaddr)
+{
+    if (::isIp4(netaddr)&&((netaddr[3] & 0x000000ff)==0x000007f))
+        return true;
+    return (netaddr[3]==0x1000000)&&(netaddr[2]==0)&&(netaddr[1]==0)&&(netaddr[0]==0);
+}
+
 bool IpAddress::isIp4() const
 {
     return ::isIp4(netaddr);
@@ -3105,9 +3123,7 @@ bool IpAddress::isNull() const
 
 bool IpAddress::isLoopBack() const
 {
-    if (::isIp4(netaddr)&&((netaddr[3] & 0x000000ff)==0x000007f))
-        return true;
-    return (netaddr[3]==0x1000000)&&(netaddr[2]==0)&&(netaddr[1]==0)&&(netaddr[0]==0);
+    return ::isLoopBack(netaddr);
 }
 
 bool IpAddress::isLocal() const 
@@ -3121,12 +3137,98 @@ bool IpAddress::isLocal() const
 bool IpAddress::ipequals(const IpAddress & other) const
 {
     // reverse compare for speed
-    return (other.netaddr[3]==netaddr[3])&&(IP4only||((other.netaddr[2]==netaddr[2])&&(other.netaddr[1]==netaddr[1])&&(other.netaddr[0]==netaddr[0])));
+    bool hcmp = (other.netaddr[3]==netaddr[3])&&(IP4only||((other.netaddr[2]==netaddr[2])&&(other.netaddr[1]==netaddr[1])&&(other.netaddr[0]==netaddr[0])));
+    if (hcmp || !resolveHostnames)
+        return hcmp;
+
+    // MCK - TODO should we make sure h_names are not dot-decimal strings ?
+
+    // if one is loopback
+    int hasLB = 0;
+    if (isLoopBack())
+        hasLB = 1;
+    else if (other.isLoopBack())
+        hasLB = 2;
+
+    int l0, l1;
+    char h0[256], h1[256];
+    if (hasLB)
+    {
+        strcpy(h0, GetCachedHostName());
+        l0 = strcspn(h0, ".");
+        h0[l0] = '\0';
+
+        if (hasLB == 1)
+        {
+            strcpy(h1, other.h_name);
+            l1 = strcspn(h1, ".");
+            h1[l1] = '\0';
+            hcmp = streq(h0, h1);
+        }
+        else
+        {
+            strcpy(h1, h_name);
+            l1 = strcspn(h1, ".");
+            h1[l1] = '\0';
+            hcmp = streq(h0, h1);
+        }
+
+        if (hcmp)
+            return hcmp;
+    }
+
+    // at this point compare names
+    // MCK - TODO do we do this only if at least one matches this hostname ?
+
+    // names as original
+    hcmp = streq(h_name, other.h_name);
+    if (hcmp)
+        return hcmp;
+
+    // names w/o domain
+    strcpy(h0, h_name);
+    l0 = strcspn(h0, ".");
+    h0[l0] = '\0';
+
+    strcpy(h1, other.h_name);
+    l1 = strcspn(h1, ".");
+    h1[l1] = '\0';
+
+    hcmp = streq(h0, h1);
+    if (hcmp)
+        return hcmp;
+
+#if 0
+    {
+        CriticalBlock c(hostnamesect);
+        FILE *fp;
+        char fname[256];
+        sprintf(fname, "/tmp/hname-%d.dbg", getpid());
+        fp = fopen(fname, "a");
+        if (fp)
+        {
+            StringBuffer ipstr;
+            StringBuffer oipstr;
+            getIpText(ipstr, true);
+            other.getIpText(oipstr, true);
+            fprintf(fp, "ipequals(): this:<%s:%s>, other:<%s:%s> %d\n", h_name, ipstr.str(),
+                    other.h_name, oipstr.str(), hcmp);
+            fclose(fp);
+        }
+    }
+#endif
+
+    return hcmp;
 }
 
 int  IpAddress::ipcompare(const IpAddress & other) const
 {
     return memcmp(&netaddr, &other.netaddr, sizeof(netaddr));
+}
+
+int  IpAddress::addrcompare(const unsigned *other) const
+{
+    return memcmp(&netaddr, other, sizeof(netaddr));
 }
 
 unsigned IpAddress::iphash(unsigned prev) const
@@ -3172,8 +3274,31 @@ static bool decodeNumericIP(const char *text,unsigned *netaddr)
     return false;
 }
 
-static bool lookupHostAddress(const char *name,unsigned *netaddr)
+static bool lookupHostAddress(const char *name,unsigned *netaddr,char *h_name)
 {
+    // usually called when name is not a numeric ip ...
+
+    if (resolveHostnames)
+    {
+        // check these cases first
+        if (streq(name, "localhost"))
+        {
+            IpAddress ip;
+            ip.ipset(queryLocalIP());
+            ip.copyAddress(netaddr);
+            strcpy(h_name, name);
+            return true;
+        }
+        else if (streq(name, GetCachedHostName()))
+        {
+            IpAddress ip;
+            ip.ipset(queryHostIP());
+            ip.copyAddress(netaddr);
+            strcpy(h_name, name);
+            return true;
+        }
+    }
+
     // if IP4only or using MS V6 can only resolve IPv4 using 
     static bool recursioncheck = false; // needed to stop error message recursing
     unsigned retry=10;
@@ -3218,6 +3343,32 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
             netaddr[2] = 0xffff0000;
             netaddr[1] = 0;
             netaddr[0] = 0;
+            if (resolveHostnames)
+            {
+                if (::isLoopBack(netaddr))
+                {
+                    IpAddress ipl;
+                    ipl.ipset(queryHostIP());
+                    ipl.copyAddress(netaddr);
+                    strcpy(h_name, "localhost");
+                }
+                else
+                    strcpy(h_name, entry->h_name);
+            }
+            else
+            {
+                StringBuffer ipstr;
+                if (::isLoopBack(netaddr))
+                {
+                    IpAddress ipl;
+                    ipl.ipset(queryHostIP());
+                    ipl.copyAddress(netaddr);
+                    ipl.getIpText(ipstr, true);
+                }
+                else
+                    ::getIpTextAddr(netaddr, ipstr);
+                strcpy(h_name, ipstr.str());
+            }
             return true;
         }
         return false;
@@ -3228,6 +3379,8 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
     struct addrinfo  *addrInfo = NULL;
     for (;;) {
         memset(&hints,0,sizeof(hints));
+        hints.ai_family = (AF_INET | AF_INET6);
+        hints.ai_flags = (AI_V4MAPPED | AI_ADDRCONFIG | AI_CANONNAME);
         int ret = getaddrinfo(name, NULL , &hints, &addrInfo);
         if (!ret) 
             break;
@@ -3254,7 +3407,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
             case AF_INET: {
                     if (snm) {
                         IpAddress ip;
-                        ip.setNetAddress(sizeof(in_addr),&(((sockaddr_in *)ai->ai_addr)->sin_addr));
+                        ip.setNetAddress(sizeof(in_addr),&(((struct sockaddr_in *)ai->ai_addr)->sin_addr));
                         if (!PreferredSubnet.test(ip))
                             continue;
                     }
@@ -3265,7 +3418,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
             case AF_INET6: {
                     if (snm) {
                         IpAddress ip;
-                        ip.setNetAddress(sizeof(in_addr6),&(((sockaddr_in6 *)ai->ai_addr)->sin6_addr));
+                        ip.setNetAddress(sizeof(in_addr6),&(((struct sockaddr_in6 *)ai->ai_addr)->sin6_addr));
                         if (!PreferredSubnet.test(ip))
                             continue;
                     }
@@ -3281,12 +3434,38 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
     }
     if (best) {
         if (best->ai_family==AF_INET6)
-            memcpy(netaddr,&(((sockaddr_in6 *)best->ai_addr)->sin6_addr),sizeof(in6_addr));
+            memcpy(netaddr,&(((struct sockaddr_in6 *)best->ai_addr)->sin6_addr),sizeof(in6_addr));
         else {
-            memcpy(netaddr+3,&(((sockaddr_in *)best->ai_addr)->sin_addr),sizeof(in_addr));
+            memcpy(netaddr+3,&(((struct sockaddr_in *)best->ai_addr)->sin_addr),sizeof(in_addr));
             netaddr[2] = 0xffff0000;
             netaddr[1] = 0;
             netaddr[0] = 0;
+        }
+        if (resolveHostnames)
+        {
+            if (::isLoopBack(netaddr))
+            {
+                IpAddress ipl;
+                ipl.ipset(queryHostIP());
+                ipl.copyAddress(netaddr);
+                strcpy(h_name, "localhost");
+            }
+            else
+                strcpy(h_name, best->ai_canonname);
+        }
+        else
+        {
+            StringBuffer ipstr;
+            if (::isLoopBack(netaddr))
+            {
+                IpAddress ipl;
+                ipl.ipset(queryHostIP());
+                ipl.copyAddress(netaddr);
+                ipl.getIpText(ipstr, true);
+            }
+            else
+                ::getIpTextAddr(netaddr, ipstr);
+            strcpy(h_name, ipstr.str());
         }
     }
     freeaddrinfo(addrInfo);
@@ -3306,18 +3485,61 @@ bool IpAddress::ipset(const char *text)
             return true;
         }
         if (decodeNumericIP(text,netaddr))
+        {
+            if (resolveHostnames)
+            {
+                // check these cases first
+                if (isLoopBack())
+                {
+                    strcpy(h_name, "localhost");
+                    return true;
+                }
+                if (!cachehostip.isNull())
+                {
+                    if (cachehostip.addrcompare(netaddr) == 0)
+                    {
+                        strcpy(h_name, GetCachedHostName());
+                        return true;
+                    }
+                }
+                // strcpy(h_name, text);
+                // resolve to name
+                StringBuffer hstr;
+                lookupHostName(*this, hstr);
+                strcpy(h_name, hstr.str());
+            }
+            else
+                strcpy(h_name, text);
             return true;
+        }
         const char *s;
         for (s=text;*s;s++)
             if (!isdigit(*s)&&(*s!=':')&&(*s!='.')) 
                 break;
         if (!*s)
-            return ipset(NULL);
-        if (lookupHostAddress(text,netaddr))
+        {
+            memset(&netaddr, 0, sizeof(netaddr));
+            strcpy(h_name, "0.0.0.0");
+            return false;
+        }
+        // resolve to name
+        if (lookupHostAddress(text, netaddr, h_name))
             return true;
     }
-    memset(&netaddr,0,sizeof(netaddr));
+    memset(&netaddr, 0, sizeof(netaddr));
+    strcpy(h_name, "0.0.0.0");
     return false;
+}
+
+void IpAddress::ipset(const IpAddress& other)
+{
+    memcpy(&netaddr,&other.netaddr,sizeof(netaddr));
+    strcpy(h_name, other.h_name);
+}
+
+void IpAddress::copyAddress(unsigned *other)
+{
+    memcpy(other, &netaddr, sizeof(netaddr));
 }
 
 inline char * addbyte(char *s,byte b)
@@ -3338,24 +3560,16 @@ inline char * addbyte(char *s,byte b)
         
 
 
-StringBuffer & IpAddress::getIpText(StringBuffer & out) const
+StringBuffer & IpAddress::getIpText(StringBuffer & out, bool getRawIP) const
 {
-    if (::isIp4(netaddr)) {
-        const byte *ip = (const byte *)&netaddr[3];
-        char ips[16]; 
-        char *s = ips;
-        for (unsigned i=0;i<4;i++) {
-            if (i)
-                *(s++) = '.';
-            s = addbyte(s,ip[i]);
-        }
-        return out.append(s-ips,ips); 
-    }
-    char tmp[INET6_ADDRSTRLEN];
-    const char *res = _inet_ntop(AF_INET6, &netaddr, tmp, sizeof(tmp));
-    if (!res) 
-        throw makeOsException(errno);
-    return out.append(res);
+    if (getRawIP || !resolveHostnames)
+        return ::getIpTextAddr(netaddr, out);
+    return out.append(h_name);
+}
+
+StringBuffer & IpAddress::getHostText(StringBuffer & out) const
+{
+    return out.append(h_name);
 }
 
 void IpAddress::ipserialize(MemoryBuffer & out) const
@@ -3369,6 +3583,9 @@ void IpAddress::ipserialize(MemoryBuffer & out) const
         unsigned pfx = IPV6_SERIALIZE_PREFIX;
         out.append(sizeof(pfx),&pfx).append(sizeof(netaddr),&netaddr);
     }
+
+    // MCK - could hostname also be sent ?
+    // but need to deal with when older clients won't expect it
 }
 
 void IpAddress::ipdeserialize(MemoryBuffer & in)
@@ -3383,6 +3600,38 @@ void IpAddress::ipdeserialize(MemoryBuffer & in)
     }
     else 
         in.read(sizeof(netaddr),&netaddr);
+
+    // MCK - if hostname sent then read it here
+    // but need to deal with when older clients won't expect it
+
+    if (resolveHostnames)
+    {
+        // check these cases first
+        if (isLoopBack())
+        {
+            strcpy(h_name, "localhost");
+            return;
+        }
+        if (!cachehostip.isNull())
+        {
+            if (cachehostip.addrcompare(netaddr) == 0)
+            {
+                strcpy(h_name, GetCachedHostName());
+                return;
+            }
+        }
+        // resolve to name
+        StringBuffer hstr;
+        // getIpText(hstr, true);
+        lookupHostName(*this, hstr);
+        strcpy(h_name, hstr.str());
+    }
+    else
+    {
+        StringBuffer ipstr;
+        ::getIpTextAddr(netaddr, ipstr);
+        strcpy(h_name, ipstr.str());
+    }
 }
 
 
@@ -3492,6 +3741,35 @@ void IpAddress::setNetAddress(size32_t sz,const void *src)
     }
     else
         memset(&netaddr,0,sizeof(netaddr));
+
+    if (resolveHostnames)
+    {
+        // check these cases first
+        if (isLoopBack())
+        {
+            strcpy(h_name, "localhost");
+            return;
+        }
+        if (!cachehostip.isNull())
+        {
+            if (cachehostip.addrcompare(netaddr) == 0)
+            {
+                strcpy(h_name, GetCachedHostName());
+                return;
+            }
+        }
+        // resolve to name
+        StringBuffer hstr;
+        // getIpText(hstr, true);
+        lookupHostName(*this, hstr);
+        strcpy(h_name, hstr.str());
+    }
+    else
+    {
+        StringBuffer ipstr;
+        ::getIpTextAddr(netaddr, ipstr);
+        strcpy(h_name, ipstr.str());
+    }
 }
 
 
@@ -3579,6 +3857,27 @@ unsigned SocketEndpoint::hash(unsigned prev) const
 
 
 
+StringBuffer & getIpTextAddr(const unsigned *netaddr, StringBuffer & out)
+{
+    if (::isIp4(netaddr))
+    {
+        const byte *ip = (const byte *)&netaddr[3];
+        char ips[16];
+        char *s = ips;
+        for (unsigned i=0;i<4;i++)
+        {
+            if (i)
+                *(s++) = '.';
+            s = addbyte(s,ip[i]);
+        }
+        return out.append(s-ips,ips);
+    }
+    char tmp[INET6_ADDRSTRLEN];
+    const char *res = _inet_ntop(AF_INET6, &netaddr, tmp, sizeof(tmp));
+    if (!res)
+        throw makeOsException(errno);
+    return out.append(res);
+}
 
 //---------------------------------------------------------------------------
 
@@ -6385,17 +6684,25 @@ bool setPreferredSubnet(const char *ip,const char *mask)
 
 StringBuffer &lookupHostName(const IpAddress &ip,StringBuffer &ret)
 {
-// not a common routine (no Jlib function!) only support IPv4 initially
-    unsigned ipa;
-    if (ip.getNetAddress(sizeof(ipa),&ipa)==sizeof(ipa)) {
-        struct hostent *phostent = gethostbyaddr( (char *) &ipa, sizeof(ipa), PF_INET);
-        if (phostent)
-            ret.append(phostent->h_name);
+    DEFINE_SOCKADDR(u);
+    socklen_t ul = setSockAddr(u,ip,0);
+    char hname[1024];
+    int rtnErr;
+    int retry = 3;
+    while (retry--)
+    {
+        rtnErr = getnameinfo((struct sockaddr *)&u, ul, hname, sizeof(hname), nullptr, 0, NI_NAMEREQD | NI_NOFQDN);
+        if (!rtnErr)
+        {
+            ret.clear().append(hname);
+            return ret;
+        }
+        else if (rtnErr!=EAI_AGAIN)
+            break;
         else
-            ip.getIpText(ret);
+            Sleep((3-retry)*10);
     }
-    else
-        ip.getIpText(ret);
+    ip.getIpText(ret, true);
     return ret;
 }
 

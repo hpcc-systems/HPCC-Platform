@@ -937,6 +937,7 @@
   <log>${LOG_PATH}</log>
   <logfields>TIM+DAT+MLT+MID+PID+TID+COD+QUO+PFX</logfields>
   <use_epoll>true</use_epoll>
+  <resolve_hostnames>true</resolve_hostnames>
   <udp_stats>true</udp_stats>
   <dfsUseSSL>SSLNone</dfsUseSSL>
   <runtime>${RUNTIME_PATH}</runtime>

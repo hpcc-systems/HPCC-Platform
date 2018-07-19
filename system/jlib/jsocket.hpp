@@ -77,13 +77,14 @@ enum JSOCKET_ERROR_CODES {
 class jlib_decl IpAddress
 {
     unsigned netaddr[4];
+    char     h_name[256];
 public:
     IpAddress()                                         { ipset(NULL); }
     IpAddress(const IpAddress& other)                   { ipset(other); }
     explicit IpAddress(const char *text)                { ipset(text); }
     
     bool ipset(const char *text);                       // sets to NULL if fails or text=NULL   
-    void ipset(const IpAddress& other)                  { memcpy(&netaddr,&other.netaddr,sizeof(netaddr)); }
+    void ipset(const IpAddress& other);
     bool ipequals(const IpAddress & other) const;       
     int  ipcompare(const IpAddress & other) const;      // depreciated 
     unsigned iphash(unsigned prev=0) const;
@@ -92,7 +93,8 @@ public:
     bool isLoopBack() const;                            // is loopback (localhost: 127.0.0.1 or ::1)
     bool isLocal() const;                               // matches local interface 
     bool isIp4() const;
-    StringBuffer &getIpText(StringBuffer & out) const;
+    StringBuffer &getIpText(StringBuffer & out,bool getRawIP=false) const;
+    StringBuffer &getHostText(StringBuffer & out) const;
     void ipserialize(MemoryBuffer & out) const;         
     void ipdeserialize(MemoryBuffer & in);          
     unsigned ipdistance(const IpAddress &ip,unsigned offset=0) const;       // network order distance (offset: 0-3 word (leat sig.), 0=Ipv4)
@@ -102,6 +104,8 @@ public:
 
     size32_t getNetAddress(size32_t maxsz,void *dst) const;     // for internal use - returns 0 if address doesn't fit
     void setNetAddress(size32_t sz,const void *src);            // for internal use
+    void copyAddress(unsigned *other);                          // for internal use
+    int addrcompare(const unsigned *other) const;               // for internal use
 
     inline bool operator == ( const IpAddress & other) const { return ipequals(other); }
     inline IpAddress & operator = ( const IpAddress &other )

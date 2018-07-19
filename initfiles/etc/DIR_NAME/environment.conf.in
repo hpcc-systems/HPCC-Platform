@@ -22,6 +22,8 @@ interface=*
 # enable epoll method for notification events (true/false)
 use_epoll=true
 #epoll_hdlperthrd=10
+# resolve IPs to host names (true/false)
+resolve_hostnames=true
 # allow kernel pagecache flushing where enabled (true/false)
 allow_pgcache_flush=true
 # report UDP network stats

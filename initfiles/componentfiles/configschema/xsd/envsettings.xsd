@@ -39,6 +39,7 @@
         <xs:element name="mpTraceLevel" hpcc:displayName="MP Trace Level" type="xs:unsignedInt" hpcc:forcedConfigValue="0" hpcc:class="setting"/>
         <xs:element name="path" hpcc:displayName="Path" type="absolutePath" hpcc:forcedConfigValue="${INSTALL_DIR}" hpcc:class="setting"/>
         <xs:element name="pid" hpcc:displayName="PID Path" type="absolutePath" hpcc:forcedConfigValue="${PID_PATH}" hpcc:class="setting"/>
+        <xs:element name="resolve_hostnames" hpcc:displayName="Resolve Hostnames" type="xs:boolean" hpcc:forcedConfigValue="true" hpcc:class="setting"/>
         <xs:element name="runtime" hpcc:displayName="Runtime Path" type="absolutePath" hpcc:forcedConfigValue="${RUNTIME_PATH}" hpcc:class="setting"/>
         <xs:element name="skipPythonCleanup" hpcc:displayName="Skip Python Cleanup" type="xs:boolean" hpcc:forcedConfigValue="true" hpcc:class="setting"/>
         <xs:element name="sourcedir" hpcc:displayName="Source Path" type="absolutePath" hpcc:forcedConfigValue="${CONFIG_SOURCE_PATH}" hpcc:class="setting"/>

@@ -1223,6 +1223,8 @@ blockname=HPCCSystems
 interface=*
 # enable epoll method for notification events (true/false)
 use_epoll=true
+# resolve IPs to host names (true/false)
+resolve_hostnames=true
 # allow kernel pagecache flushing where enabled (true/false)
 allow_pgcache_flush=true
 # report UDP network stats
@@ -1486,6 +1488,14 @@ lock=/var/lock/HPCCSystems</programlisting>
                 <para>It is an event mechanism to achieve better performance
                 in more demanding applications where number of watched file
                 descriptors is large.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>resolve_hostnames</term>
+
+              <listitem>
+                <para>Resolve all IPs in HPCC configuration to host names.</para>
               </listitem>
             </varlistentry>
 

@@ -263,10 +263,17 @@ void DllLocation::remove(bool removeFiles, bool removeDirectory)
     ForEach(*iter)
     {
         IPropertyTree & cur = iter->query();
-        if (propsMatch(cur, *locationRoot, "@ip") && propsMatch(cur, *locationRoot, "@dll") && propsMatch(cur, *locationRoot, "@lib"))
+        IpAddress curip;
+        IpAddress locip;
+        curip.ipset(cur.queryProp("@ip"));
+        locip.ipset(locationRoot->queryProp("@ip"));
+        if (curip.ipequals(locip))
         {
-            conn->queryRoot()->removeTree(&cur);
-            break;
+            if (propsMatch(cur, *locationRoot, "@dll") && propsMatch(cur, *locationRoot, "@lib"))
+            {
+                conn->queryRoot()->removeTree(&cur);
+                break;
+            }
         }
     }
 }

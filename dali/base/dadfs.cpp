@@ -9213,7 +9213,9 @@ class CInitGroups
             for (;;) {
                 const char *oldIp = oldIter->query().queryProp("@ip");
                 const char *newIp = newIter->query().queryProp("@ip");
-                if (!streq(oldIp, newIp))
+                IpAddress oip(oldIp);
+                IpAddress nip(newIp);
+                if (!nip.ipequals(oip))
                     return false;
                 if (!oldIter->next() || !newIter->next())
                     break;
