@@ -502,18 +502,39 @@ END;
 /**
  * Calculate the number of whole months between two dates.
  *
- * @param from          The first date
- * @param to            The last date
- * @return              The number of months between them.
+ * If month_ends_equal is set to TRUE and the given dates fall on the last day
+ * of their respective months, the dates' day values will be considered equal
+ * regardless of their actual values.  For example, given the dates 20160331
+ * and 20160930 (last day of March and last day of September, respectively), if
+ * month_ends_equal is FALSE then the function's result will be 5; if
+ * month_ends_equal is TRUE then the result will be 6.
+ *
+ * @param from              The first date
+ * @param to                The last date
+ * @param month_ends_equal  If TRUE and both dates fall on the last day of
+ *                          their respective months, treat the difference
+ *                          between the dates as whole months regardless of
+ *                          the actual day values; if FALSE then the day value
+ *                          of each date may be considered when calculating
+ *                          the difference; OPTIONAL, defaults to FALSE
+ * @return                  The number of months between them.
  */
 
-EXPORT INTEGER MonthsBetween(Date_t from, Date_t to) := FUNCTION
+EXPORT INTEGER MonthsBetween(Date_t from, Date_t to, BOOLEAN month_ends_equal = FALSE) := FUNCTION
     fromDate := MIN(from, to);
     toDate := MAX(from, to);
     years := Year(toDate) - Year(fromDate);
     months := Month(toDate) - Month(fromDate);
     result := years * 12 + months;
-    adjustedResult := result - IF(Day(fromDate) > Day(toDate), 1, 0);
+    fromIsMonthEnd := Day(fromDate) = CHOOSE(Month(fromDate),31,IF(IsLeapYear(Year(fromDate)),29,28),31,30,31,30,31,31,30,31,30,31);
+    toIsMonthEnd := Day(toDate) = CHOOSE(Month(toDate),31,IF(IsLeapYear(Year(toDate)),29,28),31,30,31,30,31,31,30,31,30,31);
+    adjustment := MAP
+        (
+            month_ends_equal AND fromIsMonthEnd AND toIsMonthEnd => 0,
+            Day(fromDate) > Day(toDate) => 1,
+            0
+        );
+    adjustedResult := result - adjustment;
 
     RETURN adjustedResult * IF(from > to, -1, 1);
 END;
