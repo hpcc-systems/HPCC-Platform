@@ -232,7 +232,9 @@ bool CDBLogAgentBase::buildUpdateLogStatement(IPropertyTree* logRequest, const c
 
     //add any default fields that may be required but not in request.
     addMissingFields(logFields, handledFields, fields, values);
-    appendFieldInfo("log_id", logID, fields, values, true);
+    if (table.getEnableLogID()) {
+        appendFieldInfo("log_id", logID, fields, values, true);
+    }
 
     setUpdateLogStatement(logDB, table.getTableName(), fields.str(), values.str(), updateDBStatement);
     return true;

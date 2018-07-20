@@ -85,12 +85,14 @@ void CLogTable::loadMappings(IPropertyTree& fieldList)
 void CLogGroup::loadMappings(IPropertyTree& fieldList)
 {
     StringBuffer tableName;
+    bool enableLogID;
     Owned<IPropertyTreeIterator> itr = fieldList.getElements("Fieldmap");
     ForEach(*itr)
     {
         ensureInputString(itr->query().queryProp("@table"), true, tableName, -1, "Fieldmap @table required");
+        enableLogID = itr->query().getPropBool("@enableLogID", true);
 
-        Owned<CLogTable> table = new CLogTable(tableName.str());
+        Owned<CLogTable> table = new CLogTable(tableName.str(), enableLogID);
         table->loadMappings(itr->query());
         CIArrayOf<CLogField>& logFields = table->getLogFields();
         if (logFields.length() < 1)
