@@ -10,9 +10,8 @@
     <para>All the example code for the <emphasis>Programmer's Guide</emphasis>
     is available for download from the HPCC Systems website from the same page
     that the PDF is available (<ulink
-    url="http://hpccsystems.com/download/docs/learning-ecl">click
-    here</ulink>). To make this code available for use in the ECL IDE, you
-    simply:</para>
+    url="https://hpccsystems.com/training/documentation/learning-ecl">https://hpccsystems.com/training/documentation/learning-ecl</ulink>).
+    To make this code available for use in the ECL IDE, you simply:</para>
 
     <orderedlist>
       <listitem>

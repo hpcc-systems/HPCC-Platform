@@ -47,12 +47,14 @@ public:
 class CLogTable : public CInterface
 {
     StringAttr tableName;
+    bool enableLogID;
     CIArrayOf<CLogField> logFields;
 public:
-    CLogTable(const char* _tableName) : tableName(_tableName) {};
+    CLogTable(const char* _tableName, bool _enableLogID) : tableName(_tableName), enableLogID(_enableLogID) {};
     virtual ~CLogTable() {};
 
     const char* getTableName() { return tableName.get(); };
+    bool getEnableLogID() { return enableLogID; }
     void setTableName(const char* _tableName) { return tableName.set(_tableName); };
     void loadMappings(IPropertyTree& cfg);
     CIArrayOf<CLogField>& getLogFields() { return logFields; };
