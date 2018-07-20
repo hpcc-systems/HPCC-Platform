@@ -197,6 +197,10 @@ if(APPLE)
     HPCC_ADD_SUBDIRECTORY(package)
 endif(APPLE)
 
+if(USE_SPARK)
+    HPCC_ADD_SUBDIRECTORY(spark "PLATFORM")
+endif(USE_SPARK)
+
 ###
 ## CPack install and packaging setup.
 ###
