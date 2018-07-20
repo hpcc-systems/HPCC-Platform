@@ -259,8 +259,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     set( PORTALURL "http://hpccsystems.com/download" )
   endif()
 
-  option(ICU_REQUIRES_CPP11 "Require C++11 for ICU support" OFF)
-
   if(UNIX AND SIGN_MODULES)
       execute_process(COMMAND bash "-c" "gpg --version | awk 'NR==1{print $3}'"
         OUTPUT_VARIABLE GPG_VERSION
