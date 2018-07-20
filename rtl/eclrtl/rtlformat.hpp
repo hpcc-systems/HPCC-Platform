@@ -12,11 +12,13 @@ interface IXmlWriterExt : extends IXmlWriter
     virtual IXmlWriterExt & clear() = 0;
     virtual size32_t length() const = 0;
     virtual const char *str() const = 0;
+
     virtual IInterface *saveLocation() const = 0;
     virtual void rewindTo(IInterface *location) = 0;
     virtual void cutFrom(IInterface *location, StringBuffer& databuf) = 0;
     virtual void outputNumericString(const char *field, const char *fieldname) = 0;
     virtual void outputInline(const char* text) = 0;
+    virtual void finalize() = 0;
 };
 
 class ECLRTL_API SimpleOutputWriter : implements IXmlWriterExt, public CInterface
@@ -30,6 +32,8 @@ public:
     virtual SimpleOutputWriter & clear() override;
     virtual size32_t length() const override                { return out.length(); }
     virtual const char * str() const override               { return out.str(); }
+    virtual void finalize() override                        {}
+
 
     virtual void outputQuoted(const char *text) override;
     virtual void outputQString(unsigned len, const char *field, const char *fieldname) override;
@@ -126,6 +130,8 @@ public:
     virtual IXmlWriterExt & clear();
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
+    virtual void finalize() override                                {}
+
     virtual IInterface *saveLocation() const
     {
         if (flusher)
@@ -217,6 +223,7 @@ public:
     virtual IXmlWriterExt & clear();
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
+    virtual void finalize() override                                {}
     virtual void rewindTo(unsigned int prevlen)                     { if (prevlen < out.length()) out.setLength(prevlen); }
     virtual IInterface *saveLocation() const
     {
@@ -276,6 +283,31 @@ protected:
     unsigned indent;
     unsigned nestLimit;
     bool needDelimiter;
+};
+
+class ECLRTL_API CommonJsonObjectWriter : public CommonJsonWriter
+{
+public:
+    CommonJsonObjectWriter(unsigned _flags, unsigned initialIndent,  IXmlStreamFlusher *_flusher) : CommonJsonWriter(_flags, initialIndent, _flusher)
+    {
+        outputBeginRoot();
+    }
+    ~CommonJsonObjectWriter()
+    {
+        if (!final)
+            outputEndRoot();
+    }
+    virtual void finalize() override
+    {
+        if (!final)
+        {
+            final=true;
+            outputEndRoot();
+        }
+    }
+
+private:
+    bool final=false;
 };
 
 class ECLRTL_API CPropertyTreeWriter : public CSimpleInterfaceOf<IXmlWriter>
@@ -348,7 +380,7 @@ public:
     virtual void outputData(unsigned len, const void *field, const char *fieldname);
 };
 
-enum XMLWriterType{WTStandard, WTEncoding, WTEncodingData64, WTJSON} ;
+enum XMLWriterType{WTStandard, WTEncoding, WTEncodingData64, WTJSONObject, WTJSONRootless} ;
 ECLRTL_API CommonXmlWriter * CreateCommonXmlWriter(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
 ECLRTL_API IXmlWriterExt * createIXmlWriterExt(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
 
@@ -516,6 +548,7 @@ public:
 
     virtual unsigned length() const { return out.length(); }
     virtual const char* str() const { return out.str(); }
+    virtual void finalize() override {}
     virtual void rewindTo(IInterface* location) { };
     virtual void cutFrom(IInterface *location, StringBuffer& databuf) { };
     virtual IInterface* saveLocation() const

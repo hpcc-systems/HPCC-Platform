@@ -68,7 +68,7 @@ public:
             if (calcFileCrc)
                 fileCRC.tally(out.length(), out.str());
         }
-        Owned<IXmlWriterExt> writer = createIXmlWriterExt(helper->getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSON : WTStandard);
+        Owned<IXmlWriterExt> writer = createIXmlWriterExt(helper->getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSONRootless : WTStandard);
         writer->outputBeginArray(rowTag); //need this to format rows, even if not outputting it below
         while(!abortSoon)
         {

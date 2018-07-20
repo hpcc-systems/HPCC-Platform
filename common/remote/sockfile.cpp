@@ -6298,7 +6298,7 @@ public:
             reply.append(cursorHandle);
         else // outFmt_Xml || outFmt_Json
         {
-            responseWriter.setown(createIXmlWriterExt(0, 0, nullptr, outFmt_Xml == outputFormat ? WTStandard : WTJSON));
+            responseWriter.setown(createIXmlWriterExt(0, 0, nullptr, outFmt_Xml == outputFormat ? WTStandard : WTJSONObject));
             responseWriter->outputBeginNested("Response", true);
             if (outFmt_Xml == outputFormat)
                 responseWriter->outputCString("urn:hpcc:dfs", "@xmlns:dfs");
@@ -6453,6 +6453,7 @@ public:
         if (outFmt_Binary != outputFormat)
         {
             responseWriter->outputEndNested("Response");
+            responseWriter->finalize();
             PROGLOG("Response: %s", responseWriter->str());
             reply.append(responseWriter->length(), responseWriter->str());
         }

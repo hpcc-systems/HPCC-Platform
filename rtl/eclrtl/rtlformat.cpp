@@ -2029,7 +2029,9 @@ CommonXmlWriter * CreateCommonXmlWriter(unsigned _flags, unsigned _initialIndent
 
 IXmlWriterExt * createIXmlWriterExt(unsigned _flags, unsigned _initialIndent, IXmlStreamFlusher *_flusher, XMLWriterType xmlType)
 {
-    if (xmlType==WTJSON)
+    if (xmlType==WTJSONRootless)
         return new CommonJsonWriter(_flags, _initialIndent, _flusher);
+    if (xmlType==WTJSONObject)
+        return new CommonJsonObjectWriter(_flags, _initialIndent, _flusher);
     return CreateCommonXmlWriter(_flags, _initialIndent, _flusher, xmlType);
 }
