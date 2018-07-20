@@ -2440,7 +2440,6 @@ class CKeyMerger : public CKeyLevelManager
     unsigned *mergeheap;
     unsigned numkeys;
     unsigned activekeys;
-    unsigned compareSize = 0;
     IArrayOf<IKeyCursor> cursorArray;
     UnsignedArray mergeHeapArray;
     UnsignedArray keyNoArray;
@@ -2451,17 +2450,22 @@ class CKeyMerger : public CKeyLevelManager
 
     bool resetPending;
 
-//  #define BuffCompare(a, b) memcmp(buffers[mergeheap[a]]+sortFieldOffset, buffers[mergeheap[b]]+sortFieldOffset, keySize-sortFieldOffset) // NOTE - compare whole key not just keyed part.
     inline int BuffCompare(unsigned a, unsigned b)
     {
         const byte *c1 = cursors[mergeheap[a]]->queryKeyBuffer();
         const byte *c2 = cursors[mergeheap[b]]->queryKeyBuffer();
-        //Backwards compatibility - do not compare the fileposition field, even if it would be significant.
-        //int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, keySize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
-        int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, compareSize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
-        // MORE - this is wrong! variable-size fields will not compare correctly.
-        if (!ret && sortFieldOffset)
-            ret = memcmp(c1, c2, sortFieldOffset);
+
+        //Only compare the keyed portion, and if equal tie-break on lower input numbers having priority
+        //In the future this should use the comparison functions from the type info
+        int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, keyedSize-sortFieldOffset);
+        if (!ret)
+        {
+            if (sortFieldOffset)
+                ret = memcmp(c1, c2, sortFieldOffset);
+            //If they are equal, earlier inputs have priority
+            if (!ret)
+                ret = a - b;
+        }
         return ret;
     }
 
@@ -2639,11 +2643,13 @@ public:
 
     virtual void setLayoutTranslator(const IDynamicTransform * trans) override
     { 
-        if (trans)
+        if (trans && trans->keyedTranslated())
             throw MakeStringException(0, "Layout translation not supported when merging key parts, as it may change sort order"); 
+
         // It MIGHT be possible to support translation still if all keyCursors have the same translation
         // would have to translate AFTER the merge, but that's ok
         // HOWEVER the result won't be guaranteed to be in sorted order afterwards so is there any point?
+        CKeyLevelManager::setLayoutTranslator(trans);
     }
 
     virtual void setKey(IKeyIndexBase *_keyset)
@@ -2654,7 +2660,8 @@ public:
             IKeyIndex *ki = _keyset->queryPart(0);
             keyedSize = ki->keyedSize();
             numkeys = _keyset->numParts();
-            compareSize = ki->keySize() - (ki->hasSpecialFileposition() ? sizeof(offset_t) : 0);  // MORE - feels wrong
+            if (sortFieldOffset > keyedSize)
+                throw MakeStringException(0, "Index sort order can only include keyed fields");
         }
         else
             numkeys = 0;

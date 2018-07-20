@@ -17,18 +17,25 @@
 
 //version multiPart=false
 //version multiPart=true
+//version multiPart=false,useTranslation=true
+//version multiPart=true,useTranslation=true
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, false);
+useTranslation := #IFDEFINED(root.useTranslation, true);
+
 
 //--- end of version configuration ---
+
+#option ('layoutTranslation', useTranslation);
+#onwarning (5402, ignore);
 
 //nothor
 //Stepped Thor support
 
 import $.Setup;
 import $.Setup.TS;
-wordIndex := Setup.Files(multiPart, false).getWordIndex();
+wordIndex := Setup.Files(multiPart, false, useTranslation).getWordIndex();
 
 OUTPUT(SORTED(STEPPED(WordIndex(keyed(kind = TS.kindType.TextEntry and word in ['boy', 'sheep'])), doc, segment, wpos), doc, segment, wpos, assert)) : independent;
 OUTPUT(SORTED(STEPPED(WordIndex(keyed(kind = TS.kindType.TextEntry and word in ['b%%%', 'sheep'])), doc, segment, wpos), doc, segment, wpos, assert)) : independent;

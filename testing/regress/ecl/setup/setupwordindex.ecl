@@ -21,3 +21,5 @@ import $.SetupText;
 
 SetupText.createSimpleIndex(FALSE);
 SetupText.createSimpleIndex(TRUE);
+SetupText.createSimpleIndex(FALSE, TRUE);
+SetupText.createSimpleIndex(TRUE, TRUE);
