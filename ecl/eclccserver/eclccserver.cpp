@@ -187,17 +187,15 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
 
     virtual void reportError(const char *errStr, unsigned retcode)
     {
-        // A typical error looks like this: stdin:(385,29): warning C1041: Record doesn't have an explicit maximum record size
-        // we will also see (and want to skip) nn error(s), nn warning(s)
-        // Errors reported in generated c++ files are a bit special - we want to add the generated c++ file (if it still exists) to the workunit
         RegExpr errCount, errParse, timings;
         timings.init("^<stat");
         errParse.init("^<exception");
-        if (timings.find(errStr))
+        try
         {
-            OwnedPTree timing = createPTreeFromXMLString(errStr, ipt_fast);
-            if (timing)
+            if (timings.find(errStr))
             {
+                OwnedPTree timing = createPTreeFromXMLString(errStr, ipt_fast);
+                assertex (timing);
                 unsigned __int64 nval = timing->getPropInt64("@value");
                 unsigned __int64 nmax = timing->getPropInt64("@max");
                 unsigned __int64 cnt = timing->getPropInt64("@count");
@@ -206,14 +204,10 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 StatisticKind kind = queryStatisticKind(timing->queryProp("@kind"), StKindNone);
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, nval, cnt, nmax, StatsMergeReplace);
             }
-            else
-                DBGLOG("Unrecognised timing: %s", errStr);
-        }
-        else if (errParse.find(errStr))
-        {
-            OwnedPTree exception = createPTreeFromXMLString(errStr, ipt_fast);
-            if (exception)
+            else if (errParse.find(errStr))
             {
+                OwnedPTree exception = createPTreeFromXMLString(errStr, ipt_fast);
+                assertex(exception);
                 Owned<IError> error = createError(exception);
                 addWorkunitException(workunit, error, false);
                 const char *filename = exception->queryProp("@filename");
@@ -226,6 +220,10 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             }
             else
                 DBGLOG("Unrecognised error: %s", errStr);
+        }
+        catch (IException *E)
+        {
+            EXCLOG(E, "Error parsing compiler output");
         }
     }
 
