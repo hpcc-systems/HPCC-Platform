@@ -1887,7 +1887,7 @@ FUNCTIONMACRO|MACRO {
 \357\273\277        {
                         setupdatepos;
                         if (lexer->yyPosition != 3)
-                            lexer->reportWarning(CategorySyntax, returnToken, ERR_STRING_ILLDELIMITER, "Misplaced BOM - should be at the start of the file");
+                            lexer->reportWarning(CategoryInformation, returnToken, ERR_STRING_ILLDELIMITER, "Misplaced BOM - should be at the start of the file");
                     }
 
 "("                 {
