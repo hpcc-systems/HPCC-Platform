@@ -364,7 +364,7 @@
         available on the HPCC Portal.</para>
 
         <para><ulink
-        url="http://hpccsystems.com/permlink/requirements">http://hpccsystems.com/permlink/requirements</ulink></para>
+        url="https://hpccsystems.com/training/documentation/system-requirements">https://hpccsystems.com/training/documentation/system-requirements</ulink></para>
       </sect2>
 
       <sect2 id="configuration-manager">
@@ -468,7 +468,7 @@
             </listitem>
 
             <listitem>
-              <para>Safari 10 (or later) </para>
+              <para>Safari 10 (or later)</para>
             </listitem>
           </itemizedlist>
 
