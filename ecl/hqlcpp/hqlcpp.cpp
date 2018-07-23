@@ -1813,6 +1813,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.addDefaultBloom,"addDefaultBloom", true),
         DebugOption(options.newDiskReadMapping, "newDiskReadMapping", true),
         DebugOption(options.transformNestedSequential, "transformNestedSequential", true),
+        DebugOption(options.forceAllProjectedDiskSerialized, "internalForceAllProjectedDiskSerialized", false),  // Delete in 8.0 once new code has been proved in anger
     };
 
     //get options values from workunit

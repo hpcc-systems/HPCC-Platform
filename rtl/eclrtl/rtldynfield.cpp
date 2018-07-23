@@ -1265,6 +1265,14 @@ private:
                                     source += sourceType->queryChildType()->size(source, nullptr); // MORE - shame to repeat a calculation that the translate above almost certainly just did
                                 }
                             }
+                            if (type->getType() == type_dictionary)
+                            {
+                                const RtlTypeInfo * childType = type->queryChildType();
+                                assertex(childType && childType->getType() == type_record);
+                                CHThorHashLookupInfo lookupHelper(static_cast<const RtlRecordTypeInfo &>(*childType));
+                                rtlCreateDictionaryFromDataset(numRows, childRows, childAllocator, lookupHelper);
+                            }
+
                             // Go back in and patch the count, remembering it may have moved
                             rtlWriteInt4(builder.getSelf()+offset, numRows);
                             * ( const void * * ) (builder.getSelf()+offset+sizeof(size32_t)) = childRows;
@@ -1285,7 +1293,10 @@ private:
                                 const byte ** sourceRows = *(const byte***) source;
                                 for (size32_t childRow = 0; childRow < childCount; childRow++)
                                 {
-                                    offset = match.subTrans->doTranslate(builder, callback, offset, sourceRows[childRow]);
+                                    const byte * row = sourceRows[childRow];
+                                    //Dictionaries have blank rows - ignore them when serializing (to a dataset)
+                                    if (row)
+                                        offset = match.subTrans->doTranslate(builder, callback, offset, row);
                                 }
                             }
                             else
@@ -1394,6 +1405,19 @@ private:
         }
         return expectedSize;
     }
+    static bool canTranslateNonScalar(const RtlTypeInfo * type, const RtlTypeInfo * sourceType)
+    {
+        auto target = type->getType();
+        auto source = sourceType->getType();
+        if (target == source)
+            return true;
+        if ((target == type_dictionary) && (source == type_table))
+            return true;
+        if ((target == type_table) && (source == type_dictionary))
+            return true;
+        return false;
+    }
+
     void createMatchInfo()
     {
         for (unsigned idx = 0; idx < destRecInfo.getNumFields(); idx++)
@@ -1429,7 +1453,7 @@ private:
                 }
                 if (!type->isScalar() || !sourceType->isScalar())
                 {
-                    if (type->getType() != sourceType->getType())
+                    if (!canTranslateNonScalar(type, sourceType))
                         info.matchType = match_fail;  // No translation from one non-scalar type to another
                     else
                     {
@@ -1447,6 +1471,7 @@ private:
                         case type_ifblock:
                         case type_record:
                         case type_table:
+                        case type_dictionary:
                         {
                             const RtlRecord *subDest = destRecInfo.queryNested(idx);
                             const RtlRecord *subSrc = sourceRecInfo.queryNested(info.matchIdx);

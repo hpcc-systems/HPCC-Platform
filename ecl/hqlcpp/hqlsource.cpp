@@ -1123,13 +1123,6 @@ void SourceBuilder::buildReadMembers(IHqlExpression * expr)
 {
     buildFilenameMember();
 
-    //Sanity check to ensure that the projected row is only in the in memory format if it from a spill file, or no transform needs to be called.
-    if (needToCallTransform || transformCanFilter)
-    {
-        if (!tableExpr->hasAttribute(_spill_Atom) && recordRequiresSerialization(tableExpr->queryRecord(), diskAtom))
-            throwUnexpectedX("Projected dataset should have been serialized");
-    }
-
     //---- virtual bool needTransform() { return <bool>; } ----
     if (needToCallTransform || transformCanFilter)
         translator.doBuildBoolFunction(instance->classctx, "needTransform", true);
@@ -3064,6 +3057,16 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
         return;
     }
 
+    if (recordRequiresSerialization(tableExpr->queryRecord(), diskAtom))
+    {
+        //Sanity check to ensure that the projected row is only in the in memory format if no transform needs to be called.
+        if (needToCallTransform || transformCanFilter)
+            throwUnexpectedX("Projected dataset should have been serialized");
+
+        //Base implementation for a disk read throws an exception if it is called.
+        return;
+    }
+
     if (modeOp == no_csv)
     {
         translator.buildCsvParameters(instance->nestedctx, mode, NULL, true);
@@ -3113,15 +3116,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
     if (info.newDiskReadMapping && (modeOp != no_csv) && (modeOp != no_xml) && (modeOp != no_pipe))
     {
         //The projected disk information (which is passed to the transform) uses the in memory format IFF
-        // - The source is a spill file (to allow efficient in memory mapping)
         // - The disk read is a trivial slimming transform (so no transform needs calling on the projected disk format.
+        // - It is used for all disk reads since directly transforming is always at least as efficient as going via
+        //   the serialized form.
         // Otherwise the table is converted to the serialized format.
 
-        //MORE: This shouldn't always need to be serialized - but engines crash at the moment if not
-        const bool forceAllProjectedSerialized = true;
+        const bool forceAllProjectedSerialized = options.forceAllProjectedDiskSerialized;
         //Reading from a spill file uses the in-memory format to optimize on-demand spilling.
-        bool optimizeInMemorySpill = !targetHThor() && tableExpr->hasAttribute(_spill_Atom);
-        bool useInMemoryFormat = optimizeInMemorySpill || isSimpleProjectingDiskRead(expr);
+        bool optimizeInMemorySpill = targetThor();
+        bool useInMemoryFormat = optimizeInMemorySpill && isSimpleProjectingDiskRead(expr);
         if (forceAllProjectedSerialized || !useInMemoryFormat)
         {
             //else if the the table isn't serialized, then map to a serialized table, and then project to the real format

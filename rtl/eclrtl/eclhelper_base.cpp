@@ -679,6 +679,11 @@ void CThorDiskReadArg::onKeyedLimitExceeded() { }
 ISteppingMeta * CThorDiskReadArg::queryRawSteppingMeta() { return NULL; }
 ISteppingMeta * CThorDiskReadArg::queryProjectedSteppingMeta() { return NULL; }
 void CThorDiskReadArg::mapOutputToInput(ARowBuilder & rowBuilder, const void * projectedRow, unsigned numFields) { }
+size32_t CThorDiskReadArg::transform(ARowBuilder & rowBuilder, const void * src)
+{
+    rtlFail(800, "transform() should not be called, input is deserialized");
+}
+
 size32_t CThorDiskReadArg::unfilteredTransform(ARowBuilder & rowBuilder, const void * src) { return 0; }
 size32_t CThorDiskReadArg::transformOnLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
 size32_t CThorDiskReadArg::transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) { return 0; }

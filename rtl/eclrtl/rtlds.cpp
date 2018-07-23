@@ -1442,6 +1442,17 @@ extern ECLRTL_API void rtlSerializeDictionaryToDataset(unsigned & tlen, void * &
     tgt = buffer.detach();      // not strictly speaking correct - it should have been allocated with rtlMalloc();
 }
 
+
+extern ECLRTL_API void rtlCreateDictionaryFromDataset(size32_t & count, const byte * * & rowset, IEngineRowAllocator * rowAllocator, IHThorHashLookupInfo & hashInfo)
+{
+    RtlLinkedDictionaryBuilder builder(rowAllocator, &hashInfo);
+    builder.appendRows(count, rowset);
+    rowAllocator->releaseRowset(count, rowset);
+    count = builder.getcount();
+    rowset = builder.linkrows();
+}
+
+
 //---------------------------------------------------------------------------
 
 RtlDatasetCursor::RtlDatasetCursor(size32_t _len, const void * _data)

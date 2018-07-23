@@ -905,6 +905,7 @@ class ECLRTL_API CThorDiskReadArg : public CThorArgOf<IHThorDiskReadArg>
     virtual ISteppingMeta * queryRawSteppingMeta() override;
     virtual ISteppingMeta * queryProjectedSteppingMeta() override;
     virtual void mapOutputToInput(ARowBuilder & rowBuilder, const void * projectedRow, unsigned numFields) override;
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * src) override;
     virtual size32_t unfilteredTransform(ARowBuilder & rowBuilder, const void * src) override;
 
     virtual size32_t transformOnLimitExceeded(ARowBuilder & rowBuilder) override;

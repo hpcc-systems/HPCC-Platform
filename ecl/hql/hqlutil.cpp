@@ -10316,12 +10316,11 @@ const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeIn
         }
     case type_table:
     case type_groupedtable:
+    case type_dictionary:
         {
             info.childType = buildRtlType(deserializer, ::queryRecordType(type));
             break;
         }
-    case type_dictionary:
-        return nullptr;  // MORE - does this leak?
     case type_blob:
     case type_set:
     case type_keyedint:
