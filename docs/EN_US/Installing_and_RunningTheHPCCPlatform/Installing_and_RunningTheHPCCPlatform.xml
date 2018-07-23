@@ -283,6 +283,19 @@
           <para>Optionally you can install the package with rpm (recommended
           using the -Uvh options), however then you would have to negotiate
           installing any additional dependencies.</para>
+
+          <para><variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>If you are using CentOS 6 you may need to run the following
+                  command to properly enable the installation.</para>
+
+                  <para><programlisting> wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
