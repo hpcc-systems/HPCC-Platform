@@ -143,7 +143,7 @@ define([
 
                 document.title = widget.getTitle ? widget.getTitle() : params.Widget;
 
-                if (sessionIsActive) {
+                if (sessionIsActive > -1) {
                     if (!cookie("ECLWatchUser")) {
                         cookie("ECLWatchUser", "true");
                     }
