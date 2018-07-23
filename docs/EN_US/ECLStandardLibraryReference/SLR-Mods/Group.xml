@@ -37,5 +37,6 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := Thorlib.Group();</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+A := STD.System.Thorlib.Group();</programlisting>
 </sect1>
