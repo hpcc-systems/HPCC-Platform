@@ -35,7 +35,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
@@ -465,6 +465,10 @@
 
             <listitem>
               <para>Google Chrome 10 (or later)</para>
+            </listitem>
+
+            <listitem>
+              <para>Safari 10 (or later) </para>
             </listitem>
           </itemizedlist>
 

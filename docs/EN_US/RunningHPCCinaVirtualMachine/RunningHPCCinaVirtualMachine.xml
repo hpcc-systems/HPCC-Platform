@@ -5,11 +5,7 @@
   <title>Running HPCC in a Virtual Machine</title>
 
   <bookinfo>
-    
-
     <title>HPCC in a Virtual Machine</title>
-
-    
 
     <mediaobject>
       <imageobject>
@@ -33,9 +29,8 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC
-      Systems<superscript>®</superscript> is a registered trademark of
-      LexisNexis Risk Data Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies.</para>
@@ -44,7 +39,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -69,42 +64,36 @@
   </bookinfo>
 
   <chapter id="VM_Intro">
-    
-
     <title>Introduction</title>
-
-    
 
     <para>These instructions will guide you through installing and running an
     HPCC<footnote>
         <para><emphasis role="bold">H</emphasis>igh <emphasis
         role="bold">P</emphasis>erformance <emphasis
         role="bold">C</emphasis>omputing <emphasis
-        role="bold">C</emphasis>luster (HPCC)
-        is a massively parallel processing computing platform that solves Big
-        Data problems. See <ulink
+        role="bold">C</emphasis>luster (HPCC) is a massively parallel
+        processing computing platform that solves Big Data problems. See
+        <ulink
         url="http://hpccsystems.com/Why-HPCC/How-it-works">http://hpccsystems.com/Why-HPCC/How-it-works</ulink>
         for more details.</para>
       </footnote> System on a single node inside a Linux virtual machine
     running on a Windows host.</para>
 
     <para>Packaged to run inside a virtual machine, this version provides a
-    hands-on experience with an HPCC system.
-    You can experiment with it and even create real-world data analytics
-    applications-all on your desktop or laptop PC.</para>
+    hands-on experience with an HPCC system. You can experiment with it and
+    even create real-world data analytics applications-all on your desktop or
+    laptop PC.</para>
 
-    <para>This version includes the tools and functionality of an HPCC
-    without the need for a physical cluster of servers. It provides enough for
-    you to evaluate an HPCC system and learn
-    to use ECL<footnote>
+    <para>This version includes the tools and functionality of an HPCC without
+    the need for a physical cluster of servers. It provides enough for you to
+    evaluate an HPCC system and learn to use ECL<footnote>
         <para><emphasis role="bold">E</emphasis>nterprise <emphasis
         role="bold">C</emphasis>ontrol <emphasis
-        role="bold">L</emphasis>anguage (ECL)
-        is a declarative, data-centric programming language used to manage all
-        aspects of the massive data joins, sorts, and builds that truly
-        differentiate HPCC (High Performance
-        Computing Cluster) from other technologies in its ability to provide
-        flexible data analysis on a massive scale.</para>
+        role="bold">L</emphasis>anguage (ECL) is a declarative, data-centric
+        programming language used to manage all aspects of the massive data
+        joins, sorts, and builds that truly differentiate HPCC (High
+        Performance Computing Cluster) from other technologies in its ability
+        to provide flexible data analysis on a massive scale.</para>
       </footnote>. Naturally, you do not get the power of parallel processing,
     but you can use this version as an evaluation, learning, and
     experimentation tool.</para>
@@ -130,114 +119,88 @@
       </informaltable></para>
 
     <sect1 id="VM_Requirements">
-      
-
       <title>System Requirements</title>
 
-      
-
-      <para>Running HPCC in a virtual
-      machine requires (at minimum):</para>
+      <para>Running HPCC in a virtual machine requires (at minimum):</para>
 
       <itemizedlist>
         <listitem>
-          <para>A personal computer running Windows XP,
-          Vista, Windows 7 (either 32- or 64-bit) or newer.</para>
+          <para>A personal computer running Windows XP, Vista, Windows 7
+          (either 32- or 64-bit) or newer.</para>
         </listitem>
 
         <listitem>
-          <para>A minimum of 2 GB ram, with
-          at least 1.5 GB of free memory
-          available. We recommend 4 GB or
-          more</para>
+          <para>A minimum of 2 GB ram, with at least 1.5 GB of free memory
+          available. We recommend 4 GB or more</para>
         </listitem>
 
         <listitem>
-          <para>Intel Pentium D (or better) or AMD
-          Athlon64/Opteron/Phenom processor</para>
+          <para>Intel Pentium D (or better) or AMD Athlon64/Opteron/Phenom
+          processor</para>
         </listitem>
 
         <listitem>
-          <para>Minimum 5 GB of available
-          disk space, we recommend 20 GB</para>
+          <para>Minimum 5 GB of available disk space, we recommend 20
+          GB</para>
         </listitem>
 
         <listitem>
-          <para>Oracle VM
-          VirtualBox<superscript>®</superscript> (version 4.0 or
-          later).</para>
+          <para>Oracle VM VirtualBox<superscript>®</superscript> (version 4.0
+          or later).</para>
         </listitem>
 
         <listitem>
           <para>Internet Explorer<superscript>®</superscript> 11, Google
-          Chrome 10, or Firefox™ 3.0 (or later)</para>
+          Chrome 10, Safari 10, or Firefox™ 3.0 (or later)</para>
         </listitem>
       </itemizedlist>
 
       <para>Users should have familiarity with installing and running Windows
       applications.</para>
 
-      <para>To run HPCC in a virtual
-      machine, hardware virtualization must be enabled in the BIOS
-      of your machine. This setting may be called VT-x or AMD-V.</para>
+      <para>To run HPCC in a virtual machine, hardware virtualization must be
+      enabled in the BIOS of your machine. This setting may be called VT-x or
+      AMD-V.</para>
     </sect1>
   </chapter>
 
   <chapter id="VM_GettingTheTools">
-    
-
     <title>Getting the Tools and the VM Image</title>
 
-    
-
-    <para>To run the virtual machine version of the HPCC
-    System, you need virtualization software. These packages allow you to run
-    virtual images inside a single host. There are a several different vendors
-    who make virtualization software, while any or all of these could work, we
-    support Oracle VM
-    VirtualBox<superscript>®</superscript> .</para>
+    <para>To run the virtual machine version of the HPCC System, you need
+    virtualization software. These packages allow you to run virtual images
+    inside a single host. There are a several different vendors who make
+    virtualization software, while any or all of these could work, we support
+    Oracle VM VirtualBox<superscript>®</superscript> .</para>
 
     <sect1 id="VM_VirtualBox">
-      
-
       <title>VM VirtualBox</title>
 
-      
-
-      <para>Oracle's virtualization software, VM
-      VirtualBox is supported for running the HPCC
-      virtual machine image.</para>
+      <para>Oracle's virtualization software, VM VirtualBox is supported for
+      running the HPCC virtual machine image.</para>
 
       <para>In the following section(s), you will:</para>
 
       <itemizedlist>
         <listitem>
-          <para>Download and install the VM
-          VirtualBox</para>
+          <para>Download and install the VM VirtualBox</para>
         </listitem>
 
         <listitem>
-          <para>Download the HPCC virtual
-          machine image from HPCC
+          <para>Download the HPCC virtual machine image from HPCC
           Systems.</para>
         </listitem>
 
         <listitem>
-          <para>Open and import the image in VM
-          VirtualBox</para>
+          <para>Open and import the image in VM VirtualBox</para>
         </listitem>
       </itemizedlist>
 
       <sect2 id="Install_VM_VirtualBox">
-        
-
         <title>Download and Install the VM VirtualBox</title>
 
-        
-
-        <para>If you already have the VM
-        VirtualBox installed, skip to step number 6, and verify the network
-        configuration settings.</para>
+        <para>If you already have the VM VirtualBox installed, skip to step
+        number 6, and verify the network configuration settings.</para>
 
         <orderedlist>
           <listitem>
@@ -266,8 +229,7 @@
           </listitem>
 
           <listitem>
-            <para>Start the VM VirtualBox
-            application.</para>
+            <para>Start the VM VirtualBox application.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -277,8 +239,8 @@
 
         <para><orderedlist>
             <listitem>
-              <para>Download the latest HPCC
-              virtual machine image file from:</para>
+              <para>Download the latest HPCC virtual machine image file
+              from:</para>
 
               <para><ulink
               url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
@@ -293,9 +255,9 @@
                   </varlistentry>
                 </variablelist></para>
 
-              <para>Choose the VM Image file
-              for VirtualBox. The <emphasis>filename</emphasis>.ova file is
-              appropriate for the VirtualBox.</para>
+              <para>Choose the VM Image file for VirtualBox. The
+              <emphasis>filename</emphasis>.ova file is appropriate for the
+              VirtualBox.</para>
             </listitem>
 
             <listitem>
@@ -303,8 +265,7 @@
             </listitem>
 
             <listitem>
-              <para>Open VM
-              VirtualBox.</para>
+              <para>Open VM VirtualBox.</para>
             </listitem>
 
             <listitem>
@@ -334,8 +295,8 @@
               pressing <emphasis role="bold">Next</emphasis> as appropriate,
               then press <emphasis role="bold">Import</emphasis>.</para>
 
-              <para>Wait for the HPCC
-              virtual machine to import. This may take a few minutes.</para>
+              <para>Wait for the HPCC virtual machine to import. This may take
+              a few minutes.</para>
             </listitem>
 
             <listitem>
@@ -368,10 +329,8 @@
               option. On the <emphasis>Adapter 1</emphasis> tab check the
               <emphasis>Enable Network Adapter</emphasis> box, and set the
               <emphasis>Attached to:</emphasis> option to <emphasis
-              role="bold">NAT</emphasis>.
-              <figure id="VBoxNet1">
-                  <title>VM VirtualBox
-                  Network Adapter 1</title>
+              role="bold">NAT</emphasis>. <figure id="VBoxNet1">
+                  <title>VM VirtualBox Network Adapter 1</title>
 
                   <mediaobject>
                     <imageobject>
@@ -400,8 +359,7 @@
               the <emphasis>Enable Network Adapter</emphasis> box, and set the
               <emphasis>Attached to:</emphasis> option to <emphasis
               role="bold">Host-only Adapter</emphasis>. <figure id="VBoxNet2">
-                  <title>VM VirtualBox
-                  Network Adapter 2</title>
+                  <title>VM VirtualBox Network Adapter 2</title>
 
                   <mediaobject>
                     <imageobject>
@@ -435,9 +393,8 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Once the VM
-              initialization completes, you will see a window similar to the
-              following:</para>
+              <para>Once the VM initialization completes, you will see a
+              window similar to the following:</para>
 
               <figure id="vbox_welcome">
                 <title xreflabel="welc">VirtualBox Welcome Screen</title>
@@ -462,10 +419,9 @@
                         <entry><inlinegraphic
                         fileref="images/caution.png" /></entry>
 
-                        <entry>Your virtual IP
-                        address could be different from the ones provided in
-                        the example images. Please use the IP
-                        address provided by <emphasis
+                        <entry>Your virtual IP address could be different from
+                        the ones provided in the example images. Please use
+                        the IP address provided by <emphasis
                         role="bold">your</emphasis> installation.</entry>
                       </row>
                     </tbody>
@@ -496,26 +452,18 @@
   </chapter>
 
   <chapter id="VM_RunningHPCC_VM">
-    
-
     <title>Running the HPCC VM</title>
 
-    
-
-    <para>In this section, we will access the HPCC
-    using the web-based interface: ECL
-    Watch<footnote>
-        <para>ECL Watch is a Web-based
-        interface to your HPCC system. It
-        enables you to examine and manage many aspects of the HPCC
-        and allows you to see information about jobs you run, data files, and
-        system metrics.</para>
+    <para>In this section, we will access the HPCC using the web-based
+    interface: ECL Watch<footnote>
+        <para>ECL Watch is a Web-based interface to your HPCC system. It
+        enables you to examine and manage many aspects of the HPCC and allows
+        you to see information about jobs you run, data files, and system
+        metrics.</para>
       </footnote>.From ECL Watch, we will download the ECL IDE<footnote>
-        <para>The ECL IDE
-        (Integrated Development Environment) is the tool used to create
-        queries into your data and ECL files
-        with which to build your queries. This is a Windows
-        application.</para>
+        <para>The ECL IDE (Integrated Development Environment) is the tool
+        used to create queries into your data and ECL files with which to
+        build your queries. This is a Windows application.</para>
       </footnote>. If you already have the ECL IDE installed, you can skip
     this section and continue at <emphasis>Running the HPCC ECL IDE when you
     had a previous version installed</emphasis>.</para>
@@ -523,11 +471,10 @@
     <para><orderedlist>
         <listitem>
           <para>In your browser, go to the <emphasis role="bold">ECL
-          Watch</emphasis> URL displayed
-          (circled in red) in the Figure above, <emphasis>VirtualBox Welcome
-          Screen</emphasis>. For example, http://nnn.nnn.nnn.nnn:8010, where
-          nnn.nnn.nnn.nnn is your Virtual Machine's IP
-          address.</para>
+          Watch</emphasis> URL displayed (circled in red) in the Figure above,
+          <emphasis>VirtualBox Welcome Screen</emphasis>. For example,
+          http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is your Virtual
+          Machine's IP address.</para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -542,9 +489,8 @@
                     <entry><inlinegraphic
                     fileref="images/caution.png" /></entry>
 
-                    <entry>Your virtual IP
-                    address could be different from the ones provided in the
-                    example images. Please use the IP
+                    <entry>Your virtual IP address could be different from the
+                    ones provided in the example images. Please use the IP
                     address provided by <emphasis role="bold">your</emphasis>
                     installation.</entry>
                   </row>
@@ -556,9 +502,8 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>From the ECL Watch Advanced
-          menu, select on the <emphasis role="bold">Additional Resources
-          </emphasis>link.</para>
+          <para>From the ECL Watch Advanced menu, select on the <emphasis
+          role="bold">Additional Resources </emphasis>link.</para>
 
           <para><figure>
               <title>ECL Watch Resource Page</title>
@@ -570,15 +515,14 @@
               </mediaobject>
             </figure></para>
 
-          <para>Follow the link to the HPCC
-          System's portal download page.</para>
+          <para>Follow the link to the HPCC System's portal download
+          page.</para>
         </listitem>
 
         <listitem>
-          <para>Click on the <emphasis role="bold">ECL
-          IDE </emphasis>link. (on the right
-          hand side in the Download column, under the Free Community Edition
-          heading)</para>
+          <para>Click on the <emphasis role="bold">ECL IDE </emphasis>link.
+          (on the right hand side in the Download column, under the Free
+          Community Edition heading)</para>
         </listitem>
 
         <listitem>
@@ -587,31 +531,23 @@
         </listitem>
 
         <listitem>
-          <para>Install the ECL IDE,
-          following the prompts in the installation program. Once the ECL
-          IDE is installed successfully, you
-          can proceed.</para>
+          <para>Install the ECL IDE, following the prompts in the installation
+          program. Once the ECL IDE is installed successfully, you can
+          proceed.</para>
         </listitem>
       </orderedlist></para>
 
     <sect1 id="VM_RunningTheIDE">
-      
-
       <title>Running the ECL IDE for the first time</title>
 
-      
-
-      <para>In this section, we will configure the ECL
-      IDE.</para>
+      <para>In this section, we will configure the ECL IDE.</para>
 
       <orderedlist>
         <listitem>
-          <para>Open the ECL IDE,
-          from your start menu. (Start <emphasis
+          <para>Open the ECL IDE, from your start menu. (Start <emphasis
           role="bold">&gt;&gt;</emphasis> All Programs <emphasis
           role="bold">&gt;&gt;</emphasis> HPCCSystems <emphasis
-          role="bold">&gt;&gt;</emphasis> ECL
-          IDE).</para>
+          role="bold">&gt;&gt;</emphasis> ECL IDE).</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <?dbfo keep-together="always"?>
@@ -626,8 +562,7 @@
                   <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
                   <entry>You can create a shortcut on your desktop to provide
-                  quick access to the ECL
-                  IDE.</entry>
+                  quick access to the ECL IDE.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -635,12 +570,11 @@
         </listitem>
 
         <listitem>
-          <para>Enter the IP Address shown
-          in the <link linkend="vbox_welcome">Virtual Box welcome
-          screen</link> for the server in the <emphasis role="bold">Server
-          </emphasis>box (as shown in <xref linkend="Preferences" />) and
-          press the <emphasis role="bold">OK</emphasis>
-          button.</para>
+          <para>Enter the IP Address shown in the <link
+          linkend="vbox_welcome">Virtual Box welcome screen</link> for the
+          server in the <emphasis role="bold">Server </emphasis>box (as shown
+          in <xref linkend="Preferences" />) and press the <emphasis
+          role="bold">OK</emphasis> button.</para>
 
           <para><figure id="Preferences">
               <title>ECL IDE Preferences</title>
@@ -656,8 +590,8 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Enter the <emphasis role="bold">Login ID</emphasis>
-          and <emphasis role="bold">Password</emphasis> provided in the Login
+          <para>Enter the <emphasis role="bold">Login ID</emphasis> and
+          <emphasis role="bold">Password</emphasis> provided in the Login
           dialog.</para>
 
           <informaltable colsep="1" rowsep="1">
@@ -683,11 +617,7 @@
           </informaltable>
 
           <figure>
-            
-
             <title>Login Window</title>
-
-            
 
             <mediaobject>
               <imageobject>
@@ -698,8 +628,7 @@
         </listitem>
 
         <listitem>
-          <para>Press the <emphasis role="bold">OK</emphasis>
-          button.</para>
+          <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
 
           <para>At this point you are now connected and ready to work with the
           HPCC!</para>
@@ -708,23 +637,16 @@
     </sect1>
 
     <sect1 id="VM_RunningtheIDE_wPreviousVersion">
-      
-
       <title>Running the HPCC ECL IDE when you had a previous version
       installed</title>
 
-      
-
       <orderedlist>
         <listitem>
-          <para>Open the ECL IDE,
-          from your Start menu. (Start <emphasis
+          <para>Open the ECL IDE, from your Start menu. (Start <emphasis
           role="bold">&gt;&gt;</emphasis> All Programs <emphasis
           role="bold">&gt;&gt;</emphasis> HPCCSystems <emphasis
-          role="bold">&gt;&gt;</emphasis> ECL
-          IDE <emphasis
-          role="bold">&gt;&gt;</emphasis> ECL
-          IDE)</para>
+          role="bold">&gt;&gt;</emphasis> ECL IDE <emphasis
+          role="bold">&gt;&gt;</emphasis> ECL IDE)</para>
         </listitem>
 
         <listitem>
@@ -747,12 +669,11 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Enter the IP Address shown
-          in <link linkend="vbox_welcome">Virtual Box welcome screen</link>
-          for the server in the <emphasis role="bold">Server</emphasis> box
-          (as shown in <xref linkend="Preferences2" />) and press the
-          <emphasis role="bold">OK</emphasis>
-          button.</para>
+          <para>Enter the IP Address shown in <link
+          linkend="vbox_welcome">Virtual Box welcome screen</link> for the
+          server in the <emphasis role="bold">Server</emphasis> box (as shown
+          in <xref linkend="Preferences2" />) and press the <emphasis
+          role="bold">OK</emphasis> button.</para>
 
           <para><figure id="Preferences2">
               <title>ECL IDE Preferences</title>
@@ -768,8 +689,8 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Enter the <emphasis role="bold">Login ID</emphasis>
-          and <emphasis role="bold">Password</emphasis> provided in the Login
+          <para>Enter the <emphasis role="bold">Login ID</emphasis> and
+          <emphasis role="bold">Password</emphasis> provided in the Login
           dialog.</para>
 
           <informaltable colsep="1" rowsep="1">
@@ -795,11 +716,7 @@
           </informaltable>
 
           <figure>
-            
-
             <title>Login Window</title>
-
-            
 
             <mediaobject>
               <imageobject>
@@ -810,8 +727,7 @@
         </listitem>
 
         <listitem>
-          <para>Press the <emphasis role="bold">OK</emphasis>
-          button.</para>
+          <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
 
           <para>You are now connected and ready to work with the HPCC!</para>
         </listitem>
@@ -819,23 +735,17 @@
     </sect1>
 
     <sect1 id="VM_WriteSomeECL">
-      
-
       <title>Write some ECL</title>
-
-      
 
       <para>Let's write, compile, and execute a simple "Hello World" program
       on our HPCC.</para>
 
       <orderedlist>
         <listitem>
-          <para>Open ECL IDE,
-          from your Start menu. (Start <emphasis
+          <para>Open ECL IDE, from your Start menu. (Start <emphasis
           role="bold">&gt;&gt;</emphasis> All Programs <emphasis
           role="bold">&gt;&gt;</emphasis> HPCCSystems <emphasis
-          role="bold">&gt;&gt;</emphasis> ECL
-          IDE or use the desktop shortcut,
+          role="bold">&gt;&gt;</emphasis> ECL IDE or use the desktop shortcut,
           if you have created one.)</para>
 
           <para>The Login Window displays.</para>
@@ -853,25 +763,22 @@
 
         <listitem>
           <para>Provide your credentials (hpccdemo) then press the <emphasis
-          role="bold">OK</emphasis>
-          button.</para>
+          role="bold">OK</emphasis> button.</para>
 
           <para></para>
         </listitem>
 
         <listitem>
           <para>Open a new <emphasis role="bold">Builder Window</emphasis>
-          (CTRL+N) and write the following
-          code:<programlisting>OUTPUT('Hello World');
+          (CTRL+N) and write the following code:<programlisting>OUTPUT('Hello World');
 </programlisting></para>
 
           <para>This could also be written as:</para>
 
           <para><programlisting>'Hello World';
-</programlisting>In the second program listing, the OUTPUT
-          keyword is omitted. This is possible because the language is
-          declarative and the OUTPUT action
-          is implicit.</para>
+</programlisting>In the second program listing, the OUTPUT keyword is omitted.
+          This is possible because the language is declarative and the OUTPUT
+          action is implicit.</para>
         </listitem>
 
         <listitem>
@@ -881,11 +788,10 @@
           cluster.</para>
 
           <para><emphasis role="bold">Thor</emphasis> is the Data Refinery
-          component of your HPCC. It is a
-          massively parallel computer cluster, optimized for sorting,
-          manipulating, and transforming massive data. This process is also
-          known as ETL (Extract, Transform,
-          and Load)</para>
+          component of your HPCC. It is a massively parallel computer cluster,
+          optimized for sorting, manipulating, and transforming massive data.
+          This process is also known as ETL (Extract, Transform, and
+          Load)</para>
 
           <para><figure>
               <title>Select target</title>
@@ -954,57 +860,38 @@
     </sect1>
 
     <sect1 id="VM_WorkingWithECL">
-      
-
       <title>Working with ECL</title>
 
-      
-
-      <para>Now that you have submitted some ECL
-      code, it's time to try some more complex operations.</para>
+      <para>Now that you have submitted some ECL code, it's time to try some
+      more complex operations.</para>
 
       <para>The following examples are provided to get you started.</para>
 
-   
-
       <!--?hard-pagebreak ?-->
 
+      <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/anagram1.xml"
+                  xpointer="xpointer(//*[@id='ECLExample_Anagram1'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/anagram1.xml"
-                xpointer="xpointer(//*[@id='ECLExample_Anagram1'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/anagram2.xml"
-                xpointer="xpointer(//*[@id='ECLRoxieExample_Anagram2'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-
+      <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/anagram2.xml"
+                  xpointer="xpointer(//*[@id='ECLRoxieExample_Anagram2'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <sect1 id="VM_Working_with_a_data_file">
-      
-
       <title>Working with data files</title>
 
-      
-
-      <para>Once you start working with your HPCC
-      system, you will want to process some real data, this section shows you
-      how to load data to your HPCC
-      system.</para>
+      <para>Once you start working with your HPCC system, you will want to
+      process some real data, this section shows you how to load data to your
+      HPCC system.</para>
 
       <sect2 id="VM_Cautions_and_Warnings">
-        
-
         <title>Before you begin</title>
 
-        
-
-        <para>A typical production HPCC
-        system would have much more data capacity than using a virtual system
-        for testing purposes. The size of the file you wish to work with is
-        limited by the size of your virtual machine.</para>
+        <para>A typical production HPCC system would have much more data
+        capacity than using a virtual system for testing purposes. The size of
+        the file you wish to work with is limited by the size of your virtual
+        machine.</para>
 
         <para><itemizedlist>
             <listitem>
@@ -1030,11 +917,10 @@
               <row>
                 <entry><inlinegraphic fileref="images/caution.png" /></entry>
 
-                <entry>If you exceed the file size limits your VM
-                state will not be saved and you risk losing your work. Make
-                sure that you have ample space to not only store your data,
-                but your virtual machine's "state" to be able to save your
-                work.</entry>
+                <entry>If you exceed the file size limits your VM state will
+                not be saved and you risk losing your work. Make sure that you
+                have ample space to not only store your data, but your virtual
+                machine's "state" to be able to save your work.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -1046,24 +932,18 @@
       <?hard-pagebreak ?>
 
       <sect2 id="VM_Uploading_a_file">
-        
-
         <title>Uploading a file</title>
 
-        
-
-        <para>For smaller data files, maximum of 2GB,
-        you can use the upload/download file utility in ECL
-        Watch.</para>
+        <para>For smaller data files, maximum of 2GB, you can use the
+        upload/download file utility in ECL Watch.</para>
 
         <orderedlist>
           <listitem>
             <para>In your browser, go to the <emphasis role="bold">ECL
-            Watch</emphasis> URL displayed
-            (circled in red) in <link linkend="vbox_welcome">Virtual Box
-            welcome screen</link>. For example, http://nnn.nnn.nnn.nnn:8010,
-            where nnn.nnn.nnn.nnn is your Virtual Machine's IP
-            address.</para>
+            Watch</emphasis> URL displayed (circled in red) in <link
+            linkend="vbox_welcome">Virtual Box welcome screen</link>. For
+            example, http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is
+            your Virtual Machine's IP address.</para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -1078,10 +958,9 @@
                       <entry><inlinegraphic
                       fileref="images/caution.png" /></entry>
 
-                      <entry>Your virtual IP
-                      address could be different from the ones provided in the
-                      example images. Please use the IP
-                      address provided by <emphasis
+                      <entry>Your virtual IP address could be different from
+                      the ones provided in the example images. Please use the
+                      IP address provided by <emphasis
                       role="bold">your</emphasis> installation.</entry>
                     </row>
                   </tbody>
@@ -1092,9 +971,9 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>From ECL Watch page, click
-            on the <emphasis role="bold">Upload/download File </emphasis> link
-            in the menu on the left side.</para>
+            <para>From ECL Watch page, click on the <emphasis
+            role="bold">Upload/download File </emphasis> link in the menu on
+            the left side.</para>
 
             <para><figure>
                 <title>Upload/download</title>
@@ -1139,8 +1018,7 @@
 
           <listitem>
             <para>Now that the file is on your Landing Zone, you can spray the
-            file to your cluster and write ECL
-            code to process it.</para>
+            file to your cluster and write ECL code to process it.</para>
           </listitem>
         </orderedlist>
 
@@ -1150,11 +1028,7 @@
       </sect2>
 
       <sect2 id="VM_Uploading_files_w_secure_client">
-        
-
         <title>Uploading files with a Secure Copy Client</title>
-
-        
 
         <para>To upload a large file for processing to your virtual machine,
         you will need a tool that supports the secure copy protocol. In this
@@ -1164,8 +1038,7 @@
         <para><orderedlist>
             <listitem>
               <para>Open the WinSCP tool, and login to your Virtual Machine's
-              IP address using the username
-              and password given.</para>
+              IP address using the username and password given.</para>
 
               <para><informaltable colsep="1" rowsep="1">
                   <tgroup cols="2">
@@ -1219,30 +1092,21 @@
 
             <listitem>
               <para>Now that the file is on your Landing Zone, you can spray
-              the file to your cluster and write ECL
-              code to process it.</para>
+              the file to your cluster and write ECL code to process
+              it.</para>
             </listitem>
           </orderedlist></para>
       </sect2>
     </sect1>
 
     <sect1 id="VM_NextSteps">
-      
-
       <title>Next Steps</title>
 
-      
-
-      <para>Available from the menu in ECL
-      Watch are several documents which provide details on various aspects of
-      the HPCC.</para>
+      <para>Available from the menu in ECL Watch are several documents which
+      provide details on various aspects of the HPCC.</para>
 
       <figure>
-        
-
         <title>ECL Watch Resource Page</title>
-
-        
 
         <mediaobject>
           <imageobject>
@@ -1271,16 +1135,16 @@
 
       <para><itemizedlist>
           <listitem>
-            <para>The <emphasis role="bold">HPCC
-            Data Tutorial</emphasis></para>
+            <para>The <emphasis role="bold">HPCC Data
+            Tutorial</emphasis></para>
 
             <para>This is a simple, step-by-step tutorial that shows the
             end-to-end process from receiving a receiving a raw data file to
             publishing a web-based query to search the data. Along the way,
             you will learn how to process the data, index it, then write and
             publish a query to search the data. The self-led tutorial and
-            accompanying data file is available on the ECL
-            Watch Resource Page.</para>
+            accompanying data file is available on the ECL Watch Resource
+            Page.</para>
           </listitem>
 
           <listitem>
@@ -1293,8 +1157,7 @@
           </listitem>
 
           <listitem>
-            <para>The HPCC
-            Systems<superscript>®</superscript> Portal (<ulink
+            <para>The HPCC Systems<superscript>®</superscript> Portal (<ulink
             url="http://hpccsystems.com">http://hpccsystems.com</ulink>) is
             another valuable resource for more information including:</para>
 
@@ -1325,11 +1188,7 @@
   </chapter>
 
   <chapter id="VM_FAQ_Chap">
-    
-
     <title>Frequently Asked Questions</title>
-
-    
 
     <para></para>
 
@@ -1337,14 +1196,13 @@
       <qandadiv>
         <qandaentry>
           <question>
-            <para>Can I run the VM while
-            connected to my network using a Virtual Private network (VPN)?</para>
+            <para>Can I run the VM while connected to my network using a
+            Virtual Private network (VPN)?</para>
           </question>
 
           <answer>
-            <para>No. Most VPN clients take
-            control of your network device and routing and do not allow split
-            tunnels.</para>
+            <para>No. Most VPN clients take control of your network device and
+            routing and do not allow split tunnels.</para>
           </answer>
         </qandaentry>
 
@@ -1367,32 +1225,27 @@
           </question>
 
           <answer>
-            <para>The HPCC VM
-            Edition runs on a single node, has a limit of 20 GB
-            in it workspace, and doesn't support custom configurations.</para>
+            <para>The HPCC VM Edition runs on a single node, has a limit of 20
+            GB in it workspace, and doesn't support custom
+            configurations.</para>
           </answer>
         </qandaentry>
 
         <qandaentry>
           <question>
-            <para>Can I run the VM on my
-            Linux machine?</para>
+            <para>Can I run the VM on my Linux machine?</para>
           </question>
 
           <answer>
-            <para>You can run the HPCC VM
-            using the Linux VM Player. The
-            HPCC ECL
-            IDE is a Windows application,
-            but can run under WINE. See the
+            <para>You can run the HPCC VM using the Linux VM Player. The HPCC
+            ECL IDE is a Windows application, but can run under WINE. See the
             Client Tools Manual for details.</para>
           </answer>
         </qandaentry>
 
         <qandaentry>
           <question>
-            <para>Can I run the VM on my
-            Mac?</para>
+            <para>Can I run the VM on my Mac?</para>
           </question>
 
           <answer>
@@ -1403,8 +1256,7 @@
 
         <qandaentry>
           <question>
-            <para>Can I run the VM on my
-            Windows Server?</para>
+            <para>Can I run the VM on my Windows Server?</para>
           </question>
 
           <answer>
@@ -1415,14 +1267,12 @@
 
         <qandaentry>
           <question>
-            <para>Do I need a 64-bit processor to run the VM
-            Edition?</para>
+            <para>Do I need a 64-bit processor to run the VM Edition?</para>
           </question>
 
           <answer>
-            <para>No. The VM Player runs in
-            either 32- or 64-bit environments and does not require a 64-bit
-            processor.</para>
+            <para>No. The VM Player runs in either 32- or 64-bit environments
+            and does not require a 64-bit processor.</para>
           </answer>
         </qandaentry>
 
@@ -1434,9 +1284,8 @@
 
           <answer>
             <para>Yes. Community Edition binaries run natively on 64-bit Linux
-            server(s). You can access that HPCC
-            from any Windows workstation (32- or 64-bit) that can run the ECL
-            IDE and a supported
+            server(s). You can access that HPCC from any Windows workstation
+            (32- or 64-bit) that can run the ECL IDE and a supported
             browser.</para>
           </answer>
         </qandaentry>
@@ -1448,24 +1297,21 @@
           </question>
 
           <answer>
-            <para>The VM Player saves the
-            state of your system when it closes. It saves all of your workunit
-            information, data files, and published query sets as long as there
-            is available space. The maximum size of the saved session is 20
-            GB.</para>
+            <para>The VM Player saves the state of your system when it closes.
+            It saves all of your workunit information, data files, and
+            published query sets as long as there is available space. The
+            maximum size of the saved session is 20 GB.</para>
           </answer>
         </qandaentry>
 
         <qandaentry>
           <question>
-            <para>Why won't my VM allow
-            access to my network interface?</para>
+            <para>Why won't my VM allow access to my network interface?</para>
           </question>
 
           <answer>
             <para>Check your Firewall settings. You may need to disable the
-            Firewall for your VM's network
-            interface.</para>
+            Firewall for your VM's network interface.</para>
           </answer>
         </qandaentry>
 
@@ -1475,16 +1321,14 @@
           </question>
 
           <answer>
-            <para>This VM is designed to
-            utilize a single core.</para>
+            <para>This VM is designed to utilize a single core.</para>
           </answer>
         </qandaentry>
 
         <qandaentry>
           <question>
-            <para>The VM Fails to start on
-            Mac OSx after upgrading to OSx 10.9 Mavericks. How can I correct
-            this?</para>
+            <para>The VM Fails to start on Mac OSx after upgrading to OSx 10.9
+            Mavericks. How can I correct this?</para>
           </question>
 
           <answer>
@@ -1500,8 +1344,7 @@
           </question>
 
           <answer>
-            <para>Visit the HPCC
-            Systems<superscript>®</superscript> Portal at
+            <para>Visit the HPCC Systems<superscript>®</superscript> Portal at
             http://HPCCsystems.com.</para>
           </answer>
         </qandaentry>
