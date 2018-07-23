@@ -581,13 +581,6 @@ bool EspHttpBinding::hasSubService(IEspContext &context, const char *name)
     return false;
 }
 
-
-void EspHttpBinding::setRequestPath(const char *path)
-{
-    m_reqPath.clear();
-    m_reqPath.append(path);
-}
-
 bool EspHttpBinding::rootAuthRequired()
 {
     if(!m_authmap.get())
