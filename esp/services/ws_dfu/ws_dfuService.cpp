@@ -358,15 +358,15 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
             double version = context.getClientVersion();
             if (version < 1.38)
                 doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getQuerySet(), req.getQuery(), req.getFileDesc(),
-                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), resp.updateFileDetail());
             else
                 doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getQuerySet(), req.getQuery(), req.getFileDesc(),
-                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), resp.updateFileDetail());
         }
         else
         {
             doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getQuerySet(), req.getQuery(), NULL,
-                             req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), resp.updateFileDetail());
         }
     }
     catch(IException* e)
@@ -2004,7 +2004,8 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
 }
 
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, const char *name, const char *cluster,
-    const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo, IEspDFUFileDetail &FileDetails)
+    const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo,
+    CDFUChangeProtection protect, IEspDFUFileDetail &FileDetails)
 {
     if (!name || !*name)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
@@ -2025,6 +2026,15 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
     df->getClusterNames(clusters);
     if (cluster && *cluster && !FindInStringArray(clusters, cluster))
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s on %s.", name, cluster);
+
+    if (protect != CDFUChangeProtection_NoChange)
+    {
+        StringBuffer protectBy;
+        context.getUserID(protectBy);
+        if (protectBy.isEmpty())
+            protectBy.set("hpcc");
+        df->setProtect(protectBy.str(), protect == CDFUChangeProtection_Protect ? true : false);
+    }
 
     offset_t size=queryDistributedFileSystem().getSize(df), recordSize=df->queryAttributes().getPropInt64("@recordSize",0);
 
