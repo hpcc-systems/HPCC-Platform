@@ -256,8 +256,8 @@ public:
         if (!resultRowIf)
             resultRowIf.setown(activity.createRowInterfaces(resultMeta));
         ThorGraphResultType resultType = activity.queryGraph().isLocalChild() ? thorgraphresult_nul : thorgraphresult_distributed;
-        IThorResult *loopResult = results->createResult(activity, 0, resultRowIf, resultType); // loop output
-        IThorResult *inputResult = results->createResult(activity, 1, resultRowIf, resultType); // loop input
+        IThorResult *loopResult =  activity.queryGraph().createResult(activity, 0, results, resultRowIf, resultType); // loop output
+        IThorResult *inputResult = activity.queryGraph().createResult(activity, 1, results, resultRowIf, resultType); // loop input
     }
     virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults *results, IRowWriterMultiReader *inputStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
     {
