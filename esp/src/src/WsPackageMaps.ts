@@ -51,12 +51,26 @@ export function GetPartFromPackageMap(params) {
     return ESPRequest.send("WsPackageProcess", "GetPartFromPackageMap", params);
 }
 
-export function GetPackageMapSelectOptions(params) {
+export function GetPackageMapSelectTargets(params) {
     return ESPRequest.send("WsPackageProcess", "GetPackageMapSelectOptions", {
         request: {
-            IncludeTargets: params.includeTargets,
-            IncludeProcesses: params.includeProcesses,
-            IncludeProcessFilters: params.includeProcessFilters
+            IncludeTargets: params.request.IncludeTargets
+        }
+    });
+}
+
+export function GetPackageMapSelectProcesses(params) {
+    return ESPRequest.send("WsPackageProcess", "GetPackageMapSelectOptions", {
+        request: {
+            IncludeProcesses: params.request.IncludeProcesses
+        }
+    });
+}
+
+export function GetPackageMapSelectProcessFilter(params) {
+    return ESPRequest.send("WsPackageProcess", "GetPackageMapSelectOptions", {
+        request: {
+            IncludeProcessFilters: params.request.IncludeProcessFilters
         }
     });
 }

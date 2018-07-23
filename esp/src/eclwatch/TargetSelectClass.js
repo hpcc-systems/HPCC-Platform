@@ -95,6 +95,8 @@ define([
                     this.loadGetPackageMapTargets();
                 } else if (params.GetPackageMapProcesses === true) {
                     this.loadGetPackageMapProcesses();
+                } else if (params.GetPackageMapProcessFilter === true) {
+                    this.loadGetPackageMapProcessFilter();
                 } else if (params.DropZoneMachines === true) {
                     this.defaultValue = "";
                     this.set("value", "");
@@ -149,13 +151,17 @@ define([
 
             loadGetPackageMapTargets: function () {
                 var context = this;
-                WsPackageMaps.GetPackageMapSelectOptions({
+                WsPackageMaps.GetPackageMapSelectTargets({
                     request: {
-                        includeTargets: true
+                        IncludeTargets: true
                     }
                 }).then(function (response) {
                     if (lang.exists("GetPackageMapSelectOptionsResponse.Targets.TargetData", response)) {
                         var targetData = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
+                        context.options.push({
+                            label: "ANY",
+                            value: "*"
+                        });
                         for (var i = 0; i < targetData.length; ++i) {
                             context.options.push({
                                 label: targetData[i].Name,
@@ -169,9 +175,37 @@ define([
 
             loadGetPackageMapProcesses: function () {
                 var context = this;
-                WsPackageMaps.GetPackageMapSelectOptions({
+                WsPackageMaps.GetPackageMapSelectProcesses({
                     request: {
                         IncludeProcesses: true
+                    }
+                }).then(function (response) {
+                    if (lang.exists("GetPackageMapSelectOptionsResponse.Targets.TargetData", response)) {
+                        var targetData = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
+                        context.options.push({
+                            label: "ANY",
+                            value: "*"
+                        });
+                        for (var i = 0; i < targetData.length; ++i) {
+                            if (lang.exists("Processes.Item.length", targetData[i])) {
+                                for (var j = 0; j < targetData[i].Processes.Item.length; ++j) {
+                                    context.options.push({
+                                        label: targetData[i].Processes.Item[j],
+                                        value: targetData[i].Processes.Item[j]
+                                    });
+                                }
+                            }
+                        }
+                        context._postLoad();
+                    }
+                });
+            },
+
+            loadGetPackageMapProcessFilter: function () {
+                var context = this;
+                WsPackageMaps.GetPackageMapSelectProcessFilter({
+                    request: {
+                        IncludeProcessFilters: true
                     }
                 }).then(function (response) {
                     if (lang.exists("GetPackageMapSelectOptionsResponse.ProcessFilters.Item", response)) {
