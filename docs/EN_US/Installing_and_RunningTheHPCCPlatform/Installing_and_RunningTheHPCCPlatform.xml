@@ -37,7 +37,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -149,7 +149,7 @@
           Scripts</link>) to make starting larger multi-node systems
           easier.</para>
 
-          <para>CentOS 6 and other System V users see <link
+          <para>CentOS 6, Ubuntu 14.04, and other System V users see <link
           linkend="hpcc-init">Appendix: hpcc-init</link>.</para>
         </listitem>
 
@@ -411,8 +411,8 @@
               </informaltable></para>
 
             <para><emphasis role="bold">Note:</emphasis> If you are using Cent
-            OS 6 or another System V based system, please see the <link
-            linkend="hpcc-init">Appendix: System V</link>.</para>
+            OS 6, Ubuntu 14.04, or another System V based system, please see
+            the <link linkend="hpcc-init">Appendix: System V</link>.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -2007,8 +2007,8 @@ sudo /etc/init.d/hpcc-init -c esp start
         <para>HPCC Systems is extending support and development to more
         systemd services. We intend to continue support for Cent OS 6 and
         other System V based systems through the hpcc-init. The hpcc-init
-        system service will support "start", "stop" and "restart" options.
-        </para>
+        system service will support "start", "stop" and "restart"
+        options.</para>
 
         <para>The reporting and logging for HPCC systemd will differ from the
         previous hpcc-init type. The systemd logs do not have any output to
@@ -2235,8 +2235,6 @@ sudo /etc/init.d/hpcc-init -c esp start
                         xpointer="element(/1)"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-
- 
             <para>For more information see the <link
             linkend="Starting-and-stopping">Starting-and-stopping</link> the
             HPCC System in the <emphasis>Installing and Running The HPCC
