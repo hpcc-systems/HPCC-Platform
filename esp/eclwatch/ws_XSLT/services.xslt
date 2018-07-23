@@ -41,6 +41,8 @@
 <xsl:variable name="enableSNMP" select="/TpServiceQueryResponse/EnableSNMP"/>
 <xsl:variable name="addProcessesToFilter" select="/TpServiceQueryResponse/PreflightProcessFilter"/>
 <xsl:variable name="numFTSlaves" select="count(/TpServiceQueryResponse/ServiceList/TpFTSlaves/TpFTSlave/TpMachines/TpMachine)"/>
+<xsl:variable name="numDZs" select="count(/TpServiceQueryResponse/ServiceList/TpDropZones/TpDropZone)"/>
+<xsl:variable name="numDZMachines" select="count(/TpServiceQueryResponse/ServiceList/TpDropZones/TpDropZone/TpMachines/TpMachine)"/>
 <xsl:variable name="acceptLanguage" select="/TpServiceQueryResponse/AcceptLanguage"/>
 <xsl:variable name="localiseFile"><xsl:value-of select="concat('nls/', $acceptLanguage, '/hpcc.xml')"/></xsl:variable>
 <xsl:variable name="hpccStrings" select="document($localiseFile)/hpcc/strings"/>
@@ -106,6 +108,8 @@
         </script>
         <script language="javascript">
             var numFTSlaves=<xsl:value-of select="$numFTSlaves"/>;
+            var numDZs=<xsl:value-of select="$numDZs"/>;
+            var numDZMachines=<xsl:value-of select="$numDZMachines"/>;
             <xsl:text disable-output-escaping="yes"><![CDATA[
       var fromTargetClusterPage = false;
             function onRowCheck(checked)
@@ -119,6 +123,7 @@
                 initPreflightControls();
                 onRowCheck(true);
                 toggleComponent('FTSlave', true);
+                toggleDropZone(true);
             }
 
             function toggleComponent(ComponentType, onload)
@@ -166,6 +171,38 @@
                 var show = span.style.display == 'none';
                 span.style.display = show ? 'block' : 'none';
                 img.src = '/esp/files_/img/folder' + (show?'open':'') + '.gif';
+            }
+            function toggleDropZone(onload)
+            {
+                var obj = document.getElementById('row_DropZone_1_1');
+                if (null == obj)
+                    return;
+
+                var display = '';
+                var visibility = 'visible';
+                var src = '/esp/files_/img/folderopen.gif';
+                if (onload || obj.style.visibility == 'visible')
+                {
+                    display = 'none';
+                    visibility = 'hidden';
+                    src = '/esp/files_/img/folder.gif';
+                }
+
+                img  = document.getElementById( 'DropZoneExpLink' );
+                if (img)
+                    img.src = src;
+
+                for (i = 1; i <=numDZs; i++)
+                {
+                    for (j = 1; j <=numDZMachines; j++)
+                    {
+                        obj = document.getElementById('row_DropZone_'+i+'_'+j);
+                        if (null == obj)
+                            break;
+                        obj.style.display = display;
+                        obj.style.visibility = visibility;
+                    }
+                }
             }
                         
             var browseUrl = null;
@@ -372,6 +409,12 @@
                                 <xsl:value-of select="$caption"/>
                         </a>
                     </xsl:when>
+                    <xsl:when test="$caption=$hpccStrings/st[@id='DropZones']">
+                        <a href="javascript:toggleDropZone(false)">
+                            <img id="DropZoneExpLink" border="0" src="&filePathEntity;/img/folder.gif" align="middle"/>
+                            <xsl:value-of select="$caption"/>
+                        </a>
+                    </xsl:when>
                     <xsl:otherwise>
                         <xsl:value-of select="$caption"/>
                     </xsl:otherwise>
@@ -380,7 +423,9 @@
         </tr>
         <xsl:for-each select="$nodes">
             <xsl:sort select="Name"/>
+            <xsl:variable name="nodeCount" select="position()" />
             <xsl:for-each select="TpMachines/*">
+                <xsl:variable name="machineCount" select="position()" />
                 <tr>
                     <xsl:variable name="compName" select="../../Name"/>
                     <xsl:if test="$showBindings">
@@ -391,6 +436,11 @@
                     <xsl:if test="$caption=$hpccStrings/st[@id='FTSlaves']">
                         <xsl:attribute name="id">
                             <xsl:value-of select="concat('row_FTSlave_', position())"/>
+                        </xsl:attribute>
+                    </xsl:if>
+                    <xsl:if test="$caption='Drop Zones'">
+                        <xsl:attribute name="id">
+                            <xsl:value-of select="concat('row_DropZone_', $nodeCount, '_', $machineCount)"/>
                         </xsl:attribute>
                     </xsl:if>
                     <td width="1%" valign="top">
@@ -447,7 +497,9 @@
                      </table>
                     </td>
                     <td>
-                        <xsl:value-of select="Name"/>
+                        <xsl:if test="not($caption='Drop Zones')">
+                            <xsl:value-of select="Name"/>
+                        </xsl:if>
                     </td>
                     <td>
                         <xsl:value-of select="Netaddress"/>
