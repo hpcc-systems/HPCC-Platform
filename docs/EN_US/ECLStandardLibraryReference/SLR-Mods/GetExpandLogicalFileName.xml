@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetExpandLogicalFileName">
-  <title>GetExpandLogicalFileName</title>
+  <title>GetExpandLogicalName</title>
 
-  <para><emphasis role="bold">ThorLib.GetExpandLogicalFileName<indexterm>
-      <primary>STD.System.ThorLib.GetExpandLogicalFileName</primary>
+  <para><emphasis role="bold">ThorLib.GetExpandLogicalName<indexterm>
+      <primary>STD.System.ThorLib.GetExpandLogicalName</primary>
     </indexterm> <indexterm>
-      <primary>System.ThorLib.GetExpandLogicalFileName</primary>
+      <primary>System.ThorLib.GetExpandLogicalName</primary>
     </indexterm> <indexterm>
-      <primary>ThorLib.GetExpandLogicalFileName</primary>
+      <primary>ThorLib.GetExpandLogicalName</primary>
     </indexterm> <indexterm>
-      <primary>GetExpandLogicalFileName</primary>
+      <primary>GetExpandLogicalName</primary>
     </indexterm> ( </emphasis> <emphasis>filename </emphasis> <emphasis
   role="bold">)</emphasis></para>
 
@@ -32,20 +32,21 @@
         <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry>GetExpandLogicalFileName returns a VARSTRING
-          (null-terminated) value.</entry>
+          <entry>GetExpandLogicalName returns a VARSTRING (null-terminated)
+          value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">GetExpandLogicalFileName </emphasis>function
-  returns a string containing the expanded logical filename (ncluding the
+  <para>The <emphasis role="bold">GetExpandLogicalName </emphasis>function
+  returns a string containing the expanded logical filename (including the
   default scope, if the filename does not contain a leading tilde), all in
   lowercase. This is the same value as is used internally by DATASET and
   OUTPUT.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := ThorLib.GetExpandLogicalFileName('Fred');</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+A := STD.System.ThorLib.GetExpandLogicalName('Fred');</programlisting>
 </sect1>

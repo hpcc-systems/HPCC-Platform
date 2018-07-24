@@ -37,5 +37,6 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := Thorlib.Daliserver();</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+A := STD.System.Thorlib.Daliserver();</programlisting>
 </sect1>
