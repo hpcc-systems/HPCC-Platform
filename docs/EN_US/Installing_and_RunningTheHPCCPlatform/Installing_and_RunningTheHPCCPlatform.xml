@@ -134,7 +134,11 @@
           <para><programlisting> sudo yum install hpccsystems-platform&lt;rpm_file_name&gt;</programlisting>On
           Ubuntu/Debian:</para>
 
-          <programlisting> sudo dpkg -i &lt;deb filename&gt; &amp;&amp; sudo apt-get install -f </programlisting>
+          <programlisting> sudo dpkg -i &lt;deb filename&gt; </programlisting>
+
+          <para>Then to update dependencies:</para>
+
+          <programlisting> sudo apt-get install -f </programlisting>
         </listitem>
 
         <listitem>
@@ -289,8 +293,9 @@
                 <term>Note:</term>
 
                 <listitem>
-                  <para>If you are using CentOS 6 you may need to run the following
-                  command to properly enable the installation.</para>
+                  <para>If you are using CentOS 6 you may need to run the
+                  following command to properly enable the
+                  installation.</para>
 
                   <para><programlisting> wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
                 </listitem>
@@ -309,10 +314,7 @@
           <para>After installing the package, you should run the following to
           update any dependencies.</para>
 
-          <para><programlisting>sudo apt-get install -f </programlisting>Alternatively
-          you could combine the two:</para>
-
-          <para><programlisting>sudo dpkg --i &lt;deb filename&gt; &amp;&amp; sudo apt-get install --f</programlisting></para>
+          <para><programlisting>sudo apt-get install -f </programlisting></para>
         </sect3>
 
         <sect3 id="HPCC_Plug-Ins" role="brk">
