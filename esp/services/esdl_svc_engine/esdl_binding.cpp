@@ -1406,7 +1406,7 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                     response->setContent(out.str());
 
                     if (context.getResponseFormat() == ESPSerializationJSON)
-                        response->setContentType(HTTP_TYPE_APPLICATION_JSON_UTF8);
+                        response->setContentType(HTTP_TYPE_JSON);
                     else
                       response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
                     response->setStatus(HTTP_STATUS_OK);
@@ -2167,7 +2167,7 @@ int EsdlBindingImpl::getJsonTestForm(IEspContext &context, CHttpRequest* request
     const char* excludes[] = {"soap_builder_",NULL};
     getEspUrlParams(context,params,excludes);
 
-    StringBuffer header("Content-Type: application/json; charset=UTF-8");
+    StringBuffer header("Content-Type: application/json");
 
     Owned<IXslProcessor> xslp = getXslProcessor();
     Owned<IXslTransform> xform = xslp->createXslTransform();
