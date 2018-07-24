@@ -42,7 +42,7 @@ xmlns:seisint="http://seisint.com" exclude-result-prefixes="seisint">
       </xsl:if> 
     </xsl:for-each>
     <xsl:variable select="@name" name="elem1"/>
-        <xsl:if test="(translate($elem1,'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_',''))" >
+        <xsl:if test="(translate($elem1,'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-',''))" >
       <xsl:call-template name="validationMessage">
         <xsl:with-param name="msg" select=" concat('Invalid character[@name=' ,$elem1, ']') "/>
       </xsl:call-template>
