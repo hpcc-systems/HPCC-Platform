@@ -244,12 +244,13 @@ public:
                 if (loopAgain) // cannot be 0
                     boundGraph->prepareLoopAgainResult(*this, ownedResults, loopAgain);
 
+                // ensure results prepared before graph begins
                 if (sync(loopCounter))
                     break;
 
                 boundGraph->execute(*this, condLoopCounter, ownedResults, (IRowWriterMultiReader *)NULL, 0, extractBuilder.size(), extractBuilder.getbytes());
                 ++loopCounter;
-                if (barrier)
+                if (barrier) // barrier passed once loopAgain result used
                 {
                     if (!barrier->wait(false))
                         break;
