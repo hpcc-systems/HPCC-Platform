@@ -31,9 +31,9 @@
   </informaltable>
 
   <para>The <emphasis role="bold">Group </emphasis>function returns the name
-  of the node group running the workunit. Not supported on Roxie clusters.
-  This name is used in ECL code to specify the target CLUSTER for an OUTPUT
-  action or a PERSISTed attribute.</para>
+  of the node group running the workunit. This name is used in ECL code to
+  specify the target CLUSTER for an OUTPUT action or a PERSISTed
+  attribute.</para>
 
   <para>Example:</para>
 
