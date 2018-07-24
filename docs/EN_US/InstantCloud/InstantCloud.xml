@@ -47,6 +47,7 @@
       coincidental.</para>
 
       <para />
+
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -178,7 +179,8 @@
         </listitem>
 
         <listitem>
-          <para>A Web browser (Firefox, Internet Explorer, or Chrome)</para>
+          <para>A Web browser (Firefox, Internet Explorer, Safari, or
+          Chrome)</para>
         </listitem>
       </itemizedlist>
 

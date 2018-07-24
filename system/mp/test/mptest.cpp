@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <string>
 
 using namespace std;
 
@@ -1486,11 +1487,9 @@ void printHelp(char* executableName)
             TEST_STREAM, TEST_RING, TEST_AlltoAll, TEST_SINGLE_SEND,
             TEST_RIGHT_SHIFT, TEST_RECV_FROM_ANY, TEST_SEND_TO_ALL,
             TEST_MULTI_MT, TEST_NXN };
-    std::vector<std::string>::iterator it = tests.begin();
-    printf("\t <testname>\t%s\n", (*it).c_str());
-    it++;
-    for (; it != tests.end(); ++it)
-        printf("\t\t\t%s\n", (*it).c_str());
+    printf("\t <testname>");
+    for (auto &testName: tests)
+        printf("\t%s\n\t\t", testName.c_str());
     printf("\n");
 }
 

@@ -2556,6 +2556,28 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </varlistentry>
           </variablelist>
         </sect3>
+        <sect3>
+          <title>Redundancy</title>
+          <para>Roxie can be configured to utilize a few different redundancy
+          models. <itemizedlist>
+              <listitem>
+                <para>Simple Redundancy - One channel per slave. Most commonly
+                used for a single node Roxie.</para>
+              </listitem>
+              <listitem>
+                <para>Full Redundancy - More slaves than the number of
+                channels. Multiple slaves host each channel.</para>
+              </listitem>
+              <listitem>
+                <para>Overloaded Redundancy - There are multiple channels per
+                slave.</para>
+              </listitem>
+              <listitem>
+                <para>Cyclic Redundancy - Each node hosts multiple channels in
+                rotation. The most commonly used configuration.</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
       </sect2>
 
       <sect2 id="Topology" role="brk">

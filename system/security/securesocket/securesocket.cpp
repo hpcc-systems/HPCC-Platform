@@ -497,21 +497,27 @@ StringBuffer& CSecureSocket::get_cn(X509* cert, StringBuffer& cn)
 
                 if (!(meth = X509V3_EXT_get(ext)))
                     break;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
                 data = ext->value->data;
+                auto length = ext->value->length;
+#else
+                data = X509_EXTENSION_get_data(ext)->data;
+                auto length = X509_EXTENSION_get_data(ext)->length;
+#endif
 #if (OPENSSL_VERSION_NUMBER > 0x00908000L) 
                 if (meth->it)
-                    ext_str = ASN1_item_d2i(NULL, (const unsigned char **)&data, ext->value->length,
+                    ext_str = ASN1_item_d2i(NULL, (const unsigned char **)&data, length,
                         ASN1_ITEM_ptr(meth->it));
                 else
-                    ext_str = meth->d2i(NULL, (const unsigned char **) &data, ext->value->length);
+                    ext_str = meth->d2i(NULL, (const unsigned char **) &data, length);
 #elif (OPENSSL_VERSION_NUMBER > 0x00907000L)     
                 if (meth->it)
-                    ext_str = ASN1_item_d2i(NULL, (unsigned char **)&data, ext->value->length,
+                    ext_str = ASN1_item_d2i(NULL, (unsigned char **)&data, length,
                         ASN1_ITEM_ptr(meth->it));
                 else
-                    ext_str = meth->d2i(NULL, (unsigned char **) &data, ext->value->length);
+                    ext_str = meth->d2i(NULL, (unsigned char **) &data, length);
 #else
-                    ext_str = meth->d2i(NULL, &data, ext->value->length);
+                    ext_str = meth->d2i(NULL, &data, length);
 #endif
                 val = meth->i2v(meth, ext_str, NULL);
                 for (j = 0;  j < sk_CONF_VALUE_num(val);  j++)
@@ -1228,8 +1234,23 @@ public:
         if ((x509=X509_new()) == NULL)
             throw MakeStringException(-1, "can't create X509 structure");
 
-        RSA *rsa=RSA_generate_key(m_bits, RSA_F4, NULL, NULL);
-        if (!EVP_PKEY_assign_RSA(pkey, rsa))
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        RSA *rsa = RSA_generate_key(m_bits, RSA_F4, NULL, NULL);
+#else
+        RSA *rsa = RSA_new();
+        if (rsa)
+        {
+            BIGNUM *e;
+            e = BN_new();
+            if (e)
+            {
+                BN_set_word(e, RSA_F4);
+                RSA_generate_key_ex(rsa, m_bits, e, NULL);
+                BN_free(e);
+            }
+        }
+#endif
+        if (!rsa || !EVP_PKEY_assign_RSA(pkey, rsa))
         {
             char errbuf[512];
             ERR_error_string_n(ERR_get_error(), errbuf, 512);
@@ -1320,8 +1341,11 @@ public:
 
         X509_free(x509);
         EVP_PKEY_free(pkey);
+        RSA_free(rsa);
 
+#ifndef OPENSSL_NO_CRYPTO_MDEBUG
         CRYPTO_mem_leaks(bio_err);
+#endif
         BIO_free(bio_err);
         BIO_free(pmem);
         BIO_free(cmem);
@@ -1443,7 +1467,9 @@ public:
         X509_free(x509);
         EVP_PKEY_free(pkey);
 
+#ifndef OPENSSL_NO_CRYPTO_MDEBUG
         CRYPTO_mem_leaks(bio_err);
+#endif
         BIO_free(bio_err);
         BIO_free(pmem);
         BIO_free(cmem);
@@ -1523,9 +1549,18 @@ public:
             throw MakeStringException(-1, "Error adding subject to request");
 
         /* pick the correct digest and sign the request */
-        if (EVP_PKEY_type (pkey->type) == EVP_PKEY_DSA)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        auto type = EVP_PKEY_type(pkey->type);
+#else
+        auto type = EVP_PKEY_base_id(pkey);
+#endif
+        if (type == EVP_PKEY_DSA)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
             digest = EVP_dss1 ();
-        else if (EVP_PKEY_type (pkey->type) == EVP_PKEY_RSA)
+#else
+            throw MakeStringException(-1, "Error checking public key for a valid digest (DSA not supported by openSSL 1.1)");
+#endif
+        else if (type == EVP_PKEY_RSA)
             digest = EVP_sha1 ();
         else
             throw MakeStringException(-1, "Error checking public key for a valid digest");
@@ -1540,7 +1575,9 @@ public:
 
         readBio(reqmem, csr);
 
+#ifndef OPENSSL_NO_CRYPTO_MDEBUG
         CRYPTO_mem_leaks(bio_err);
+#endif
         BIO_free(pmem);
         BIO_free(reqmem);
         EVP_PKEY_free (pkey);
@@ -1662,9 +1699,18 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
     X509_gmtime_adj (X509_get_notAfter (cert), days*24*60*60);
 
     // sign the certificate with the CA private key
-    if (EVP_PKEY_type (CApkey->type) == EVP_PKEY_DSA)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    auto type = EVP_PKEY_type(CApkey->type);
+#else
+    auto type = EVP_PKEY_base_id(CApkey);
+#endif
+    if (type == EVP_PKEY_DSA)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
         digest = EVP_dss1 ();
-    else if (EVP_PKEY_type (CApkey->type) == EVP_PKEY_RSA)
+#else
+        throw MakeStringException(-1, "Error checking public key for a valid digest (DSA not supported by openSSL 1.1)");
+#endif
+    else if (type == EVP_PKEY_RSA)
         digest = EVP_sha1 ();
     else
         throw MakeStringException(-1, "Error checking public key for a valid digest");
@@ -1677,7 +1723,9 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
     PEM_write_bio_X509(cmem, cert);
     readBio(cmem, certificate);
 
+#ifndef OPENSSL_NO_CRYPTO_MDEBUG
     CRYPTO_mem_leaks(bio_err);
+#endif
     BIO_free(csrmem);
     BIO_free(cacertmem);
     BIO_free(cmem);

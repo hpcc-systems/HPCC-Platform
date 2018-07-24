@@ -133,6 +133,10 @@ public:
             "   -v,--verbose                         Output additional tracing information\n"
         );
     }
+    virtual void outputWsStatus(int code, const char * message)
+    {
+        fprintf(code == 0 ? stdout : stderr, "\n %s.\n", message);
+    }
 public:
     bool optVerbose;
 };

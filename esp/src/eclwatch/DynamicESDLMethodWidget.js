@@ -116,9 +116,9 @@ define([
                 var xmlBuilder = "<Methods>" + userXML + "</Methods>";
                 WsESDLConfig.PublishESDLBinding({
                     request: {
-                        EspProcName: this.params.Binding.ESPProc,
+                        EspProcName: this.params.Binding.ESPProcessName,
                         EspBindingName: this.params.Binding.Name,
-                        EspPort: this.params.Binding.__hpcc_id,
+                        EspPort: this.params.Binding.Port,
                         EsdlDefinitionID: this.params.Definition,
                         Overwrite: true,
                         Config: xmlBuilder

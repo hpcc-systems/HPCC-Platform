@@ -173,6 +173,7 @@ define([
                 var currSel = this.getSelectedChild();
                 if (currSel && !currSel.initalized) {
                     if (currSel.id === this.queriesTab.id) {
+                        this.refreshGrid();
                     } else {
                         currSel.init(currSel.hpcc.params);
                     }

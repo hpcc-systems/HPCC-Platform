@@ -30,6 +30,8 @@
 
 #define MIGRATE_JOIN_CONDITIONS             // This works, but I doubt it is generally worth the effort. - maybe on a flag.
 //#define TRACE_USAGE
+//#define VERIFY_SELECTORS_UPDATED          // Uncomment this to help catch problems when selectors become inconsistent
+
 #ifdef _DEBUG
 //#define TRACK_EXPR_SEQ  nnnnn
 #endif
@@ -44,8 +46,6 @@ void CHECK_EXPR_ID(IHqlExpression * expr)
 #else
 #define CHECK_EXPR_ID(expr)
 #endif
-
-
 
 /*
 Notes:
@@ -1182,51 +1182,61 @@ IHqlExpression * CTreeOptimizer::getHoistedFilter(IHqlExpression * transformed, 
             }
         }
 
-        if (!matched && !expandMonitor.isComplex())
+        try
         {
-            OwnedHqlExpr leftMappedFilter = replaceSelector(expandedFilter, leftSelector, activeLeft);
-            OwnedHqlExpr rightMappedFilter = replaceSelector(expandedFilter, rightSelector, activeRight);
+            if (!matched && !expandMonitor.isComplex())
+            {
+                OwnedHqlExpr leftMappedFilter = replaceSelector(expandedFilter, leftSelector, activeLeft);
+                OwnedHqlExpr rightMappedFilter = replaceSelector(expandedFilter, rightSelector, activeRight);
 
-            //MORE: Could also take join conditions into account to sent filter up both sides;
-            if (rightMappedFilter==expandedFilter)
-            {
-                //Only contains LEFT.
-                if (canHoistLeft)
+                //MORE: Could also take join conditions into account to sent filter up both sides;
+                if (rightMappedFilter==expandedFilter)
                 {
-                    leftFilters.append(*LINK(leftMappedFilter));
-                    matched = true;
+                    //Only contains LEFT.
+                    if (canHoistLeft)
+                    {
+                        leftFilters.append(*LINK(leftMappedFilter));
+                        matched = true;
+                    }
+                    else if (canMergeLeft && (conditionIndex != NotFound))
+                    {
+                        expanded.append(*LINK(expandedFilter));
+                        matched = true;
+                    }
+                    //If the filter expression is invariant of left and right then hoist up both paths.
+                    if (leftMappedFilter==expandedFilter && canHoistRight)
+                    {
+                        rightFilters.append(*LINK(expandedFilter));
+                        matched = true;
+                    }
                 }
-                else if (canMergeLeft && (conditionIndex != NotFound))
+                else if (leftMappedFilter==expandedFilter)
+                {
+                    //Only contains RIGHT.
+                    if (canHoistRight)
+                    {
+                        rightFilters.append(*LINK(rightMappedFilter));
+                        matched = true;
+                    }
+                    else if (canMergeRight && (conditionIndex != NotFound))
+                    {
+                        expanded.append(*LINK(expandedFilter));
+                        matched = true;
+                    }
+                }
+                else if (canMergeLeft && canMergeRight && conditionIndex != NotFound)
                 {
                     expanded.append(*LINK(expandedFilter));
                     matched = true;
                 }
-                //If the filter expression is invariant of left and right then hoist up both paths.
-                if (leftMappedFilter==expandedFilter && canHoistRight)
-                {
-                    rightFilters.append(*LINK(expandedFilter));
-                    matched = true;
-                }
             }
-            else if (leftMappedFilter==expandedFilter)
-            {
-                //Only contains RIGHT.
-                if (canHoistRight)
-                {
-                    rightFilters.append(*LINK(rightMappedFilter));
-                    matched = true;
-                }
-                else if (canMergeRight && (conditionIndex != NotFound))
-                {
-                    expanded.append(*LINK(expandedFilter));
-                    matched = true;
-                }
-            }
-            else if (canMergeLeft && canMergeRight && conditionIndex != NotFound)
-            {
-                expanded.append(*LINK(expandedFilter));
-                matched = true;
-            }
+        }
+        catch (IException * e)
+        {
+            if (e->errorCode() != HQLERR_PotentialAmbiguity)
+                throw;
+            e->Release();
+            matched = false;
         }
 
         if (!matched)
@@ -2106,6 +2116,16 @@ IHqlExpression * CTreeOptimizer::inheritSkips(IHqlExpression * newTransform, IHq
 
 IHqlExpression * CTreeOptimizer::createTransformed(IHqlExpression * expr)
 {
+    IHqlExpression * body = expr->queryBody();
+    if (expr != body)
+    {
+        OwnedHqlExpr transformed = transform(body);
+        if (transformed == body)
+            return LINK(expr);
+        return expr->cloneAllAnnotations(transformed);
+    }
+
+
     node_operator op = expr->getOperator();
     switch (op)
     {
@@ -2116,7 +2136,20 @@ IHqlExpression * CTreeOptimizer::createTransformed(IHqlExpression * expr)
 
     //Do this first, so that any references to a child dataset that changes are correctly updated, before proceeding any further.
     OwnedHqlExpr dft = defaultCreateTransformed(expr);
+
+#ifdef VERIFY_SELECTORS_UPDATED
+    LinkedHqlExpr savedDft = dft;
+#endif
+
     updateOrphanedSelectors(dft, expr);
+
+#ifdef VERIFY_SELECTORS_UPDATED
+    if (isIndependentOfScope(expr) && !isIndependentOfScope(dft))
+    {
+        EclIR::dump_irn(3, expr, savedDft.get(), dft.get());
+        throwUnexpectedX(!isIndependentOfScope(savedDft) ? "doCreateTransform" : "updateOrphan");
+    }
+#endif
 
     OwnedHqlExpr ret = doCreateTransformed(dft, expr);
     if (ret->queryBody() == expr->queryBody())

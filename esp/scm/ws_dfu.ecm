@@ -24,6 +24,13 @@ ESPenum DFUArrayActions : string
     AddToSuperfile("Add To Superfile"),
 };
 
+ESPenum DFUChangeProtection : int
+{
+    NoChange(0, "No Change"),
+    Protect(1, "Protect"),
+    Unprotect(2, "Unprotect")
+};
+
 ESPenum DFUDefFileFormat : string
 {
     xml("xml"),
@@ -314,6 +321,7 @@ DFUInfoRequest
     string FileDesc;
     [min_ver("1.37")] bool IncludeJsonTypeInfo(false);
     [min_ver("1.37")] bool IncludeBinTypeInfo(false);
+    [min_ver("1.39")] ESPenum DFUChangeProtection Protect(0);
 };
 
 ESPresponse
@@ -793,7 +801,7 @@ ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.38"),
+    version("1.39"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

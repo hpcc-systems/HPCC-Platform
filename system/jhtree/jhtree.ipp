@@ -213,7 +213,7 @@ protected:
     bool gtEqual(const char *src, char *dst, KeyStatsCollector &stats);
     bool ltEqual(const char *src, KeyStatsCollector &stats);
     bool _lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats);
-    void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeyStatsCollector &stats);
+    void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, size32_t recSize, KeyStatsCollector &stats);
 
     inline void setLow(unsigned segNo)
     {

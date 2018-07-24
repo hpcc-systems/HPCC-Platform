@@ -276,7 +276,7 @@ var ServerJobQueue = declare([Queue], {
     },
 
     getDisplayName: function () {
-        return this.QueueName;
+        return this.ServerName;
     },
 
     isNormal: function () {

@@ -1,4 +1,4 @@
-﻿IMPORT Std.BLAS AS BLAS;
+IMPORT Std.BLAS AS BLAS;
 IMPORT BLAS.Types;
 Diagonal := Types.Diagonal;
 Triangle := Types.Triangle;

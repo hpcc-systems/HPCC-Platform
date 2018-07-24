@@ -358,15 +358,15 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
             double version = context.getClientVersion();
             if (version < 1.38)
                 doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getQuerySet(), req.getQuery(), req.getFileDesc(),
-                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), resp.updateFileDetail());
             else
                 doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getQuerySet(), req.getQuery(), req.getFileDesc(),
-                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), resp.updateFileDetail());
         }
         else
         {
             doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getQuerySet(), req.getQuery(), NULL,
-                             req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), resp.updateFileDetail());
         }
     }
     catch(IException* e)
@@ -1613,6 +1613,61 @@ IHqlExpression * getEclRecordDefinition(IUserDescriptor* udesc, const char* File
     return getEclRecordDefinition(df->queryAttributes().queryProp("ECL"));
 }
 
+bool getRecordFormatFromRtlType(MemoryBuffer &binLayout, StringBuffer &jsonLayout, const IPropertyTree &attr, bool includeBin, bool includeJson)
+{
+    if (!attr.hasProp("_rtlType"))
+        return false;
+    try
+    {
+        MemoryBuffer mb;
+        attr.getPropBin("_rtlType", mb);
+        if (includeJson)
+        {
+            Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
+            const RtlTypeInfo *typeInfo = deserializer->deserialize(mb);
+            dumpTypeInfo(jsonLayout, typeInfo);
+        }
+        if (includeBin)
+            mb.swapWith(binLayout);
+        return true;
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, "Failed to process _rtlType");
+        e->Release();
+    }
+    return false;
+}
+
+bool getRecordFormatFromECL(MemoryBuffer &binLayout, StringBuffer &jsonLayout, const IPropertyTree &attr, bool includeBin, bool includeJson)
+{
+    if (!attr.hasProp("ECL"))
+        return false;
+    try
+    {
+        const char * kind = attr.queryProp("@kind");
+        bool isIndex = (kind && streq(kind, "key"));
+        OwnedHqlExpr record = getEclRecordDefinition(attr.queryProp("ECL"));
+        MemoryBuffer mb;
+        if (attr.hasProp("_record_layout"))
+        {
+            attr.getPropBin("_record_layout", mb);
+            record.setown(patchEclRecordDefinitionFromRecordLayout(record, mb));
+        }
+        if (includeJson)
+            exportJsonType(jsonLayout, record, isIndex);
+        if (includeBin)
+            exportBinaryType(binLayout, record, isIndex);
+        return true;
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, "Failed to process ECL record");
+        e->Release();
+    }
+    return false;
+}
+
 bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRequest &req, IEspDFURecordTypeInfoResponse &resp)
 {
     try
@@ -1627,58 +1682,29 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
 
         const char* userId = context.queryUserId();
         Owned<IUserDescriptor> userdesc;
-        if(userId && *userId)
+        if (userId && *userId)
         {
             userdesc.setown(createUserDescriptor());
             userdesc->set(userId, context.queryPassword(), context.querySignature());
         }
         Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userdesc);
-        if(!df)
+        if (!df)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",fileName);
-        if (df->queryAttributes().hasProp("_rtlType"))
+
+        MemoryBuffer binLayout;
+        StringBuffer jsonLayout;
+        if (getRecordFormatFromRtlType(binLayout, jsonLayout, df->queryAttributes(), req.getIncludeBinTypeInfo(), req.getIncludeJsonTypeInfo()) ||
+            getRecordFormatFromECL(binLayout.clear(), jsonLayout.clear(), df->queryAttributes(), req.getIncludeBinTypeInfo(), req.getIncludeJsonTypeInfo()))
         {
-            MemoryBuffer layoutBin;
-            df->queryAttributes().getPropBin("_rtlType", layoutBin);
-            if (req.getIncludeJsonTypeInfo())
-            {
-                Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
-                const RtlTypeInfo *typeInfo = deserializer->deserialize(layoutBin);
-                StringBuffer jsonFormat;
-                dumpTypeInfo(jsonFormat, typeInfo);
-                resp.setJsonInfo(jsonFormat);
-                layoutBin.reset(0);
-            }
             if (req.getIncludeBinTypeInfo())
-                resp.setBinInfo(layoutBin);
-        }
-        else if (df->queryAttributes().hasProp("ECL"))
-        {
-            const char * kind = df->queryAttributes().queryProp("@kind");
-            bool isIndex = (kind && streq(kind, "key"));
-            OwnedHqlExpr record = getEclRecordDefinition(userdesc, fileName);
-            if (df->queryAttributes().hasProp("_record_layout"))
-            {
-                MemoryBuffer mb;
-                df->queryAttributes().getPropBin("_record_layout", mb);
-                record.setown(patchEclRecordDefinitionFromRecordLayout(record, mb));
-            }
+                resp.setBinInfo(binLayout);
             if (req.getIncludeJsonTypeInfo())
-            {
-                StringBuffer jsonFormat;
-                exportJsonType(jsonFormat, record, isIndex);
-                resp.setJsonInfo(jsonFormat);
-            }
-            if (req.getIncludeBinTypeInfo())
-            {
-                MemoryBuffer binFormat;
-                exportBinaryType(binFormat, record, isIndex);
-                resp.setBinInfo(binFormat);
-            }
+                resp.setJsonInfo(jsonLayout);
         }
     }
-    catch(IException* e)
+    catch (IException* e)
     {
-        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
@@ -1978,7 +2004,8 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
 }
 
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, const char *name, const char *cluster,
-    const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo, IEspDFUFileDetail &FileDetails)
+    const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo,
+    CDFUChangeProtection protect, IEspDFUFileDetail &FileDetails)
 {
     if (!name || !*name)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
@@ -1999,6 +2026,15 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
     df->getClusterNames(clusters);
     if (cluster && *cluster && !FindInStringArray(clusters, cluster))
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s on %s.", name, cluster);
+
+    if (protect != CDFUChangeProtection_NoChange)
+    {
+        StringBuffer protectBy;
+        context.getUserID(protectBy);
+        if (protectBy.isEmpty())
+            protectBy.set("hpcc");
+        df->setProtect(protectBy.str(), protect == CDFUChangeProtection_Protect ? true : false);
+    }
 
     offset_t size=queryDistributedFileSystem().getSize(df), recordSize=df->queryAttributes().getPropInt64("@recordSize",0);
 
@@ -2374,45 +2410,15 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
     }
     if (includeJsonTypeInfo||includeBinTypeInfo)
     {
-        if (df->queryAttributes().hasProp("_rtlType"))
+        MemoryBuffer binLayout;
+        StringBuffer jsonLayout;
+        if (getRecordFormatFromRtlType(binLayout, jsonLayout, df->queryAttributes(), includeBinTypeInfo, includeJsonTypeInfo) ||
+            getRecordFormatFromECL(binLayout.clear(), jsonLayout.clear(), df->queryAttributes(), includeBinTypeInfo, includeJsonTypeInfo))
         {
-            MemoryBuffer layoutBin;
-            df->queryAttributes().getPropBin("_rtlType", layoutBin);
-            if (includeJsonTypeInfo)
-            {
-                Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
-                const RtlTypeInfo *typeInfo = deserializer->deserialize(layoutBin);
-                StringBuffer jsonFormat;
-                dumpTypeInfo(jsonFormat, typeInfo);
-                FileDetails.setJsonInfo(jsonFormat);
-                layoutBin.reset(0);
-            }
             if (includeBinTypeInfo)
-                FileDetails.setBinInfo(layoutBin);
-        }
-        else if (df->queryAttributes().hasProp("ECL"))
-        {
-            const char * kind = df->queryAttributes().queryProp("@kind");
-            bool isIndex = (kind && streq(kind, "key"));
-            OwnedHqlExpr record = getEclRecordDefinition(df->queryAttributes().queryProp("ECL"));
-            if (df->queryAttributes().hasProp("_record_layout"))
-            {
-                MemoryBuffer mb;
-                df->queryAttributes().getPropBin("_record_layout", mb);
-                record.setown(patchEclRecordDefinitionFromRecordLayout(record, mb));
-            }
+                FileDetails.setBinInfo(binLayout);
             if (includeJsonTypeInfo)
-            {
-                StringBuffer jsonFormat;
-                exportJsonType(jsonFormat, record, isIndex);
-                FileDetails.setJsonInfo(jsonFormat);
-            }
-            if (includeBinTypeInfo)
-            {
-                MemoryBuffer binFormat;
-                exportBinaryType(binFormat, record, isIndex);
-                FileDetails.setBinInfo(binFormat);
-            }
+                FileDetails.setJsonInfo(jsonLayout);
         }
     }
     PROGLOG("doGetFileDetails: %s done", name);

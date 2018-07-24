@@ -11966,7 +11966,7 @@ public:
         headerLength = header.length();
         diskout->write(header.length(), header.str());
 
-        Owned<IXmlWriterExt> writer = createIXmlWriterExt(xmlHelper.getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSON : WTStandard);
+        Owned<IXmlWriterExt> writer = createIXmlWriterExt(xmlHelper.getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSONRootless : WTStandard);
         writer->outputBeginArray(rowTag); //need to set this
         writer->clear(); //but not output it
 

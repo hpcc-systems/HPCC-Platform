@@ -554,7 +554,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             EXCLOG(e, "CLookupRequest");
             if (replyAttempt)
                 return;
-            byte errorCode = 1;
+            byte errorCode = kjse_exception;
             CMessageBuffer msg;
             msg.append(errorCode);
             serializeException(e, msg);
@@ -730,7 +730,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             {
                 CKeyLookupResult lookupResult(*activityCtx); // reply for 1 request row
 
-                byte errorCode = 0;
+                byte errorCode = kjse_nop;
                 CMessageBuffer replyMsg;
                 replyMsg.append(errorCode);
                 unsigned startPos = replyMsg.length();
@@ -876,7 +876,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             {
                 CFetchLookupResult fetchLookupResult(*activityCtx);
 
-                byte errorCode = 0;
+                byte errorCode = kjse_nop;
                 CMessageBuffer replyMsg;
                 replyMsg.append(errorCode);
                 unsigned startPos = replyMsg.length();
@@ -1020,7 +1020,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     CriticalSection kMCrit, lCCrit;
     Owned<IThreadPool> processorPool;
 
-    CActivityContext *createActivityContext(CJobBase &job, activity_id id)
+    CActivityContext *createActivityContext(CJobBase &job, activity_id id, MemoryBuffer &createCtxMb)
     {
         VStringBuffer helperName("fAc%u", (unsigned)id);
         EclHelperFactory helperFactory = (EclHelperFactory) job.queryDllEntry().getEntry(helperName.str());
@@ -1029,15 +1029,16 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
 
         ICodeContext &codeCtx = job.queryJobChannel(0).querySharedMemCodeContext();
         Owned<IHThorKeyedJoinArg> helper = static_cast<IHThorKeyedJoinArg *>(helperFactory());
+        helper->onCreate(&codeCtx, nullptr, &createCtxMb); // JCS->GH - will I ever need colocalParent here?
         return new CActivityContext(*this, id, helper.getClear(), &codeCtx);
     }
-    CActivityContext *ensureActivityContext(CJobBase &job, activity_id id)
+    CActivityContext *ensureActivityContext(CJobBase &job, activity_id id, MemoryBuffer &createCtxMb)
     {
         CriticalBlock b(lCCrit);
         CActivityContext *activityCtx = activityContextsHT.find(id);
         if (activityCtx)
             return LINK(activityCtx);
-        activityCtx = createActivityContext(job, id);
+        activityCtx = createActivityContext(job, id, createCtxMb);
         activityContextsHT.replace(*activityCtx); // NB: does not link/take ownership
         return activityCtx;
     }
@@ -1045,7 +1046,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     {
         return new CKeyLookupContext(*this, activityCtx, key);
     }
-    CKeyLookupContext *ensureKeyLookupContext(CJobBase &job, const CLookupKey &key, bool *created=nullptr)
+    CKeyLookupContext *ensureKeyLookupContext(CJobBase &job, const CLookupKey &key, MemoryBuffer &createCtxMb, bool *created=nullptr)
     {
         CriticalBlock b(lCCrit);
         CKeyLookupContext *keyLookupContext = keyLookupContextsHT.find(key);
@@ -1061,7 +1062,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         Linked<CActivityContext> activityCtx = activityContextsHT.find(id);
         if (!activityCtx)
         {
-            activityCtx.setown(createActivityContext(job, key.id));
+            activityCtx.setown(createActivityContext(job, key.id, createCtxMb));
             activityContextsHT.replace(*activityCtx); // NB: does not link/take ownership
         }
         keyLookupContext = createLookupContext(activityCtx, key);
@@ -1089,7 +1090,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         if (!keyLookupContext->IsShared())
             keyLookupContextsHT.removeExact(keyLookupContext);
     }
-    CFetchContext *ensureFetchContext(CJobBase &job, FetchKey &key)
+    CFetchContext *ensureFetchContext(CJobBase &job, FetchKey &key, MemoryBuffer &createCtxMb)
     {
         CriticalBlock b(lCCrit);
         CFetchContext *fetchContext = fetchContextsHT.find(key);
@@ -1099,7 +1100,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         Linked<CActivityContext> activityCtx = activityContextsHT.find(id);
         if (!activityCtx)
         {
-            activityCtx.setown(createActivityContext(job, id));
+            activityCtx.setown(createActivityContext(job, id, createCtxMb));
             activityContextsHT.replace(*activityCtx); // NB: does not link/take ownership
         }
         fetchContext = new CFetchContext(*this, activityCtx, key);
@@ -1264,7 +1265,7 @@ public:
             rank_t sender = RANK_NULL;
             CMessageBuffer msg;
             mptag_t replyTag = TAG_NULL;
-            byte errorCode = 0;
+            byte errorCode = kjse_nop;
             bool replyAttempt = false;
             try
             {
@@ -1282,8 +1283,13 @@ public:
                     {
                         CLookupKey key(msg);
 
+                        size32_t createCtxSz;
+                        msg.read(createCtxSz);
+                        MemoryBuffer createCtxMb;
+                        createCtxMb.setBuffer(createCtxSz, (void *)msg.readDirect(createCtxSz)); // NB: read only
+
                         bool created;
-                        Owned<CKeyLookupContext> keyLookupContext = ensureKeyLookupContext(*currentJob, key, &created); // ensure entry in keyLookupContextsHT, will be removed by last CKMContainer
+                        Owned<CKeyLookupContext> keyLookupContext = ensureKeyLookupContext(*currentJob, key, createCtxMb, &created); // ensure entry in keyLookupContextsHT, will be removed by last CKMContainer
                         bool messageCompression;
                         msg.read(messageCompression);
                         keyLookupContext->queryActivityCtx()->setMessageCompression(messageCompression);
@@ -1310,16 +1316,22 @@ public:
                     }
                     case kjs_keyread:
                     {
-                        CLookupKey key(msg);
                         unsigned handle;
                         msg.read(handle);
                         dbgassertex(handle);
 
                         Owned<CKMContainer> kmc = getKeyManager(handle);
-                        if (!kmc) // if closed, alternative is to send just handle and send challenge response if unknown
+                        if (!kmc) // if closed/not known, alternative is to send just handle and send challenge response if unknown
                         {
-                            Owned<CKeyLookupContext> keyLookupContext = ensureKeyLookupContext(*currentJob, key);
-                            kmc.setown(ensureKeyManager(keyLookupContext));
+                            msg.clear();
+                            errorCode = kjse_unknownhandle;
+                            msg.append(errorCode);
+
+                            if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
+                                throw MakeStringException(0, "Failed to reply to challenge on key read");
+
+                            // client will resent with kjs_keyopen + full info.
+                            continue;
                         }
                         processKeyLookupRequest(msg, kmc, sender, replyTag);
                         break;
@@ -1341,7 +1353,12 @@ public:
                     case kjs_fetchopen:
                     {
                         FetchKey key(msg, (unsigned)sender); // key by {actid, partNo, sender}, to keep each context (from each slave) alive.
-                        Owned<CFetchContext> fetchContext = ensureFetchContext(*currentJob, key);
+
+                        size32_t createCtxSz;
+                        msg.read(createCtxSz);
+                        MemoryBuffer createCtxMb;
+                        createCtxMb.setBuffer(createCtxSz, (void *)msg.readDirect(createCtxSz)); // NB: read only
+                        Owned<CFetchContext> fetchContext = ensureFetchContext(*currentJob, key, createCtxMb);
                         CActivityContext *activityCtx = fetchContext->queryActivityCtx();
 
                         /* NB: clients will send it on their first request, but might already have from others
@@ -1396,6 +1413,19 @@ public:
                         dbgassertex(handle);
 
                         Owned<CFetchContext> fetchContext = getFetchContext(handle);
+                        if (!fetchContext) // if closed/not known, alternative is to send just handle and send challenge response if unknown
+                        {
+                            msg.clear();
+                            errorCode = kjse_unknownhandle;
+                            msg.append(errorCode);
+
+                            if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
+                                throw MakeStringException(0, "Failed to reply to challenge on fetch read");
+
+                            // client will resent with kjs_fetchopen + full info.
+                            continue;
+                        }
+
                         CActivityContext *activityCtx = fetchContext->queryActivityCtx();
                         Owned<CFetchLookupRequest> lookupRequest = new CFetchLookupRequest(fetchContext, sender, replyTag);
 
@@ -1441,7 +1471,7 @@ public:
                 else
                 {
                     msg.clear();
-                    errorCode = 1;
+                    errorCode = kjse_exception;
                     msg.append(errorCode);
                     serializeException(e, msg);
                 }

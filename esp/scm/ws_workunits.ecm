@@ -1894,7 +1894,7 @@ ESPrequest [nil_remove] WUCreateZAPInfoRequest
     string WhereSlow;
     [min_ver("1.53"), depr_ver("1.70")] string Password;
     [min_ver("1.65")] string ZAPFileName;
-    [min_ver("1.57")] bool IncludeThorSlaveLog(false);
+    [min_ver("1.57")] string IncludeThorSlaveLog("on");
     [min_ver("1.70")] string ZAPPassword;
 };
 

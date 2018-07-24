@@ -507,7 +507,7 @@ public:
 
 IXmlWriterExt * createAdaptiveRESTWriterExt(AdaptiveRoot model, const char *tagname, unsigned _flags, unsigned _initialIndent, IXmlStreamFlusher *_flusher, XMLWriterType xmlType)
 {
-    if (xmlType==WTJSON)
+    if (xmlType==WTJSONRootless)
         return new AdaptiveRESTJsonWriter(model, _flags, _initialIndent, _flusher);
     return new AdaptiveRESTXmlWriter(model, tagname, _flags, _initialIndent, _flusher);
 }
@@ -607,7 +607,7 @@ public:
                         rootType = AdaptiveRoot::RootArray;
                 }
 
-                Owned<IXmlWriter> xmlwriter = createAdaptiveRESTWriterExt(rootType, tagName, writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard);
+                Owned<IXmlWriter> xmlwriter = createAdaptiveRESTWriterExt(rootType, tagName, writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSONRootless : WTStandard);
                 xmlwriter->outputBeginArray("Row");
                 return xmlwriter.getClear();
             }
@@ -1174,7 +1174,7 @@ public:
             appendJSONName(tag, name);
             content->append(tag);
         }
-        Owned<IXmlWriter> xmlwriter = createIXmlWriterExt(XWFnoindent, 1, content, WTJSON);
+        Owned<IXmlWriter> xmlwriter = createIXmlWriterExt(XWFnoindent, 1, content, WTJSONRootless);
         return xmlwriter.getClear();
     }
     void outputContent()

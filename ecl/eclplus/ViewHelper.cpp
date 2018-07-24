@@ -79,27 +79,31 @@ bool ViewHelper::doit(FILE * fp)
                     int lineno = excep->getLineNo();
                     const char* source = excep->getSource();
                     const char* msg = excep->getMessage();
+
+                    StringBuffer encodedMsg;
+                    if (!isEmptyString(msg))
+                        encodeXML(msg, encodedMsg);
                     unsigned code = excep->getCode();
                     if (lineno && source != NULL)
                     {
                         if (xml)
-                            fprintf(fp, "<%s><source>%s</source><line>%d</line><code>%d</code><message>%s</message></%s>\n", severity, source, lineno, code, msg, severity);
+                            fprintf(fp, "<%s><source>%s</source><line>%d</line><code>%d</code><message>%s</message></%s>\n", severity, source, lineno, code, encodedMsg.str(), severity);
                         else
-                            fprintf(fp, "%s: %s(%d) %s\n", severity, source, lineno, msg);
+                            fprintf(fp, "%s: %s(%d) %s\n", severity, source, lineno, encodedMsg.str());
                     }
                     else if(source != NULL)
                     {
                         if (xml)
-                            fprintf(fp, "<%s><source>%s</source><code>%d</code><message>%s</message></%s>\n", severity, source, code, msg, severity);
+                            fprintf(fp, "<%s><source>%s</source><code>%d</code><message>%s</message></%s>\n", severity, source, code, encodedMsg.str(), severity);
                         else
-                            fprintf(fp, "%s: %s %s\n", severity, source, msg);
+                            fprintf(fp, "%s: %s %s\n", severity, source, encodedMsg.str());
                     }
                     else
                     {
                         if (xml)
-                            fprintf(fp, "<%s><code>%d</code><message>%s</message></%s>\n", severity, code, msg, severity);
+                            fprintf(fp, "<%s><code>%d</code><message>%s</message></%s>\n", severity, code, encodedMsg.str(), severity);
                         else
-                            fprintf(fp, "%s: %s\n", severity, msg);
+                            fprintf(fp, "%s: %s\n", severity, encodedMsg.str());
                     }
                 }
             }

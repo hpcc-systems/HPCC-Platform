@@ -34,7 +34,7 @@ define([
                         Id: params.Id
                     }
                 }).then(function (response) {
-                    var xml = context.formatXml(response.GetESDLDefinitionResponse.XMLDefinition);
+                    var xml = context.formatXml(response.GetESDLDefinitionResponse.Definition.Interface);
                     context.widget._XML.init({
                         sourceMode: "xml",
                         readOnly: true

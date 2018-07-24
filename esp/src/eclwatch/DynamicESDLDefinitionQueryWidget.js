@@ -42,7 +42,7 @@ define([
                 id: this.id + "_DefinitionDetails",
                 region: "right",
                 splitter: true,
-                style: "width: 80%",
+                style: "width: 60%",
                 minSize: 240
             });
             this.definitionWidget.placeAt(this.gridTab, "last");
@@ -63,6 +63,29 @@ define([
                         label: this.i18n.Name,
                         sortable: true,
                         width: 200
+                    },
+                    PublishBy: {
+                        label: this.i18n.PublishedBy,
+                        sortable: false,
+                        width: 200
+                    },
+                    CreatedTime: {
+                        label: this.i18n.CreatedTime,
+                        sortable: false,
+                        width: 200
+                    },
+                    LastEditBy: {
+                        label: this.i18n.LastEditedBy,
+                        sortable: false,
+                        width: 200,
+                        hidden: true
+
+                    },
+                    LastEditTime: {
+                        label: this.i18n.LastEditTime,
+                        sortable: false,
+                        width: 200,
+                        hidden: true
                     }
                 }
             }, domID);
@@ -92,7 +115,11 @@ define([
                     arrayUtil.forEach(response.ListESDLDefinitionsResponse.Definitions.Definition, function (item, idx) {
                         var Def = {
                             Id: idx,
-                            Name: item.Id
+                            Name: item.Id,
+                            PublishBy: item.History.PublishBy,
+                            CreatedTime: item.History.CreatedTime,
+                            LastEditBy: item.History.LastEditBy,
+                            LastEditTime: item.History.LastEditTime
                         }
                         results.push(Def);
                     });

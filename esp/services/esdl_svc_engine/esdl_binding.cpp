@@ -502,7 +502,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
              javactx->writeResult(m_esdl, srvdef.queryName(), mthdef.queryResponseType(), javaRespWriter);
              origResp.set(javaRespWriter->str());
 
-             Owned<IXmlWriterExt> finalRespWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSON : WTStandard);
+             Owned<IXmlWriterExt> finalRespWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
              m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
 
              out.append(finalRespWriter->str());
@@ -530,7 +530,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             if (isPublishedQuery(implType))
             {
                 context.addTraceSummaryTimeStamp(LogNormal, "srt-procres");
-                Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSON : WTStandard);
+                Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
                 m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), respWriter.get(), logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
                 context.addTraceSummaryTimeStamp(LogNormal, "end-procres");
 
@@ -2514,7 +2514,7 @@ void EsdlBindingImpl::getRequestContent(IEspContext &context, StringBuffer & req
                Owned<IPropertyTree> tgtctx;
                Owned<IPropertyTree> req_pt = createPTreeFromXMLString(xmlstr.length(), xmlstr.str(), false);
 
-               Owned<IXmlWriterExt> writer = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_REQUEST_JSON) ? WTJSON : WTStandard);
+               Owned<IXmlWriterExt> writer = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_REQUEST_JSON) ? WTJSONRootless : WTStandard);
 
                m_pESDLService->m_pEsdlTransformer->process(context, EsdlRequestMode, m_espServiceName.get(), methodname, *req_pt.get(), writer.get(), flags, ns);
 
