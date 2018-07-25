@@ -64,10 +64,10 @@ rec fillRow(rec L, unsigned4 c) := transform
 
 outdata := NORMALIZE(one_per_node, numrecs, fillRow(LEFT, counter));  
 
-copiedcmp1 := DATASET(prefix + 'testfile_exp_copy_cmp', rec, flat, __compressed__);
-copiedcmp2 := DATASET(prefix + 'testfile_cmp_copy_cmp', rec, flat, __compressed__);
-copiedcmp3 := DATASET(prefix + 'testfile_cmp_copy_cmp2', rec, flat, __compressed__);
-copiedcmp4 := DATASET(prefix + 'testfile_cmp_copy_cmp3', rec, flat, __compressed__);
+copiedcmp1 := DATASET(prefix + 'testfile_exp_copy_cmp', rec, flat);
+copiedcmp2 := DATASET(prefix + 'testfile_cmp_copy_cmp', rec, flat);
+copiedcmp3 := DATASET(prefix + 'testfile_cmp_copy_cmp2', rec, flat);
+copiedcmp4 := DATASET(prefix + 'testfile_cmp_copy_cmp3', rec, flat);
 copiedexp := DATASET(prefix + 'testfile_cmp_copy_exp', rec, flat);
 
 unsigned compareDatasets(dataset(rec) ds1,dataset(rec) ds2) := FUNCTION

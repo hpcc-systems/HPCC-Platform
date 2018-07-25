@@ -2504,6 +2504,7 @@ void FileSprayer::setSource(IDistributedFile * source)
     if (history)
         srcHistory.setown(createPTreeFromIPT(history));
 
+    compressedInput = source->isCompressed();
     extractSourceFormat(srcAttr);
     unsigned numParts = source->numParts();
     for (unsigned idx=0; idx < numParts; idx++)
@@ -2538,6 +2539,7 @@ void FileSprayer::setSource(IFileDescriptor * source)
 void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mirrorCopy)
 {
     IPropertyTree *attr = &source->queryProperties();
+    compressedInput = source->isCompressed();
     extractSourceFormat(attr);
     srcAttr.setown(createPTreeFromIPT(&source->queryProperties()));
     IPropertyTree *history = source->queryHistory();
@@ -2637,15 +2639,15 @@ void FileSprayer::setSourceTarget(IFileDescriptor * fd, DaftReplicateMode mode)
         setCopyCompressedRaw();
 }
 
-void FileSprayer::setTargetCompression(bool compress)
-{
-    compressOutput = compress;
-}
-
 void FileSprayer::setTarget(IDistributedFile * target)
 {
     distributedTarget.set(target);
-    compressOutput = !encryptKey.isEmpty()||target->isCompressed();
+
+    compressOutput = target->isCompressed();
+
+    LOG(MCdebugInfo, unknownJob, "FileSprayer::setTarget: compressedInput:%s, compressOutput:%s",
+                                boolToStr(compressedInput),
+                                boolToStr(compressOutput));
 
     if (tgtFormat.restore(&target->queryAttributes()))
         unknownTargetFormat = false;

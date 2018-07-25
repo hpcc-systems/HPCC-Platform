@@ -58,14 +58,6 @@ void CDistributedFileSystem::copy(IDistributedFile * from, IDistributedFile * to
     sprayer->setPartFilter(filter);
     sprayer->setSource(from);
     sprayer->setTarget(to);
-
-    bool compressInput = from->isCompressed();
-    bool compressOutput = options->getPropBool("@compress");
-    bool preserveCompression = options->getPropBool("@preserveCompression");
-    LOG(MCdebugInfo, unknownJob, "DFS: compressInput:%d, compressOutput:%d, preserveCompression:%d ", compressInput, compressOutput, preserveCompression);
-    if (preserveCompression & compressInput)
-        sprayer->setTargetCompression(compressInput);
-
     sprayer->spray();
 }
 
