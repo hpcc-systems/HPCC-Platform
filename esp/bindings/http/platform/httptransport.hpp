@@ -61,7 +61,9 @@
 #define HTTP_TYPE_TEXT_XML_UTF8                 "text/xml; charset=UTF-8"
 #define HTTP_TYPE_APPLICATION_XML_UTF8          "application/xml; charset=UTF-8"
 #define HTTP_TYPE_SOAP_UTF8                     "application/soap; charset=UTF-8"
-#define HTTP_TYPE_APPLICATION_JSON_UTF8         "application/json; charset=UTF-8"
+
+//Do not use, JSON is always implied to be UTF8
+//#define HTTP_TYPE_APPLICATION_JSON_UTF8         "application/json; charset=UTF-8"
 
 #define HTTP_STATUS_OK_CODE                 200
 #define HTTP_STATUS_NO_CONTENT_CODE         204

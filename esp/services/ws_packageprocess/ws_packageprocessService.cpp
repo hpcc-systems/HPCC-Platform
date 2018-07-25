@@ -1457,7 +1457,7 @@ int CWsPackageProcessSoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpReques
     }
 
     response->setContent(respStr.str());
-    response->setContentType(HTTP_TYPE_APPLICATION_JSON_UTF8);
+    response->setContentType(HTTP_TYPE_JSON);
     response->send();
     return 0;
 }

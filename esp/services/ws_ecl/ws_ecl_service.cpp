@@ -1757,7 +1757,7 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     const char* excludes[] = {"soap_builder_",NULL};
     getEspUrlParams(context,params,excludes);
 
-    StringBuffer header("Content-Type: application/json; charset=UTF-8");
+    StringBuffer header("Content-Type: application/json");
 
     Owned<IXslProcessor> xslp = getXslProcessor();
     Owned<IXslTransform> xform = xslp->createXslTransform(queryXsltConfig());

@@ -2498,7 +2498,7 @@ bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, c
         {
         case ESPSerializationJSON:
         {
-            setContentType(HTTP_TYPE_APPLICATION_JSON_UTF8);
+            setContentType(HTTP_TYPE_JSON);
             toJSON(content, me, context->queryRequestParameters()->queryProp("jsonp"));
             break;
         }
