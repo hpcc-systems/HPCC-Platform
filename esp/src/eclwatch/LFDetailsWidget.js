@@ -128,15 +128,13 @@ define([
                                 if (context.desprayTargetPath) {
                                     context.desprayTargetPath._dropZoneTarget = targetRow;
                                     if (path > -1) {
-                                        context.desprayTargetPath.defaultValue = "\\"
                                         pathSepChar = "\\"
                                         context.pathSepCharG = "\\"
                                     } else {
-                                        context.desprayTargetPath.defaultValue = "/"
                                         pathSepChar = "/";
                                         context.pathSepCharG = "/"
                                     }
-                                    context.desprayTargetPath.loadDropZoneFolders(pathSepChar);
+                                    context.desprayTargetPath.loadDropZoneFolders(pathSepChar, targetRow.machine.Directory);
                                 }
                             }
                         });

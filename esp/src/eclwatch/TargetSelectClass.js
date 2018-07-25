@@ -353,7 +353,7 @@ define([
                 return str.indexOf(suffix, str.length - suffix.length) !== -1;
             },
 
-            loadDropZoneFolders: function (pathSepChar) {
+            loadDropZoneFolders: function (pathSepChar, defaultPath) {
                 var context = this;
                 this.getDropZoneFolder = function () {
                     var baseFolder = this._dropZoneTarget.machine.Directory;
@@ -373,6 +373,7 @@ define([
                             })
                         });
                         context.set("store", store);
+                        context.set("placeholder", defaultPath)
                         context._postLoad();
                     });
                 }
