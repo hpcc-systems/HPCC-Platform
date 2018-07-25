@@ -365,7 +365,7 @@ define([
                     });
                 }
 
-                this.updatedFilter = retVal;
+                this.updatedFilter = JSON.parse(JSON.stringify(retVal));    // Deep copy as checkIfWarning will append _rawxml to it  ---
                 this.checkIfWarning();
 
                 return retVal;
@@ -634,7 +634,7 @@ define([
                         IntSize: {
                             label: this.i18n.Size, width: 100,
                             formatter: function (intsize, row) {
-                                if(intsize === null ) {
+                                if (intsize === null) {
                                     return "0 Bytes";
                                 } else {
                                     return Utility.convertedSize(intsize);
