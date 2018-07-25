@@ -151,6 +151,7 @@ define([
                     dom.byId(this.id + "UserID").textContent = this.userName;
                 } else if (cookie("ESPUserName")) {
                     domConstruct.place("<span>" + cookie("ESPUserName") + "</span>", this.id + "UserID", "replace");
+                    dojoConfig.username = cookie("ESPUserName");
                 } else {
                     dom.byId(this.id + "UserID").textContent = "";
                 }
