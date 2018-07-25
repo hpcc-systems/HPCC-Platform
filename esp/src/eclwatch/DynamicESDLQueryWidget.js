@@ -128,7 +128,8 @@ define([
                             }
                             return true;
                         },
-                        sortable: false
+                        sortable: false,
+                        unhidable: true
                     }),
                     Name: tree({
                         formatter: function (_name, row) {
@@ -144,7 +145,8 @@ define([
                         },
                         collapseOnRefresh: false,
                         label: this.i18n.Process,
-                        sortable: false
+                        sortable: false,
+                        unhidable: true
                     }),
                     PublishBy: {
                         label: this.i18n.PublishedBy,

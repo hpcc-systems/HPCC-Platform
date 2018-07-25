@@ -57,12 +57,14 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox'
+                        selectorType: 'checkbox',
+                        unhidable: true
                     }),
                     Name: {
                         label: this.i18n.Name,
                         sortable: true,
-                        width: 200
+                        width: 200,
+                        unhidable: true
                     },
                     PublishBy: {
                         label: this.i18n.PublishedBy,
