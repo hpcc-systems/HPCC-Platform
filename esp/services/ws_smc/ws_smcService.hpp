@@ -129,7 +129,9 @@ class CActivityInfo : public CInterface, implements IInterface
     void readDFUWUDetails(const char* queueName, const char* serverName, StringArray& wuidList, unsigned runningWUCount);
     void getDFURecoveryJobs();
     void getServerJobQueue(IEspContext &context, const char* queueName, const char* serverName, const char* serverType, const char* networkAddress, unsigned port);
-    void readServerJobQueueStatus(IEspServerJobQueue* jobQueue);
+    void readServerJobQueueStatus(IEspContext &context, const char* queueName, IEspServerJobQueue* jobQueue);
+    void readServerJobQueueDetails(IEspContext &context, const char* queueName, bool& hasStopped,
+        bool& hasPaused, StringBuffer& queueStateDetails, IArrayOf<IEspServerJobQueue>& jobQueues);
     CWsSMCTargetCluster* findWUClusterInfo(const char* wuid, bool isOnECLAgent, CIArrayOf<CWsSMCTargetCluster>& targetClusters,
         CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2);
     CWsSMCTargetCluster* findTargetCluster(const char* clusterName, CIArrayOf<CWsSMCTargetCluster>& targetClusters);

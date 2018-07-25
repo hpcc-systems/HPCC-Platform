@@ -867,14 +867,6 @@ void CActivityInfo::getServerJobQueue(IEspContext &context, const char* queueNam
 
     double version = context.getClientVersion();
     Owned<IEspServerJobQueue> jobQueue = createServerJobQueue("", "");
-    if (version < 1.20)
-        jobQueue->setQueueName(queueName);
-    else
-    {
-        StringArray queueNames;
-        queueNames.appendListUniq(queueName, ",");
-        jobQueue->setQueueNames(queueNames);
-    }
     jobQueue->setServerName(serverName);
     jobQueue->setServerType(serverType);
     if (networkAddress && *networkAddress)
@@ -883,12 +875,12 @@ void CActivityInfo::getServerJobQueue(IEspContext &context, const char* queueNam
         jobQueue->setPort(port);
     }
 
-    readServerJobQueueStatus(jobQueue);
+    readServerJobQueueStatus(context, queueName, jobQueue);
 
     serverJobQueues.append(*jobQueue.getClear());
 }
 
-void CActivityInfo::readServerJobQueueStatus(IEspServerJobQueue* jobQueue)
+void CActivityInfo::readServerJobQueueStatus(IEspContext &context, const char* queueName, IEspServerJobQueue* jobQueue)
 {
     if (!jobQueueSnapshot)
     {
@@ -897,48 +889,111 @@ void CActivityInfo::readServerJobQueueStatus(IEspServerJobQueue* jobQueue)
     }
 
     StringBuffer queueStateDetails;
-    bool jobQueueFound = false, hasRunning = false,  hasPaused =  false;
+    bool hasStopped = false,  hasPaused =  false;
 
-    StringArray qlist;
-    qlist.appendListUniq(jobQueue->getQueueName(), ",");
-    ForEachItemIn(i, qlist)
-    {
-        const char* qname = qlist.item(i);
-        Owned<IJobQueueConst> queue = jobQueueSnapshot->getJobQueue(qname);
-        if (!queue)
-            continue;
+    StringArray queueNames;
+    queueNames.appendListUniq(queueName, ",");
 
-        jobQueueFound = true;
+    IArrayOf<IEspServerJobQueue> jobQueues;
+    ForEachItemIn(i, queueNames)
+        readServerJobQueueDetails(context, queueNames.item(i), hasStopped, hasPaused, queueStateDetails, jobQueues);
 
-        StringBuffer status, details;
+    double version = context.getClientVersion();
+    if (version < 1.20)
+        jobQueue->setQueueName(queueName);
+    else if (version < 1.21)
+        jobQueue->setQueueNames(queueNames);
+    else
+        jobQueue->setQueues(jobQueues);
+
+    //The hasStopped, hasPaused, and queueStateDetails should be set inside readServerJobQueueDetails().
+    if (hasStopped)
+        jobQueue->setQueueStatus("stopped"); //Some of its job queues is stopped. So, return a warning here.
+    else if (hasPaused)
+        jobQueue->setQueueStatus("paused"); //Some of its job queues is paused. So, return a warning here.
+    else
+        jobQueue->setQueueStatus("running");
+    jobQueue->setStatusDetails(queueStateDetails.str());
+}
+
+void CActivityInfo::readServerJobQueueDetails(IEspContext &context, const char* queueName, bool& hasStopped,
+    bool& hasPaused, StringBuffer& queueStateDetails, IArrayOf<IEspServerJobQueue>& jobQueues)
+{
+    double version = context.getClientVersion();
+    StringBuffer status, details, stateDetailsString;
+    Owned<IJobQueueConst> queue = jobQueueSnapshot->getJobQueue(queueName);
+    if (queue)
         queue->getState(status, details);
-        if (!status || !*status)
-            continue;
+    if (status.isEmpty())
+    {
+        if (version < 1.21)
+        {
+            if (!queue)
+                queueStateDetails.appendf("%s not found in Status Server list; ", queueName);
+            else
+                queueStateDetails.appendf("No status set in Status Server list for %s; ", queueName);
+        }
+        else
+        {
+            Owned<IEspServerJobQueue> jobQueue = createServerJobQueue();
+            jobQueue->setQueueName(queueName);
 
+            if (!queue)
+                stateDetailsString.setf("%s not found in Status Server list", queueName);
+            else
+                stateDetailsString.setf("No status set in Status Server list for %s", queueName);
+
+            queueStateDetails.appendf("%s;", stateDetailsString.str());
+            jobQueue->setStatusDetails(stateDetailsString.str());
+            jobQueues.append(*jobQueue.getClear());
+        }
+        return;
+    }
+
+    if (version < 1.21)
+    {
         if (strieq(status.str(), "paused"))
             hasPaused =  true;
-        else if (!strieq(status.str(), "stopped"))
-            hasRunning =  true;
-
+        else if (strieq(status.str(), "stopped"))
+            hasStopped =  true;
+    
         if (details && *details)
-            queueStateDetails.appendf("%s: queue %s; %s;", qname, status.str(), details.str());
+            queueStateDetails.appendf("%s: queue %s; %s;", queueName, status.str(), details.str());
         else
-            queueStateDetails.appendf("%s: queue %s;", qname, status.str());
+            queueStateDetails.appendf("%s: queue %s;", queueName, status.str());
     }
-
-    if (hasRunning)
-        jobQueue->setQueueStatus("running");
-    else if (hasPaused)
-        jobQueue->setQueueStatus("paused");
     else
     {
-        jobQueue->setQueueStatus("stopped");
-        if (!jobQueueFound)
-            queueStateDetails.setf("%s not found in Status Server list", jobQueue->getQueueName());
-        else if (!queueStateDetails.length())
-            queueStateDetails.setf("No status set in Status Server list for %s", jobQueue->getQueueName());
+        Owned<IEspServerJobQueue> jobQueue = createServerJobQueue();
+        jobQueue->setQueueName(queueName);
+        if (strieq(status.str(), "paused"))
+        {
+            hasPaused =  true;
+            jobQueue->setQueueStatus("paused");
+        }
+        else if (strieq(status.str(), "stopped"))
+        {
+            hasStopped =  true;
+            jobQueue->setQueueStatus("stopped");
+        }
+        else
+        {
+            jobQueue->setQueueStatus("running");
+        }
+    
+        if (details && *details)
+        {
+            queueStateDetails.appendf("%s: queue %s; %s;", queueName, status.str(), details.str());
+            stateDetailsString.setf("%s: queue %s; %s;", queueName, status.str(), details.str());
+        }
+        else
+        {
+            queueStateDetails.appendf("%s: queue %s;", queueName, status.str());
+            stateDetailsString.setf("%s: queue %s;", queueName, status.str());
+        }
+        jobQueue->setStatusDetails(stateDetailsString.str());
+        jobQueues.append(*jobQueue.getClear());
     }
-    jobQueue->setStatusDetails(queueStateDetails.str());
 }
 
 bool CWsSMCEx::onIndex(IEspContext &context, IEspSMCIndexRequest &req, IEspSMCIndexResponse &resp)
