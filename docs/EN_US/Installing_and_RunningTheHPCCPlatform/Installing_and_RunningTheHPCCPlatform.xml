@@ -739,8 +739,8 @@
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>Press the <emphasis role="bold">Go</emphasis> button (or
-                press ctrl+enter).</para>
+                <para>Press the <emphasis role="bold">Submit</emphasis> button
+                (or press ctrl+enter).</para>
 
                 <para><figure>
                     <title>Completed job</title>
