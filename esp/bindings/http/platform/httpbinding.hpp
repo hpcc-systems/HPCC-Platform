@@ -132,7 +132,6 @@ private:
 
     StringAttr              m_authtype;
     StringAttr              m_authmethod;
-    StringBuffer            m_reqPath;
     StringBuffer            m_filespath;
     StringBuffer            m_wsdlAddress;
     Owned<ISecManager>      m_secmgr;
@@ -200,7 +199,6 @@ public:
     const char *getWsdlAddress(){return m_wsdlAddress.str();}
     void setWsdlAddress(const char *wsdladdress){m_wsdlAddress.set(wsdladdress);}
 
-    virtual void setRequestPath(const char *path);
     virtual bool rootAuthRequired();
     virtual bool authRequired(CHttpRequest *request);
     virtual bool doAuth(IEspContext* ctx);
@@ -211,7 +209,6 @@ public:
     virtual StringBuffer &generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns);
     virtual void getSchemaLocation(IEspContext &context, CHttpRequest* request, StringBuffer &schemaLocation );
 
-    virtual StringBuffer &getRequestPath(){return m_reqPath;}
     static int formatHtmlResultSet(IEspContext &context, const char *serv, const char *method, const char *resultsXml, StringBuffer &html);
     int formatResultsPage(IEspContext &context, const char *serv, const char *method, StringBuffer &results, StringBuffer &page);
 

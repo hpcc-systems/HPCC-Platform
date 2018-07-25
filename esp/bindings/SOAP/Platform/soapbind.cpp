@@ -213,10 +213,6 @@ int CHttpSoapBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* re
         soapresponse->setHttpResp(response);
     }
 
-    StringBuffer reqPath;
-    request->getPath(reqPath);
-    setRequestPath(reqPath.str());
-
     soapservice->processRequest(*soaprequest.get(), *soapresponse.get());
 
     //For JSON the response would have been sent except for certain errors, which will be thrown below
