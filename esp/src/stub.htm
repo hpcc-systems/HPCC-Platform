@@ -45,7 +45,7 @@
             }
 
             function checkCookie(){
-                    document.cookie.indexOf ("ESPAuthenticated=true") > -1 ? window.location() : window.location = location.origin + "/esp/files/Login.html";
+                    document.cookie.indexOf ("ESPAuthenticated=true") > -1 ? window.location.href : window.location = location.origin + "/esp/files/Login.html";
                 }
 
             function sendAuthRequest(){
