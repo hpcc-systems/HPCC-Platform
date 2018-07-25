@@ -229,9 +229,6 @@ public:
             unsigned loopCounter = 1;
             for (;;)
             {
-                if (sync(loopCounter))
-                    break;
-
                 // NB: This is exactly the same as the slave implementation up until the execute().
                 IThorBoundLoopGraph *boundGraph = queryContainer().queryLoopGraph();
                 unsigned condLoopCounter = (flags & IHThorLoopArg::LFcounter) ? loopCounter : 0;
@@ -247,9 +244,13 @@ public:
                 if (loopAgain) // cannot be 0
                     boundGraph->prepareLoopAgainResult(*this, ownedResults, loopAgain);
 
+                // ensure results prepared before graph begins
+                if (sync(loopCounter))
+                    break;
+
                 boundGraph->execute(*this, condLoopCounter, ownedResults, (IRowWriterMultiReader *)NULL, 0, extractBuilder.size(), extractBuilder.getbytes());
                 ++loopCounter;
-                if (barrier)
+                if (barrier) // barrier passed once loopAgain result used
                 {
                     if (!barrier->wait(false))
                         break;
