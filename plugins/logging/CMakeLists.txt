@@ -31,6 +31,7 @@ set (    SRCS
 include_directories ( 
          ./../../system/include 
          ./../../system/jlib 
+         ./../../rtl/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DLOGGING_EXPORTS )

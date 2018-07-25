@@ -34,6 +34,8 @@ static const char * EclDefinition =
 "  addWorkunitInformation(const varstring txt, unsigned code=0, unsigned severity=0, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
 "  addWorkunitWarning(const varstring txt, unsigned code=0, unsigned severity=1, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
 "  addWorkunitError(const varstring txt, unsigned code=0, unsigned severity=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
+"  varstring getGlobalId() : c,context,entrypoint='logGetGlobalId'; \n"
+"  varstring getLocalId() : c,context,entrypoint='logGetLocalId'; \n"
 "END;";
 
 LOGGING_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
@@ -61,3 +63,14 @@ LOGGING_API void LOGGING_CALL logDbgLog(unsigned srcLen, const char * src)
     DBGLOG("%.*s", srcLen, src);
 }
 
+LOGGING_API char *  LOGGING_CALL logGetGlobalId(ICodeContext *ctx)
+{
+    StringBuffer ret = ctx->queryContextLogger().queryGlobalId();
+    return ret.detach();
+}
+
+LOGGING_API char *  LOGGING_CALL logGetLocalId(ICodeContext *ctx)
+{
+    StringBuffer ret = ctx->queryContextLogger().queryLocalId();
+    return ret.detach();
+}

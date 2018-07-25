@@ -49,4 +49,21 @@ EXPORT addWorkunitWarning(varstring text, unsigned code=0) := lib_logging.Loggin
 
 EXPORT addWorkunitError(varstring text, unsigned code=0) := lib_logging.Logging.addWorkunitError(text, code, 2);
 
+/*
+ * Gets the Global Id associated with the current query or workunit.
+ *
+ * Returns the Global Id
+ */
+
+EXPORT getGlobalId() := lib_logging.Logging.getGlobalId();
+
+/*
+ * Gets the Local Id associated with the current query or workunit.
+ *
+ * Returns the Local Id
+ */
+
+EXPORT getLocalId() := lib_logging.Logging.getLocalId();
+
+
 END;
