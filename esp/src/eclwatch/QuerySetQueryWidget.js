@@ -157,9 +157,11 @@ define([
 
                 var context = this;
                 this.filter.on("clear", function (evt) {
+                    context.refreshHRef();
                     context.refreshGrid();
                 });
                 this.filter.on("apply", function (evt) {
+                    context.refreshHRef();
                     context.refreshGrid();
                 });
                 topic.subscribe("hpcc/ecl_wu_published", function (topic) {

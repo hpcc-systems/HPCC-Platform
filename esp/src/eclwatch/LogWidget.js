@@ -74,9 +74,11 @@ define([
             this.filter = registry.byId(this.id + "Filter");
             this.filter.on("clear", function (evt) {
                 context._onFilterType();
+                context.refreshHRef();
                 context.refreshGrid();
             });
             this.filter.on("apply", function (evt) {
+                context.refreshHRef();
                 context.refreshGrid();
             });
             this.rawText = registry.byId(this.id + "LogText");

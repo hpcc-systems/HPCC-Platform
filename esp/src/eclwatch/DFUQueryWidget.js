@@ -426,9 +426,11 @@ define([
                 this.initWorkunitsGrid();
 
                 this.filter.on("clear", function (evt) {
+                    context.refreshHRef();
                     context.refreshGrid();
                 });
                 this.filter.on("apply", function (evt) {
+                    context.refreshHRef();
                     context.refreshGrid();
                 });
                 topic.subscribe("hpcc/dfu_wu_completed", function (topic) {
