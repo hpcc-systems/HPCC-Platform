@@ -761,7 +761,8 @@ inline type_t getRequiredTypeCode(node_operator op)
     case no_libraryscope:
     case no_type:
     case no_libraryscopeinstance:
-        return type_alias; // type is an alias if itself.
+    case no_forwardscope:
+        return type_alias; // type is an alias of itself.
     }
     return type_none;
 }
