@@ -475,9 +475,11 @@ define([
             });
 
             this.filter.on("clear", function (evt) {
+                context.refreshHRef();
                 context.refreshUsersGrid();
             });
             this.filter.on("apply", function (evt) {
+                context.refreshHRef();
                 context.refreshUsersGrid();
             });
 

@@ -65,6 +65,7 @@ define([
                 this.refreshGrid();
 
                 this.filter.on("apply", function (evt) {
+                    context.refreshHRef();
                     var selection = context.grid.getSelected();
                     var filter = context.getFilter();
 

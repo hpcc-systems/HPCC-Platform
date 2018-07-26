@@ -235,9 +235,11 @@ define([
 
                 var context = this;
                 this.filter.on("clear", function (evt) {
+                    context.refreshHRef();
                     context.refreshGrid();
                 });
                 this.filter.on("apply", function (evt) {
+                    context.refreshHRef();
                     context.refreshGrid();
                 });
                 topic.subscribe("hpcc/dfu_wu_created", function (topic) {

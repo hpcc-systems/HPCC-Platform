@@ -179,9 +179,11 @@ define([
                         tableContainer.placeAt(origTableContainer.domNode, "replace");
                         origTableContainer.destroyRecursive();
                         context.filter.on("clear", function (evt) {
+                            context.refreshHRef();
                             context.refresh();
                         });
                         context.filter.on("apply", function (evt) {
+                            context.refreshHRef();
                             context.refresh();
                         });
                         context.filter.refreshState();
