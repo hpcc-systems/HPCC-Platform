@@ -1265,30 +1265,35 @@ public:
             case DFUcmd_add:
                 {
                     destination->getLogicalName(tmp.clear());
-                    if (tmp.length()) {
+                    if (tmp.length())
+                    {
                         CDfsLogicalFileName tmpdlfn;
                         StringBuffer newroxieprefix;
                         constructDestinationName(tmp.str(),oldRoxiePrefix,destination,tmpdlfn,newroxieprefix);
                         tmp.clear().append(tmpdlfn.get());
                         bool iswin;
-                        if (!destination->getWindowsOS(iswin)) { // would normally know!
+                        if (!destination->getWindowsOS(iswin)) // would normally know!
+                            {
                             // set default OS to cluster 0
                             Owned<IGroup> grp=destination->getGroup(0);
-                            if (grp.get()) {
-                                switch (queryOS(grp->queryNode(0).endpoint())) {
-                                case MachineOsW2K:
-                                    destination->setWindowsOS(true);
-                                    iswin = false;
-                                    break;
-                                case MachineOsSolaris:
-                                case MachineOsLinux:
-                                    destination->setWindowsOS(false);
-                                    iswin = false;
-                                    break;
+                            if (grp.get())
+                            {
+                                switch (queryOS(grp->queryNode(0).endpoint()))
+                                {
+                                    case MachineOsW2K:
+                                        destination->setWindowsOS(true);
+                                        iswin = false;
+                                        break;
+                                    case MachineOsSolaris:
+                                    case MachineOsLinux:
+                                        destination->setWindowsOS(false);
+                                        iswin = false;
+                                        break;
                                 };
                             }
                         }
-                        if (destination->getWrap()) {
+                        if (destination->getWrap())
+                        {
                             Owned<IFileDescriptor> fdesc = source?source->getFileDescriptor():NULL;
                             if (fdesc)
                                 destination->setNumPartsOverride(fdesc->numParts());
@@ -1304,25 +1309,44 @@ public:
 
                         opttree->setPropBool("@quotedTerminator", options->getQuotedTerminator());
                         Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey,options->getSuppressNonKeyRepeats()&&!iskey);
-                        if (fdesc) {
-                            if (options->getSubfileCopy()) {// need to set destination compressed or not
+                        if (fdesc)
+                        {
+                            if (options->getSubfileCopy()) // need to set destination compressed or not
+                            {
                                 if (opttree->getPropBool("@compress"))
                                     fdesc->queryProperties().setPropBool("@blockCompressed",true);
                                 else
                                     fdesc->queryProperties().removeProp("@blockCompressed");
                             }
-                            if (!encryptkey.isEmpty()) {
+                            if (!encryptkey.isEmpty())
+                            {
                                 fdesc->queryProperties().setPropBool("@encrypted",true);
                                 fdesc->queryProperties().setPropBool("@blockCompressed",true);
                             }
-                            if (multiclusterinsert) {
+                            else if (options->getPreserveCompression())
+                            {
+                                bool dstCompressed = false;
+                                if (srcFile)
+                                    dstCompressed = srcFile->isCompressed();
+                                else
+                                {
+                                    IFileDescriptor * srcDesc = (auxfdesc.get() ? auxfdesc.get() : foreignfdesc.get());
+                                    dstCompressed = srcDesc && srcDesc->isCompressed();
+                                }
+                                if (dstCompressed)
+                                    fdesc->queryProperties().setPropBool("@blockCompressed",true);
+                            }
+
+                            if (multiclusterinsert)
+                            {
                                 if (foreigncopy)
                                     throw MakeStringException(-1,"Cannot create multi cluster file in foreign file");
                                 StringBuffer err;
                                 if (!srcFile->checkClusterCompatible(*fdesc,err))
                                     throw MakeStringException(-1,"Incompatible file for multicluster add - %s",err.str());
                             }
-                            else if (multiclustermerge) {
+                            else if (multiclustermerge)
+                            {
                                 dstFile.setown(fdir.lookup(tmp.str(),userdesc,true));
                                 if (!dstFile)
                                     throw MakeStringException(-1,"Destination for merge %s does not exist",tmp.str());
@@ -1330,9 +1354,11 @@ public:
                                 if (!dstFile->checkClusterCompatible(*fdesc,err))
                                     throw MakeStringException(-1,"Incompatible file for multicluster merge - %s",err.str());
                             }
-                            else {
+                            else
+                            {
                                 Owned<IDistributedFile> oldfile = fdir.lookup(tmp.str(),userdesc,true);
-                                if (oldfile) {
+                                if (oldfile)
+                                {
                                     StringBuffer reason;
                                     bool canRemove = oldfile->canRemove(reason);
                                     oldfile.clear();
@@ -1362,7 +1388,8 @@ public:
                             dstName.set(tmp.str());
                         }
                     }
-                    if (!dstFile&&!multiclusterinsert) {
+                    if (!dstFile&&!multiclusterinsert)
+                    {
                         throw MakeStringException(-1,"Destination file %s could not be created",tmp.str());
                     }
                 }
@@ -1457,9 +1484,13 @@ public:
                                 Audit("COPYDIFF",userdesc,srcName.get(),dstName.get());
                             }
                         }
-                        else if (foreigncopy||auxfdesc) {
-                            fsys.import(auxfdesc.get()?auxfdesc.get():foreignfdesc.get(), dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
-                            if (!abortnotify.abortRequested()) {
+                        else if (foreigncopy||auxfdesc)
+                        {
+                            IFileDescriptor * srcDesc = (auxfdesc.get() ? auxfdesc.get() : foreignfdesc.get());
+                            fsys.import(srcDesc, dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
+
+                            if (!abortnotify.abortRequested())
+                            {
                                 if (needrep)
                                     replicating = true;
                                 else
