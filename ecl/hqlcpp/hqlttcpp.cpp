@@ -13448,19 +13448,27 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
                 OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(left), LINK(rowsid));
                 OwnedHqlExpr initialLoopDataset = LINK(dataset);
-                if (filter)
-                {
-                    //If there is a loop filter then the global condition is applied to dataset filtered by that.
-                    OwnedHqlExpr mappedFilter = replaceSelector(filter, left, dataset);
-                    initialLoopDataset.setown(createDataset(no_filter, initialLoopDataset.getClear(), LINK(mappedFilter)));
-                }
-                OwnedHqlExpr firstCond = quickFullReplaceExpression(loopCond, rowsExpr, initialLoopDataset);
+                LinkedHqlExpr mappedFilter = filter;
+                LinkedHqlExpr mappedCond = loopCond;
                 if (counter)
                 {
                     //Whether to evaluate the 1st time round the loop requires COUNTER=1
+                    //Replace before the input dataset is substituted, otherwise it can change other loops
                     OwnedHqlExpr one = createConstant(createIntValue(1, counter->getType()));
-                    firstCond.setown(quickFullReplaceExpression(firstCond, counter, one));
+                    if (mappedFilter)
+                        mappedFilter.setown(quickFullReplaceExpression(mappedFilter, counter, one));
+                    if (mappedCond)
+                        mappedCond.setown(quickFullReplaceExpression(mappedCond, counter, one));
                 }
+
+                if (mappedFilter)
+                {
+                    //If there is a loop filter then the global condition is applied to dataset filtered by that.
+                    mappedFilter.setown(replaceSelector(mappedFilter, left, dataset));
+                    initialLoopDataset.setown(createDataset(no_filter, initialLoopDataset.getClear(), LINK(mappedFilter)));
+                }
+
+                OwnedHqlExpr firstCond = quickFullReplaceExpression(mappedCond, rowsExpr, initialLoopDataset);
                 return appendOwnedOperand(transformed, createExprAttribute(loopFirstAtom, firstCond.getClear()));
             }
             return transformed.getClear();
