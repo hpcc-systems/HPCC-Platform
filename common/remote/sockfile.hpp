@@ -78,6 +78,11 @@ extern REMOTE_API void setDafsEndpointPort(SocketEndpoint &ep);
 extern REMOTE_API void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mountdir);
 extern REMOTE_API ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms); // NOTE: might alter ep.port if configured for multiple ports ...
 extern REMOTE_API ISocket *checkSocketSecure(ISocket *socket);
+
+
+extern REMOTE_API void setRemoteOutputCompressionDefault(const char *type);
+extern REMOTE_API const char *queryOutputCompressionDefault();
+
 interface IOutputMetaData;
 class RowFilter;
 interface IRemoteFileIO : extends IFileIO
