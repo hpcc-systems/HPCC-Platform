@@ -1979,13 +1979,13 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
 
 void CWsDfuEx::parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray)
 {
-    if (fieldMask == 0)
-        return;
-
-    fieldCount++;
-    if (fieldMask % 2)
-        fieldIndexArray.append(fieldCount);
-    parseFieldMask(fieldMask/2, fieldCount, fieldIndexArray);
+    while (fieldMask > 0)
+    {
+        if (fieldMask & 1)
+            fieldIndexArray.append(fieldCount); //index from 0
+        fieldMask >>= 1;
+        fieldCount++;
+    }
 }
 
 void CWsDfuEx::queryFieldNames(IEspContext &context, const char *fileName, const char *cluster,
@@ -2160,23 +2160,23 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             unsigned __int64 partitionFieldMask = df->queryAttributes().getPropInt64("@partitionFieldMask");
             queryFieldNames(context, name, cluster, partitionFieldMask, partitionFieldNames);
 
-            IEspDFUFilePartition &partition = FileDetails.updatePartitions();
+            IEspDFUFilePartition &partition = FileDetails.updatePartition();
             partition.setFieldMask(partitionFieldMask);
             partition.setFieldNames(partitionFieldNames);
         }
 
-        IPropertyTree *bloom = df->queryAttributes().queryPropTree("Bloom");
-        if (bloom)
+        IPropertyTree *bloomTree = df->queryAttributes().queryPropTree("Bloom");
+        if (bloomTree)
         {
             StringArray bloomFieldNames;
-            unsigned __int64 bloomFieldMask = bloom->getPropInt64("@bloomFieldMask");
+            unsigned __int64 bloomFieldMask = bloomTree->getPropInt64("@bloomFieldMask");
             queryFieldNames(context, name, cluster, bloomFieldMask, bloomFieldNames);
 
-            IEspDFUFileBloom &blooms = FileDetails.updateBlooms();
-            blooms.setFieldMask(bloomFieldMask);
-            blooms.setFieldNames(bloomFieldNames);
-            blooms.setLimit(bloom->getPropInt64("@bloomLimit"));
-            blooms.setProbability(bloom->queryProp("@bloomProbability"));
+            IEspDFUFileBloom &bloom = FileDetails.updateBloom();
+            bloom.setFieldMask(bloomFieldMask);
+            bloom.setFieldNames(bloomFieldNames);
+            bloom.setLimit(bloomTree->getPropInt64("@bloomLimit"));
+            bloom.setProbability(bloomTree->queryProp("@bloomProbability"));
         }
     }
 
