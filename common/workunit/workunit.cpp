@@ -7461,7 +7461,7 @@ IUserDescriptor *CLocalWorkUnit::queryUserDescriptor() const
     {
         SCMStringBuffer token, user, password;
         getSecurityToken(token);
-        extractToken(token.str(), queryWuid(), user, password);
+        extractToken(token.str(), queryWuid(), user);
         userDesc.setown(createUserDescriptor());
         userDesc->set(user.str(), password.str());
     }
@@ -11413,7 +11413,7 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
     assertex(workunit);
 
     SCMStringBuffer token;
-    createToken(wuid, username, password, token);
+    createToken(wuid, username, token);
     workunit->setSecurityToken(token.str());
     StringAttr clusterName(workunit->queryClusterName());
     if (!clusterName.length()) 
@@ -12129,17 +12129,17 @@ extern WORKUNIT_API bool getWorkUnitCreateTime(const char *wuid,CDateTime &time)
     return false;
 }
 
-extern WORKUNIT_API IStringVal& createToken(const char *wuid, const char *user, const char *password, IStringVal &str)
+extern WORKUNIT_API IStringVal& createToken(const char *wuid, const char *user, IStringVal &str)
 {
     StringBuffer wu, token("X");
-    wu.append(wuid).append(';').append(user).append(';').append(password);
+    wu.append(wuid).append(';').append(user).append(';');
     encrypt(token,wu.str());
     str.set(token.str());
     return str;
 }
 
 // This will be replaced by something more secure!
-extern WORKUNIT_API void extractToken(const char *token, const char *wuid, IStringVal &user, IStringVal &password)
+extern WORKUNIT_API void extractToken(const char *token, const char *wuid, IStringVal &user)
 {
     if (token && *token)
     {
@@ -12152,8 +12152,6 @@ extern WORKUNIT_API void extractToken(const char *token, const char *wuid, IStri
             if(finger1)
             {
                 user.setLen(finger, (size32_t)(finger1-finger));
-                finger1++;
-                password.setLen(finger1, (size32_t)(wu.str() + wu.length() - finger1));
                 return;
             }
         }

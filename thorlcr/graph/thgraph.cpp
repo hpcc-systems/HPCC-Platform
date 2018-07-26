@@ -2674,10 +2674,10 @@ void CJobBase::init()
     tmp.append(graphName);
     key.set(tmp.str());
 
-    SCMStringBuffer tokenUser, password;
-    extractToken(token.str(), wuid.str(), tokenUser, password);
+    SCMStringBuffer tokenUser;
+    extractToken(token.str(), wuid.str(), tokenUser);
     userDesc = createUserDescriptor();
-    userDesc->set(user.str(), password.str());
+    userDesc->set(user.str(), nullptr);
 
     forceLogGraphIdMin = (graph_id)getWorkUnitValueInt("forceLogGraphIdMin", 0);
     forceLogGraphIdMax = (graph_id)getWorkUnitValueInt("forceLogGraphIdMax", 0);
