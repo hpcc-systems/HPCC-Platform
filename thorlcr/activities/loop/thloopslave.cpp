@@ -887,12 +887,9 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        if (hasStarted())
-        {
-            IThorDataLink *branchInput = queryInput(branch);
-            if (branchInput)
-                branchInput->getMetaInfo(info);
-        }
+        IThorDataLink *branchInput = queryInput(branch);
+        if (branchInput)
+            branchInput->getMetaInfo(info);
     }
 };
 

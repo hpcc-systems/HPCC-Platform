@@ -145,10 +145,6 @@ public:
         
         OwnedConstThorRow prev = next.getClear();
         next.setown(getNext());
-        if (next && !prev)
-        {
-            throwUnexpected();
-        }
         if (next && !helper->isSameGroup(prev, next))
         {
             noteEndOfGroup();

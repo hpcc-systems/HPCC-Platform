@@ -218,8 +218,6 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
 
     rowcount_t lastTotalLimitState = 0, lastSkipCountState = RCMAX;
 
-    MemoryBuffer currentState; // to determinte whether new lookahead reader required.
-
     void sendOnce(rowcount_t count)
     {
         {
