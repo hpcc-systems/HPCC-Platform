@@ -76,21 +76,22 @@ if(USE_SPARK)
       DOWNLOAD ${SPARK_URL}
       ${CMAKE_BINARY_DIR}/downloads/${SPARK_PACKAGE_NAME}.tgz
       EXPECTED_HASH SHA512=${SHA512STRING}
-      TIMEOUT 180
+      TIMEOUT 300
       INACTIVITY_TIMEOUT 120)"
     )
   else (SHA512STRING)
     install(CODE "file(
       DOWNLOAD ${SPARK_URL}
       ${CMAKE_BINARY_DIR}/downloads/${SPARK_PACKAGE_NAME}.tgz
-      TIMEOUT 120
-      INACTIVITY_TIMEOUT 30)"
+      TIMEOUT 300
+      INACTIVITY_TIMEOUT 120)"
     )
   endif (SHA512STRING)
 
   install(
      CODE "
      execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}/downloads\" COMMAND \"${CMAKE_COMMAND}\" -E tar -zxf \"${SPARK_PACKAGE_NAME}.tgz\" )
+     execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}/downloads\" COMMAND \"${CMAKE_COMMAND}\" -E rename \"${SPARK_PACKAGE_NAME}\" \"spark-hadoop\" )
      execute_process( WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}/downloads\" COMMAND \"${CMAKE_COMMAND}\" -E remove -f  \"${SPARK_PACKAGE_NAME}.tgz\" )
     "
   )
