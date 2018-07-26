@@ -1984,7 +1984,7 @@ protected:
     MemoryBuffer reply;
     unsigned handle = 0;
     size32_t bufRemaining = 0;
-    unsigned bufPos = 0;
+    offset_t bufPos = 0;
     bool eof = false;
 
     bool firstRequest = true;
