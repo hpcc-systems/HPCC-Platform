@@ -21,16 +21,20 @@
 //version multiPart=true
 //version multiPart=false,useSequential=true
 //version keyedFilters=true
+//version keyedFilters=true,opRemoteRead=true
+//version keyedFilters=true,multiPart=true,useSequential=true,opRemoteRead=true
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, false);
 useSequential := #IFDEFINED(root.useSequential, false);
 keyedFilters := #IFDEFINED(root.keyedFilters, false);
+optRemoteRead := #IFDEFINED(root.optRemoteRead, false);
 
 //--- end of version configuration ---
 
 #onwarning (2168, ignore);
 #option ('implicitKeyedDiskFilter', keyedFilters);
+#option('forceRemoteRead', optRemoteRead);
 
 import $.setup;
 sq := setup.sq(multiPart);

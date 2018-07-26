@@ -798,6 +798,7 @@ struct HqlCppOptions
     bool                addDefaultBloom;
     bool                newDiskReadMapping;
     bool                transformNestedSequential;
+    bool                forceAllProjectedDiskSerialized;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

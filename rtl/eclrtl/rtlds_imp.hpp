@@ -486,6 +486,7 @@ extern ECLRTL_API void rtlDeserializeDictionary(size32_t & count, const byte * *
 extern ECLRTL_API void rtlDeserializeDictionaryFromDataset(size32_t & count, const byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, IHThorHashLookupInfo & hashInfo, size32_t lenSrc, const void * src);
 extern ECLRTL_API void rtlSerializeDictionary(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
 extern ECLRTL_API void rtlSerializeDictionaryToDataset(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
+extern ECLRTL_API void rtlCreateDictionaryFromDataset(size32_t & count, const byte * * & rowset, IEngineRowAllocator * rowAllocator, IHThorHashLookupInfo & hashInfo);
 
 extern ECLRTL_API void rtlSerializeDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
 extern ECLRTL_API void rtlSerializeDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
@@ -738,4 +739,5 @@ public:
 protected:
     CHThorDictHelper helper;
 };
+
 #endif

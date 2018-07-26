@@ -258,7 +258,7 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
         const RtlTypeInfo *curType = queryType(i);
         if (!curType->isFixedSize() || (fields[i]->flags & RFTMinifblock))
             numVarFields++;
-        if (curType->getType()==type_table || curType->getType()==type_record)
+        if (curType->getType()==type_table || curType->getType()==type_record || curType->getType()==type_dictionary)
             numTables++;
     }
 
@@ -300,6 +300,7 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
         switch (curType->getType())
         {
         case type_table:
+        case type_dictionary:
             tableIds[curTable] = i;
             nestedTables[curTable++] = new RtlRecord(curType->queryChildType()->queryFields(), expandFields);
             break;
