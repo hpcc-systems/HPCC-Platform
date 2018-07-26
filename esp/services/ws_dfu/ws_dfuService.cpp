@@ -3999,23 +3999,6 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
                 }
             }
 
-            StringBuffer username;
-            context.getUserID(username);
-
-            Owned<IUserDescriptor> userdesc;
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), context.queryPassword(), context.querySignature());
-
-            {
-                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalNameStr.str(), userdesc);
-                if(!df)
-                    throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.", logicalNameStr.str());
-
-                IDistributedSuperFile *sf = df->querySuperFile();
-                if (sf && (sf->numSubFiles() > 1))
-                    throw MakeStringException(ECLWATCH_INVALID_ACTION,"This feature is not designed to work with a superfile which contains multiple subfiles.");
-            }
-
             Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
             Owned<INewResultSet> result;
             if (m_clusterName.length() > 0)
@@ -4723,19 +4706,6 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
         const char* fileName = fileNameStr.trim().str();
         if (!fileName || !*fileName)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "CWsDfuEx::onDFUGetFileMetaData: LogicalFileName not set");
-
-        {//Check whether the meta data is available for the file. If not, throw an exception.
-            StringBuffer nameStr;
-            Owned<IUserDescriptor> userdesc = createUserDescriptor();
-            userdesc->set(context.getUserID(nameStr).str(), context.queryPassword(), context.querySignature());
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userdesc);
-            if(!df)
-                throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"CWsDfuEx::onDFUGetFileMetaData: Could not find file %s.", fileName);
-
-            IDistributedSuperFile *sf = df->querySuperFile();
-            if (sf && (sf->numSubFiles() > 1))
-                throw MakeStringException(ECLWATCH_INVALID_ACTION, "CWsDfuEx::onDFUGetFileMetaData: This feature is not designed to work with a superfile which contains multiple subfiles.");
-        }
 
         const char* cluster = NULL;
         StringBuffer clusterNameStr = req.getClusterName();
