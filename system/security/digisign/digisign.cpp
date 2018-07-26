@@ -120,8 +120,8 @@ public:
         publicKeyBuff.set(_pubKeyBuff);
         privateKeyBuff.set(_privKeyBuff);
         passphraseBuffEnc.set(_passPhrase);//MD5 encrypted passphrase
-        signingConfigured = !publicKeyBuff.isEmpty();
-        verifyingConfigured = !privateKeyBuff.isEmpty();
+        signingConfigured = !privateKeyBuff.isEmpty();
+        verifyingConfigured = !publicKeyBuff.isEmpty();
     }
 
     bool isDigiSignerConfigured()
