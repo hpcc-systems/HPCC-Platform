@@ -57,13 +57,6 @@ IF (USE_OPENSSL)
     )
 ENDIF()
 
-FOREACH( iFILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/EspMethods.txt
-    ${CMAKE_CURRENT_SOURCE_DIR}/README.txt
-)
-    Install ( FILES ${iFILES} DESTINATION componentfiles COMPONENT Runtime )
-ENDFOREACH ( iFILES )
-
 if ( PLATFORM )
     install ( PROGRAMS soapplus.install DESTINATION etc/init.d/install COMPONENT Runtime )
     install ( PROGRAMS soapplus.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
