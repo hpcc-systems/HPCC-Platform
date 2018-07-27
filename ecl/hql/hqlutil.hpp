@@ -194,6 +194,7 @@ extern HQL_API IHqlExpression * getFailMessage(IHqlExpression * failExpr, bool n
 extern HQL_API IAtom * queryCsvTableEncoding(IHqlExpression * tableExpr);
 extern HQL_API IAtom * queryCsvEncoding(IHqlExpression * csvAttr);
 extern HQL_API IHqlExpression * combineIfsToMap(IHqlExpression * expr);
+extern HQL_API IHqlExpression * combineIfsToCase(IHqlExpression * expr);
 extern HQL_API IHqlExpression * appendLocalAttribute(IHqlExpression * expr);
 extern HQL_API IHqlExpression * removeLocalAttribute(IHqlExpression * expr);
 extern HQL_API IHqlExpression * removeAttribute(IHqlExpression * expr, IAtom * attr);

@@ -1034,6 +1034,7 @@ IHqlExpression * HqlCppCaseInfo::createResultsExpr(IHqlExpression * matchVar, bo
     HqlExprArray choosePairs;
     cvtChooseListToPairs(choosePairs, newlist, 0);
 
+    *includedDefault = true;
     IHqlExpression * caseExpr = createOpenValue(no_case, LINK(retType));
     caseExpr->addOperand(LINK(matchVar));
     ForEachItemIn(idx2, choosePairs)

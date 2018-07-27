@@ -93,6 +93,10 @@ IReferenceSelector * HqlCppTranslator::doBuildRowIf(BuildCtx & ctx, IHqlExpressi
         return buildNewRow(ctx, expr->queryChild(branch));
     }
 
+    OwnedHqlExpr converted = combineIfsToCase(expr);
+    if (converted)
+        return buildNewRow(ctx, converted);
+
     IHqlExpression * trueBranch = expr->queryChild(1);
     IHqlExpression * falseBranch = expr->queryChild(2);
 
@@ -115,6 +119,41 @@ IReferenceSelector * HqlCppTranslator::doBuildRowIf(BuildCtx & ctx, IHqlExpressi
 
     condctx.associateExpr(queryConditionalRowMarker(), rowExpr);
     doBuildRowIfBranch(ctx, condctx, row, falseBranch);
+
+    ctx.associate(*row);
+    return createReferenceSelector(row);
+}
+
+
+class ExprBranchAssignProcessor : implements IExprProcessor
+{
+public:
+    ExprBranchAssignProcessor(BoundRow * _targetRow, IHqlExpression * _rowExpr) : targetRow(_targetRow), rowExpr(_rowExpr) {}
+
+    virtual void process(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * expr) override
+    {
+        ctx.associateExpr(queryConditionalRowMarker(), rowExpr);
+        translator.doBuildRowIfBranch(ctx, ctx, targetRow, expr);
+    }
+
+private:
+    BoundRow * targetRow;
+    IHqlExpression * rowExpr;
+};
+
+
+IReferenceSelector * HqlCppTranslator::doBuildRowCase(BuildCtx & ctx, IHqlExpression * expr)
+{
+    HqlCppCaseInfo info(*this);
+    doBuildCaseInfo(expr, info);
+
+    //Ideally should have a constant modifier on the following row...
+    Owned<ITypeInfo> rowType = makeReferenceModifier(expr->getType());
+    OwnedHqlExpr rowExpr = ctx.getTempDeclare(rowType, NULL);
+    Owned<BoundRow> row = createBoundRow(expr->queryBody(), rowExpr);
+
+    ExprBranchAssignProcessor assigner(row, rowExpr);
+    info.buildProcess(ctx, assigner);
 
     ctx.associate(*row);
     return createReferenceSelector(row);
@@ -431,6 +470,8 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
         return buildActiveRow(ctx, expr->queryChild(0));
     case no_if:
         return doBuildRowIf(ctx, expr);
+    case no_case:
+        return doBuildRowCase(ctx, expr);
     case no_id2blob:
         return doBuildRowIdToBlob(ctx, expr, true);
     case no_index:
@@ -4675,6 +4716,15 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
             }
         }
         break;
+    case no_case:
+    case no_map:
+        {
+            HqlCppCaseInfo info(*this);
+            doBuildCaseInfo(expr, info);
+            ExprRowAssignProcessor assigner(target);
+            info.buildProcess(ctx, assigner);
+            return;
+        }
         /*
     case no_externalcall:
         //MORE: Should assign directly to the target, but may not be very easy....
