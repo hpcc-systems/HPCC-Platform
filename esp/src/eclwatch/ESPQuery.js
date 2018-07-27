@@ -101,7 +101,7 @@ define([
         }
     });
 
-    var Query = declare([ESPUtil.Singleton], {
+    var Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
         i18n: nlsHPCC,
         constructor: function (args) {
             this.inherited(arguments);

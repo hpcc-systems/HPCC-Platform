@@ -73,7 +73,7 @@ define([
     };
 
 
-    var TopologyItem = declare([ESPTree.Item], {
+    var TopologyItem = declare([ESPTree.Item], {  // jshint ignore:line
         constructor: function (args) {
             this.__hpcc_children = [];
         },

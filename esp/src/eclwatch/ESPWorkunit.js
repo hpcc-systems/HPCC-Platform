@@ -85,7 +85,7 @@ define([
         }
     });
 
-    var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
+    var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore:line
         i18n: nlsHPCC,
 
         //  Asserts  ---

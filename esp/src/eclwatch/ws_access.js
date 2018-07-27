@@ -460,7 +460,7 @@ define([
         }
     });
 
-    var self = {
+    var self = {  // jshint ignore:line
         checkError: function (response, sourceMethod, showOkMsg) {
             var retCode = lang.getObject(sourceMethod + "Response.retcode", false, response);
             var retMsg = lang.getObject(sourceMethod + "Response.retmsg", false, response);

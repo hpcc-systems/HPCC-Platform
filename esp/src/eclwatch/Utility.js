@@ -21,9 +21,10 @@
     }
 
     function parseXML (val) {
+        var xmlDoc;
         if (window.DOMParser) {
             var parser = new DOMParser();
-            var xmlDoc = parser.parseFromString(val,"text/xml");
+            xmlDoc = parser.parseFromString(val,"text/xml");
         } else {
             xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
             xmlDoc.async = false;

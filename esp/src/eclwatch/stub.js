@@ -103,7 +103,7 @@ define([
         domStyle.set(dom.byId("loadingOverlay"), "opacity", "255");
     },
 
-    stopLoading = function () {
+    stopLoading = function () {   // jshint ignore:line
         fx.fadeOut({
             node: dom.byId("loadingOverlay"),
             onEnd: function (node) {

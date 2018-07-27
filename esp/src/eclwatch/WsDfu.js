@@ -87,7 +87,7 @@ define([
         }
     });
 
-    var self = {
+    var self = {  // jshint ignore:line
         CreateDiskUsageStore: function() {
             var store = new DiskUsageStore();
             return Observable(store);

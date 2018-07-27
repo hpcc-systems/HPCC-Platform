@@ -203,7 +203,7 @@ define([
         }
     });
 
-    var LogicalFile = declare([ESPUtil.Singleton], {
+    var LogicalFile = declare([ESPUtil.Singleton], {  // jshint ignore:line
         _FileDetailSetter: function(FileDetail) {
             this.FileDetail = FileDetail;
             this.result = ESPResult.Get(FileDetail);
