@@ -91,7 +91,7 @@ interface IThorDataLink : extends IInterface
 {
     virtual void start() = 0; // prepares input
     virtual CSlaveActivity *queryFromActivity() = 0; // activity that has this as an output
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const = 0;
     virtual bool isGrouped() const { return false; }
     virtual IOutputMetaData * queryOutputMeta() const = 0;
     virtual bool isInputOrdered(bool consumerOrdered) const = 0;

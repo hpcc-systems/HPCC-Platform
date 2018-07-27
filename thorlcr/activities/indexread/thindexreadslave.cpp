@@ -725,7 +725,7 @@ public:
         if (eoi && RCMAX != keyedLimitCount && !keyedLimitSkips && (container.queryLocalOrGrouped() || firstNode()))
             eoi = false; // because a non skipping limit needs to be triggered by checkLimit in nextRow(), which will either fire an exception or generate a row
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSource = true;
@@ -862,7 +862,7 @@ public:
         localAggTable->addRow(next);
     }
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSource = true;
@@ -977,7 +977,7 @@ public:
     }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSource = true;
@@ -1143,7 +1143,7 @@ public:
     }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSource = true;
@@ -1286,7 +1286,7 @@ public:
     }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSource = true;

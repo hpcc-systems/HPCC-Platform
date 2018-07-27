@@ -239,6 +239,7 @@ void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDat
         if ((helper->getFlags() & TDXtemporary) && (!container.queryJob().queryUseCheckpoints()))
             partDescs.item(0).queryOwner().setDefaultDir(queryTempDir());
     }
+    gotMeta = false; // if variable filename and inside loop, need to invalidate cached meta
 }
 
 const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)
@@ -303,18 +304,15 @@ void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 
 /////////////////
 
-void CDiskWriteSlaveActivityBase::setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered)
-{
-    PARENT::setInputStream(index, _input, consumerOrdered);
-    if (dlfn.isExternal() && !firstNode())
-        setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), PROCESS_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), grouped, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()));
-}
-
 void CDiskWriteSlaveActivityBase::open()
 {
     start();
     if (dlfn.isExternal() && !firstNode())
     {
+        if (hasLookAhead(0))
+            startLookAhead(0);
+        else
+            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), PROCESS_SMART_BUFFER_SIZE, ::canStall(input), grouped, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()), false);
         if (!rfsQueryParallel)
         {
             ActPrintLog("Blocked, waiting for previous part to complete write");

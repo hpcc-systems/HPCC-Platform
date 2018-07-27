@@ -84,7 +84,7 @@ public:
     { 
         return false; 
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.fastThrough = true;

@@ -111,6 +111,17 @@ public:
     virtual const mptag_t queryTag() const { return tag; }
 };
 
+
+bool canStall(IThorDataLink *input)
+{
+    return input->queryFromActivity()->canStall();
+}
+
+//
+bool CThorInput::isFastThrough() const
+{
+    return itdl->queryFromActivity()->isFastThrough();
+}
 // 
 
 CSlaveActivity::CSlaveActivity(CGraphElementBase *_container) : CActivityBase(_container), CEdgeProgress(this)
@@ -124,6 +135,11 @@ CSlaveActivity::~CSlaveActivity()
     outputs.kill();
     if (data) delete [] data;
     ActPrintLog("DESTROYED");
+}
+
+bool CSlaveActivity::hasLookAhead(unsigned index) const
+{
+    return inputs.item(index).hasLookAhead();
 }
 
 void CSlaveActivity::setOutputStream(unsigned index, IEngineRowStream *stream)
@@ -182,7 +198,7 @@ void CSlaveActivity::setInputStream(unsigned index, CThorInput &_input, bool con
             _input.tracingStream.setown(tracingStream);
             _inputStream = tracingStream;
         }
-        _input.stream.set(_inputStream);
+        _input.setStream(LINK(_inputStream));
         _input.junction.setown(junction.getClear());
         if (0 == index)
             inputStream = _inputStream;
@@ -190,24 +206,110 @@ void CSlaveActivity::setInputStream(unsigned index, CThorInput &_input, bool con
     }
 }
 
-IEngineRowStream *CSlaveActivity::replaceInputStream(unsigned index, IEngineRowStream *_inputStream)
+void CSlaveActivity::setLookAhead(unsigned index, IStartableEngineRowStream *lookAhead, bool persistent)
 {
     CThorInput &_input = inputs.item(index);
-    IEngineRowStream *prevInputStream = _input.stream.getClear();
-    _input.stream.setown(_inputStream);
-    if (0 == index)
-        inputStream = _inputStream;
-    return prevInputStream;
-}
-
-void CSlaveActivity::setLookAhead(unsigned index, IStartableEngineRowStream *lookAhead)
-{
-    CThorInput &_input = inputs.item(index);
-    _input.lookAhead.setown(lookAhead);
-    _input.stream.set(lookAhead);
+    _input.setLookAhead(lookAhead, persistent);
     if (0 == index)
         inputStream = lookAhead;
+    if (!persistent)
+        _input.startLookAhead();
 }
+
+void CSlaveActivity::startLookAhead(unsigned index)
+{
+    CThorInput &_input = inputs.item(index);
+    _input.startLookAhead();
+    if (0 == index)
+        inputStream = _input.queryStream();
+}
+
+bool CSlaveActivity::isLookAheadActive(unsigned index) const
+{
+    CThorInput &_input = inputs.item(index);
+    return _input.isLookAheadActive();
+}
+
+bool CSlaveActivity::isInputFastThrough(unsigned index) const
+{
+    CThorInput &input = inputs.item(index);
+    return input.isFastThrough();
+}
+
+/* If fastThrough, return false.
+ * If !fastThrough (indicating needs look ahead) and has existing lookahead, start it, return false.
+ * If !fastThrough (indicating needs look ahead) and no existing lookahead, return true, caller will install.
+ *
+ * NB: only return true if new lookahead needs installing.
+ */
+bool CSlaveActivity::ensureStartFTLookAhead(unsigned index)
+{
+    CThorInput &input = inputs.item(index);
+    if (input.isFastThrough())
+        return false; // no look ahead required
+    else
+    {
+        // look ahead required
+        if (input.hasLookAhead())
+        {
+            // no change, start existing look ahead
+            startLookAhead(index);
+            return false; // no [new] look ahead required
+        }
+        else
+            return true; // new look ahead required
+    }
+}
+
+// recurse through active inputs, if _all_ are fastThrough, return true
+bool CSlaveActivity::isFastThrough() const
+{
+    if (!hasStarted())
+        return true;
+    ThorDataLinkMetaInfo info;
+    getMetaInfo(info);
+    if (!info.fastThrough || info.canStall) // NB: JIC - but should never be marked fastThrough==true if canStall==true
+        return false;
+    for (unsigned i=0; i<queryNumInputs(); i++)
+    {
+        IThorDataLink *input = queryInput(i);
+        if (input && queryInputStarted(i))
+        {
+            CSlaveActivity *inputAct = input->queryFromActivity();
+            if (!inputAct->isFastThrough())
+                return false;
+        }
+    }
+    return true;
+}
+
+// NB: very similar to above, should possible be merged at some point
+// recurse through active inputs, if _any_ are canStall, return true
+bool CSlaveActivity::canStall() const
+{
+    if (!hasStarted())
+        return false;
+    ThorDataLinkMetaInfo info;
+    getMetaInfo(info);
+    if (info.canStall)
+        return true;
+    if (info.isSource || info.buffersInput || info.canBufferInput)
+        return false;
+
+    for (unsigned i=0; i<queryNumInputs(); i++)
+    {
+        IThorDataLink *input = queryInput(i);
+        if (input && queryInputStarted(i))
+        {
+            CSlaveActivity *inputAct = input->queryFromActivity();
+            if (inputAct->canStall())
+                return true;
+        }
+    }
+    return false;
+}
+
+
 
 IStrandJunction *CSlaveActivity::getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
 {
@@ -248,7 +350,7 @@ IThorDataLink *CSlaveActivity::queryInput(unsigned index) const
 IEngineRowStream *CSlaveActivity::queryInputStream(unsigned index) const
 {
     if (index>=inputs.ordinality()) return nullptr;
-    return inputs.item(index).stream;
+    return inputs.item(index).queryStream();
 }
 
 IStrandJunction *CSlaveActivity::queryInputJunction(unsigned index) const
@@ -298,14 +400,12 @@ void CSlaveActivity::startInput(unsigned index, const char *extra)
     try
     {
 #endif
-        _input.itdl->start();
-        startJunction(_input.junction);
-        if (_input.lookAhead)
-            _input.lookAhead->start();
-        _input.stopped = false;
-        _input.started = true;
+        _input.start();
         if (0 == index)
+        {
             inputStopped = false;
+            inputStream = _input.queryStream();
+        }
 #ifdef TRACE_STARTSTOP_EXCEPTIONS
     }
     catch(IException *e)
@@ -337,11 +437,12 @@ void CSlaveActivity::stopInput(unsigned index, const char *extra)
     try
     {
 #endif
-        if (_input.stream)
-            _input.stream->stop();
-        _input.stopped = true;
+        _input.stop();
         if (0 == index)
+        {
             inputStopped = true;
+            inputStream = _input.queryStream();
+        }
 
 #ifdef TRACE_STARTSTOP_EXCEPTIONS
     }

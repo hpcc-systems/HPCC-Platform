@@ -270,14 +270,14 @@ public:
     }
     
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         if (!gotMeta)
         {
             gotMeta = true;
             initMetaInfo(cachedMetaInfo);
             cachedMetaInfo.isSource = true;
-            getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), partDescs.getArray(), partHandler);
+            getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), ((IArrayOf<IPartDescriptor> &) partDescs).getArray(), partHandler);
             cachedMetaInfo.unknownRowsOutput = true; // at least I don't think we know
             cachedMetaInfo.fastThrough = true;
         }

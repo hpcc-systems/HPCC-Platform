@@ -97,7 +97,7 @@ public:
         return rowBuilder.finalizeRowClear(sz);
     }
     virtual bool isGrouped() const override { return grouped; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSource = true;

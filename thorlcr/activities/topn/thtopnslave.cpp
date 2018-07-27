@@ -272,7 +272,7 @@ public:
         }
         return NULL;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canStall = true;

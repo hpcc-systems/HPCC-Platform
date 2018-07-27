@@ -174,7 +174,7 @@ public:
             numGroupMax = numThisGroup;
         numGroups++;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         if (rolloverEnabled)
@@ -182,6 +182,8 @@ public:
             info.isSequential = true;
             info.unknownRowsOutput = true; // don't know how many rolled over
         }
+        else
+            info.fastThrough = true;
         calcMetaInfoSize(info, queryInput(0));
     }
     virtual bool isGrouped() const override{ return true; }

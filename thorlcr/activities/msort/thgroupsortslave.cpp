@@ -109,7 +109,7 @@ public:
         return row.getClear();
     }
     virtual bool isGrouped() const override { return container.queryGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.buffersInput = true;
@@ -185,7 +185,7 @@ public:
         inputStream->resetEOF();
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         calcMetaInfoSize(info, queryInput(0));

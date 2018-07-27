@@ -107,15 +107,25 @@ public:
 
 class CThorInput : public CSimpleInterfaceOf<IInterface>
 {
+    Linked<IEngineRowStream> stream;
+    Linked<IStartableEngineRowStream> lookAhead;
+
+
+    void _startLookAhead()
+    {
+        assertex(nullptr != lookAhead);
+        lookAhead->start();
+        lookAheadActive = true;
+    }
 public:
     unsigned sourceIdx = 0;
     Linked<IThorDataLink> itdl;
-    Linked<IStartableEngineRowStream> lookAhead;
     Linked<IThorDebug> tracingStream;
-    Linked<IEngineRowStream> stream;
     Linked<IStrandJunction> junction;
     bool stopped = false;
     bool started = false;
+    bool persistentLookAhead = false;
+    bool lookAheadActive = false;
 
     explicit CThorInput() { }
     void set(IThorDataLink *_itdl, unsigned idx) { itdl.set(_itdl); sourceIdx = idx; }
@@ -126,6 +136,56 @@ public:
     }
     bool isStopped() const { return stopped; }
     bool isStarted() const { return started; }
+    bool isLookAheadActive() const { return lookAheadActive; }
+    IEngineRowStream *queryStream() const
+    {
+        if (lookAhead && lookAheadActive)
+            return lookAhead;
+        else
+            return stream;
+    }
+    void setStream(IEngineRowStream *_stream) { stream.setown(_stream); }
+    bool hasLookAhead() const { return nullptr != lookAhead; }
+    void setLookAhead(IStartableEngineRowStream *_lookAhead, bool persistent)
+    {
+        dbgassertex(!persistentLookAhead); // If persistent, must only be called once
+
+        /* NB: if persistent, must be installed before starting input, e.g. during setInputStream wiring.
+         * if not persistent, must be installed after input started, e.g. in start() after startInput(x).
+         */
+        dbgassertex((persistent && !isStarted()) || (!persistent && isStarted()));
+
+        lookAhead.setown(_lookAhead); // if pre-existing lookAhead, this will replace.
+        persistentLookAhead = persistent;
+    }
+    void startLookAhead()
+    {
+        dbgassertex(!persistentLookAhead);
+        dbgassertex(isStarted());
+        _startLookAhead();
+    }
+    void start()
+    {
+        itdl->start();
+        startJunction(junction);
+        if (persistentLookAhead)
+            _startLookAhead();
+        stopped = false;
+        started = true;
+    }
+    void stop()
+    {
+        // NB: lookAhead can be installed but not used
+        if (lookAheadActive)
+        {
+            lookAhead->stop();
+            lookAheadActive = false;
+        }
+        else if (stream)
+            stream->stop();
+        stopped = true;
+    }
+    bool isFastThrough() const;
 };
 typedef IArrayOf<CThorInput> CThorInputArray;
 
@@ -150,6 +210,12 @@ protected:
 
 protected:
     unsigned __int64 queryLocalCycles() const;
+    bool ensureStartFTLookAhead(unsigned index);
+    bool isInputFastThrough(unsigned index) const;
+    bool hasLookAhead(unsigned index) const;
+    void setLookAhead(unsigned index, IStartableEngineRowStream *lookAhead, bool persistent);
+    void startLookAhead(unsigned index);
+    bool isLookAheadActive(unsigned index) const;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CActivityBase)
@@ -168,8 +234,6 @@ public:
     virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx) override;
     virtual void connectInputStreams(bool consumerOrdered);
 
-    void setLookAhead(unsigned index, IStartableEngineRowStream *lookAhead);
-    IEngineRowStream *replaceInputStream(unsigned index, IEngineRowStream *_inputStream);
     IThorDataLink *queryOutput(unsigned index) const;
     IThorDataLink *queryInput(unsigned index) const;
     IEngineRowStream *queryInputStream(unsigned index) const;
@@ -187,12 +251,15 @@ public:
     void stopAllInputs();
     virtual void serializeStats(MemoryBuffer &mb);
     void debugRequest(unsigned edgeIdx, MemoryBuffer &msg);
+    bool canStall() const;
+    bool isFastThrough() const;
+
 
 // IThorDataLink
     virtual CSlaveActivity *queryFromActivity() override { return this; }
     virtual IStrandJunction *getOutputStreams(CActivityBase &_ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override;
     virtual void setOutputStream(unsigned index, IEngineRowStream *stream) override;
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override { }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override { }
     virtual bool isGrouped() const override;
     virtual IOutputMetaData * queryOutputMeta() const;
     virtual void dataLinkSerialize(MemoryBuffer &mb) const override;
@@ -496,5 +563,8 @@ interface IPartDescriptor;
 extern graphslave_decl bool ensurePrimary(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFile & ifile, unsigned &location, StringBuffer &path);
 extern graphslave_decl IActivityReplicatedFile *createEnsurePrimaryPartFile(const char *logicalFilename, IPartDescriptor *partDesc);
 extern graphslave_decl IThorFileCache *createFileCache(unsigned limit);
+
+extern graphslave_decl bool canStall(IThorDataLink *input);
+
 
 #endif

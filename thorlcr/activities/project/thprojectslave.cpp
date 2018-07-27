@@ -95,7 +95,7 @@ public:
     virtual CThorStrandProcessor *createStrandSourceProcessor(bool inputOrdered) override { throwUnexpected(); }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.fastThrough = true; // ish
@@ -311,7 +311,7 @@ public:
         CSlaveActivity::abort();
         prefetcher.abort();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         if (helper->canFilter())

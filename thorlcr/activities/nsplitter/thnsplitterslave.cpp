@@ -48,7 +48,7 @@ public:
 
 // IThorDataLink impl.
     virtual CSlaveActivity *queryFromActivity() override;
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override;
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override;
     virtual void dataLinkSerialize(MemoryBuffer &mb) const override { CEdgeProgress::dataLinkSerialize(mb); }
     virtual rowcount_t getProgressCount() const override { return CEdgeProgress::getCount(); }
     virtual bool isGrouped() const override;
@@ -204,8 +204,6 @@ public:
 
                 PARENT::start();
                 initMetaInfo(cachedMetaInfo);
-                //GH->JCS I think the following line is correct and may remove some downstream spilling streams
-                //cachedMetaInfo.canBufferInput = spill;
                 calcMetaInfoSize(cachedMetaInfo, queryInput(0));
 
                 ForEachItemIn(o, outputs)
@@ -232,6 +230,7 @@ public:
                     {
                         ActPrintLog("Spill is 'balanced'");
                         smartBuf.setown(createSharedSmartMemBuffer(this, numOutputs, queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
+                        cachedMetaInfo.canStall = true;
                     }
                     // mark any outputs already stopped
                     ForEachItemIn(o, outputs)
@@ -387,7 +386,7 @@ public:
         streams.append(this);
         return nullptr;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         info = cachedMetaInfo;
     }
@@ -406,7 +405,7 @@ CSlaveActivity *CSplitterOutput::queryFromActivity()
     return &activity;
 }
 
-void CSplitterOutput::getMetaInfo(ThorDataLinkMetaInfo &info)
+void CSplitterOutput::getMetaInfo(ThorDataLinkMetaInfo &info) const
 {
     activity.getMetaInfo(info);
 }

@@ -28,7 +28,6 @@ protected:
     Semaphore finishedSem;
     rowcount_t counter = 0, localRecCount = 0;
     rowcount_t denominator = 0, numerator = 0;
-    Owned<IEngineRowStream> originalInputStream;
 
     bool haveLocalCount() { return RCUNBOUND != localRecCount; }
     inline bool wanted()
@@ -74,17 +73,23 @@ protected:
         // Need lookahead _unless_ row count pre-known.
         if (0 == numerator)
             localRecCount = 0;
-        else if (info.totalRowsMin == info.totalRowsMax)
-        {
-            localRecCount = (rowcount_t)info.totalRowsMax;
-            ActPrintLog("%s: row count pre-known to be %" RCPF "d", actStr.str(), localRecCount);
-        }
         else
         {
-            localRecCount = RCUNBOUND;
-            IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());
-            originalInputStream.setown(replaceInputStream(0, lookAhead)); // NB: this is post base start()
-            lookAhead->start();
+            if (info.totalRowsMin == info.totalRowsMax)
+            {
+                localRecCount = (rowcount_t)info.totalRowsMax;
+                ActPrintLog("%s: row count pre-known to be %" RCPF "d", actStr.str(), localRecCount);
+            }
+            else
+            {
+                localRecCount = RCUNBOUND;
+
+                // NB: this is post base start()
+                if (!hasLookAhead(0))
+                    setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()), false);
+                else
+                    startLookAhead(0);
+            }
         }
     }
 public:
@@ -103,18 +108,8 @@ public:
         denominator = validRC(helper->getProportionDenominator());
         numerator = validRC(helper->getProportionNumerator());
     }
-    virtual void stop() override
-    {
-        PARENT::stop();
-
-        // restore original inputStream if lookAhead was installed, to avoid base start spuriously starting previously installed lookahead
-        if (originalInputStream)
-        {
-            Owned<IEngineRowStream> lookAhead = replaceInputStream(0, originalInputStream.getClear());
-        }
-    }
     virtual bool isGrouped() const override { return false; }
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.buffersInput = true;

@@ -1381,6 +1381,9 @@ public:
         try
         {
             startInput(0);
+            if (ensureStartFTLookAhead(0))
+                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), LOOKUPJOINL_SMART_BUFFER_SIZE, ::canStall(input), grouped, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()), false);
+            left.set(inputStream); // can be replaced by loader stream
         }
         catch(IException *e)
         {
@@ -1442,16 +1445,8 @@ public:
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {
         PARENT::setInputStream(index, _input, consumerOrdered);
-        if (0 == index)
-        {
-            if (!isFastThrough(input))
-                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), LOOKUPJOINL_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(input->queryFromActivity()), grouped, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()));
-        }
-        else
-        {
-            dbgassertex(1 == index);
+        if (1 == index)
             right = queryInputStream(1);
-        }
     }
     virtual void reset() override
     {
@@ -1469,7 +1464,6 @@ public:
         leftMatch = false;
         rhsNext = NULL;
 
-        left.set(inputStream); // can be replaced by loader stream
         if (isGlobal())
         {
             // It is not until here, that it is guaranteed all channel slave activities have been initialized.
@@ -1545,7 +1539,7 @@ public:
         left.clear();
         dataLinkStop();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.unknownRowsOutput = true;

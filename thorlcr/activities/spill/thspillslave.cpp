@@ -193,7 +193,7 @@ public:
     }
 
     virtual bool isGrouped() const override { return grouped; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.fastThrough = true; // ish

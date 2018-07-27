@@ -86,8 +86,9 @@ protected:
     StringArray subfileLogicalFilenames;
     IArrayOf<IPartDescriptor> partDescs;
     IHThorDiskReadBaseArg *helper;
-    bool checkFileCrc, gotMeta, crcCheckCompressed, markStart;
-    ThorDataLinkMetaInfo cachedMetaInfo;
+    bool checkFileCrc, crcCheckCompressed, markStart;
+    mutable bool gotMeta;
+    mutable ThorDataLinkMetaInfo cachedMetaInfo;
     Owned<CDiskPartHandlerBase> partHandler;
     Owned<IExpander> eexp;
     rowcount_t diskProgress = 0;
@@ -143,7 +144,6 @@ public:
     virtual CFPmode onProgress(unsigned __int64 sizeDone, unsigned __int64 totalSize);
 
 // IThorSlaveProcess overloaded methods
-    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override;
     virtual void kill();
     virtual void process();
     virtual void endProcess();

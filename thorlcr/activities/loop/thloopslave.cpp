@@ -111,7 +111,7 @@ public:
     }
 // IThorDataLink
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }
@@ -594,7 +594,7 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }
@@ -680,7 +680,7 @@ public:
         PARENT::stop();
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }
@@ -856,7 +856,7 @@ public:
             startInput(branch);
             CThorInput &selectedInput = inputs.item(branch);
             selectedItdl = selectedInput.itdl;
-            selectedInputStream = selectedInput.stream;
+            selectedInputStream = selectedInput.queryStream();
         }
         dataLinkStart();
     }
@@ -884,9 +884,12 @@ public:
         return ret.getClear();
     }
     virtual bool isGrouped() const override { return container.queryGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
+        IThorDataLink *branchInput = queryInput(branch);
+        if (branchInput)
+            branchInput->getMetaInfo(info);
     }
 };
 
@@ -1049,7 +1052,7 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }
@@ -1095,7 +1098,7 @@ public:
         return ret.finalizeRowClear(sz);
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }
@@ -1155,7 +1158,7 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }
@@ -1243,7 +1246,7 @@ public:
         }
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }
@@ -1317,7 +1320,7 @@ public:
         resultStream.clear();
         PARENT::stop();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
     }

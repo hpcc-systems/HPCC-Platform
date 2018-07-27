@@ -441,7 +441,7 @@ public:
         }
         return NULL;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         calcMetaInfoSize(info, inputs);
@@ -547,7 +547,7 @@ public:
     {
         return queryInput(0)->isGrouped();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         // TBD I think this should say max out = lhs set.
@@ -617,7 +617,7 @@ public:
         return NULL;
     }
 
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         calcMetaInfoSize(info, inputs);
@@ -749,7 +749,7 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return container.queryGrouped(); }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.canReduceNumRows = true;
@@ -861,7 +861,7 @@ public:
             return NULL;
         return selectedStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         if (selectedStream)
@@ -960,7 +960,7 @@ public:
     {
         throwUnexpected();
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         calcMetaInfoSize(info, queryInput(0));

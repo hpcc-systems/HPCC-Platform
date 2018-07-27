@@ -28,7 +28,6 @@ class CSelectNthSlaveActivity : public CSlaveActivity, implements ILookAheadStop
     bool createDefaultIfFail;
     IHThorSelectNArg *helper;
     SpinLock spin; // MORE: Remove this and use an atomic variable for lookaheadN
-    Owned<IEngineRowStream> originalInputStream;
 
     void initN()
     {
@@ -102,12 +101,8 @@ public:
         IStartableEngineRowStream *lookAhead = nullptr;
         if (!isLocal && rowN)
         {
-            if (!isFastThrough(input))
-            {
-                lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), SELECTN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false, rowN, this, &container.queryJob().queryIDiskUsage());
-                originalInputStream.setown(replaceInputStream(0, lookAhead));
-                lookAhead->start();
-            }
+            if (ensureStartFTLookAhead(0))
+                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), SELECTN_SMART_BUFFER_SIZE, ::canStall(input), false, rowN, this, &container.queryJob().queryIDiskUsage()), false);
         }
 
         seenNth = false;
@@ -126,14 +121,6 @@ public:
 #endif
         }
         first = true;
-    }
-    virtual void stop() override
-    {
-        PARENT::stop();
-        if (originalInputStream)
-        {
-            Owned<IEngineRowStream> lookAhead = replaceInputStream(0, originalInputStream.getClear());
-        }
     }
     virtual void abort() override
     {
@@ -204,7 +191,7 @@ public:
         return ret.getClear();
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
         info.isSequential = true; 
