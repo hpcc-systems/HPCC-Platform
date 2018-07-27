@@ -202,9 +202,15 @@ bool HqlCppCaseInfo::canBuildStaticList(ITypeInfo * type)
 
 bool HqlCppCaseInfo::buildAssign(BuildCtx & ctx, const CHqlBoundTarget & target)
 {
+    ExprAssignProcessor assigner(target);
+    return buildProcess(ctx, assigner);
+}
+
+bool HqlCppCaseInfo::buildProcess(BuildCtx & ctx, IExprProcessor & target)
+{
     if (pairs.ordinality() == 0)
     {
-        translator.buildExprAssign(ctx, target, defaultValue);
+        target.process(translator, ctx, defaultValue);
     }
     else if (cond.get() && constantCases)
     {
@@ -218,14 +224,14 @@ bool HqlCppCaseInfo::buildAssign(BuildCtx & ctx, const CHqlBoundTarget & target)
         {
             if (pairs.ordinality() > INLINE_COMPARE_THRESHOLD)
             {
-                if (okToAlwaysEvaluateDefault() || hasLibraryChop())
+                if (okToAlwaysEvaluateDefault(target) || hasLibraryChop())
                     buildLoopChopMap(subctx, target, test);
                 else
                     buildGeneralAssign(subctx, target);
             }
             else 
             {
-                if (okToAlwaysEvaluateDefault())
+                if (okToAlwaysEvaluateDefault(target))
                     buildChop3Map(subctx, target, test);
                 else
                     buildGeneralAssign(subctx, target);
@@ -242,13 +248,13 @@ bool HqlCppCaseInfo::buildAssign(BuildCtx & ctx, const CHqlBoundTarget & target)
                     if (constantValues && (condType->getTypeCode() == type_int) && (pairs.ordinality() > INTEGER_SEARCH_THRESHOLD) && canBuildStaticList(resultType))
                         buildIntegerSearchMap(subctx, target, search);
                     else
-                        buildSwitchMap(subctx, &target, test.expr);
+                        buildSwitchMap(subctx, target, test.expr);
                 }
                 else
                 {
-                    if (okToAlwaysEvaluateDefault() && pairs.ordinality() > 4)
+                    if (okToAlwaysEvaluateDefault(target) && pairs.ordinality() > 4)
                     {
-                        translator.buildExprAssign(ctx, target, defaultValue);
+                        target.process(translator, ctx, defaultValue);
                         buildChop2Map(subctx, target, test, 0, pairs.ordinality());
                     }
                     else
@@ -265,39 +271,12 @@ bool HqlCppCaseInfo::buildAssign(BuildCtx & ctx, const CHqlBoundTarget & target)
 
 bool HqlCppCaseInfo::buildReturn(BuildCtx & ctx)
 {
-    if (pairs.ordinality() == 0)
-    {
-        translator.buildReturn(ctx, defaultValue);
-    }
-    else if (cond.get() && constantCases)
-    {
-        processBranches();
-
-        BuildCtx subctx(ctx);
-        CHqlBoundExpr test;
-        buildSwitchCondition(ctx, test);
-
-        if (complexCompare)
-        {
-            buildGeneralReturn(subctx);
-        }
-        else
-        {
-            //if canBuildArrayLookup(test)
-            //if use a lookup table to map value->constants
-            if (test.queryType()->getTypeCode() != type_real)
-                buildSwitchMap(subctx, NULL, test.expr);
-            else
-                buildGeneralReturn(subctx);
-        }
-    }
-    else
-        buildGeneralReturn(ctx);
-
+    ExprReturnProcessor processor;
+    buildProcess(ctx, processor);
     return true;
 }
 
-void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test, IHqlExpression * temp, unsigned start, unsigned end)
+void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, IExprProcessor & target, CHqlBoundExpr & test, IHqlExpression * temp, unsigned start, unsigned end)
 {
     if ((end - start) <= 2)
         buildChop2Map(ctx, target, test, start, end);
@@ -310,7 +289,7 @@ void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & targe
 
         BuildCtx subctx(ctx);
         IHqlStmt * if1 = subctx.addFilter(test1);                   // if (test == 0)
-        translator.buildExprAssign(subctx, target, queryReturn(mid));  //   target = value(n)
+        target.process(translator, subctx, queryReturn(mid));  //   target = value(n)
         subctx.selectElse(if1);                                                         // else
         IHqlStmt * if2 = subctx.addFilter(test2);                   //   if (test < 0)
         buildChop3Map(subctx, target, test, temp, start, mid);      //       repeat for start..mid
@@ -320,9 +299,9 @@ void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & targe
 }
 
 
-void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test)
+void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, IExprProcessor & target, CHqlBoundExpr & test)
 {
-    translator.buildExprAssign(ctx, target, defaultValue);
+    target.process(translator, ctx, defaultValue);
     if (getNumPairs() <= 2)
     {
         buildChop2Map(ctx, target, test, 0, getNumPairs());
@@ -335,7 +314,7 @@ void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & targe
     }
 }
 
-void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test, unsigned start, unsigned end)
+void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, IExprProcessor & target, CHqlBoundExpr & test, unsigned start, unsigned end)
 {
     BuildCtx subctx(ctx);
     
@@ -364,7 +343,7 @@ void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, const CHqlBoundTarget & targe
             }
             OwnedHqlExpr compound = cb.getCompound();
             translator.buildFilter(subctx, compound);
-            translator.buildExprAssign(subctx, target, queryReturn(start));
+            target.process(translator, subctx, queryReturn(start));
         }
         else
         {
@@ -379,7 +358,7 @@ void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, const CHqlBoundTarget & targe
                 CHqlBoundExpr bound;
                 translator.buildExpr(subctx, cond, bound);
                 stmt = subctx.addFilter(bound.expr);
-                translator.buildExprAssign(subctx, target, queryReturn(index));
+                target.process(translator, subctx, queryReturn(index));
             }
         }
     }
@@ -517,7 +496,7 @@ IHqlExpression * HqlCppCaseInfo::buildIndexedMap(BuildCtx & ctx, const CHqlBound
 
 }
 
-void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test)
+void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, IExprProcessor & target, CHqlBoundExpr & test)
 {
     //Declare a table that contains all the strings...
     ITypeInfo * compareType = queryCompareType();
@@ -590,14 +569,14 @@ void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & ta
 
         OwnedHqlExpr simpleResult = queryCreateSimpleResultAssign(search, resultExpr);
         if (simpleResult)
-            translator.buildExprAssign(ctx, target, simpleResult);
+            target.process(translator, ctx, simpleResult);
         else
         {
             ctx.addDeclare(midVar, NULL);
             translator.buildAssignToTemp(ctx, midVar, search);
             if (includeDefaultInResult)
             {
-                translator.buildExprAssign(ctx, target, resultExpr);
+                target.process(translator, ctx, resultExpr);
             }
             else
             {
@@ -605,9 +584,9 @@ void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & ta
 
                 BuildCtx subctx(ctx);
                 IHqlStmt * stmt = subctx.addFilter(compare);
-                translator.buildExprAssign(subctx, target, resultExpr);
+                target.process(translator, subctx, resultExpr);
                 subctx.selectElse(stmt);
-                translator.buildExprAssign(subctx, target, defaultValue);
+                target.process(translator, subctx, defaultValue);
             }
         }
     }
@@ -633,7 +612,7 @@ void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & ta
         OwnedHqlExpr numPairs = getSizetConstant(getNumPairs());
         ctx.addAssign(leftVar, queryZero());
         ctx.addAssign(rightVar, numPairs);
-        translator.buildExprAssign(ctx, target, defaultValue);
+        target.process(translator,ctx, defaultValue);
 
         OwnedHqlExpr loopc = createBoolExpr(no_lt, LINK(leftVar), LINK(rightVar));
         OwnedHqlExpr mid = createValue(no_div, createValue(no_add, LINK(leftVar), LINK(rightVar)), createConstant(indexType->castFrom(false, 2)));
@@ -656,12 +635,12 @@ void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & ta
             translator.buildAssignToTemp(subctx, leftVar, mid_p1);                      //       left = mid + 1;
             subctx.selectElse(if2);                                                                          //     else
             //generate the default assignment...
-            translator.buildExprAssign(subctx, target, resultExpr);
+            target.process(translator, subctx, resultExpr);
             subctx.addBreak();
     }
 }
 
-void HqlCppCaseInfo::buildIntegerSearchMap(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * test)
+void HqlCppCaseInfo::buildIntegerSearchMap(BuildCtx & ctx, IExprProcessor & target, IHqlExpression * test)
 {
     ITypeInfo * compareType = queryCompareType();
 
@@ -693,14 +672,14 @@ void HqlCppCaseInfo::buildIntegerSearchMap(BuildCtx & ctx, const CHqlBoundTarget
 
     OwnedHqlExpr simpleResult = queryCreateSimpleResultAssign(search, resultExpr);
     if (simpleResult)
-        translator.buildExprAssign(ctx, target, simpleResult);
+        target.process(translator, ctx, simpleResult);
     else
     {
         ctx.addDeclare(midVar, NULL);
         translator.buildAssignToTemp(ctx, midVar, search);
         if (includeDefaultInResult)
         {
-            translator.buildExprAssign(ctx, target, resultExpr);
+            target.process(translator, ctx, resultExpr);
         }
         else
         {
@@ -708,9 +687,9 @@ void HqlCppCaseInfo::buildIntegerSearchMap(BuildCtx & ctx, const CHqlBoundTarget
 
             BuildCtx subctx(ctx);
             IHqlStmt * stmt = subctx.addFilter(compare);
-            translator.buildExprAssign(subctx, target, resultExpr);
+            target.process(translator, subctx, resultExpr);
             subctx.selectElse(stmt);
-            translator.buildExprAssign(subctx, target, defaultValue);
+            target.process(translator, subctx, defaultValue);
         }
     }
 }
@@ -721,7 +700,7 @@ void HqlCppCaseInfo::buildSwitchCondition(BuildCtx & ctx, CHqlBoundExpr & bound)
     translator.buildCachedExpr(ctx, simpleCond, bound);
 }
 
-void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * test)
+void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, IExprProcessor & target, IHqlExpression * test)
 {
     bool isCharCompare = (test->queryType()->getTypeCode() == type_string);
     Owned<ITypeInfo> unsigned1Type = makeIntType(1, false);
@@ -791,27 +770,24 @@ void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, const CHqlBoundTarget * targ
             if (!same)
             {
                 sameCount = 1;
-                if (target)
-                    translator.buildExprAssign(subctx, *target, branchValue);
-                else
-                    translator.buildReturn(subctx, branchValue);
+                target.process(translator, subctx, branchValue);
             }
             else
                 sameCount++;
         }
     }
     
-    if (target)
+    if (target.canContinue())
     {
         subctx.addDefault(stmt);
-        translator.buildExprAssign(subctx, *target, defaultValue);
+        target.process(translator, subctx, defaultValue);
     }
     else
-        translator.buildReturn(ctx, defaultValue);
+        target.process(translator, ctx, defaultValue);
 }
 
 
-void HqlCppCaseInfo::buildGeneralAssign(BuildCtx & ctx, const CHqlBoundTarget & target)
+void HqlCppCaseInfo::buildGeneralAssign(BuildCtx & ctx, IExprProcessor & target)
 {
     unsigned max = pairs.ordinality();
 
@@ -822,7 +798,7 @@ void HqlCppCaseInfo::buildGeneralAssign(BuildCtx & ctx, const CHqlBoundTarget & 
     
     OwnedHqlExpr testMore;
 
-    if (max > MAX_NESTED_CASES)
+    if (target.canContinue() && (max > MAX_NESTED_CASES))
     {
         //Too many nested blocks cause the compiler indigestion...
         Owned<ITypeInfo> t = makeBoolType();
@@ -841,20 +817,31 @@ void HqlCppCaseInfo::buildGeneralAssign(BuildCtx & ctx, const CHqlBoundTarget & 
         else
             compare.setown(createBoolExpr(no_eq, pureCond.getTranslatedExpr(), LINK(curtest)));
 
-        if (idx && ((idx % MAX_NESTED_CASES) == 0))
+        if (target.canContinue())
         {
-            translator.buildAssignToTemp(*subctx,testMore,queryBoolExpr(true));
-            subctx.setown(new BuildCtx(ctx));
-            subctx->addFilter(testMore);
-            translator.buildAssignToTemp(*subctx,testMore,queryBoolExpr(false));
-        }
+            if (idx && ((idx % MAX_NESTED_CASES) == 0))
+            {
+                translator.buildAssignToTemp(*subctx,testMore,queryBoolExpr(true));
+                subctx.setown(new BuildCtx(ctx));
+                subctx->addFilter(testMore);
+                translator.buildAssignToTemp(*subctx,testMore,queryBoolExpr(false));
+            }
 
-        IHqlStmt * test = translator.buildFilterViaExpr(*subctx, compare);
-        translator.buildExprAssign(*subctx, target, curvalue);
-        subctx->selectElse(test);
+            IHqlStmt * test = translator.buildFilterViaExpr(*subctx, compare);
+            target.process(translator, *subctx, curvalue);
+
+
+            subctx->selectElse(test);
+        }
+        else
+        {
+            BuildCtx ifctx(*subctx);
+            translator.buildFilter(ifctx, compare);
+            target.process(translator, ifctx, curvalue);
+        }
     }
 
-    translator.buildExprAssign(*subctx, target, defaultValue);
+    target.process(translator, *subctx, defaultValue);
 }
 
 void HqlCppCaseInfo::buildGeneralReturn(BuildCtx & ctx)
@@ -885,8 +872,10 @@ void HqlCppCaseInfo::buildGeneralReturn(BuildCtx & ctx)
     translator.buildReturn(ctx, defaultValue);
 }
 
-bool HqlCppCaseInfo::okToAlwaysEvaluateDefault()
+bool HqlCppCaseInfo::okToAlwaysEvaluateDefault(const IExprProcessor & target)
 {
+    if (target.canReturn())
+        return false;
     if (!canRemoveGuard(defaultValue))
         return false;
     return true;
@@ -1126,7 +1115,7 @@ void HqlCppCaseInfo::promoteTypes()
 
 bool HqlCppCaseInfo::canBuildArrayLookup(const CHqlBoundExpr & test)
 {
-    if (!constantValues)
+    if (!constantValues || pairs.ordinality() <= 3)
         return false;
 
     ITypeInfo * condType = test.queryType()->queryPromotedType();
@@ -1148,10 +1137,10 @@ bool HqlCppCaseInfo::canBuildArrayLookup(const CHqlBoundExpr & test)
         }
     }
 
-#if 0
-    //Currently removed because it revealed inconsistencies in the implementation - HPCC-18745
-    //is opened to address that later.
-    if (condType->isInteger() && !isUnknownSize(resultType))
+    //Currently this condition is restricted because it revealed inconsistencies in the implementation
+    //HPCC-18745 is opened to address that later.
+    //Change to:    if (condType->isInteger() && !isUnknownSize(resultType))
+    if (condType->isInteger() && resultType->isInteger())
     {
         unsigned __int64 range = getIntValue(highestCompareExpr, 0) - getIntValue(lowestCompareExpr, 0) + 1;
         if (pairs.ordinality() * 100 >= range  * RANGE_DENSITY_THRESHOLD)
@@ -1162,18 +1151,17 @@ bool HqlCppCaseInfo::canBuildArrayLookup(const CHqlBoundExpr & test)
             return true;
         }
     }
-#endif
 
     return false;
 }
 
-bool HqlCppCaseInfo::queryBuildArrayLookup(BuildCtx & ctx, const CHqlBoundTarget & target, const CHqlBoundExpr & test)
+bool HqlCppCaseInfo::queryBuildArrayLookup(BuildCtx & ctx, IExprProcessor & target, const CHqlBoundExpr & test)
 {
     if (canBuildArrayLookup(test) && canBuildStaticList(resultType) && defaultValue->isConstant())
     {
         BuildCtx subctx(ctx);
         OwnedHqlExpr ret = buildIndexedMap(subctx, test);
-        translator.buildExprAssign(ctx, target, ret);
+        target.process(translator, ctx, ret);
         return true;
     }
     return false;
