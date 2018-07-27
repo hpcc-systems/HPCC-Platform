@@ -696,8 +696,8 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>From the ECL Watch Advanced menu, select on the <emphasis
-              role="bold">Additional Resources </emphasis>link.</para>
+              <para>From the ECL Watch Advanced menu, select the <emphasis
+              role="bold">Downloads </emphasis>link.</para>
 
               <para><figure>
                   <title>ECL Watch Resource Page</title>
@@ -712,23 +712,26 @@
 
               <para>Follow the link to the HPCC System's portal download
               page.</para>
+
+              <para>Alternatively, you could use your browser to go directly
+              to <ulink
+              url="https://hpccsystems.com/download">https://hpccsystems.com/download</ulink></para>
             </listitem>
 
             <listitem>
-              <para>Click on the <emphasis role="bold">ECL IDE
-              </emphasis>link. (on the right hand side in the Download column,
-              under the Free Community Edition heading)</para>
+              <para>Follow the instructions on that page to download the
+              <emphasis role="bold">ECL IDE and Client Tools for
+              Windows</emphasis>.</para>
             </listitem>
 
             <listitem>
-              <para>Follow the instructions on the web page to install the ECL
-              IDE.</para>
+              <para>Install the <emphasis role="bold">ECL IDE and Client Tools
+              for Windows</emphasis>.</para>
             </listitem>
 
             <listitem>
-              <para>Install the ECL IDE, following the prompts in the
-              installation program. Once the ECL IDE is installed
-              successfully, you can proceed.</para>
+              <para>Once the ECL IDE is successfully installed, you can
+              proceed.</para>
             </listitem>
           </orderedlist></para>
       </sect2>
