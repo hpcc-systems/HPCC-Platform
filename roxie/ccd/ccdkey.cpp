@@ -1329,7 +1329,9 @@ protected:
         virtual IOutputMetaData *queryActualLayout(unsigned subFile) const override { throwUnexpected(); }
         virtual int queryTargetFormatCrc() const override { throwUnexpected(); }
         virtual const RtlRecord &queryTargetFormat() const override { throwUnexpected(); }
-        virtual bool isTranslating() const { return false; }
+        virtual bool isTranslating() const override { return false; }
+        virtual bool isTranslatingKeyed() const override { return false; }
+        virtual bool hasConsistentTranslation() const override { return true; }
     } dummyTranslator;
 
     void test1()

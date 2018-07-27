@@ -19,6 +19,7 @@
 //class=index
 //version multiPart=false
 //version multiPart=true
+//version multiPart=true,useTranslation=true
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
@@ -34,8 +35,10 @@ import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
 
 //nothor
-//Stepped global joins unsupported, see issue HPCC-8148
-//skip type==thorlcr TBD
+//nohthor
 
-// should be equivalent to OUTPUT(SORT(Files.DG_IndexFile(DG_firstname = 'DAVID'), DG_Prange));
-OUTPUT(STEPPED(Files.DG_KeyedIndexFile(KEYED(DG_firstname = 'DAVID')), DG_Prange));
+ indexRead := STEPPED(Files.DG_indexFile(KEYED(DG_firstname = 'DAVID')), DG_lastname);
+
+ distrib := ALLNODES(LOCAL(indexRead));
+ nf := NOFOLD(distrib);
+ output(nf,{dg_lastname, dg_prange});

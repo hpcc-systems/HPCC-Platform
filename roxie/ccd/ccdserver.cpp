@@ -23015,6 +23015,7 @@ public:
     {
         try
         {
+            bool noLocal = factory->queryQueryFactory().queryOptions().disableLocalOptimizations || seekGEOffset > 0;
             if (indexHelper.canMatchAny())
             {
                 if (variableInfoPending)
@@ -23025,7 +23026,6 @@ public:
                     // MORE - this recreates the segmonitors per part but not per fileno (which is a little backwards).
                     // With soft layout support may need to recreate per fileno too (i.e. different keys in a superkey have different layout) but never per partno
                     // However order is probably better to iterate fileno's inside partnos 
-                    // MORE - also not properly supporting STEPPED I fear.
                     // A superkey that mixes single and multipart or tlk and roroot keys might be hard
                     for (unsigned partNo = 0; partNo < keySet->length(); partNo++)
                     {
@@ -23057,6 +23057,7 @@ public:
                             if (seekGEOffset && !thisKey->isTopLevelKey())
                             {
                                 tlk.setown(createSingleKeyMerger(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), thisKey, seekGEOffset, this, indexHelper.hasNewSegmentMonitors()));
+                                tlk->setLayoutTranslator(translators->queryTranslator(fileNo));
                             }
                             else
                             {
@@ -23105,7 +23106,13 @@ public:
                                     }
                                     else
                                     {
-                                        if (processSingleKey(thisKey, translators->queryTranslator(fileNo)))
+                                        // Single - part key. We process locally unless smart-stepping is involved, in which case we need to ensure that
+                                        // we do the proper two-stage merge.
+                                        // Unfortunately processSingleKey will not use the merger we carefully set up before,
+                                        // so we disable the local processing in that case
+                                        if (noLocal)
+                                            remote.getMem(1, fileNo, 0);  // 1 because it's a single part key
+                                        else if (processSingleKey(thisKey, translators->queryTranslator(fileNo)))
                                             break;
                                     }
                                 }
@@ -23587,9 +23594,12 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
 
     void initKeySet()
     {
-        if ((keySet->length() > 1 || rawMeta != NULL) && translators->isTranslating())
+        if (keySet->length() > 1 || rawMeta != NULL)
         {
-            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Layout translation is not available when merging key parts or smart-stepping, as it may change record order");
+            if (translators->isTranslatingKeyed())
+                throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Keyed Layout translation is not available when merging key parts or smart-stepping, as it may change record order");
+            if (!translators->hasConsistentTranslation())
+                throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Mixture of layout translation is not available when merging key parts or smart-stepping");
         }
         keyIndexSet.setown(createKeyIndexSet());
         for (unsigned part = 0; part < keySet->length(); part++)
@@ -23782,7 +23792,7 @@ public:
             if (numParts > 1 || seekGEOffset)
             {
                 tlk.setown(createKeyMerger(indexHelper.queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, this, indexHelper.hasNewSegmentMonitors()));
-                // note that we don't set up translator because we don't support it. If that ever changes...
+                tlk->setLayoutTranslator(translators->queryTranslator(0));
             }
             else
             {

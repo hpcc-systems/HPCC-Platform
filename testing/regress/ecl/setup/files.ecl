@@ -152,7 +152,12 @@ EXPORT DG_indexFile      := INDEX(DG_NormalIndexFile, indexName);
 indexName := IF(useTranslation, __nameof__(DG_TransIndexFileEvens), __nameof__(DG_NormalIndexFileEvens));
 EXPORT DG_indexFileEvens := INDEX(DG_NormalIndexFileEvens, indexName);
 
-EXPORT DG_KeyedIndexFile      := INDEX(DG_FlatFile, { DG_firstname, DG_lastname, DG_Prange}, { filepos }, DG_IndexOut+'KEYED_INDEX');
+
+EXPORT DG_KeyedIndexFile      := INDEX(DG_FlatFile, { DG_firstname, DG_lastname, DG_Prange}, { filepos }, DG_IndexOut+'KEYED_INDEX', fileposition(false));
+EXPORT DG_KeyedIndexFileDelta := INDEX(DG_FlatFile, { DG_firstname, DG_lastname, DG_Prange}, { UNSIGNED8 filepos := filepos + 1 }, DG_IndexOut+'KEYED_INDEX_DELTA', fileposition(false));
+//Combine the two files above with an implicit superkey
+EXPORT DG_DupKeyedIndexFile   := INDEX(DG_FlatFile, { DG_firstname, DG_lastname, DG_Prange}, { filepos }, '{' + DG_IndexOut+'KEYED_INDEX' + ',' + DG_IndexOut+'KEYED_INDEX_DELTA' + '}', fileposition(false));
+EXPORT DG_DupKeyedIndexSuperFileName   := DG_IndexOut+'KEYED_INDEX_DUP';
 
 EXPORT DG_CSVFile   := DATASET(DG_FileOut+'CSV',DG_OutRec,CSV);
 EXPORT DG_XMLFile   := DATASET(DG_FileOut+'XML',DG_OutRec,XML);
@@ -195,7 +200,7 @@ EXPORT SET OF STRING3 DG_MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','A
 
 //----------------------------- Text search definitions ----------------------------------
 
-EXPORT NameWordIndex() := indexPrefix + 'wordIndex' + IF(useLocal, '_Local', '');
+EXPORT NameWordIndex() := indexPrefix + 'wordIndex' + IF(useLocal, '_Local', '') + IF(useTranslation, '_Trans', '') ;
 EXPORT NameSearchIndex := indexPrefix + 'searchIndex';
 EXPORT getWordIndex() := INDEX(TS.textSearchIndex, NameWordIndex());
 EXPORT getSearchIndex() := INDEX(TS.textSearchIndex, NameSearchIndex);

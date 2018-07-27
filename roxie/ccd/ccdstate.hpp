@@ -109,6 +109,8 @@ interface ITranslatorSet : extends IInterface
     virtual int queryTargetFormatCrc() const = 0;
     virtual const RtlRecord &queryTargetFormat() const = 0;
     virtual bool isTranslating() const = 0;
+    virtual bool isTranslatingKeyed() const = 0;
+    virtual bool hasConsistentTranslation() const = 0;
 };
 
 interface IRoxieQuerySetManagerSet : extends IInterface

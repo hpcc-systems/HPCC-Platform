@@ -83,6 +83,9 @@ EvensFilter := DG_ParentRecs.DG_firstname in [Files.DG_Fnames[2],Files.DG_Fnames
                                               Files.DG_Fnames[10],Files.DG_Fnames[12],Files.DG_Fnames[14],Files.DG_Fnames[16]];
 
 SEQUENTIAL(
+    ORDERED(
+        FileServices.DeleteSuperFile(Files.DG_DupKeyedIndexSuperFileName)
+    ),
     PARALLEL(output(DG_ParentRecs,,Files.DG_FileOut+'FLAT',overwrite),
              output(GROUP(SORT(DG_ParentRecs, DG_FirstName),DG_Firstname),,Files.DG_FileOut+'GROUPED',__GROUPED__,overwrite),
              output(DG_ParentRecs(EvensFilter),,Files.DG_FileOut+'FLAT_EVENS',overwrite)),
@@ -90,7 +93,16 @@ SEQUENTIAL(
              buildindex(Files.DG_NormalIndexFileEvens,overwrite,SET('_nodeSize', 512)),
              buildindex(Files.DG_TransIndexFile,overwrite),
              buildindex(Files.DG_TransIndexFileEvens,overwrite),
-             buildindex(Files.DG_KeyedIndexFile,overwrite))
+             buildindex(Files.DG_KeyedIndexFile,overwrite),
+             buildindex(Files.DG_KeyedIndexFileDelta,overwrite),
+             ),
+    ORDERED(
+        FileServices.CreateSuperFile(Files.DG_DupKeyedIndexSuperFileName),
+        FileServices.StartSuperFileTransaction(),
+        FileServices.AddSuperFile(Files.DG_DupKeyedIndexSuperFileName,__nameof__(Files.DG_KeyedIndexFile)),
+        FileServices.AddSuperFile(Files.DG_DupKeyedIndexSuperFileName,__nameof__(Files.DG_KeyedIndexFileDelta)),
+        FileServices.FinishSuperFileTransaction(),
+    )
     );
 
     fileServices.AddFileRelationship( __nameof__(Files.DG_FlatFile), __nameof__(Files.DG_NormalIndexFile), '', '', 'view', '1:1', false);

@@ -1693,6 +1693,8 @@ class CTranslatorSet : implements CInterfaceOf<ITranslatorSet>
     const RtlRecord &targetLayout;
     int targetFormatCrc = 0;
     bool anyTranslators = false;
+    bool anyKeyedTranslators = false;
+    bool translatorsMatch = true;
 public:
     CTranslatorSet(const RtlRecord &_targetLayout, int _targetFormatCrc)
     : targetLayout(_targetLayout), targetFormatCrc(_targetFormatCrc)
@@ -1703,6 +1705,10 @@ public:
         assertex(actualLayout);
         if (translator || keyTranslator)
             anyTranslators = true;
+        if (translator && translator->keyedTranslated())
+            anyKeyedTranslators = true;
+        if (transformers.ordinality() && (translator != transformers.item(0)))
+            translatorsMatch = false;
         transformers.append(translator);
         keyTranslators.append(keyTranslator);
         actualLayouts.append(actualLayout);
@@ -1753,6 +1759,16 @@ public:
     virtual bool isTranslating() const override
     {
         return anyTranslators;
+    }
+
+    virtual bool isTranslatingKeyed() const override
+    {
+        return anyKeyedTranslators;
+    }
+
+    virtual bool hasConsistentTranslation() const override
+    {
+        return translatorsMatch;
     }
 };
 

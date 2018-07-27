@@ -427,16 +427,24 @@ wordsAndAliases := merge(orderedWords, orderedAliases, sorted(doc, segment, wpos
 
 normalizedInversion := normalizeWordFormat(wordsAndAliases);
 
-doCreateSimpleIndex(boolean useLocal) := FUNCTION
-    Files := $.Files(createMultiPart, useLocal);
+doCreateSimpleIndex(boolean useLocal, boolean useTranslation) := FUNCTION
+    Files := $.Files(createMultiPart, useLocal, useTranslation);
     distributedWords := DISTRIBUTE(normalizedInversion, IF(doc > 6, 0, 1));
     
     RETURN sequential(
-        IF(useLocal,
-            BUILD(distributedWords, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameWordIndex(), 
-                    OVERWRITE, NOROOT, COMPRESSED(row)),
-            BUILD(normalizedInversion, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameWordIndex(), 
-                    OVERWRITE, COMPRESSED(row))
+        IF(useTranslation,
+            IF(useLocal,
+                BUILD(distributedWords, { kind, word, doc, segment, wpos, wip }, { unsigned extra := dpos; flags, original, dpos }, Files.NameWordIndex(),
+                        OVERWRITE, NOROOT, COMPRESSED(row)),
+                BUILD(normalizedInversion, { kind, word, doc, segment, wpos, wip }, { unsigned extra := dpos, flags, original, dpos }, Files.NameWordIndex(),
+                        OVERWRITE, COMPRESSED(row))
+            ),
+            IF(useLocal,
+                BUILD(distributedWords, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameWordIndex(),
+                        OVERWRITE, NOROOT, COMPRESSED(row)),
+                BUILD(normalizedInversion, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameWordIndex(),
+                        OVERWRITE, COMPRESSED(row))
+            )
         );
         //Add a column mapping, testing done L->R, multiple transforms, and that parameters work
         fileServices.setColumnMapping(Files.NameWordIndex(), 'word{set(stringlib.StringToLowerCase,stringlib.StringFilterOut(\'AEIOU$?.:;,()\'))}')
@@ -517,7 +525,8 @@ END;
     exports := MODULE
         EXPORT createSearchIndex() := doCreateSearchIndex();
     
-        EXPORT createSimpleIndex(boolean useLocal) := doCreateSimpleIndex(useLocal);
+        EXPORT createSimpleIndex(boolean useLocal, boolean useTranslation = FALSE) :=
+                    doCreateSimpleIndex(useLocal, useTranslation);
     END;
     
     RETURN exports;
