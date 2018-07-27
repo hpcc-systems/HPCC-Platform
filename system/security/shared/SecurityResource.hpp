@@ -32,10 +32,10 @@ private:
 
     SecResourceType m_resourcetype;
 
-public: 
+public:
     IMPLEMENT_IINTERFACE
 
-    CSecurityResource(const char *name) : m_name(name), m_access(SecAccess_Unknown), m_required_access(SecAccess_Unknown), m_resourcetype(RT_DEFAULT)
+    CSecurityResource(const char *name) : m_name(name), m_access(SecAccess_Unknown), m_required_access(SecAccess_Unknown), m_resourcetype(RT_DEFAULT), m_parameters(createProperties(false))
     {
     }
 
@@ -43,7 +43,7 @@ public:
     {
         m_access =  SecAccessFlags((int)m_access | flags);
     }
-    
+
 //interface ISecResource : extends IInterface
     const char * getName()
     {
@@ -54,7 +54,7 @@ public:
     {
         m_access = flags;
     }
-        
+
     SecAccessFlags getAccessFlags()
     {
         return m_access;
@@ -62,27 +62,18 @@ public:
 
     virtual int addParameter(const char* name, const char* value)
     {
-        if (!m_parameters)
-            m_parameters.setown(createProperties(false));
         m_parameters->setProp(name, value);
         return 0;
     }
 
     virtual const char * getParameter(const char * name)
     {
-        if (m_parameters)
-        {
-            const char *value = m_parameters->queryProp(name);
-            return value;
-        }
-
-        return NULL;
-
+        return m_parameters->queryProp(name);
     }
 
     virtual IPropertyIterator * getParameterIterator() const override
     {
-        return (m_parameters.get() ? m_parameters->getIterator() : nullptr);
+        return m_parameters->getIterator();
     }
 
     virtual void setRequiredAccessFlags(SecAccessFlags flags)
@@ -128,15 +119,10 @@ public:
         _res->setRequiredAccessFlags(getRequiredAccessFlags());
         _res->setAccessFlags(getAccessFlags());
 
-        if(!m_parameters)
-            return _res;
-
         Owned<IPropertyIterator> Itr = m_parameters->getIterator();
-        Itr->first();
-        while(Itr->isValid())
+        ForEach(*Itr)
         {
             _res->addParameter(Itr->getPropKey(),m_parameters->queryProp(Itr->getPropKey()));
-            Itr->next();
         }
         return _res;
     }
@@ -150,16 +136,14 @@ public:
         setValue(from->getValue());
         setAccessFlags(from->getAccessFlags());
 
-        if(m_parameters.get())
-            m_parameters.clear();
+        // The destination properties are reset to an empty default state so the
+        // result of the copy is a copy and not a merge. The IProperties interface
+        // does not provide ways to manage existing content with lower overhead.
+        m_parameters.setown(createProperties(false));
         Owned<IPropertyIterator> Itr = from->getParameterIterator();
-        if(!Itr.get())
-            return;
-        Itr->first();
-        while(Itr->isValid())
+        ForEach(*Itr)
         {
             addParameter(Itr->getPropKey(), from->getParameter(Itr->getPropKey()));
-            Itr->next();
         }
         return;
     }
