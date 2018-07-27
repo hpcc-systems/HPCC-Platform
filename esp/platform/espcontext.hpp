@@ -43,6 +43,7 @@ static const char* const SESSION_TIMEOUT_COOKIE = "ESPSessionTimeoutSeconds";
 static const char* const SESSION_ID_TEMP_COOKIE = "ESPAuthIDTemp";
 static const char* const SESSION_AUTH_OK_COOKIE = "ESPAuthenticated";
 static const char* const SESSION_AUTH_MSG_COOKIE = "ESPAuthenticationMSG";
+static const char* const SESSION_LOCKED_COOKIE = "ESPClientLocked";
 static const char* const DEFAULT_LOGIN_URL = "/esp/files/Login.html";
 static const char* const DEFAULT_GET_USER_NAME_URL = "/esp/files/GetUserName.html";
 static const char* const DEFAULT_UNRESTRICTED_RESOURCES = "/favicon.ico,/esp/files/*,/esp/xslt/*";
