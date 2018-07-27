@@ -5,11 +5,11 @@
   <title>DeleteLogicalFile</title>
 
   <para><emphasis role="bold">STD.File.DeleteLogicalFile<indexterm>
-      <primary>STD.File.DeleteLogicalFiles</primary>
+      <primary>STD.File.DeleteLogicalFile</primary>
     </indexterm><indexterm>
-      <primary>File.DeleteLogicalFiles</primary>
+      <primary>File.DeleteLogicalFile</primary>
     </indexterm><indexterm>
-      <primary>DeleteLogicalFiles</primary>
+      <primary>DeleteLogicalFile</primary>
     </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>, ifexists </emphasis> <emphasis
   role="bold">] )</emphasis></para>
