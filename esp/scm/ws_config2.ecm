@@ -41,6 +41,7 @@ ESPresponse [exceptions_inline] EmptyResponse
 
 ESPresponse StatusResponse
 {
+    bool EnvironmentModified;
     ESPstruct StatusType Status;
 };
 
@@ -329,6 +330,7 @@ ESPrequest UnlockSessionRequest
 {
     string SessionId;
     string SessionLockKey;
+    bool   RejectIfModified(true);
 };
 
 

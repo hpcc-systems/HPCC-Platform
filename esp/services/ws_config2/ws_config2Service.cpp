@@ -316,6 +316,11 @@ bool Cws_config2Ex::onUnlockSession(IEspContext &context, IEspUnlockSessionReque
 {
     ConfigMgrSession *pSession = getConfigSessionForUpdate(req.getSessionId(), req.getSessionLockKey());
 
+    if (pSession->modified && req.getRejectIfModified())
+    {
+        throw MakeStringException(CFGMGR_ERROR_ENVIRONMENT_LOCKING, "Error unlocking the session, environment has been modified. Please save first.");
+    }
+
     if (!pSession->unlock(req.getSessionLockKey()))
     {
         throw MakeStringException(CFGMGR_ERROR_ENVIRONMENT_LOCKING, "Error unlocking the session");
@@ -395,6 +400,7 @@ bool Cws_config2Ex::onRemoveNode(IEspContext &context, IEspRemoveNodeRequest &re
     pSession->modified = true;
     pSession->m_pEnvMgr->validate(status, false);
     buildStatusResponse(status, pSession, resp.updateStatus());
+    resp.setEnvironmentModified(pSession->modified);
     return true;
 }
 
@@ -407,6 +413,7 @@ bool Cws_config2Ex::onValidateEnvironment(IEspContext &context, IEspValidateEnvi
 
     pSession->m_pEnvMgr->validate(status, req.getIncludeHiddenNodes());
     buildStatusResponse(status, pSession, resp.updateStatus());
+    resp.setEnvironmentModified(pSession->modified);
     return true;
 }
 
@@ -442,6 +449,7 @@ bool Cws_config2Ex::onSetValues(IEspContext &context, IEspSetValuesRequest &req,
     pNode->setAttributeValues(values, status, allowInvalid, forceCreate);
     pSession->modified = true;
     buildStatusResponse(status, pSession, resp.updateStatus());
+    resp.setEnvironmentModified(pSession->modified);
     return true;
 }
 
