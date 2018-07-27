@@ -21,12 +21,12 @@
     <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="EspProcess">
         <xs:complexType>
-        <!--DOC-Autobuild-code-->
-     	 <xs:annotation>
-     	    <xs:appinfo>
-     	    	<docid>ESP.t6</docid>
-     	    </xs:appinfo>
-     	 </xs:annotation>  
+            <!--DOC-Autobuild-code-->
+            <xs:annotation>
+                <xs:appinfo>
+                    <docid>ESP.t6</docid>
+                </xs:appinfo>
+            </xs:annotation>
             <xs:sequence>
                 <xs:element name="EspBinding" maxOccurs="unbounded">
                     <xs:annotation>
@@ -35,38 +35,38 @@
                         </xs:appinfo>
                     </xs:annotation>
                     <xs:complexType>
-                    <!--DOC-Autobuild-code-->
-		     <xs:annotation>
-	    	    	<xs:appinfo>
-			  <docid>ESP.t3</docid>
-			</xs:appinfo>
-		     </xs:annotation>  
+                        <!--DOC-Autobuild-code-->
+                        <xs:annotation>
+                            <xs:appinfo>
+                                <docid>ESP.t3</docid>
+                            </xs:appinfo>
+                        </xs:annotation>
                         <xs:sequence>
                             <xs:element name="CustomBindingParameter" minOccurs="0" maxOccurs="unbounded">
-                               <xs:annotation>
-                                  <xs:appinfo>
-                                       <viewType>list</viewType>
-                                       <title>Custom Binding Parameters</title>
-                                   </xs:appinfo>
-                               </xs:annotation>
-                               <xs:complexType>
-                                   <xs:attribute name="key" type="xs:string" use="optional">
-                                       <xs:annotation>
-                                           <xs:appinfo>
-                                               <colIndex>1</colIndex>
-                                          </xs:appinfo>
-                                      </xs:annotation>
-                                  </xs:attribute>
-                                  <xs:attribute name="value" type="xs:string" use="optional">
-                                      <xs:annotation>
-                                          <xs:appinfo>
+                                <xs:annotation>
+                                    <xs:appinfo>
+                                        <viewType>list</viewType>
+                                        <title>Custom Binding Parameters</title>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="key" type="xs:string" use="optional">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <colIndex>1</colIndex>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="value" type="xs:string" use="optional">
+                                        <xs:annotation>
+                                            <xs:appinfo>
                                                 <colIndex>2</colIndex>
-                                           </xs:appinfo>
-                                      </xs:annotation>
-                                  </xs:attribute>
-                              </xs:complexType>
-                          </xs:element>
-                          <xs:element name="Authenticate" minOccurs="0" maxOccurs="unbounded">
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="Authenticate" minOccurs="0" maxOccurs="unbounded">
                                 <xs:annotation>
                                     <xs:appinfo>
                                         <viewType>list</viewType>
@@ -74,12 +74,12 @@
                                     </xs:appinfo>
                                 </xs:annotation>
                                 <xs:complexType>
-                                <!--DOC-Autobuild-code-->
-				 <xs:annotation>
-				    <xs:appinfo>
-				       <docid>ESP.t1</docid>
-				    </xs:appinfo>
-     			         </xs:annotation> 
+                                    <!--DOC-Autobuild-code-->
+                                    <xs:annotation>
+                                        <xs:appinfo>
+                                            <docid>ESP.t1</docid>
+                                        </xs:appinfo>
+                                    </xs:annotation>
                                     <xs:attribute name="description" type="xs:string" use="optional">
                                         <xs:annotation>
                                             <xs:appinfo>
@@ -134,12 +134,12 @@
                                     </xs:appinfo>
                                 </xs:annotation>
                                 <xs:complexType>
-                                <!--DOC-Autobuild-code-->
-				<xs:annotation>
-				  <xs:appinfo>
-				     <docid>ESP.t2</docid>
-				   </xs:appinfo>
-				 </xs:annotation>  
+                                    <!--DOC-Autobuild-code-->
+                                    <xs:annotation>
+                                        <xs:appinfo>
+                                            <docid>ESP.t2</docid>
+                                        </xs:appinfo>
+                                    </xs:annotation>
                                     <xs:attribute name="authenticate" use="optional" default="Yes">
                                         <xs:annotation>
                                             <xs:appinfo>
@@ -163,12 +163,21 @@
                                             </xs:appinfo>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="path" type="xs:string" use="optional" default="/">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <tooltip>The logical path of a resource used for authentication.</tooltip>
+                                                <required>true</required>
+                                                <colIndex>3</colIndex>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                     <xs:attribute name="resource" type="xs:string" use="required">
                                         <xs:annotation>
                                             <xs:appinfo>
                                                 <tooltip>The physical resource for which access is checked.</tooltip>
                                                 <width>120</width>
-                                                <colIndex>3</colIndex>
+                                                <colIndex>4</colIndex>
                                             </xs:appinfo>
                                         </xs:annotation>
                                     </xs:attribute>
@@ -279,12 +288,12 @@
                         </xs:appinfo>
                     </xs:annotation>
                     <xs:complexType>
-                    <!--DOC-Autobuild-code-->
-		     <xs:annotation>
-		       <xs:appinfo>
-		         <docid>ESP.t4</docid>
-		        </xs:appinfo>
-		      </xs:annotation>  
+                        <!--DOC-Autobuild-code-->
+                        <xs:annotation>
+                            <xs:appinfo>
+                                <docid>ESP.t4</docid>
+                            </xs:appinfo>
+                        </xs:annotation>
                         <xs:attribute name="method" use="optional" default="none">
                             <xs:annotation>
                                 <xs:appinfo>
@@ -340,126 +349,126 @@
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="checkViewPermissions" type="xs:boolean" use="optional" default="false">
-                          <xs:annotation>
-                            <xs:appinfo>
-                              <tooltip>Enable file and column access permission checking for all view enabled queries</tooltip>
-                            </xs:appinfo>
-                          </xs:annotation>
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Enable file and column access permission checking for all view enabled queries</tooltip>
+                                </xs:appinfo>
+                            </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="getUserNameURL" type="xs:string" use="optional" default="/esp/files/GetUserName.html">
-                          <xs:annotation>
-                            <xs:appinfo>
-                              <tooltip>URL to getUserName</tooltip>
-                            </xs:appinfo>
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>URL to getUserName</tooltip>
+                                </xs:appinfo>
                             </xs:annotation>
-                          </xs:attribute>
+                        </xs:attribute>
                         <xs:attribute name="getUserNameUnrestrictedResources" type="xs:string" use="optional" default="/favicon.ico,/esp/files/*,/esp/xslt/*">
-                          <xs:annotation>
-                            <xs:appinfo>
-                              <tooltip>unrestricted resources for getUserNameURL</tooltip>
-                            </xs:appinfo>
-                          </xs:annotation>
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>unrestricted resources for getUserNameURL</tooltip>
+                                </xs:appinfo>
+                            </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="AuthDomain" maxOccurs="unbounded">
-	          <xs:annotation>
-	            <xs:appinfo>
-	              <title>AuthDomain</title>
-	            </xs:appinfo>
-	          </xs:annotation>
-	          <!--DOC-Autobuild-code-->
-	          <xs:annotation>
-	            <xs:appinfo>
-	              <docid>ESP.t7</docid>
-	            </xs:appinfo>
-	          </xs:annotation>
-	          <xs:complexType>
-	            <xs:attribute name="domainName" type="xs:string" use="required" default="default">
-	              <xs:annotation>
-	                <xs:appinfo>
-	                  <tooltip>Unique string to identify an auth domain in case > 1 domains in an esp</tooltip>
-	                  <colIndex>1</colIndex>
-	                </xs:appinfo>
-	              </xs:annotation>
-	            </xs:attribute>
-	            <xs:attribute name="authType" use="optional" default="AuthTypeMixed">
-	              <xs:annotation>
-	                <xs:appinfo>
-	                  <tooltip>User session Authentication type</tooltip>
-	                  <colIndex>2</colIndex>
-	                  <required>true</required>
-	                </xs:appinfo>
-	              </xs:annotation>
-	              <xs:simpleType>
-	                <xs:restriction base="xs:string">
-	                  <xs:enumeration value="AuthTypeMixed"/>
-	                  <xs:enumeration value="AuthPerSessionOnly"/>
-	                  <xs:enumeration value="AuthPerRequestOnly"/>
-	                </xs:restriction>
-	              </xs:simpleType>
-	            </xs:attribute>
-	            <xs:attribute name="logonURL" type="xs:string" use="optional" default="/esp/files/Login.html">
-	              <xs:annotation>
-	                <xs:appinfo>
-	                  <tooltip>Logon URL</tooltip>
-	                  <colIndex>3</colIndex>
-	                </xs:appinfo>
-	              </xs:annotation>
-	            </xs:attribute>
-	            <xs:attribute name="logoutURL" type="xs:string" use="optional" default="">
-	              <xs:annotation>
-	                <xs:appinfo>
-	                  <tooltip>Logout URL</tooltip>
-	                  <colIndex>4</colIndex>
-	                </xs:appinfo>
-	              </xs:annotation>
-	            </xs:attribute>
-	            <xs:attribute name="clientSessionTimeoutMinutes" use="optional" default="120">
-	              <xs:annotation>
-	                <xs:appinfo>
-	                  <tooltip>Inactive session duration, in minutes, that is used to timeout a session on ESP client. Specify 0 for default timeout, -1 for never time out.</tooltip>
-	                  <colIndex>5</colIndex>
-	                </xs:appinfo>
-	              </xs:annotation>
-	            </xs:attribute>
-                <xs:attribute name="serverSessionTimeoutMinutes" use="optional" default="240">
-                  <xs:annotation>
-                    <xs:appinfo>
-                      <tooltip>Considering network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.\nIf serverSessionTimeoutMinutes is less than clientSessionTimeoutMinutes, serverSessionTimeoutMinutes = 2 * clientSessionTimeoutMinutes. -1 for never time out.</tooltip>
-                      <colIndex>6</colIndex>
-                    </xs:appinfo>
-                  </xs:annotation>
-                </xs:attribute>
-	            <xs:attribute name="unrestrictedResources" type="xs:string" use="optional" default="/favicon.ico,/esp/files/*,/esp/xslt/*">
-	              <xs:annotation>
-	                <xs:appinfo>
-	                  <width>50</width>
-	                  <tooltip>unrestricted resources for user authentication</tooltip>
-	                  <colIndex>7</colIndex>
-	                </xs:appinfo>
-	              </xs:annotation>
-	            </xs:attribute>
-	            <xs:attribute name="invalidURLsAfterAuth" type="xs:string" use="optional" default="/esp/login">
-	              <xs:annotation>
-	                <xs:appinfo>
-	                  <width>50</width>
-	                  <tooltip>After authentication, requests are redirected to the home page.</tooltip>
-	                  <colIndex>8</colIndex>
-	                </xs:appinfo>
-	              </xs:annotation>
-	            </xs:attribute>
-	          </xs:complexType>
-	        </xs:element>
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <title>AuthDomain</title>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <!--DOC-Autobuild-code-->
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <docid>ESP.t7</docid>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="domainName" type="xs:string" use="required" default="default">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Unique string to identify an auth domain in case > 1 domains in an esp</tooltip>
+                                    <colIndex>1</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="authType" use="optional" default="AuthTypeMixed">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>User session Authentication type</tooltip>
+                                    <colIndex>2</colIndex>
+                                    <required>true</required>
+                                </xs:appinfo>
+                            </xs:annotation>
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="AuthTypeMixed"/>
+                                    <xs:enumeration value="AuthPerSessionOnly"/>
+                                    <xs:enumeration value="AuthPerRequestOnly"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:attribute>
+                        <xs:attribute name="logonURL" type="xs:string" use="optional" default="/esp/files/Login.html">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Logon URL</tooltip>
+                                    <colIndex>3</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="logoutURL" type="xs:string" use="optional" default="">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Logout URL</tooltip>
+                                    <colIndex>4</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="clientSessionTimeoutMinutes" use="optional" default="120">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Inactive session duration, in minutes, that is used to timeout a session on ESP client. Specify 0 for default timeout, -1 for never time out.</tooltip>
+                                    <colIndex>5</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="serverSessionTimeoutMinutes" use="optional" default="240">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Considering network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.\nIf serverSessionTimeoutMinutes is less than clientSessionTimeoutMinutes, serverSessionTimeoutMinutes = 2 * clientSessionTimeoutMinutes. -1 for never time out.</tooltip>
+                                    <colIndex>6</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="unrestrictedResources" type="xs:string" use="optional" default="/favicon.ico,/esp/files/*,/esp/xslt/*">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <width>50</width>
+                                    <tooltip>unrestricted resources for user authentication</tooltip>
+                                    <colIndex>7</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="invalidURLsAfterAuth" type="xs:string" use="optional" default="/esp/login">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <width>50</width>
+                                    <tooltip>After authentication, requests are redirected to the home page.</tooltip>
+                                    <colIndex>8</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="HTTPS" minOccurs="0">
                     <xs:complexType>
-                     <!--DOC-Autobuild-code-->
-		      <xs:annotation>
-		         <xs:appinfo>
-		            <docid>ESP.t5</docid>
-		         </xs:appinfo>
-		      </xs:annotation>
-                       <xs:attribute name="cipherList" type="xs:string" use="optional" default="ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5">
+                        <!--DOC-Autobuild-code-->
+                        <xs:annotation>
+                            <xs:appinfo>
+                                <docid>ESP.t5</docid>
+                            </xs:appinfo>
+                        </xs:annotation>
+                        <xs:attribute name="cipherList" type="xs:string" use="optional" default="ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Sets the ordered list of available ciphers for use by openssl.  See openssl documentation on ciphers for information on use and formatting.</tooltip>
@@ -627,30 +636,30 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
-	        <xs:element name="ESPCacheGroup"  maxOccurs="unbounded">
-	          <xs:annotation>
-	            <xs:appinfo>
-	              <title>ESPCacheGroup</title>
-	            </xs:appinfo>
-	          </xs:annotation>
-	          <xs:complexType>
-	            <xs:attribute name="id" type="xs:string" use="required">
-	              <xs:annotation>
-	                <xs:appinfo>
-	                  <tooltip>Unique string to identify an ESP level cache group</tooltip>
-	                  <colIndex>1</colIndex>
-	                </xs:appinfo>
-	              </xs:annotation>
-	            </xs:attribute>
-                    <xs:attribute name="initString" type="xs:string" use="required">
-	              <xs:annotation>
-	                <xs:appinfo>
-	                  <tooltip>A string sent to cache server for initiating the server.</tooltip>
-	                  <colIndex>2</colIndex>
-	                </xs:appinfo>
-	              </xs:annotation>
-	            </xs:attribute>
-                  </xs:complexType>
+                <xs:element name="ESPCacheGroup" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <title>ESPCacheGroup</title>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="id" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Unique string to identify an ESP level cache group</tooltip>
+                                    <colIndex>1</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="initString" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>A string sent to cache server for initiating the server.</tooltip>
+                                    <colIndex>2</colIndex>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
                 </xs:element>
                 <xs:element name="Instance" maxOccurs="unbounded">
                     <xs:annotation>
@@ -866,12 +875,12 @@
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="portalurl" type="xs:string" default="http://hpccsystems.com/download">
-              <xs:annotation>
-                <xs:appinfo>
-                  <viewType>hidden</viewType>
-                  <tooltip>portal to HPCC Systems® web site.</tooltip>
-                </xs:appinfo>
-              </xs:annotation>
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                        <tooltip>portal to HPCC Systems® web site.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
             </xs:attribute>
             <xs:attribute name="controlPort" type="xs:nonNegativeInteger" use="optional" default="8010">
                 <xs:annotation>
@@ -887,7 +896,7 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-      <!--xs:attribute name="logDir" type="xs:string" use="optional" default=".">
+            <!--xs:attribute name="logDir" type="xs:string" use="optional" default=".">
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>Sets the log directory.</tooltip>
