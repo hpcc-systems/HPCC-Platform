@@ -175,7 +175,7 @@ ESPStruct [nil_remove] DFUFileDetail
     [min_ver("1.37")] binary binInfo;
     [min_ver("1.38")] string PackageID;
     [min_ver("1.39")] ESPstruct DFUFilePartition Partition;
-    [min_ver("1.39")] ESPstruct DFUFileBloom Bloom;
+    [min_ver("1.39")] ESParray<ESPstruct DFUFileBloom> Blooms;
 };
 
 ESPStruct DFUSpaceItem

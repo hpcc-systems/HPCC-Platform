@@ -2165,19 +2165,25 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             partition.setFieldNames(partitionFieldNames);
         }
 
-        IPropertyTree *bloomTree = df->queryAttributes().queryPropTree("Bloom");
-        if (bloomTree)
+        IArrayOf<IEspDFUFileBloom> bloomList;
+        Owned<IPropertyTreeIterator> itr= df->queryAttributes().getElements("Bloom");
+        ForEach(*itr)
         {
+            IPropertyTree &bloomTree = itr->query();
+
             StringArray bloomFieldNames;
-            unsigned __int64 bloomFieldMask = bloomTree->getPropInt64("@bloomFieldMask");
+            unsigned __int64 bloomFieldMask = bloomTree.getPropInt64("@bloomFieldMask");
             queryFieldNames(context, name, cluster, bloomFieldMask, bloomFieldNames);
 
-            IEspDFUFileBloom &bloom = FileDetails.updateBloom();
-            bloom.setFieldMask(bloomFieldMask);
-            bloom.setFieldNames(bloomFieldNames);
-            bloom.setLimit(bloomTree->getPropInt64("@bloomLimit"));
-            bloom.setProbability(bloomTree->queryProp("@bloomProbability"));
+            Owned<IEspDFUFileBloom> bloom= createDFUFileBloom();
+            bloom->setFieldMask(bloomFieldMask);
+            bloom->setFieldNames(bloomFieldNames);
+            bloom->setLimit(bloomTree.getPropInt64("@bloomLimit"));
+            bloom->setProbability(bloomTree.queryProp("@bloomProbability"));
+            bloomList.append(*bloom.getLink());
         }
+        if (bloomList.ordinality())
+            FileDetails.setBlooms(bloomList);
     }
 
     //#14280
