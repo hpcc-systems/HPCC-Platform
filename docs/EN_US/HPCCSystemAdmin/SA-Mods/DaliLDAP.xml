@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Dali-LDAP">
+  <title>Dali and LDAP</title>
+
+  <para>This section contains additional information about Dali and LDAP
+  security settings.</para>
+
+  <sect2 id="LDAP-Dali">
+    <title>LDAP and Dali Security settings</title>
+
+    <para>There are a few Dali security settings that impact the way that Dali
+    performs. The following configurations further explain the impact of some
+    common security settings.</para>
+
+    <sect3 id="DaliNoLDAP">
+      <title>Dali without LDAP</title>
+
+      <para>If you configure Dali without any LDAP server bound:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Anyone can access any file and any workunit. Essentially, you
+          have no security.</para>
+        </listitem>
+
+        <listitem>
+          <para>Without an LDAP server configured, the CheckScopeScan
+          attribute in the configuration is ignored. This means that any user
+          can see the entire list of logical files and can access any
+          file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Anyone can see, access, or even run any workunit.</para>
+        </listitem>
+      </itemizedlist>
+    </sect3>
+
+    <sect3>
+      <title>Dali with LDAP Server and CheckScopeScans setting
+      disabled</title>
+
+      <para>In this scenario, you have your Dali bound to a LDAP server, and
+      the CheckScopeScans attribute is set to false</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>The CheckScopeScans setting only impacts the listing of
+          logical files.</para>
+        </listitem>
+
+        <listitem>
+          <para>All file access calls are authorized by ensuring the caller
+          has access to the given file scope.</para>
+        </listitem>
+
+        <listitem>
+          <para>FilesDefaultUser credentials are injected if none provided.
+          The <emphasis>filesDefaultUser</emphasis> is an LDAP account used to
+          access files when no user credentials are supplied. This is similar
+          to a guest account, so it should be an account with very limited
+          access, if used at all. To disable access without credentials, leave
+          filesDefaultUser attribute blank.</para>
+        </listitem>
+
+        <listitem>
+          <para>Since the CheckScopeScans setting is disabled, users can see
+          the entire list of logical files, even if user does not have access
+          to view a file.</para>
+        </listitem>
+      </itemizedlist>
+    </sect3>
+
+    <sect3>
+      <title>Dali with LDAP Server and CheckScopeScans setting enabled</title>
+
+      <para>In this scenario, you have your Dali bound to a LDAP server, and
+      the CheckScopeScans attribute is set to true.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>All file access calls are authorized by ensuring the caller
+          has access to the given file scope.</para>
+        </listitem>
+
+        <listitem>
+          <para>Users can see files listed for all files within file scopes
+          for which they have read access permission.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>You should keep in mind since the system must make an external
+      LDAP call to check every level in the scope, from the top to the bottom,
+      that the depth of file scopes can have a performance cost in systems
+      with File Scope Security enabled.</para>
+    </sect3>
+  </sect2>
+</sect1>

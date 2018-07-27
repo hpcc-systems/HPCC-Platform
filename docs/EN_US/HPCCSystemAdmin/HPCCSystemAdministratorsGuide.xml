@@ -1314,6 +1314,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 xpointer="xpointer(//*[@id='User_Security_Maint'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <!--LDAP and DALI Include-->
+	  <xi:include href="HPCCSystemAdmin/SA-Mods/DaliLDAP.xml"
+                xpointer="xpointer(//*[@id='Dali-LDAP'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+
     <sect1 id="SystemD_initScripts">
       <title>Initialization under Systemd</title>
 
