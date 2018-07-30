@@ -48,10 +48,7 @@
 
       <para />
 
-      <para>
-        <emphasis role="redbold" />
-      </para>
-    </legalnotice>
+     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
@@ -169,14 +166,13 @@
               </listitem>
 
               <listitem>
-                <para><emphasis>Linux workstation with the Eclipse IDE and the
-                ECL plugin for Eclipse (available soon)</emphasis></para>
+                <para><emphasis>Linux workstation with the ECL IDE or VS
+                Code </emphasis></para>
               </listitem>
 
               <listitem>
-                <para><emphasis>Mac<superscript></superscript> workstation
-                with the Eclipse IDE and the ECL plugin for Eclipse (available
-                soon)</emphasis></para>
+                <para><emphasis>Mac<superscript>®</superscript> workstation
+                with the ECL IDE or VS Code </emphasis></para>
               </listitem>
             </itemizedlist></para>
         </listitem>
