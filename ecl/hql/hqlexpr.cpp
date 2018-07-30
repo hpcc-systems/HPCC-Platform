@@ -1127,7 +1127,7 @@ bool HqlParseContext::createCache(IHqlExpression * simplifiedDefinition, bool is
         writeStringToStream(*stream, "</Cache>\n");
         stream->flush();
     }
-    cacheFile->rename(filename);
+    cacheFile->move(filename);
     return true;
 }
 
