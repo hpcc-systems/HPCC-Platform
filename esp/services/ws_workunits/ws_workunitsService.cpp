@@ -3079,6 +3079,89 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
     return true;
 }
 
+IPropertyTree *getArchivedWorkUnitProperties(const char *wuid, bool dfuWU)
+{
+    SocketEndpoint ep;
+    getSashaNode(ep);
+    Owned<INode> node = createINode(ep);
+    if (!node)
+        throw MakeStringException(ECLWATCH_INODE_NOT_FOUND, "INode not found.");
+
+    StringBuffer tmp;
+    Owned<ISashaCommand> cmd = createSashaCommand();
+    cmd->addId(wuid);
+    cmd->setAction(SCA_GET);
+    cmd->setArchived(true);
+    if (dfuWU)
+        cmd->setDFU(true);
+    if (!cmd->send(node, 1*60*1000))
+        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to Archive server at %s.", ep.getUrlStr(tmp).str());
+
+    if ((cmd->numIds() < 1) || (cmd->numResults() < 1))
+        return nullptr;
+
+    cmd->getResult(0, tmp.clear());
+    if(tmp.length() < 1)
+        return nullptr;
+
+    Owned<IPropertyTree> wu = createPTreeFromXMLString(tmp.str());
+    if (!wu)
+        return nullptr;
+
+    return wu.getClear();
+}
+
+void getWorkunitCluster(IEspContext &context, const char *wuid, SCMStringBuffer &cluster, bool checkArchiveWUs)
+{
+    if (isEmpty(wuid))
+        return;
+
+    if ('W' == wuid[0])
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+        if (cw)
+            cluster.set(cw->queryClusterName());
+        else if (checkArchiveWUs)
+        {
+            Owned<IPropertyTree> wuProps = getArchivedWorkUnitProperties(wuid, false);
+            if (wuProps)
+                cluster.set(wuProps->queryProp("@clusterName"));
+        }
+    }
+    else
+    {
+        Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+        Owned<IConstDFUWorkUnit> cw = factory->openWorkUnit(wuid, false);
+        if(cw)
+        {
+            StringBuffer tmp;
+            if (cw->getClusterName(tmp).length()!=0)
+                cluster.set(tmp.str());
+        }
+        else if (checkArchiveWUs)
+        {
+            Owned<IPropertyTree> wuProps = getArchivedWorkUnitProperties(wuid, true);
+            if (wuProps)
+                cluster.set(wuProps->queryProp("@clusterName"));
+        }
+    }
+}
+
+void getFileResults(IEspContext &context, const char *logicalName, const char *cluster, __int64 start, unsigned &count, __int64 &total,
+    IStringVal &resname, bool bin, IArrayOf<IConstNamedValue> *filterBy, MemoryBuffer &buf, bool xsd)
+{
+    Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
+    Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(logicalName, cluster));
+    if (!filterBy || !filterBy->length())
+        appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
+    else
+    {
+        Owned<INewResultSet> filteredResult = createFilteredResultSet(result, filterBy);
+        appendResultSet(buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
+    }
+}
+
 bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &req, IEspWUResultBinResponse &resp)
 {
     try
@@ -3118,12 +3201,22 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
         else if (notEmpty(req.getLogicalName()))
         {
             const char* logicalName = req.getLogicalName();
-            StringBuffer wuid;
-            getWuidFromLogicalFileName(context, logicalName, wuid);
-            if (!wuid.length())
-                throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT,"Cannot find the workunit for file %s.",logicalName);
-            PROGLOG("WUResultBin: %s", req.getLogicalName());
-            getWsWuResult(context, wuid.str(), NULL, logicalName, 0, start, count, total, name, bin, filterBy, mb, wuState);
+            const char* clusterIn = req.getCluster();
+            if (!isEmptyString(clusterIn))
+                getFileResults(context, logicalName, clusterIn, start, count, total, name, false, filterBy, mb, true);
+            else
+            {
+                StringBuffer wuid;
+                getWuidFromLogicalFileName(context, logicalName, wuid);
+                if (!wuid.length())
+                    throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT,"Cannot find the workunit for file %s.",logicalName);
+                SCMStringBuffer cluster;
+                getWorkunitCluster(context, wuid.str(), cluster, true);
+                if (cluster.length() > 0)
+                    getFileResults(context, logicalName, cluster.str(), start, count, total, name, false, filterBy, mb, true);
+                else
+                    getWsWuResult(context, wuid.str(), NULL, logicalName, 0, start, count, total, name, bin, filterBy, mb, wuState);
+            }
         }
         else
             throw MakeStringException(ECLWATCH_CANNOT_GET_WU_RESULT,"Cannot open the workunit result.");
@@ -3257,38 +3350,6 @@ bool CWsWorkunitsEx::onWUResultSummary(IEspContext &context, IEspWUResultSummary
 
     return true;
 }
-
-void getFileResults(IEspContext &context, const char* logicalName, const char* cluster,__int64 start, unsigned& count,__int64& total,
-        IStringVal& resname,bool bin, IArrayOf<IConstNamedValue>* filterBy, MemoryBuffer& buf, bool xsd)
-{
-    Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
-    Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(logicalName, cluster));
-    if (!filterBy || !filterBy->length())
-        appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
-    else
-    {
-        Owned<INewResultSet> filteredResult = createFilteredResultSet(result, filterBy);
-        appendResultSet(buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
-    }
-}
-
-void getWorkunitCluster(IEspContext &context, const char* wuid, SCMStringBuffer& cluster, bool checkArchiveWUs)
-{
-    if (isEmpty(wuid))
-        return;
-
-    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
-    if (cw)
-        cluster.set(cw->queryClusterName());
-    else if (checkArchiveWUs)
-    {
-        Owned<IPropertyTree> wuProps;// = getArchivedWorkUnitProperties(wuid);
-        if (wuProps)
-            cluster.set(wuProps->queryProp("@clusterName"));
-    }
-}
-
 
 bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, IEspWUResultResponse &resp)
 {
