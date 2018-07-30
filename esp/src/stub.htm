@@ -39,13 +39,13 @@
             if (document.cookie.indexOf ("ESPSessionState=true") > -1){
                 checkCookie();
             } else if (document.cookie.indexOf ("ESPSessionState=false") > -1) {
-                window.location();
+                window.location.href;
             } else {
                 sendAuthRequest();
             }
 
             function checkCookie(){
-                    document.cookie.indexOf ("ESPAuthenticated=true") > -1 ? window.location.href : window.location = location.origin + "/esp/files/Login.html";
+                    document.cookie.indexOf ("ESPAuthenticated=true") > -1 ? window.location.href : window.location.href = location.origin + "/esp/files/Login.html";
                 }
 
             function sendAuthRequest(){
