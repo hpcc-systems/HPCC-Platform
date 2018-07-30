@@ -402,6 +402,13 @@ public:
 
                 if (flags & IHThorLoopArg::LFnewloopagain)
                 {
+                    //Need to wait for all other slaves to finish so that the loopAgain result is calculated.
+                    if (barrier)
+                    {
+                        if (!barrier->wait(false))
+                            return NULL; // aborted
+                    }
+
                     Owned<IThorResult> loopAgainResult = ownedResults->getResult(helper->loopAgainResult(), !queryGraph().isLocalChild());
                     assertex(loopAgainResult);
                     Owned<IRowStream> loopAgainRows = loopAgainResult->getRowStream();

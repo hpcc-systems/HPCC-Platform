@@ -250,6 +250,11 @@ public:
 
                 boundGraph->execute(*this, condLoopCounter, ownedResults, (IRowWriterMultiReader *)NULL, 0, extractBuilder.size(), extractBuilder.getbytes());
                 ++loopCounter;
+                if (barrier) // barrier passed once all slave graphs have completed
+                {
+                    if (!barrier->wait(false))
+                        break;
+                }
                 if (barrier) // barrier passed once loopAgain result used
                 {
                     if (!barrier->wait(false))
