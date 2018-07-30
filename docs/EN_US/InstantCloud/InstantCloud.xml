@@ -48,9 +48,6 @@
 
       <para />
 
-      <para>
-        <emphasis role="redbold" />
-      </para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -169,14 +166,14 @@
               </listitem>
 
               <listitem>
-                <para><emphasis>Linux workstation with the Eclipse IDE and the
-                ECL plugin for Eclipse (available soon)</emphasis></para>
+                <para><emphasis>A Linux workstation with Visual Studio Code
+                and the ECL for VS Code extension.</emphasis></para>
               </listitem>
 
               <listitem>
-                <para><emphasis>Mac<superscript></superscript> workstation
-                with the Eclipse IDE and the ECL plugin for Eclipse (available
-                soon)</emphasis></para>
+                <para><emphasis>Mac<superscript>®</superscript> workstation
+                with Visual Studio Code and the ECL for VS Code extension.
+                </emphasis></para>
               </listitem>
             </itemizedlist></para>
         </listitem>
