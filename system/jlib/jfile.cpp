@@ -779,7 +779,7 @@ void CFile::move(const char *newname)
 #ifdef _WIN32
     unsigned retry = 0;
     for (;;) {
-        if (MoveFileEx(filename.get(),newname,0)) 
+        if (MoveFileEx(filename.get(),newname, MOVEFILE_REPLACE_EXISTING))
             return;
         DWORD err = GetLastError();
         if ((retry++==10)||  // some or all of the following can occur when the domain controller gets busy
