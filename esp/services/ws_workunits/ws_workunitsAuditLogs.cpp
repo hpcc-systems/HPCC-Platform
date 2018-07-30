@@ -1399,6 +1399,7 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit %s.", zapInfoReq.wuid.str());
     ensureWsWorkunitAccess(context, *cwu, SecAccess_Read);
 
+    request->getParameter("URL", zapInfoReq.url);
     request->getParameter("ESPIPAddress", zapInfoReq.espIP);
     request->getParameter("ThorIPAddress", zapInfoReq.thorIP);
     request->getParameter("ProblemDescription", zapInfoReq.problemDesc);
@@ -1417,6 +1418,8 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
 
         request->getParameter("EmailSubject", zapInfoReq.emailSubject);
         request->getParameter("EmailBody", zapInfoReq.emailBody);
+        if (!zapInfoReq.url.isEmpty())
+            zapInfoReq.emailBody.append("\r\nURL:").append(zapInfoReq.url.str());
         //Read maxAttachmentSize from setting.
         zapInfoReq.maxAttachmentSize = wswService->zapEmailMaxAttachmentSize;
         zapInfoReq.emailServer.set(wswService->zapEmailServer.get());
