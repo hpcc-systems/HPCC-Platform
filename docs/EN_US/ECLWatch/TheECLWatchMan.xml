@@ -1592,12 +1592,13 @@
         <title>Using Dynamic ESDL</title>
 
         <para>In order to use this interface choose an ESP service from the
-        service list. Click on the triangle icon next to the ESP process to
-        expand and display the DESDL services. Select the desired DESDL
-        service from the navigator pane.</para>
 
-        <para>The selected service's information displays on the <emphasis
-        role="bold">Summary</emphasis> tab to the right.</para>
+        service list. Click on the triangle icon next to the ESP process
+        (myesp) to expand and display the DESDL services. Check the box to
+        select the desired DESDL service, then press the Open button.</para>
+
+        <para>The selected service's information opens and displays the
+        <emphasis role="bold">Summary</emphasis> tab.</para>
 
         <para><figure>
             <title>Dynamic ESDL Summary</title>
@@ -1613,12 +1614,13 @@
           <title>Viewing the binding information</title>
 
           <para>If the selected service contains an ESDL binding, you can
-          select the binding tab to view the binding definition (the service
-          interface) and the configuration information.</para>
 
-          <para>Select the <emphasis role="bold">Binding</emphasis> tab then
-          press the <emphasis role="bold">Definition</emphasis> button to
-          display the ESDL definition in XML format.</para>
+          select the binding tabs to view the binding definition (the service
+          interface) or the configuration information.</para>
+
+          <para>Select the <emphasis role="bold">Binding Definition</emphasis>
+          to display the ESDL definition in XML format.</para>
+
 
           <para><figure>
               <title>Dynamic ESDL Binding Definition</title>
@@ -1638,9 +1640,9 @@
           can review, delete, or modify the configuration of that
           binding.</para>
 
-          <para>Press the <emphasis role="bold">Configuration</emphasis>
-          button to view or edit the <emphasis role="bold">Method
-          Configurations</emphasis>. Press <emphasis
+          <para>Select the <emphasis role="bold">Binding
+          Configuration</emphasis> tab to view or edit the <emphasis
+          role="bold">Methods</emphasis>. Press <emphasis
           role="bold">Save</emphasis> when finished. <figure>
               <title>Dynamic EDSL Binding Configuration</title>
 
@@ -1669,9 +1671,9 @@
                   <imagedata fileref="images/DESDL05.jpg" />
                 </imageobject>
               </mediaobject>
-            </figure>This will open a dialog listing the available interfaces
-          that have definitions. Select the interface to bind to the ESP
-          service.</para>
+            </figure>This will open a dialog listing the available interfaces.
+          Provide the information requested, an ESP Process Name and a Port.
+          Select a Definition and then provide a Service Name. </para>
 
           <para><figure>
               <title>Adding the definition</title>
@@ -1689,8 +1691,11 @@
           <title>Delete a Binding</title>
 
           <para>To delete a service binding for a
-          <emphasis>configured</emphasis> ESP Service. Select the ESP service
-          that contains the binding to delete.</para>
+
+          <emphasis>configured</emphasis> ESP Service. Expand the Process list
+          as necessary and select the ESP service that contains the binding to
+          delete.</para>
+
 
           <para><figure>
               <title>Deleting service binding</title>
