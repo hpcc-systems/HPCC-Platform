@@ -20,6 +20,7 @@
 #include "EnvironmentNode.hpp"
 #include <algorithm>
 #include "Utils.hpp"
+#include <exception>
 
 SchemaValue::SchemaValue(const std::string &name, bool isDefined) :
     m_name(name), m_displayName(name)
@@ -99,13 +100,21 @@ bool SchemaValue::isValueValid(const std::string &value, const EnvironmentValue 
 
 void SchemaValue::validate(Status &status, const std::string &id, const EnvironmentValue *pEnvValue) const
 {
-    std::string curValue = pEnvValue->getValue();
-    bool isValid = m_pType->isValueValid(curValue);
+    bool isValid = true;
+
+    if (pEnvValue == nullptr)
+    {
+        std::string msg = "Attempt to validate schema value w/o an environment value.";
+        throw(std::runtime_error(msg));
+    }
 
     //
     // If we have an environment value, more specific information can be provided
     if (pEnvValue)
     {
+        std::string curValue = pEnvValue->getValue();
+        isValid = m_pType->isValueValid(curValue);
+
         //
         // See if there is a dependency on another value being set.
         if (!m_requiredIf.empty() && isValid)
