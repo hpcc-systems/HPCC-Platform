@@ -13,6 +13,19 @@
             <xs:attribute name="warnIfFreeMemoryUnder" type="xs:nonNegativeInteger" use="optional" default="5" hpcc:displayName="Warn Free Memory" hpcc:group="Monitoring" hpcc:tooltip="Available memory under this value is flagged as warning in monitoring output"/>
         </xs:attributeGroup>
 
+        <xs:attributeGroup name="elkintegration">
+            <xs:attribute name="integrateKibana" type="xs:boolean" use="required"  default="false" hpcc:tooltip="Declare if Kibana dashboard to be integrated in ECLWatch"/>
+            <xs:attribute name="kibanaAddress" type="xs:string" use="optional" hpcc:defaultInCode="localhost" hpcc:tooltip="Address (ip/hostname) of Kibana server"/>
+            <xs:attribute name="kibanaPort" type="xs:nonNegativeInteger" use="optional" hpcc:defaultInCode="5601" hpcc:tooltip="Port number of target Kibana server"/>
+            <xs:attribute name="kibanaEntryPointURI" type="xs:string" hpcc:tooltip="Declares the ECLWatch integration entry point URI for the target Kibana dashboard"/>
+            <xs:attribute name="reportLogStashHealth" type="xs:boolean" use="required" hpcc:defaultInCode="true" hpcc:tooltip="Declare if connectivity to LogStash nodes is to be reported in ECLWatch"/>
+            <xs:attribute name="logStashAdresses" type="xs:string" use="optional" hpcc:tooltip="Declares the target LogStash nodes' adresses (semicolon seperated)"/>
+            <xs:attribute name="logStashPort" type="xs:nonNegativeInteger" use="optional" hpcc:tooltip="Declares the target LogStash nodes' port"/>
+            <xs:attribute name="reportElasticHealth" type="xs:boolean" use="required" hpcc:defaultInCode="true" hpcc:tooltip="Declare if connectivity to Elastic Search nodes is to be reported in ECLWatch"/>
+            <xs:attribute name="elasticSearchAdresses" type="xs:string" use="optional" hpcc:tooltip="Declares the target ElasticSearch nodes' adresses (semicolon seperated)"/>
+            <xs:attribute name="elasticSearchPort" type="xs:string" use="optional" hpcc:tooltip="Declares the target LogStash nodes' port"/>
+        </xs:attributeGroup>
+
         <xs:sequence>
             <xs:element name="EspService" hpcc:class="component" hpcc:componentName="espsmc" hpcc:category="ESP Service" hpcc:displayName="ESP SMC" maxOccurs="unbounded" hpcc:docid="SMC-T01">
                 <xs:complexType>
@@ -142,6 +155,7 @@
                     <xs:attribute name="enableLogDaliConnection" type="xs:boolean" use="optional" default="false" hpcc:displayName="Enable Log Dali Connection" hpcc:tooltip="Enable ESP/Dali Connection ID to be logged into esp.xml" />
                     <xs:attribute name="allowNewRoxieOnDemandQuery" type="xs:boolean" use="optional" default="false" hpcc:displayName="Allow New Roxie On Demand Query" hpcc:tooltip="allow new queries to be used by roxie on demand and roxie browser" />
                     <xs:attributeGroup ref="Monitoring"/>
+                    <xs:attributeGroup ref="elkintegration"/>
 
                 </xs:complexType>
 
