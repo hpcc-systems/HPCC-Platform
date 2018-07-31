@@ -850,9 +850,6 @@ margin-left:-20px;
     z-index: 1001;
 }
 
-.CodeMirror {
-}
-
 .CodeMirror-scroll {
     position: absolute;
     height: 100%;
@@ -1295,7 +1292,9 @@ margin-left:-20px;
 
 .dojoxColorPicker {
     padding:8px;
+    border-radius:4pt;
     -moz-border-radius:4pt;
+    border-radius:5pt;
     -webkit-border-radius:5pt;
     -webkit-drop-shadow:3pt;
 }
@@ -1486,12 +1485,6 @@ margin-left:-20px;
     padding: 3px;
 }
 
-.dojoxTreeMapGroup {
-}
-
-.dojoxTreeMapGroupContent {
-}
-
 .dojoxTreeMapHeader {
     background-color: white;
     border: 1px solid black;
@@ -1502,9 +1495,6 @@ margin-left:-20px;
 
 .dojoxTreeMapLeaf.dojoxTreeMapHovered {
     border-color: white;
-}
-
-.dojoxTreeMapGroup.dojoxTreeMapHovered {
 }
 
 .dojoxTreeMapSelected {
@@ -1606,4 +1596,24 @@ button.clippy img {
     padding:0px;
     width:13px;
     height:16px;
+}
+
+.eclwatch_WUGraph_Tooltip table {
+    border-collapse: separate;
+    border-spacing: 5px;
+}
+
+.eclwatch_WUGraph_Tooltip table .key {
+    font-weight: bold;
+}
+
+.eclwatch_WUGraph_Tooltip table .value {
+    font-weight: normal;
+}
+
+span.dijitReset.dijitInline.dijitIcon.fa {
+    font-family: "FontAwesome";
+    color:#2D97D6;
+    min-width: 16px;
+    min-height: 16px;
 }

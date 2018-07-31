@@ -23,6 +23,7 @@ define([
 
     "hpcc/_Widget",
     "src/ESPUtil",
+    "src/GraphStore",
     "src/Utility",
 
     "dojo/text!../templates/GraphWidget.html",
@@ -44,170 +45,8 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
     registry, BorderContainer, ContentPane,
     parser,
-    _Widget, ESPUtil, Utility,
+    _Widget, ESPUtil, GraphStore, Utility,
     template) {
-
-        var GraphStore = declare("GraphStore", [Memory], {
-            idProperty: "id",
-
-            setData: function (data) {
-                this.inherited(arguments);
-                this.cacheColumns = {};
-                this.calcColumns();
-            },
-
-            query: function (query, options) {
-                var retVal = this.inherited(arguments);
-                var sortSet = options && options.sort;
-                if (sortSet) {
-                    retVal.sort(typeof sortSet === "function" ? sortSet : function (a, b) {
-                        for (var sort, i = 0; sort = sortSet[i]; i++) {
-                            var aValue = a[sort.attribute];
-                            var bValue = b[sort.attribute];
-                            // valueOf enables proper comparison of dates
-                            aValue = aValue != null ? aValue.valueOf() : aValue;
-                            bValue = bValue != null ? bValue.valueOf() : bValue;
-                            if (aValue !== bValue) {
-                                return !!sort.descending == (bValue == null || aValue > bValue) ? -1 : 1;   // jshint ignore:line
-                            }
-                        }
-                        return 0;
-                    });
-                }
-                return retVal;
-            },
-
-            //  Helpers  ---
-            isNumber: function (n) {
-                return !isNaN(parseFloat(n)) && isFinite(n);
-            },
-            calcColumns: function () {
-                arrayUtil.forEach(this.data, function (item, idx) {
-                    for (var key in item) {
-                        if (key !== "id" && key.substring(0, 1) !== "_") {
-                            if (!this.cacheColumns[key]) {
-                                this.cacheColumns[key] = item[key].length;
-                            } else if (item[key].length > this.cacheColumns[key]) {
-                                this.cacheColumns[key] = item[key].length;
-                            }
-                        }
-                        if (this.isNumber(item[key])) {
-                            item[key] = parseFloat(item[key]);
-                        }
-                    }
-                }, this);
-            },
-            getColumnWidth: function (key) {
-                var width = this.cacheColumns[key] * 9;
-                if (width < 27) {
-                    width = 27;
-                } else if (width > 300) {
-                    width = 300;
-                }
-                return width;
-            },
-            appendColumns: function (target, highPriority, lowPriority, skip, formatTime) {
-                if (!highPriority) {
-                    highPriority = [];
-                }
-                if (!lowPriority) {
-                    lowPriority = [];
-                }
-                var skip = skip || [];
-                arrayUtil.forEach(target, function (item, idx) {
-                    skip.push(item.field);
-                });
-                arrayUtil.forEach(highPriority, function (key, idx) {
-                    if (skip.indexOf(key) === -1 && this.cacheColumns[key]) {
-                        target.push({
-                            field: key, label: key, width: this.getColumnWidth(key)
-                        });
-                    }
-                }, this);
-                for (var key in this.cacheColumns) {
-                    if (skip.indexOf(key) === -1 && highPriority.indexOf(key) === -1 && lowPriority.indexOf(key) === -1 && key.substring(0, 1) !== "_") {
-                        target.push({
-                            field: key, label: key, width: this.getColumnWidth(key)
-                        });
-                    }
-                }
-                arrayUtil.forEach(lowPriority, function (key, idx) {
-                    if (skip.indexOf(key) === -1 && this.cacheColumns[key]) {
-                        target.push({
-                            field: key, label: key, width: this.getColumnWidth(key)
-                        });
-                    }
-                }, this);
-                if (formatTime) {
-                    arrayUtil.forEach(target, function (column, idx) {
-                        if (column.label.indexOf("Time") === 0 || column.label.indexOf("Size") === 0 || column.label.indexOf("Skew") === 0) {
-                            column.formatter = function (_id, row) {
-                                return row["_" + column.field] || "";
-                            }
-                        }
-                    });
-                }
-            }
-        });
-
-        var GraphTreeStore = declare("GraphTreeStore", [GraphStore], {
-            idProperty: "id",
-
-            //  Store API  ---
-            constructor: function (options) {
-            },
-            query: function (query, options) {
-                return this.inherited(arguments);
-            },
-            setTree: function (data) {
-                this.setData([]);
-                this.inherited(arguments);
-                this.cacheColumns = {};
-                this.walkData(data);
-            },
-            walkData: function (data) {
-                arrayUtil.forEach(data, function (item, idx) {
-                    if (item._children) {
-                        item._children.sort(function (l, r) {
-                            return l.id - r.id;
-                        });
-                        this.walkData(item._children);
-                        lang.mixin(item, {
-                            __hpcc_notActivity: true
-                        });
-                    }
-                    this.add(item);
-
-                    for (var key in item) {
-                        if (key !== "id" && key.substring(0, 1) !== "_") {
-                            if (!this.cacheColumns[key]) {
-                                this.cacheColumns[key] = item[key].length;
-                            } else if (item[key].length > this.cacheColumns[key]) {
-                                this.cacheColumns[key] = item[key].length;
-                            }
-                        }
-                        if (this.isNumber(item[key])) {
-                            item[key] = parseFloat(item[key]);
-                        }
-                    }
-                }, this);
-            },
-
-            //  Tree API  ---
-            mayHaveChildren: function (object) {
-                return object._children;
-            },
-            getChildren: function (parent, options) {
-                var filter = {};
-                if (options.originalQuery.__hpcc_notActivity) {
-                    filter = {
-                        __hpcc_notActivity: true
-                    };
-                }
-                return QueryResults(this.queryEngine(filter, options)(parent._children));
-            }
-        });
-
         var GraphView = declare("GraphView", null, {
             sourceGraphWidget: null,
             rootGlobalIDs: null,
@@ -564,12 +403,12 @@ define([
             },
 
             createTreeStore: function () {
-                var store = new GraphTreeStore();
+                var store = new GraphStore.GraphTreeStore();
                 return Observable(store);
             },
 
             createStore: function () {
-                var store = new GraphStore();
+                var store = new GraphStore.GraphStore();
                 return Observable(store);
             },
 

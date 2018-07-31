@@ -228,7 +228,7 @@ define([
                         id: this.createChildTabID(id),
                         title: id,
                         closable: true,
-                        delayWidget: "Graph7Widget",
+                        delayWidget: "GraphTree7Widget",
                         params: {
                             Wuid: this.wu.Wuid,
                             GraphName: params.GraphName,

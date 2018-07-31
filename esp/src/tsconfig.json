@@ -13,6 +13,7 @@
         "experimentalDecorators": true,
         "allowJs": true,
         "skipLibCheck": true,
+        "noImplicitUseStrict": true,
         "lib": [
             "dom",
             "es5",

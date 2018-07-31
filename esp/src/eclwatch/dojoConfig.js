@@ -1,9 +1,12 @@
 var dojoConfig;
+var debugHPCC_JS = false; //  Should never be TRUE in a PR  ---
 
 function getConfig(env) {
     // dojoRoot is defined if we're running in node (i.e. building)
     var dojoRoot = env.dojoRoot;
     var baseUrl = dojoRoot ? "." : "/esp/files";
+    var hpccBaseUrl = baseUrl + "/node_modules/@hpcc-js";
+    var hpccMin = debugHPCC_JS ? "" : "min";
 
     return {
         baseUrl: baseUrl,
@@ -17,27 +20,27 @@ function getConfig(env) {
         blankGif: "/esp/files/eclwatch/img/blank.gif",
         paths: {
             "hpcc": baseUrl + "/eclwatch",
-            "src": baseUrl + "/lib",
+            "src": baseUrl + "/lib/src",
             "templates": baseUrl + "/eclwatch/templates",
             "ecl": baseUrl + "/eclwatch/ecl",
             "css": baseUrl + "/loader/css",
             "d3-selection": baseUrl + "/node_modules/d3-selection/build/d3-selection",
-            "@hpcc-js/api": baseUrl + "/node_modules/@hpcc-js/api/dist/index.min",
-            "@hpcc-js/chart": baseUrl + "/node_modules/@hpcc-js/chart/dist/index.min",
-            "@hpcc-js/common": baseUrl + "/node_modules/@hpcc-js/common/dist/index.min",
-            "@hpcc-js/comms": baseUrl + "/node_modules/@hpcc-js/comms/dist/index.min",
-            "@hpcc-js/composite": baseUrl + "/node_modules/@hpcc-js/composite/dist/index.min",
-            "@hpcc-js/dgrid": baseUrl + "/node_modules/@hpcc-js/dgrid/dist/index.min",
-            "@hpcc-js/dgrid-shim": baseUrl + "/node_modules/@hpcc-js/dgrid-shim/dist/index.min",
-            "@hpcc-js/eclwatch": baseUrl + "/node_modules/@hpcc-js/eclwatch/dist/index.min",
-            "@hpcc-js/form": baseUrl + "/node_modules/@hpcc-js/form/dist/index.min",
-            "@hpcc-js/graph": baseUrl + "/node_modules/@hpcc-js/graph/dist/index.min",
-            "@hpcc-js/layout": baseUrl + "/node_modules/@hpcc-js/layout/dist/index.min",
-            "@hpcc-js/map": baseUrl + "/node_modules/@hpcc-js/map/dist/index.min",
-            "@hpcc-js/other": baseUrl + "/node_modules/@hpcc-js/other/dist/index.min",
-            "@hpcc-js/timeline": baseUrl + "/node_modules/@hpcc-js/timeline/dist/index.min",
-            "@hpcc-js/tree": baseUrl + "/node_modules/@hpcc-js/tree/dist/index.min",
-            "@hpcc-js/util": baseUrl + "/node_modules/@hpcc-js/util/dist/index.min",
+            "@hpcc-js/api": baseUrl + "/node_modules/@hpcc-js/api/dist/index" + hpccMin,
+            "@hpcc-js/chart": baseUrl + "/node_modules/@hpcc-js/chart/dist/index" + hpccMin,
+            "@hpcc-js/common": baseUrl + "/node_modules/@hpcc-js/common/dist/index" + hpccMin,
+            "@hpcc-js/comms": baseUrl + "/node_modules/@hpcc-js/comms/dist/index" + hpccMin,
+            "@hpcc-js/composite": baseUrl + "/node_modules/@hpcc-js/composite/dist/index" + hpccMin,
+            "@hpcc-js/dgrid": baseUrl + "/node_modules/@hpcc-js/dgrid/dist/index" + hpccMin,
+            "@hpcc-js/dgrid-shim": baseUrl + "/node_modules/@hpcc-js/dgrid-shim/dist/index" + hpccMin,
+            "@hpcc-js/eclwatch": baseUrl + "/node_modules/@hpcc-js/eclwatch/dist/index" + hpccMin,
+            "@hpcc-js/form": baseUrl + "/node_modules/@hpcc-js/form/dist/index" + hpccMin,
+            "@hpcc-js/graph": baseUrl + "/node_modules/@hpcc-js/graph/dist/index" + hpccMin,
+            "@hpcc-js/layout": baseUrl + "/node_modules/@hpcc-js/layout/dist/index" + hpccMin,
+            "@hpcc-js/map": baseUrl + "/node_modules/@hpcc-js/map/dist/index" + hpccMin,
+            "@hpcc-js/other": baseUrl + "/node_modules/@hpcc-js/other/dist/index" + hpccMin,
+            "@hpcc-js/timeline": baseUrl + "/node_modules/@hpcc-js/timeline/dist/index" + hpccMin,
+            "@hpcc-js/tree": baseUrl + "/node_modules/@hpcc-js/tree/dist/index" + hpccMin,
+            "@hpcc-js/util": baseUrl + "/node_modules/@hpcc-js/util/dist/index" + hpccMin,
             "@hpcc-js/TopoJSON": dojoRoot ? "/esp/files/dist/TopoJSON" : baseUrl + "/node_modules/@hpcc-js/map/TopoJSON",
             "clipboard": baseUrl + "/node_modules/clipboard/dist/clipboard",
             "codemirror": baseUrl + "/node_modules/codemirror",
