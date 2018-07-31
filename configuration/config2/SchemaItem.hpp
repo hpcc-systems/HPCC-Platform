@@ -53,7 +53,7 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         void addChild(const std::shared_ptr<SchemaItem> &pItem, const std::string &name) { m_children.insert({ name, pItem }); }
         void getChildren(std::vector<std::shared_ptr<SchemaItem>> &children, const std::string &name = std::string("")) const;
         std::shared_ptr<SchemaItem> getChild(const std::string &name);
-        std::shared_ptr<SchemaItem> getChildByComponent(const std::string &name, std::string &componentName);
+        std::shared_ptr<SchemaItem> getChildByItemType(const std::string &name, std::string &itemType);
         void setItemSchemaValue(const std::shared_ptr<SchemaValue> &pValue) { m_pItemValue = pValue; }
         std::shared_ptr<SchemaValue> getItemSchemaValue() const { return m_pItemValue; }
         bool isItemValueDefined() { return m_pItemValue != nullptr; }

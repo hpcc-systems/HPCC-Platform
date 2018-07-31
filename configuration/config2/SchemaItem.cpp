@@ -363,13 +363,13 @@ std::shared_ptr<SchemaItem> SchemaItem::getChild(const std::string &name)
 }
 
 
-std::shared_ptr<SchemaItem> SchemaItem::getChildByComponent(const std::string &name, std::string &componentName)
+std::shared_ptr<SchemaItem> SchemaItem::getChildByItemType(const std::string &name, std::string &itemType)
 {
     std::shared_ptr<SchemaItem> pItem = std::make_shared<SchemaItem>(name, "default", shared_from_this());
     auto childItRange = m_children.equal_range(name);
     for (auto childIt = childItRange.first; childIt != childItRange.second; ++childIt)
     {
-        if (childIt->second->getProperty("componentName") == componentName)
+        if (childIt->second->getProperty("itemType") == itemType)
         {
             pItem = childIt->second;
             break;
@@ -622,8 +622,6 @@ std::string SchemaItem::getItemType() const
     // Return itemType based on this set of rules
     if (!getProperty("itemType").empty())
         return getProperty("itemType");
-    else if (!getProperty("componentName").empty())
-        return getProperty("componentName");
 
     return getProperty("name");
 }

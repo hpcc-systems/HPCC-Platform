@@ -22,7 +22,7 @@
     <xs:include schemaLocation="types.xsd"/>
     <xs:complexType name="ldapserver">
         <xs:sequence>
-            <xs:element name="LDAPServerProcess" hpcc:class="component" hpcc:category="LDAP Process" hpcc:componentName="ldapserver" hpcc:displayName="Active Directory LDAP process" hpcc:docid="ldapSrv" maxOccurs="unbounded">
+            <xs:element name="LDAPServerProcess" hpcc:class="component" hpcc:category="LDAP Process" hpcc:itemType="ldapserver" hpcc:displayName="Active Directory LDAP process" hpcc:docid="ldapSrv" maxOccurs="unbounded">
                 <xs:complexType>
                     <xs:sequence>
                         <xs:element type="hwinstance" hpcc:displayName="Instances"/>

@@ -5,7 +5,7 @@
     <xs:include schemaLocation="types.xsd"/>
     <xs:complexType name="ws_ecl">
         <xs:sequence>
-            <xs:element name="EspService" maxOccurs="unbounded" hpcc:class="component" hpcc:category="ESP Service" hpcc:displayName="WS ECL??" hpcc:componentName="ws_ecl" hpcc:docid="MyWS2-T03">
+            <xs:element name="EspService" maxOccurs="unbounded" hpcc:class="component" hpcc:category="ESP Service" hpcc:itemType="ws_ecl" hpcc:displayName="WS ECL??" hpcc:docid="MyWS2-T03">
                 <xs:complexType>
                     <xs:sequence>
 

@@ -5,7 +5,7 @@
     <xs:include schemaLocation="types.xsd"/>
     <xs:complexType name="esp">
         <xs:sequence>
-            <xs:element name="EspProcess" hpcc:class="component" hpcc:category="ESP Process" hpcc:componentName="esp" hpcc:displayName="ESP Process"  hpcc:docid="ESP.t6" maxOccurs="unbounded">
+            <xs:element name="EspProcess" hpcc:class="component" hpcc:category="ESP Process" hpcc:itemType="esp" hpcc:displayName="ESP Process"  hpcc:docid="ESP.t6" maxOccurs="unbounded">
                 <xs:annotation>
                     <xs:documentation>ESP Service Bindings</xs:documentation>
                 </xs:annotation>

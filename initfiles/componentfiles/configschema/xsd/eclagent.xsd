@@ -17,7 +17,7 @@
             <xs:attribute name="wuQueueName" hpcc:displayName="Workunit Queue Name" hpcc:group="Options" type="xs:string" use="optional" default="" hpcc:tooltip="eclAgent Workunit Execution Queue Name" hpcc:autogenforwizard="true" hpcc:autogensuffix="_queue"/> <!-- is this keyed? do we need new auto name option for suffix -->
         </xs:attributeGroup>
         <xs:sequence>
-            <xs:element name="EclAgentProcess" hpcc:class="component" hpcc:componentName="eclagent" hpcc:displayName="ECL Agent Process" maxOccurs="unbounded" hpcc:docid="EA.t1">
+            <xs:element name="EclAgentProcess" hpcc:class="component" hpcc:itemType="eclAgent" hpcc:displayName="ECL Agent Process" maxOccurs="unbounded" hpcc:docid="EA.t1">
                 <xs:complexType>
                     <xs:sequence>
                         <xs:element name="Instance" maxOccurs="unbounded" hpcc:displayName="Bound Computers">

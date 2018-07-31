@@ -10,7 +10,7 @@
             <xs:attribute name="throttleCPULimit" type="xs:nonNegativeInteger" use="optional" default="75" hpcc:tooltip="if after the initial delay, the CPU % falls below this setting, the transaction will be allowed to continue, i.e. the limit can be exceeded this way. Overrides global settting."/>
         </xs:attributeGroup>
         <xs:sequence>
-            <xs:element name="DafilesrvProcess" hpcc:class="valueSet" hpcc:docid="daFs.t">
+            <xs:element name="DafilesrvProcess" hpcc:itemType="dafilesrv" hpcc:class="valueSet" hpcc:docid="daFs.t">
                 <xs:annotation>
                     <xs:documentation>Describes an DFUFileSrv installation</xs:documentation>
                 </xs:annotation>
