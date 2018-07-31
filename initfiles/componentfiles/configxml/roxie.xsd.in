@@ -1211,6 +1211,27 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="mysqlCacheCheckPeriod" type="xs:nonNegativeInteger" use="optional" default="10000">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Time to wait (ms) between checking if any cached MySQL connections can be closed</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="mysqlCacheTimeoutPeriod" type="xs:nonNegativeInteger" use="optional" default="60000">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Time to wait (ms) before closing a cached MySQL connection</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="mysqlConnectionCacheSize" type="xs:nonNegativeInteger" use="optional" default="10">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Number of MySQL connections to hold in cache</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
   </xs:attributeGroup>
   <xs:attributeGroup name="SSH">
     <xs:annotation>
