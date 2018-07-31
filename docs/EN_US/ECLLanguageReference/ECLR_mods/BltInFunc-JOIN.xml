@@ -141,8 +141,8 @@
     order as the input record sets</emphasis>. If JOIN does do a dynamic sort
     of its input record sets, that new sort order cannot be relied upon to
     exist past the execution of the JOIN. This principle also applies to any
-    GROUPing--the records are automatically "un-grouped" as needed except under
-    the following circumstances:</para>
+    GROUPing--the records are automatically "un-grouped" as needed except
+    under the following circumstances:</para>
 
     <para>* For LOOKUP and ALL joins, the GROUPing and sort order of the
     <emphasis>leftrecset</emphasis> are preserved.</para>
@@ -426,8 +426,8 @@
             is useful for situations where you need to eliminate all "too many
             matches" record pairs from the result set. ATMOST is not supported
             on RIGHT ONLY or RIGHT OUTER <emphasis>jointypes</emphasis>. There
-            are two forms: ATMOST(condition, n) -- maximum is computed only for
-            the condition. ATMOST(n) -- maximum is computed for the entire
+            are two forms: ATMOST(condition, n) -- maximum is computed only
+            for the condition. ATMOST(n) -- maximum is computed for the entire
             <emphasis>joincondition</emphasis>, unless KEYED is used in the
             <emphasis>joincondition</emphasis>, in which case only the KEYED
             expressions are used. When ATMOST is specified (and the JOIN is
@@ -647,7 +647,7 @@
     <para>Use SMART when the right side dataset is likely to be small enough
     to fit in memory, but is not guaranteed to fit.</para>
 
-    <para>If you get an error similar to this: </para>
+    <para>If you get an error similar to this:</para>
 
     <para><programlisting>"error: 1301: Pool memory exhausted:<indexterm>
           <primary>memory exhausted</primary>
@@ -657,7 +657,7 @@
 
     <para>this means the <emphasis>rightrecset</emphasis> is too large and a
     LOOKUP JOIN should not be used. A SMART JOIN may be a good option in this
-    case. </para>
+    case.</para>
   </sect2>
 
   <sect2 id="Keyed_Joins">
@@ -1113,8 +1113,8 @@ OUTPUT(j5);
     <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
     Structure</link>, <link linkend="RECORD_Structure">RECORD
     Structure</link>, <link linkend="SKIP">SKIP</link>, <link
-    linkend="STEPPED">STEPPED</link>, <link
-    linkend="KEYED-WILD">KEYED/WILD</link>, <link
+    linkend="ROWDIER">ROWDIFF</link>, <link linkend="STEPPED">STEPPED</link>,
+    <link linkend="KEYED-WILD">KEYED/WILD</link>, <link
     linkend="MERGEJOIN">MERGEJOIN</link></para>
   </sect2>
 </sect1>
