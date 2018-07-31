@@ -278,6 +278,7 @@ public:
     void getTargetPlatform(StringBuffer & result);
 
 protected:
+    void appendNeverSimplifyList(const char *attribsList);
     bool checkDaliConnected() const;
     void addFilenameDependency(StringBuffer & target, EclCompileInstance & instance, const char * filename);
     void applyApplicationOptions(IWorkUnit * wu);
@@ -364,6 +365,7 @@ protected:
     StringArray allowSignedPermissions;
     StringArray deniedPermissions;
     StringAttr optMetaLocation;
+    StringBuffer neverSimplifyRegEx;
     bool defaultAllowed[2];
 
     ClusterType optTargetClusterType = RoxieCluster;
@@ -1223,6 +1225,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             parseCtx.setRegenerateCache();
         if (optIgnoreCache)
             parseCtx.setIgnoreCache();
+        if (neverSimplifyRegEx)
+            parseCtx.setNeverSimplify(neverSimplifyRegEx.str());
+
         if (optFastSyntax)
             parseCtx.setFastSyntax();
         parseCtx.timeParser = instance.wu->getDebugValueBool("timeParser", false);
@@ -2149,6 +2154,30 @@ void EclCompileInstance::getTargetPlatform(StringBuffer & result)
         return eclcc.getTargetPlatform(result);
 }
 
+void EclCC::appendNeverSimplifyList(const char *attribsList)
+{
+    const char * p = attribsList;
+    while (*p)
+    {
+        StringBuffer attribRegex;
+        if (*p == ',') p++;
+        for (; *p && *p != ','; p++)
+        {
+            if (*p=='/' || *p=='.' || *p=='\\')
+                attribRegex.append("\\.");
+            else
+                attribRegex.append(*p);
+        }
+        if (attribRegex.length() > 0)
+        {
+            if (neverSimplifyRegEx.length() > 0)
+                neverSimplifyRegEx.append("|");
+            // Match attribute and all child scopes
+            neverSimplifyRegEx.append(attribRegex.str()).append("(\\..+)?");
+        }
+    }
+}
+
 void EclCC::pushCluster(const char *clusterName)
 {
     clusters.append(clusterName);
@@ -2574,6 +2603,10 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
                 optMetaLocation.set(tempArg);
             else
                 optMetaLocation.clear();
+        }
+        else if (iter.matchOption(tempArg, "--neverSimplify"))
+        {
+            appendNeverSimplifyList(tempArg);
         }
         else if (iter.matchFlag(optGenerateMeta, "-M"))
         {
