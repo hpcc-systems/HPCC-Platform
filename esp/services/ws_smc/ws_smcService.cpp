@@ -673,6 +673,7 @@ void CActivityInfo::readRunningWUsAndJobQueueforOtherStatusServers(IEspContext& 
     ForEach(*it)
     {
         IPropertyTree& serverNode = it->query();
+        const char* cluster = serverNode.queryProp("@cluster");
         const char* serverName = serverNode.queryProp("@name");
         const char* node = serverNode.queryProp("@node");
         const char* queueName = serverNode.queryProp("@queue");
@@ -682,7 +683,11 @@ void CActivityInfo::readRunningWUsAndJobQueueforOtherStatusServers(IEspContext& 
             || strieq(serverName, getStatusServerTypeName(WsSMCSSTHThorCluster)) || strieq(serverName, getStatusServerTypeName(WsSMCSSTECLagent)))
             continue; //target clusters, ECLAgent, DFUServer already handled separately
 
-        VStringBuffer instanceName("%s_on_%s:%d", serverName, node, port); //where to get a better instance name?
+        StringBuffer instanceName;
+        if (!isEmptyString(cluster))
+            instanceName.set(cluster);
+        else
+            instanceName.setf("%s_on_%s:%d", serverName, node, port); //for legacy
         Owned<IPropertyTreeIterator> wuids(serverNode.getElements("WorkUnit"));
         ForEach(*wuids)
         {
