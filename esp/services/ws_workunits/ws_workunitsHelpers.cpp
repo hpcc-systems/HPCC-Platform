@@ -29,6 +29,7 @@
 #include "dllserver.hpp"
 #include "wujobq.hpp"
 #include "hqlexpr.hpp"
+#include "rmtsmtp.hpp"
 
 #ifndef _NO_LDAP
 #include "ldapsecurity.ipp"
@@ -3779,6 +3780,44 @@ IFileIOStream* CWsWuFileHelper::createWUZAPFileIOStream(IEspContext& context, Ow
     StringBuffer zapFileName, zapFileNameWithPath;
     createWUZAPFile(context, cwu, request, zapFileName, zapFileNameWithPath);
 
+    if (request.sendEmail)
+    {
+        CWsWuEmailHelper emailHelper(request.emailFrom.str(), request.emailTo.str(), request.emailServer.str(), request.port);
+
+        StringBuffer subject = request.emailSubject.str();
+        if (subject.isEmpty())
+            subject.append(request.wuid.str()).append(" ZAP Report");
+        emailHelper.setSubject(subject.str());
+
+        PROGLOG("Sending WU ZAP email (%s): from %s to %s", request.emailServer.str(), request.emailFrom.str(), request.emailTo.str());
+
+        StringArray warnings;
+        if (!request.attachZAPReportToEmail)
+            emailHelper.send(request.emailBody.str(), "", 0, warnings);
+        else
+        {
+            Owned<IFile> f = createIFile(zapFileNameWithPath.str());
+            Owned<IFileIO> io = f->open(IFOread);
+            unsigned zapFileSize = (unsigned) io->size();
+            if (zapFileSize > request.maxAttachmentSize)
+            {
+                request.emailBody.appendf("\n\n(Failed to attach the ZAP report. The size limit is %u bytes.)", request.maxAttachmentSize);
+                emailHelper.send(request.emailBody.str(), "", 0, warnings);
+            }
+            else
+            {
+                MemoryBuffer mb;
+                void * data = mb.reserve(zapFileSize);
+                size32_t read = io->read(0, zapFileSize, data);
+                mb.setLength(read);
+
+                emailHelper.setAttachmentName(zapFileName.str());
+                emailHelper.setMimeType("application/zip, application/octet-stream");
+                emailHelper.send(request.emailBody.str(), mb.toByteArray(), mb.length(), warnings);
+            }
+        }
+    }
+
     VStringBuffer headerStr("attachment;filename=%s", zapFileName.str());
     context.addCustomerHeader("Content-disposition", headerStr.str());
     return createIOStreamWithFileName(zapFileNameWithPath.str(), IFOread);
@@ -3946,6 +3985,15 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
     default:
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unsupported file type %d.", fileType);
     }
+}
+
+void CWsWuEmailHelper::send(const char* body, const void* attachment, size32_t lenAttachment, StringArray& warnings)
+{
+    if (lenAttachment == 0)
+        sendEmail(to.get(), subject.get(), body, mailServer.get(), port, sender.get(), &warnings);
+    else
+        sendEmailAttachData(to.get(), subject.get(), body, lenAttachment, attachment, mimeType.get(),
+            attachmentName.get(), mailServer.get(), port, sender.get(), &warnings);
 }
 
 }

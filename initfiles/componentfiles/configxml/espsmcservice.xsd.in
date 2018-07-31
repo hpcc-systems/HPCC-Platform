@@ -138,6 +138,41 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="ZAPEmailTo" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Default email address to receive ZAP Report email</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="ZAPEmailFrom" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Default email address to send ZAP Report email from</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="ZAPEmailServer" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Default Email Server URL to handle ZAP Report email</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="ZAPEmailServerPort" type="xs:nonNegativeInteger" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Default Email Server port to handle ZAP Report email</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>ZAPEmailMaxAttachmentSize
+            <xs:attribute name="ZAPEmailMaxAttachmentSize" type="xs:nonNegativeInteger" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximal attachment size in ZAP Report email</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="enableLogDaliConnection" type="xs:boolean" use="optional" default="false">
                 <xs:annotation>
                     <xs:appinfo>

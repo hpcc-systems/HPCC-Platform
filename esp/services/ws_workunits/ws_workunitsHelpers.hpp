@@ -56,6 +56,7 @@ const unsigned WUARCHIVE_CACHE_SIZE = 8;
 const unsigned WUARCHIVE_CACHE_MINITES = 5;
 const unsigned AWUS_CACHE_SIZE = 16;
 const unsigned AWUS_CACHE_MIN_DEFAULT = 15;
+const unsigned WUDEFAULT_ZAPEMAILSERVER_PORT = 25;
 
 inline bool notEmpty(const char *val){return (val && *val);}
 inline bool isEmpty(const char *val){return (!val || !*val);}
@@ -581,6 +582,9 @@ public:
 struct CWsWuZAPInfoReq
 {
     StringBuffer wuid, espIP, thorIP, problemDesc, whatChanged, whereSlow, includeThorSlaveLog, zapFileName, password;
+    StringBuffer emailFrom, emailTo, emailServer, emailSubject, emailBody;
+    bool sendEmail, attachZAPReportToEmail;
+    unsigned maxAttachmentSize, port;
 };
 
 class CWsWuFileHelper
@@ -619,6 +623,22 @@ public:
         CWUFileDownloadOption &downloadOptions, StringBuffer &contentType);
 
     IFileIOStream* createIOStreamWithFileName(const char *fileNameWithPath, IFOmode mode);
+};
+
+class CWsWuEmailHelper
+{
+    StringAttr mailServer, sender, to, subject, body;
+    StringAttr attachmentName, mimeType;
+    unsigned port;
+public:
+    CWsWuEmailHelper(const char *_sender, const char *_to, const char *_mailServer, unsigned _port)
+        : sender(_sender), to(_to), mailServer(_mailServer), port(_port) {};
+
+    void setSubject(const char *_subject) { subject.set(_subject); };
+    void setMimeType(const char *_mimeType) { mimeType.set(_mimeType); };
+    void setAttachmentName(const char *_attachmentName) { attachmentName.set(_attachmentName); };
+
+    void send(const char *body, const void *attachment, size32_t lenAttachment, StringArray &warnings);
 };
 }
 #endif
