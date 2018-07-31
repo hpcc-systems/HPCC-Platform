@@ -9613,6 +9613,7 @@ EnumMapping queryFileTypes[] = {
    { FileTypeResText, "res" },
    { FileTypeHintXml, "hint" },
    { FileTypeXml, "xml" },
+   { FileTypeLog, "log" },
    { FileTypeSize,  NULL },
 };
 

@@ -372,6 +372,7 @@ protected:
     unsigned batchPart = 0;
     unsigned batchSplit = 1;
     unsigned optLogDetail = 0;
+    unsigned optMonitorInterval = 60;
     unsigned optMaxErrors = 0;
     unsigned optDaliTimeout = 30000;
     bool optUnsuppressImmediateSyntaxErrors = false;
@@ -502,9 +503,8 @@ int main(int argc, const char *argv[])
     // Turn logging down (we turn it back up if -v option seen)
     Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error);
     queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
-
     unsigned exitCode = doMain(argc, argv);
-
+    stopPerformanceMonitor();
     if (!optReleaseAllMemory)
     {
         //In release mode exit without calling all the clean up code.
@@ -641,7 +641,10 @@ void EclCC::loadOptions()
             if (logVerbose)
                 fprintf(stdout, "Logging to '%s'\n",lf.str());
         }
+        if (optMonitorInterval)
+            startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
     }
+
     if (hooksPath.length())
         installFileHooks(hooksPath.str());
 
@@ -2551,6 +2554,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchOption(optLogDetail, "--logdetail"))
+        {
+        }
+        else if (iter.matchOption(optMonitorInterval, "--monitorinterval"))
         {
         }
         else if (iter.matchOption(optQueryRepositoryReference, "-main"))

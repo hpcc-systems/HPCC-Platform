@@ -225,6 +225,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="monitorInterval" type="xs:nonNegativeInteger" use="optional" default="60">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Interval (in seconds) for reporting of memory usage stats. Set to 0 to disable.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
