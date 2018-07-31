@@ -112,7 +112,7 @@ const char * const helpText[] = {
     "!   -pch          Generate precompiled header for eclinclude4.hpp",
 #endif
     "!   -P <path>     Specify the path of the output files (only with -b option)",
-    "!   --regeneratecache Force regeneration of cache (even if upto date)"
+    "!   --regeneratecache Force regeneration of cache (overwrite existing cache)",
     "!   -showpaths    Print information about the searchpaths eclcc is using",
     "    -specs file   Read eclcc configuration from specified file",
     "!   -split m:n    Process a subset m of n input files (only with -b option)",
