@@ -24,5 +24,5 @@ IF(MAKE_DOCS)
      ENDIF()
   ENDFOREACH()
 
-  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/DataTutorial.xml" ${PORTAL_HTML_DIR}/DataTutorial_${DOC_LANG}  "data_tutorial_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+  DOCBOOK_TO_HTML(${PORTAL_GEN_XSL} "${CMAKE_CURRENT_BINARY_DIR}/DataTutorial.xml" ${PORTAL_HTML_DIR}/DataTutorial_${DOC_LANG}  "data_tutorial_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
 ENDIF(MAKE_DOCS)

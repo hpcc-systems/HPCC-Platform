@@ -25,5 +25,5 @@ IF(MAKE_DOCS)
      ENDIF()
   ENDFOREACH()
 
-  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/InstantCloud.xml" ${PORTAL_HTML_DIR}/InstantCloud_for_AWS_${DOC_LANG}  "instantcloud_for_aws_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+  DOCBOOK_TO_HTML(${PORTAL_GEN_XSL} "${CMAKE_CURRENT_BINARY_DIR}/InstantCloud.xml" ${PORTAL_HTML_DIR}/InstantCloud_for_AWS_${DOC_LANG}  "instantcloud_for_aws_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
 ENDIF(MAKE_DOCS)

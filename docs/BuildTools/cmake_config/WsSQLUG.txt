@@ -27,5 +27,5 @@ IF(MAKE_DOCS)
      ENDIF()
   ENDFOREACH()
 
-  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/WsSQL_ESPWebServiceGuide.xml" ${PORTAL_HTML_DIR}/WsSQLUG_${DOC_LANG}  "wssql_user_guide_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+  DOCBOOK_TO_HTML(${PORTAL_GEN_XSL} "${CMAKE_CURRENT_BINARY_DIR}/WsSQL_ESPWebServiceGuide.xml" ${PORTAL_HTML_DIR}/WsSQLUG_${DOC_LANG}  "wssql_user_guide_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
 ENDIF(MAKE_DOCS)
