@@ -127,7 +127,7 @@ if [[ $eclcc != '' ]]; then
     echo "FLAGS=$flags" >> Makefile
     echo "ECLCC=$eclcc" >> Makefile
     echo "TARGET=$target_dir" >> Makefile
-    echo "FILES=\$(shell echo *.ecl*)" >> Makefile
+    echo "FILES=\$(shell ls *.ecl* | sort -R | tr '\n' ' ')" >> Makefile
     echo "LOGS0=\$(FILES:%.ecl=\$(TARGET)/%.ecl.log)" >> Makefile
     echo "LOGS1=\$(LOGS0:%.ecl.gz=\$(TARGET)/%.ecl.log)" >> Makefile
     echo "LOGS2=\$(LOGS1:%.eclxml.gz=\$(TARGET)/%.eclxml.log)" >> Makefile
