@@ -104,6 +104,7 @@ target_link_libraries ( ws_workunits
          eclrtl
          deftype
          workunit
+         dfuwu
          wuwebview
          SMCLib
          schedulectrl

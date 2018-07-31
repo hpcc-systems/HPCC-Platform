@@ -176,6 +176,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
 {
     StringAttr wuid;
     Owned<IWorkUnit> workunit;
+    StringAttr clusterName;
     StringBuffer idxStr;
     StringArray filesSeen;
 
@@ -430,7 +431,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
 
 public:
     IMPLEMENT_IINTERFACE;
-    EclccCompileThread(unsigned _idx)
+    EclccCompileThread(const char *_clusterName, unsigned _idx) : clusterName(_clusterName)
     {
         idxStr.append(_idx);
     }
@@ -457,7 +458,9 @@ public:
             workunit.clear();
             return;
         }
-        CSDSServerStatus serverstatus("ECLCCserver");
+        CSDSServerStatus serverstatus("ECLCCserverThread");
+        serverstatus.queryProperties()->setProp("@cluster",clusterName.get());
+        serverstatus.queryProperties()->setProp("@thread", idxStr.str());
         serverstatus.queryProperties()->setProp("WorkUnit",wuid.get());
         serverstatus.commitProperties();
         workunit->setAgentSession(myProcessSession());
@@ -596,6 +599,7 @@ static void removePrecompiledHeader()
 class EclccServer : public CInterface, implements IThreadFactory, implements IAbortHandler
 {
     StringAttr queueName;
+    StringAttr clusterName;
     unsigned poolSize;
     Owned<IThreadPool> pool;
 
@@ -607,12 +611,13 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
 
 public:
     IMPLEMENT_IINTERFACE;
-    EclccServer(const char *_queueName, unsigned _poolSize)
-        : queueName(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
+    EclccServer(const char *_queueName, const char *_clusterName, unsigned _poolSize)
+        : queueName(_queueName), clusterName(_clusterName), poolSize(_poolSize), serverstatus("ECLCCserver")
     {
         threadsActive = 0;
         running = false;
         pool.setown(createThreadPool("eclccServerPool", this, NULL, poolSize, INFINITE));
+        serverstatus.queryProperties()->setProp("@cluster",clusterName.get());
         serverstatus.queryProperties()->setProp("@queue",queueName.get());
         serverstatus.commitProperties();
     }
@@ -673,7 +678,7 @@ public:
     virtual IPooledThread *createNew()
     {
         CriticalBlock b(threadActiveCrit);
-        return new EclccCompileThread(threadsActive++);
+        return new EclccCompileThread(clusterName, threadsActive++);
     }
 
     virtual bool onAbort() 
@@ -792,7 +797,7 @@ int main(int argc, const char *argv[])
         // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
         // still accept the old name if the new one is not present.
         unsigned maxThreads = globals->getPropInt("@maxEclccProcesses", globals->getPropInt("@maxCompileThreads", 4));
-        EclccServer server(queueNames.str(), maxThreads);
+        EclccServer server(queueNames.str(), processName, maxThreads);
         // if we got here, eclserver is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
         // put in its own "scope" to force the flush
         writeSentinelFile(sentinelFile);
