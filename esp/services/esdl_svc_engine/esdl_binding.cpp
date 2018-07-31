@@ -160,9 +160,9 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
     m_espServiceName.set(service);
     m_espProcName.set(process);
     m_bGenerateLocalTrxId = true;
+    m_custTrxCompileFail = false;
 
-    StringBuffer xpath;
-    xpath.appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
+    VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
     IPropertyTree * srvcfg = cfg->queryPropTree(xpath.str());
     if (srvcfg)
     {
@@ -194,6 +194,9 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
         }
         else
             m_serviceNameSpaceBase.set(DEFAULT_ESDLBINDING_URN_BASE);
+
+        xpath.setf("Software/EspProcess[@name=\"%s\"]/EspBinding[@service=\"%s\"]", process, service); //get this service's binding cfg
+        m_oEspBindingCfg.set(cfg->queryPropTree(xpath.str()));
     }
     else
         throw MakeStringException(-1, "Could not access ESDL service configuration: esp process '%s' service name '%s'", process, service);
@@ -290,13 +293,49 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
     VStringBuffer xpath("Definition[@esdlservice='%s']/Methods", service);
     IPropertyTree *target_cfg = cfg->queryPropTree(xpath.str());
     DBGLOG("ESDL Binding: configuring method targets for esdl service %s", service);
+
     if (target_cfg)
     {
+        IPropertyTree * customRequestTransform = nullptr;
+        try
+        {
+            customRequestTransform = target_cfg->queryPropTree("Method/xsdl:CustomRequestTransforms");
+        }
+        catch (IPTreeException *e)
+        {
+            m_custTrxCompileFail = true;
+            StringBuffer msg;
+            e->errorMessage(msg);
+            ERRLOG("Encountered error while fetching \"hpcc:Transforms\" from service \"%s\" ESDL configuration. Ensure a single set of transforms is provided:\n%s ", service, msg.str());
+            e->Release();
+        }
+
+        try
+        {
+            if (customRequestTransform)
+                m_customRequestTransform.setown(new CEsdlCustomTransform(customRequestTransform));
+            m_custTrxCompileFail = false;
+        }
+        catch(IException* e)
+        {
+            m_custTrxCompileFail = true;
+            StringBuffer msg;
+            e->errorMessage(msg);
+            ERRLOG("Custom Request Transform could not be processed, will be ignored!!: \n\t%s", msg.str());
+            e->Release();
+        }
+        catch (...)
+        {
+            m_custTrxCompileFail = true;
+            ERRLOG("Custom Request Transform could not be processed, will be ignored!!");
+        }
+
         m_pServiceMethodTargets.setown(createPTree(ipt_caseInsensitive));
         Owned<IPropertyTreeIterator> itns = target_cfg->getElements("Method");
 
         ForEach(*itns)
             m_pServiceMethodTargets->addPropTree("Target", createPTreeFromIPT(&itns->query()));
+
 
         StringBuffer classPath;
         const IProperties &envConf = queryEnvironmentConf();
@@ -371,6 +410,9 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 {
     const char *mthName = mthdef.queryName();
     context.addTraceSummaryValue(LogMin, "method", mthName);
+
+    if (m_custTrxCompileFail)
+        throw MakeStringException(-1, "%s::%s disabled due to Custom Transform errors. Review tranform template in configuration.", srvdef.queryName(), mthName);
 
     MapStringTo<SecAccessFlags>&  methaccessmap = const_cast<MapStringTo<SecAccessFlags>&>(mthdef.queryAccessMap());
     if (methaccessmap.ordinality() > 0)
@@ -522,7 +564,14 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                 tgtctx.setown(createTargetContext(context, tgtcfg.get(), srvdef, mthdef, req));
 
             reqcontent.set(reqWriter->str());
-            context.addTraceSummaryTimeStamp(LogNormal, "ser-xmlreq");
+            context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
+
+            if (m_customRequestTransform)
+            {
+                context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
+                m_customRequestTransform->processTransform(&context, reqcontent, m_oEspBindingCfg.get());
+                context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
+            }
 
             handleFinalRequest(context, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy);
             context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq");
