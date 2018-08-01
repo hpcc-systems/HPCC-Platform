@@ -510,14 +510,14 @@ void RegexPattern::getTraceText(StringBuffer & s)
 
 void RegexPattern::toXML(StringBuffer & out, RegexXmlState & state)
 {
-    out.appendf("\t<expr id=\"%d\"", state.patterns.find(*this));
+    out.appendf("\t<expr id=\"%d\"", (unsigned)state.patterns.find(*this));
     toXMLattr(out,state);
     if (next.ordinality())
     {
         out.append(">").newline();
         ForEachItemIn(idx, next)
         {
-            out.appendf("\t\t<next id=\"%d\"/>", state.patterns.find(next.item(idx))).newline();
+            out.appendf("\t\t<next id=\"%d\"/>", (unsigned)state.patterns.find(next.item(idx))).newline();
         }
         out.append("\t</expr>").newline();
         ForEachItemInRev(idx2, next)
@@ -1567,7 +1567,7 @@ void RegexAssertionPattern::serializePattern(MemoryBuffer & out)
 void RegexAssertionPattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
 {
     RegexPattern::toXMLattr(out, state);
-    out.appendf(" sub=\"%d\" invert=\"%d\"", state.patterns.find(*pattern), invert);
+    out.appendf(" sub=\"%d\" invert=\"%d\"", (unsigned)state.patterns.find(*pattern), invert);
     state.addLink(*pattern);
 }
 
@@ -1791,7 +1791,7 @@ void RegexCheckInPattern::deserializeLinks(MemoryBuffer & in, RegexSerializeStat
 void RegexCheckInPattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
 {
     RegexCheckPattern::toXMLattr(out, state);
-    out.appendf(" sub=\"%d\"", state.patterns.find(*pattern));
+    out.appendf(" sub=\"%d\"", (unsigned)state.patterns.find(*pattern));
     state.addLink(*pattern);
 }
 
@@ -2035,7 +2035,7 @@ void RegexNamedPattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
     RegexPattern::toXMLattr(out, state);
     if (def->queryName())
         out.appendf(" name=\"%s\"", def->queryName()->queryStr());
-    out.appendf(" body=\"%d\"", state.named.find(*def));
+    out.appendf(" body=\"%d\"", (unsigned)state.named.find(*def));
 }
 
 
@@ -2233,7 +2233,7 @@ void RegexRepeatPattern::deserializeLinks(MemoryBuffer & in, RegexSerializeState
 void RegexRepeatPattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
 {
     RegexPattern::toXMLattr(out, state);
-    out.appendf(" min=\"%d\" max=\"%d\" greedy=\"%d\" body=\"%d\"", minLimit, maxLimit, greedy, state.named.find(*def));
+    out.appendf(" min=\"%d\" max=\"%d\" greedy=\"%d\" body=\"%d\"", minLimit, maxLimit, greedy, (unsigned)state.named.find(*def));
 }
 
 
@@ -2992,7 +2992,7 @@ void RegexNamed::toXML(StringBuffer & out, RegexXmlState & state)
 {
     StringBuffer lowerName;
     lowerName.append(str(name)).toLowerCase();
-    out.appendf("<named id=\"%d\" name=\"%s\" matchid=\"%d\" first=\"%d\">", state.named.find(*this), lowerName.str(), id, state.patterns.find(*first)).newline();
+    out.appendf("<named id=\"%d\" name=\"%s\" matchid=\"%d\" first=\"%d\">", (unsigned)state.named.find(*this), lowerName.str(), id, (unsigned)state.patterns.find(*first)).newline();
     graphToXML(out, state, first);
     //first->toXML(out, state);
     out.append("</named>").newline();
@@ -3013,7 +3013,7 @@ void regexToXml(StringBuffer & out, RegexPattern * root, unsigned detail)
     state.detail = detail;
     root->gather(state);
 
-    out.appendf("<regex root=\"%d\">", state.patterns.find(*root)).newline();
+    out.appendf("<regex root=\"%d\">", (unsigned)state.patterns.find(*root)).newline();
     graphToXML(out, state, root);
     ForEachItemIn(in, state.named)
         state.named.item(in).toXML(out, state);

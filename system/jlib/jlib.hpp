@@ -98,7 +98,7 @@ public:
     inline void append(TYPE& obj)                 { assert(&obj); CIArray::append(obj); } 
     inline void appendUniq(TYPE& obj)             { assert(&obj); CIArray::appendUniq(obj); } 
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CIArray::add(obj, pos); } 
-    inline aindex_t find(TYPE & obj) const        { assert(&obj); return CIArray::find(obj); }
+    inline NoBool<aindex_t> find(TYPE & obj) const        { assert(&obj); return CIArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); CIArray::replace(obj, pos, nodel); }
     inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return CIArray::zap(obj, nodel); }
 };
@@ -116,7 +116,7 @@ public:
     inline void append(TYPE& obj)                 { assert(&obj); CICopyArray::append(obj); } 
     inline void appendUniq(TYPE& obj)             { assert(&obj); CICopyArray::appendUniq(obj); } 
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CICopyArray::add(obj, pos); } 
-    inline aindex_t find(TYPE & obj) const        { assert(&obj); return CICopyArray::find(obj); }
+    inline NoBool<aindex_t> find(TYPE & obj) const        { assert(&obj); return CICopyArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos)  { assert(&obj); CICopyArray::replace(obj, pos); }
     inline bool zap(TYPE & obj)                   { assert(&obj); return CICopyArray::zap(obj); }
 };
@@ -134,7 +134,7 @@ public:
     inline void append(TYPE& obj)                 { assert(&obj); IArray::append(obj); } 
     inline void appendUniq(TYPE& obj)             { assert(&obj); IArray::appendUniq(obj); } 
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); IArray::add(obj, pos); } 
-    inline aindex_t find(TYPE & obj) const        { assert(&obj); return IArray::find(obj); }
+    inline NoBool<aindex_t> find(TYPE & obj) const        { assert(&obj); return IArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); IArray::replace(obj, pos, nodel); }
     inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return IArray::zap(obj, nodel); }
 };
@@ -153,7 +153,7 @@ public:
     inline void append(TYPE& obj)                 { assert(&obj); IArray::append((BTYPE &) obj); }
     inline void appendUniq(TYPE& obj)             { assert(&obj); IArray::appendUniq((BTYPE &) obj); }
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); IArray::add((BTYPE &) obj, pos); }
-    inline aindex_t find(TYPE & obj) const        { assert(&obj); return IArray::find((BTYPE &) obj); }
+    inline NoBool<aindex_t> find(TYPE & obj) const        { assert(&obj); return IArray::find((BTYPE &) obj); }
     inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); IArray::replace((BTYPE &) obj, pos, nodel); }
     inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return IArray::zap((BTYPE &) obj, nodel); }
 };
@@ -169,7 +169,7 @@ public:
     inline void append(TYPE& obj)                 { assert(&obj); IArray::append((BASE &)obj); }
     inline void appendUniq(TYPE& obj)             { assert(&obj); IArray::appendUniq((BASE &)obj); }
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); IArray::add((BASE &)obj, pos); }
-    inline aindex_t find(TYPE & obj) const        { assert(&obj); return IArray::find((BASE&)obj); }
+    inline NoBool<aindex_t> find(TYPE & obj) const        { assert(&obj); return IArray::find((BASE&)obj); }
     inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); IArray::replace((BASE &)obj, pos, nodel); }
     inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return IArray::zap((BASE &)obj, nodel); }
 };
@@ -187,7 +187,7 @@ public:
     inline void append(TYPE& obj)                 { assert(&obj); ICopyArray::append(obj); } 
     inline void appendUniq(TYPE& obj)             { assert(&obj); ICopyArray::appendUniq(obj); } 
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); ICopyArray::add(obj, pos); } 
-    inline aindex_t find(TYPE & obj) const        { assert(&obj); return ICopyArray::find(obj); }
+    inline NoBool<aindex_t> find(TYPE & obj) const        { assert(&obj); return ICopyArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos) { assert(&obj); ICopyArray::replace(obj, pos); }
     inline bool zap(TYPE & obj)                   { assert(&obj); return ICopyArray::zap(obj); }
 };
@@ -205,7 +205,7 @@ public:
     inline void append(TYPE * obj)                { IPointerArray::append(obj); } 
     inline void appendUniq(TYPE * obj)            { IPointerArray::appendUniq(obj); } 
     inline void add(TYPE * obj, aindex_t pos)     { IPointerArray::add(obj, pos); } 
-    inline aindex_t find(TYPE * obj) const        { return IPointerArray::find(obj); }
+    inline NoBool<aindex_t> find(TYPE * obj) const        { return IPointerArray::find(obj); }
     inline void replace(TYPE * obj, aindex_t pos, bool nodel=false) { IPointerArray::replace(obj, pos, nodel); }
     inline bool zap(TYPE * obj, bool nodel=false) { return IPointerArray::zap(obj, nodel); }
 };
@@ -224,7 +224,7 @@ public:
     inline void append(TYPE * obj)                { IConstPointerArray::append(obj); }
     inline void appendUniq(TYPE * obj)            { IConstPointerArray::appendUniq(obj); }
     inline void add(TYPE * obj, aindex_t pos)     { IConstPointerArray::add(obj, pos); }
-    inline aindex_t find(TYPE * obj) const        { return IConstPointerArray::find(obj); }
+    inline NoBool<aindex_t> find(TYPE * obj) const        { return IConstPointerArray::find(obj); }
     inline void replace(TYPE * obj, aindex_t pos, bool nodel=false) { IConstPointerArray::replace(obj, pos, nodel); }
     inline bool zap(TYPE * obj, bool nodel=false) { return IConstPointerArray::zap(obj, nodel); }
 };
@@ -238,7 +238,7 @@ public:
     inline void append(TYPE * x)                { PointerArray::append(x); }
     inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return PointerArray::bAdd(*(void * *)&newItem, (CompareFunc)f, isNew); }
     inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return PointerArray:: bSearch(*(void * const *)&key, (CompareFunc)f); }
-    inline aindex_t find(TYPE * x) const        { return PointerArray::find(x); }
+    inline NoBool<aindex_t> find(TYPE * x) const        { return PointerArray::find(x); }
     inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)PointerArray::getArray(pos); }
     inline TYPE **detach()                      { return (TYPE **)PointerArray::detach(); }
     inline TYPE * item(aindex_t pos) const      { return (TYPE *)PointerArray::item(pos); }
@@ -259,7 +259,7 @@ public:
     inline void append(TYPE * x)                { ConstPointerArray::append(x); }
     inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return ConstPointerArray::bAdd(*(const void * *)&newItem, (CompareFunc)f, isNew); }
     inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return ConstPointerArray:: bSearch(*(const void * const *)&key, (CompareFunc)f); }
-    inline aindex_t find(TYPE * x) const        { return ConstPointerArray::find(x); }
+    inline NoBool<aindex_t> find(TYPE * x) const        { return ConstPointerArray::find(x); }
     inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)ConstPointerArray::getArray(pos); }
     inline TYPE **detach()                      { return (TYPE **)ConstPointerArray::detach(); }
     inline TYPE * item(aindex_t pos) const      { return (TYPE *)ConstPointerArray::item(pos); }
