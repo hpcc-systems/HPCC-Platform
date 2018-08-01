@@ -295,6 +295,10 @@ define([
                         context.set("disabled", false);
                         if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
                             context.set("options", []);
+                            context.options.push({
+                                label: "&nbsp;",
+                                value: ""
+                            });
                             arrayUtil.forEach(response.TpDropZoneQueryResponse.TpDropZones.TpDropZone, function (item, idx) {
                                 var targetData = item.TpMachines.TpMachine;
                                 for (var i = 0; i < targetData.length; ++i) {
