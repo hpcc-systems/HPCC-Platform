@@ -3524,7 +3524,7 @@ void CWsWuFileHelper::createThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInf
     }
 }
 
-void CWsWuFileHelper::createZAPInfoFile(const char* espIP, const char* thorIP, const char* problemDesc,
+void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* espIP, const char* thorIP, const char* problemDesc,
     const char* whatChanged, const char* timing, Owned<IConstWorkUnit>& cwu, const char* pathNameStr)
 {
     VStringBuffer fileName("%s.txt", pathNameStr);
@@ -3544,6 +3544,8 @@ void CWsWuFileHelper::createZAPInfoFile(const char* espIP, const char* thorIP, c
         ipaddr.getIpText(espIPAddr);
         sb.append("ESP:          ").append(espIPAddr.str()).append("\r\n");
     }
+    if (!isEmptyString(url))
+        sb.append("URL:          ").append(url).append("\r\n");
     if (!isEmptyString(thorIP))
         sb.append("Thor:         ").append(thorIP).append("\r\n");
     outFile->write(sb.length(), sb.str());
@@ -3710,7 +3712,7 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, Owned<IConstWorkUnit
 
     //create WU ZAP files
     inFileNamePrefixWithPath.set(folderToZIP.str()).append(PATHSEPCHAR).append(zapReportNameStr.str());
-    createZAPInfoFile(request.espIP.str(), request.thorIP.str(), request.problemDesc.str(), request.whatChanged.str(),
+    createZAPInfoFile(request.url.str(), request.espIP.str(), request.thorIP.str(), request.problemDesc.str(), request.whatChanged.str(),
         request.whereSlow.str(), cwu, inFileNamePrefixWithPath.str());
     createZAPECLQueryArchiveFiles(cwu, inFileNamePrefixWithPath.str());
 

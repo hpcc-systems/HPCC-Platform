@@ -581,7 +581,7 @@ public:
 
 struct CWsWuZAPInfoReq
 {
-    StringBuffer wuid, espIP, thorIP, problemDesc, whatChanged, whereSlow, includeThorSlaveLog, zapFileName, password;
+    StringBuffer wuid, espIP, url, thorIP, problemDesc, whatChanged, whereSlow, includeThorSlaveLog, zapFileName, password;
     StringBuffer emailFrom, emailTo, emailServer, emailSubject, emailBody;
     bool sendEmail, attachZAPReportToEmail;
     unsigned maxAttachmentSize, port;
@@ -603,7 +603,7 @@ class CWsWuFileHelper
     IFile *createWorkingFolder(IEspContext &context, const char *wuid, const char *namePrefix,
         StringBuffer &namePrefixStr, StringBuffer &folderName);
 
-    void createZAPInfoFile(const char *espIP, const char *thorIP, const char *problemDesc,
+    void createZAPInfoFile(const char *url, const char *espIP, const char *thorIP, const char *problemDesc,
         const char *whatChanged, const char *timing, Owned<IConstWorkUnit> &cwu, const char *pathNameStr);
     void createZAPWUXMLFile(WsWuInfo &winfo, const char *pathNameStr);
     void createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit> &cwu, const char *pathNameStr);
