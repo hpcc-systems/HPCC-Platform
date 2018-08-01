@@ -727,9 +727,16 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
             if (multiInstances)
               processName.clear().append(pInst->queryName());
 
-            out.appendf("%s,%s,%s,%s,%s%c%s,%s\n", processName.str(), 
-              pComponent->queryProp("@name"), netAddr.str(), port.str(), 
-              STANDARD_OUTDIR, PATHSEPCHAR, pComponent->queryProp("@name"), pComponent->queryProp("@logDir"));
+            if (!strcmp(processName.str(), "ThorSlaveProcess"))
+            {
+               out.appendf("%s,%s,%s,%s,%s,%s%c%s,%s\n", processName.str(),
+                 pComponent->queryProp("@name"), netAddr.str(),pInst->queryProp("@slaveport"), pInst->queryProp("@slavesPerNode"),
+                 STANDARD_OUTDIR, PATHSEPCHAR, pComponent->queryProp("@name"), pComponent->queryProp("@logDir"));
+            }
+            else
+               out.appendf("%s,%s,%s,%s,%s%c%s,%s\n", processName.str(),
+                 pComponent->queryProp("@name"), netAddr.str(), port.str(),
+                 STANDARD_OUTDIR, PATHSEPCHAR, pComponent->queryProp("@name"), pComponent->queryProp("@logDir"));
           }
         }
         else 
