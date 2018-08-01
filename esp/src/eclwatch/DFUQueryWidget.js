@@ -129,18 +129,17 @@ define([
                                 var path = targetRow.machine.Directory.indexOf("\\");
                                 targetRow.machine.Name = value
                                 targetRow.machine.Netaddress = value
+                                context.desprayTargetPath.placeholder = targetRow.machine.Directory;
                                 if (context.desprayTargetPath) {
                                     context.desprayTargetPath._dropZoneTarget = targetRow;
                                     if (path > -1) {
-                                        context.desprayTargetPath.defaultValue = "\\"
                                         pathSepChar = "\\"
                                         context.pathSepCharG = "\\"
                                     } else {
-                                        context.desprayTargetPath.defaultValue = "/"
                                         pathSepChar = "/";
                                         context.pathSepCharG = "/"
                                     }
-                                    context.desprayTargetPath.loadDropZoneFolders(pathSepChar);
+                                    context.desprayTargetPath.loadDropZoneFolders(pathSepChar, targetRow.machine.Directory);
                                 }
                             }
                         });
