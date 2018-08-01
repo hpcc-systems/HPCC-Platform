@@ -354,7 +354,8 @@ enum WUFileType
     FileTypeResText = 2,
     FileTypeHintXml = 3,
     FileTypeXml = 4,
-    FileTypeSize = 5
+    FileTypeLog = 5,
+    FileTypeSize = 6
 };
 
 

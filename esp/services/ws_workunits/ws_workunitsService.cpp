@@ -3007,7 +3007,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 winfo.getWorkunitArchiveQuery(mb);
                 openSaveFile(context, opt, req.getSizeLimit(), "ArchiveQuery.xml", HTTP_TYPE_APPLICATION_XML, mb, resp);
             }
-            else if (strieq(File_Cpp,req.getType()) && notEmpty(req.getName()))
+            else if ((strieq(File_Cpp,req.getType()) || strieq(File_Log,req.getType())) && notEmpty(req.getName()))
             {
                 winfo.getWorkunitCpp(req.getName(), req.getDescription(), req.getIPAddress(),mb, opt > 0, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), req.getName(), HTTP_TYPE_TEXT_PLAIN, mb, resp);

@@ -314,6 +314,8 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         eclccCmd.append(" --timings --xml");
         eclccCmd.append(" --nostdinc");
         eclccCmd.append(" --metacache=");
+        VStringBuffer logfile("%s.eclcc.log", workunit->queryWuid());
+        eclccCmd.appendf(" --logfile=%s", logfile.str());
         if (globals->getPropBool("@enableEclccDali", true))
         {
             const char *daliServers = globals->queryProp("@daliServers");
@@ -405,12 +407,19 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
 
                 createUNCFilename(realdllfilename.str(), dllurl);
                 unsigned crc = crc_file(realdllfilename.str());
-
                 Owned<IWUQuery> query = workunit->updateQuery();
+                associateLocalFile(query, FileTypeLog, logfile, "Compiler log", 0);
                 associateLocalFile(query, FileTypeDll, realdllfilename, "Workunit DLL", crc);
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
                 workunit->commit();
                 return true;
+            }
+            else
+            {
+                Owned<IWUQuery> query = workunit->updateQuery();
+                associateLocalFile(query, FileTypeLog, logfile, "Compiler log", 0);
+                workunit->commit();
+                return false;
             }
         }
         catch (IException * e)
@@ -418,6 +427,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             reportError(e);
             e->Release();
         }
+        workunit->commit();
         return false;
     }
 
@@ -790,6 +800,9 @@ int main(int argc, const char *argv[])
     {
         initClientProcess(serverGroup, DCR_EclCCServer);
         openLogFile();
+        unsigned optMonitorInterval = globals->getPropInt("@monitorInterval", 60);
+        if (optMonitorInterval)
+            startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
         SCMStringBuffer queueNames;
         getEclCCServerQueueNames(queueNames, processName);
         if (!queueNames.length())
@@ -812,6 +825,7 @@ int main(int argc, const char *argv[])
     {
         ERRLOG("Terminating unexpectedly");
     }
+    stopPerformanceMonitor();
     globals.clear();
     UseSysLogForOperatorMessages(false);
     ::closedownClientProcess(); // dali client closedown

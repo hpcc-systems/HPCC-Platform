@@ -391,6 +391,7 @@ ESPenum WUFileType : string
     CPP("cpp"),
     DLL("dll"),
     Res("res"),
+    LOG("log"),
     WUECL("WUECL"),
     ThorLog("ThorLog"),
     ThorSlaveLog("ThorSlaveLog"),

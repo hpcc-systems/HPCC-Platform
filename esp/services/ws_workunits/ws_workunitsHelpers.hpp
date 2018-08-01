@@ -36,6 +36,7 @@ namespace ws_workunits {
 #define     OTHERS_WU_ACCESS   "OthersWorkunitsAccess"
 
 #define    File_Cpp "cpp"
+#define    File_Log "log"
 #define    File_ThorLog "ThorLog"
 #define    File_ThorSlaveLog "ThorSlaveLog"
 #define    File_EclAgentLog "EclAgentLog"

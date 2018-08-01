@@ -510,6 +510,7 @@ EnumMapping queryFileTypes[] = {
    { FileTypeResText, "res" },
    { FileTypeHintXml, "hint" },
    { FileTypeXml, "xml" },
+   { FileTypeLog, "log" },
    { FileTypeSize,  NULL },
 };
 
@@ -3904,6 +3905,7 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         writeToFileIOStream(workingFolder, "ArchiveQuery.xml", mb);
         break;
     case CWUFileType_CPP:
+    case CWUFileType_LOG:
     {
         const char *tail=pathTail(item.getName());
         fileName.set(tail ? tail : item.getName());
