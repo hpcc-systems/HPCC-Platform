@@ -40,6 +40,7 @@ elseif (USE_LIBXSLT)
         xslcache.cpp
         libxslt_processor.cpp
         libxml_validator.cpp
+        libxml_xpathprocessor.cpp
     )
 else()
     set (SRCS

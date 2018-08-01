@@ -17,6 +17,7 @@
 #ifndef _EsdlBinding_HPP__
 #define _EsdlBinding_HPP__
 
+#include "esdl_svc_custom.hpp"
 #include "esdl_def.hpp"
 #include "esdl_transformer.hpp"
 #include "esdl_def_helper.hpp"
@@ -73,6 +74,8 @@ private:
     MapStringToMyClass<IException> javaExceptionMap;
     Owned<ILoggingManager> m_oLoggingManager;
     bool m_bGenerateLocalTrxId;
+    Owned<CEsdlCustomTransform> m_customRequestTransform;
+    bool m_custTrxCompileFail;
 
 #ifndef LINK_STATICALLY
     Owned<ILoadedDllEntry> javaPluginDll;
@@ -83,7 +86,7 @@ public:
     StringBuffer                m_espServiceType;
     StringBuffer                m_espServiceName;
     StringBuffer                m_espProcName;
-    Owned<IPropertyTree>        m_pServiceConfig;
+    Owned<IPropertyTree>        m_oEspBindingCfg;
     Owned<IPropertyTree>        m_pServiceMethodTargets;
     Owned<IEsdlTransformer>     m_pEsdlTransformer;
     Owned<IEsdlDefinition>      m_esdl;
