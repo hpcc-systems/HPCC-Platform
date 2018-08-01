@@ -17,7 +17,7 @@
 
      ******************************************************************** -->
 <!-- Import docbook XSL and other resources from Jenk-Build locale -->
-<xsl:import href="./docbook-xsl/eclipse/profile-eclipse.xsl"/>
+<xsl:import href="../resources/docbook-xsl/eclipse/profile-eclipse.xsl"/>
 <xsl:param name="img.src.path">../</xsl:param>
 <xsl:param name="html.stylesheet">eclipsehelp.css</xsl:param>
 <xsl:param name="use.id.as.filename" select="1" />

@@ -26,5 +26,5 @@ IF(MAKE_DOCS)
     ENDIF()
   ENDFOREACH()
 
-  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/ESDL_LangRef_Includer.xml" ${PORTAL_HTML_DIR}/ESDL_LangRef_${DOC_LANG}  "esdl_langref_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+  DOCBOOK_TO_HTML(${PORTAL_GEN_XSL} "${CMAKE_CURRENT_BINARY_DIR}/ESDL_LangRef_Includer.xml" ${PORTAL_HTML_DIR}/ESDL_LangRef_${DOC_LANG}  "esdl_langref_html_${DOC_LANG}" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
 ENDIF(MAKE_DOCS)

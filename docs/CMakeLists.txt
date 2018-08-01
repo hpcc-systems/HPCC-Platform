@@ -32,6 +32,7 @@ set (VERSION_DIR ${CMAKE_CURRENT_BINARY_DIR}/)
 set (ECLIPSE_HTML_XSL ${CMAKE_CURRENT_BINARY_DIR}/BuildTools/EclipseHelp.xsl)
 #set (ECL_REFERENCE_XML ${CMAKE_CURRENT_BINARY_DIR}/ECLReference/ECLReference.xml)
 set (HTML_HELP_XSL ${CMAKE_CURRENT_BINARY_DIR}/resources/docbook-xsl/htmlhelp/htmlhelp.xsl)
+set (PORTAL_GEN_XSL ${CMAKE_CURRENT_BINARY_DIR}/BuildTools/PortalGen.xsl)
 
 
 
