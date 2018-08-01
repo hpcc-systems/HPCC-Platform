@@ -182,6 +182,7 @@ elseif ( NOT MAKE_DOCS_ONLY )
 
     if ( WIN32 )
         HPCC_ADD_SUBDIRECTORY (clienttools/IDEPlugins "CLIENTTOOLS_ONLY")
+        HPCC_ADD_SUBDIRECTORY (clienttools/win "CLIENTTOOLS_ONLY")
     else()
         HPCC_ADD_SUBDIRECTORY (clienttools "CLIENTTOOLS_ONLY")
    endif()
@@ -460,6 +461,16 @@ if(TOP_LEVEL_PROJECT)
                 !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR_WITHOUT_TRADEMARK}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
                 !define MUI_FINISHPAGE_NOAUTOCLOSE
             ")
+
+           list ( APPEND CPACK_NSIS_CREATE_ICONS_EXTRA "
+                CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\ECL Command Prompt.lnk\\\" '%comspec%' '/k \\\"$INSTDIR\\\\ECLCmd.bat\\\"'
+           ")
+           list ( APPEND CPACK_NSIS_DELETE_ICONS_EXTRA "
+                Delete \\\"$SMPROGRAMS\\\\$MUI_TEMP\\\\ECL CMD.lnk\\\"
+           ")
+
+            set(CPACK_NSIS_MODIFY_PATH "ON")
+
 
             file(STRINGS "${SIGN_DIRECTORY}/passphrase.txt" PFX_PASSWORD LIMIT_COUNT 1)
 
