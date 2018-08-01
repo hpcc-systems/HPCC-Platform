@@ -92,6 +92,7 @@ define([
                 this.fileName = registry.byId(this.id + "CSVFileName");
                 this.recreateQueriesGrid = registry.byId(this.id + "RecreateQueriesGrid");
                 this.recreateForm = registry.byId(this.id + "RecreateForm");
+                this.mineControl = registry.byId(this.id + "Mine");
             },
 
             startup: function (args) {
@@ -169,6 +170,9 @@ define([
                 });
 
                 this.userName = dojoConfig.username;
+                if (this.userName === null) {
+                    this.mineControl.set("disabled", true);
+                }
             },
 
             initTab: function () {

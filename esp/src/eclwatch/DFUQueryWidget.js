@@ -103,6 +103,7 @@ define([
                 this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
                 this.downListForm = registry.byId(this.id + "DownListForm");
                 this.fileName = registry.byId(this.id + "FileName");
+                this.mineControl = registry.byId(this.id + "Mine");
                 var context = this;
                 var origOnOpen = this.desprayTooltipDialog.onOpen;
                 this.desprayTooltipDialog.onOpen = function () {
@@ -449,6 +450,9 @@ define([
                 });
 
                 this.userName = dojoConfig.username;
+                if (this.userName === null) {
+                    this.mineControl.set("disabled", true);
+                }
             },
 
             _onMine: function (event) {
