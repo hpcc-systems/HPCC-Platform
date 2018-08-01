@@ -3719,7 +3719,7 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, Owned<IConstWorkUnit
     createZAPWUGraphProgressFile(request.wuid.str(), inFileNamePrefixWithPath.str());
     createProcessLogfile(cwu, winfo, "EclAgent", folderToZIP.str());
     createProcessLogfile(cwu, winfo, "Thor", folderToZIP.str());
-    if (strieq(request.includeThorSlaveLog.str(), "on"))
+    if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
         createThorSlaveLogfile(cwu, winfo, folderToZIP.str());
 
     //Write out to ZIP file
