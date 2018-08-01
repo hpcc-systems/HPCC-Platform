@@ -252,14 +252,16 @@ define([
                         this.logicalFilesTab.set("tooltip", logicalFileToolTip);
                     }
                 } else if (name === "LibrariesUsed") {
-                    this.librariesUsedTab.set("title", this.i18n.LibrariesUsed + " (" + newValue.Item.length + ")");
-                    var tooltip = "";
-                    for (var i = 0; i < newValue.Item.length; ++i) {
-                        if (tooltip !== "")
-                            tooltip += "\n";
-                        tooltip += newValue.Item[i];
+                    if (lang.exists("Item.length", newValue)) {
+                        this.librariesUsedTab.set("title", this.i18n.LibrariesUsed + " (" + newValue.Item.length + ")");
+                        var tooltip = "";
+                        for (var i = 0; i < newValue.Item.length; ++i) {
+                            if (tooltip !== "")
+                                tooltip += "\n";
+                            tooltip += newValue.Item[i];
+                        }
+                        this.librariesUsedTab.set("tooltip", tooltip);
                     }
-                    this.librariesUsedTab.set("tooltip", tooltip);
                 } else if (name === "Clusters") {
                     if (lang.exists("ClusterQueryState.length", newValue)) {
                         var checkIfSuspended = false;

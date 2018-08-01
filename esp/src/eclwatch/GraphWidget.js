@@ -418,7 +418,6 @@ define([
 
             borderContainer: null,
             graphContentPane: null,
-            _isPluginInstalled: false,
             _plugin: null,
             eventsRegistered: false,
             xgmml: null,
@@ -545,7 +544,6 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
-                this._isPluginInstalled = Utility.isPluginInstalled();
                 this.createPlugin();
                 this.watchStyleChange();
                 this.watchSelect(this.zoomDropCombo);
@@ -888,37 +886,11 @@ define([
 
             createPlugin: function () {
                 if (!this.hasPlugin()) {
-                    if (this._isPluginInstalled) {
-                        this.pluginID = this.id + "Plugin";
-                        if (this.isIE || this.isIE11) {
-                            this.graphContentPane.domNode.innerHTML = '<object type="application/x-hpccsystemsgraphviewcontrol" '
-                                + 'id="' + this.pluginID + '" '
-                                + 'name="' + this.pluginID + '" '
-                                + 'width="100%" '
-                                + 'height="100%">'
-                                + '</object>';
-                        } else {
-                            this.graphContentPane.domNode.innerHTML = '<embed type="application/x-hpccsystemsgraphviewcontrol" '
-                                + 'id="' + this.pluginID + '" '
-                                + 'name="' + this.pluginID + '" '
-                                + 'width="100%" '
-                                + 'height="100%">'
-                                + '</embed>';
-                        }
-                        var context = this;
-                        this.checkPluginLoaded().then(lang.hitch(this, function (response) {
-                            this.version = response;
-                            this._plugin = dom.byId(context.pluginID);
-                            this.registerEvents();
-                            this.emit("ready");
-                        }));
-                    } else {
-                        domConstruct.create("div", {
-                            innerHTML: "<h4>" + this.i18n.GraphView + "</h4>" +
-                                "<p>" + this.i18n.Toenablegraphviews + ":</p>" +
-                                this.getResourceLinks()
-                        }, this.graphContentPane.domNode);
-                    }
+                    domConstruct.create("div", {
+                        innerHTML: "<h4>" + this.i18n.GraphView + "</h4>" +
+                            "<p>" + this.i18n.Toenablegraphviews + ":</p>" +
+                            this.getResourceLinks()
+                    }, this.graphContentPane.domNode);
                 }
             },
 

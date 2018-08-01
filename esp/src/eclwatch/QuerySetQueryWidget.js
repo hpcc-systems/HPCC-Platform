@@ -38,6 +38,7 @@ define([
     "dijit/form/TextBox",
     "dijit/Dialog",
     "dijit/form/DropDownButton",
+    "dijit/Fieldset",
     "dijit/TooltipDialog",
 
     "hpcc/TargetSelectWidget",
