@@ -193,6 +193,7 @@ define([
                     load: function (response) {
                         if (lang.exists("FilePermissionResponse.Groups.Group", response)) {
                             var targetData = response.FilePermissionResponse.Groups.Group;
+                            Utility.stringLowerSort(targetData, "name");
                             for (var i = 0; i < targetData.length; ++i) {
                                 context.options.push({
                                     label: targetData[i].name,
@@ -211,6 +212,7 @@ define([
                     load: function (response) {
                         if (lang.exists("FilePermissionResponse.Users.User", response)) {
                             var targetData = response.FilePermissionResponse.Users.User;
+                            Utility.stringLowerSort(targetData, "username");
                             for (var i = 0; i < targetData.length; ++i) {
                                 context.options.push({
                                     label: targetData[i].username,
