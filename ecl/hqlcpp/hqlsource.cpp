@@ -3906,7 +3906,7 @@ IHqlExpression * MonitorRemovalTransformer::createTransformed(IHqlExpression * e
             unsigned match = builder.originalFilters.find(*body);
             if (match == NotFound)
             {
-                if (builder.removedFilters.find(*body))
+                if (builder.removedFilters.contains(*body))
                     return transform(ds);
                 return NewHqlTransformer::createTransformed(expr);
             }
