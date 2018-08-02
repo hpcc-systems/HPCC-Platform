@@ -49,11 +49,9 @@
 
             function sendAuthRequest(){
                 var xhttp = new XMLHttpRequest();
-                xhttp.open ('GET', 'esp/getauthtype', true);
-                xhttp.send();
-                xhttp.onload = function(){
-                    var responseType = (this.responseXML.childNodes[0].textContent);
-                    if (this.readyState == 4 && this.status == 200 && this.responseXML.childNodes[0].textContent == responseType){
+                xhttp.onload = function () {
+                    var responseType = this.responseXML && this.responseXML.childNodes && this.responseXML.childNodes.length ? this.responseXML.childNodes[0].textContent : "None";
+                    if (this.readyState == 4 && this.status == 200) {
                         switch (responseType) {
                             case 'Mixed':
                             case 'PerSessionOnly':
@@ -66,11 +64,13 @@
                                 break;
                             default:
                                 document.cookie = ("ESPSessionState=false");
-                            }
+                        }
                     } else {
-                        alert ('Authorization Request Error.')
+                        alert('Authorization Request Error.')
                     }
                 }
+                xhttp.open('GET', '/esp/getauthtype', true);
+                xhttp.send();
             }
         }
     </script>
