@@ -444,6 +444,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CurrentTime.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/DayOfWeek.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DayOfYear.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
