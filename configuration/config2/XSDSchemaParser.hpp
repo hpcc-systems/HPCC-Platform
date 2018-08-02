@@ -59,8 +59,6 @@ class XSDSchemaParser : public SchemaParser
         virtual std::shared_ptr<SchemaType> getType(const pt::ptree &typeTree, bool nameRequired=true);
         virtual std::shared_ptr<SchemaValue> getSchemaValue(const pt::ptree &attr);
 
-        virtual void parseKey(const pt::ptree &keyTree);
-        virtual void parseKeyRef(const pt::ptree &keyTree);
         virtual void parseIntegerTypeLimits(const pt::ptree &restrictTree, std::shared_ptr<SchemaTypeIntegerLimits> &pIntegerLimits);
         virtual void parseStringTypeLimits(const pt::ptree &restrictTree, std::shared_ptr<SchemaTypeStringLimits> &pStringLimits);
         virtual void parseAllowedValue(const pt::ptree &allowedValueTree, SchemaTypeLimits *pTypeLimits);

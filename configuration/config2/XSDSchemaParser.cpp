@@ -166,14 +166,6 @@ void XSDSchemaParser::parseXSD(const pt::ptree &keys)
         {
             parseElement(it->second);
         }
-        else if (elemType == "xs:key")
-        {
-            parseKey(it->second);
-        }
-        else if (elemType == "xs:keyref")
-        {
-            parseKeyRef(it->second);
-        }
         else if (elemType == "xs:annotation")
         {
             parseAnnotation(it->second);
@@ -240,6 +232,10 @@ void XSDSchemaParser::parseAttributeGroup(const pt::ptree &attributeTree)
                 std::vector<std::shared_ptr<SchemaValue>> attributes;
                 pValueSet->getAttributes(attributes);
                 m_pSchemaItem->addAttribute(attributes);
+
+                //
+                // Add any unique valueset references
+                m_pSchemaItem->addReferenceToUniqueAttributeValueSet(pValueSet);
             }
         }
     }
@@ -249,13 +245,11 @@ void XSDSchemaParser::parseAttributeGroup(const pt::ptree &attributeTree)
 void XSDSchemaParser::parseComplexType(const pt::ptree &typeTree)
 {
     std::string complexTypeName = getXSDAttributeValue(typeTree, "<xmlattr>.name", false, "");
-    bool hidden = typeTree.get("<xmlattr>.hpcc:hidden", "false") == "true";
 
     if (!complexTypeName.empty())
     {
         std::shared_ptr<SchemaItem> pComplexType = std::make_shared<SchemaItem>(complexTypeName, "component", m_pSchemaItem);
         pComplexType->setProperty("itemType", complexTypeName);
-        pComplexType->setHidden(hidden);
 
         pt::ptree childTree = typeTree.get_child("", pt::ptree());
         if (!childTree.empty())
@@ -559,7 +553,10 @@ std::shared_ptr<SchemaType> XSDSchemaParser::getType(const pt::ptree &typeTree, 
         std::string xsdBaseType = getXSDAttributeValue(restriction->second, "<xmlattr>.base");
         std::shared_ptr<SchemaType> pBaseType = m_pSchemaItem->getSchemaValueType(xsdBaseType);
         pCfgType->setBaseType(pBaseType->getBaseType());
-        pCfgType->setSubType(typeName);
+        if (typeName != pBaseType->getBaseType())
+        {
+            pCfgType->setSubType(typeName);
+        }
 
         pLimits = pBaseType->getLimits();
 
@@ -722,50 +719,38 @@ std::shared_ptr<SchemaValue> XSDSchemaParser::getSchemaValue(const pt::ptree &at
         std::shared_ptr<SchemaType> pType = getType(attr.get_child("xs:simpleType", pt::ptree()), false);
         if (!pType->isValid())
         {
-            throw(ParseException("Attribute " + attrName + " does not have a valid type"));
+            throw(ParseException("Attribute " + m_pSchemaItem->getProperty("name") + "[@" + attrName + "] does not have a valid type"));
         }
         pCfgValue->setType(pType);
     }
+
+    //
+    // Keyed value or from a keyed set?
+    std::string uniqueKey = attr.get("<xmlattr>.hpcc:uniqueKey", "");
+    std::string sourceKey = attr.get("<xmlattr>.hpcc:sourceKey", "");
+
+    //
+    // Make sure both aren't specified
+    if (!uniqueKey.empty() && !sourceKey.empty())
+    {
+        throw(ParseException("Attribute " + m_pSchemaItem->getProperty("name") + "[@" + attrName + "] cannot be both unique and from a source path"));
+    }
+
+    //
+    // If value must be unique, add a unique value set definition
+    if (!uniqueKey.empty())
+    {
+        std::string elementPath = "./";
+        m_pSchemaItem->addUniqueAttributeValueSetDefinition(uniqueKey, elementPath, attrName, true);
+    }
+
+    //
+    // If the value must be from an existing attribute, add reference to such
+    else if (!sourceKey.empty())
+    {
+        std::string elementPath = "./";
+        m_pSchemaItem->addReferenceToUniqueAttributeValueSet(sourceKey, elementPath, attrName);
+    }
+
     return pCfgValue;
-}
-
-
-void XSDSchemaParser::parseKey(const pt::ptree &keyTree)
-{
-    std::string keyName = getXSDAttributeValue(keyTree, "<xmlattr>.name");
-    bool duplicateOk = keyTree.get("<xmlattr>.hpcc:allowDuplicate", "false") == "true";
-    std::string elementName = getXSDAttributeValue(keyTree, "xs:selector.<xmlattr>.xpath", false, "");
-    std::string attrName = getXSDAttributeValue(keyTree, "xs:field.<xmlattr>.xpath", false, "");
-    std::string attributeName;
-
-    if (attrName.find_first_of('@') != std::string::npos)
-    {
-        attributeName = attrName.substr(attrName.find_first_of('@') + 1);
-    }
-    else
-    {
-        attributeName = attrName;
-    }
-
-    m_pSchemaItem->addUniqueAttributeValueSetDefinition(keyName, elementName, attributeName, duplicateOk);
-}
-
-
-void XSDSchemaParser::parseKeyRef(const pt::ptree &keyTree)
-{
-    std::string keyName = getXSDAttributeValue(keyTree, "<xmlattr>.refer");
-    std::string elementName = getXSDAttributeValue(keyTree, "xs:selector.<xmlattr>.xpath", false, "");
-    std::string attrName = getXSDAttributeValue(keyTree, "xs:field.<xmlattr>.xpath", false, "");
-    std::string attributeName;
-
-    if (attrName.find_first_of('@') != std::string::npos)
-    {
-        attributeName = attrName.substr(attrName.find_first_of('@') + 1);
-    }
-    else
-    {
-        attributeName = attrName;
-    }
-
-    m_pSchemaItem->addReferenceToUniqueAttributeValueSet(keyName, elementName, attributeName);
 }

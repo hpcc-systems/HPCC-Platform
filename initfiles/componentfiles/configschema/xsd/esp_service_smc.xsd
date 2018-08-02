@@ -126,7 +126,8 @@
                     </xs:sequence>
 
                     <xs:attributeGroup ref="buildInfo"/>
-                    <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="EclWatch" hpcc:tooltip="Name for this ESP service" />
+                    <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="EclWatch"
+                        hpcc:uniqueKey="espservice_name" hpcc:tooltip="Name for this ESP service" />
                     <xs:attribute name="description" type="xs:string" use="optional" hpcc:displayName="Description" hpcc:tooltip="Description for this process" />
                     <xs:attribute name="syntaxCheckQueue" type="xs:string" use="optional" hpcc:displayName="Syntax Check Queue" hpcc:tooltip="Queue Name of ECL server which is used for ECL Syntax Check" />
                     <xs:attribute name="pluginsPath" type="xs:string" use="optional" default="${PLUGINS_PATH}" hpcc:displayName="Plugins Path" hpcc:tooltip="Path where plugin files are deployed" />
@@ -144,11 +145,6 @@
                     <xs:attributeGroup ref="Monitoring"/>
 
                 </xs:complexType>
-
-                <xs:key name="espservice_name_key" hpcc:allowDuplicate="true">
-                    <xs:selector xpath="./" />
-                    <xs:field xpath="@name" />
-                </xs:key>
 
             </xs:element>
         </xs:sequence>

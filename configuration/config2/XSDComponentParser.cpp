@@ -93,22 +93,8 @@ void XSDComponentParser::parseXSD(const pt::ptree &compTree)
             XSDSchemaParser::parseXSD(elemTree.get_child("xs:complexType.xs:sequence", pt::ptree()));
 
             //
-            // See if any post config stuff like unique, key, or keyref
-            for (auto it = elemTree.begin(); it != elemTree.end(); ++it)
-            {
-                //
-                // Element parent (a type in realilty) and the element name help figure out how to process the XSD schema element
-                std::string elemType = it->first;
-                if (elemType == "xs:key")
-                {
-                    parseKey(it->second);
-                }
-                else if (elemType == "xs:keyref")
-                {
-                    parseKeyRef(it->second);
-                }
-            }
-
+            // If there were other keys that we needed to support, this is where a loop would be added
+            // to parse those.
         }
     }
 }

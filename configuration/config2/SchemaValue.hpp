@@ -56,6 +56,7 @@ class DECL_EXPORT SchemaValue
         void setModifiers(const std::vector<std::string> &list) { m_modifiers = list;  }
         const std::vector<std::string> &getModifiers() const { return m_modifiers; }
         bool hasModifiers() const { return m_modifiers.size() != 0; }
+        bool hasModifier(const std::string &modifier) const;
         void setUniqueValue(bool isUnique) { bitMask.m_isUnique = isUnique; }
         bool isUniqueValue() const { return bitMask.m_isUnique;  }
         void setUniqueValueSetRef(const std::shared_ptr<SchemaValue> &pValue) { m_pUniqueValueSetRefs.push_back(pValue);  }

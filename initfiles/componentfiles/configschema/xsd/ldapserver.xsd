@@ -29,7 +29,8 @@
                         <xs:element type="usernotes" hpcc:displayName="Notes"/>
                     </xs:sequence>
                     <xs:attributeGroup ref="buildInfo"/>
-                    <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="LDAP" hpcc:tooltip="Name for this process" />
+                    <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="LDAP"
+                        hpcc:uniqueKey="ldapserverprocess_name" hpcc:tooltip="Name for this process" />
                     <xs:attribute name="description" type="xs:string" hpcc:displayName="Description" use="optional" default="LDAP server process" hpcc:tooptip="Description for this process"/> <!-- cant have default and optional -->
                     <xs:attribute name="ldapPort" type="xs:nonNegativeInteger" hpcc:displayName="LDAP Port" use="required" default="389" hpcc:tooltip="The port of the ldap (Active Directory) server"/> <!-- key required ? -->
                     <xs:attribute name="ldapSecurePort" type="xs:nonNegativeInteger" hpcc:displayName="LDAP Secure Port" use="required" default="636" hpcc:tooltip="The port of the ldap (Active Directory) server"/> <!-- key ? -->
@@ -58,21 +59,6 @@
                         </xs:simpleType>
                     </xs:attribute>
                 </xs:complexType>
-
-                <xs:key name="ldap_name_key">
-                    <xs:selector xpath="." />
-                    <xs:field xpath="@name" />
-                </xs:key>
-
-                <xs:keyref name="espprocess_Instance_keyref" refer="computerNameKey">
-                    <xs:selector xpath="Instance"/>
-                    <xs:field xpath="@computer"/>
-                </xs:keyref>
-
-                <xs:keyref name="espprocess_Instance_ipref" refer="computerIPAddressKey">
-                    <xs:selector xpath="Instance"/>
-                    <xs:field xpath="netAddress"/>
-                </xs:keyref>
             </xs:element>
         </xs:sequence>
     </xs:complexType>

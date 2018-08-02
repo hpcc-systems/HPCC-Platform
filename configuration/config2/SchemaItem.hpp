@@ -66,6 +66,7 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         void getAttributes(std::vector<std::shared_ptr<SchemaValue>> &attributes) const;
         bool addUniqueName(const std::string keyName);
         void addUniqueAttributeValueSetDefinition(const std::string &setName, const std::string &elementPath, const std::string &attributeName, bool duplicateOk = false);
+        void addReferenceToUniqueAttributeValueSet(const std::shared_ptr<SchemaItem> &pSourceSchemaItem);
         void addReferenceToUniqueAttributeValueSet(const std::string &setName, const std::string &elementPath, const std::string &attributeName);
         void processDefinedUniqueAttributeValueSets(std::map<std::string, std::vector<std::shared_ptr<SchemaValue>>> &uniqueAttributeValueSets);
         void processUniqueAttributeValueSetReferences(const std::map<std::string, std::vector<std::shared_ptr<SchemaValue>>> &uniqueAttributeValueSets);
@@ -83,6 +84,7 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         std::shared_ptr<const SchemaItem> getSchemaRoot() const;
         void processEvent(const std::string &eventType, const std::shared_ptr<EnvironmentNode> &pEnvNode) const;
         void addEventHandler(const std::shared_ptr<EnvironmentEventHandler> &pHandler) { m_eventHandlers.push_back(pHandler); }
+        void getPath(std::string &path) const;
 
 
     protected:

@@ -41,7 +41,7 @@
     </xs:simpleType>
 
     <xs:simpleType name="ipV4Address">
-        <xs:restriction base="xs:token">
+        <xs:restriction base="xs:string">
             <xs:pattern value="/^0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.0*([1-9]?\\d|1\\d\\d|2[0-4]\\d|25[0-5])$/"/>
         </xs:restriction>
     </xs:simpleType>
@@ -62,22 +62,16 @@
         <xs:restriction base="xs:string" hpcc:autoType="timestamp"/>
     </xs:simpleType>
 
-    <xs:simpleType name="AutoComputerType">
-        <xs:restriction base="xs:string" hpcc:autoType="requestIP"/>
-    </xs:simpleType>
-
     <xs:simpleType name="AutoUseridType">
         <xs:restriction base="xs:string" hpcc:autoType="requestUser"/>
     </xs:simpleType>
 
-    <xs:attributeGroup name="computerNode">
-        <xs:attribute name="name" type="nodeName" use="required"/>
-        <xs:attribute name="netAddress" type="ipV4Address" use="required"/>
-    </xs:attributeGroup>
-
     <xs:attributeGroup name="computerNodeReference">
-        <xs:attribute name="computer" type="nodeName" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"/>
-        <xs:attribute name="netAddress" type="ipV4Address" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
+        <xs:attribute name="computer" hpcc:displayName="Computer" group="Attributes" type="nodeName" use="required"
+            hpcc:sourceKey="computer_name" hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"
+            hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue" hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
+        <xs:attribute name="netAddress" group="Attributes" hpcc:displayName="Net Address" type="ipV4Address" use="required" hpcc:readOnly="true"
+            hpcc:sourceKey="computer_netaddress" hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
     </xs:attributeGroup>
 
     <xs:complexType name="hwinstance">
@@ -97,7 +91,7 @@
                 <xs:sequence>
                     <xs:element name="Note" type="xs:string" minOccurs="0"/>
                 </xs:sequence>
-                <xs:attribute name="severity" use="optional" default="Minor" hpcc:displayName="Severity" hpcc:tooltip="Significance of this note">
+                <xs:attribute name="severity" group="Attributes" hpcc:displayName="Severity" use="optional" default="Minor" hpcc:tooltip="Significance of this note">
                     <xs:simpleType>
                         <xs:restriction base="xs:string">
                             <xs:enumeration value="Minor"/>
@@ -106,9 +100,9 @@
                         </xs:restriction>
                     </xs:simpleType>
                 </xs:attribute>
-                <xs:attribute name="date" type="AutoTimeStampType" use="optional" hpcc:displayName="Date/Time" hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
-                <xs:attribute name="computer" type="AutoComputerType" use="optional" hpcc:displayName="Computer" hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
-                <xs:attribute name="user" type="AutoUseridType" use="optional" hpcc:displayName="User" hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
+                <xs:attribute name="date" group="Attributes" hpcc:displayName="Date/Time" type="AutoTimeStampType" use="optional" hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
+                <xs:attribute name="computer" group="Attributes" hpcc:displayName="Computer" type="AutoComputerType" use="optional" hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
+                <xs:attribute name="user" group="Attributes" hpcc:displayName="User" type="AutoUseridType" use="optional" hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
             </xs:complexType>
         </xs:seqeunce>
     </xs:complexType>
