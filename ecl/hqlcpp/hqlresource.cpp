@@ -6443,11 +6443,11 @@ void EclResourcer::display(StringBuffer & out)
     {
         ResourceGraphLink & link = sortedLinks.item(i2);
         unsigned len = out.length();
-        out.appendf("  Source: %d %s", sortedGraphs.find(*link.sourceGraph), getOpString(link.sourceNode->getOperator()));
+        out.appendf("  Source: %d %s", (unsigned)sortedGraphs.find(*link.sourceGraph), getOpString(link.sourceNode->getOperator()));
         if (link.sinkNode)
         {
             out.padTo(len+30);
-            out.appendf("  Sink: %d %s", sortedGraphs.find(*link.sinkGraph), getOpString(link.sinkNode->getOperator()));
+            out.appendf("  Sink: %d %s", (unsigned)sortedGraphs.find(*link.sinkGraph), getOpString(link.sinkNode->getOperator()));
         }
         if (link.linkKind == SequenceLink)
             out.append(" <sequence>");

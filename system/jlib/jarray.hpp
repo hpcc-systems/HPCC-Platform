@@ -25,6 +25,27 @@
 #include "platform.h"
 #include "jiface.hpp"
 
+//In debug mode use this class to check that the value is never cast to a boolean without comparing.
+//This is a compile time check, so use the standard typename in release to avoid any potential overhead
+#ifdef _DEBUG
+template <typename T>
+class NoBool
+{
+public:
+    NoBool()                              { }
+    NoBool(T _value) : value(_value) { }
+
+    operator T () const { return value; }
+    explicit operator bool() const = delete;  // report an error if used in a boolean context
+
+private:
+    T value;
+};
+#else
+template <typename T>
+using NoBool = T;
+#endif
+
 typedef size32_t aindex_t;
 
 const aindex_t NotFound = (aindex_t)-1;
@@ -171,7 +192,7 @@ public:
             return (aindex_t)(match - (MEMBER *)head);
         return NotFound;
     }
-    aindex_t find(PARAM searchValue) const
+    NoBool<aindex_t> find(PARAM searchValue) const
     {
         MEMBER * head= (MEMBER *)SELF::_head;
         for (aindex_t pos = 0; pos < SELF::used; ++pos)
