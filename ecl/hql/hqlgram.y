@@ -416,6 +416,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   SET
   SHARED
   SIMPLE_TYPE
+  __SIMPLIFIED__
   SIN
   SINGLE
   SINH
@@ -5933,6 +5934,12 @@ primexpr1
 
     | '(' expression ')'    
                         {   $$.inherit($2); }
+    | __SIMPLIFIED__ '(' scalarType ')'
+                        {
+                            ITypeInfo *type = $3.getType();
+                            $$.setExpr(createValue(no_simplified, type));
+                            $$.setPosition($1);
+                        }
     | COUNT '(' startTopFilter aggregateFlags ')' endTopFilter
                         {
                             $$.setExpr(createValueF(no_count, LINK(parser->defaultIntegralType), $3.getExpr(), $4.getExpr(), NULL));
