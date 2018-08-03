@@ -215,6 +215,7 @@ protected:
     unsigned id;
     unsigned subgraphId;
     ThorActivityKind kind;
+    RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
     ActivityArrayArray childQueries;
     UnsignedArray childQueryIndexes;
     CachedOutputMetaData meta;
@@ -224,7 +225,7 @@ protected:
     // to IPropertyTrees.  Would need to serialize/deserialize and then merge/derived so that they merged properly
 
 public:
-    CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
+    CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode);
     ~CActivityFactory() 
     { 
         ForEachItemIn(idx, childQueries)
@@ -271,6 +272,8 @@ public:
 
     RecordTranslationMode getEnableFieldTranslation() const
     {
+        if (recordTranslationModeHint != RecordTranslationMode::Unspecified)
+            return recordTranslationModeHint;
         return queryFactory.queryOptions().enableFieldTranslation;
     }
 };

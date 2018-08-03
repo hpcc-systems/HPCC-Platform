@@ -127,8 +127,8 @@ extern HTHOR_API IHThorActivity *createPipeWriteActivity(IAgentContext &, unsign
 extern HTHOR_API IHThorActivity *createCsvWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorCsvWriteArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createXmlWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createPipeThroughActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorPipeThroughArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFetchArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createKeyedJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorKeyedJoinArg &arg, ThorActivityKind kind);
+extern HTHOR_API IHThorActivity *createFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFetchArg &arg, ThorActivityKind kind, IPropertyTree *_node);
+extern HTHOR_API IHThorActivity *createKeyedJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorKeyedJoinArg &arg, ThorActivityKind kind, IPropertyTree *_node);
 extern HTHOR_API IHThorActivity *createIfActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIfArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createChildIfActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIfArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &arg, ThorActivityKind kind, bool _isGroupedHashAggregate);
@@ -144,12 +144,12 @@ extern HTHOR_API IHThorActivity *createSkipCatchActivity(IAgentContext &_agent, 
 extern HTHOR_API IHThorActivity *createOnFailLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createCountProjectActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorCountProjectArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createIndexWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorIndexWriteArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createCsvFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvFetchArg &arg, ThorActivityKind kind);
+extern HTHOR_API IHThorActivity *createCsvFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvFetchArg &arg, ThorActivityKind kind, IPropertyTree *_node);
 extern HTHOR_API IHThorActivity *createParseActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorParseArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createEnthActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorEnthArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createTopNActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorTopNArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createXmlParseActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorXmlParseArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createXmlFetchActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorXmlFetchArg &arg, ThorActivityKind kind);
+extern HTHOR_API IHThorActivity *createXmlFetchActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorXmlFetchArg &arg, ThorActivityKind kind, IPropertyTree *_node);
 extern HTHOR_API IHThorActivity *createMergeActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorMergeArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createHttpRowCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHttpCallArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createSoapRowCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapCallArg &arg, ThorActivityKind kind);
@@ -166,19 +166,19 @@ extern HTHOR_API IHThorActivity *createChildAggregateActivity(IAgentContext &_ag
 extern HTHOR_API IHThorActivity *createChildGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildGroupAggregateArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createChildThroughNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildThroughNormalizeArg &arg, ThorActivityKind kind);
 
-extern HTHOR_API IHThorActivity *createDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createDiskNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskNormalizeArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createDiskAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskAggregateArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createDiskCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskCountArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createDiskGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskGroupAggregateArg &arg, ThorActivityKind kind);
+extern HTHOR_API IHThorActivity *createDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &arg, ThorActivityKind kind, IPropertyTree *node);
+extern HTHOR_API IHThorActivity *createDiskNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskNormalizeArg &arg, ThorActivityKind kind, IPropertyTree *node);
+extern HTHOR_API IHThorActivity *createDiskAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskAggregateArg &arg, ThorActivityKind kind, IPropertyTree *node);
+extern HTHOR_API IHThorActivity *createDiskCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskCountArg &arg, ThorActivityKind kind, IPropertyTree *node);
+extern HTHOR_API IHThorActivity *createDiskGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskGroupAggregateArg &arg, ThorActivityKind kind, IPropertyTree *node);
 
-extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexAggregateArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexGroupAggregateArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createCsvReadActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createXmlReadActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &arg, ThorActivityKind kind);
+extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &arg, ThorActivityKind kind, IPropertyTree *_node);
+extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &arg, ThorActivityKind kind, IPropertyTree *_node);
+extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexAggregateArg &arg, ThorActivityKind kind, IPropertyTree *_node);
+extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &arg, ThorActivityKind kind, IPropertyTree *_node);
+extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexGroupAggregateArg &arg, ThorActivityKind kind, IPropertyTree *_node);
+extern HTHOR_API IHThorActivity *createCsvReadActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &arg, ThorActivityKind kind, IPropertyTree *_node);
+extern HTHOR_API IHThorActivity *createXmlReadActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &arg, ThorActivityKind kind, IPropertyTree *_node);
 extern HTHOR_API IHThorActivity *createLocalResultReadActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultReadArg &arg, ThorActivityKind kind, __int64 graphId);
 extern HTHOR_API IHThorActivity *createLocalResultWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultWriteArg &arg, ThorActivityKind kind, __int64 graphId);
 extern HTHOR_API IHThorActivity *createLocalResultSpillActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultSpillArg &arg, ThorActivityKind kind, __int64 graphId);

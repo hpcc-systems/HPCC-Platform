@@ -7031,7 +7031,7 @@ void CHThorWorkunitReadActivity::checkForDiskRead()
         {
             throw makeWrappedException(e);
         }
-        diskread.setown(new CHThorDiskReadActivity(agent, activityId, subgraphId, *diskreadHelper, TAKdiskread));
+        diskread.setown(new CHThorDiskReadActivity(agent, activityId, subgraphId, *diskreadHelper, TAKdiskread, nullptr));
     }
 }
 
@@ -8017,11 +8017,17 @@ const void *CHThorChildThroughNormalizeActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
     helper.setCallback(this);
     expectedDiskMeta = helper.queryDiskRecordSize();
     projectedDiskMeta = helper.queryProjectedDiskRecordSize();
+    if (_node)
+    {
+        const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
+        if (recordTranslationModeHintText)
+            recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
+    }
 }
 
 CHThorDiskReadBaseActivity::~CHThorDiskReadBaseActivity()
@@ -8105,7 +8111,7 @@ void CHThorDiskReadBaseActivity::resolve()
                 }
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
-                if(agent.getLayoutTranslationMode()==RecordTranslationMode::None)
+                if(getLayoutTranslationMode()==RecordTranslationMode::None)
                     verifyRecordFormatCrc();
             }
         }
@@ -8325,7 +8331,7 @@ bool CHThorDiskReadBaseActivity::openNext()
             }
 
             //Check if the file requires translation, but translation is disabled
-            if (actualCrc && expectedCrc && (actualCrc != expectedCrc) && (agent.getLayoutTranslationMode()==RecordTranslationMode::None))
+            if (actualCrc && expectedCrc && (actualCrc != expectedCrc) && (getLayoutTranslationMode()==RecordTranslationMode::None))
             {
                 IOutputMetaData * expectedDiskMeta = helper.queryDiskRecordSize();
                 throwTranslationError(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true), logicalFileName.str());
@@ -8483,8 +8489,8 @@ void CHThorDiskReadBaseActivity::open()
 
 //=====================================================================================================
 
-CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind)
-: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind),
+CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *_node)
+: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _node),
   segHelper(_segHelper), prefetchBuffer(NULL)
 {
     readType = rt_binary;
@@ -8559,7 +8565,7 @@ void CHThorBinaryDiskReadBase::open()
 
 //=====================================================================================================
 
-CHThorDiskReadActivity::CHThorDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind), helper(_arg), outBuilder(NULL)
+CHThorDiskReadActivity::CHThorDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node), helper(_arg), outBuilder(NULL)
 {
     needTransform = false;
     eogPending = 0;
@@ -8696,7 +8702,7 @@ const void *CHThorDiskReadActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorDiskNormalizeActivity::CHThorDiskNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskNormalizeArg &_arg, ThorActivityKind _kind) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind), helper(_arg), outBuilder(NULL)
+CHThorDiskNormalizeActivity::CHThorDiskNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskNormalizeArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node), helper(_arg), outBuilder(NULL)
 {
 }
 
@@ -8814,7 +8820,7 @@ const void * CHThorDiskNormalizeActivity::createNextRow()
 
 //=====================================================================================================
 
-CHThorDiskAggregateActivity::CHThorDiskAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskAggregateArg &_arg, ThorActivityKind _kind) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind), helper(_arg), outBuilder(NULL)
+CHThorDiskAggregateActivity::CHThorDiskAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskAggregateArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node), helper(_arg), outBuilder(NULL)
 {
 }
 
@@ -8877,7 +8883,7 @@ const void *CHThorDiskAggregateActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorDiskCountActivity::CHThorDiskCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskCountArg &_arg, ThorActivityKind _kind) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind), helper(_arg)
+CHThorDiskCountActivity::CHThorDiskCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskCountArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node), helper(_arg)
 {
     finished = true;
 }
@@ -8971,8 +8977,8 @@ const void *CHThorDiskCountActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorDiskGroupAggregateActivity::CHThorDiskGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskGroupAggregateArg &_arg, ThorActivityKind _kind) 
-  : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind), 
+CHThorDiskGroupAggregateActivity::CHThorDiskGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskGroupAggregateArg &_arg, ThorActivityKind _kind, IPropertyTree *_node)
+  : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node),
     helper(_arg), 
     aggregated(_arg, _arg)
 {
@@ -9047,7 +9053,7 @@ const void *CHThorDiskGroupAggregateActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorCsvReadActivity::CHThorCsvReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorCsvReadActivity::CHThorCsvReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _node), helper(_arg)
 {
     maxRowSize = agent.queryWorkUnit()->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
     readType = rt_csv;
@@ -9188,7 +9194,7 @@ void CHThorCsvReadActivity::checkOpenNext()
 
 //=====================================================================================================
 
-CHThorXmlReadActivity::CHThorXmlReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorXmlReadActivity::CHThorXmlReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _node), helper(_arg)
 {
     readType = rt_xml;
 }
@@ -10368,13 +10374,13 @@ MAKEFACTORY(ChildAggregate)
 MAKEFACTORY(ChildGroupAggregate)
 MAKEFACTORY(ChildThroughNormalize)
 
-MAKEFACTORY(DiskRead)
-MAKEFACTORY(DiskNormalize)
-MAKEFACTORY(DiskAggregate)
-MAKEFACTORY(DiskCount)
-MAKEFACTORY(DiskGroupAggregate)
-MAKEFACTORY(CsvRead)
-MAKEFACTORY(XmlRead)
+MAKEFACTORY_EXTRA(DiskRead, IPropertyTree *)
+MAKEFACTORY_EXTRA(DiskNormalize, IPropertyTree *)
+MAKEFACTORY_EXTRA(DiskAggregate, IPropertyTree *)
+MAKEFACTORY_EXTRA(DiskCount, IPropertyTree *)
+MAKEFACTORY_EXTRA(DiskGroupAggregate, IPropertyTree *)
+MAKEFACTORY_EXTRA(CsvRead, IPropertyTree *)
+MAKEFACTORY_EXTRA(XmlRead, IPropertyTree *)
 
 MAKEFACTORY_EXTRA(LocalResultRead, __int64)
 MAKEFACTORY_EXTRA(LocalResultWrite, __int64)
