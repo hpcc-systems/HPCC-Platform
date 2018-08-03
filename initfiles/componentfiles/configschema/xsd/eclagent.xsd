@@ -29,23 +29,11 @@
                         <xs:element type="usernotes" hpcc:displayName="Notes"/>
                     </xs:sequence>
                     <xs:attributeGroup ref="buildInfo"/>
-                    <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:tooltip="Name for this process"/>
+                    <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:uniqueKey="eclagentprocess_name" hpcc:tooltip="Name for this process"/>
                     <xs:attribute name="description" type="xs:string" use="optional" hpcc:displayName="Description" default="EclAgent process" hpcc:tooltip="Description for this process"/>
                     <xs:attributeGroup ref="Options"/>
                 </xs:complexType>
 
-                <xs:key name="eclagent_name_key">  <!-- does name need to be unique? -->
-                    <xs:selector xpath="." />
-                    <xs:field xpath="@name" />
-                </xs:key>
-                <xs:keyref name="eclagent_Instance_keyref" refer="computerNameKey">
-                    <xs:selector xpath="Instance"/>
-                    <xs:field xpath="@computer"/>
-                </xs:keyref>
-                <xs:keyref name="eclagent_Instance_ipref" refer="computerIPAddressKey">
-                    <xs:selector xpath="Instance"/>
-                    <xs:field xpath="netAddress"/>
-                </xs:keyref>
             </xs:element>
         </xs:sequence>
     </xs:complexType>

@@ -30,7 +30,8 @@
                     </xs:sequence>
 
                     <xs:attributeGroup ref="buildInfo"/>
-                    <xs:attribute name="name" type="xs:string" use="required" hpcc:autogenerateType="Prefix" hpcc:autoGenerateValue="wsecl" hpcc:displayName="Service Name" hpcc:tooltip="Name for this ESP service" />
+                    <xs:attribute name="name" type="xs:string" use="required" hpcc:autogenerateType="Prefix" hpcc:autoGenerateValue="wsecl" hpcc:displayName="Service Name"
+                        hpcc:uniqueKey="espservice_key" hpcc:tooltip="Name for this ESP service" />
                     <xs:attribute name="description" type="xs:string" use="optional" default="WS ECL Service" hpcc:displayName="Description" hpcc:tooltip="Allows creation of web services using ECL language" />
                     <xs:attribute name="roxieTimeout" type="xs:unsignedInt" use="optional" default="300" hpcc:displayName="Roxie Timeout"
                                   hpcc:tooltip="Timeout (in seconds) for WsEcl connections to roxie (0 == wait forever)" />
@@ -40,11 +41,6 @@
                     <xs:complexType name="espservice_options"/>
 
                 </xs:complexType>
-
-                <xs:key name="espservice_name_key" hpcc:allowDuplicate="true">
-                    <xs:selector xpath="." />
-                    <xs:field xpath="@name" />
-                </xs:key>
 
             </xs:element>
         </xs:sequence>

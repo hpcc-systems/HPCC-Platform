@@ -51,7 +51,7 @@
                         </xs:element>
                         <xs:element name="RoxieServerProcess" hpcc:displayName="Servers" maxOccurs="unbounded"> <!--special view type needed to collect together all of these somehow -->
                             <xs:complexType>
-                                <xs:attribute name="name" type="nodeName" use="required" hpcc:readOnly="true" hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"/>
+                                <xs:attribute name="name" type="nodeName" use="required" hpcc:readOnly="true" hpcc:sourceKey="computer_name" hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"/>
                                 <xs:attributeGroup ref="computerNodeReference"/>
                             </xs:complexType>
                         </xs:element>
@@ -61,7 +61,8 @@
                                 <xs:sequence>
                                     <xs:element name="BaseList" minOccurs="0" maxOccurs="unbounded" hpcc:tooltip="Base Access Control Lists (Ordered List)">
                                         <xs:complexType>
-                                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:tooltip="Name of another Access Control List to extend"/>
+                                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:uniqueKey="roxieaclbaselist_name"
+                                                hpcc:tooltip="Name of another Access Control List to extend"/>
                                         </xs:complexType>
                                     </xs:element>
                                     <xs:element name="Access" minOccurs="0" maxOccurs="unbounded" hpcc:tooltip="Access Rules (Ordered List)">
@@ -72,22 +73,25 @@
                                             <xs:attribute name="query" type="xs:string" hpcc:displayName="Query Wildcard" use="optional" hpcc:defaultInCode=".*" hpcc:tooltip="wildcard for queries to allow/disallow"/>
                                             <xs:attribute name="errorCode" type="xs:nonNegativeInteger" hpcc:displayName="Error Code" use="optional" hpcc:tooltip="optional error code to associate with the query"/>
                                             <xs:attribute name="error" type="xs:string" hpcc:displayName="Error Message" use="optional" hpcc:tooltip="optional error message to associate with the query"/>
-                                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="ACLrule" hpcc:tooltip="Name of this Access Control Rule"/>
+                                            <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="ACLrule"
+                                                hpcc:uniqueKey="roxieaclaccess_name" hpcc:tooltip="Name of this Access Control Rule"/>
                                         </xs:complexType>
                                     </xs:element>
                                 </xs:sequence>
-                                <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="ACL"/>
+                                <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:uniqueKey="roxieacl_name" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="ACL"/>
                             </xs:complexType>
                         </xs:element>
                         <xs:element name="PreferredCluster" hpcc:displayName="Preferred Clusters" maxOccurs="unbounded">
                             <xs:complexType>
-                                <xs:attribute name="name" type="xs:string" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="PreferredCluster" hpcc:tooltip="Name of the cluster"/>
+                                <xs:attribute name="name" type="xs:string" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="PreferredCluster"
+                                    hpcc:uniqueKey="roxiepreferredcluster_name" hpcc:tooltip="Name of the cluster"/>
                                 <xs:attribute name="priority" type="xs:integer" use="required" hpcc:tooltip="Priority (negative to disable)"/>
                             </xs:complexType>
                         </xs:element>
                         <xs:element name="UserMetric" hpcc:displayName="User Metrics" maxOccurs="unbounded">
                             <xs:complexType>
-                                <xs:attribute name="name" type="xs:string" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="UserMetric" hpcc:tooltip="Name of this metric"/>
+                                <xs:attribute name="name" type="xs:string" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="UserMetric"
+                                    hpcc:uniqueKey="roxieusermetric_name" hpcc:tooltip="Name of this metric"/>
                                 <xs:attribute name="regex" type="xs:integer" use="required" hpcc:tooltip="Expression to match"/>
                             </xs:complexType>
                         </xs:element>
@@ -95,7 +99,8 @@
                     </xs:sequence>
                     <!-- General RoxieCluster Attributes -->
                     <xs:attributeGroup ref="buildInfo"/>
-                    <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="roxie" hpcc:tooltip="Name for this process"/>
+                    <xs:attribute name="name" type="xs:string" hpcc:displayName="Name" use="required" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="roxie"
+                        hpcc:uniqueKey="roxiecluster_name" hpcc:tooltip="Name for this process"/>
                     <xs:attribute name="description" type="xs:string" hpcc:displayName="Description" use="optional" default="Roxie cluster" hpcc:tooltip="Description for this process"/>
                     <xs:attribute name="daliServers" type="xs:string" hpcc:displayName="Dali Server" use="optional" hpcc:tooltip="Specifies the dali server to which this roxie is attached"/>
                     <xs:attribute name="lockDali" type="xs:boolean" hpcc:displayName="Lock Dali" use="optional" default="false" hpcc:tooltip="If set, Roxie will use cached info from dali only, and will not connect to dali or refresh the cache"/>
@@ -305,42 +310,6 @@
                     <xs:attribute name="socketCheckInterval" type="xs:nonNegativeInteger" hpcc:displayName="Socket Check Interval" hpcc:group="Debug" use="optional" default="5000" hpcc:tooltip="Interval (in milliseconds) between checks that client socket is still open"/>
                     <xs:attribute name="systemMonitorInterval" type="xs:nonNegativeInteger" hpcc:displayName="System Monitor Interval (ms?)" hpcc:group="Debug" use="optional" default="60000" hpcc:tooltip="How often to send an 'alive' message"/>
                 </xs:complexType>
-                <xs:key name="roxieCluster_namekey">
-                    <xs:selector xpath="."/>
-                    <xs:field xpath="@name"/>
-                </xs:key>
-                <xs:keyref name="roxisServerProcess_Instance_nameref" refer="computerNameKey">
-                    <xs:selector xpath="RoxieServerProcess"/>
-                    <xs:field xpath="@name"/>
-                </xs:keyref>
-                <xs:keyref name="roxisServerProcess_Instance_computerref" refer="computerNameKey">
-                    <xs:selector xpath="RoxieServerProcess"/>
-                    <xs:field xpath="@computer"/>
-                </xs:keyref>
-                <xs:keyref name="roxisServerProcess_Instance_ipref" refer="computerIPAddressKey">
-                    <xs:selector xpath="RoxieServerProcess"/>
-                    <xs:field xpath="@netAddress"/>
-                </xs:keyref>
-                <xs:key name="roxie_ACLName">
-                    <xs:selector xpath="ACL"/>
-                    <xs:field xpath="@name"/>
-                </xs:key>
-                <xs:keyref name="roxie_ACLBaselistref" refer="roxie_ACLName">
-                    <xs:selector xpath="ACL/BaseList"/>
-                    <xs:field xpath="@name"/>
-                </xs:keyref>
-                <xs:key name="roxie_ACLAccessName">
-                    <xs:selector xpath="ACL/Access"/>
-                    <xs:field xpath="@name"/>
-                </xs:key>
-                <xs:key name="roxie_PreferredClusterName">
-                    <xs:selector xpath="PreferredCluster"/>
-                    <xs:field xpath="@name"/>
-                </xs:key>
-                <xs:key name="roxie_UserMetricName">
-                    <xs:selector xpath="UserMetric"/>
-                    <xs:field xpath="@name"/>
-                </xs:key>
             </xs:element>
         </xs:sequence>
     </xs:complexType>

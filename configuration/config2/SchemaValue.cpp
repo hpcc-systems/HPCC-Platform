@@ -19,8 +19,9 @@
 #include "EnvironmentValue.hpp"
 #include "EnvironmentNode.hpp"
 #include <algorithm>
+#include "ConfigPath.hpp"
 #include "Utils.hpp"
-#include <exception>
+#include "Exceptions.hpp"
 
 SchemaValue::SchemaValue(const std::string &name, bool isDefined) :
     m_name(name), m_displayName(name)
@@ -212,68 +213,73 @@ void SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
     }
 
     //
-    // Is there a specialized rule that limits the values?
-    else if (!m_valueLimitRuleType.empty())
+    // Is there a specialized rule that limits the values? The order is important here. Place more restrictive rules first. Note also that
+    // a rule could be used inside a unique value set which should remain the last entry in this if then else if block
+
+    //
+    // uniqueItemType_espBinding - value is based on a unique item type described by the data for the rule. This is version 1
+    else if (m_valueLimitRuleType == "uniqueItemType_espBinding")
     {
-        //
-        // uniqueItemType_1 - value is based on a unique item type described by the data for the rule. This is version 1
-        if (m_valueLimitRuleType == "uniqueItemType_1")
+        std::vector<std::string> params = splitString(m_valueLimitRuleData, ",");
+        if (params.size() != 2)
         {
-            std::vector<std::string> params = splitString(m_valueLimitRuleData, ",");
-            std::vector<std::string> parts;
+            std::string msg = "Applying rule " + m_valueLimitRuleType + ", expected 2 parameters in rule data";
+            throw(ParseException(msg));
+        }
 
-            //
-            // First parameter is the source values for an attribute search. The two parts of the parameter are the path to the
-            // node set where the atttribute, the second part, name is found (not that there may be no entries). Find all the nodes
-            // for the path (parts[0]), then get all of the values for the attribute (parts[1]). This serves as the list of existing
-            // values that are eliminated from the final list of allowable values.
-            parts = splitString(params[0], "@");
-            std::vector<std::shared_ptr<EnvironmentNode>> existingSourceNodes;
-            pEnvNode->fetchNodes(parts[0], existingSourceNodes);
-            std::vector<std::string> existingSourceAttributeValues;
-            for (auto &existingNodeIt: existingSourceNodes)
+        //
+        // First parameter is the source values for an attribute search. The two parts of the parameter are the path to the
+        // node set where the atttribute, the second part, name is found (not that there may be no entries). Find all the nodes
+        // for the path (parts[0]), then get all of the values for the attribute (parts[1]). This serves as the list of existing
+        // values that are eliminated from the final list of allowable values.
+        ConfigPath sourcePath(params[0]);
+        std::shared_ptr<ConfigPathItem> pSourcePath = sourcePath.getNextPathItem();
+        std::vector<std::shared_ptr<EnvironmentNode>> existingSourceNodes;
+        pEnvNode->fetchNodes(pSourcePath->getElementName(), existingSourceNodes);
+        std::vector<std::string> existingSourceAttributeValues;
+        for (auto &existingNodeIt: existingSourceNodes)
+        {
+            existingSourceAttributeValues.push_back( existingNodeIt->getAttributeValue(pSourcePath->getAttributeName()));
+        }
+
+        //
+        // Get the full set of possible values using the params[1] values. From its parts, parts[0] is the path
+        // to find the set of all possible nodes that could serve as an allowable value.
+        std::vector<std::shared_ptr<EnvironmentNode>> allSourceNodes;
+        ConfigPath valuesPath(params[1]);
+        std::shared_ptr<ConfigPathItem> pValuesPath = valuesPath.getNextPathItem();
+        std::string sourceAttributeName = pValuesPath->getAttributeName();  // for use below in case parts is reused later
+        pEnvNode->fetchNodes(pValuesPath->getElementName(), allSourceNodes);
+
+        //
+        // For each exising source node, using the existingSourceAttributeValues, matching the name to the value in
+        // sourceAttributeName, and collect the itemType values found.
+        std::vector<std::string> existingItemTypes;
+        for (auto &existingValueIt: existingSourceAttributeValues)
+        {
+            std::vector<std::shared_ptr<EnvironmentNode>>::iterator sourceIt = std::find_if(allSourceNodes.begin(), allSourceNodes.end(),
+                [&](std::shared_ptr<EnvironmentNode> &srcIt) {
+                    return srcIt->getAttributeValue(sourceAttributeName) == existingValueIt;
+            });
+
+            if (sourceIt != allSourceNodes.end())
             {
-                existingSourceAttributeValues.push_back( existingNodeIt->getAttributeValue(parts[1]));
+                existingItemTypes.push_back((*sourceIt)->getSchemaItem()->getItemType());
             }
+        }
 
-            //
-            // Get the full set of possible values using the params[1] values. From its parts, parts[0] is the path
-            // to find the set of all possible nodes that could serve as an allowable value.
-            std::vector<std::shared_ptr<EnvironmentNode>> allSourceNodes;
-            parts = splitString(params[1], "@");
-            std::string sourceAttributeName = parts[1];  // for use below in case parts is reused later
-            pEnvNode->fetchNodes(parts[0], allSourceNodes);
+        //
+        // Build the allowable value list by only adding itmes from the all sources list that don't hvae
+        // an entry in the existing item type vector
+        for (auto &sourceIt: allSourceNodes)
+        {
+            std::vector<std::string>::const_iterator itemTypeIt = std::find_if(existingItemTypes.begin(), existingItemTypes.end(), [&](const std::string &itemIt) {
+                return itemIt == sourceIt->getSchemaItem()->getItemType();
+            });
 
-            //
-            // For each exising source node, using the existingSourceAttributeValues, matching the name to the value in
-            // sourceAttributeName, and collect the itemType values found.
-            std::vector<std::string> existingItemTypes;
-            for (auto &existingValueIt: existingSourceAttributeValues)
+            if (itemTypeIt == existingItemTypes.end())
             {
-                std::vector<std::shared_ptr<EnvironmentNode>>::iterator sourceIt = std::find_if(allSourceNodes.begin(), allSourceNodes.end(),
-                    [&](std::shared_ptr<EnvironmentNode> &srcIt) {
-                        return srcIt->getAttributeValue(sourceAttributeName) == existingValueIt;
-                });
-
-                if (sourceIt != allSourceNodes.end())
-                {
-                    existingItemTypes.push_back((*sourceIt)->getSchemaItem()->getItemType());
-                }
-            }
-
-            //
-            // Build the allowable value list by only adding itmes from the all sources list that don't hvae
-            // an entry in the existing item type vector
-            for (auto &sourceIt: allSourceNodes)
-            {
-                std::vector<std::string>::const_iterator itemTypeIt = std::find_if(existingItemTypes.begin(), existingItemTypes.end(), [&](const std::string &itemIt) {
-                    return itemIt == sourceIt->getSchemaItem()->getItemType();
-                });
-
-                if (itemTypeIt == existingItemTypes.end())
-                {
-                    allowedValues.push_back({ sourceIt->getAttributeValue(sourceAttributeName), "" });
-                }
+                allowedValues.push_back({ sourceIt->getAttributeValue(sourceAttributeName), "" });
             }
         }
     }
@@ -288,6 +294,45 @@ void SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
         for (auto it = refValues.begin(); it != refValues.end(); ++it)
         {
             allowedValues.push_back({ *it, "" });
+        }
+
+        if (!allowedValues.empty() && m_valueLimitRuleType == "addDependencies_FromSiblingAttributeValue")
+        {
+            std::vector<std::string> params = splitString(m_valueLimitRuleData, ",");
+
+            if (params.size() != 2)
+            {
+                std::string msg = "Applying rule " + m_valueLimitRuleType + ", expected 4 parameters in rule data";
+                throw(ParseException(msg));
+            }
+
+            std::string matchPath = params[0];
+            std::string matchAttribute = params[1];
+            std::string depAttrSource = params[2];
+            std::string depAttrTarget = params[3];
+
+            //
+            // Get an environment node pointer using the first entry in the env values vector. We know it's not empty because
+            // we have at least one allowed value. Use this for fetching
+            std::shared_ptr<EnvironmentNode> pEnvNode = m_envValues[0].lock()->getEnvironmentNode();
+
+            //
+            // Loop through each allowed value and find it's environment node (by value). Then add a dependency
+            // based on the dependent attribute source.
+            for (auto &allowedValue: allowedValues)
+            {
+                std::string path = matchPath + "[@" + matchAttribute + "='" + allowedValue.m_value + "']";
+                std::vector<std::shared_ptr<EnvironmentNode>> envNodes;
+                pEnvNode->fetchNodes(path, envNodes);
+                if (!envNodes.empty())
+                {
+                    std::shared_ptr<EnvironmentValue> pAttr = envNodes[0]->getAttribute(depAttrSource);
+                    if (pAttr)
+                    {
+                        allowedValue.addDependentValue(depAttrTarget, pAttr->getValue());
+                    }
+                }
+            }
         }
     }
 }
@@ -306,4 +351,9 @@ void SchemaValue::getAllKeyRefValues(std::vector<std::string> &keyRefValues) con
             keyRefValues.push_back(envIt->getValue());
         }
     }
+}
+
+bool SchemaValue::hasModifier(const std::string &modifier) const
+{
+    return std::find(m_modifiers.begin(), m_modifiers.end(), modifier) != m_modifiers.end();
 }

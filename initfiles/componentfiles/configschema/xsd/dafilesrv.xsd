@@ -33,14 +33,5 @@
             </xs:element>
         </xs:sequence>
 
-        <xs:keyref name="dafilesrv_Instance_keyref" refer="computerNameKey">
-            <xs:selector xpath="Instance"/>
-            <xs:field xpath="@computer"/>
-        </xs:keyref>
-
-        <xs:keyref name="dafilesrv_Instance_ipref" refer="computerIPAddressKey">
-            <xs:selector xpath="Instance"/>
-            <xs:field xpath="netAddress"/>
-        </xs:keyref>
     </xs:complexType>
 </xs:schema>

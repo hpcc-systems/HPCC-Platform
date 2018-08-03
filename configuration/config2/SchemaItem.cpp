@@ -288,6 +288,15 @@ void SchemaItem::addReferenceToUniqueAttributeValueSet(const std::string &setNam
 }
 
 
+void SchemaItem::addReferenceToUniqueAttributeValueSet(const std::shared_ptr<SchemaItem> &pSourceSchemaItem)
+{
+    for (auto &ref: pSourceSchemaItem->m_uniqueAttributeValueSetReferences)
+    {
+        addReferenceToUniqueAttributeValueSet(ref.first, ref.second.m_elementPath, ref.second.m_attributeName);
+    }
+}
+
+
 void SchemaItem::processUniqueAttributeValueSetReferences(const std::map<std::string, std::vector<std::shared_ptr<SchemaValue>>> &uniqueAttributeValueSets)
 {
     for (auto setRefIt = m_uniqueAttributeValueSetReferences.begin(); setRefIt != m_uniqueAttributeValueSetReferences.end(); ++setRefIt)
@@ -476,6 +485,17 @@ std::shared_ptr<const SchemaItem> SchemaItem::getSchemaRoot() const
 
     std::shared_ptr<const SchemaItem> ptr = shared_from_this();
     return ptr;
+}
+
+
+void SchemaItem::getPath(std::string &path) const
+{
+    path = getProperty("name") + path;
+    if (!m_pParent.expired())
+    {
+        path = "/" + path;
+        m_pParent.lock()->getPath(path);
+    }
 }
 
 
