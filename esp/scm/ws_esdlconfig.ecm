@@ -54,7 +54,7 @@ ESPstruct ESDLBinding
 ESPstruct ESDLService
 {
     ESParray<ESPStruct MethodConfig, Method> Methods;
-    String Name;
+    string Name;
 };
 
 ESPstruct ESDLDefinition
