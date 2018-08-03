@@ -487,9 +487,6 @@ define([
                     searchArray.push(WsDfu.DFUQuery({ request: { LogicalName: "*" + searchText + "*" } }).then(function (response) {
                         context.loadDFUQueryResponse(context.i18n.LogicalName, response);
                     }));
-                    searchArray.push(WsDfu.DFUQuery({ request: { Description: "*" + searchText + "*" } }).then(function (response) {
-                        context.loadDFUQueryResponse(context.i18n.Description, response);
-                    }));
                     searchArray.push(WsDfu.DFUQuery({ request: { Owner: searchText } }).then(function (response) {
                         context.loadDFUQueryResponse(context.i18n.Owner, response);
                     }));
