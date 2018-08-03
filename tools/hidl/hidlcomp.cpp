@@ -6541,11 +6541,24 @@ void EspServInfo::write_esp_client_ipp()
     outs("\tstatic int transferThunkEvent(void *data);\n");
     
 
-    outs("#ifdef _WIN32\n");
-    outs("\tstatic void espWorkerThread(void* data);\n");
-    outs("#else\n");
     outs("\tstatic void *espWorkerThread(void *data);\n");
-    outs("#endif\n");
+
+    outs("\n");
+    outf("\tclass CClient%sThread: public Thread\n", name_);
+    outs("\t{\n");
+    outs("\tpublic:\n");
+    outs("\t\tOwned<IRpcRequestBinding> m_esprequest;\n");
+    outf("\t\tCClient%sThread(IRpcRequestBinding *_esprequest)\n", name_);
+    outs("\t\t{\n");
+    outs("\t\t\tm_esprequest.setown(_esprequest);\n");
+    outs("\t\t\tsetStackSize(0x10000);\n");
+    outs("\t\t}\n");
+    outs("\t\tint run()\n");
+    outs("\t\t{\n");
+    outf("\t\t\tCClient%s::espWorkerThread((void *)LINK(m_esprequest));\n", name_);
+    outs("\t\t\treturn 0;\n");
+    outs("\t\t}\n");
+    outs("\t};\n");
 
     outs("};\n\n");
 }
@@ -6608,28 +6621,9 @@ void EspServInfo::write_esp_client()
         outs("\tif(state!=NULL)\n");
         outs("\t\tstate->Link();\n\n");
 
-        
-        outs("#ifdef _WIN32\n");
-        outs("\t_beginthread(espWorkerThread, 0, (void *)(IRpcRequestBinding *)(esprequest));\n");
-        outs("#else\n");
-
-        outs("\tpthread_attr_t attr;\n");
-        outs("\tpthread_attr_init(&attr);\n");
-        outs("\tpthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);\n");
-        outs("\tpthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);\n");
-        outs("\tpthread_attr_setstacksize(&attr, 0x10000);\n");
-        outs("\tThreadId threadid;\n");
-        outs("\tint status;\n");
-        outs("\tdo\n");
-        outs("\t{\n");
-        outf("\t\tstatus = pthread_create(&threadid, &attr, CClient%s::espWorkerThread, (void *)(IRpcRequestBinding *)(esprequest));\n", name_);
-        outs("\t} while (0 != status && (errno == EINTR));\n");
-        outs("\tif (status) {\n");
-        outs("\t\tRelease();\n");
-        outs("\t\tthrow makeOsException(errno);\n");
-        outs("\t}\n");
-
-        outs("#endif\n");
+        outf("\tCClient%sThread *clientthread = new CClient%sThread(esprequest);\n", name_, name_);
+        outs("\tclientthread->startRelease();\n");
+        outs("\n");
         outs("}\n");
 
         mthi->write_esp_method(name_, false, false);
@@ -6675,12 +6669,9 @@ void EspServInfo::write_esp_client()
     outf("\treturn NULL;\n");
     outs("}\n");
 
-    outf("\n#ifdef _WIN32\n");
-    outf("void CClient%s::espWorkerThread(void* data)\n", name_);
-    outf("#else\n");
-    outf("void *CClient%s::espWorkerThread(void *data)\n", name_);
-    outf("#endif\n");
+    outs("\n");
 
+    outf("void *CClient%s::espWorkerThread(void *data)\n", name_);
     
     outs("{\n");
     outs("\tIRpcRequestBinding *request = (IRpcRequestBinding *) data;\n\n");
