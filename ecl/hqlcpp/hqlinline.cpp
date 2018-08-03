@@ -1273,7 +1273,7 @@ AliasKind ParentExtract::evaluateExpression(BuildCtx & ctx, IHqlExpression * val
 {
     CHqlBoundExpr bound;
     AliasKind kind;
-    if (buildctx)
+    if (buildctx && (!evaluateLocally || !mustEvaluateInContext(ctx, value)))
         kind = translator.doBuildAliasValue(*buildctx, value, bound, NULL);
     else
         kind = container->evaluateExpression(ctx, value, bound, evaluateLocally);
@@ -1757,7 +1757,7 @@ AliasKind ClassEvalContext::evaluateExpression(BuildCtx & ctx, IHqlExpression * 
         return RuntimeAlias;
 
     ///If contains a nasty like counter/matchtext then evaluate here for the moment...
-    if (!needToEvaluateLocally(ctx, value))
+    if (!evaluateLocally || !needToEvaluateLocally(ctx, value))
     {
         if (evaluateInParent(ctx, value, (onStart.evalctx != NULL)))
         {

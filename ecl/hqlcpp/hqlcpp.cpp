@@ -4124,7 +4124,7 @@ bool mustEvaluateInContext(BuildCtx & ctx, IHqlExpression * expr)
             IHqlExpression * selector = cur.querySelector();
             if (cur.isInherited())
                 inheritedRows.append(*selector);
-            else
+            else if (!cur.isSerialization())
                 activeRows.append(*selector);
         }
     }
@@ -4132,11 +4132,17 @@ bool mustEvaluateInContext(BuildCtx & ctx, IHqlExpression * expr)
     //Ensure all instances of activeRows which match the inherited rows are removed
     ForEachItemInRev(i, activeRows)
     {
-        if (inheritedRows.find(activeRows.item(i)))
+        if (inheritedRows.contains(activeRows.item(i)))
             activeRows.remove(i);
     }
 
-    return canEvaluateInScope(activeRows, required);
+    //If any of the selectors required by the expression are defined locally then the meaning will change if is moved
+    ForEachItemIn(iReq, required)
+    {
+        if (activeRows.contains(required.item(iReq)))
+            return true;
+    }
+    return false;
 }
 
 
