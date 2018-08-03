@@ -2884,7 +2884,7 @@ bool isInterfaceIp(const IpAddress &ip, const char *ifname)
 
 bool getInterfaceIp(IpAddress &ip,const char *ifname)
 {
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32)
     return false;
 #else
     static bool recursioncheck = false;
@@ -2902,18 +2902,34 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
         close(fd);
         return false;
     }
-    struct ifreq *ifr = ifc.ifc_req;
-    unsigned n = ifc.ifc_len/sizeof(struct ifreq);
     for (int loopback = 0; loopback <= 1; loopback++)
     {
-        for (unsigned i=0; i<n; i++)
+        struct ifreq *ifr = ifc.ifc_req;
+        int len = 0;
+        for (int i=0; i<ifc.ifc_len;
+#ifdef __APPLE__
+             len = IFNAMSIZ + ifr->ifr_addr.sa_len,
+#else
+             len = sizeof(struct ifreq),
+#endif
+             ifr = (struct ifreq *) ((char *) ifr + len),
+             i += len
+            )
         {
             bool useLoopback = (loopback==1);
-            struct ifreq *item = &ifr[i];
-            if (ifname&&*ifname)
+            struct ifreq *item = ifr;
+            if (ifname && *ifname)
                 if (!WildMatch(item->ifr_name,ifname))
                     continue;
+#ifdef __APPLE__
+            if (item->ifr_addr.sa_family != AF_INET) // ipv6 support TBD
+                continue;
+            char host[128];
+            getnameinfo(&item->ifr_addr, sizeof(item->ifr_addr), host, sizeof(host), 0, 0, NI_NUMERICHOST);
+            IpAddress iptest(host);
+#else
             IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
+#endif
             if (ioctl(fd, SIOCGIFFLAGS, item) < 0)
             {
                 if (!recursioncheck) {
