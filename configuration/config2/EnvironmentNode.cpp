@@ -340,10 +340,10 @@ void EnvironmentNode::initialize()
 
     //
     // If we are a component and there is a buildSet attribute, set the value to the configItem's type
-    if (!(m_pSchemaItem->getProperty("componentName").empty())  && hasAttribute("buildSet"))
+    if (!(m_pSchemaItem->getProperty("itemType").empty()) && hasAttribute("buildSet"))
     {
         Status status;
-        setAttributeValue("buildSet", m_pSchemaItem->getProperty("componentName"), status);
+        setAttributeValue("buildSet", m_pSchemaItem->getProperty("itemType"), status);
     }
 
     //

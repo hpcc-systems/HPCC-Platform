@@ -1,24 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
-    xmlns:hpcc="someuri">
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:complexType name="hardware">
+    <xs:complexType name="hardware" >
         <xs:sequence>
-            <xs:element name="Hardware">
+            <xs:element name="Hardware" >
                 <xs:complexType>
                     <xs:sequence>
-                        <xs:element name="ComputerType" maxOccurs="unbounded" use="required" hpcc:category="Computer Types" hpcc:class="valueSet">
+                        <xs:element name="ComputerType" maxOccurs="unbounded" use="required" hpcc:category="Computer Types"
+                                    hpcc:class="valueSet">
                             <xs:complexType>
                                 <xs:attribute name="name" group="Attributes" type="xs:string" hpcc:displayName="Name" use="required" hpcc:uniqueKey="computertype_name"/>
-                                <xs:attribute name="manufacturer" group="Attributes" hpcc:displayName="Manufacturer" type="xs:string"/>
+                                <xs:attribute name="manufacturer" group="Attributes" hpcc:displayName="Manufacturer"type="xs:string"/>
                                 <xs:attribute name="computerType" group="Attributes" hpcc:displayName="Computer Type" type="xs:string"/>
                                 <xs:attribute name="nicSpeed" group="Attributes" hpcc:displayName="NIC Speed" type="xs:nonNegativeInteger"/>
                                 <xs:attribute name="opSys">
                                     <xs:simpleType>
                                         <xs:restriction base="xs:string">
-                                            <xs:enumeration value="linux" hpcc:displayName="Linux"/>
-                                            <xs:enumeration value="solaris" hpcc:displayName="Solaris"/>
-                                            <xs:enumeration value="W2K" hpcc:displayName="Windows 2000"/>
+                                            <xs:enumeration value="linux"hpcc:displayName="Linux"/>
+                                            <xs:enumeration value="solaris"hpcc:displayName="Solaris"/>
+                                            <xs:enumeration value="W2K"hpcc:displayName="Windows 2000"/>
                                         </xs:restriction>
                                     </xs:simpleType>
                                 </xs:attribute>
@@ -31,13 +33,15 @@
                             </xs:complexType>
                         </xs:element>
 
-                        <xs:element name="Switch" maxOccurs="unbounded" use="required" hpcc:class="valueSet" hpcc:displayName="Switches">
+                        <xs:element name="Switch" maxOccurs="unbounded" hpcc:class="valueSet"
+                                    hpcc:doc="Describes a switch that is contained in the environment">
                             <xs:complexType>
-                                <xs:attribute name="name" group="Attributes" hpcc:displayName="Name" type="xs:string" use="required" hpcc:uniqueKey="switch_name"/>
+                                <xs:attribute name="name" type="xs:string"/>
                             </xs:complexType>
                         </xs:element>
 
-                        <xs:element name="Computer" maxOccurs="unbounded" use="required" hpcc:class="valueSet" hpcc:displayName="Computers">
+                        <xs:element name="Computer" maxOccurs="unbounded" use="required"hpcc:class="valueSet"
+                                    hpcc:displayName="Computers">
                             <xs:complexType>
                                 <xs:attribute name="name" group="Attributes" hpcc:displayName="Name" type="nodeName" use="required" hpcc:uniqueKey="computer_name"/>
                                 <xs:attribute name="netAddress" group="Attributes" hpcc:displayName="Net Address" type="ipV4Address" use="required" hpcc:uniqueKey="computer_netaddress"/>
@@ -47,6 +51,9 @@
                         </xs:element>
                     </xs:sequence>
                 </xs:complexType>
+
+
+
             </xs:element>
         </xs:sequence>
     </xs:complexType>

@@ -27,7 +27,7 @@
         </xs:attributeGroup>
 
         <xs:sequence>
-            <xs:element name="EspService" hpcc:class="component" hpcc:componentName="espsmc" hpcc:category="ESP Service" hpcc:displayName="ESP SMC" maxOccurs="unbounded" hpcc:docid="SMC-T01">
+            <xs:element name="EspService" hpcc:class="component" hpcc:category="ESP Service" hpcc:itemType="espsmc" hpcc:displayName="ESP SMC" maxOccurs="unbounded" hpcc:docid="SMC-T01">
                 <xs:complexType>
 
                     <xs:sequence>

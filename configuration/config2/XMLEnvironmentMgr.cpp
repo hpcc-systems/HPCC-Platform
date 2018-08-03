@@ -112,7 +112,7 @@ void XMLEnvironmentMgr::parse(const pt::ptree &envTree, const std::shared_ptr<Sc
             std::shared_ptr<SchemaItem> pSchemaItem;
             if (!typeName.empty())
             {
-                pSchemaItem = pConfigItem->getChildByComponent(elemName, typeName);
+                pSchemaItem = pConfigItem->getChildByItemType(elemName, typeName);
             }
             else
             {

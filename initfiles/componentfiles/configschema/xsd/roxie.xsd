@@ -22,7 +22,7 @@
     <xs:include schemaLocation="types.xsd"/>
     <xs:complexType name="roxiecluster">
         <xs:sequence>
-            <xs:element name="RoxieCluster" maxOccurs="unbounded" hpcc:displayName="Roxie Cluster" hpcc:class="component" hpcc:componentName="roxiecluster">
+            <xs:element name="RoxieCluster" maxOccurs="unbounded" hpcc:itemType="roxiecluster" hpcc:displayName="Roxie Cluster" hpcc:class="component">
                 <!-- should make this default to the complexType name -->
                 <xs:complexType>
                     <xs:sequence>
