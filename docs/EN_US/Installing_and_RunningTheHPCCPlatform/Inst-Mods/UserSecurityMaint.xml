@@ -156,37 +156,27 @@
       <title>Information about your account</title>
 
       <para>To find out more information about your account, in ECL Watch
-      click on the <emphasis role="bold">Logged In As:</emphasis> link at the
-      top of the ECL Watch page.</para>
+      click on your username link under <emphasis role="bold">Logged In
+      As:</emphasis> at the top of the ECL Watch page.</para>
 
       <para><graphic fileref="../../images/ECLWMyAccount.jpg"
-      vendor="eclwatchSS" /> <orderedlist>
+      vendor="eclwatchSS" /> <itemizedlist>
           <listitem>
-            <para>Click on the <emphasis role="bold">Logged In As:</emphasis>
-            link.</para>
-
-            <para>A User Details tab with your account information
-            displays.<graphic fileref="../../images/ECLWUserDetails.jpg"
+            <para>A <emphasis role="bold">User Details</emphasis> tab with
+            your account information displays.<graphic
+            fileref="../../images/ECLWUserDetails.jpg"
             vendor="eclwatchSS" /></para>
           </listitem>
 
           <listitem>
-            <para>Confirm the User Name that you are logged in as.</para>
-
-            <para>Note that Administrator rights are needed to manage users
-            and permissions.</para>
-
-            <para>Ensure you are using an account with Administrator rights if
-            you intend to manage users or permissions.</para>
+            <para>You can change your password here, if desired. </para>
           </listitem>
 
           <listitem>
-            <para>Verify the password expiration date, or if password is set
-            to expire.</para>
-
-            <para>You can also change your password here, if desired.</para>
+            <para>You can also verify the password expiration date, if your
+            password is set to expire.</para>
           </listitem>
-        </orderedlist></para>
+        </itemizedlist></para>
     </sect3>
 
     <sect3 id="UsingSecurity_SettingAndModifyingUserPermissions" role="brk">
@@ -1406,8 +1396,9 @@
               <row>
                 <entry>PackageMapAccess</entry>
 
-                <entry>Access to ListPackage, ListPackages, GetPackage, GetPackageMapById, ValidatePackage,
-                GetQueryFileMapping, GetPackageMapSelectOptions, GetPartFromPackageMap</entry>
+                <entry>Access to ListPackage, ListPackages, GetPackage,
+                GetPackageMapById, ValidatePackage, GetQueryFileMapping,
+                GetPackageMapSelectOptions, GetPartFromPackageMap</entry>
 
                 <entry>Read</entry>
               </row>
@@ -1416,7 +1407,8 @@
                 <entry></entry>
 
                 <entry>Access to AddPackage, CopyPackageMap, ActivatePackage,
-                DeActivatePackage, AddPartToPackageMap, RemovePartFromPackageMap</entry>
+                DeActivatePackage, AddPartToPackageMap,
+                RemovePartFromPackageMap</entry>
 
                 <entry>Write</entry>
               </row>
@@ -2182,7 +2174,7 @@
       <listitem>
         <para>Access the Physical Files permission page. The Physical Files
         settings specify the default permissions for files that do not have a
-        scope explicitly specified. </para>
+        scope explicitly specified.</para>
       </listitem>
 
       <listitem>
