@@ -353,6 +353,17 @@ public:
 
 //---------------------------------------------------------------------------
 
+//This interface is used to common up code that assign or returns values
+class IExprProcessor
+{
+public:
+    virtual bool canReturn() const { return false; }  // could process have any side-effects if it is called.
+    virtual bool canContinue() const { return true; }  // can c++ code still be executed after calling process()?
+    virtual void process(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * expr) = 0;
+};
+
+//---------------------------------------------------------------------------
+
 class HqlCppCaseInfo
 {
     friend class HqlCppTranslator;
@@ -362,6 +373,7 @@ public:
     void addPair(IHqlExpression * expr);
     void addPairs(HqlExprArray & pairs);
     bool buildAssign(BuildCtx & ctx, const CHqlBoundTarget & target);
+    bool buildProcess(BuildCtx & ctx, IExprProcessor & target);
     bool buildReturn(BuildCtx & ctx);
     void setCond(IHqlExpression * expr);
     void setDefault(IHqlExpression * expr);
@@ -369,15 +381,15 @@ public:
 protected:
     bool canBuildStaticList(ITypeInfo * type);
 
-    void buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test, IHqlExpression * temp, unsigned start, unsigned end);
-    void buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test);
-    void buildChop2Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test, unsigned start, unsigned end);
+    void buildChop3Map(BuildCtx & ctx, IExprProcessor & target, CHqlBoundExpr & test, IHqlExpression * temp, unsigned start, unsigned end);
+    void buildChop3Map(BuildCtx & ctx, IExprProcessor & target, CHqlBoundExpr & test);
+    void buildChop2Map(BuildCtx & ctx, IExprProcessor & target, CHqlBoundExpr & test, unsigned start, unsigned end);
     IHqlExpression * buildIndexedMap(BuildCtx & ctx, const CHqlBoundExpr & test);
-    void buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test);
-    void buildIntegerSearchMap(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * est);
+    void buildLoopChopMap(BuildCtx & ctx, IExprProcessor & target, CHqlBoundExpr & test);
+    void buildIntegerSearchMap(BuildCtx & ctx, IExprProcessor & target, IHqlExpression * est);
     void buildSwitchCondition(BuildCtx & ctx, CHqlBoundExpr & bound);
-    void buildSwitchMap(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * test);
-    void buildGeneralAssign(BuildCtx & ctx, const CHqlBoundTarget & target);
+    void buildSwitchMap(BuildCtx & ctx, IExprProcessor & target, IHqlExpression * test);
+    void buildGeneralAssign(BuildCtx & ctx, IExprProcessor & target);
     void buildGeneralReturn(BuildCtx & ctx);
 
     bool canBuildArrayLookup(const CHqlBoundExpr & test);
@@ -387,11 +399,11 @@ protected:
     void generateCompareVar(BuildCtx & ctx, IHqlExpression * target, CHqlBoundExpr & test, IHqlExpression * other);
     unsigned getNumPairs();
     bool hasLibraryChop();
-    bool okToAlwaysEvaluateDefault();
+    bool okToAlwaysEvaluateDefault(const IExprProcessor & target);
     void processBranches();
     void promoteTypes();
     IHqlExpression * queryCreateSimpleResultAssign(IHqlExpression * search, IHqlExpression * resultExpr);
-    bool queryBuildArrayLookup(BuildCtx & ctx, const CHqlBoundTarget & target, const CHqlBoundExpr & test);
+    bool queryBuildArrayLookup(BuildCtx & ctx, IExprProcessor & target, const CHqlBoundExpr & test);
     IHqlExpression * queryCompare(unsigned index);
     ITypeInfo * queryCompareType();
     IHqlExpression * queryReturn(unsigned index);
@@ -2069,7 +2081,58 @@ protected:
 };
 
 
-//===========================================================================
+//---------------------------------------------------------------------------------------------------------------------
+
+// Implementations of IExprProcessor for assigning to different targets or returning a value
+class ExprEvaluateProcessor : implements IExprProcessor
+{
+public:
+    virtual void process(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * expr) override
+    {
+        translator.buildStmt(ctx, expr);
+    }
+};
+
+class ExprReturnProcessor : implements IExprProcessor
+{
+public:
+    virtual bool canReturn() const override { return true; }
+    virtual bool canContinue() const override { return false; }
+    virtual void process(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * expr) override
+    {
+        translator.buildReturn(ctx, expr);
+    }
+};
+
+class ExprAssignProcessor : implements IExprProcessor
+{
+public:
+    ExprAssignProcessor(const CHqlBoundTarget & _target) : target(_target) {}
+
+    virtual void process(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * expr) override
+    {
+        translator.buildExprAssign(ctx, target, expr);
+    }
+
+private:
+    const CHqlBoundTarget & target;
+};
+
+class ExprRowAssignProcessor : implements IExprProcessor
+{
+public:
+    ExprRowAssignProcessor(IReferenceSelector * _target) : target(_target) {}
+
+    virtual void process(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * expr) override
+    {
+        translator.buildRowAssign(ctx, target, expr);
+    }
+
+private:
+    IReferenceSelector * target;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
 
 class HQLCPP_API HqlQueryInstance : implements IHqlQueryInstance, public CInterface
 {
@@ -2082,6 +2145,7 @@ public:
 protected:
     unique_id_t         instance;
 };
+
 
 //---------------------------------------------------------------------------------------------------------------------
 
