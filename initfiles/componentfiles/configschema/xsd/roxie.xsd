@@ -188,6 +188,12 @@
             <xs:attribute name="leafCacheMem" type="xs:nonNegativeInteger" hpcc:displayName="Leaf Cache Memory Size (Mb)"  use="optional" default="50" hpcc:tooltip="Size (in Mb) of leaf index page cache"/>
             <xs:attribute name="nodeCachePreload" type="xs:boolean" hpcc:displayName="Enable Node Cache Preload"  use="optional" default="false" hpcc:tooltip="Prefill the node cache with all non-leaf pages from all indexes"/>
             <xs:attribute name="nodeCacheMem" type="xs:nonNegativeInteger" hpcc:displayName="Node Cache Memory Size (Mb)"  use="optional" default="100" hpcc:tooltip="Size (in Mb) of non-leaf index page cache"/>
+            <xs:attribute name="mysqlCacheCheckPeriod" type="xs:nonNegativeInteger" hpcc:displayName="MySQL Cache Check Period(ms)" use="optional" default="10000"
+                hpcc:tooltip="Time to wait (ms) between checking if any cached MySQL connections can be closed"/>
+            <xs:attribute name="mysqlCacheTimeoutPeriod" type="xs:nonNegativeInteger" hpcc:displayName="MySQL Cache Timeout Period(ms)" use="optional" default="60000"
+                hpcc:tooltip="Time to wait (ms) before closing a cached MySQL connection"/>
+            <xs:attribute name="mysqlConnectionCacheSize" type="xs:nonNegativeInteger" hpcc:displayName="MySQL Connection Cache Size" use="optional" default="10"
+                hpcc:tooltip="Number of MySQL connections to hold in cache"/>
         </xs:attributeGroup>
 
         <xs:attributeGroup name="debug" hpcc:groupByName="Debug">
