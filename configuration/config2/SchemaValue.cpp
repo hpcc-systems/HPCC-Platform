@@ -53,6 +53,7 @@ SchemaValue::SchemaValue(const SchemaValue &value)
     m_valueLimitRuleData = value.m_valueLimitRuleData;
     m_requiredIf = value.m_requiredIf;
     m_groupByName = value.m_groupByName;
+    m_hiddenIf = value.m_hiddenIf;
 
     // special processing? Maybe after inserting?
     std::vector<std::shared_ptr<SchemaValue>> m_mirrorToSchemaValues;
@@ -203,13 +204,16 @@ void SchemaValue::getAllEnvironmentValues(std::vector<std::shared_ptr<Environmen
 }
 
 
-void SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, const std::shared_ptr<const EnvironmentNode> &pEnvNode) const
+bool SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, const std::shared_ptr<const EnvironmentNode> &pEnvNode) const
 {
+    bool rc = false;
+
     //
     // If enumerated, get the allowed values
     if (m_pType->isEnumerated())
     {
         allowedValues = m_pType->getEnumeratedValues();
+        rc = true;
     }
 
     //
@@ -282,6 +286,7 @@ void SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
                 allowedValues.push_back({ sourceIt->getAttributeValue(sourceAttributeName), "" });
             }
         }
+        rc = true;
     }
 
     //
@@ -334,7 +339,9 @@ void SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
                 }
             }
         }
+        rc = true;
     }
+    return rc;
 }
 
 
@@ -353,7 +360,24 @@ void SchemaValue::getAllKeyRefValues(std::vector<std::string> &keyRefValues) con
     }
 }
 
+
 bool SchemaValue::hasModifier(const std::string &modifier) const
 {
     return std::find(m_modifiers.begin(), m_modifiers.end(), modifier) != m_modifiers.end();
+}
+
+
+bool SchemaValue::isHidden(const EnvironmentValue *pEnvValue) const
+{
+    bool hidden = bitMask.m_hidden;
+    if (!hidden && !m_hiddenIf.empty() && pEnvValue != nullptr)
+    {
+        //
+        // Hidden if string format is an xpath. Search this environment value's owning node
+        // for a match.
+        std::vector<std::shared_ptr<EnvironmentNode>> nodes;
+        pEnvValue->getEnvironmentNode()->fetchNodes(m_hiddenIf, nodes);
+        hidden = !nodes.empty();
+    }
+    return hidden;
 }

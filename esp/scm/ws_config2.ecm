@@ -144,6 +144,7 @@ ESPstruct LimitsType
     bool   MaxValid(false);
     int    Min(0);
     int    Max(0);
+    bool   hasChoices(false);
     ESParray<ESPstruct ChoiceType, Choice> ChoiceList;
     ESParray<string, Expr> Regex;
 };

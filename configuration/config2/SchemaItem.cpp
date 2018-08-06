@@ -288,13 +288,19 @@ void SchemaItem::addReferenceToUniqueAttributeValueSet(const std::string &setNam
 }
 
 
-void SchemaItem::addReferenceToUniqueAttributeValueSet(const std::shared_ptr<SchemaItem> &pSourceSchemaItem)
+void SchemaItem::addUniqueAttrValueSetDefsAndRefs(const std::shared_ptr<SchemaItem> &pSourceSchemaItem)
 {
     for (auto &ref: pSourceSchemaItem->m_uniqueAttributeValueSetReferences)
     {
         addReferenceToUniqueAttributeValueSet(ref.first, ref.second.m_elementPath, ref.second.m_attributeName);
     }
+
+    for (auto &def: pSourceSchemaItem->m_uniqueAttributeValueSetDefs)
+    {
+        addUniqueAttributeValueSetDefinition(def.first, def.second.m_elementPath, def.second.m_attributeName, true);
+    }
 }
+
 
 
 void SchemaItem::processUniqueAttributeValueSetReferences(const std::map<std::string, std::vector<std::shared_ptr<SchemaValue>>> &uniqueAttributeValueSets)

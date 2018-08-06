@@ -216,10 +216,11 @@ void XSDSchemaParser::parseAttributeGroup(const pt::ptree &attributeTree)
     {
         std::shared_ptr<SchemaItem> pValueSet = std::make_shared<SchemaItem>(groupName, "valueset", m_pSchemaItem);
         std::shared_ptr<XSDValueSetParser> pXSDValueSetParaser = std::make_shared<XSDValueSetParser>(pValueSet);
-        std::string groupByName = getXSDAttributeValue(attributeTree, "<xmlattr>.groupByName", false, "");
+        std::string groupByName = getXSDAttributeValue(attributeTree, "<xmlattr>.hpcc:groupByName", false, "");
         pXSDValueSetParaser->setGroupByName(groupByName);
         pXSDValueSetParaser->parseXSD(attributeTree.get_child("", pt::ptree()));
         m_pSchemaItem->addSchemaType(pValueSet, groupName);
+        m_pSchemaItem->setProperty("attribute_group_default_overrides", getXSDAttributeValue(attributeTree, "<xmlattr>.hpcc:defaultInCodeOverrides", false, ""));
     }
 
     //
@@ -246,7 +247,29 @@ void XSDSchemaParser::parseAttributeGroup(const pt::ptree &attributeTree)
 
                 //
                 // Add any unique valueset references
-                m_pSchemaItem->addReferenceToUniqueAttributeValueSet(pValueSet);
+                m_pSchemaItem->addUniqueAttrValueSetDefsAndRefs(pValueSet);
+
+                //
+                // See if there are any overrides for default in code values
+                std::string dfltOverrides = pValueSet->getProperty("attribute_group_default_overrides");
+                if (!dfltOverrides.empty())
+                {
+                    std::vector<std::string> overrides = splitString(dfltOverrides, ",");
+                    for (auto &info: overrides)
+                    {
+                        std::vector<std::string> vals = splitString(info, "=");
+                        if (vals.size() != 2)
+                        {
+                            throw (ParseException("Invalid default value override in attribute group (" + refName + ")"));
+                        }
+
+                        std::shared_ptr<SchemaValue> pAttr = m_pSchemaItem->getAttribute(vals[0], false);
+                        if (pAttr)
+                        {
+                            pAttr->setCodeDefault(vals[1]);
+                        }
+                    }
+                }
             }
         }
     }
