@@ -5,12 +5,12 @@
     <xs:include schemaLocation="types.xsd"/>
     <xs:complexType name="espsmc">
 
-        <xs:attributeGroup name="Monitoring" hpcc:docid="SMC-T02">
-            <xs:attribute name="monitorDaliFileServer" type="xs:boolean" use="true" default="false" hpcc:displayName="Monior Dali File Server" hpcc:group="Monitoring" hpcc:tooltip="Warn if dafilesrv process is not running on computers"/>
-            <xs:attribute name="excludePartitions" type="xs:string" use="optional" default="/dev*,/sys,/proc/*" hpcc:displayName="Exclude Partitions" hpcc:group="Monitoring" hpcc:tooltip="Comma, space or semicolon delimited list of partitions not to be monitored for free space"/>
-            <xs:attribute name="warnIfCpuLoadOver" type="xs:nonNegativeInteger" use="optional" default="95" hpcc:displayName="Warn CPU Load" hpcc:group="Monitoring" hpcc:tooltip="CPU load over this value is flagged as warning in monitoring output"/>
-            <xs:attribute name="warnIfFreeStorageUnder" type="xs:nonNegativeInteger" use="optional" default="5" hpcc:displayName="Warn Free Storage" hpcc:group="Monitoring" hpcc:tooltip="Available disk storage space under this value is flagged as warning in monitoring output"/>
-            <xs:attribute name="warnIfFreeMemoryUnder" type="xs:nonNegativeInteger" use="optional" default="5" hpcc:displayName="Warn Free Memory" hpcc:group="Monitoring" hpcc:tooltip="Available memory under this value is flagged as warning in monitoring output"/>
+        <xs:attributeGroup name="monitoring" hpcc:groupByName="Monitoring" hpcc:docid="SMC-T02">
+            <xs:attribute name="monitorDaliFileServer" type="xs:boolean" use="true" default="false" hpcc:displayName="Monior Dali File Server" hpcc:tooltip="Warn if dafilesrv process is not running on computers"/>
+            <xs:attribute name="excludePartitions" type="xs:string" use="optional" default="/dev*,/sys,/proc/*" hpcc:displayName="Exclude Partitions" hpcc:tooltip="Comma, space or semicolon delimited list of partitions not to be monitored for free space"/>
+            <xs:attribute name="warnIfCpuLoadOver" type="xs:nonNegativeInteger" use="optional" default="95" hpcc:displayName="Warn CPU Load" hpcc:tooltip="CPU load over this value is flagged as warning in monitoring output"/>
+            <xs:attribute name="warnIfFreeStorageUnder" type="xs:nonNegativeInteger" use="optional" default="5" hpcc:displayName="Warn Free Storage" hpcc:tooltip="Available disk storage space under this value is flagged as warning in monitoring output"/>
+            <xs:attribute name="warnIfFreeMemoryUnder" type="xs:nonNegativeInteger" use="optional" default="5" hpcc:displayName="Warn Free Memory" hpcc:tooltip="Available memory under this value is flagged as warning in monitoring output"/>
         </xs:attributeGroup>
 
         <xs:attributeGroup name="elkintegration">
@@ -155,7 +155,7 @@
                     <xs:attribute name="disableUppercaseTranslation" type="xs:boolean" use="optional" default="false" hpcc:displayName="Disable Uppercase Translation" hpcc:tooltip="To disable upper case translation for filter values in ViewKeyFile function" />
                     <xs:attribute name="enableLogDaliConnection" type="xs:boolean" use="optional" default="false" hpcc:displayName="Enable Log Dali Connection" hpcc:tooltip="Enable ESP/Dali Connection ID to be logged into esp.xml" />
                     <xs:attribute name="allowNewRoxieOnDemandQuery" type="xs:boolean" use="optional" default="false" hpcc:displayName="Allow New Roxie On Demand Query" hpcc:tooltip="allow new queries to be used by roxie on demand and roxie browser" />
-                    <xs:attributeGroup ref="Monitoring"/>
+                    <xs:attributeGroup ref="monitoring"/>
                     <xs:attributeGroup ref="elkintegration"/>
 
                 </xs:complexType>

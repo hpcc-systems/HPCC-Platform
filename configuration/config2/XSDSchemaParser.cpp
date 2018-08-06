@@ -197,10 +197,11 @@ void XSDSchemaParser::parseSimpleType(const pt::ptree &typeTree)
 }
 
 
-void XSDSchemaParser::parseAttribute(const pt::ptree &attr)
+std::shared_ptr<SchemaValue> XSDSchemaParser::parseAttribute(const pt::ptree &attr)
 {
     std::shared_ptr<SchemaValue> pCfgValue = getSchemaValue(attr);
     m_pSchemaItem->addAttribute(pCfgValue);
+    return pCfgValue;
 }
 
 
@@ -215,6 +216,8 @@ void XSDSchemaParser::parseAttributeGroup(const pt::ptree &attributeTree)
     {
         std::shared_ptr<SchemaItem> pValueSet = std::make_shared<SchemaItem>(groupName, "valueset", m_pSchemaItem);
         std::shared_ptr<XSDValueSetParser> pXSDValueSetParaser = std::make_shared<XSDValueSetParser>(pValueSet);
+        std::string groupByName = getXSDAttributeValue(attributeTree, "<xmlattr>.groupByName", false, "");
+        pXSDValueSetParaser->setGroupByName(groupByName);
         pXSDValueSetParaser->parseXSD(attributeTree.get_child("", pt::ptree()));
         m_pSchemaItem->addSchemaType(pValueSet, groupName);
     }
@@ -231,6 +234,14 @@ void XSDSchemaParser::parseAttributeGroup(const pt::ptree &attributeTree)
             {
                 std::vector<std::shared_ptr<SchemaValue>> attributes;
                 pValueSet->getAttributes(attributes);
+                std::string groupByName = getXSDAttributeValue(attributeTree, "<xmlattr>.groupByName", false, "");
+                if (!groupByName.empty())
+                {
+                    for (auto &attr: attributes)
+                    {
+                        attr->setGroupByName(groupByName);
+                    }
+                }
                 m_pSchemaItem->addAttribute(attributes);
 
                 //

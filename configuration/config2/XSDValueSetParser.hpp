@@ -37,11 +37,17 @@ class XSDValueSetParser : public XSDSchemaParser
         virtual ~XSDValueSetParser() { }
         virtual void parseXSD(const pt::ptree &valueSetTree);
         void parseAttributeGroup(const pt::ptree &attributeTree);
+        void setGroupByName(const std::string &name) { m_groupByName = name; }
 
 
     protected:
 
         XSDValueSetParser() { }
+
+
+    protected:
+
+        std::string m_groupByName;
 };
 
 

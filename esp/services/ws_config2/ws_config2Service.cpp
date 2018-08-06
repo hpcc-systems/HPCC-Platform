@@ -804,7 +804,7 @@ void Cws_config2Ex::getAttributes(const std::shared_ptr<EnvironmentNode> &pEnvNo
             pAttribute->setReadOnly(pSchemaValue->isReadOnly());
             pAttribute->setHidden(pSchemaValue->isHidden());
             pAttribute->setDeprecated(pSchemaValue->isDeprecated());
-            std::string groupName = pSchemaValue->getGroup();
+            std::string groupName = pSchemaValue->getGroupByName();
             pAttribute->setGroup(groupName.empty() ? "Attributes" : groupName.c_str());
 
             //

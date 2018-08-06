@@ -12,10 +12,10 @@
                 <xs:complexType>
                     <xs:sequence>
 
-                        <xs:element name="EspBinding" maxOccurs="unbounded" hpcc:itemType="espbinding" hpcc:category="ESP Bindings" hpcc:insertLimitType="attribute" hpcc:insertLimitData="service" hpcc:displayName="ESP Service Bindings" hpcc:class="valueSet" hpcc:event="create">
+                        <xs:element name="EspBinding" maxOccurs="unbounded" hpcc:itemType="espbinding" hpcc:category="ESP Bindings" hpcc:insertLimitType="attribute" hpcc:insertLimitData="service" hpcc:displayName="ESP Service Bindings" hpcc:class="elementSet" hpcc:event="create">
                             <xs:complexType>
                                 <xs:sequence>
-                                    <xs:element name="Authenticate" minOccurs="0" maxOccurs="unbounded" hpcc:displayName="URL Authentication" hpcc:docid="ESP.t1">
+                                    <xs:element name="Authenticate" minOccurs="0" maxOccurs="unbounded" hpcc:class="elementSet" hpcc:displayName="URL Authentication" hpcc:docid="ESP.t1">
                                         <xs:complexType>
                                             <xs:attribute name="description" type="xs:string" use="optional" hpcc:displayName="Description"/>
                                             <xs:attribute name="path" type="xs:string" use="required" default="/" hpcc:displayName="Path" hpcc:tooltip="The logical path of a resource used for authentication"/>
@@ -34,7 +34,7 @@
                                             </xs:attribute>
                                         </xs:complexType>
                                     </xs:element>
-                                    <xs:element name="AuthenticateFeature" minOccurs="0" maxOccurs="unbounded" hpcc:displayName="Feature Authentication" hpcc:docid="ESP.t2">
+                                    <xs:element name="AuthenticateFeature" minOccurs="0" maxOccurs="unbounded" hpcc:class="elementSet" hpcc:displayName="Feature Authentication" hpcc:docid="ESP.t2">
                                         <xs:complexType>
                                             <xs:attribute name="authenticate" use="optional" default="Yes" hpcc:displayName="Authenticate" hpcc:tooltip="Validate access rights for this capability?">
                                                 <xs:simpleType>
@@ -49,13 +49,12 @@
                                         </xs:complexType>
                                     </xs:element>
 
-                                    <xs:element name="CustomBindingParameter" minOccurs="0" maxOccurs="unbounded" hpcc:displayName="Custom Binding Parameters">
+                                    <xs:element name="CustomBindingParameter" minOccurs="0" maxOccurs="unbounded" hpcc:class="elementSet" hpcc:displayName="Custom Binding Parameters">
                                         <xs:complexType>
                                             <xs:attribute name="key" type="xs:string" use="optional" hpcc:uniqueKey="custombindingparameter_key" hpcc:displayName="Key" />
                                             <xs:attribute name="value" type="xs:string" use="optional" hpcc:displayName="Value"/>
                                         </xs:complexType>
                                     </xs:element>
-
                                 </xs:sequence>
 
                                 <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Binding Name" hpcc:autoName="" />
@@ -82,7 +81,7 @@
 
                         </xs:element>
 
-                        <xs:element name="Authentication" hpcc:docid="ESP.t4" hpcc:class="valueSet" hpcc:displayName="Authentication">
+                        <xs:element name="Authentication" hpcc:docid="ESP.t4" minOccurs="1" hpcc:class="valueSet" hpcc:displayName="Authentication">
                             <xs:complexType>
                                 <xs:attribute name="method" use="required" default="none" hpcc:displayName="Method" hpcc:modifiers="variableAttributes" hpcc:tooltip="The protocol to use for authenticating the service">
                                     <xs:simpleType>
@@ -120,7 +119,7 @@
                             </xs:complexType>
                         </xs:element>
 
-                        <xs:element name="AuthDomain" minOccurs="0" maxOccurs="unbounded" hpcc:displayName="AuthDomain" hpcc:class="valueSet" hpcc:docid="ESP.t7">
+                        <xs:element name="AuthDomain" minOccurs="0" maxOccurs="unbounded" hpcc:class="elementSet" hpcc:displayName="AuthDomain" hpcc:docid="ESP.t7">
                             <xs:complexType>
                                 <xs:attribute name="authType" use="required" default="AuthTypeMixed" hpcc:displayName="" hpcc:tooltip="User session Authentication type">
                                     <xs:simpleType>
@@ -152,6 +151,14 @@
                             </xs:complexType>
                         </xs:element>
 
+                        <xs:element name="ESPCacheGroup" hpcc:displayName="ESP Cache Group" hpcc:class="elementSet" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:attribute name="id" type="xs:string" hpcc:displayName="ID" use="required" hpcc:uniqueKey="espprocess_cachegroup_id"
+                                              hpcc:tooltip="Unique string to identify an ESP level cache group"/>
+                                <xs:attribute name="initString" type="xs:string" hpcc:displayName="Init String" use="required" hpcc:tooltip="A string sent to cache server for initiating the server."/>
+                            </xs:complexType>
+                        </xs:element>
+
                         <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded" hpcc:class="valueSet">
                             <xs:complexType>
                                 <xs:sequence>
@@ -180,8 +187,8 @@
                     <xs:attribute name="maxBacklogQueueSize" type="xs:nonNegativeInteger" use="optional" default="200" hpcc:displayName="Max Backlog Queue Size" hpcc:tooltip="Sets the sockets parameter for the maximum number of backlogged requests" />
                     <xs:attribute name="perfReportDelay" type="xs:nonNegativeInteger" use="optional" default="60" hpcc:displayName="Resource Usage Stats Logging Frequency" hpcc:tooltip="Sets the frequency for logging resource usage stats" />
                     <xs:attribute name="portalurl" type="xs:string" default="http://hpccsystems.com/download" hpcc:hidden="true" hpcc:tooltip="portal to HPCC Systems® web site" />
-                    <xs:attribute name="controlPort" type="xs:nonNegativeInteger" use="optional" default="8010" hpcc:displayName="Control Port"
-                        hpcc:uniqueKey="espprocess_controlport" hpcc:tooltip="Sets the network port for ESP control" />
+                    <xs:attribute name="controlPort" type="xs:nonNegativeInteger" use="optional" default="8010" hpcc:displayName="Control Port" hpcc:uniqueKey="espprocess_controlport"
+                        hpcc:tooltip="Sets the network port for ESP control" />
                     <xs:attribute name="logLevel" type="xs:nonNegativeInteger" use="optional" default="1" hpcc:displayName="Log Level" hpcc:tooltip="ets the log level [0: none, 1: min, 5: noraml, 10: max]" />
                     <xs:attribute name="componentfilesDir" type="xs:string" use="optional" default="${COMPONENTFILES_PATH}" hpcc:displayName="Component Files Dir" hpcc:tooltip="Sets the componentfiles directory" />
                     <xs:attribute name="logRequests" type="xs:boolean" use="optional" default="true" hpcc:displayName="Log Requests"/>
@@ -191,31 +198,6 @@
                     <xs:attribute name="memCachedOptionString" type="xs:string" use="optional" hpcc:displayName="memcached Option String" hpcc:tooltip="Option string used by ESP memcached client" />
 
                 </xs:complexType>
-
-                <!--xs:key name="espprocess_name_key">
-                    <xs:selector xpath="./" />
-                    <xs:field xpath="@name" />
-                </xs:key>
-
-                <xs:key name="espprocess_controlport_key">
-                    <xs:selector xpath="./" />
-                    <xs:field xpath="@controlPort" />
-                </xs:key>
-
-                <xs:keyref name="esp_servicename_keyref" refer="espservice_name_key">
-                    <xs:selector xpath="./EspBinding" />
-                    <xs:field xpath="@service" />
-                </xs:keyref>
-
-                <xs:keyref name="espprocess_Instance_keyref" refer="computerNameKey">
-                    <xs:selector xpath="./Instance"/>
-                    <xs:field xpath="@computer"/>
-                </xs:keyref>
-
-                <xs:keyref name="espprocess_Instance_ipref" refer="computerIPAddressKey">
-                    <xs:selector xpath="./Instance"/>
-                    <xs:field xpath="@netAddress"/>
-                </xs:keyref -->
 
             </xs:element>
         </xs:sequence>

@@ -48,7 +48,7 @@ class XSDSchemaParser : public SchemaParser
         virtual void parseXSD(const std::string &filename);
         virtual std::string getXSDAttributeValue(const pt::ptree &tree, const std::string &attriName, bool throwIfNotPresent=true, const std::string &defaultVal = (std::string(""))) const;
         virtual void parseAttributeGroup(const pt::ptree &attributeTree);
-        virtual void parseAttribute(const pt::ptree &attr);
+        virtual std::shared_ptr<SchemaValue> parseAttribute(const pt::ptree &attr);
 
         virtual void parseSimpleType(const pt::ptree &typeTree);
         virtual void parseComplexType(const pt::ptree &typeTree);

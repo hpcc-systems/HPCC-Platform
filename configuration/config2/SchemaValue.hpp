@@ -86,8 +86,8 @@ class DECL_EXPORT SchemaValue
         const std::string &getValueLimitRuleData() { return m_valueLimitRuleData; }
         void setRequiredIf(const std::string &reqIf) { m_requiredIf = reqIf; }
         const std::string &getRequiredIf() const { return m_requiredIf; }
-        void setGroup(const std::string &group) { m_group = group; }
-        const std::string &getGroup() const { return m_group; }
+        void setGroupByName(const std::string &group) { m_groupByName = group; }
+        const std::string &getGroupByName() const { return m_groupByName; }
 
 
     protected:
@@ -104,7 +104,7 @@ class DECL_EXPORT SchemaValue
         std::string m_valueLimitRuleType;
         std::string m_valueLimitRuleData;
         std::string m_requiredIf;
-        std::string m_group;
+        std::string m_groupByName;
         // DON'T FORGET IF DATA ADDED, IT MAY MAY TO BE COPIED IN THE COPY CONSTRUCTOR!!
 
         struct {
