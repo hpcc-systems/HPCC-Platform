@@ -79,7 +79,7 @@ interface ISessionManagerServer: implements IConnectionMonitor
     virtual void addSession(SessionId id) = 0;
     virtual SessionId lookupProcessSession(INode *node) = 0;
     virtual INode *getProcessSessionNode(SessionId id) =0;
-    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags, const char * reqSignature, CDateTime * reqUTCTimestamp, int *err)=0;
+    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags, const char * reqSignature, CDateTime & reqUTCTimestamp, int *err)=0;
     virtual bool clearPermissionsCache(IUserDescriptor *udesc) = 0;
     virtual void stopSession(SessionId sessid,bool failed) = 0;
     virtual void setClientAuth(IDaliClientAuthConnection *authconn) = 0;
@@ -453,46 +453,23 @@ public:
     }
 };
 
-
-//Helper class to Serialize/deserialize digital signature of "scope;username;timestamp" and request timestamp
-class CDaliMessageSignatureHelper
+bool createDaliSignature(const char * scope, IUserDescriptor *udesc, CDateTime &now, StringBuffer &b64sig)
 {
-public:
-    static void serializeSignature(const char * scope, IUserDescriptor *udesc, MemoryBuffer &mb)
+    IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
+    if (pDSM && pDSM->isDigiSignerConfigured())
     {
-		IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
-		if (pDSM && pDSM->isDigiSignerConfigured())
-		{
-            //Serialize timestamp and signature of "scope;username;timestamp"
-            //Dali will use this to ensure request came from
-            //valid authenticated user within a reasonable timeframe
-            StringBuffer username;
-            udesc->getUserName(username);
-            CDateTime now;
-            now.setNow();
-            StringBuffer timeStr;
-            now.getString(timeStr, false);//get UTC timestamp
-            VStringBuffer toSign("%s;%s;%s", scope, username.str(), timeStr.str());
+        StringBuffer username;
+        udesc->getUserName(username);
+        StringBuffer timeStr;
+        now.setNow();
+        now.getString(timeStr, false);//get UTC timestamp
+        VStringBuffer toSign("%s;%s;%s", scope, username.str(), timeStr.str());
 
-            StringBuffer b64sig;
-            pDSM->digiSign(toSign, b64sig);//Sign "scope;username;timeStamp"
-
-            //Serialize the signature, and the timestamp object
-            mb.append(b64sig.str());
-            now.serialize(mb);
-        }
+        pDSM->digiSign(toSign, b64sig);//Sign "scope;username;timeStamp"
+        return true;
     }
-
-    static void deserializeSignature(MemoryBuffer &mb, StringBuffer & signature, CDateTime & utcTimeStamp)
-    {
-        if (mb.remaining() > 0)
-        {
-            mb.read(signature);
-            utcTimeStamp.deserialize(mb);
-        }
-    }
-};
-
+    return false;
+}
 
 class CSessionRequestServer: public Thread
 {
@@ -647,11 +624,13 @@ public:
 
                 StringBuffer reqSignature;
                 CDateTime reqUTCTimestamp;
-                if (queryDaliServerVersion().compare("3.15") >= 0)
-                    CDaliMessageSignatureHelper::deserializeSignature(mb, reqSignature, reqUTCTimestamp);
-
+                if (mb.remaining() > 0)
+                {
+                    mb.read(reqSignature);
+                    reqUTCTimestamp.deserialize(mb);
+                }
                 int err = 0;
-                SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,reqSignature.str(),&reqUTCTimestamp,&err);
+                SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,reqSignature.str(),reqUTCTimestamp,&err);
                 mb.clear().append((int)perms);
                 if (err)
                     mb.append(err);
@@ -930,7 +909,7 @@ public:
     }
 
 
-    SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags,const char * reqSignature, CDateTime * reqUTCTimestamp, int *err)
+    SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags,const char * reqSignature, CDateTime & reqUTCTimestamp, int *err)
     {
         if (err)
             *err = 0;
@@ -958,8 +937,26 @@ public:
 #endif
         udesc->serialize(mb);
         mb.append(auditflags);
+
+        //Serialize signature. If not provided, compute it
         if (queryDaliServerVersion().compare("3.15") >= 0)
-            CDaliMessageSignatureHelper::serializeSignature(obj, udesc, mb);//serialize scope, signature, timestamp
+        {
+            if (isEmptyString(reqSignature))
+            {
+                CDateTime now;
+                StringBuffer b64sig;
+                createDaliSignature(obj, udesc, now, b64sig);
+                mb.append(b64sig.str());
+                now.serialize(mb);
+            }
+            else
+            {
+                mb.append(reqSignature);
+                reqUTCTimestamp.serialize(mb);
+            }
+        }
+
+
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return SecAccess_None;
         SecAccessFlags perms = SecAccess_Unavailable;
@@ -1193,12 +1190,13 @@ public:
     {
         running = false;
     }
-    void start(const char *_key,const char *_obj,IUserDescriptor *_udesc,unsigned _flags,const char * _reqSignature, CDateTime * _reqUTCTimestamp)
+    void start(const char *_key,const char *_obj,IUserDescriptor *_udesc,unsigned _flags,const char * _reqSignature, CDateTime & _reqUTCTimestamp)
     {
         key.set(_key);
         obj.set(_obj); 
         reqSignature.set(_reqSignature);
-        reqUTCTimestamp.set(*_reqUTCTimestamp);
+        if (!_reqUTCTimestamp.isNull())
+            reqUTCTimestamp.set(_reqUTCTimestamp);
 
 #ifdef NULL_DALIUSER_STACKTRACE
         StringBuffer sb;
@@ -1227,7 +1225,7 @@ public:
             if (!running)
                 break;
             try {
-                ret = ldapconn->getPermissions(key,obj,udesc,flags,reqSignature.str(),&reqUTCTimestamp);
+                ret = ldapconn->getPermissions(key,obj,udesc,flags,reqSignature.str(),reqUTCTimestamp);
             }
             catch(IException *e) {
                 LOG(MCoperatorError, unknownJob, e, "CLdapWorkItem"); 
@@ -1458,7 +1456,8 @@ public:
     }
 
     //ISessionManagerServer
-    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags,const char * reqSignature, CDateTime * reqUTCTimestamp, int *err)
+    //Dali method to handle permission request
+    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags,const char * reqSignature, CDateTime & reqUTCTimestamp, int *err)
     {
         if (err)
             *err = 0;
