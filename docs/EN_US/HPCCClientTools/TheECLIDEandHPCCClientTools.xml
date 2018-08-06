@@ -17,7 +17,7 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> </para>
+      email to <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Please include <emphasis role="bold">Documentation
       Feedback</emphasis> in the subject line and reference the document name,
@@ -25,30 +25,33 @@
       message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. </para>
+      of Reed Elsevier Properties Inc., used under license.</para>
 
       <para>HPCC Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. </para>
+      registered trademarks of their respective companies.</para>
 
       <para>All names and example data used in this manual are fictitious. Any
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -70,15 +73,19 @@
               xpointer="xpointer(//*[@id='Command_Line_ECL'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <xi:include href="HPCCClientTools/CT_Mods/CT_ECL_CLI.xml" xpointer="xpointer(//*[@id='ECL_CLI'])"
+  <xi:include href="HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+              xpointer="xpointer(//*[@id='ECL_CLI'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-<xi:include href="HPCCClientTools/CT_Mods/ECLCC.xml" xpointer="xpointer(//*[@id='ECL_Compiler'])"
-              xmlns:xi="http://www.w3.org/2001/XInclude" /> 
-			  
+  <xi:include href="HPCCClientTools/CT_Mods/ECLCC.xml"
+              xpointer="xpointer(//*[@id='ECL_Compiler'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
   <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_DFU.xml"
               xpointer="xpointer(//*[@id='Command_Line_DFU'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
+
   <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
-              xpointer="xpointer(//*[@id='ESDL_CLI'])" xmlns:xi="http://www.w3.org/2001/XInclude" />
+              xpointer="xpointer(//*[@id='ESDL_CLI'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 </book>

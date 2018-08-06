@@ -132,46 +132,46 @@
 
         <listitem>
           <para>Install the client tools software to your machine.</para>
-
-          <para><emphasis role="bold">Windows: </emphasis></para>
-
-          <para>Run the executable file, for example:
-          hpccsystems-clienttools_community-4.X.X-XWindows-i386.exe on your
-          machine. Follow the prompts to complete the installation.</para>
-
-          <para><emphasis role="bold">RPM-Based Systems (CentOS/RedHat):
-          </emphasis></para>
-
-          <para>An RPM installation package is provided. <programlisting>sudo yum install &lt;rpm file name&gt;</programlisting></para>
-
-          <para><variablelist>
-              <varlistentry>
-                <term>Note:</term>
-
-                <listitem>
-                  <para>If you are using CentOS 6 you may need to run the following
-                  command to properly enable the installation.</para>
-
-                  <para><programlisting> wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
-                </listitem>
-              </varlistentry>
-            </variablelist></para>
-
-          <para><emphasis role="bold">Debian-Based Systems
-          (Ubuntu):</emphasis></para>
-
-          <para>For Ubuntu installations a Debian package is provided. To
-          install the package, use:</para>
-
-          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
-
-          <para><emphasis role="bold">Mac OSX:</emphasis></para>
-
-          <para>Run the installation file, for example:
-          hpccsystems-clienttools_community-4.X.X-XDarwin-x86_64.dmg. Follow
-          the prompts to complete the installation.</para>
         </listitem>
       </orderedlist>
+
+      <para><emphasis role="bold">Windows: </emphasis></para>
+
+      <para>Run the executable file, for example:
+      hpccsystems-clienttools_community-4.X.X-XWindows-i386.exe on your
+      machine. Follow the prompts to complete the installation.</para>
+
+      <para><emphasis role="bold">RPM-Based Systems (CentOS/RedHat):
+      </emphasis></para>
+
+      <para>An RPM installation package is provided. <programlisting>sudo yum install &lt;rpm file name&gt;</programlisting></para>
+
+      <para><variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>If you are using CentOS 6 you may need to run the
+              following command to properly enable the installation.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist></para>
+
+      <para><programlisting>sudo wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
+
+      <para><emphasis role="bold">Debian-Based Systems
+      (Ubuntu):</emphasis></para>
+
+      <para>For Ubuntu installations a Debian package is provided. To install
+      the package, use:</para>
+
+      <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+
+      <para><emphasis role="bold">Mac OSX:</emphasis></para>
+
+      <para>Run the installation file, for example:
+      hpccsystems-clienttools_community-4.X.X-XDarwin-x86_64.dmg. Follow the
+      prompts to complete the installation.</para>
     </sect2>
   </sect1>
 </chapter>
