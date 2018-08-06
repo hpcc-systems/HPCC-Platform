@@ -49,6 +49,20 @@ ESPStruct SpaceItem
     int64 SmallestSizeInt;
 };
 
+ESPStruct DFUFilePartition
+{
+    int64 FieldMask;
+    ESParray<string> FieldNames;
+};
+
+ESPStruct DFUFileBloom
+{
+    int64 FieldMask;
+    ESParray<string> FieldNames;
+    int64 Limit;
+    string Probability;
+};
+
 ESPStruct DFULogicalFile
 {
     string Prefix;
@@ -167,6 +181,8 @@ ESPStruct [nil_remove] DFUFileDetail
     [min_ver("1.37"), json_inline(1)] string jsonInfo;
     [min_ver("1.37")] binary binInfo;
     [min_ver("1.38")] string PackageID;
+    [min_ver("1.39")] ESPstruct DFUFilePartition Partition;
+    [min_ver("1.39")] ESParray<ESPstruct DFUFileBloom> Blooms;
 };
 
 ESPStruct DFUSpaceItem
