@@ -47,8 +47,8 @@ private:
 public:
     IMPLEMENT_IINTERFACE
 
-    CSecureUser(const char *name, const char *pw) : 
-        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown), m_sessionToken(0)
+    CSecureUser(const char *name, const char *pw) :
+        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown), m_sessionToken(0), m_parameters(createProperties(false))
     {
     }
 
@@ -174,35 +174,27 @@ public:
 
     void setProperty(const char* name, const char* value)
     {
-        if (!m_parameters)
-            m_parameters.setown(createProperties(false));
         m_parameters->setProp(name, value);
     }
 
     const char* getProperty(const char* name)
     {
-        if (m_parameters)
-            return m_parameters->queryProp(name);
-        return NULL;
+        return m_parameters->queryProp(name);
     }
 
     void setPropertyInt(const char* name, int value)
     {
-        if (!m_parameters)
-            m_parameters.setown(createProperties(false));
         m_parameters->setProp(name, value);
     }
 
     int getPropertyInt(const char* name)
     {
-        if (m_parameters)
-            return m_parameters->getPropInt(name);
-        return 0;
+        return m_parameters->getPropInt(name);
     }
 
     IPropertyIterator * getPropertyIterator() const override
     {
-        return (m_parameters.get() ? m_parameters->getIterator() : nullptr);
+        return m_parameters->getIterator();
     }
 
 
@@ -270,15 +262,11 @@ public:
         CDateTime tmpTime;
         destination.setPasswordExpiration(getPasswordExpiration(tmpTime));
         destination.setStatus(getStatus());
-        if(m_parameters.get()==NULL)
-            return;
         CriticalBlock b(crit);
         Owned<IPropertyIterator> Itr = m_parameters->getIterator();
-        Itr->first();
-        while(Itr->isValid())
+        ForEach(*Itr)
         {
             destination.setProperty(Itr->getPropKey(),m_parameters->queryProp(Itr->getPropKey()));
-            Itr->next();
         }
 
 

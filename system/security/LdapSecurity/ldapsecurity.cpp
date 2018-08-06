@@ -25,7 +25,12 @@
 /**********************************************************
  *     CLdapSecUser                                       *
  **********************************************************/
-CLdapSecUser::CLdapSecUser(const char *name, const char *pw) : 
+
+// An empty static properties instance is shared by all instances because this
+// implementation of the interface does not manage per-instance properties.
+Owned<IProperties> CLdapSecUser::sm_emptyParameters(createProperties(false));
+
+CLdapSecUser::CLdapSecUser(const char *name, const char *pw) :
     m_pw(pw), m_authenticateStatus(AS_UNKNOWN)
 {
     setName(name);
@@ -262,7 +267,7 @@ ISecUser * CLdapSecUser::clone()
  *     CLdapSecResource                                   *
  **********************************************************/
 
-CLdapSecResource::CLdapSecResource(const char *name) : m_name(name), m_access(SecAccess_None), m_required_access(SecAccess_None)
+CLdapSecResource::CLdapSecResource(const char *name) : m_name(name), m_access(SecAccess_None), m_required_access(SecAccess_None), m_parameters(createProperties(false))
 {
     m_resourcetype = RT_DEFAULT;
 }
@@ -300,27 +305,18 @@ SecAccessFlags CLdapSecResource::getAccessFlags()
 
 int CLdapSecResource::addParameter(const char* name, const char* value)
 {
-    if (!m_parameters)
-        m_parameters.setown(createProperties(false));
     m_parameters->setProp(name, value);
     return 0;
 }
 
 const char * CLdapSecResource::getParameter(const char * name)
 {
-    if (m_parameters)
-    {
-        const char *value = m_parameters->queryProp(name);
-        return value;
-    }
-
-    return NULL;
-
+    return m_parameters->queryProp(name);
 }
 
 IPropertyIterator * CLdapSecResource::getParameterIterator() const
 {
-    return (m_parameters.get() ? m_parameters->getIterator() : nullptr);
+    return m_parameters->getIterator();
 }
 
 void CLdapSecResource::setDescription(const char* description)
@@ -357,15 +353,10 @@ ISecResource * CLdapSecResource::clone()
     _res->m_required_access = m_required_access;
     _res->setDescription(m_description.str());
 
-    if(!m_parameters)
-        return _res;
-
     Owned<IPropertyIterator> Itr = m_parameters->getIterator();
-    Itr->first();
-    while(Itr->isValid())
+    ForEach(*Itr)
     {
         _res->addParameter(Itr->getPropKey(),m_parameters->queryProp(Itr->getPropKey()));
-        Itr->next();
     }
     return _res;
 }
@@ -380,20 +371,15 @@ void CLdapSecResource::copy(ISecResource* from)
     m_access = ldapfrom->m_access;
     setDescription(ldapfrom->m_description.str());
 
-    if(m_parameters.get())
-    {
-        m_parameters.clear();
-    }
-
-    if(!ldapfrom->m_parameters.get())
-        return;
+    // The destination properties are reset to an empty default state so the
+    // result of the copy is a copy and not a merge. The IProperties interface
+    // does not provide ways to manage existing content with lower overhead.
+    m_parameters.setown(createProperties());
 
     Owned<IPropertyIterator> Itr = ldapfrom->m_parameters->getIterator();
-    Itr->first();
-    while(Itr->isValid())
+    ForEach(*Itr)
     {
         addParameter(Itr->getPropKey(), ldapfrom->m_parameters->queryProp(Itr->getPropKey()));
-        Itr->next();
     }
     return;
 }

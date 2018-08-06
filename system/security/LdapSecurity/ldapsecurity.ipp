@@ -70,6 +70,8 @@ private:
     unsigned     m_sessionToken;//User's ESP session token
     StringBuffer m_signature;//User's digital signature
 
+    static Owned<IProperties> sm_emptyParameters;
+
 public:
     IMPLEMENT_IINTERFACE
 
@@ -149,7 +151,7 @@ public:
 
     virtual void setPropertyInt(const char* name, int value){}
     virtual int getPropertyInt(const char* name){ return 0;}
-    IPropertyIterator * getPropertyIterator() const override { return nullptr;}
+    IPropertyIterator * getPropertyIterator() const override { return sm_emptyParameters->getIterator();}
 
 
 //interface ISecCredentials
