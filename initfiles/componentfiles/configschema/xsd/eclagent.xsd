@@ -4,23 +4,23 @@
     xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
     <xs:complexType name="eclAgent">
-        <xs:attributeGroup name="Options" hpcc:docid="EA.t2">
-            <xs:attribute name="allowedPipePrograms" hpcc:displayName="Allowed Pipe Programs" hpcc:group="Options" type="xs:string" use="optional" default="*" hpcc:tab="Eclagent" hpcc:tooltip="Comma separated list of allowed PIPE programs (* for allow all)"/>
-            <xs:attribute name="daliServers" hpcc:displayName="Dali Servers" hpcc:group="Options" type="xs:string" use="required" hpcc:tooltip="Specifies the dali server to which this eclagent is attached"/>
-            <xs:attribute name="defaultMemoryLimitMB" hpcc:displayName="Default Memory Limit (MB)" hpcc:group="Options" type="xs:nonNegativeInteger" use="optional" default="300" hpcc:tooltip="Default memory limit in MB for eclagent"/>
-            <xs:attribute name="heapUseHugePages" hpcc:displayName="Heap Use Huge Pages" hpcc:group="Options" type="xs:boolean" default="false" hpcc:tooltip="Use memory from huge pages if they have been configured"/>
-            <xs:attribute name="heapUseTransparentHugePages" hpcc:displayName="Heam Use Transparent Huge Pages" hpcc:group="Options" type="xs:boolean" default="true" hpcc:tooltip="Use memory from transparent huge pages"/>
-            <xs:attribute name="heapRetainMemory" hpcc:displayName="Heap Retain Memory" hpcc:group="Options" type="xs:boolean" default="false" hpcc:tooltip="Retain and do not return unused memory to the operating system"/>
-            <xs:attribute name="pluginDirectory" hpcc:displayName="Plugin Directory" hpcc:group="Options" type="absolutePath" use="optional" default="/opt/HPCCSystems/plugins/" hpcc:tooltip="Directory where plugins are located"/>
-            <xs:attribute name="traceLevel" hpcc:displayName="Trace Level" hpcc:group="Options" type="xs:nonNegativeInteger" use="optional" default="0" hpcc:tooltip="Trace level"/> < - Shoud this be an enumerated list, or a range say 0-10
-            <xs:attribute name="thorConnectTimeout" hpcc:displayName="Thor Connect Timeout" hpcc:group="Options" type="xs:nonNegativeInteger" use="optional" default="600" hpcc:tooltip="Default connection timeout when sending query to Thor"/>
-            <xs:attribute name="wuQueueName" hpcc:displayName="Workunit Queue Name" hpcc:group="Options" type="xs:string" use="optional" default="" hpcc:tooltip="eclAgent Workunit Execution Queue Name" hpcc:autogenforwizard="true" hpcc:autogensuffix="_queue"/> <!-- is this keyed? do we need new auto name option for suffix -->
+        <xs:attributeGroup name="options" hpcc:groupByName="Options" hpcc:docid="EA.t2">
+            <xs:attribute name="allowedPipePrograms" hpcc:displayName="Allowed Pipe Programs" type="xs:string" use="optional" default="*" hpcc:tab="Eclagent" hpcc:tooltip="Comma separated list of allowed PIPE programs (* for allow all)"/>
+            <xs:attribute name="daliServers" hpcc:displayName="Dali Servers" type="xs:string" use="required" hpcc:tooltip="Specifies the dali server to which this eclagent is attached"/>
+            <xs:attribute name="defaultMemoryLimitMB" hpcc:displayName="Default Memory Limit (MB)" type="xs:nonNegativeInteger" use="optional" default="300" hpcc:tooltip="Default memory limit in MB for eclagent"/>
+            <xs:attribute name="heapUseHugePages" hpcc:displayName="Heap Use Huge Pages" type="xs:boolean" default="false" hpcc:tooltip="Use memory from huge pages if they have been configured"/>
+            <xs:attribute name="heapUseTransparentHugePages" hpcc:displayName="Heam Use Transparent Huge Pages" type="xs:boolean" default="true" hpcc:tooltip="Use memory from transparent huge pages"/>
+            <xs:attribute name="heapRetainMemory" hpcc:displayName="Heap Retain Memory" type="xs:boolean" default="false" hpcc:tooltip="Retain and do not return unused memory to the operating system"/>
+            <xs:attribute name="pluginDirectory" hpcc:displayName="Plugin Directory" type="absolutePath" use="optional" default="/opt/HPCCSystems/plugins/" hpcc:tooltip="Directory where plugins are located"/>
+            <xs:attribute name="traceLevel" hpcc:displayName="Trace Level" type="xs:nonNegativeInteger" use="optional" default="0" hpcc:tooltip="Trace level"/> < - Shoud this be an enumerated list, or a range say 0-10
+            <xs:attribute name="thorConnectTimeout" hpcc:displayName="Thor Connect Timeout" type="xs:nonNegativeInteger" use="optional" default="600" hpcc:tooltip="Default connection timeout when sending query to Thor"/>
+            <xs:attribute name="wuQueueName" hpcc:displayName="Workunit Queue Name" type="xs:string" use="optional" default="" hpcc:tooltip="eclAgent Workunit Execution Queue Name" hpcc:autogenforwizard="true" hpcc:autogensuffix="_queue"/> <!-- is this keyed? do we need new auto name option for suffix -->
         </xs:attributeGroup>
         <xs:sequence>
             <xs:element name="EclAgentProcess" hpcc:class="component" hpcc:itemType="eclAgent" hpcc:displayName="ECL Agent Process" maxOccurs="unbounded" hpcc:docid="EA.t1">
                 <xs:complexType>
                     <xs:sequence>
-                        <xs:element name="Instance" maxOccurs="unbounded" hpcc:displayName="Bound Computers">
+                        <xs:element name="Instance" hpcc:itemType = "elementSet" maxOccurs="unbounded" hpcc:displayName="Instances">
                             <xs:complexType>
                                 <xs:attributeGroup ref="computerNodeReference"/>
                                 <xs:attribute name="directory" type="xs:string" use="optional" default="c$\eclagent" hpcc:hidden="true"/> <!-- hidden doesn't make sense -->
@@ -31,7 +31,7 @@
                     <xs:attributeGroup ref="buildInfo"/>
                     <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:uniqueKey="eclagentprocess_name" hpcc:tooltip="Name for this process"/>
                     <xs:attribute name="description" type="xs:string" use="optional" hpcc:displayName="Description" default="EclAgent process" hpcc:tooltip="Description for this process"/>
-                    <xs:attributeGroup ref="Options"/>
+                    <xs:attributeGroup ref="options"/>
                 </xs:complexType>
 
             </xs:element>

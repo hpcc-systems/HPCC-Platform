@@ -3,50 +3,49 @@
         xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
         xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:complexType name="hardware" >
+    <xs:complexType name="hardware" hpcc:class="component" hpcc:category="" hpcc:displayName="Hardware Configuration">
         <xs:sequence>
-            <xs:element name="Hardware" >
+            <xs:element name="Hardware" hpcc:displayname="Hardware">
                 <xs:complexType>
                     <xs:sequence>
-                        <xs:element name="ComputerType" maxOccurs="unbounded" use="required" hpcc:category="Computer Types"
-                                    hpcc:class="valueSet">
+                        <xs:element name="ComputerType" maxOccurs="unbounded" hpcc:displayName="Defined computer types" hpcc:class="elementSet">
                             <xs:complexType>
-                                <xs:attribute name="name" group="Attributes" type="xs:string" hpcc:displayName="Name" use="required" hpcc:uniqueKey="computertype_name"/>
-                                <xs:attribute name="manufacturer" group="Attributes" hpcc:displayName="Manufacturer"type="xs:string"/>
-                                <xs:attribute name="computerType" group="Attributes" hpcc:displayName="Computer Type" type="xs:string"/>
-                                <xs:attribute name="nicSpeed" group="Attributes" hpcc:displayName="NIC Speed" type="xs:nonNegativeInteger"/>
+                                <xs:attribute name="name" type="xs:string" use="required"/>
+                                <xs:attribute name="nicSpeed" type="xs:nonNegativeInteger"/>
+                                <xs:attribute name="manufacturer" type="xs:string"/>
+                                <xs:attribute name="memory" type="xs:nonNegativeInteger"/>
+                                <xs:attribute name="computerType" type="xs:string"/>
                                 <xs:attribute name="opSys">
                                     <xs:simpleType>
                                         <xs:restriction base="xs:string">
-                                            <xs:enumeration value="linux"hpcc:displayName="Linux"/>
-                                            <xs:enumeration value="solaris"hpcc:displayName="Solaris"/>
-                                            <xs:enumeration value="W2K"hpcc:displayName="Windows 2000"/>
+                                            <xs:enumeration value="linux"/>
+                                            <xs:enumeration value="solaris"/>
+                                            <xs:enumeration value="W2K"/>
                                         </xs:restriction>
                                     </xs:simpleType>
                                 </xs:attribute>
                             </xs:complexType>
                         </xs:element>
 
-                        <xs:element name="Domain" maxOccurs="unbounded" use="required" hpcc:category="Domains" hpcc:class="valueSet">
+                        <xs:element name="Domain" maxOccurs="unbounded" hpcc:category="Domains" hpcc:class="elementSet">
                             <xs:complexType>
-                                <xs:attribute name="name" group="Attributes" hpcc:displayName="Name" type="xs:string" use="required" hpcc:uniqueKey="domain_name"/>
+                                <xs:attribute name="name" hpcc:displayName="Name" type="xs:string" use="required" hpcc:uniqueKey="domain_name"/>
                             </xs:complexType>
                         </xs:element>
 
-                        <xs:element name="Switch" maxOccurs="unbounded" hpcc:class="valueSet"
-                                    hpcc:doc="Describes a switch that is contained in the environment">
+                        <xs:element name="Switch" maxOccurs="unbounded" use="required" hpcc:class="valueSet"
+                                    hpcc:displayName="Switches">
                             <xs:complexType>
-                                <xs:attribute name="name" type="xs:string"/>
+                                <xs:attribute name="name" hpcc:displayName="Name" type="xs:string" use="required" hpcc:uniqueKey="switch_name"/>
                             </xs:complexType>
                         </xs:element>
 
-                        <xs:element name="Computer" maxOccurs="unbounded" use="required"hpcc:class="valueSet"
-                                    hpcc:displayName="Computers">
+                        <xs:element name="Computer" maxOccurs="unbounded" hpcc:class="elementSet" hpcc:displayName="Computers">
                             <xs:complexType>
-                                <xs:attribute name="name" group="Attributes" hpcc:displayName="Name" type="nodeName" use="required" hpcc:uniqueKey="computer_name"/>
-                                <xs:attribute name="netAddress" group="Attributes" hpcc:displayName="Net Address" type="ipV4Address" use="required" hpcc:uniqueKey="computer_netaddress"/>
-                                <xs:attribute name="domain" group="Attributes" hpcc:displayName="Domain" type="xs:string" hpcc:sourceKey="domain_name"/>
-                                <xs:attribute name="computerType" group="Attributes" hpcc:displayName="Computer type" type="xs:string" hpcc:sourceKey="computertype_name"/>
+                                <xs:attribute name="name" hpcc:displayName="Name" type="nodeName" use="required" hpcc:uniqueKey="computer_name"/>
+                                <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="required" hpcc:uniqueKey="computer_netaddress"/>
+                                <xs:attribute name="domain" hpcc:displayName="Domain" type="xs:string" hpcc:sourceKey="domain_name"/>
+                                <xs:attribute name="computerType" hpcc:displayName="Computer type" type="xs:string" hpcc:sourceKey="computertype_name"/>
                             </xs:complexType>
                         </xs:element>
                     </xs:sequence>

@@ -76,7 +76,7 @@
 
     <xs:complexType name="hwinstance">
         <xs:sequence>
-            <xs:element name="Instance" maxOccurs="unbounded">
+            <xs:element name="Instance" hpcc:displayName="Instances" hpcc:class="elementSet" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType>
                     <xs:attributeGroup ref="computerNodeReference"/>
                 </xs:complexType>
@@ -86,12 +86,12 @@
 
     <xs:complexType name="usernotes">
         <xs:seqeunce>
-            <xs:element name="Notes" maxOccurs="unbounded"/>
-            <xs:complexType>
+            <xs:element name="Notes" hpcc:displayName="Notes" hpcc:class="elementSet" minOcurrs="1" maxOccurs="unbounded"/>
+            <xs:complexType name="note">
                 <xs:sequence>
                     <xs:element name="Note" type="xs:string" minOccurs="0"/>
                 </xs:sequence>
-                <xs:attribute name="severity" group="Attributes" hpcc:displayName="Severity" use="optional" default="Minor" hpcc:tooltip="Significance of this note">
+                <xs:attribute name="severity" hpcc:displayName="Severity" use="optional" default="Minor" hpcc:tooltip="Significance of this note">
                     <xs:simpleType>
                         <xs:restriction base="xs:string">
                             <xs:enumeration value="Minor"/>
@@ -100,19 +100,19 @@
                         </xs:restriction>
                     </xs:simpleType>
                 </xs:attribute>
-                <xs:attribute name="date" group="Attributes" hpcc:displayName="Date/Time" type="AutoTimeStampType" use="optional" hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
-                <xs:attribute name="computer" group="Attributes" hpcc:displayName="Computer" type="AutoComputerType" use="optional" hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
-                <xs:attribute name="user" group="Attributes" hpcc:displayName="User" type="AutoUseridType" use="optional" hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
+                <xs:attribute name="date" hpcc:displayName="Date/Time" type="AutoTimeStampType" use="optional" hpcc:readOnly="true" hpcc:tooltip="Date and time this note was entered"/>
+                <xs:attribute name="computer" hpcc:displayName="Computer" type="xs:string" use="optional" hpcc:readOnly="true" hpcc:tooltip="Computer from which this note was entered"/>
+                <xs:attribute name="user" hpcc:displayName="User" type="AutoUseridType" use="optional" hpcc:readOnly="true" hpcc:tooltip="User account from which this note was entered"/>
             </xs:complexType>
         </xs:seqeunce>
     </xs:complexType>
 
     <xs:complexType name="espservice_properties">
         <xs:sequence>
-            <xs:element name="Properties" use="optional" minOccurs="0" maxOccurs="1" hpcc:hidden="true">
+            <xs:element name="Properties" minOccurs="0" maxOccurs="1" hpcc:hidden="true">
                 <xs:complexType>
                     <xs:sequence>
-                        <xs:element name="Authenticate" use="optional" minOccurs="0" maxOccurs="1">
+                        <xs:element name="Authenticate" minOccurs="0" maxOccurs="1">
                             <xs:complexType>
                                 <xs:attribute name="access" type="xs:string"/>
                                 <xs:attribute name="description" type="xs:string"/>
@@ -121,7 +121,7 @@
                                 <xs:attribute name="resource" type="xs:string"/>
                             </xs:complexType>
                         </xs:element>
-                        <xs:element name="AuthenticateFeature" minOccurs="0" maxOccurs="unbounded">
+                        <xs:element name="AuthenticateFeature" hpcc:class="elementSet" minOccurs="0" maxOccurs="unbounded">
                             <xs:complexType>
                                 <xs:attribute name="description" type="xs:string"/>
                                 <xs:attribute name="path" type="xs:string"/>
@@ -172,7 +172,7 @@
         </xs:sequence>
     </xs:complexType>
 
-    <xs:attributeGroup name="buildInfo">
+    <xs:attributeGroup name="buildInfo" hpcc:groupByName="Attributes">
         <xs:attribute name="build" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="fixedValue" hpcc:autoGenerateValue="_"/>
         <xs:attribute name="buildSet" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="configProperty" hpcc:autoGenerateValue="componentName"/>
     </xs:attributeGroup>

@@ -52,7 +52,7 @@ SchemaValue::SchemaValue(const SchemaValue &value)
     m_valueLimitRuleType = value.m_valueLimitRuleType;
     m_valueLimitRuleData = value.m_valueLimitRuleData;
     m_requiredIf = value.m_requiredIf;
-    m_group = value.m_group;
+    m_groupByName = value.m_groupByName;
 
     // special processing? Maybe after inserting?
     std::vector<std::shared_ptr<SchemaValue>> m_mirrorToSchemaValues;

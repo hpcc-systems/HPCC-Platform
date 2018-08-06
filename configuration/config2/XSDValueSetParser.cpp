@@ -25,28 +25,10 @@ void XSDValueSetParser::parseXSD(const pt::ptree &valueSetTree)
     for (auto it = valueSetTree.begin(); it != valueSetTree.end(); ++it)
     {
         //
-        // Element parent (a type in realilty) and the element name help figure out how to process the XSD schema element
-        std::string elemType = it->first;
-        if (it->first == "xs:attributeGroup")
+        // Only handle attributes
+        if (it->first == "xs:attribute")
         {
-            parseAttributeGroup(it->second);
+            parseAttribute(it->second)->setGroupByName(m_groupByName);
         }
-        else if (it->first == "xs:attribute")
-        {
-            parseAttribute(it->second);
-        }
-    }
-}
-
-
-void XSDValueSetParser::parseAttributeGroup(const pt::ptree &attributeTree)
-{
-    std::string groupRefName = getXSDAttributeValue(attributeTree, "<xmlattr>.ref");
-    std::shared_ptr<SchemaItem> pValueSet = m_pSchemaItem->getSchemaType(groupRefName, true);
-    if (pValueSet)
-    {
-        std::vector<std::shared_ptr<SchemaValue>> attributes;
-        pValueSet->getAttributes(attributes);
-        m_pSchemaItem->addAttribute(attributes);
     }
 }
