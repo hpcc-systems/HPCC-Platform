@@ -39,7 +39,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -429,9 +429,9 @@
         <sect3 id="ECLWatch_AdvancedMenuLoggedInAs" role="nobrk">
           <title>Logged In As</title>
 
-          <para>The <emphasis role="bold">Logged In As:</emphasis> link at the
-          top of the ECL Watch page displays information about the current
-          user on a cluster configured for authentication. <figure>
+          <para>The <emphasis role="bold">Logged In As:</emphasis> links at
+          the top of the ECL Watch page display information about the current
+          user logged onto a cluster configured for authentication. <figure>
               <title>Logged In As</title>
 
               <mediaobject>
@@ -444,11 +444,8 @@
 
           <para><orderedlist>
               <listitem>
-                <para>Click on the <emphasis role="bold"><emphasis
-                role="bold">LOGGED IN AS:</emphasis></emphasis> link.</para>
-
-                <para>The User Details window opens. The default window opens
-                on the Summary tab.</para>
+                <para>Click on your username link and the User Details window
+                opens. </para>
 
                 <para><figure>
                     <title>User Details window</title>
@@ -462,8 +459,8 @@
               </listitem>
 
               <listitem>
-                <para>From The User Details page Summary tab, you can Confirm
-                the User Name that you are logged in as.</para>
+                <para>From The User Details page, you can Confirm the User
+                Name that you are logged in as.</para>
 
                 <para>You can change your password.</para>
 
@@ -487,12 +484,16 @@
             change your password, right from the User Details window.
             <orderedlist>
                 <listitem>
-                  <para>Click on the <emphasis role="bold"><emphasis
-                  role="bold">LOGGED IN AS:</emphasis></emphasis> link.</para>
+                  <para>Click on your username link under the <emphasis
+                  role="bold"><emphasis role="bold">LOGGED IN
+                  AS:</emphasis></emphasis> </para>
 
-                  <para>The User Details window opens. The default window
-                  opens on the Summary tab. There are fields on the Summary
-                  tab where you can change your password.</para>
+                  <para>The User Details window opens. There are fields where
+                  you can change your password.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Enter your Old Password.</para>
                 </listitem>
 
                 <listitem>
@@ -516,31 +517,12 @@
               </orderedlist></para>
           </sect4>
 
-          <sect4 id="ECLWatch_AdvancedMenuPermissionGroups">
-            <title>Permission groups</title>
+          <sect4>
+            <title>Lock</title>
 
-            <para>The second tab on the User Details window labelled Member
-            Of, displays a list of groups. The groups your account belongs to,
-            are indicated with a checkmark.</para>
-
-            <para>You must be an administrator to modify any of group
-            settings.</para>
-          </sect4>
-
-          <sect4 id="ECLWatch_AdvancedMenuUserPermissions">
-            <title>User Permissions tab</title>
-
-            <para>The third tab on the User Details window labelled <emphasis
-            role="bold">User Permissions</emphasis>, displays a list of
-            permission settings. Note that Administrator rights are needed to
-            manage users and permissions. Ensure you are using an account with
-            Administrator rights if you intend to manage users or
-            permissions.</para>
-
-            <para>This is where you can access the user permissions area. A
-            more detailed description of the user permissions settings is
-            covered in the <link linkend="User_Permissions_Chapter">User
-            Permissions</link> section.</para>
+            <para>Click the <emphasis role="bold">Lock</emphasis> link next to
+            the username link to lock your session. You would then need to
+            enter your credentials to unlock your session. </para>
           </sect4>
         </sect3>
       </sect2>
@@ -1670,7 +1652,7 @@
               </mediaobject>
             </figure>This will open a dialog listing the available interfaces.
           Provide the information requested, an ESP Process Name and a Port.
-          Select a Definition and then provide a Service Name. </para>
+          Select a Definition and then provide a Service Name.</para>
 
           <para><figure>
               <title>Adding the definition</title>
