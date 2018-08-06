@@ -2252,7 +2252,7 @@ protected:
     bool persistent;
     bool grouped;
     enum ReadType:byte { rt_unknown, rt_binary, rt_csv, rt_xml } readType = rt_unknown;
-
+    RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
     unsigned __int64 stopAfter = 0;
     unsigned __int64 remoteLimit = 0;
     unsigned __int64 localOffset;
@@ -2283,8 +2283,16 @@ protected:
     {
         agent.reportProgress(NULL);
     }
+
+    RecordTranslationMode getLayoutTranslationMode()
+    {
+        if (recordTranslationModeHint != RecordTranslationMode::Unspecified)
+            return recordTranslationModeHint;
+        return agent.getLayoutTranslationMode();
+    }
+
 public:
-    CHThorDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind);
+    CHThorDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind, IPropertyTree *node);
     ~CHThorDiskReadBaseActivity();
     IMPLEMENT_IINTERFACE
 
@@ -2313,7 +2321,7 @@ protected:
     CThorContiguousRowBuffer prefetchBuffer;
     CThorStreamDeserializerSource deserializeSource;
 public:
-    CHThorBinaryDiskReadBase(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind);
+    CHThorBinaryDiskReadBase(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *_node);
 
     virtual void ready();
 
@@ -2359,7 +2367,7 @@ protected:
     unsigned __int64 limit;
 
 public:
-    CHThorDiskReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind);
+    CHThorDiskReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind, IPropertyTree *node);
 
     virtual void ready();
     virtual void stop();
@@ -2374,7 +2382,7 @@ class CHThorCsvReadActivity : public CHThorDiskReadBaseActivity
 {
     typedef CHThorDiskReadBaseActivity PARENT;
 public:
-    CHThorCsvReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind);
+    CHThorCsvReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind, IPropertyTree *node);
     ~CHThorCsvReadActivity();
     virtual const void *nextRow();
     virtual void ready();
@@ -2403,7 +2411,7 @@ class CHThorXmlReadActivity : public CHThorDiskReadBaseActivity, implements IXML
 public:
     IMPLEMENT_IINTERFACE;
 
-    CHThorXmlReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind);
+    CHThorXmlReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
     
     virtual void ready();
     virtual void stop();
@@ -2450,7 +2458,7 @@ protected:
     virtual void gatherInfo(IFileDescriptor * fileDesc);
 
 public:
-    CHThorDiskNormalizeActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskNormalizeArg &_arg, ThorActivityKind _kind);
+    CHThorDiskNormalizeActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskNormalizeArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
 
     virtual void stop();
     virtual void ready();
@@ -2472,7 +2480,7 @@ protected:
     virtual void gatherInfo(IFileDescriptor * fileDesc);
 
 public:
-    CHThorDiskAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskAggregateArg &_arg, ThorActivityKind _kind);
+    CHThorDiskAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskAggregateArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
 
     virtual void stop();
     virtual void ready();
@@ -2493,7 +2501,7 @@ protected:
     virtual void gatherInfo(IFileDescriptor * fileDesc);
 
 public:
-    CHThorDiskCountActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskCountArg &_arg, ThorActivityKind _kind);
+    CHThorDiskCountActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskCountArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
     ~CHThorDiskCountActivity();
 
     virtual void ready();
@@ -2518,7 +2526,7 @@ protected:
     virtual void gatherInfo(IFileDescriptor * fileDesc);
 
 public:
-    CHThorDiskGroupAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskGroupAggregateArg &_arg, ThorActivityKind _kind);
+    CHThorDiskGroupAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskGroupAggregateArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
     IMPLEMENT_IINTERFACE
 
     virtual void ready();

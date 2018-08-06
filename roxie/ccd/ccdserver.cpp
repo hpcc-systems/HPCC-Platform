@@ -416,7 +416,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CRoxieServerActivityFactoryBase(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+        : CActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
         dependentCount = 0;
         optParallel = _graphNode.getPropInt("att[@name='parallel']/@value", 0);

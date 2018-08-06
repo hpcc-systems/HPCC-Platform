@@ -88,7 +88,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKkeyedjoin:
     case TAKkeyeddenormalize:
     case TAKkeyeddenormalizegroup:
-        return createKeyedJoinActivity(agent, activityId, subgraphId, (IHThorKeyedJoinArg &)arg, kind);
+        return createKeyedJoinActivity(agent, activityId, subgraphId, (IHThorKeyedJoinArg &)arg, kind, node);
     case TAKlookupjoin:
     case TAKlookupdenormalize:
     case TAKlookupdenormalizegroup:
@@ -150,9 +150,9 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKchoosesetslast:
         return createChooseSetsLastActivity(agent, activityId, subgraphId, (IHThorChooseSetsExArg &)arg, kind);
     case TAKfetch:
-        return createFetchActivity(agent, activityId, subgraphId, (IHThorFetchArg &)arg, kind);
+        return createFetchActivity(agent, activityId, subgraphId, (IHThorFetchArg &)arg, kind, node);
     case TAKcsvfetch:
-        return createCsvFetchActivity(agent, activityId, subgraphId, (IHThorCsvFetchArg &)arg, kind);
+        return createCsvFetchActivity(agent, activityId, subgraphId, (IHThorCsvFetchArg &)arg, kind, node);
     case TAKworkunitread:
         return createWorkunitReadActivity(agent, activityId, subgraphId, (IHThorWorkunitReadArg &)arg, kind);
     case TAKspill:
@@ -184,7 +184,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createXmlParseActivity(agent, activityId, subgraphId, (IHThorXmlParseArg &)arg, kind);
     case TAKxmlfetch:
     case TAKjsonfetch:
-        return createXmlFetchActivity(agent, activityId, subgraphId, (IHThorXmlFetchArg &)arg, kind);
+        return createXmlFetchActivity(agent, activityId, subgraphId, (IHThorXmlFetchArg &)arg, kind, node);
     case TAKmerge: 
         return createMergeActivity(agent, activityId, subgraphId, (IHThorMergeArg &)arg, kind);
     case TAKhttp_rowdataset:
@@ -233,35 +233,35 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createChildThroughNormalizeActivity(agent, activityId, subgraphId, (IHThorChildThroughNormalizeArg &)arg, kind);
     case TAKdiskread:
     case TAKspillread:
-        return createDiskReadActivity(agent, activityId, subgraphId, (IHThorDiskReadArg &)arg, kind);
+        return createDiskReadActivity(agent, activityId, subgraphId, (IHThorDiskReadArg &)arg, kind, node);
     case TAKdisknormalize:
-        return createDiskNormalizeActivity(agent, activityId, subgraphId, (IHThorDiskNormalizeArg &)arg, kind);
+        return createDiskNormalizeActivity(agent, activityId, subgraphId, (IHThorDiskNormalizeArg &)arg, kind, node);
     case TAKdiskaggregate:
-        return createDiskAggregateActivity(agent, activityId, subgraphId, (IHThorDiskAggregateArg &)arg, kind);
+        return createDiskAggregateActivity(agent, activityId, subgraphId, (IHThorDiskAggregateArg &)arg, kind, node);
     case TAKdiskcount:
-        return createDiskCountActivity(agent, activityId, subgraphId, (IHThorDiskCountArg &)arg, kind);
+        return createDiskCountActivity(agent, activityId, subgraphId, (IHThorDiskCountArg &)arg, kind, node);
     case TAKdiskgroupaggregate:
-        return createDiskGroupAggregateActivity(agent, activityId, subgraphId, (IHThorDiskGroupAggregateArg &)arg, kind);
+        return createDiskGroupAggregateActivity(agent, activityId, subgraphId, (IHThorDiskGroupAggregateArg &)arg, kind, node);
     case TAKindexread:
-        return createIndexReadActivity(agent, activityId, subgraphId, (IHThorIndexReadArg &)arg, kind);
+        return createIndexReadActivity(agent, activityId, subgraphId, (IHThorIndexReadArg &)arg, kind, node);
     case TAKindexnormalize:
-        return createIndexNormalizeActivity(agent, activityId, subgraphId, (IHThorIndexNormalizeArg &)arg, kind);
+        return createIndexNormalizeActivity(agent, activityId, subgraphId, (IHThorIndexNormalizeArg &)arg, kind, node);
     case TAKindexaggregate:
-        return createIndexAggregateActivity(agent, activityId, subgraphId, (IHThorIndexAggregateArg &)arg, kind);
+        return createIndexAggregateActivity(agent, activityId, subgraphId, (IHThorIndexAggregateArg &)arg, kind, node);
     case TAKindexcount:
-        return createIndexCountActivity(agent, activityId, subgraphId, (IHThorIndexCountArg &)arg, kind);
+        return createIndexCountActivity(agent, activityId, subgraphId, (IHThorIndexCountArg &)arg, kind, node);
     case TAKindexgroupaggregate:
     case TAKindexgroupexists:
     case TAKindexgroupcount:
-        return createIndexGroupAggregateActivity(agent, activityId, subgraphId, (IHThorIndexGroupAggregateArg &)arg, kind);
+        return createIndexGroupAggregateActivity(agent, activityId, subgraphId, (IHThorIndexGroupAggregateArg &)arg, kind, node);
     case TAKchilddataset:
     case TAKthroughaggregate:
         UNIMPLEMENTED;
     case TAKcsvread:
-        return createCsvReadActivity(agent, activityId, subgraphId, (IHThorCsvReadArg &)arg, kind);
+        return createCsvReadActivity(agent, activityId, subgraphId, (IHThorCsvReadArg &)arg, kind, node);
     case TAKxmlread:
     case TAKjsonread:
-        return createXmlReadActivity(agent, activityId, subgraphId, (IHThorXmlReadArg &)arg, kind);
+        return createXmlReadActivity(agent, activityId, subgraphId, (IHThorXmlReadArg &)arg, kind, node);
     case TAKlocalresultread:
         return createLocalResultReadActivity(agent, activityId, subgraphId, (IHThorLocalResultReadArg &)arg, kind, node->getPropInt("att[@name='_graphId']/@value"));
     case TAKlocalresultwrite:

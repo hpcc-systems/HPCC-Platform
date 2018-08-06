@@ -99,7 +99,7 @@ extern void putStatsValue(StringBuffer &reply, const char *statName, const char 
     }
 }
 
-CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
   : id(_id),
     subgraphId(_subgraphId),
     queryFactory(_queryFactory),
@@ -112,6 +112,9 @@ CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFac
         Owned<IHThorArg> helper = helperFactory();
         meta.set(helper->queryOutputMeta());
     }
+    const char *recordTranslationModeHintText = _graphNode.queryProp("hint[@name='layoutTranslation']/@value");
+    if (recordTranslationModeHintText)
+        recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
 }
 
 void CActivityFactory::addChildQuery(unsigned id, ActivityArray *childQuery) 
@@ -139,7 +142,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     CSlaveActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory) 
-        : CActivityFactory(_graphNode.getPropInt("@id", 0), _subgraphId, _queryFactory, _helperFactory, getActivityKind(_graphNode))
+        : CActivityFactory(_graphNode.getPropInt("@id", 0), _subgraphId, _queryFactory, _helperFactory, getActivityKind(_graphNode), _graphNode)
     {
     }
 
