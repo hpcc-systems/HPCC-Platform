@@ -10,7 +10,7 @@
                     <xs:sequence>
                         <xs:element name="ComputerType" maxOccurs="unbounded" hpcc:displayName="Defined computer types" hpcc:class="elementSet">
                             <xs:complexType>
-                                <xs:attribute name="name" type="xs:string" use="required"/>
+                                <xs:attribute name="name" type="xs:string" use="required" hpcc:uniqueKey="computertype_name"/>
                                 <xs:attribute name="nicSpeed" type="xs:nonNegativeInteger"/>
                                 <xs:attribute name="manufacturer" type="xs:string"/>
                                 <xs:attribute name="memory" type="xs:nonNegativeInteger"/>
