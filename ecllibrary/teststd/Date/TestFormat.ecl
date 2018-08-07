@@ -24,6 +24,26 @@ EXPORT TestFormat := MODULE
 
     ASSERT(Date.FromStringToTime('12:34:56', '%H:%M:%S') = 123456, CONST);
 
+
+    ASSERT(Date.TimestampToString(1533642860000000, '%Y-%m-%dT%H:%M:%S.%@') = '2018-08-07T11:54:20.000000', CONST);
+    ASSERT(Date.TimestampToString(1533642860000000, '%Y-%m-%dT%H:%M:%S.%#') = '2018-08-07T11:54:20.000', CONST);
+    ASSERT(Date.TimestampToString(1533642860000001, '%Y-%m-%dT%H:%M:%S.%@') = '2018-08-07T11:54:20.000001', CONST);
+    ASSERT(Date.TimestampToString(1533642860000001, '%Y-%m-%dT%H:%M:%S.%#') = '2018-08-07T11:54:20.000', CONST);
+    ASSERT(Date.TimestampToString(1533642860000010, '%Y-%m-%dT%H:%M:%S.%@') = '2018-08-07T11:54:20.000010', CONST);
+    ASSERT(Date.TimestampToString(1533642860000010, '%Y-%m-%dT%H:%M:%S.%#') = '2018-08-07T11:54:20.000', CONST);
+    ASSERT(Date.TimestampToString(1533642860000100, '%Y-%m-%dT%H:%M:%S.%@') = '2018-08-07T11:54:20.000100', CONST);
+    ASSERT(Date.TimestampToString(1533642860000100, '%Y-%m-%dT%H:%M:%S.%#') = '2018-08-07T11:54:20.000', CONST);
+    ASSERT(Date.TimestampToString(1533642860001000, '%Y-%m-%dT%H:%M:%S.%@') = '2018-08-07T11:54:20.001000', CONST);
+    ASSERT(Date.TimestampToString(1533642860001000, '%Y-%m-%dT%H:%M:%S.%#') = '2018-08-07T11:54:20.001', CONST);
+    ASSERT(Date.TimestampToString(1533642860010000, '%Y-%m-%dT%H:%M:%S.%@') = '2018-08-07T11:54:20.010000', CONST);
+    ASSERT(Date.TimestampToString(1533642860010000, '%Y-%m-%dT%H:%M:%S.%#') = '2018-08-07T11:54:20.010', CONST);
+    ASSERT(Date.TimestampToString(1533642860100000, '%Y-%m-%dT%H:%M:%S.%@') = '2018-08-07T11:54:20.100000', CONST);
+    ASSERT(Date.TimestampToString(1533642860100000, '%Y-%m-%dT%H:%M:%S.%#') = '2018-08-07T11:54:20.100', CONST);
+    ASSERT(Date.TimestampToString(1533642860994561, '%Y-%m-%dT%H:%M:%S.%@') = '2018-08-07T11:54:20.994561', CONST);
+    ASSERT(Date.TimestampToString(1533642860994561, '%Y-%m-%dT%H:%M:%S.%#') = '2018-08-07T11:54:20.994', CONST);
+    ASSERT(Date.TimestampToString(1533642860999999, '%Y-%m-%dT%H:%M:%S.%@') = '2018-08-07T11:54:20.999999', CONST);
+    ASSERT(Date.TimestampToString(1533642860999999, '%Y-%m-%dT%H:%M:%S.%#') = '2018-08-07T11:54:20.999', CONST);
+
     ASSERT(TRUE)
   ];
 

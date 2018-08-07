@@ -765,6 +765,32 @@ EXPORT STRING SecondsToString(Seconds_t seconds, VARSTRING format = '%Y-%m-%dT%H
 
 
 /**
+ * Converts a Timestamp_t value into a human-readable string using a format template.
+ *
+ * @param timestamp     The microseconds since epoch.
+ * @param format        The format template to use for the conversion; see
+ *                      strftime() for appropriate format specifiers.  Two
+ *                      additional format specifiers are available to show
+ *                      fractional seconds:
+ *                          %@ - fraction of seconds in microseconds (6 digits)
+ *                          %# - fraction of seconds in milliseconds (3 digits)
+ *                      The maximum length of the resulting string is 255
+ *                      characters.  This parameter is optional and defaults to
+ *                      '%Y-%m-%dT%H:%M:%S.%@' which is YYYY-MM-DDTHH:MM:SS.ssssss.
+ * @return              The converted timestamp as a string.
+ */
+
+EXPORT STRING TimestampToString(Timestamp_t timestamp, VARSTRING format = '%Y-%m-%dT%H:%M:%S.%@') := FUNCTION
+    f := INTFORMAT(timestamp % 1000000, 6, 1);
+    s1 := TimeLib.SecondsToString(timestamp DIV 1000000, format);
+    s2 := REGEXREPLACE('%@', s1, f);
+    s3 := REGEXREPLACE('%#', s2, f[..3]);
+
+    RETURN s3;
+END;
+
+
+/**
  * Formats a date as a string.
  *
  * @param date          The date to be converted.
