@@ -876,7 +876,7 @@ public:
                     m_ld = NULL;
                     m_connected = false;
                 }
-                DBGLOG("cached connection invalid, creating a new connection");
+                DBGLOG("cached connection invalid (%s), creating a new connection", ldap_err2string(err));
                 return connect(m_useSSL);//reconnect stale connection, using original protocol
             }
             else
