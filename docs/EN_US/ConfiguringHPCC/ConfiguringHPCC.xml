@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -436,10 +436,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>If it is running, stop the HPCC system using this command on
           every node:</para>
 
-                     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
-	                          xpointer="element(/1)"
-	                          xmlns:xi="http://www.w3.org/2001/XInclude" />
-
+          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
+                      xpointer="element(/1)"
+                      xmlns:xi="http://www.w3.org/2001/XInclude" />
 
           <variablelist>
             <varlistentry>
@@ -469,7 +468,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     fileref="images/OSSgr3.png" /></entry>
 
                     <entry>You can use this command to confirm HPCC processes
-                    are stopped: <para><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
+                    are stopped: <para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1790,8 +1789,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
               <listitem>
                 <para>In the <emphasis>kibanaEntryPointURI</emphasis> field,
-                enter the Kibana URI pointing to your shared Kibana dashboard.
-                </para>
+                enter the Kibana URI pointing to your shared Kibana
+                dashboard.</para>
 
                 <para>For example: /app/kibana#/dashboard/etc. (obtained from
                 the "share" tab in Kibana)</para>
@@ -2556,22 +2555,27 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </varlistentry>
           </variablelist>
         </sect3>
+
         <sect3>
           <title>Redundancy</title>
+
           <para>Roxie can be configured to utilize a few different redundancy
           models. <itemizedlist>
               <listitem>
                 <para>Simple Redundancy - One channel per slave. Most commonly
                 used for a single node Roxie.</para>
               </listitem>
+
               <listitem>
                 <para>Full Redundancy - More slaves than the number of
                 channels. Multiple slaves host each channel.</para>
               </listitem>
+
               <listitem>
                 <para>Overloaded Redundancy - There are multiple channels per
                 slave.</para>
               </listitem>
+
               <listitem>
                 <para>Cyclic Redundancy - Each node hosts multiple channels in
                 rotation. The most commonly used configuration.</para>
