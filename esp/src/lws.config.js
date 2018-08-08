@@ -5,6 +5,7 @@ let rewrite = [
     { from: "/esp/files/Login.html", to: "http://" + debugServerIP + ":8010/esp/files/Login.html" },
     { from: "/esp/files/GetUserName.html", to: "http://" + debugServerIP + ":8010/esp/files/GetUserName.html" },
     { from: "/esp/login", to: "http://" + debugServerIP + ":8010/esp/login" },
+    { from: "/esp/getauthtype", to: "http://" + debugServerIP + ":8010/esp/getauthtype" },
     { from: "/esp/files/esp/getauthtype", to: "http://" + debugServerIP + ":8010/esp/getauthtype" },
     { from: "/esp/files/esp/lock", to: "http://" + debugServerIP + ":8010/esp/lock" },
     { from: "/esp/unlock.json", to: "http://" + debugServerIP + ":8010/esp/unlock.json" },
