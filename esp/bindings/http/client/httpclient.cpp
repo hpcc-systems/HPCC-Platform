@@ -643,7 +643,7 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
         StringBuffer uidpair;
         uidpair.append(m_userid.get()).append(":").append(m_password.get());
         StringBuffer result;
-        Utils::base64encode(uidpair.str(), uidpair.length(), result);
+        JBASE64_Encode(uidpair.str(), uidpair.length(), result, false);//encode, without line breaks
         StringBuffer authhdr("Basic ");
 
         //Remove the \n from the end of the encoded string.

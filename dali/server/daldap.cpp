@@ -141,6 +141,8 @@ public:
         {
             username.append(filesdefaultuser);
             decrypt(password, filesdefaultpassword);
+            WARNLOG("Missing credentials, injecting deprecated filesdefaultuser");
+            reqSignature = nullptr;
         }
 
         Owned<ISecUser> user = ldapsecurity->createUser(username);
