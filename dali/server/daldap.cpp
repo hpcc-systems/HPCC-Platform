@@ -146,8 +146,6 @@ public:
         Owned<ISecUser> user = ldapsecurity->createUser(username);
         user->credentials().setPassword(password);
 
-        bool authenticated = false;
-
         //Check that the digital signature provided by the caller (signature of
         //caller's "scope;username;timeStamp") matches what we expect it to be
         if (!isEmptyString(reqSignature))
@@ -186,13 +184,15 @@ public:
                     return SecAccess_None;//deny
                 }
 
-                authenticated = true;//Digital signature verified
+                //Mark user as authenticated. The call below to authenticateUser
+                //will add this user to the LDAP cache
+                user->setAuthenticateStatus(AS_AUTHENTICATED);
             }
             else
                 ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s digital signature support not available",key?key:"NULL",obj?obj:"NULL",username.str());
         }
 
-        if (!authenticated && !ldapsecurity->authenticateUser(*user, NULL))
+        if (!ldapsecurity->authenticateUser(*user, NULL))
         {
             ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails LDAP authentication",key?key:"NULL",obj?obj:"NULL",username.str());
             return SecAccess_None;//deny

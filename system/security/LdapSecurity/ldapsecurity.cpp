@@ -647,8 +647,6 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         return false;
     }
 
-    user->setAuthenticateStatus(AS_UNKNOWN);
-
     bool isCaching = m_permissionsCache->isCacheEnabled() && !m_usercache_off;//caching enabled?
     bool isUserCached = false;
     Owned<ISecUser> cachedUser = new CLdapSecUser(user->getName(), "");
@@ -656,6 +654,13 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     {
         user->copyTo(*(cachedUser.get()));//copy user to cachedUser
         isUserCached = m_permissionsCache->lookup(*cachedUser);//populate cachedUser with cached values
+    }
+
+    if (AS_AUTHENTICATED == user->getAuthenticateStatus())
+    {
+        if(isCaching && !isUserCached)
+            m_permissionsCache->add(*user);
+        return true;
     }
 
     //Verify provided signature if present
@@ -694,16 +699,19 @@ bool CLdapSecManager::authenticate(ISecUser* user)
 
     if (AS_AUTHENTICATED == user->getAuthenticateStatus())
     {
-        if (pDSM && pDSM->isDigiSignerConfigured() && isEmptyString(user->credentials().getSignature()))
-        {
-            //Set user digital signature
-            StringBuffer b64Signature;
-            pDSM->digiSign(user->getName(), b64Signature);
-            user->credentials().setSignature(b64Signature);
-        }
-
         if (isCaching)
             m_permissionsCache->add(*user);
+        else if (isEmptyString(user->credentials().getPassword()) && (0 == user->credentials().getSessionToken()) && isEmptyString(user->credentials().getSignature()))
+        {
+            //No need to sign if password or authenticated session based user
+            if (pDSM && pDSM->isDigiSignerConfigured())
+            {
+               //Set user digital signature
+               StringBuffer b64Signature;
+               pDSM->digiSign(user->getName(), b64Signature);
+               user->credentials().setSignature(b64Signature);
+            }
+        }
     }
 
     return AS_AUTHENTICATED == user->getAuthenticateStatus();
