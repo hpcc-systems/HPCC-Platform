@@ -2,6 +2,7 @@
 #include "xslprocessor.hpp"
 #include "xmlvalidator.hpp"
 #include "xmlerror.hpp"
+#include "xpathprocessor.hpp"
 
 XMLLIB_API IXmlDomParser* getXmlDomParser()
 {
