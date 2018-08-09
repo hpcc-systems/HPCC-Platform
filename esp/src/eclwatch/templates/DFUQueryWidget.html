@@ -159,6 +159,13 @@
                             <option value="Superfiles Only">${i18n.SuperfilesOnly}</option>
                             <option value="Not in Superfiles">${i18n.NotInSuperfiles}</option>
                         </select>
+                        <input id="${id}FirstN" title="${i18n.FirstN}:" name="FirstN" colspan="2" style="width:15%" data-dojo-props="trim: true, placeHolder:'-1'" data-dojo-type="dijit.form.TextBox" />
+                        <select id="${id}Sortby" title="" name="Sortby" colspan="2" data-dojo-type="dijit.form.Select">
+                            <option value="Newest" selected="selected">${i18n.Newest}</option>
+                            <option value="Oldest">${i18n.Oldest}</option>
+                            <option value="Smallest">${i18n.Smallest}</option>
+                            <option value="Largest">${i18n.Largest}</option>
+                        </select>
                         <input id="${id}FromDate" title="${i18n.FromDate}:" name="StartDate" data-dojo-props="trim: true, placeHolder:'7/28/2013'" data-dojo-type="dijit.form.DateTextBox" />
                         <input id="${id}FromTime" title="" name="FromTime" data-dojo-props="trim: true, placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox" />
                         <input id="${id}ToDate" title="${i18n.ToDate}:" name="EndDate" data-dojo-props="trim: true, placeHolder:'7/28/2013'" data-dojo-type="dijit.form.DateTextBox" />
