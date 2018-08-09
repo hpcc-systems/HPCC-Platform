@@ -70,8 +70,10 @@ define([
                 this.packagesGrid = registry.byId(this.id + "PackagesGrid");
                 this.targetSelect = registry.byId(this.id + "TargetSelect");
                 this.processSelect = registry.byId(this.id + "ProcessSelect");
+                this.processSelectFilter = registry.byId(this.id + "ProcessFilterSelect");
                 this.addPackageTargetSelect = registry.byId(this.id + "AddProcessMapTargetSelect");
                 this.addPackageProcessSelect = registry.byId(this.id + "AddProcessMapProcessSelect");
+                this.addPackageProcessFilter = registry.byId(this.id + "AddProcessMapProcessFilter");
                 this.addPackageMapDialog = registry.byId(this.id + "AddProcessMapDialog");
                 this.filter = registry.byId(this.id + "Filter");
             },
@@ -250,9 +252,14 @@ define([
                 this.targetSelect.init({
                     GetPackageMapTargets: true
                 });
+                
                 this.processSelect.init({
                     GetPackageMapProcesses: true
                 });
+
+                this.processSelectFilter.init({
+                    GetPackageMapProcessFilter: true
+                })
 
                 this.addPackageTargetSelect.init({
                     GetPackageMapTargets: true
@@ -382,7 +389,7 @@ define([
                 return {
                     Target: this.targetSelect.getValue(),
                     Process: this.processSelect.getValue(),
-                    ProcessFilter: "*"
+                    ProcessFilter: this.processSelectFilter.getValue()
                 };
             },
 
