@@ -104,7 +104,7 @@ define([
         countProperty: "Count"
     });
 
-    var self = {
+    var self = {  // jshint ignore:line
         TpServiceQuery: function (params) {
             lang.mixin(params.request, {
                 Type: "ALLSERVICES"

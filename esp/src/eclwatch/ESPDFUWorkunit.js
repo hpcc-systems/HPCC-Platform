@@ -78,7 +78,7 @@ define([
         }
     });
 
-    var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
+    var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {  // jshint ignore:line
         //  Asserts  ---
         _assertHasWuid: function () {
             if (!this.Wuid) {

@@ -5,8 +5,9 @@
   "devDependencies": {
     "gulp": "~3.9.1",
     "gulp-filter": "~3.0.1",
-    "jshint-stylish": "~2.1.0",
-    "gulp-jshint": "~2.0.0"
+    "jshint": "~2.9.5",
+    "jshint-stylish": "~2.2.1",
+    "gulp-jshint": "~2.1.0"
   },
   "main": "src/stub.js",
   "scripts": {

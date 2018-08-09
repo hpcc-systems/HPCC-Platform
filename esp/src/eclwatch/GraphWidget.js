@@ -83,7 +83,7 @@ define([
                         aValue = aValue != null ? aValue.valueOf() : aValue;
                         bValue = bValue != null ? bValue.valueOf() : bValue;
                         if (aValue != bValue) {
-                            return !!sort.descending == (bValue == null || aValue > bValue) ? -1 : 1;
+                            return !!sort.descending == (bValue == null || aValue > bValue) ? -1 : 1;  // jshint ignore:line
                         }
                     }
                     return 0;

@@ -42,7 +42,7 @@ define([
     // Reference: http://es5.github.io/#x15.4.4.21
     // https://tc39.github.io/ecma262/#sec-array.prototype.reduce
     if (!Array.prototype.reduce) {
-        Array.prototype.reduce = function (callback /*, initialValue*/) {
+        Array.prototype.reduce = function (callback /*, initialValue*/) {  // jshint ignore:line
             if (this === null) {
                 throw new TypeError('Array.prototype.reduce called on null or undefined');
             }
@@ -80,7 +80,7 @@ define([
                 // b. Let kPresent be ? HasProperty(O, Pk).
                 // c. If kPresent is true, then
                 //    i. Let kValue be ? Get(O, Pk).
-                //    ii. Let accumulator be ? Call(callbackfn, undefined, « accumulator, kValue, k, O »).
+                //    ii. Let accumulator be ? Call(callbackfn, undefined, accumulator, kValue, k, O).
                 if (k in o) {
                     value = callback(value, o[k], k, o);
                 }

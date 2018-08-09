@@ -138,7 +138,7 @@ define([
         }
     });
 
-    var packageMap = declare([ESPUtil.Singleton], {
+    var packageMap = declare([ESPUtil.Singleton], {  // jshint ignore:line
         constructor: function (args) {
             this.inherited(arguments);
             declare.safeMixin(this, args);
