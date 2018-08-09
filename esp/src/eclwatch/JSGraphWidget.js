@@ -367,7 +367,9 @@ define([
                     lpos = labelTpl.indexOf("%", rpos + 1);
                 }
                 retVal += labelTpl.substring(rpos + 1, labelTpl.length);
-                return retVal.split("\\n").join("\n");
+                return retVal.split("\\n").filter(function (line) {
+                    return !!line;
+                }).join("\n");
             },
 
             rebuild: function (merge) {

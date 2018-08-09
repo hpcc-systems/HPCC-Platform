@@ -23,6 +23,12 @@ export function xmlEncode2(str) {
         ;
 }
 
+export function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+
 export function parseXML(val) {
     var xmlDoc;
     if ((window as any).DOMParser) {
@@ -337,7 +343,7 @@ export function alphanumCase(a, b) {
     return aa.length - bb.length;
 }
 
-export function alphanumSort(arr, col, caseInsensitive, reverse) {
+export function alphanumSort(arr, col, caseInsensitive, reverse: boolean = false) {
     if (arr && arr instanceof Array) {
         arr.sort(function (l, r) {
             if (caseInsensitive) {
@@ -358,6 +364,9 @@ export function stringLowerSort(arr: object[], col: string) {
 
 export function resolve(hpccWidget, callback) {
     function doLoad(widget) {
+        if (widget[hpccWidget]) {
+            widget = widget[hpccWidget];
+        }
         if (widget.fixCircularDependency) {
             widget = widget.fixCircularDependency;
         }
@@ -450,7 +459,10 @@ export function resolve(hpccWidget, callback) {
             require(["hpcc/GraphsWidget"], doLoad);
             break;
         case "GraphTreeWidget":
-            require(["hpcc/GraphTreeWidget"], doLoad);
+            require(["src/GraphTreeWidget"], doLoad);
+            break;
+        case "GraphTree7Widget":
+            require(["src/GraphTree7Widget"], doLoad);
             break;
         case "Graph7Widget":
             require(["hpcc/Graph7Widget"], doLoad);

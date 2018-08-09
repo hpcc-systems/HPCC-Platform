@@ -131,7 +131,7 @@ define([
                 return Utility.getImageHTML(this.getStateImageName(row));
             },
 
-            createGridColumns: function() {
+            createGridColumns: function () {
                 var context = this;
                 switch (this.mode) {
                     case "WU":
@@ -278,7 +278,7 @@ define([
                     }
                 }
                 var title = row.Name;
-                var delayWidget = "Graph7Widget";
+                var delayWidget = "GraphTree7Widget";
                 var delayProps = {
                     forceJS: true
                 };
