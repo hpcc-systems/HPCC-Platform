@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -221,10 +221,9 @@
           <para>If it is running, stop the HPCC system, using this command in
           a terminal window:</para>
 
-                     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
-	                          xpointer="element(/1)"
-	                          xmlns:xi="http://www.w3.org/2001/XInclude" />
-
+          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
+                      xpointer="element(/1)"
+                      xmlns:xi="http://www.w3.org/2001/XInclude" />
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -240,7 +239,7 @@
                     fileref="images/OSSgr3.png" /></entry>
 
                     <entry>You can use this command to confirm HPCC processes
-                    are stopped:<para> <programlisting>sudo /etc/init.d/hpcc-init status</programlisting>
+                    are stopped:<para> <programlisting>sudo systemctl status hpccsystems-platform.target</programlisting>
                     </para></entry>
                   </row>
                 </tbody>
@@ -392,10 +391,9 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           role="bold">every</emphasis> node. The following command starts the
           HPCC system on an individual node:</para>
 
-                     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
-	                          xpointer="element(/1)"
-	                          xmlns:xi="http://www.w3.org/2001/XInclude" />
-
+          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+                      xpointer="element(/1)"
+                      xmlns:xi="http://www.w3.org/2001/XInclude" />
 
           <para></para>
 
@@ -414,10 +412,10 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                   <entry><para>You may want to create a script to push this
                   command out to every node. A sample script is provided with
                   HPCC. Use the following command to start HPCC on all
-                  nodes:</para>            <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
-                        xpointer="element(/1)"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
-</entry>
+                  nodes:</para> <xi:include
+                  href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" /></entry>
                 </row>
               </tbody>
             </tgroup>
@@ -655,10 +653,11 @@ ds_out := ROW ({res},MathService.MathService.t_AddThisResponse);
 OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
           </listitem>
 
-          <listitem><?dbfo keep-together="always"?>
-            <para>Using the <emphasis
-            role="bold">Target</emphasis> drop list, select
-            <emphasis>Roxie</emphasis> as the Target cluster.</para>
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Using the <emphasis role="bold">Target</emphasis> drop list,
+            select <emphasis>Roxie</emphasis> as the Target cluster.</para>
 
             <para><figure>
                 <title>Target Roxie</title>
