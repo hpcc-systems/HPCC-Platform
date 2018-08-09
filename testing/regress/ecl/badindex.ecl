@@ -15,9 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
+//version newIndexReadMapping=false
+//version newIndexReadMapping=true,noroxie,nothor
+
 // Testing various indexes that might present tricky cases for remote projection/filtering
 
 import ^ as root;
+newIndexReadMapping := #IFDEFINED(root.newIndexReadMapping, false);
+
+#option ('newIndexReadMapping', newIndexReadMapping);
+
 import $.setup;
 prefix := setup.Files(false, false).IndexPrefix;
 

@@ -319,6 +319,7 @@ IAtom * onceAtom;
 IAtom * onFailAtom;
 IAtom * onWarningAtom;
 IAtom * optAtom;
+IAtom * __option__Atom;
 IAtom * orderedAtom;
 IAtom * _ordered_Atom;
 IAtom * _origin_Atom;
@@ -784,6 +785,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(onFail);
     MAKEATOM(onWarning);
     MAKEATOM(opt);
+    MAKEATOM(__option__);
     MAKEATOM(ordered);
     MAKESYSATOM(ordered);
     MAKESYSATOM(origin);

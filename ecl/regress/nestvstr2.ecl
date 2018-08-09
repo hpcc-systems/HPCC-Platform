@@ -40,7 +40,7 @@ end;
 d1 := dataset([{'id1', '20030911', 5, x'1234567890'}, {'id2', '20030910', 3, x'123456'}], rawLayout);
 //output(d1,,'imgfile', overwrite);
 
-d := dataset('imgfile', { rawLayout x, unsigned8 _fpos{virtual(fileposition)} }, FLAT, virtual(legacy));
+d := dataset('imgfile', { rawLayout x, unsigned8 _fpos{virtual(fileposition)} }, FLAT, __OPTION__(legacy));
 i := index(d, { x.dl, _fpos }, 'imgindex');
 
 buildindex(i, overwrite);

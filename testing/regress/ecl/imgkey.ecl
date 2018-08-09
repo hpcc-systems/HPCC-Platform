@@ -67,7 +67,7 @@ d1 := dataset([
     rawLayout);
 output(d1,,prefix + 'imgfile', overwrite);
 
-d := dataset(prefix + 'imgfile', rawLayout1, FLAT, virtual(legacy));
+d := dataset(prefix + 'imgfile', rawLayout1, FLAT, __option__(legacy(true)));
 i := index(d, keylayout, 'imgindex');
 
 rawtrim := table(d, { dl, date, unsigned2 seq:=0, unsigned2 num := 0, imgLength, _fpos});

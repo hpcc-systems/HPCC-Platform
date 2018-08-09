@@ -848,6 +848,7 @@ ONFAIL              { RETURNSYM(ONFAIL); }
 ONLY                { RETURNSYM(ONLY); }
 ONWARNING           { RETURNSYM(ONWARNING); }
 OPT                 { RETURNSYM(OPT); }
+__OPTION__          { RETURNSYM(__OPTION__); }
 ORDERED             { RETURNSYM(ORDERED); }
 OUTER               { RETURNSYM(OUTER); }
 OUTPUT              { 

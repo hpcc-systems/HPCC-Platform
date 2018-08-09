@@ -171,7 +171,7 @@ extern DEFTYPE_API ITypeInfo *makeSwapIntType(int size, bool isSigned);
 extern DEFTYPE_API ITypeInfo *makePackedIntType(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo *makePackedIntType(int size, bool isSigned);
 extern DEFTYPE_API ITypeInfo *makeFilePosType(ITypeInfo *basetype);
-extern DEFTYPE_API ITypeInfo *makeKeyedType(ITypeInfo *basetype);
+extern DEFTYPE_API ITypeInfo *makeKeyedIntType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeRealType(int size);
 extern DEFTYPE_API ITypeInfo *makeDataType(int size);
 extern DEFTYPE_API ITypeInfo *makeBitfieldType(int sizeInBits, ITypeInfo * basetype = NULL);

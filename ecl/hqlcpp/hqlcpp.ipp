@@ -811,6 +811,7 @@ struct HqlCppOptions
     bool                newDiskReadMapping;
     bool                transformNestedSequential;
     bool                forceAllProjectedDiskSerialized;
+    bool                newIndexReadMapping;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
