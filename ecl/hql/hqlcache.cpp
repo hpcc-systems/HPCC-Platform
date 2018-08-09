@@ -353,6 +353,8 @@ static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type)
     case type_token:
         //Possible, but the default testing code doesn't work
         return nullptr;
+    case type_utf8:
+    case type_string:
     case type_real:
     case type_decimal:
     case type_int:
@@ -391,6 +393,7 @@ static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr)
             case type_record:
             case type_enumerated:
             case type_groupedtable:
+            case type_dictionary:
                 return nullptr;
             }
             funcArgs.append(*createParameter(param->queryId(),(unsigned)expr->querySequenceExtra(), getFullyUnqualifiedType(param->queryType()), dummyAttrs));
