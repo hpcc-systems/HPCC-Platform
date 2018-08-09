@@ -2604,7 +2604,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
             else
                 optMetaLocation.clear();
         }
-        else if (iter.matchOption(tempArg, "--neverSimplify"))
+        else if (iter.matchOption(tempArg, "--neversimplify"))
         {
             appendNeverSimplifyList(tempArg);
         }
