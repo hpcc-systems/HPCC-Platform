@@ -37,18 +37,21 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -265,9 +268,8 @@
         <para>The easiest way to schedule the backup process is to create a
         cron job. Cron is a daemon that serves as a task scheduler.</para>
 
-        <para>Cron tab (short for CRON TABle) is a text file that contains a
-        the task list. To edit with the default editor, use the
-        command:</para>
+        <para>Cron tab (short for CRON TABle) is a text file that contains the
+        task list. To edit with the default editor, use the command:</para>
 
         <programlisting>sudo crontab -e</programlisting>
 
