@@ -56,7 +56,9 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id === this.id + "_Grid") {} else if (currSel.id === this.definitionQueryWidget.id && !this.definitionQueryWidget.initalized) {
+                if (currSel.id === this.id + "_Grid") {
+                    this.refreshGrid()
+                } else if (currSel.id === this.definitionQueryWidget.id && !this.definitionQueryWidget.initalized) {
                     this.definitionQueryWidget.init({
                         firstLoad: true
                     });
