@@ -12312,12 +12312,19 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
         throw;
     }
     OwnedHqlExpr parsed = scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
-    bool canCache = parsed && (parsed->getOperator() != no_forwardscope) && !alreadySimplified;
-    bool isMacro = parsed && parsed->isMacro();
+    bool canCache = false;
+    bool isMacro = false;
+    bool neverSimplify = false;
+    if (parsed)
+    {
+        canCache = (parsed->getOperator() != no_forwardscope) && !alreadySimplified ;
+        isMacro = parsed->isMacro();
+        neverSimplify = isMacro || ctx.neverSimplify(fullName);
+    }
     ctx.incrementAttribsProcessed();
     if (canCache && (ctx.syntaxChecking() || ctx.hasCacheLocation()))
     {
-        OwnedHqlExpr simplified = isMacro ? nullptr : createSimplifiedDefinition(parsed);
+        OwnedHqlExpr simplified = neverSimplify ? nullptr : createSimplifiedDefinition(parsed);
         if (ctx.hasCacheLocation())
             attrCtx.createCache(simplified, isMacro);
         if (simplified)

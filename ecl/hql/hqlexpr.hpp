@@ -42,7 +42,7 @@
 
 //This should be defined, but HOLe does not cope with variable length stored strings.  Need to wait until HOLe is integrated into thor.
 //#define STORED_CAN_CHANGE_LENGTH
-
+#include <regex>
 #include "hql.hpp"
 #include "jhash.hpp"
 #include "jprop.hpp"
@@ -913,6 +913,8 @@ public:
     inline void setCheckSimpleDef() { checkSimpleDef = true; }
     inline void setRegenerateCache() { regenerateCache = true; }
     inline void setIgnoreCache() { ignoreCache = true; }
+    void setNeverSimplify(const char *regex) { neverSimplifyRegEx.assign(regex, std::regex_constants::icase); neverSimplifyEnabled = true; };
+    bool neverSimplify(const char *fullname) { return neverSimplifyEnabled? std::regex_match(fullname, neverSimplifyRegEx):false; };
     inline IPropertyTree * queryNestedDependTree() const { return nestedDependTree; }
 
     void beginMetaScope() { metaStack.append(*new FileParseMeta); }
@@ -960,6 +962,8 @@ private:
     void getCacheBaseFilename(StringBuffer & fullName, StringBuffer & baseFilename);
 
     MetaOptions metaOptions;
+    bool neverSimplifyEnabled = false;
+    std::regex neverSimplifyRegEx;
 
     struct {
         bool gatherNow;
@@ -1022,9 +1026,10 @@ public:
     inline bool ignoreCache() const { return parseCtx.ignoreCache; }
     inline bool createCache(IHqlExpression * simplified, bool isMacro) { return parseCtx.createCache(simplified, isMacro); }
     void reportTiming(const char * name);
-    inline void incrementAttribsSimplified() { ++parseCtx.numAttribsSimplified; };
-    inline void incrementAttribsProcessed() { ++parseCtx.numAttribsProcessed; };
-    inline void incrementAttribsFromCache() { ++parseCtx.numAttribsFromCache; };
+    inline void incrementAttribsSimplified() { ++parseCtx.numAttribsSimplified; }
+    inline void incrementAttribsProcessed() { ++parseCtx.numAttribsProcessed; }
+    inline void incrementAttribsFromCache() { ++parseCtx.numAttribsFromCache; }
+    inline bool neverSimplify(const char *fullname) { return parseCtx.neverSimplify(fullname); }
 protected:
 
     inline IPropertyTree * queryArchive() const { return parseCtx.archive; }

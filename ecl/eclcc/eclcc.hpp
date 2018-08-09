@@ -101,6 +101,7 @@ const char * const helpText[] = {
     "!   --logdetail=n Set the level of detail in the log file",
     "!   --maxErrors=<n> Limit the number of errors, aborting on the nth (default = 5)",
     "    --metacache=x Specify directory to store distributed meta information",
+    "!   --neversimplify=x Attributes/directory paths (comma separated list) that should not be simplified",
     "!   --nologfile   Do not write any logfile",
 #ifdef _WIN32
     "!   -m            Enable leak checking",
