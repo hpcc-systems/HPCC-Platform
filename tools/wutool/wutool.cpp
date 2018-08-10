@@ -30,6 +30,7 @@
 #include "dautils.hpp"
 #include "danqs.hpp"
 #include "dalienv.hpp"
+#include "digisign.hpp"
 
 #ifdef _USE_CPPUNIT
 #include "workunitservices.hpp"
@@ -679,6 +680,7 @@ class WuTool : public CppUnit::TestFixture
         CPPUNIT_TEST(testListByFilesWritten);
         CPPUNIT_TEST(testSortByThorTime);
         CPPUNIT_TEST(testSet);
+        CPPUNIT_TEST(testSignature);
         CPPUNIT_TEST(testResults);
         CPPUNIT_TEST(testWorkUnitServices);
         CPPUNIT_TEST(testDelete);
@@ -1445,6 +1447,38 @@ protected:
         end = msTick();
         DBGLOG("%u workunits reread in %d ms", testSize, end-start);
         start = end;
+    }
+
+    void testSignature()
+    {
+        IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromEnv();
+        if (pDSM)
+        {
+            if (!pDSM->isDigiSignerConfigured())
+            {
+                DBGLOG("Digital Signature 'HPCCPrivateKeyFile' not configured in environment.conf, skipping test");
+                return;
+            }
+            if (!pDSM->isDigiVerifierConfigured())
+            {
+                DBGLOG("Digital Signature 'HPCCPublicKeyFile' not configured in environment.conf, skipping test");
+                return;
+            }
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+            Owned<IWorkUnit> wu = factory->updateWorkUnit(wuids.item(0));
+            if (!wu->setSecuritySignature())
+            {
+                ASSERT(nullptr == "Digital Signing of workunit failed");
+                return;
+            }
+            if (!wu->validateSecuritySignature())
+            {
+                ASSERT(nullptr == "Verification of workunit Digital Signature failed");
+                return;
+            }
+        }
+        else
+            DBGLOG("Digital Signatures not configured in environment.conf, skipping test");
     }
 
     void testResults()

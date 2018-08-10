@@ -79,6 +79,7 @@ if(WSSQL_SERVICE)
         ${HPCC_SOURCE_DIR}/system/security/securesocket
         ${HPCC_SOURCE_DIR}/system/security/zcrypt
         ${HPCC_SOURCE_DIR}/system/security/LdapSecurity
+        ${HPCC_SOURCE_DIR}/system/security/digisign
         ${HPCC_SOURCE_DIR}/system/mp
         ${HPCC_SOURCE_DIR}/dali/dfu
         ${HPCC_SOURCE_DIR}/dali/base/
@@ -108,6 +109,7 @@ if(WSSQL_SERVICE)
         dalibase
         libantlr3c
         wuwebview
+        digisign
         )
     install(TARGETS ws_sql
         RUNTIME DESTINATION ${EXEC_DIR}

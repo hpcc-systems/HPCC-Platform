@@ -294,6 +294,7 @@ public:
     virtual IConstWUResultIterator & getResults() const;
     virtual IStringVal & getScope(IStringVal & str) const;
     virtual IStringVal & getSecurityToken(IStringVal & str) const;
+    virtual bool validateSecuritySignature() const;
     virtual WUState getState() const;
     virtual IStringVal & getStateEx(IStringVal & str) const;
     virtual __int64 getAgentSession() const;
@@ -372,6 +373,7 @@ public:
     void setStateEx(const char * text);
     void setAgentSession(__int64 sessionId);
     void setSecurityToken(const char *value);
+    bool setSecuritySignature();//compute and write security signature to workunit
     void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction);
     void setTracingValue(const char * propname, const char * value);
     void setTracingValueInt(const char * propname, int value);

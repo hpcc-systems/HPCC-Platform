@@ -34,6 +34,7 @@ include_directories (
          ./../../system/include 
          ./../../dali/base 
          ./../../system/jlib 
+         ./../../system/security/digisign
          ./../../common/environment 
          ./../../common/workunit 
          ./../../testing/unittests
@@ -61,6 +62,7 @@ target_link_libraries ( wutool
          eclrtl 
          deftype
          workunit 
+         digisign
          ${CPPUNIT_LIBRARIES}
     )
     

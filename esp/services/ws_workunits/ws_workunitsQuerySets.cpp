@@ -1670,8 +1670,18 @@ void copyWorkunitForRecompile(IEspContext &context, IWorkUnitFactory *factory, c
 
     wu->setAction(WUActionCompile);
 
-    SCMStringBuffer token;
-    wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+    //Digitally sign the workunit
+    if (!wu->setSecuritySignature())
+    {
+        if (isEmptyString(context.queryPassword()))
+            throw makeStringException(0, "Unable to sign workunit, please configure HPCCPrivateKeyFile");
+    }
+
+    if (!isEmptyString(context.queryPassword()))
+    {
+        SCMStringBuffer token;
+        wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+    }
 
     jobname.set(src->queryJobName());
     if (jobname.length())

@@ -50,6 +50,7 @@
 #include "wujobq.hpp"
 #include "environment.hpp"
 #include "workunit.ipp"
+#include "digisign.hpp"
 
 static int workUnitTraceLevel = 1;
 
@@ -3639,6 +3640,8 @@ public:
             { return c->getScope(str); }
     virtual IStringVal & getSecurityToken(IStringVal & str) const
             { return c->getSecurityToken(str); }
+    virtual bool validateSecuritySignature() const //validate the workunit SecuritySignature
+            { return c->validateSecuritySignature(); }
     virtual WUState getState() const
             { return c->getState(); }
     virtual IStringVal & getStateEx(IStringVal & str) const
@@ -3785,6 +3788,8 @@ public:
             { c->setResultLimit(value); }
     virtual void setSecurityToken(const char *value)
             { c->setSecurityToken(value); }
+    virtual bool setSecuritySignature()//compute and write SecuritySignature to workunit
+            { return c->setSecuritySignature(); }
     virtual void setState(WUState state)
             { c->setState(state); }
     virtual void setStateEx(const char * text)
@@ -6340,6 +6345,50 @@ void CLocalWorkUnit::setSecurityToken(const char *value)
 {
     CriticalBlock block(crit);
     p->setProp("@token", value);
+}
+
+bool CLocalWorkUnit::validateSecuritySignature() const
+{
+    CriticalBlock block(crit);
+    IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromEnv();
+    if (pDSM && pDSM->isDigiVerifierConfigured())
+    {
+        VStringBuffer wuSig("%s;%s", queryWuid(), queryUser());
+        VStringBuffer b64Signature("%s",p->queryProp("@signature"));
+        return  pDSM->digiVerify(wuSig, b64Signature);
+    }
+    WARNLOG("Unable to validate signature, please configure HPCCPublicKeyFile");
+    return false;
+}
+
+bool CLocalWorkUnit::setSecuritySignature()
+{
+    CriticalBlock block(crit);
+    IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromEnv();
+    if (pDSM && pDSM->isDigiSignerConfigured())
+    {
+        const char * wuid = queryWuid();
+        const char * user = queryUser();
+        if (isEmptyString(user))
+        {
+            ERRLOG("Cannot sign workunit, wuid not present");
+            return false;
+        }
+        if (isEmptyString(user))
+        {
+            ERRLOG("Cannot sign workunit, user ID not present");
+            return false;
+        }
+        VStringBuffer wuSig("%s;%s", wuid, user);
+        StringBuffer b64Signature;
+        if (pDSM->digiSign(wuSig, b64Signature))
+        {
+            p->setProp("@signature",b64Signature.str());
+            return true;
+        }
+    }
+    WARNLOG("Unable to create digital signature, please configure HPCCPrivateKeyFile");
+    return false;
 }
 
 bool CLocalWorkUnit::getRunningGraph(IStringVal &graphName, WUGraphIDType &subId) const
@@ -11413,9 +11462,20 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
     Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
     assertex(workunit);
 
-    SCMStringBuffer token;
-    createToken(wuid, username, password, token);
-    workunit->setSecurityToken(token.str());
+    //Digitally sign the workunit
+    if (!workunit->setSecuritySignature())
+    {
+        if (isEmptyString(password))
+            throw makeStringException(0, "Unable to sign workunit, please configure HPCCPrivateKeyFile");
+    }
+
+    if (!isEmptyString(password))
+    {
+        SCMStringBuffer token;
+        createToken(wuid, username, password, token);
+        workunit->setSecurityToken(token.str());
+    }
+
     StringAttr clusterName(workunit->queryClusterName());
     if (!clusterName.length()) 
         throw MakeStringException(WUERR_InvalidCluster, "No target cluster specified");

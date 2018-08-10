@@ -44,7 +44,7 @@ include_directories (
          ./../../../common/environment
          ./../../../system/hrpc 
          ./../../../system/xmllib 
-         ./../../../system/security/shared 
+         ./../../../system/security/shared
          ./../../../system/security/securesocket 
          ./../../../system/include 
          ./../../../common/workunit 
