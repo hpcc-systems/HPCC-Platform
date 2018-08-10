@@ -28,7 +28,6 @@ HPCC_ADD_SUBDIRECTORY (initfiles)
 
 set (    SRCS
          ${HPCC_SOURCE_DIR}/system/security/shared/authmap.cpp
-         ${HPCC_SOURCE_DIR}/system/security/shared/caching.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/singleUserSecurity.cpp
     )
 
