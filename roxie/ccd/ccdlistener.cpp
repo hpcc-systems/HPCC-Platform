@@ -174,7 +174,7 @@ public:
         lockQuery.appendf("<control:childlock thisEndpoint='%d' parent='%d'/>", activeIdxes.item(idx), myEndpoint);
         doChildQuery(idx, lockQuery.str(), lockReply);
         Owned<IPropertyTree> lockResult = createPTreeFromXMLString(lockReply.str(), ipt_caseInsensitive|ipt_fast);
-        int lockCount = lockResult->getPropInt("Lock", 0);
+        int lockCount = lockResult ? lockResult->getPropInt("Lock", 0) : 0;
         if (lockCount)
         {
             return lockCount;
