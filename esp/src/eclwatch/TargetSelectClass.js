@@ -284,11 +284,13 @@ define([
                 if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
                     var targetData = response.TpDropZoneQueryResponse.TpDropZones.TpDropZone;
                     for (var i = 0; i < targetData.length; ++i) {
-                        context.options.push({
-                            label: targetData[i].Name,
-                            value: targetData[i].Name,
-                            machine: targetData[i].TpMachines.TpMachine[0]
-                        });
+                        if (lang.exists("TpMachines.TpMachine", targetData[i])) {
+                            context.options.push({
+                                label: targetData[i].Name,
+                                value: targetData[i].Name,
+                                machine: targetData[i].TpMachines.TpMachine[0]
+                            });
+                        }
                     }
                     context._postLoad();
                 }
