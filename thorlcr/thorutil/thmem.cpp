@@ -1824,6 +1824,7 @@ protected:
     void reset()
     {
         spillableRows.kill();
+        spillableRows.setup(rowIf, ers_forbidden, stableSort);
         spillFiles.kill();
         totalRows = 0;
         overflowCount = outStreams = 0;
@@ -1870,7 +1871,6 @@ public:
     }
     ~CThorRowCollectorBase()
     {
-        reset();
         ensureSpillingCallbackRemoved();
     }
 // for IThorRowCollectorCommon implementation
