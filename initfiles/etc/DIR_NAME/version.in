@@ -1,1 +1,1 @@
-${projname}_${version}-${stagever}
+${version_file_prefix}${projname}_${version}-${stagever}

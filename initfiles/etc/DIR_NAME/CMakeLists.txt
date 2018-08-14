@@ -20,6 +20,10 @@ if(NOT WSSQL_SERVICE)
     set(WSSQL_SERVICE_BLOCK_E "-->")
 endif(NOT WSSQL_SERVICE)
 
+if(NOT "${CUSTOM_PACKAGE_SUFFIX}" STREQUAL "")
+    set(version_file_prefix "${CUSTOM_PACKAGE_SUFFIX}_")
+endif()
+
 configure_file("version.in" "version")
 configure_file("environment.conf.in" "environment.conf" IMMEDIATE)
 configure_file("environment.xml.in" "environment.xml" IMMEDIATE)
