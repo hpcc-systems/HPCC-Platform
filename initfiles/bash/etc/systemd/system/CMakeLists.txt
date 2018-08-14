@@ -29,7 +29,8 @@ set(componentList
     sasha
     thor
     thorslave
-    backupnode)
+    backupnode
+    sparkthor)
 
 set(dafilesrv "dafilesrv" "-L ${LOG_PATH} -I %i -D" "")
 set(dali "daserver" "--daemon %i" "dafilesrv.service")
@@ -48,7 +49,7 @@ foreach(component ${componentList})
     list(GET "${component}" 0 processName)
     list(GET "${component}" 1 processArgs)
     list(GET "${component}" 2 dependencies)
-    if("${component}" STREQUAL "thor" OR "${component}" STREQUAL "thorslave" OR "${component}" STREQUAL "hpcc-conf" OR "${component}" STREQUAL "thor-conf" OR "${component}" STREQUAL "backupnode")
+    if("${component}" STREQUAL "thor" OR "${component}" STREQUAL "thorslave" OR "${component}" STREQUAL "hpcc-conf" OR "${component}" STREQUAL "thor-conf" OR "${component}" STREQUAL "backupnode" OR "${component}" STREQUAL "sparkthor")
         configure_file(${component}@instance.service.in ${component}@.service @ONLY)
     else()
         configure_file(component@instance.service.in ${component}@.service @ONLY)

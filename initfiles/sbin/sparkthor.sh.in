@@ -1,0 +1,51 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+
+_command=${1:-start}
+_component=${2:-mysparkthor}
+
+exec 3>&2 2>/@LOG_PATH@/${_component}/sparkthor.sh.debug
+set -x
+
+export logfile="@LOG_PATH@/${_component}/sparkthor.log"
+source @INSTALL_DIR@/etc/init.d/hpcc_common
+source ./spark-env.sh
+
+# update slaves file in case state of environment has been altered since last run
+errorMessage=$( @EXEC_PATH@/daliadmin server=$DALISERVER clusternodes ${NODEGROUP} @RUNTIME_PATH@/${_component}/slaves 2>&1 )
+errcode=$?
+if [[ 0 != ${errcode} ]]; then
+    log "failed to lookup dali group for ${component}"
+    log "$errorMessage"
+    exit 1
+fi
+
+log "${_command} master"
+@INSTALL_DIR@/externals/spark-hadoop/sbin/${_command}-master.sh
+
+if [[ -f "@RUNTIME_PATH@/${_component}/slaves" ]]; then
+    workerlist=$(cat "@RUNTIME_PATH@/${_component}/slaves")
+    for slave in `echo "${workerlist}"`; do
+        log "connecting to ${slave} for remote worker ${_command}"
+        ssh -o StrictHostKeyChecking=no "${slave}" "@ADMIN_PATH@/sparkthor-worker.sh" "${_command}" "${_component}"
+    done
+else
+    @ADMIN_PATH@/sparkthor-worker.sh ${_command} ${_component}
+fi
+
+exit 0

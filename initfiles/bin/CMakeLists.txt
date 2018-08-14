@@ -35,7 +35,15 @@ FOREACH( iFILES
     ${outFiles}
     ${CMAKE_CURRENT_SOURCE_DIR}/init_ftslave
     ${CMAKE_CURRENT_SOURCE_DIR}/init_roxie_cluster
-	${CMAKE_CURRENT_BINARY_DIR}/init_backupnode
+    ${CMAKE_CURRENT_BINARY_DIR}/init_backupnode
 )
     install ( PROGRAMS ${iFILES} DESTINATION ${EXEC_DIR} COMPONENT Runtime )
 ENDFOREACH ( iFILES )
+
+if(USE_SPARK)
+    configure_file(init_sparkthor.in init_sparkthor @ONLY)
+    install(
+        PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/init_sparkthor
+        DESTINATION ${EXEC_DIR}
+        COMPONENT Runtime)
+endif()
