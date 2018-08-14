@@ -31,37 +31,37 @@
       fictitious. Any similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
-   
-     <xi:include  href="../../common/Version.xml" xpointer="FooterInfo" 
-                 xmlns:xi="http://www.w3.org/2001/XInclude">
-                  <xi:fallback>
-                    <para><emphasis>FooterInfo Failed to load</emphasis></para>
-                   </xi:fallback>
-     </xi:include>
+    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>FooterInfo Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
-                
-     <xi:include  href="../../common/Version.xml" xpointer="DateVer" 
-                 xmlns:xi="http://www.w3.org/2001/XInclude">
-                  <xi:fallback>
-                    <para><emphasis>DateVer Failed to load</emphasis></para>
-                   </xi:fallback>
-     </xi:include>
-		
+    <xi:include href="../../common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>DateVer Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-   
-     <xi:include  href="../../common/Version.xml" xpointer="Copyright" 
-                 xmlns:xi="http://www.w3.org/2001/XInclude">
-                  <xi:fallback>
-                    <para><emphasis>Copyright Failed to load</emphasis></para>
-                   </xi:fallback>
-     </xi:include>
-
-
+    <xi:include href="../../common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>Copyright Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <mediaobject role="logo">
       <imageobject>
@@ -1685,7 +1685,7 @@
       zone action buttons. You can also spray files to a cluster from this
       page.</para>
 
-      <sect2 id="Upload_Files">
+      <sect2 id="Upload_Files" role="brk">
         <title>Upload files</title>
 
         <para>You can upload files to your landing zone from the Landing Zone
@@ -1750,7 +1750,7 @@
             begin the upload.</para>
 
             <para>The Upload action button displays the progress as the file
-            uploads. </para>
+            uploads.</para>
           </listitem>
         </orderedlist>
 
