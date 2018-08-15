@@ -4134,7 +4134,11 @@ public:
         ActPrintLog("HASHAGGREGATE: stopping");
         if (localAggTable)
             localAggTable->reset();
-        aggregateStream.clear();
+        if (aggregateStream)
+        {
+            aggregateStream->stop();
+            aggregateStream.clear();
+        }
         PARENT::stop();
     }
     virtual void abort() override
