@@ -70,6 +70,7 @@ define([
             filter: null,
             dropZoneTarget2Select: null,
             serverFilterSelect: null,
+            replicateEnabled: null,
 
             postCreate: function (args) {
                 this.inherited(arguments);
@@ -109,6 +110,7 @@ define([
                 this.delimitedSprayReplicateCheckbox = registry.byId(this.id + "DelimitedSprayReplicate");
                 this.xmlSprayReplicateCheckbox = registry.byId(this.id + "XMLSprayReplicate");
                 this.sprayXMLButton = registry.byId(this.id + "SprayXMLButton");
+                this.jsonSprayReplicate = registry.byId(this.id + "JSONSprayReplicate");
                 this.variableSprayReplicateCheckbox = registry.byId(this.id + "VariableSprayReplicate");
                 this.blobSprayReplicateCheckbox = registry.byId(this.id + "BlobSprayReplicate");
                 this.filter = registry.byId(this.id + "Filter");
@@ -588,9 +590,12 @@ define([
                 this.sprayBlobDestinationSelect.on('change', function (value) {
                     context.checkReplicate(value, context.blobSprayReplicateCheckbox);
                 });
+
+                this.checkReplicate();
             },
 
             checkReplicate: function (value, checkBoxValue) {
+                var context = this;
                 FileSpray.GetSprayTargets({
                     request: {}
                 }).then(function (response) {
@@ -599,14 +604,24 @@ define([
                         for (var index in arr) {
                             if (arr[index].Name === value && arr[index].ReplicateOutputs === true) {
                                 checkBoxValue.set("disabled", false);
+                                context.replicateEnabled = true;
                                 break;
                             } else if (arr[index].Name === value) {
                                 checkBoxValue.set("disabled", true);
                                 break;
+                            } else if (!arr[index].ReplicateOutputs) {
+                                context.replicateEnabled = false;
                             }
                         }
                     }
                 });
+                this.fixedSprayReplicateCheckbox.set("disabled", !this.replicateEnabled);
+                this.delimitedSprayReplicateCheckbox.set("disabled", !this.replicateEnabled);
+                this.xmlSprayReplicateCheckbox.set("disabled", !this.replicateEnabled);
+                this.variableSprayReplicateCheckbox.set("disabled", !this.replicateEnabled);
+                this.blobSprayReplicateCheckbox.set("disabled", !this.replicateEnabled);
+                this.jsonSprayReplicate.set("disabled", !this.replicateEnabled);
+
             },
 
             initTab: function () {
