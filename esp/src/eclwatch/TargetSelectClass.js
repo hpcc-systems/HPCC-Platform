@@ -288,6 +288,7 @@ define([
                 }).then(function (response) {
                     if (lang.exists("GroupMemberEditInputResponse.Users.User", response)) {
                         var targetData = response.GroupMemberEditInputResponse.Users.User;
+                        Utility.stringLowerSort(targetData, "username");
                         for (var i = 0; i < targetData.length; ++i) {
                             context.options.push({
                                 label: targetData[i].username,
