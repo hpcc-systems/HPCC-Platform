@@ -25,8 +25,11 @@ newIndexReadMapping := #IFDEFINED(root.newIndexReadMapping, false);
 
 #option ('newIndexReadMapping', newIndexReadMapping);
 
+import Std.File AS FileServices;
+
 import $.setup;
 prefix := setup.Files(false, false).IndexPrefix;
+suffix := '-' + WORKUNIT;
 
 simple_rec := RECORD
   unsigned4 u4;
@@ -38,30 +41,38 @@ END;
 simple_ds := DATASET([{1,1,1,1},{2,2,2,2},{3,-3,3,-3},{4,4,4,4}], simple_rec);
 
 // Simple case - last field gets moved to fileposition and only 3 fields are considered keyed
-simple := INDEX(simple_ds, {simple_ds}, prefix + '1_simple.idx');
+simpleName := prefix + '1_simple' + suffix + '.idx';
+simple := INDEX(simple_ds, {simple_ds}, simpleName);
 
 // All fields keyed, so no fileposition
-allkeyed := INDEX(simple_ds, {simple_ds}, {}, prefix + '2_allkeyed.idx');
+allkeyedName := prefix + '2_allkeyed' + suffix + '.idx';
+allkeyed := INDEX(simple_ds, {simple_ds}, {}, allkeyedName);
 
 // Only one field, so fileposition
-onekeyed := INDEX(simple_ds, {s4}, prefix + '3_onekeyed.idx');
+onekeyedName := prefix + '3_onekeyed' + suffix + '.idx';
+onekeyed := INDEX(simple_ds, {s4}, onekeyedName);
  
 // Check bias - keyed fields get bias (but only if signed), and so do unkeyed (except in filepos field)
-payloadbias := INDEX(simple_ds, {u4},{s4,bu4,bs4}, prefix + '4_payloadbias.idx');
-payloadbias2 := INDEX(simple_ds, {u4},{bu4,bs4,s4}, prefix + '5_payloadbias2.idx');
+payloadbiasName := prefix + '4_payloadbias' + suffix + '.idx';
+payloadbias := INDEX(simple_ds, {u4},{s4,bu4,bs4}, payloadbiasName);
+
+payloadbias2Name := prefix + '5_payloadbias2' + suffix + '.idx';
+payloadbias2 := INDEX(simple_ds, {u4},{bu4,bs4,s4}, payloadbias2Name);
 
 // Check for tricky types - nested records in payload
-nestrec :=  INDEX(simple_ds, {u4}, {simple_rec r := ROW({u4,s4,bu4,bs4}, simple_rec) }, prefix + '6_nestrec.idx');
+nestrecName := prefix + '6_nestrec' + suffix + '.idx';
+nestrec :=  INDEX(simple_ds, {u4}, {simple_rec r := ROW({u4,s4,bu4,bs4}, simple_rec) }, nestrecName);
 
 // Check for unserializable types in payload
+unserializedName := prefix + '7_ifrec' + suffix + '.idx';
+unserialized := INDEX(simple_ds, {u4}, { u4, ifblock(self.u4!=2) s4,END,bu4,bs4 }, unserializedName);
 
-unserialized := INDEX(simple_ds, {u4}, { u4, ifblock(self.u4!=2) s4,END,bu4,bs4 }, prefix + '7_ifrec.idx');
-
-unserialized2 := INDEX(simple_ds, {u4}, { boolean b := u4!=2, ifblock(self.b) s4,bu4,bs4 END }, prefix + '8_ifrec.idx');
+unserialized2Name := prefix + '8_ifrec' + suffix + '.idx';
+unserialized2 := INDEX(simple_ds, {u4}, { boolean b := u4!=2, ifblock(self.b) s4,bu4,bs4 END }, unserialized2Name);
 
 // Check for nested ifblocks
-
-unserialized3 := INDEX(simple_ds, {u4}, { u4, ifblock(self.u4!=2) s4, ifblock(self.u4 != 2) bu4 END,END,bs4 }, prefix + '9_ifrec.idx');
+unserialized3Name := prefix + '9_ifrec' + suffix + '.idx';
+unserialized3 := INDEX(simple_ds, {u4}, { u4, ifblock(self.u4!=2) s4, ifblock(self.u4 != 2) bu4 END,END,bs4 }, unserialized3Name);
 
 // Check for tricky types - child datasets 
 // Check for tricky types - utf8 
@@ -79,7 +90,8 @@ END;
 
 set_ds := DATASET([{1,[1,2,3],[1,2,3],[1,2,3]},{2,[2,3,4],[2,3,4],[2,3,4]},{3,[-3,-4,-5],[3,4,5],[-3,-4,-5]},{4,[4,5,6],[4,5,6],[4,5,6]}], set_rec);
 
-keyedset := INDEX(set_ds, {u4},{s4,bu4,bs4 }, prefix + '10_setrec.idx');
+keyedsetName := prefix + '10_setrec' + suffix + '.idx';
+keyedset := INDEX(set_ds, {u4},{s4,bu4,bs4 }, keyedsetName);
 
 // Check for multipart keys, noroot keys, etc
 
@@ -133,4 +145,17 @@ SEQUENTIAL(
   BUILDINDEX(keyedset, OVERWRITE),
   OUTPUT(choosen(keyedset, 5)); 
   //OUTPUT(choosen(keyedset(keyed(u4=[3,4,5])), 5)) 
+
+
+  // Clean-Up
+  FileServices.DeleteLogicalFile(simpleName),
+  FileServices.DeleteLogicalFile(allkeyedName),
+  FileServices.DeleteLogicalFile(onekeyedName),
+  FileServices.DeleteLogicalFile(payloadbiasName),
+  FileServices.DeleteLogicalFile(payloadbias2Name),
+  FileServices.DeleteLogicalFile(nestrecName),
+  FileServices.DeleteLogicalFile(unserializedName),
+  FileServices.DeleteLogicalFile(unserialized2Name),
+  FileServices.DeleteLogicalFile(unserialized3Name),
+  FileServices.DeleteLogicalFile(keyedsetName);
 );
