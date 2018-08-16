@@ -2040,7 +2040,7 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", "employeeId", NULL};
+            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", "employeeId", "distinguishedName", "userAccountControl", "pwdLastSet", NULL};
             CLDAPMessage searchResult;
             int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
 
@@ -2050,6 +2050,7 @@ public:
                 return false;
             }
 
+            bool accountPwdNeverExpires = false;
             ((CLdapSecUser*)&user)->setPosixenabled(false);
             // Go through the search results by checking message types
             for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
@@ -2076,6 +2077,27 @@ public:
                             ((CLdapSecUser*)&user)->setHomedirectory(vals.queryCharValue(0));
                         else if(stricmp(attribute, "loginshell") == 0)
                             ((CLdapSecUser*)&user)->setLoginshell(vals.queryCharValue(0));
+                        else if(stricmp(attribute, "distinguishedName") == 0)
+                            ((CLdapSecUser*)&user)->setDistinguishedName(vals.queryCharValue(0));
+                        else if((stricmp(attribute, "userAccountControl") == 0))
+                        {
+                            //UF_DONT_EXPIRE_PASSWD 0x10000
+                            CLDAPGetValuesLenWrapper vals(ld, message, attribute);
+                            if (vals.hasValues())
+                                if (atoi((char*)vals.queryCharValue(0)) & 0x10000)//this can be true at the account level, even if domain policy requires password
+                                    accountPwdNeverExpires = true;
+                        }
+                        else if(stricmp(attribute, "pwdLastSet") == 0)
+                        {
+                            CLDAPGetValuesLenWrapper valsLen(ld, message, attribute);
+                            if (!m_domainPwdsNeverExpire && !accountPwdNeverExpires && valsLen.hasValues())
+                            {
+                                CDateTime expiry;
+                                char * val = (char*)valsLen.queryCharValue(0);
+                                calcPWExpiry(expiry, (unsigned)strlen(val), val);
+                                ((CLdapSecUser*)&user)->setPasswordExpiration(expiry);
+                            }
+                        }
                         else if(stricmp(attribute, "objectClass") == 0)
                         {
                             int valind = 0;
