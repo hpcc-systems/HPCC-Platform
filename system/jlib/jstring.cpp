@@ -2200,7 +2200,6 @@ inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch, unsigned &
             break;
         case '\"':
         case '\\':
-        case '/':
             s.append('\\');
             s.append(next);
             break;
