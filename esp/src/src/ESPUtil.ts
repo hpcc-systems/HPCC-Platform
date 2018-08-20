@@ -152,7 +152,7 @@ var GridHelper = declare(null, {
     loadingMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.loadingMessage + "</span>",
 
     postCreate: override(function (inherited) {
-        inherited();
+        inherited(arguments);
 
         this.__hpcc_tooltip = new Tooltip({
             connectId: [this.id],
@@ -182,7 +182,7 @@ var GridHelper = declare(null, {
     },
 
     clearSelection: override(function (inherited) {
-        inherited();
+        inherited(arguments);
         query("input[type=checkbox]", this.domNode).forEach(function (node) {
             node.checked = false;
             node.indeterminate = false;

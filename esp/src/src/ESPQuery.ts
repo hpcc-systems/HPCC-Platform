@@ -83,7 +83,7 @@ var Store = declare([ESPRequest.Store], {
 var Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
     i18n: nlsHPCC,
     constructor: ESPUtil.override(function (inherited, args) {
-        inherited();
+        inherited(arguments);
         if (args) {
             declare.safeMixin(this, args);
         }

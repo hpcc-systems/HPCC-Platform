@@ -149,7 +149,7 @@ var InheritedPermissionStore = declare([Memory], {
 
     put: ESPUtil.override(function (inherited, row) {
         this.get(row.__hpcc_id);
-        var retVal = inherited();
+        var retVal = inherited(arguments);
         var request = {
             basedn: row.basedn,
             rtype: row.rtype,
@@ -231,7 +231,7 @@ var AccountResourcesStore = declare([Memory], {
 
     put: ESPUtil.override(function (inherited, row) {
         this.get(row.__hpcc_id);
-        var retVal = inherited();
+        var retVal = inherited(arguments);
         var request = {
             basedn: row.basedn,
             rtype: row.rtype,
@@ -307,7 +307,7 @@ var IndividualPermissionsStore = declare([Memory], {
 
     put: ESPUtil.override(function (inherited, row) {
         this.get(row.__hpcc_id);
-        var retVal = inherited();
+        var retVal = inherited(arguments);
         var request = {
             basedn: row.basedn,
             rtype: row.rtype,
