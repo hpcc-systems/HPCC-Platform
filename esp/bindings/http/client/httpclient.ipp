@@ -121,6 +121,7 @@ public:
     virtual int sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response);
     virtual int sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent = false);
     virtual int sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent = false);
+    virtual int proxyRequest(IHttpMessage *request, IHttpMessage *response);
 
     virtual int postRequest(ISoapMessage &req, ISoapMessage& resp);
 

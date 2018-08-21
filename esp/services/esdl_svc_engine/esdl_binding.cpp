@@ -40,6 +40,7 @@
 #include "esdl_monitor.hpp"
 
 #include "loggingagentbase.hpp"
+#include "httpclient.ipp"
 
 /*
  * trim xpath at first instance of element
@@ -1199,6 +1200,8 @@ bool EsdlBindingImpl::reloadBindingFromCentralStore(const char* bindingId)
             if (srvdef)
                 initEsdlServiceInfo(*srvdef);
 
+            configureProxies(tempEsdlBndCfg, loadedname);
+
             m_pESDLService->m_espServiceType.set(loadedname);
             m_pESDLService->configureTargets(tempEsdlBndCfg, loadedname);
             m_esdlBndCfg.setown(tempEsdlBndCfg.getClear());
@@ -1219,6 +1222,33 @@ bool EsdlBindingImpl::reloadBindingFromCentralStore(const char* bindingId)
         DBGLOG("Exception caught in EsdlBindingImpl::EsdlBindingImpl: Could Not load Binding %s information from Dali!", bindingId);
     }
     return true;
+}
+
+void EsdlBindingImpl::configureProxies(IPropertyTree *cfg, const char *service)
+{
+    VStringBuffer xpath("Definition[@esdlservice='%s']/Methods", service);
+    IPropertyTree *target_cfg = cfg->queryPropTree(xpath.str());
+
+    if (!target_cfg)
+    {
+        DBGLOG("ESDL Binding proxies: esdl service %s methods configuration not found", service);
+        return;
+    }
+
+    Owned<IPropertyTreeIterator> proxies = target_cfg->getElements("Proxy");
+    if (!proxies->first()) //no proxies at all
+        return;
+
+    m_proxyInfo.setown(createPTree(ipt_caseInsensitive));
+    IPropertyTree *serviceTree = m_proxyInfo->addPropTree(service);
+
+    //method definitions win, these methods will not be proxied
+    Owned<IPropertyTreeIterator> methods = target_cfg->getElements("Method");
+    ForEach(*methods)
+        serviceTree->addPropTree("Method", createPTreeFromIPT(&methods->query()));
+
+    ForEach(*proxies)
+        serviceTree->addPropTree("Proxy", createPTreeFromIPT(&proxies->query()));
 }
 
 void EsdlBindingImpl::clearBindingState()
@@ -1272,6 +1302,8 @@ void EsdlBindingImpl::addService(const char * name,
 
                 if (srvdef)
                     initEsdlServiceInfo(*srvdef);
+
+                configureProxies(m_esdlBndCfg, name);
 
                  m_pESDLService->configureTargets(m_esdlBndCfg, name);
                  CEspBinding::addService(name, host, port, service);
@@ -1548,6 +1580,41 @@ void parseNamespace(const char *ns, StringBuffer &service, StringBuffer &method,
     }
 }
 
+bool EsdlBindingImpl::checkForMethodProxy(const char *service, const char *method, StringBuffer &forwardTo)
+{
+    if (!m_proxyInfo || !method || !*method)
+        return false;
+
+    IPropertyTree *proxyService = m_proxyInfo->queryPropTree(service);
+    if (!proxyService)
+        return false;
+
+    VStringBuffer xpath("Method[@name='%s']", method);
+    if (proxyService->hasProp(xpath)) //if method is configured locally, don't proxy
+        return false;
+
+    xpath.setf("Proxy[@method='%s']/@forwardTo", method); //exact (non-wild) match wins
+    forwardTo.set(proxyService->queryProp(xpath));
+    if (forwardTo.length())
+        return true;
+
+    size_t len = strlen(method);
+    if (len && (*method=='_' || method[len-1]=='_')) //methods beginning or ending in '_' can't be wild card selected (these are generally internal methods, use explicit match string to override)
+        return false;
+
+    Owned<IPropertyTreeIterator> proxies = proxyService->getElements("Proxy");
+    ForEach(*proxies)
+    {
+        const char *wildname = proxies->query().queryProp("@method");
+        if (isWildString(wildname) && WildMatch(method, wildname, true))
+        {
+            forwardTo.set(proxies->query().queryProp("@forwardTo"));
+            return true;
+        }
+    }
+    return false;
+}
+
 int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
                                        CHttpResponse* response)
 {
@@ -1579,6 +1646,17 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
         IEsdlDefMethod *mthdef=NULL;
         if (getSoapMethodInfo(in, reqname, ns))
         {
+            if (m_proxyInfo)
+            {
+                StringBuffer proxyMethod(reqname);
+                size32_t len = reqname.length()-7;
+                if (len>0 && strieq(reqname.str()+len, "Request"))
+                    proxyMethod.setLength(len);
+                StringBuffer proxyAddress;
+                if (checkForMethodProxy(request->queryServiceName(), proxyMethod, proxyAddress))
+                    return forwardProxyMessage(proxyAddress, request, response);
+            }
+
             StringBuffer nssrv;
             StringBuffer nsmth;
             StringBuffer nsver;
@@ -1795,6 +1873,48 @@ int EsdlBindingImpl::onJavaPlugin(IEspContext &context,
     return 0;
 }
 
+inline bool hasHttpPrefix(const char *addr)
+{
+    if (hasPrefix(addr, "http", false))
+    {
+        const char *finger = addr + 4;
+        if (*finger=='s' || *finger=='S')
+            finger++;
+        if (*finger==':')
+            return true;
+    }
+    return false;
+}
+
+int EsdlBindingImpl::forwardProxyMessage(const char *addr, CHttpRequest* request, CHttpResponse* response)
+{
+    Owned<IHttpClientContext> httpctx = getHttpClientContext();
+
+    StringBuffer url;
+    if (!hasHttpPrefix(addr))
+        url.append("http://");
+    url.append(addr).append(request->queryPath());
+
+    const char *paramstr = request->queryParamStr();
+    if (paramstr && *paramstr)
+        url.append('?').append(paramstr);
+
+    DBGLOG("Forwarding request to %s", url.str());
+    Owned<IHttpClient> cl = httpctx->createHttpClient(nullptr, url);
+    cl->proxyRequest(request, response);
+
+    StringBuffer status;
+    DBGLOG("Forwarded request status %s", response->getStatus(status).str());
+
+    int statusCode = atoi(status.str());
+    if (statusCode == HTTP_STATUS_UNAUTHORIZED_CODE)
+        response->sendBasicChallenge(getChallengeRealm(), false);
+    else
+        response->send();
+
+    return 0;
+}
+
 int EsdlBindingImpl::onGet(CHttpRequest* request, CHttpResponse* response)
 {
     Owned<IMultiException> me = MakeMultiException("DynamicESDL");
@@ -1812,7 +1932,32 @@ int EsdlBindingImpl::onGet(CHttpRequest* request, CHttpResponse* response)
         firstPathNode(thepath, root);
 
         if (!strieq(root, "esdl"))
+        {
+            if (m_proxyInfo)
+            {
+                sub_service sstype = sub_serv_unknown;
+                request->getEspPathInfo(sstype);
+
+                switch (sstype)
+                {
+                //only proxy actual service method calls, not meta service calls
+                case sub_serv_method:
+                case sub_serv_query:
+                case sub_serv_instant_query:
+                {
+                    StringBuffer method;
+                    nextPathNode(thepath, method);
+                    StringBuffer proxyAddress;
+                    if (checkForMethodProxy(root, method, proxyAddress))
+                        return forwardProxyMessage(proxyAddress, request, response);
+                    break;
+                }
+                default:
+                    break;
+                }
+            }
             return EspHttpBinding::onGet(request, response);
+        }
 
         StringBuffer action;
         nextPathNode(thepath, action);
@@ -2215,6 +2360,16 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
         const char * methodName = request->queryServiceMethod();
         const char * serviceName = request->queryServiceName();
 
+        if (m_proxyInfo)
+        {
+            StringBuffer proxyAddress;
+            if (checkForMethodProxy(serviceName, methodName, proxyAddress))
+            {
+                forwardProxyMessage(proxyAddress, request, response);
+                return;
+            }
+        }
+
         StringBuffer content(request->queryContent());
         if (getEspLogLevel()>LogNormal)
             DBGLOG("EsdlBinding::%s::%s: JSON request: %s", serviceName, methodName, content.str());
@@ -2304,6 +2459,28 @@ void EsdlBindingImpl::handleHttpPost(CHttpRequest *request, CHttpResponse *respo
     StringBuffer paramStr;
 
     request->getEspPathInfo(sstype, &pathEx, &serviceName, &methodName, false);
+
+    if (m_proxyInfo)
+    {
+        switch (sstype)
+        {
+        //only proxy actual service method calls, not meta service calls
+        case sub_serv_method:
+        case sub_serv_query:
+        case sub_serv_instant_query:
+        {
+            StringBuffer proxyAddress;
+            if (checkForMethodProxy(serviceName, methodName, proxyAddress)) //usually won't catch SOAP requests, so will test again later when method is known.
+            {
+                forwardProxyMessage(proxyAddress, request, response);
+                return;
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
 
     switch (sstype)
     {
@@ -2502,29 +2679,14 @@ void EsdlBindingImpl::getRequestContent(IEspContext &context, StringBuffer & req
        params2xml(m_esdl, servicename, methodname, EsdlTypeRequest, request->queryParameters(), xmlstr, flags, context.getClientVersion());
        ESPLOG(LogMax,"params reqxml: %s", xmlstr.str());
 
-       VStringBuffer xpath("Target[@name=\"%s\"]", methodname);
-       Owned<IPropertyTree> tgtcfg = m_pESDLService->m_pServiceMethodTargets->getPropTree(xpath.str());
+       Owned<IPropertyTree> tgtctx;
+       Owned<IPropertyTree> req_pt = createPTreeFromXMLString(xmlstr.length(), xmlstr.str(), false);
 
-       if (tgtcfg)
-       {
-           const char *tgtQueryName =  tgtcfg->queryProp("@queryname");
+       Owned<IXmlWriterExt> writer = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_REQUEST_JSON) ? WTJSONRootless : WTStandard);
 
-           if (tgtQueryName && *tgtQueryName)
-           {
-               Owned<IPropertyTree> tgtctx;
-               Owned<IPropertyTree> req_pt = createPTreeFromXMLString(xmlstr.length(), xmlstr.str(), false);
+       m_pESDLService->m_pEsdlTransformer->process(context, EsdlRequestMode, m_espServiceName.get(), methodname, *req_pt.get(), writer.get(), flags, ns);
 
-               Owned<IXmlWriterExt> writer = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_REQUEST_JSON) ? WTJSONRootless : WTStandard);
-
-               m_pESDLService->m_pEsdlTransformer->process(context, EsdlRequestMode, m_espServiceName.get(), methodname, *req_pt.get(), writer.get(), flags, ns);
-
-               req.append(writer->str());
-           }
-       }
-       else
-       {
-           throw MakeStringException(-1, "ESDLBinding::%s::%s: Could not generate request content", servicename, methodname);
-       }
+       req.append(writer->str());
     }
 }
 
