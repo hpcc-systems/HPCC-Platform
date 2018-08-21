@@ -3278,7 +3278,6 @@ void WsWuHelpers::copyWsWorkunit(IEspContext &context, IWorkUnit &wu, const char
 
     queryExtendedWU(&wu)->copyWorkUnit(src, false, false);
 
-    wu.setDistributedAccessToken(wu.queryWuid(), context.queryUserId());
     wu.commit();
 }
 

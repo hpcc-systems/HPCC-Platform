@@ -1217,7 +1217,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual unsigned getResultLimit() const = 0;
     virtual IConstWUResultIterator & getResults() const = 0;
     virtual IStringVal & getScope(IStringVal & str) const = 0;
-    virtual void getDistributedAccessToken(IStringVal & datoken) const = 0;
+    virtual void getWorkunitDistributedAccessToken(IStringVal & datoken) const = 0;
     virtual IStringVal & getStateEx(IStringVal & str) const = 0;
     virtual __int64 getAgentSession() const = 0;
     virtual unsigned getAgentPID() const = 0;
@@ -1302,7 +1302,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setPriorityLevel(int level) = 0;
     virtual void setRescheduleFlag(bool value) = 0;
     virtual void setResultLimit(unsigned value) = 0;
-    virtual bool setDistributedAccessToken(const char * wuid, const char * user) = 0;
     virtual void setState(WUState state) = 0;
     virtual void setStateEx(const char * text) = 0;  // Indicates why blocked
     virtual void setAgentSession(__int64 sessionId) = 0;
@@ -1598,6 +1597,7 @@ extern WORKUNIT_API IConstWUResult * getWorkUnitResult(IConstWorkUnit * w, const
 extern WORKUNIT_API void updateSuppliedXmlParams(IWorkUnit * w);
 
 //workunit distributed access token support
+extern WORKUNIT_API bool isWorkunitDAToken(const char * distributedAccessToken);
 extern WORKUNIT_API bool extractFromWorkunitDAToken(const char * token, StringBuffer * wuid, StringBuffer * user, StringBuffer * privKey);
 extern WORKUNIT_API int verifyWorkunitDAToken(const char * distributedAccessToken);
 

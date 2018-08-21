@@ -327,7 +327,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 eclccCmd.appendf(" -scope=%s", wuScope);
             eclccCmd.appendf(" -cluster=%s", targetCluster);
             SCMStringBuffer token;
-            workunit->getDistributedAccessToken(token);
+            workunit->getWorkunitDistributedAccessToken(token);
             if (token.length())
                 eclccCmd.appendf(" -wuid=%s -token=%s", workunit->queryWuid(), token.str());
         }

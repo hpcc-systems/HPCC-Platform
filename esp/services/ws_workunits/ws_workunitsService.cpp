@@ -4634,10 +4634,6 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
             wu.setQueryText(srcxml->queryProp("Query/Text"));
     }
 
-    //TODO Not sure about the user part....
-    //Generate new token to match new wuid, user
-    wu->setDistributedAccessToken(wuid.str(), context.queryUser()->getName());
-
     wu->setState(WUStateCompiled);
     wu->commit();
     wu.clear();

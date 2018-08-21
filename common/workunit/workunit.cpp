@@ -3638,8 +3638,8 @@ public:
             { return c->getResults(); }
     virtual IStringVal & getScope(IStringVal & str) const
             { return c->getScope(str); }
-    virtual void getDistributedAccessToken(IStringVal & str) const
-            { return c->getDistributedAccessToken(str); }
+    virtual void getWorkunitDistributedAccessToken(IStringVal & str) const
+            { return c->getWorkunitDistributedAccessToken(str); }
     virtual WUState getState() const
             { return c->getState(); }
     virtual IStringVal & getStateEx(IStringVal & str) const
@@ -3784,8 +3784,6 @@ public:
             { c->setRescheduleFlag(value); }
     virtual void setResultLimit(unsigned value)
             { c->setResultLimit(value); }
-    virtual bool setDistributedAccessToken(const char * wuid, const char * user)
-            { return c->setDistributedAccessToken(wuid, user); }
     virtual void setState(WUState state)
             { c->setState(state); }
     virtual void setStateEx(const char * text)
@@ -4550,7 +4548,7 @@ IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *a
     Owned<CLocalWorkUnit> cw = _createWorkUnit(wuid, secmgr, secuser);
     if (scope)
         cw->setWuScope(scope);  // Note - this may check access rights and throw exception. Is that correct? We might prefer to only check access once, and this will check on the lock too...
-    cw->setDistributedAccessToken(wuid, secuser->getName());//create and sign the workunit distributed access token
+    cw->setDistributedAccessToken(secuser->getName());//create and sign the workunit distributed access token
     IWorkUnit* ret = &cw->lockRemote(false);   // Note - this may throw exception if user does not have rights.
     ret->setDebugValue("CREATED_BY", app, true);
     ret->setDebugValue("CREATED_FOR", scope, true);
@@ -6331,44 +6329,17 @@ void CLocalWorkUnit::setDebugAgentListenerIP(const char * ip)
     p->setProp("@DebugListenerIP", ip);
 }
 
-void CLocalWorkUnit::getDistributedAccessToken(IStringVal & datoken) const
+void CLocalWorkUnit::getWorkunitDistributedAccessToken(IStringVal & datoken) const
 {
     CriticalBlock block(crit);
     datoken.set(p->queryProp("@distributedAccessToken"));
 }
 
-bool CLocalWorkUnit::setDistributedAccessToken(const char * wuid, const char * user)
+bool CLocalWorkUnit::setDistributedAccessToken(const char * user)
 {
-#ifdef _DEBUG
-    const char * pTok = p->queryProp("@distributedAccessToken");
-    if (pTok)
-    {
-        ERRLOG("TODO!! Token has already been created for wu=%s user=%s", (char *)wuid, (char *)user);
-        PrintStackReport();
-        return true;
-    }
-#endif
-    if (isEmptyString(user))
-    {
-        ERRLOG("Cannot create workunit Distributed Access Token, user not provided");
-        return false;
-    }
-
-    if (isEmptyString(wuid))
-    {
-        ERRLOG("Cannot create workunit Distributed Access Token, wuid ID not provided");
-        return false;
-    }
-
-    if (!streq(wuid, queryWuid()))
-    {
-        ERRLOG("Cannot create workunit Distributed Access Token, given WUID does not match");
-        return false;
-    }
-
     CriticalBlock block(crit);
 
-    VStringBuffer datoken("HPCC[u=%s,w=%s]", user, wuid);
+    VStringBuffer datoken("HPCC[u=%s,w=%s]", user, queryWuid());
 
     IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
     if (pDSM && pDSM->isDigiSignerConfigured())
@@ -6863,40 +6834,51 @@ const char *clusterTypeString(ClusterType clusterType, bool lcrSensitive)
     throwUnexpected();
 }
 
+//Does given token appear to be in the right format. KeyFile and signature are optional
+//    HPCC[u=user,w=wuid]keyFile;signature
+bool isWorkunitDAToken(const char * distributedAccessToken)
+{
+    if (strncmp(distributedAccessToken, "HPCC[", 5) ||
+        !strstr(distributedAccessToken+5, "u=") ||
+        !strchr(distributedAccessToken+5, ',')  ||
+        !strstr(distributedAccessToken+5, "w=") ||
+        !strchr(distributedAccessToken+5, ']')  ||
+        !strchr(distributedAccessToken+5, ';'))
+    {
+        return false;
+    }
+    return true;//appears to be a workunit token
+}
+
 bool extractFromWorkunitDAToken(const char * distributedAccessToken, StringBuffer * wuid, StringBuffer * user, StringBuffer * privKey)
 {
-    if (strncmp(distributedAccessToken, "HPCC[", 5))
+    if (!isWorkunitDAToken(distributedAccessToken))
     {
         DBGLOG("Not a valid workunit distributed access token");
         return false;
     }
 
-    const char * finger;
-    if (user)
-    {
-        finger = strstr(distributedAccessToken+5, "u=");
-        if (finger)
-        {
-            finger += 2;
-            while (*finger && *finger != ',' && *finger != ']')
-                user->append(1, (const char *)finger++);
-        }
-    }
+    //Isolate string between []
+    StringBuffer tokenValues(distributedAccessToken + 5);
+    tokenValues.replace(']', (char)0);
 
-    if (wuid)
+    StringArray nameValues;
+    nameValues.appendList(tokenValues.str(), ",",true);
+
+    if (user || wuid)
     {
-        finger = strstr(distributedAccessToken+5, "w=");
-        if (finger)
+        for (int x = 0; x < nameValues.ordinality(); x++)
         {
-            finger += 2;
-            while (*finger && *finger != ',' && *finger != ']')
-                wuid->append(1, (const char *)finger++);
+            if (user && 0==strncmp(nameValues[x],"u=",2))//Extract user
+                user->append(nameValues[x] + 2);
+            else if (wuid && 0==strncmp(nameValues[x],"w=",2))//Extract wuid
+                wuid->append(nameValues[x] + 2);
         }
     }
 
     if (privKey)
     {
-        finger = strstr(distributedAccessToken+5, "]");
+        const char * finger = strchr(distributedAccessToken+5, ']');
         if (finger)
         {
             ++finger;
@@ -6918,31 +6900,18 @@ CriticalSection verifyWorkunitDATokenCrit;
 int verifyWorkunitDAToken(const char * distributedAccessToken)
 {
     CriticalBlock block(verifyWorkunitDATokenCrit);
-
-    //Extract user
-    StringBuffer user;
-    const char * finger = strstr(distributedAccessToken, "u=");
-    if (finger)
+    if (!isWorkunitDAToken(distributedAccessToken))
     {
-        finger += 2;
-        while (*finger && *finger != ',' && *finger != ']')
-            user.append(1, (const char *)finger++);
+        DBGLOG("Not a valid workunit distributed access token");
+        return false;
     }
 
-    //Extract wuid
-    StringBuffer wuid;
-    finger = strstr(distributedAccessToken, "w=");
-    if (finger)
-    {
-        finger += 2;
-        while (*finger && *finger != ',' && *finger != ']')
-            wuid.append(1, (const char *)finger++);
-    }
 
     //Validate signature
     IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
     if (pDSM && pDSM->isDigiVerifierConfigured())
     {
+    	const char * finger;
         StringBuffer token;//receives copy of everything up until signature
         for (finger = distributedAccessToken; *finger && *finger != ';'; finger++)
             token.append(1, finger);
@@ -6959,23 +6928,42 @@ int verifyWorkunitDAToken(const char * distributedAccessToken)
         }
     }
 
+    //Isolate string between []
+    StringBuffer tokenValues(distributedAccessToken + 5);
+    tokenValues.replace(']', (char)0);
+
+    StringArray nameValues;
+    nameValues.appendList(tokenValues.str(), ",",true);
+
     //Verify workunit still active
+    const char * wuid = nullptr;
+    for (int idx = 0; idx < nameValues.ordinality(); idx++)
+    {
+        if (0==strncmp("w=", nameValues[idx], 2))
+        {
+            wuid = nameValues[idx] + 2;
+            break;
+        }
+    }
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
     if(!cw)
     {
-        throw MakeStringException(WUERR_WorkunitAccessDenied,"verifyWorkunitDAToken : Cannot open workunit %s",wuid.str());
+        throw MakeStringException(WUERR_WorkunitAccessDenied,"verifyWorkunitDAToken : Cannot open workunit %s",wuid);
     }
 
-    if (!streq(wuid.str(), cw->queryWuid()))
+
+    VStringBuffer searchUser("u=%s",cw->queryUser());
+    if (NotFound == nameValues.find(searchUser.str()))
     {
-        ERRLOG("verifyWorkunitDAToken : given wuid does not match workunit");
+        ERRLOG("verifyWorkunitDAToken : token user does not match workunit");
         return 1;
     }
 
-    if (!streq(user.str(), cw->queryUser()))
+    VStringBuffer searchWuid("w=%s",cw->queryWuid());
+    if (NotFound == nameValues.find(searchUser.str()))
     {
-        ERRLOG("verifyWorkunitDAToken : given user does not match workunit");
+        ERRLOG("verifyWorkunitDAToken : token wuid does not match workunit");
         return 1;
     }
 
@@ -6985,11 +6973,11 @@ int verifyWorkunitDAToken(const char * distributedAccessToken)
 //TODO    case WUStateCompiling:    unclear if compiler needs to verify the token
     case WUStateRunning:
     case WUStateDebugRunning:
-        DBGLOG("verifyWorkunitDAToken : Workunit token is valid for %s %s, state is '%s'", wuid.str(), user.str(), getWorkunitStateStr(cw->getState()));
+        DBGLOG("verifyWorkunitDAToken : Workunit token validated for %s %s, state is '%s'", cw->queryWuid(), cw->queryUser(), getWorkunitStateStr(cw->getState()));
         wuActive = true;
         break;
     default:
-        ERRLOG("verifyWorkunitDAToken : Workunit not active, state is '%s'", getWorkunitStateStr(cw->getState()));
+        ERRLOG("verifyWorkunitDAToken : Workunit %s not active, state is '%s'", cw->queryWuid(), getWorkunitStateStr(cw->getState()));
         wuActive = false;
         break;
     }
@@ -7654,21 +7642,8 @@ IUserDescriptor *CLocalWorkUnit::queryUserDescriptor() const
     {
         userDesc.setown(createUserDescriptor());
         SCMStringBuffer token;
-        getDistributedAccessToken(token);
-        int rc = verifyWorkunitDAToken(token.str());
-        if (rc)
-        {
-            if (rc == 1)
-                ERRLOG("Workunit Distributed Access Token invalid");
-            else
-                ERRLOG("Workunit not active");
-        }
-        else if (token.length())
-        {
-        	StringBuffer user;
-		    extractFromWorkunitDAToken(token.str(), nullptr, &user, nullptr);
-		    userDesc->set(user.str(), token.str());//use token as password
-        }
+        getWorkunitDistributedAccessToken(token);
+        userDesc->set(queryUser(), token.str());//use token as password
     }
     return userDesc;
 }

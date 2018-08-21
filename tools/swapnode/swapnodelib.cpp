@@ -86,7 +86,7 @@ bool WuResubmit(const char *wuid)
     }
     SCMStringBuffer daToken;
     StringBuffer user;
-    wu->getDistributedAccessToken(daToken);
+    wu->getWorkunitDistributedAccessToken(daToken);//TODO CAn't i just use wu->queryUser()
     extractFromWorkunitDAToken(daToken.str(), nullptr, &user, nullptr);//get user from token
     wu->resetWorkflow();
     wu->setState(WUStateSubmitted);

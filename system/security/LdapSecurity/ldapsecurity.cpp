@@ -650,7 +650,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
 
     //Check if the password is a "real" password, or a workunit distributed access token
     const char * wutoken = user->credentials().getPassword();
-    if (wutoken && 0==strncmp(wutoken, "HPCC[",5))
+    if (wutoken && * wutoken && isWorkunitDAToken(wutoken))
     {
         int rc = verifyWorkunitDAToken(wutoken);//throws if cannot open workunit
         if (rc == 0)
