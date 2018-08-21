@@ -38,8 +38,6 @@ public:
     static int strncasecmp(const char* s1, const char* s2, size32_t n);
     static int strcasecmp(const char* s1, const char* s2);
     static const char *stristr(const char *haystack, const char *needle);
-    static StringBuffer& base64encode(const void *data, long length, StringBuffer& result);
-    static int base64decode(int inlen, const char *in, StringBuffer& data);
     static unsigned int hash (const char *str, unsigned int len);
     static StringBuffer &url_encode(const char* url, StringBuffer& encoded_url);
     static int url_decode(const char* param, StringBuffer& result);
