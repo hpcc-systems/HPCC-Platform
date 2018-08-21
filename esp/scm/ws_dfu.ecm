@@ -857,6 +857,32 @@ ESPresponse [exceptions_inline] DFUReadAccessResponse
     string RecordTypeInfoJson;  // optional
 };
 
+ESPrequest [nil_remove] DFUCreateAndPublishRequest
+{
+    string Name;
+    string Cluster;
+    string ECLRecordDefinition;
+    bool ReturnJsonTypeInfo(false);
+    bool ReturnBinTypeInfo(false);
+    ESPenum SecAccessType AccessType;
+    int ExpiryMinutes(1);
+};
+
+ESPresponse [exceptions_inline, nil_remove] DFUCreateAndPublishResponse
+{
+    string Name; //Copy from request
+    string UserID; //the uesr of the DFUCreateAndPublishRequest
+    ESPenum SecAccessType AccessType; //Copy from request
+    int ExpiryMinutes; //Copy from request if < 24hrs. Max 24hrs
+    string KeyName;         // name of key used to encrypt
+    int NumParts;        // number of parts in logical file
+    ESParray<EspStruct DFUPartLocations> FilePartLocations;
+    ESParray<EspStruct DFUPartCopies> FileParts;
+    binary RecordTypeInfoBin;   // optional
+    string RecordTypeInfoJson;  // optional
+    string MetaInfoBlob;
+};
+
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
@@ -890,6 +916,7 @@ ESPservice [
     ESPmethod EclRecordTypeInfo(EclRecordTypeInfoRequest, EclRecordTypeInfoResponse);
 
     ESPmethod [auth_feature("DfuAccess:READ"), min_var("1.39")] DFUReadAccess(DFUReadAccessRequest, DFUReadAccessResponse);
+    ESPmethod [auth_feature("DfuAccess:WRITE"), min_var("1.39")] DFUCreateAndPublish(DFUCreateAndPublishRequest, DFUCreateAndPublishResponse);
 };
 
 SCMexportdef(WSDFU);

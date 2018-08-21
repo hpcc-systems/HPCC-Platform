@@ -187,6 +187,7 @@ public:
     virtual bool onListHistory(IEspContext &context, IEspListHistoryRequest &req, IEspListHistoryResponse &resp);
     virtual bool onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req, IEspEraseHistoryResponse &resp);
     virtual bool onDFUReadAccess(IEspContext &context, IEspDFUReadAccessRequest &req, IEspDFUReadAccessResponse &resp);
+    virtual bool onDFUCreateAndPublish(IEspContext &context, IEspDFUCreateAndPublishRequest &req, IEspDFUCreateAndPublishResponse &resp);
 
 private:
     const char* getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix);
@@ -257,7 +258,8 @@ private:
     unsigned getFilePartsInfo(IEspContext &context, IDistributedFile *df, const char *clusterName,
         IArrayOf<IEspDFUPartLocations> &dfuPartLocations, IArrayOf<IEspDFUPartCopies> &dfuPartCopies);
     void getReadAccess(IEspContext &context, IUserDescriptor *udesc, DFUReadAccessRequest &req, DFUReadAccessResponse &resp);
-
+    void createAndPublishLogicalFile(IEspContext &context, const char *logicalName, const char *clusterName,
+        const char *jobDesc, const char *userID, const char *recordDefinition, IUserDescriptor *userDesc);
     bool attachServiceToDali() override
     {
         m_daliDetached = false;
