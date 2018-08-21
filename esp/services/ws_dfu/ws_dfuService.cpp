@@ -5885,4 +5885,153 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     return iRet;
 }
 
+bool CWsDfuEx::createDigitalSignature(const char *scope, IUserDescriptor *udesc, unsigned expirationMinutes, StringBuffer &b64sig)
+{
+    /*IDigitalSignatureManager *pDSM = queryDigitalSignatureManagerInstanceFromEnv();
+    if (!pDSM || !pDSM->isDigiSignerConfigured())
+        return false;
+
+    StringBuffer username;
+    if (udesc)
+        udesc->getUserName(username);
+    StringBuffer timeStr;
+    CDateTime expiration;
+    expiration.setNow();
+    expiration.adjustTime(expirationMinutes);
+    expiration.getString(timeStr, false);//get UTC timestamp
+
+    VStringBuffer toSign("%s;%s;%s", scope, username.str(), timeStr.str());
+    pDSM->digiSign(toSign.str(), b64sig);//Sign "scope;username;timeStamp"*/
+    return true;
+}
+
+unsigned CWsDfuEx::getFilePartsInfo(IEspContext &context, IDistributedFile *df, const char *clusterName, StringArray &dfuPartLocations, IArrayOf<IEspDFUPartCopies> &dfuPartCopies)
+{
+    int locationsIndex = -1;
+    BoolHash uniqueLocations;
+    Owned<IFileDescriptor> fdesc = df->getFileDescriptor(clusterName);
+    Owned<IPartDescriptorIterator> pi = fdesc->getIterator();
+    ForEach(*pi)
+    {
+        IPartDescriptor& part = pi->query();
+        unsigned partIndex = part.queryPartIndex();
+
+        StringArray partCopyLocationsIndexes;
+        for (unsigned int i=0; i<part.numCopies(); i++)
+        {
+            StringBuffer ip, locationsIndexStr;
+            part.queryNode(i)->endpoint().getUrlStr(ip);
+            bool* found = uniqueLocations.getValue(ip.str());
+            if (!found || !*found)
+            {
+                dfuPartLocations.append(ip.str());
+                locationsIndex++;
+                uniqueLocations.setValue(ip.str(), true);
+            }
+            partCopyLocationsIndexes.append(locationsIndexStr.append(locationsIndex).str());
+        }
+
+        Owned<IEspDFUPartCopies> partCopies = createDFUPartCopies();
+        partCopies->setLocationIndexes(partCopyLocationsIndexes);
+        dfuPartCopies.append(*partCopies.getClear());
+    }
+    return df->numParts();
+}
+
+void CWsDfuEx::getReadAccess(IEspContext &context, IUserDescriptor *udesc, DFUReadAccessRequest &req, DFUReadAccessResponse &resp)
+{
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(req.logicalName, udesc, false, false, true); // lock super-owners
+    if(!df)
+        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.", req.logicalName);
+
+    StringArray clusters;
+    df->getClusterNames(clusters);
+    if (!FindInStringArray(clusters, req.clusterName))
+        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s on %s.", req.logicalName, req.clusterName);
+
+    if (!req.refresh)
+    {
+        resp.numParts = getFilePartsInfo(context, df, req.clusterName, resp.dfuPartLocations, resp.dfuPartCopies);
+        if (req.returnJsonTypeInfo || req.returnBinTypeInfo)
+        {
+            if (!getRecordFormatFromRtlType(resp.binLayout, resp.jsonLayout, df->queryAttributes(), req.returnBinTypeInfo, req.returnJsonTypeInfo))
+                getRecordFormatFromECL(resp.binLayout.clear(), resp.jsonLayout.clear(), df->queryAttributes(), req.returnBinTypeInfo, req.returnJsonTypeInfo);
+        }
+    }
+
+    //TODO: Still not decide what kind of string should be used for createDigitalSignature? scope, file name,
+    //the xml string of the IDistributedFile, or the xml string of the FileDetail?
+    /*StringBuffer scopes, accessToken;
+    CDfsLogicalFileName dlfn;
+    dlfn.set(logicalName);
+    dlfn.getScopes(scopes);
+    if (createDigitalSignature(scopes.str(), userDesc, expiry, accessToken))
+        resp.setAccessToken(accessToken.str());*/
+
+}
+
+bool CWsDfuEx::onDFUReadAccess(IEspContext &context, IEspDFUReadAccessRequest &req, IEspDFUReadAccessResponse &resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to CreateAndPublish. Permission denied.");
+
+        DFUReadAccessRequest dfuReadAccessReq;
+        dfuReadAccessReq.logicalName = req.getName();
+        dfuReadAccessReq.clusterName = req.getCluster();
+        if (isEmptyString(dfuReadAccessReq.logicalName))
+             throw MakeStringException(ECLWATCH_INVALID_INPUT, "No Name defined.");
+        if (isEmptyString(dfuReadAccessReq.clusterName))
+             throw MakeStringException(ECLWATCH_INVALID_INPUT, "No Cluster defined.");
+        dfuReadAccessReq.accessType = req.getAccessType();
+        if (dfuReadAccessReq.accessType == SecAccessType_Undefined)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"AccessType not defined.");
+
+        StringBuffer userID;
+        context.getUserID(userID);
+
+        Owned<IUserDescriptor> userDesc;
+        if(!userID.isEmpty())
+        {
+            userDesc.setown(createUserDescriptor());
+            userDesc->set(userID.str(), context.queryPassword(), context.querySignature());
+        }
+
+        dfuReadAccessReq.refresh = req.getRefresh();
+        if (!dfuReadAccessReq.refresh)
+        {
+            dfuReadAccessReq.returnJsonTypeInfo = req.getReturnJsonTypeInfo();
+            dfuReadAccessReq.returnBinTypeInfo = req.getReturnBinTypeInfo();
+        }
+        dfuReadAccessReq.expiry = req.getExpiryMinutes();
+        if (dfuReadAccessReq.expiry > 1440)
+            dfuReadAccessReq.expiry = 1440; //24 hours
+
+        DFUReadAccessResponse dfuReadAccessResp;
+        getReadAccess(context, userDesc, dfuReadAccessReq, dfuReadAccessResp);
+
+        if (!dfuReadAccessReq.refresh)
+        {
+            resp.setNumParts(dfuReadAccessResp.numParts);
+            resp.setFilePartLocations(dfuReadAccessResp.dfuPartLocations);
+            resp.setFileParts(dfuReadAccessResp.dfuPartCopies);
+            if (dfuReadAccessReq.returnJsonTypeInfo && dfuReadAccessResp.jsonLayout.length())
+                resp.setRecordTypeInfoJson(dfuReadAccessResp.jsonLayout.str());
+            if (dfuReadAccessReq.returnBinTypeInfo && dfuReadAccessResp.binLayout.length())
+                resp.setRecordTypeInfoBin(dfuReadAccessResp.binLayout);
+        }
+
+        ///    resp.setAccessToken(accessToken.str());
+        ///resp.setKeyName(keyName);
+        ///resp.setAccessType(accessType);
+        resp.setExpiryMinutes(dfuReadAccessReq.expiry);
+    }
+    catch(IException *e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 //////////////////////HPCC Browser//////////////////////////
