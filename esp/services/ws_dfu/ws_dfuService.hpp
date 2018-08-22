@@ -110,7 +110,7 @@ struct DFUReadAccessRequest
 struct DFUReadAccessResponse
 {
     unsigned numParts = 0;
-    StringArray dfuPartLocations;
+    IArrayOf<IEspDFUPartLocations> dfuPartLocations;
     IArrayOf<IEspDFUPartCopies> dfuPartCopies;
     MemoryBuffer binLayout;
     StringBuffer jsonLayout;
@@ -254,7 +254,8 @@ private:
         unsigned __int64 fieldMask, StringArray &fieldNames);
     void parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray);
     bool createDigitalSignature(const char *scope, IUserDescriptor *udesc, unsigned expirationMinutes, StringBuffer &b64sig);
-    unsigned getFilePartsInfo(IEspContext &context, IDistributedFile *df, const char *clusterName, StringArray &dfuPartLocations, IArrayOf<IEspDFUPartCopies> &dfuPartCopies);
+    unsigned getFilePartsInfo(IEspContext &context, IDistributedFile *df, const char *clusterName,
+        IArrayOf<IEspDFUPartLocations> &dfuPartLocations, IArrayOf<IEspDFUPartCopies> &dfuPartCopies);
     void getReadAccess(IEspContext &context, IUserDescriptor *udesc, DFUReadAccessRequest &req, DFUReadAccessResponse &resp);
 
     bool attachServiceToDali() override

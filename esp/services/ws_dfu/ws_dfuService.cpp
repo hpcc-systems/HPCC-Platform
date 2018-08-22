@@ -5905,10 +5905,11 @@ bool CWsDfuEx::createDigitalSignature(const char *scope, IUserDescriptor *udesc,
     return true;
 }
 
-unsigned CWsDfuEx::getFilePartsInfo(IEspContext &context, IDistributedFile *df, const char *clusterName, StringArray &dfuPartLocations, IArrayOf<IEspDFUPartCopies> &dfuPartCopies)
+unsigned CWsDfuEx::getFilePartsInfo(IEspContext &context, IDistributedFile *df, const char *clusterName,
+    IArrayOf<IEspDFUPartLocations> &dfuPartLocations, IArrayOf<IEspDFUPartCopies> &dfuPartCopies)
 {
-    int locationsIndex = -1;
-    BoolHash uniqueLocations;
+    int nextLocationsIndex = 0;
+    MapStringTo<int> locationMap;
     Owned<IFileDescriptor> fdesc = df->getFileDescriptor(clusterName);
     Owned<IPartDescriptorIterator> pi = fdesc->getIterator();
     ForEach(*pi)
@@ -5921,17 +5922,25 @@ unsigned CWsDfuEx::getFilePartsInfo(IEspContext &context, IDistributedFile *df, 
         {
             StringBuffer ip, locationsIndexStr;
             part.queryNode(i)->endpoint().getUrlStr(ip);
-            bool* found = uniqueLocations.getValue(ip.str());
-            if (!found || !*found)
+            int *locationsIndex = locationMap.getValue(ip.str());
+            if (locationsIndex)
             {
-                dfuPartLocations.append(ip.str());
-                locationsIndex++;
-                uniqueLocations.setValue(ip.str(), true);
+                partCopyLocationsIndexes.append(locationsIndexStr.append(*locationsIndex).str());
+                continue;
             }
-            partCopyLocationsIndexes.append(locationsIndexStr.append(locationsIndex).str());
+
+            Owned<IEspDFUPartLocations> partLocations = createDFUPartLocations();
+            partLocations->setLocationIndex(nextLocationsIndex);
+            partLocations->setLocation(ip.str());
+            dfuPartLocations.append(*partLocations.getClear());
+
+            partCopyLocationsIndexes.append(locationsIndexStr.append(nextLocationsIndex).str());
+            locationMap.setValue(ip.str(), nextLocationsIndex);
+            nextLocationsIndex++;
         }
 
         Owned<IEspDFUPartCopies> partCopies = createDFUPartCopies();
+        partCopies->setPartId(partIndex + 1);
         partCopies->setLocationIndexes(partCopyLocationsIndexes);
         dfuPartCopies.append(*partCopies.getClear());
     }

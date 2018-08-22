@@ -821,8 +821,15 @@ ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
     ESParray<ESPStruct History, Origin> History;
 };
 
+ESPStruct DFUPartLocations
+{
+    int LocationIndex;
+    string Location;
+};
+
 ESPStruct DFUPartCopies
 {
+    int PartId;
     ESParray<string> LocationIndexes;
 };
 
@@ -844,7 +851,7 @@ ESPresponse [exceptions_inline] DFUReadAccessResponse
     string KeyName;         // name of key used to encrypt
     int ExpiryMinutes;
     int NumParts;        // number of parts in logical file
-    ESParray<string> FilePartLocations;
+    ESParray<EspStruct DFUPartLocations> FilePartLocations;
     ESParray<EspStruct DFUPartCopies> FileParts;
     binary RecordTypeInfoBin;   // optional
     string RecordTypeInfoJson;  // optional
