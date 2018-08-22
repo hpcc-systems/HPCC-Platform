@@ -46,6 +46,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/jlib 
          ${HPCC_SOURCE_DIR}/esp/platform 
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform 
+         ${HPCC_SOURCE_DIR}/common/environment 
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWSDFUACCESS_EXPORTS )
@@ -57,6 +58,7 @@ target_link_libraries ( wsdfuaccess
          xmllib 
          esphttp 
          dalibase
+         environment 
     )
 
 

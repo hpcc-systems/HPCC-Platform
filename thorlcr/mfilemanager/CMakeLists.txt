@@ -50,6 +50,7 @@ include_directories (
          ./../../common/thorhelper 
          ./../../roxie/roxiemem
          ./../../system/security/shared
+         ./../../esp/clients/wsdfuaccess
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DMFILEMANAGER_EXPORTS )
@@ -69,6 +70,7 @@ target_link_libraries ( mfilemanager_lcr
          workunit 
          jhtree 
          graph_lcr 
+         wsdfuaccess
     )
 
 

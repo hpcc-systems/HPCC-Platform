@@ -53,6 +53,9 @@
 #include "roxiehelper.hpp"
 #include "jlzw.hpp"
 
+#include "wsdfuaccess.hpp"
+
+
 using roxiemem::OwnedRoxieString;
 
 #include <memory>
@@ -85,6 +88,8 @@ const LogMsgCategory MCsetresult = MCprogress(100);     // Category used to info
 const LogMsgCategory MCgetresult = MCprogress(200);     // Category used to inform when getting result
 const LogMsgCategory MCresolve = MCprogress(100);       // Category used to inform during name resolution
 const LogMsgCategory MCrunlock = MCprogress(100);      // Category used to inform about run lock progress
+
+static const unsigned defaultDafilesrvExpirySecs = (3600*24);
 
 Owned<IPropertyTree> agentTopology;
 
@@ -556,6 +561,8 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     if (_queryXML)
         w->setXmlParams(_queryXML);
     updateSuppliedXmlParams(w);
+    factory.setown(getEnvironmentFactory(true));
+    env.setown(factory->openEnvironment());
 }
 
 EclAgent::~EclAgent()
@@ -3256,6 +3263,11 @@ IGroup *EclAgent::getHThorGroup(StringBuffer &out)
     return queryNamedGroupStore().lookup(mygroupname.str());
 }
 
+const char *EclAgent::getFileAccessUrl() const
+{
+    return env->getFileAccessUrl();
+}
+
 //======================================================================================================================
 
 void printStart(int argc, const char *argv[])
@@ -3445,6 +3457,9 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 
     enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
+    Owned<IDistributeFileAccessHook> fileAccessHook = wsdfuaccess::createDFSFileAccessHook(defaultDafilesrvExpirySecs);
+    queryDistributedFileDirectory().setFileAccessHook(fileAccessHook);
+
     try
     {
 #ifdef MONITOR_ECLAGENT_STATUS  
@@ -3574,6 +3589,9 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 
             if (w)
             {
+                IUserDescriptor *uDesc = w->queryUserDescriptor();
+                StringBuffer tokens("jobid=");
+                uDesc->addExtra(tokens.append(wuid));
                 EclAgent agent(w, wuid.str(), globals->getPropInt("IGNOREVERSION", 0)==0, globals->getPropBool("WFRESET", false), globals->getPropBool("NORETRY", false), logfilespec.str(), globals->queryProp("allowedPipePrograms"), query.getClear(), globals, agentTopology, logMsgHandler);
                 const bool isRemoteWorkunit = (daliServers.length() != 0);
                 const bool resolveFilesLocally = standAloneExe && (!isRemoteWorkunit || globals->getPropBool("USELOCALFILES", false));

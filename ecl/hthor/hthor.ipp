@@ -2268,10 +2268,12 @@ protected:
     IPointerArrayOf<IOutputMetaData> actualLayouts;  // Do we need to keep more than one?
     IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
     RowFilter actualFilter;               // This refers to the actual disk layout
+    StringBuffer metaInfo;
 
     void close();
     virtual void open();
     void resolve();
+    void checkSecurityInfo(IDistributedFile &file, SecAccessFlags access, unsigned expirySecs);
     virtual void verifyRecordFormatCrc() {} // do nothing here as (currently, and probably by design) not available for CSV and XML, so only implement for binary
     virtual void gatherInfo(IFileDescriptor * fileDesc);
     virtual void calcFixedDiskRecordSize() = 0;

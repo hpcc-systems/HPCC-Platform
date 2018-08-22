@@ -240,6 +240,9 @@ void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDat
             partDescs.item(0).queryOwner().setDefaultDir(queryTempDir());
     }
     gotMeta = false; // if variable filename and inside loop, need to invalidate cached meta
+    size32_t metaInfoSz;
+    data.read(metaInfoSz);
+    metaInfo.append(metaInfoSz, (const char *)data.readDirect(metaInfoSz));
 }
 
 const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)

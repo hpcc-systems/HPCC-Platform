@@ -71,6 +71,8 @@ protected:
     Owned<IKeyIndexSet> keyIndexSet;
     IConstPointerArrayOf<ITranslator> translators;
 
+    StringBuffer metaInfo;
+
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
     {
     protected:
@@ -163,6 +165,8 @@ public:
 
                 unsigned crc=0;
                 part.getCrc(crc);
+                unsigned remoteCopiesAttempted = 0;
+                Owned<IMultiException> remoteExceptions;
                 if (canSerializeTypeInfo && !usesBlobs && !localMerge)
                 {
                     for (unsigned copy=0; copy<part.numCopies(); copy++)
@@ -175,6 +179,8 @@ public:
                         StringBuffer lPath;
                         if (isRemoteReadCandidate(*this, rfn, lPath))
                         {
+                            ++remoteCopiesAttempted;
+
                             // Open a stream from remote file, having passed actual, expected, projected, and filters to it
                             SocketEndpoint ep(rfn.queryEndpoint());
                             setDafsEndpointPort(ep);
@@ -201,7 +207,10 @@ public:
                             else
                                 actualFilter.appendFilters(fieldFilters);
 
-                            Owned<IIndexLookup> indexLookup = createRemoteFilteredKey(ep, lPath, crc, actualFormat, projectedFormat, actualFilter, remoteLimit);
+                            /* JCSMORE - should 'crc' really be within the metaInfo
+                             * I think it's only used to make a unique reference within the cache
+                             */
+                            Owned<IIndexLookup> indexLookup = createRemoteFilteredKey(ep, metaInfo, lPath, partNum, copy, crc, actualFormat, projectedFormat, actualFilter, remoteLimit);
                             if (indexLookup)
                             {
                                 try
@@ -220,6 +229,13 @@ public:
                             }
                         }
                     }
+                }
+                // if forced and all remote copies failed, report exceptions
+                if (getOptBool(THOROPT_FORCE_REMOTE_READ) && (remoteExceptions && remoteCopiesAttempted == remoteExceptions->ordinality()))
+                {
+                    StringBuffer msg;
+                    remoteExceptions->errorMessage(msg);
+                    throwStringExceptionV(0, "Force remote read, failed to open any remote part. Exceptions: %s", msg.str());
                 }
 
                 // local key handling
@@ -421,6 +437,9 @@ public:
         statsArr = _statsArr.getArray();
         lastSeeks = lastScans = 0;
         localMerge = (localKey && partDescs.ordinality()>1) || seekGEOffset;
+        size32_t metaInfoSz;
+        data.read(metaInfoSz);
+        metaInfo.append(metaInfoSz, (const char *)data.readDirect(metaInfoSz));
     }
     // IThorDataLink
     virtual void start() override

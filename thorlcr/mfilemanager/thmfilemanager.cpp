@@ -38,6 +38,9 @@
 
 #include "workunit.hpp"
 
+#include "wsdfuaccess.hpp"
+
+
 #define CHECKPOINTSCOPE "checkpoints"
 #define TMPSCOPE "temporary"
 
@@ -45,11 +48,16 @@
 
 static IThorFileManager *fileManager = NULL;
 
+
+static const unsigned defaultDafilesrvExpirySecs = (3600*24);
+
+
 typedef OwningStringHTMapping<IDistributedFile> CIDistributeFileMapping;
 class CFileManager : public CSimpleInterface, implements IThorFileManager
 {
     OwningStringSuperHashTableOf<CIDistributeFileMapping> fileMap;
     bool replicateOutputs;
+    Owned<IDistributeFileAccessHook> fileAccessHook;
 
 
     StringBuffer &_getPublishPhysicalName(CJobBase &job, const char *logicalName, unsigned partno, const char *groupName, IGroup *group, StringBuffer &res)
@@ -219,13 +227,15 @@ class CFileManager : public CSimpleInterface, implements IThorFileManager
             blockReportFunc<bool>(job, func, timeout, blockedMsg);
         }
     }
-
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CFileManager()
     {
         replicateOutputs = globals->getPropBool("@replicateOutputs");
+
+        fileAccessHook.setown(wsdfuaccess::createDFSFileAccessHook(defaultDafilesrvExpirySecs));
+        queryDistributedFileDirectory().setFileAccessHook(fileAccessHook);
     }
     StringBuffer &mangleLFN(CJobBase &job, const char *lfn, StringBuffer &out)
     {

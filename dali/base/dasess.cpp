@@ -2066,6 +2066,7 @@ class CUserDescriptor: implements IUserDescriptor, public CInterface
     StringAttr username;
     StringAttr passwordenc;
     StringBuffer signature;//user's digital Signature
+    StringBuffer extra; // client side only
 public:
     IMPLEMENT_IINTERFACE;
     CUserDescriptor()
@@ -2101,6 +2102,14 @@ public:
         username.clear();
         passwordenc.clear();
         signature.clear();
+    }
+    virtual StringBuffer &addExtra(const char *text) override
+    {
+        return extra.append(text);
+    }
+    virtual const char *queryExtra() const override
+    {
+        return extra;
     }
     void serialize(MemoryBuffer &mb)
     {

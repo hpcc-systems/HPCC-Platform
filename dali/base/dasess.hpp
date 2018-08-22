@@ -80,6 +80,8 @@ interface IUserDescriptor: extends serializable
     virtual void set(const char *name,const char *password)=0;
     virtual void set(const char *name,const char *password, const char *_signature)=0;
     virtual void clear()=0;
+    virtual StringBuffer &addExtra(const char *text) = 0;
+    virtual const char *queryExtra() const = 0;
 };
 
 extern da_decl IUserDescriptor *createUserDescriptor();

@@ -30,11 +30,13 @@
 
 
 class StringBuffer;
+class CDfsLogicalFileName;
 
 namespace wsdfuaccess
 {
 
-WSDFUACCESS_API bool getFileAccess(StringBuffer &metaInfo, const char *serviceUrl, const char *jobId, const char *logicalName, SecAccessFlags access, unsigned expirySecs, const char *user, const char *token);
+WSDFUACCESS_API bool getFileAccess(StringBuffer &metaInfo, const char *serviceUrl, const char *jobId, CDfsLogicalFileName &logicalName, SecAccessFlags access, unsigned expirySecs, const char *user, const char *token);
+WSDFUACCESS_API IDistributeFileAccessHook *createDFSFileAccessHook(unsigned expirySecs);
 
 } // end of namespace wsdfuaccess
 

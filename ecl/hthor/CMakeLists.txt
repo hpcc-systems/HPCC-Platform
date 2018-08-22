@@ -69,6 +69,7 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
          ${HPCC_SOURCE_DIR}/dali/ft
          ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/esp/clients/wsdfuaccess
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DHTHOR_EXPORTS -DSTARTQUERY_EXPORTS )
@@ -91,6 +92,7 @@ target_link_libraries ( hthor
          thorhelper
          roxiemem
          schedulectrl
+         wsdfuaccess
     )
 
 IF (USE_OPENSSL)

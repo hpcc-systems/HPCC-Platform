@@ -2678,6 +2678,8 @@ void CJobBase::init()
     extractToken(token.str(), wuid.str(), tokenUser, password);
     userDesc = createUserDescriptor();
     userDesc->set(user.str(), password.str());
+    StringBuffer tokens("jobid=");
+    userDesc->addExtra(tokens.append(wuid));
 
     forceLogGraphIdMin = (graph_id)getWorkUnitValueInt("forceLogGraphIdMin", 0);
     forceLogGraphIdMax = (graph_id)getWorkUnitValueInt("forceLogGraphIdMax", 0);

@@ -52,6 +52,7 @@
 #include "rtldynfield.hpp"
 #include "rtlnewkey.hpp"
 
+
 #define EMPTY_LOOP_LIMIT 1000
 
 static unsigned const hthorReadBufferSize = 0x10000;
@@ -65,6 +66,7 @@ using roxiemem::OwnedRoxieString;
 using roxiemem::OwnedConstRoxieRow;
 
 IRowManager * theRowManager;
+
 
 void setHThorRowManager(IRowManager * manager)
 {
@@ -8304,7 +8306,7 @@ bool CHThorDiskReadBaseActivity::openNext()
                         SocketEndpoint ep(rfilename.queryEndpoint());
                         setDafsEndpointPort(ep);
 
-                        Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
+                        Owned<IRemoteFileIO> remoteFileIO = createRemoteFilteredFile(ep, dFile->queryMetaInfo(), path, partNum, copy, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped, remoteLimit);
                         if (remoteFileIO)
                         {
                             StringBuffer tmp;

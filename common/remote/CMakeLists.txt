@@ -58,6 +58,7 @@ include_directories (
          ./../../system/jhtree
          ./../../rtl/eclrtl
          ./../../system/security/securesocket
+         ./../../system/security/cryptohelper
          ./../../testing/unittests
          ./../../rtl/include
     )
@@ -79,5 +80,6 @@ target_link_libraries ( remote
 IF (USE_OPENSSL)
     target_link_libraries ( remote 
     	securesocket
+        cryptohelper
     )
 ENDIF()

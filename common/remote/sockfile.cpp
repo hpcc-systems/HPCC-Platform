@@ -53,6 +53,11 @@
 #include "rtlcommon.hpp"
 #include "rtlformat.hpp"
 
+#include "jflz.hpp"
+#include "ske.hpp"
+
+using namespace cryptohelper;
+
 
 #define SOCKET_CACHE_MAX 500
 
@@ -181,7 +186,7 @@ struct dummyReadWrite
 // backward compatible modes
 typedef enum { compatIFSHnone, compatIFSHread, compatIFSHwrite, compatIFSHexec, compatIFSHall} compatIFSHmode;
 
-static const char *VERSTRING= "DS V2.2"       // dont forget FILESRV_VERSION in header
+static const char *VERSTRING= "DS V2.3"       // dont forget FILESRV_VERSION in header
 #ifdef _WIN32
 "Windows ";
 #else
@@ -1784,21 +1789,33 @@ void CEndpointCS::beforeDispose()
     table.removeExact(this);
 }
 
+#define REMOTESTREAM_VERSION "2"
+
 class CRemoteFilteredFileIOBase : public CRemoteBase, implements IRemoteFileIO
 {
 public:
     IMPLEMENT_IINTERFACE;
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
     // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
-    CRemoteFilteredFileIOBase(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
-        : CRemoteBase(ep, filename)
+    CRemoteFilteredFileIOBase(const SocketEndpoint &ep, const StringBuffer &metaInfo, const char *partFileName, unsigned partNum, unsigned partCopy, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+        : CRemoteBase(ep, "remotefilteredread")
     {
         // NB: inputGrouped == outputGrouped for now, but may want output to be ungrouped
 
         openRequest();
-        request.appendf("\"format\" : \"binary\",\n"
-            "\"node\" : {\n"
-            " \"fileName\" : \"%s\"", filename);
+        request.appendf("\"version\" : \"%s\",\n"
+            "\"format\" : \"binary\",\n"
+            "\"node\" : {\n", REMOTESTREAM_VERSION);
+        if (metaInfo.length())
+            request.append(" \"metaInfo\" : ").append(metaInfo).append(",\n");
+        else if (!isEmptyString(partFileName))
+            request.appendf(" \"fileName\" : \"%s\",\n", partFileName);
+
+        // NB: 1 based partNum and partCopy in JSON request
+        request.appendf(" \"filePart\" : \"%u\"", partNum+1);
+        if (partCopy) // don't bother encoding if 0 (=default)
+            request.appendf(",\n \"filePartCopy\" : \"%u\",\n", partCopy+1);
+
         if (chooseN)
             request.appendf(",\n \"chooseN\" : \"%" I64F "u\"", chooseN);
         if (fieldFilters.numFilterFields())
@@ -1820,7 +1837,7 @@ public:
         MemoryBuffer actualTypeInfo;
         if (!dumpTypeInfo(actualTypeInfo, actual->querySerializedDiskMeta()->queryTypeInfo()))
             throw MakeStringException(0, "Format not supported by remote read");
-        request.append(",\n \"inputBin\": \"");
+        request.append(",\n \"inputBin\" : \"");
         JBASE64_Encode(actualTypeInfo.toByteArray(), actualTypeInfo.length(), request, false);
         request.append("\"");
         if (actual != projected)
@@ -1996,8 +2013,8 @@ class CRemoteFilteredFileIO : public CRemoteFilteredFileIOBase
 public:
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
     // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
-    CRemoteFilteredFileIO(SocketEndpoint &ep, const char *filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
-        : CRemoteFilteredFileIOBase(ep, filename, actual, projected, fieldFilters, chooseN)
+    CRemoteFilteredFileIO(const SocketEndpoint &ep, const StringBuffer &metaInfo, const char *partFileName, unsigned partNum, unsigned partCopy, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
+        : CRemoteFilteredFileIOBase(ep, metaInfo, partFileName, partNum, partCopy, actual, projected, fieldFilters, chooseN)
     {
         // NB: inputGrouped == outputGrouped for now, but may want output to be ungrouped
         request.appendf(",\n \"kind\" : \"diskread\",\n"
@@ -2007,38 +2024,11 @@ public:
     }
 };
 
-class CRemoteFilteredRowStream : public CRemoteFilteredFileIO, implements IRowStream
-{
-public:
-    CRemoteFilteredRowStream(const RtlRecord &_recInfo, SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped)
-        : CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped, 0), recInfo(_recInfo)
-    {
-    }
-    virtual const byte *queryNextRow()  // NOTE - rows returned must NOT be freed
-    {
-        if (!bufRemaining && !eof)
-            refill();
-        if (eof)
-            return nullptr;
-        unsigned len = recInfo.getRecordSize(reply.readDirect(0));
-        bufPos += len;
-        bufRemaining -= len;
-        return reply.readDirect(len);
-    }
-    virtual void stop() override
-    {
-        close();
-        eof = true;
-    }
-protected:
-    const RtlRecord &recInfo;
-};
-
-extern IRemoteFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
+extern IRemoteFileIO *createRemoteFilteredFile(const SocketEndpoint &ep, const StringBuffer &metaInfo, const char *partFileName, unsigned partNum, unsigned partCopy, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped, unsigned __int64 chooseN)
 {
     try
     {
-        return new CRemoteFilteredFileIO(ep, filename, actual, projected, fieldFilters, compressed, grouped, chooseN);
+        return new CRemoteFilteredFileIO(ep, metaInfo, partFileName, partNum, partCopy, actual, projected, fieldFilters, compressed, grouped, chooseN);
     }
     catch (IException *e)
     {
@@ -2053,8 +2043,8 @@ class CRemoteFilteredKeyIO : public CRemoteFilteredFileIOBase
 public:
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
     // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
-    CRemoteFilteredKeyIO(SocketEndpoint &ep, const char *filename, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
-        : CRemoteFilteredFileIOBase(ep, filename, actual, projected, fieldFilters, chooseN)
+    CRemoteFilteredKeyIO(const SocketEndpoint &ep, const StringBuffer &metaInfo, const char *partFileName, unsigned partNum, unsigned partCopy, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+        : CRemoteFilteredFileIOBase(ep, metaInfo, partFileName, partNum, partCopy, actual, projected, fieldFilters, chooseN)
     {
         request.appendf(",\n \"kind\" : \"indexread\"");
         request.appendf(",\n \"crc\" : \"%u\"", crc);
@@ -2066,8 +2056,8 @@ class CRemoteFilteredKeyCountIO : public CRemoteFilteredFileIOBase
 public:
     // Really a stream, but life (maybe) easier elsewhere if looks like a file
     // Sometime should refactor to be based on ISerialStream instead - or maybe IRowStream.
-    CRemoteFilteredKeyCountIO(SocketEndpoint &ep, const char *filename, unsigned crc, IOutputMetaData *actual, const RowFilter &fieldFilters, unsigned __int64 rowLimit)
-        : CRemoteFilteredFileIOBase(ep, filename, actual, actual, fieldFilters, rowLimit)
+    CRemoteFilteredKeyCountIO(const SocketEndpoint &ep, const StringBuffer &metaInfo, const char *partFileName, unsigned partNum, unsigned partCopy, unsigned crc, IOutputMetaData *actual, const RowFilter &fieldFilters, unsigned __int64 rowLimit)
+        : CRemoteFilteredFileIOBase(ep, metaInfo, partFileName, partNum, partCopy, actual, actual, fieldFilters, rowLimit)
     {
         request.appendf(",\n \"kind\" : \"indexcount\"");
         request.appendf(",\n \"crc\" : \"%u\"", crc);
@@ -2083,20 +2073,24 @@ class CRemoteKey : public CSimpleInterfaceOf<IIndexLookup>
     Owned<ISerialStream> strm;
     bool pending = false;
     SocketEndpoint ep;
-    StringAttr filename;
+    unsigned partNum, partCopy;
     unsigned crc;
     Linked<IOutputMetaData> actual, projected;
     RowFilter fieldFilters;
+    StringBuffer metaInfo;
+    StringAttr partFileName;
 
 public:
-    CRemoteKey(SocketEndpoint &_ep, const char *_filename, unsigned _crc, IOutputMetaData *_actual, IOutputMetaData *_projected, const RowFilter &_fieldFilters, unsigned __int64 rowLimit)
-        : ep(_ep), filename(_filename), crc(_crc), actual(_actual), projected(_projected)
+    CRemoteKey(const SocketEndpoint &_ep, const StringBuffer &_metaInfo, const char *_partFileName, unsigned _partNum, unsigned _partCopy, unsigned _crc, IOutputMetaData *_actual, IOutputMetaData *_projected, const RowFilter &_fieldFilters, unsigned __int64 rowLimit)
+        : ep(_ep), partNum(_partNum), partCopy(_partCopy), crc(_crc), actual(_actual), projected(_projected)
     {
+        metaInfo.append(_metaInfo.length(), _metaInfo.str());
+        partFileName.set(_partFileName);
         for (unsigned f=0; f<_fieldFilters.numFilterFields(); f++)
             fieldFilters.addFilter(OLINK(_fieldFilters.queryFilter(f)));
-        iRemoteFileIO.setown(new CRemoteFilteredKeyIO(ep, filename, crc, actual, projected, fieldFilters, rowLimit));
+        iRemoteFileIO.setown(new CRemoteFilteredKeyIO(ep, metaInfo, partFileName, partNum, partCopy, crc, actual, projected, fieldFilters, rowLimit));
         if (!iRemoteFileIO)
-            throw MakeStringException(0, "Unable to open remote key part: '%s'", filename.get());
+            throw MakeStringException(0, "Unable to open remote key file: '%s'", _metaInfo.str());
         strm.setown(createFileSerialStream(iRemoteFileIO));
         prefetcher.setown(projected->createDiskPrefetcher());
         assertex(prefetcher);
@@ -2113,7 +2107,7 @@ public:
     }
     virtual unsigned __int64 checkCount(unsigned __int64 limit) override
     {
-        Owned<IFileIO> iFileIO = new CRemoteFilteredKeyCountIO(ep, filename, crc, actual, fieldFilters, limit);
+        Owned<IFileIO> iFileIO = new CRemoteFilteredKeyCountIO(ep, metaInfo, partFileName, partNum, partCopy, crc, actual, fieldFilters, limit);
         unsigned __int64 result;
         iFileIO->read(0, sizeof(result), &result);
         return result;
@@ -2134,11 +2128,11 @@ public:
 };
 
 
-extern IIndexLookup *createRemoteFilteredKey(SocketEndpoint &ep, const char * filename, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
+extern IIndexLookup *createRemoteFilteredKey(const SocketEndpoint &ep, const StringBuffer &metaInfo, const char *partFileName, unsigned partNum, unsigned partCopy, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseN)
 {
     try
     {
-        return new CRemoteKey(ep, filename, crc, actual, projected, fieldFilters, chooseN);
+        return new CRemoteKey(ep, metaInfo, partFileName, partNum, partCopy, crc, actual, projected, fieldFilters, chooseN);
     }
     catch (IException *e)
     {
@@ -3985,8 +3979,6 @@ protected:
     void initCommon(IPropertyTree &config)
     {
         fileName.set(config.queryProp("fileName"));
-        if (isEmptyString(fileName))
-            throw MakeStringException(0, "CRemoteDiskBaseActivity: fileName missing");
 
         record = &inMeta->queryRecordAccessor(true);
         translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
@@ -4421,10 +4413,116 @@ IRemoteActivity *createRemoteIndexCount(IPropertyTree &actNode)
     return new CRemoteIndexCountActivity(actNode);
 }
 
-IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
+bool propsMatch(IPropertyTree &t1, IPropertyTree &t2, const char *prop)
 {
-    const char *kindStr = actNode.queryProp("kind");
+    const char *v1 = t1.queryProp(prop);
+    const char *v2 = t2.queryProp(prop);
+    return strsame(v1, v2);
+}
 
+void verifyAuthorization(IPropertyTree &securityInfo, IPropertyTree &secureMetaInfo)
+{
+    if (!propsMatch(securityInfo, secureMetaInfo, "logicalFilename") ||
+        !propsMatch(securityInfo, secureMetaInfo, "jobId") ||
+        !propsMatch(securityInfo, secureMetaInfo, "accessType") ||
+        !propsMatch(securityInfo, secureMetaInfo, "user"))
+        throwStringExceptionV(0, "createRemoteActivity: verifyAuthorization failed");
+
+    const char *expiryTime = secureMetaInfo.queryProp("expiryTime");
+    if (isEmptyString(expiryTime))
+        throwStringExceptionV(0, "createRemoteActivity: invalid expiry specification");
+    CDateTime expiryTimeDt;
+    expiryTimeDt.setString(expiryTime);
+    CDateTime nowDt;
+    nowDt.setNow();
+    if (nowDt >= expiryTimeDt)
+        throwStringExceptionV(0, "createRemoteActivity: authorization expired");
+}
+
+void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IPropertyTree *keyPairInfo)
+{
+    if (!authorizedOnly) // if configured false, allows unencrypted meta info
+    {
+        if (actNode.hasProp("fileName"))
+            return;
+    }
+    IPropertyTree *metaInfo = actNode.queryPropTree("metaInfo");
+    if (!metaInfo)
+        throwStringExceptionV(0, "createRemoteActivity: missing metaInfo");
+
+    // version for future use
+    unsigned securityVersion = metaInfo ? metaInfo->getPropInt("version") : 0;
+
+#ifdef _USE_OPENSSL
+    const char *keyPairName = metaInfo->queryProp("keyPairName");
+    bool encrypted = !isEmptyString(keyPairName);
+    if (authorizedOnly && !encrypted)
+        throwStringExceptionV(0, "createRemoteActivity: unathorized");
+
+    Owned<IPropertyTree> secureMetaInfo;
+    IPropertyTree *fileInfo = nullptr;
+    if (encrypted)
+    {
+        MemoryBuffer secureInfoMb;
+        if (!metaInfo->getPropBin("secureInfo", secureInfoMb))
+            throwStringExceptionV(0, "createRemoteActivity: missing securityToken");
+
+        // 1st decrypt
+        VStringBuffer keyPairPath("KeyPair[@name=\"%s\"]", keyPairName);
+        IPropertyTree *keyPair = keyPairInfo->queryPropTree(keyPairPath);
+        if (!keyPair)
+            throwStringExceptionV(0, "createRemoteActivity: missing key pair definition");
+        const char *privateKeyFName = keyPair->queryProp("@privateKey");
+        if (isEmptyString(privateKeyFName))
+            throwStringExceptionV(0, "createRemoteActivity: missing private key definition");
+        Owned<CLoadedKey> privateKey = loadPrivateKeyFromFile(privateKeyFName, nullptr);
+        MemoryBuffer decryptedSecureMetaInfoMb;
+        aesDecryptWithRSAEncryptedKey(decryptedSecureMetaInfoMb, secureInfoMb.length(), secureInfoMb.bytes(), *privateKey);
+
+        /* NB: As it's a single encrypted block - implies all DAFILESRV's share same private key
+         * Otherwise server would need to create multiple encrypted packets each encrypted with the public key of each DAFILESRV...
+         */
+
+        // 2nd decompress
+        MemoryBuffer decompressedSecuredMetaInfoMb;
+        fastLZDecompressToBuffer(decompressedSecuredMetaInfoMb, decryptedSecureMetaInfoMb);
+
+        // 3rd create IPT
+        secureMetaInfo.setown(createPTreeFromJSONString(decompressedSecuredMetaInfoMb.length(), (const char *)decompressedSecuredMetaInfoMb.bytes()));
+
+        verifyAuthorization(*metaInfo, *secureMetaInfo);
+        fileInfo = secureMetaInfo->queryPropTree("FileInfo");
+    }
+    else
+#endif
+    {
+        // unencrypted file info.
+        fileInfo = metaInfo->queryPropTree("FileInfo");
+    }
+
+    // extra filename based on part/copy.
+    assertex(fileInfo);
+    assertex(actNode.hasProp("filePart"));
+    unsigned partNum = actNode.getPropInt("filePart");
+    assertex(partNum);
+    unsigned partCopy = actNode.getPropInt("filePartCopy", 1);
+
+    VStringBuffer xpath("Part[%u]/Copy[%u]/@filePath", partNum, partCopy);
+    StringBuffer partFileName;
+    fileInfo->getProp(xpath, partFileName);
+    if (!partFileName.length())
+        throwStringExceptionV(0, "createRemoteActivity: invalid file info");
+
+    actNode.setProp("fileName", partFileName.str());
+    verifyex(actNode.removeTree(metaInfo)); // no longer needed
+}
+
+IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnly, const IPropertyTree *keyPairInfo)
+{
+    verifyMetaInfo(actNode, authorizedOnly, keyPairInfo);
+
+    const char *partFileName = actNode.queryProp("fileName");
+    const char *kindStr = actNode.queryProp("kind");
     ThorActivityKind kind = TAKnone;
     if (kindStr)
     {
@@ -4436,10 +4534,6 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
             kind = TAKindexcount;
         // else - auto-detect
     }
-
-    const char *fileName = actNode.queryProp("fileName");
-    if (isEmptyString(fileName))
-        throw MakeStringException(0, "createRemoteActivity: fileName missing");
 
     Owned<IRemoteActivity> activity;
     switch (kind)
@@ -4462,14 +4556,14 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
         default: // auto-detect file format
         {
             const char *action = actNode.queryProp("action");
-            if (isIndexFile(fileName))
+            if (isIndexFile(partFileName))
             {
                 if (!isEmptyString(action))
                 {
                     if (streq("count", action))
                         activity.setown(createRemoteIndexCount(actNode));
                     else
-                        throwStringExceptionV(0, "Unknown action '%s' on index '%s'", action, fileName);
+                        throwStringExceptionV(0, "Unknown action '%s' on index '%s'", action, partFileName);
                 }
                 else
                     activity.setown(createRemoteIndexRead(actNode));
@@ -4481,7 +4575,7 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
                     if (streq("count", action))
                         throwStringExceptionV(0, "Remote Disk Counts currently unsupported");
                     else
-                        throwStringExceptionV(0, "Unknown action '%s' on flat file '%s'", action, fileName);
+                        throwStringExceptionV(0, "Unknown action '%s' on flat file '%s'", action, partFileName);
                 }
                 else
                     activity.setown(createRemoteDiskRead(actNode));
@@ -4493,11 +4587,11 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
     return activity.getClear();
 }
 
-IRemoteActivity *createOutputActivity(IPropertyTree &requestTree)
+IRemoteActivity *createOutputActivity(IPropertyTree &requestTree, bool authorizedOnly, const IPropertyTree *keyPairInfo)
 {
     IPropertyTree *actNode = requestTree.queryPropTree("node");
     assertex(actNode);
-    return createRemoteActivity(*actNode);
+    return createRemoteActivity(*actNode, authorizedOnly, keyPairInfo);
 }
 
 #define MAX_KEYDATA_SZ 0x10000
@@ -5139,6 +5233,8 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     CClientStatsTable clientStatsTable;
     atomic_t globallasttick;
     unsigned targetActiveThreads;
+    bool authorizedOnly;
+    Owned<IPropertyTree> keyPairInfo;
 
     int getNextHandle()
     {
@@ -5290,8 +5386,8 @@ public:
 
     IMPLEMENT_IINTERFACE
 
-    CRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy)
-        : asyncCommandManager(maxAsyncCopy), stdCmdThrottler("stdCmdThrotlter"), slowCmdThrottler("slowCmdThrotlter")
+    CRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy, bool _authorizedOnly, IPropertyTree *_keyPairInfo)
+        : asyncCommandManager(maxAsyncCopy), stdCmdThrottler("stdCmdThrotlter"), slowCmdThrottler("slowCmdThrotlter"), authorizedOnly(_authorizedOnly), keyPairInfo(_keyPairInfo)
     {
         lasthandle = 0;
         selecthandler.setown(createSocketSelectHandler(NULL));
@@ -6263,7 +6359,7 @@ public:
             replyLimit = requestTree->getPropInt64("replyLimit", defaultDaFSReplyLimitKB) * 1024;
 
             // In future this may be passed the request and build a chain of activities and return sink.
-            outputActivity.setown(createOutputActivity(*requestTree));
+            outputActivity.setown(createOutputActivity(*requestTree, authorizedOnly, keyPairInfo));
 
             Owned<CRemoteRequest> remoteRequest = new CRemoteRequest(outputFormat, replyLimit, outputActivity);
 
@@ -7164,12 +7260,17 @@ public:
 };
 
 
-IRemoteFileServer * createRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy)
+IRemoteFileServer * createRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy, bool authorizedOnly, IPropertyTree *keyPairInfo)
 {
 #if SIMULATE_PACKETLOSS
     errorSimulationOn = false;
 #endif
-    return new CRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy);
+
+// NB: if no OOPENSSL, no authorization checks
+#ifndef _USE_OPENSSL
+    authorizedOnly = false;
+#endif
+    return new CRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy, authorizedOnly, keyPairInfo);
 }
 
 

@@ -92,6 +92,7 @@ protected:
     Owned<CDiskPartHandlerBase> partHandler;
     Owned<IExpander> eexp;
     rowcount_t diskProgress = 0;
+    StringBuffer metaInfo;
 
 public:
     CDiskReadSlaveActivityBase(CGraphElementBase *_container, IHThorArg *_helper);
