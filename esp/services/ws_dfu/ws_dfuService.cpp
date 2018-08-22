@@ -58,6 +58,12 @@
 #include "package.h"
 #include "daaudit.hpp"
 
+#include "jflz.hpp"
+#include "digisign.hpp"
+
+using namespace cryptohelper;
+
+
 #define     Action_Delete           "Delete"
 #define     Action_AddtoSuperfile   "Add To Superfile"
 static const char* FEATURE_URL="DfuAccess";
@@ -81,6 +87,7 @@ const unsigned MAX_VIEWKEYFILE_ROWS = 1000;
 const unsigned MAX_KEY_ROWS = 20;
 
 short days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
 
 CThorNodeGroup* CThorNodeGroupCache::readNodeGroup(const char* _groupName)
 {
@@ -116,32 +123,32 @@ CThorNodeGroup* CThorNodeGroupCache::lookup(const char* groupName, unsigned time
 
 void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
-    StringBuffer xpath;
 
     DBGLOG("Initializing %s service [process = %s]", service, process);
 
     espProcess.set(process);
 
-    xpath.appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/DefaultScope", process, service);
-    cfg->getProp(xpath.str(), defaultScope_);
+    VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]", process);
+    IPropertyTree *processTree = cfg->queryPropTree(xpath);
+    if (!processTree)
+        throw MakeStringException(-1, "config not found for process %s", process);
 
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/User", process, service);
-    cfg->getProp(xpath.str(), user_);
+    xpath.clear().appendf("EspService[@name=\"%s\"]", service);
+    IPropertyTree *serviceTree = processTree->queryPropTree(xpath);
+    if (!serviceTree)
+        throw MakeStringException(-1, "config not found for service %s", service);
 
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/Password", process, service);
-    cfg->getProp(xpath.str(), password_);
+    serviceTree->getProp("DefaultScope", defaultScope_);
+    serviceTree->getProp("User", user_);
+    serviceTree->getProp("Password", password_);
 
     StringBuffer disableUppercaseTranslation;
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/DisableUppercaseTranslation", process, service);
-    cfg->getProp(xpath.str(), disableUppercaseTranslation);
+    serviceTree->getProp("DisableUppercaseTranslation", disableUppercaseTranslation);
 
     m_clusterName.clear();
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ClusterName", process, service);
-    cfg->getProp(xpath.str(), m_clusterName);
+    serviceTree->getProp("ClusterName", m_clusterName);
 
-    Linked<IPropertyTree>  globals;
-    globals.set(cfg->queryPropTree(StringBuffer("Software/EspProcess[@name=\"").append(process).append("\"]/EspService[@name=\"").append(service).append("\"]").str()));
-    const char * plugins = globals->queryProp("Plugins/@path");
+    const char * plugins = serviceTree->queryProp("Plugins/@path");
     if (plugins)
         queryTransformerRegistry().addPlugins(plugins);
 
@@ -149,15 +156,12 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
     if (streq(disableUppercaseTranslation.str(), "true"))
         m_disableUppercaseTranslation = true;
 
-    xpath.setf("Software/EspProcess[@name=\"%s\"]/@PageCacheTimeoutSeconds", process);
-    if (cfg->hasProp(xpath.str()))
-        setPageCacheTimeoutMilliSeconds(cfg->getPropInt(xpath.str()));
-    xpath.setf("Software/EspProcess[@name=\"%s\"]/@MaxPageCacheItems", process);
-    if (cfg->hasProp(xpath.str()))
-        setMaxPageCacheItems(cfg->getPropInt(xpath.str()));
+    if (processTree->hasProp("@PageCacheTimeoutSeconds"))
+        setPageCacheTimeoutMilliSeconds(processTree->getPropInt("@PageCacheTimeoutSeconds"));
+    if (processTree->hasProp("@MaxPageCacheItems"))
+        setMaxPageCacheItems(processTree->getPropInt("@MaxPageCacheItems"));
 
-    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/NodeGroupCacheMinutes", process, service);
-    int timeout = cfg->getPropInt(xpath.str(), -1);
+    int timeout = serviceTree->getPropInt("NodeGroupCacheMinutes", -1);
     if (timeout > -1)
         nodeGroupCacheTimeout = (unsigned) timeout*60*1000;
     else
@@ -169,6 +173,9 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
 
     setDaliServixSocketCaching(true);
 
+    factory.setown(getEnvironmentFactory(true));
+    env.setown(factory->openEnvironment());
+    maxFileAccessExpirySeconds = serviceTree->getPropInt("@maxFileAccessExpirySeconds", defaultMaxFileAccessExpirySeconds);
 }
 
 bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEspDFUSearchResponse & resp)
@@ -5883,6 +5890,255 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     DataList.append(*item.getClear());
 
     return iRet;
+}
+
+unsigned CWsDfuEx::getFilePartsInfo(IEspContext &context, IDistributedFile *df, const char *clusterName,
+    IArrayOf<IEspDFUPartLocations> &dfuPartLocations, IArrayOf<IEspDFUPartCopies> &dfuPartCopies)
+{
+    int nextLocationsIndex = 1; // NB: both LocationIndex and PartIndex are 1 based in response.
+    MapStringTo<int> locationMap;
+    Owned<IFileDescriptor> fdesc = df->getFileDescriptor(clusterName);
+    Owned<IPartDescriptorIterator> pi = fdesc->getIterator();
+    ForEach(*pi)
+    {
+        IPartDescriptor& part = pi->query();
+        unsigned partIndex = part.queryPartIndex();
+
+        StringArray partCopyLocationsIndexes;
+        for (unsigned int i=0; i<part.numCopies(); i++)
+        {
+            StringBuffer host, locationsIndexStr;
+            part.queryNode(i)->endpoint().getUrlStr(host);
+            int *locationsIndex = locationMap.getValue(host.str());
+            if (locationsIndex)
+            {
+                partCopyLocationsIndexes.append(locationsIndexStr.append(*locationsIndex).str());
+                continue;
+            }
+
+            Owned<IEspDFUPartLocations> partLocations = createDFUPartLocations();
+            partLocations->setLocationIndex(nextLocationsIndex);
+            partLocations->setLocation(host.str());
+            dfuPartLocations.append(*partLocations.getClear());
+
+            partCopyLocationsIndexes.append(locationsIndexStr.append(nextLocationsIndex).str());
+            locationMap.setValue(host.str(), nextLocationsIndex);
+            nextLocationsIndex++;
+        }
+
+        Owned<IEspDFUPartCopies> partCopies = createDFUPartCopies();
+        partCopies->setPartIndex(partIndex + 1);
+        partCopies->setLocationIndexes(partCopyLocationsIndexes);
+        dfuPartCopies.append(*partCopies.getClear());
+    }
+    return df->numParts();
+}
+
+static const char *securityInfoVersion="1";
+void CWsDfuEx::getFileMeta(StringBuffer &metaInfoStr, IDistributedFile &file, IUserDescriptor *user, CFileAccessRole role, const char *expiryTime, const char *keyPairName, IConstDFUFileAccessRequest &req)
+{
+    Owned<IPropertyTree> metaInfoEnvelope = createPTree();
+    Owned<IPropertyTree> metaInfo = createPTree();
+    const char *clusterName = req.getCluster(); // can be null
+    Owned<IFileDescriptor> fDesc = file.getFileDescriptor(clusterName);
+    extractFilePartInfo(*metaInfo, *fDesc);
+
+    MemoryBuffer metaInfoMb;
+
+    /* NB: If file access security is disabled in the environment, or on a per cluster basis
+     * keyPairName will be blank. In that case the meta data is returned in plain format.
+     * NB2: Dafilesrv's would also require file access security to be disabled in that case,
+     * otherwise they will be denied access.
+     * Should be part of the same configuration setup.
+     */
+#ifdef _USE_OPENSSL
+    if (!isEmptyString(keyPairName)) // without it, meta data is not encrypted
+    {
+        metaInfo->setProp("version", securityInfoVersion);
+        metaInfo->setProp("logicalFilename", file.queryLogicalName());
+        metaInfo->setProp("jobId", req.getJobId());
+        metaInfo->setProp("accessType", req.getAccessTypeAsString());
+        StringBuffer userStr;
+        if (user)
+            metaInfo->setProp("user", user->getUserName(userStr).str());
+        metaInfo->setProp("keyPairName", keyPairName);
+        metaInfo->setProp("expiryTime", expiryTime);
+
+        MemoryBuffer metaInfoBlob;
+        metaInfo->serialize(metaInfoBlob);
+
+        const char *privateKeyFName = env->getPrivateKeyPath(keyPairName);
+        Owned<CLoadedKey> privateKey = loadPrivateKeyFromFile(privateKeyFName, nullptr);
+        StringBuffer metaInfoSignature;
+        digiSign(metaInfoSignature, metaInfoBlob.length(), metaInfoBlob.bytes(), *privateKey);
+        metaInfoEnvelope->setProp("signature", metaInfoSignature);
+        metaInfoEnvelope->setPropBin("metaInfoBlob", metaInfoBlob.length(), metaInfoBlob.bytes());
+        metaInfoEnvelope->serialize(metaInfoMb.clear());
+    }
+    else
+#endif
+        metaInfo->serialize(metaInfoMb);
+
+    MemoryBuffer compressedMetaInfoMb;
+    fastLZCompressToBuffer(compressedMetaInfoMb, metaInfoMb.length(), metaInfoMb.bytes());
+    JBASE64_Encode(compressedMetaInfoMb.bytes(), compressedMetaInfoMb.length(), metaInfoStr, false);
+}
+
+StringBuffer &CWsDfuEx::getFileDafilesrvKeyName(StringBuffer &keyPairName, IDistributedFile &file)
+{
+    unsigned numClusters = file.numClusters();
+    for (unsigned c=0; c<numClusters; c++)
+    {
+        StringBuffer clusterName;
+        const char *cluster = file.getClusterName(c, clusterName.clear()).str();
+        const char *_keyPairName = env->getClusterKeyPairName(cluster);
+        if (0 == c)
+            keyPairName.set(_keyPairName);
+        else if (!strsame(keyPairName, _keyPairName))
+            throwStringExceptionV(0, "Configuration issue - file '%s' is on multiple clusters, keys for file access must match", file.queryLogicalName());
+    }
+
+    return keyPairName;
+}
+
+void CWsDfuEx::getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAccessFlags accessType, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp)
+{
+    bool writePermissions = (accessType == SecAccess_Write) || (accessType == SecAccess_Full);
+    bool readPermissions = true; // by implication
+
+    StringBuffer fileName(req.getName());
+    if (!isEmptyString(req.getCluster()))
+        fileName.append("@").append(req.getCluster());
+
+    checkLogicalName(fileName, udesc, readPermissions, writePermissions, false, nullptr);
+
+    switch (accessType)
+    {
+        case SecAccess_Access:
+        case SecAccess_Read:
+            break;
+        default:
+        {
+            // NB - no handling for write/full at moment
+            return;
+        }
+    }
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, udesc, false, false, true); // lock super-owners
+    if (!df)
+        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.", req.getName());
+
+    CFileAccessRole role = req.getAccessRole();
+    switch (role)
+    {
+        case CFileAccessRole_Token:
+        {
+            break;
+        }
+        case CFileAccessRole_Engine:
+        {
+            /* JCSMORE - for now do nothing
+             * Ideally, would get the file tree here and add it to 'metaInfo' tree, i.e. outside of uncrypted secureInfo blob
+             * Then client could construct a IDistributeFile from it etc.
+             * However, the way the engines and IDistributedFile work at the moment, means that using this info
+             * at the client side would require a significant amount of refactoring of the IDistributedFile implementation.
+             * Not least because IDF allows updates via IPT -> Dali.
+             *
+             * So for now don't send anything, and rely on engine fetching the legacy way, i.e. direct from Dali, via lazy fetching etc.
+             */
+            break;
+        }
+        case CFileAccessRole_External:
+        {
+            IArrayOf<IEspDFUPartLocations> dfuPartLocations;
+            IArrayOf<IEspDFUPartCopies> dfuPartCopies;
+            resp.setNumParts(getFilePartsInfo(context, df, req.getCluster(), dfuPartLocations, dfuPartCopies));
+            resp.setFilePartLocations(dfuPartLocations);
+            resp.setFileParts(dfuPartCopies);
+            if (req.getReturnJsonTypeInfo() || req.getReturnJsonTypeInfo())
+            {
+                MemoryBuffer binLayout;
+                StringBuffer jsonLayout;
+                if (!getRecordFormatFromRtlType(binLayout, jsonLayout, df->queryAttributes(), req.getReturnJsonTypeInfo(), req.getReturnJsonTypeInfo()))
+                    getRecordFormatFromECL(binLayout, jsonLayout, df->queryAttributes(), req.getReturnJsonTypeInfo(), req.getReturnJsonTypeInfo());
+                if (req.getReturnJsonTypeInfo() && jsonLayout.length())
+                    resp.setRecordTypeInfoJson(jsonLayout.str());
+                if (req.getReturnBinTypeInfo() && binLayout.length())
+                    resp.setRecordTypeInfoBin(binLayout);
+            }
+            break;
+        }
+        default:
+            throwUnexpected();
+    }
+
+    // setup "expiryTime"
+    unsigned expirySecs = req.getExpirySeconds();
+    if (expirySecs > maxFileAccessExpirySeconds)
+        expirySecs = maxFileAccessExpirySeconds;
+    time_t now;
+    time(&now);
+    CDateTime expiryDt;
+    expiryDt.set(now + expirySecs);
+    StringBuffer expiryTimeStr;
+    expiryDt.getString(expiryTimeStr);
+
+    StringBuffer keyPairName;
+    getFileDafilesrvKeyName(keyPairName, *df);
+
+    StringBuffer metaInfo;
+    getFileMeta(metaInfo, *df, udesc, role, expiryTimeStr, keyPairName, req);
+    resp.setMetaInfoBlob(metaInfo);
+    resp.setExpiryTime(expiryTimeStr);
+}
+
+
+SecAccessFlags translateToSecAccessFlags(CSecAccessType from)
+{
+    switch (from)
+    {
+        case CSecAccessType_Access:
+            return SecAccess_Access;
+        case CSecAccessType_Read:
+            return SecAccess_Read;
+        case CSecAccessType_Write:
+            return SecAccess_Write;
+        case CSecAccessType_Full:
+            return SecAccess_Full;
+        case CSecAccessType_None:
+        default:
+            return SecAccess_None;
+    }
+}
+
+bool CWsDfuEx::onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp)
+{
+    try
+    {
+        SecAccessFlags accessType = translateToSecAccessFlags(req.getAccessType());
+        if (SecAccess_None == accessType)
+            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "onDFUFileAccess - Permission denied.");
+        else if (!context.validateFeatureAccess(FEATURE_URL, accessType, false))
+            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "onDFUFileAccess - Permission denied.");
+
+        if (isEmptyString(req.getName()))
+             throw MakeStringException(ECLWATCH_INVALID_INPUT, "No Name defined.");
+
+        StringBuffer userID;
+        context.getUserID(userID);
+
+        Owned<IUserDescriptor> userDesc;
+        if (!userID.isEmpty())
+        {
+            userDesc.setown(createUserDescriptor());
+            userDesc->set(userID.str(), context.queryPassword(), context.querySignature());
+        }
+        getFileAccess(context, userDesc, accessType, req, resp);
+    }
+    catch (IException *e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
 }
 
 //////////////////////HPCC Browser//////////////////////////

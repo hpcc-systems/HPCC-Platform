@@ -37,6 +37,26 @@ ESPenum DFUDefFileFormat : string
     def("def"),
 };
 
+ESPenum SecAccessType : string
+{
+    None("None"),
+    Access("Access"),
+    Read("Read"),
+    Write("Write"),
+    Full("Full")
+};
+
+/* The FileAccessRole differentiates what type of info is returned in the response
+ * "Token" will generally be used to refresh an expired token.
+ * "Engine" may not be required long term, but allows the service to tailor and hopefully optimize the reply with info. the engines need. 
+ */
+ESPenum FileAccessRole : string
+{
+    Token("Token"),       // Request for security token only, no plain text file information will be return in the response. May be used to refresh an expired token.
+    Engine("Engine"),     // For internal HPCC engines, plain text file meta info may differ from external clients (for now at least). 
+    External("External"), // For external clients (e.g. Spark), plain text less verbose than legacy format needed by engines (e.g. only needs locations, # parts only). 
+};
+
 ESPStruct SpaceItem
 {
     string Name;
@@ -812,7 +832,43 @@ ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
     ESParray<ESPStruct History, Origin> History;
 };
 
+ESPrequest DFUFileAccessRequest
+{
+    string Name;
+    string Cluster;
+    int ExpirySeconds(60);
+    ESPenum FileAccessRole AccessRole;
+    ESPenum SecAccessType AccessType;
+    string JobId;
+    bool ReturnJsonTypeInfo(false);
+    bool ReturnBinTypeInfo(false);
+};
 
+// DFUPartLocations and DFUPartCopies part of DFUFileAccessResponse below
+ESPStruct DFUPartLocations
+{
+    int LocationIndex;
+    string Location;
+};
+
+ESPStruct DFUPartCopies
+{
+    int PartIndex;
+    ESParray<string> LocationIndexes;
+};
+
+ESPresponse [exceptions_inline] DFUFileAccessResponse
+{
+    string MetaInfoBlob;
+    string ExpiryTime;
+    // {NumParts, FilePartLocations, FileParts} depend on ReturnFileInfo in request
+    int NumParts;        // number of parts in logical file
+    ESParray<EspStruct DFUPartLocations> FilePartLocations;
+    ESParray<EspStruct DFUPartCopies> FileParts;
+    
+    binary RecordTypeInfoBin;   // optional
+    string RecordTypeInfoJson;  // optional
+};
 
 //  ===========================================================================
 ESPservice [
@@ -845,6 +901,8 @@ ESPservice [
     ESPmethod EraseHistory(EraseHistoryRequest, EraseHistoryResponse);
     ESPmethod DFURecordTypeInfo(DFURecordTypeInfoRequest, DFURecordTypeInfoResponse);
     ESPmethod EclRecordTypeInfo(EclRecordTypeInfoRequest, EclRecordTypeInfoResponse);
+
+    ESPmethod [auth_feature("DfuAccess:READ"), min_var("1.39")] DFUFileAccess(DFUFileAccessRequest, DFUFileAccessResponse);
 };
 
 SCMexportdef(WSDFU);

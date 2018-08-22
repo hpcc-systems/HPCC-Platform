@@ -522,6 +522,7 @@
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/queries/[INST]" name="query"/>
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lock/[NAME]/[INST]" name="lock"/>
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/hpcc-data4/[COMPONENT]" name="data4"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/keys" name="keys"/>
   </Directories>
   <EclAgentProcess allowedPipePrograms="*"
                    build="_"

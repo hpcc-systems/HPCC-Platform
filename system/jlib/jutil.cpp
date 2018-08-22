@@ -2540,6 +2540,30 @@ static IPropertyTree *getOSSdirTree()
     return NULL;
 }
 
+StringBuffer &getFileAccessUrl(StringBuffer &out)
+{
+    Owned<IPropertyTree> envtree = getHPCCEnvironment();
+    if (envtree)
+    {
+        IPropertyTree *secureFileAccessInfo = envtree->queryPropTree("EnvSettings/SecureFileAccess");
+        if (secureFileAccessInfo)
+        {
+            const char *protocol = secureFileAccessInfo->queryProp("@protocol");
+            const char *host = secureFileAccessInfo->queryProp("@host");
+            unsigned port = secureFileAccessInfo->getPropInt("@port", (unsigned)-1);
+            if (isEmptyString(protocol))
+                WARNLOG("Missing protocol from secure file access definition");
+            else if (isEmptyString(host))
+                WARNLOG("Missing host from secure file access definition");
+            else if ((unsigned)-1 == port)
+                WARNLOG("Missing port from secure file access definition");
+            else
+                out.appendf("%s://%s:%u/WsDfu", protocol, host, port);
+        }
+    }
+    return out;
+}
+
 bool getConfigurationDirectory(const IPropertyTree *useTree, const char *category, const char *component, const char *instance, StringBuffer &dirout)
 {
     Linked<const IPropertyTree> dirtree = useTree;
