@@ -380,8 +380,10 @@ int main(int argc,char **argv)
     unsigned throttleSlowDelayMs = DEFAULT_SLOWCMD_THROTTLEDELAYMS;
     unsigned throttleSlowCPULimit = DEFAULT_SLOWCMD_THROTTLECPULIMIT;
     unsigned throttleSlowQueueLimit = DEFAULT_SLOWCMD_THROTTLEQUEUELIMIT;
+    bool authorizedOnly = DEFAULT_AUTHORIZED_ONLY;
 
     Owned<IPropertyTree> env = getHPCCEnvironment();
+    IPropertyTree *keyPairInfo = nullptr;
     if (env)
     {
         StringBuffer dafilesrvPath("Software/DafilesrvProcess");
@@ -406,6 +408,8 @@ int main(int argc,char **argv)
             throttleSlowCPULimit = daFileSrv->getPropInt("@throttleSlowCPULimit", DEFAULT_SLOWCMD_THROTTLECPULIMIT);
             throttleSlowQueueLimit = daFileSrv->getPropInt("@throttleSlowQueueLimit", DEFAULT_SLOWCMD_THROTTLEQUEUELIMIT);
 
+            authorizedOnly = daFileSrv->getPropBool("@authorizedOnly", DEFAULT_AUTHORIZED_ONLY);
+
             // any overrides by Instance definitions?
             // NB: This won't work if netAddress is "." or if we start supporting hostnames there
             StringBuffer ipStr;
@@ -427,8 +431,11 @@ int main(int argc,char **argv)
                 throttleSlowDelayMs = dafileSrvInstance->getPropInt("@throttleSlowDelayMs", throttleSlowDelayMs);
                 throttleSlowCPULimit = dafileSrvInstance->getPropInt("@throttleSlowCPULimit", throttleSlowCPULimit);
                 throttleSlowQueueLimit = dafileSrvInstance->getPropInt("@throttleSlowQueueLimit", throttleSlowQueueLimit);
+
+                authorizedOnly = dafileSrvInstance->getPropBool("@authorizedOnly", authorizedOnly);
             }
         }
+        keyPairInfo = env->queryPropTree("EnvSettings/Keys");
     }
 
     // these should really be in env, but currently they are not ...
@@ -771,7 +778,7 @@ int main(int argc,char **argv)
 
     PROGLOG("Version: %s", verstring);
     PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
-    server.setown(createRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy));
+    server.setown(createRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy, authorizedOnly, keyPairInfo));
     server->setThrottle(ThrottleStd, parallelRequestLimit, throttleDelayMs, throttleCPULimit);
     server->setThrottle(ThrottleSlow, parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
     class CPerfHook : public CSimpleInterfaceOf<IPerfMonHook>

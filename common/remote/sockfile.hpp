@@ -50,6 +50,8 @@ enum ThrottleClass
 #define DEFAULT_SLOWCMD_THROTTLECPULIMIT 75
 #define DEFAULT_SLOWCMD_THROTTLEQUEUELIMIT 1000
 
+#define DEFAULT_AUTHORIZED_ONLY false
+
 interface IRemoteFileServer : extends IInterface
 {
     virtual void run(DAFSConnectCfg connectMethod, SocketEndpoint &listenep, unsigned sslPort=0) = 0;
@@ -59,7 +61,7 @@ interface IRemoteFileServer : extends IInterface
     virtual StringBuffer &getStats(StringBuffer &stats, bool reset) = 0;
 };
 
-#define FILESRV_VERSION 22 // don't forget VERSTRING in sockfile.cpp
+#define FILESRV_VERSION 23 // don't forget VERSTRING in sockfile.cpp
 
 interface IKeyManager;
 interface IDelayedFile;
@@ -68,7 +70,7 @@ extern REMOTE_API IFile * createRemoteFile(SocketEndpoint &ep,const char * _file
 extern REMOTE_API unsigned getRemoteVersion(ISocket * _socket, StringBuffer &ver);
 extern REMOTE_API unsigned stopRemoteServer(ISocket * _socket);
 extern REMOTE_API const char *remoteServerVersionString();
-extern REMOTE_API IRemoteFileServer * createRemoteFileServer(unsigned maxThreads=DEFAULT_THREADLIMIT, unsigned maxThreadsDelayMs=DEFAULT_THREADLIMITDELAYMS, unsigned maxAsyncCopy=DEFAULT_ASYNCCOPYMAX);
+extern REMOTE_API IRemoteFileServer * createRemoteFileServer(unsigned maxThreads=DEFAULT_THREADLIMIT, unsigned maxThreadsDelayMs=DEFAULT_THREADLIMITDELAYMS, unsigned maxAsyncCopy=DEFAULT_ASYNCCOPYMAX, bool authorizedOnly=DEFAULT_AUTHORIZED_ONLY, IPropertyTree *keyPairInfo=nullptr);
 extern REMOTE_API int setDafsTrace(ISocket * socket,byte flags);
 extern REMOTE_API int setDafsThrottleLimit(ISocket * socket, ThrottleClass throttleClass, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit, unsigned queueLimit, StringBuffer *errMsg=NULL);
 extern REMOTE_API bool enableDafsAuthentication(bool on);

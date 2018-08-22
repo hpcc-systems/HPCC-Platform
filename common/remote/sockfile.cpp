@@ -53,6 +53,11 @@
 #include "rtlcommon.hpp"
 #include "rtlformat.hpp"
 
+#include "jflz.hpp"
+#include "digisign.hpp"
+
+using namespace cryptohelper;
+
 
 #define SOCKET_CACHE_MAX 500
 
@@ -181,7 +186,7 @@ struct dummyReadWrite
 // backward compatible modes
 typedef enum { compatIFSHnone, compatIFSHread, compatIFSHwrite, compatIFSHexec, compatIFSHall} compatIFSHmode;
 
-static const char *VERSTRING= "DS V2.2"       // dont forget FILESRV_VERSION in header
+static const char *VERSTRING= "DS V2.3"       // dont forget FILESRV_VERSION in header
 #ifdef _WIN32
 "Windows ";
 #else
@@ -1820,7 +1825,7 @@ public:
         MemoryBuffer actualTypeInfo;
         if (!dumpTypeInfo(actualTypeInfo, actual->querySerializedDiskMeta()->queryTypeInfo()))
             throw MakeStringException(0, "Format not supported by remote read");
-        request.append(",\n \"inputBin\": \"");
+        request.append(",\n \"inputBin\" : \"");
         JBASE64_Encode(actualTypeInfo.toByteArray(), actualTypeInfo.length(), request, false);
         request.append("\"");
         if (actual != projected)
@@ -4421,10 +4426,101 @@ IRemoteActivity *createRemoteIndexCount(IPropertyTree &actNode)
     return new CRemoteIndexCountActivity(actNode);
 }
 
-IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
+void checkExpiryTime(IPropertyTree &metaInfo)
 {
-    const char *kindStr = actNode.queryProp("kind");
+    const char *expiryTime = metaInfo.queryProp("expiryTime");
+    if (isEmptyString(expiryTime))
+        throwStringExceptionV(0, "createRemoteActivity: invalid expiry specification");
+    CDateTime expiryTimeDt;
+    expiryTimeDt.setString(expiryTime);
+    CDateTime nowDt;
+    nowDt.setNow();
+    if (nowDt >= expiryTimeDt)
+        throwStringExceptionV(0, "createRemoteActivity: authorization expired");
+}
 
+void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IPropertyTree *keyPairInfo)
+{
+    if (!authorizedOnly) // if configured false, allows unencrypted meta info
+    {
+        if (actNode.hasProp("fileName"))
+            return;
+    }
+    StringBuffer metaInfoB64;
+    actNode.getProp("metaInfo", metaInfoB64);
+    if (0 == metaInfoB64.length())
+        throwStringExceptionV(0, "createRemoteActivity: missing metaInfo");
+
+    MemoryBuffer compressedMetaInfoMb;
+    JBASE64_Decode(metaInfoB64.str(), compressedMetaInfoMb);
+    MemoryBuffer decompressedMetaInfoMb;
+    fastLZDecompressToBuffer(decompressedMetaInfoMb, compressedMetaInfoMb);
+    Owned<IPropertyTree> metaInfoEnvelope = createPTree(decompressedMetaInfoMb);
+
+    Owned<IPropertyTree> metaInfo;
+#ifdef _USE_OPENSSL
+    MemoryBuffer metaInfoBlob;
+    metaInfoEnvelope->getPropBin("metaInfoBlob", metaInfoBlob);
+
+    bool isSigned = metaInfoBlob.length() != 0;
+    if (authorizedOnly && !isSigned)
+        throwStringExceptionV(0, "createRemoteActivity: unathorized");
+
+    if (isSigned)
+    {
+        metaInfo.setown(createPTree(metaInfoBlob));
+
+        // version for future use
+        unsigned securityVersion = metaInfo->getPropInt("version");
+
+        const char *keyPairName = metaInfo->queryProp("keyPairName");
+
+        StringBuffer metaInfoSignature;
+        if (!metaInfoEnvelope->getProp("signature", metaInfoSignature))
+            throwStringExceptionV(0, "createRemoteActivity: missing signature");
+
+        VStringBuffer keyPairPath("KeyPair[@name=\"%s\"]", keyPairName);
+        IPropertyTree *keyPair = keyPairInfo->queryPropTree(keyPairPath);
+        if (!keyPair)
+            throwStringExceptionV(0, "createRemoteActivity: missing key pair definition");
+        const char *publicKeyFName = keyPair->queryProp("@publicKey");
+        if (isEmptyString(publicKeyFName))
+            throwStringExceptionV(0, "createRemoteActivity: missing public key definition");
+        Owned<CLoadedKey> publicKey = loadPublicKeyFromFile(publicKeyFName, nullptr); // NB: if cared could cache loaded keys
+        if (!digiVerify(metaInfoSignature, decompressedMetaInfoMb.length(), decompressedMetaInfoMb.bytes(), *publicKey))
+            throwStringExceptionV(0, "createRemoteActivity: signature verification failed");
+
+        checkExpiryTime(*metaInfo);
+    }
+    else
+#endif
+        metaInfo.set(metaInfoEnvelope);
+
+    IPropertyTree *fileInfo = metaInfo->queryPropTree("FileInfo");
+    assertex(fileInfo);
+
+    // extra filename based on part/copy.
+    assertex(actNode.hasProp("filePart"));
+    unsigned partNum = actNode.getPropInt("filePart");
+    assertex(partNum);
+    unsigned partCopy = actNode.getPropInt("filePartCopy", 1);
+
+    VStringBuffer xpath("Part[%u]/Copy[%u]/@filePath", partNum, partCopy);
+    StringBuffer partFileName;
+    fileInfo->getProp(xpath, partFileName);
+    if (!partFileName.length())
+        throwStringExceptionV(0, "createRemoteActivity: invalid file info");
+
+    actNode.setProp("fileName", partFileName.str());
+    verifyex(actNode.removeProp("metaInfo")); // no longer needed
+}
+
+IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnly, const IPropertyTree *keyPairInfo)
+{
+    verifyMetaInfo(actNode, authorizedOnly, keyPairInfo);
+
+    const char *partFileName = actNode.queryProp("fileName");
+    const char *kindStr = actNode.queryProp("kind");
     ThorActivityKind kind = TAKnone;
     if (kindStr)
     {
@@ -4436,10 +4532,6 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
             kind = TAKindexcount;
         // else - auto-detect
     }
-
-    const char *fileName = actNode.queryProp("fileName");
-    if (isEmptyString(fileName))
-        throw MakeStringException(0, "createRemoteActivity: fileName missing");
 
     Owned<IRemoteActivity> activity;
     switch (kind)
@@ -4462,14 +4554,14 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
         default: // auto-detect file format
         {
             const char *action = actNode.queryProp("action");
-            if (isIndexFile(fileName))
+            if (isIndexFile(partFileName))
             {
                 if (!isEmptyString(action))
                 {
                     if (streq("count", action))
                         activity.setown(createRemoteIndexCount(actNode));
                     else
-                        throwStringExceptionV(0, "Unknown action '%s' on index '%s'", action, fileName);
+                        throwStringExceptionV(0, "Unknown action '%s' on index '%s'", action, partFileName);
                 }
                 else
                     activity.setown(createRemoteIndexRead(actNode));
@@ -4481,7 +4573,7 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
                     if (streq("count", action))
                         throwStringExceptionV(0, "Remote Disk Counts currently unsupported");
                     else
-                        throwStringExceptionV(0, "Unknown action '%s' on flat file '%s'", action, fileName);
+                        throwStringExceptionV(0, "Unknown action '%s' on flat file '%s'", action, partFileName);
                 }
                 else
                     activity.setown(createRemoteDiskRead(actNode));
@@ -4493,11 +4585,11 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode)
     return activity.getClear();
 }
 
-IRemoteActivity *createOutputActivity(IPropertyTree &requestTree)
+IRemoteActivity *createOutputActivity(IPropertyTree &requestTree, bool authorizedOnly, const IPropertyTree *keyPairInfo)
 {
     IPropertyTree *actNode = requestTree.queryPropTree("node");
     assertex(actNode);
-    return createRemoteActivity(*actNode);
+    return createRemoteActivity(*actNode, authorizedOnly, keyPairInfo);
 }
 
 #define MAX_KEYDATA_SZ 0x10000
@@ -5139,6 +5231,8 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     CClientStatsTable clientStatsTable;
     atomic_t globallasttick;
     unsigned targetActiveThreads;
+    bool authorizedOnly;
+    Owned<IPropertyTree> keyPairInfo;
 
     int getNextHandle()
     {
@@ -5290,8 +5384,8 @@ public:
 
     IMPLEMENT_IINTERFACE
 
-    CRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy)
-        : asyncCommandManager(maxAsyncCopy), stdCmdThrottler("stdCmdThrotlter"), slowCmdThrottler("slowCmdThrotlter")
+    CRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy, bool _authorizedOnly, IPropertyTree *_keyPairInfo)
+        : asyncCommandManager(maxAsyncCopy), stdCmdThrottler("stdCmdThrotlter"), slowCmdThrottler("slowCmdThrotlter"), authorizedOnly(_authorizedOnly), keyPairInfo(_keyPairInfo)
     {
         lasthandle = 0;
         selecthandler.setown(createSocketSelectHandler(NULL));
@@ -6263,7 +6357,7 @@ public:
             replyLimit = requestTree->getPropInt64("replyLimit", defaultDaFSReplyLimitKB) * 1024;
 
             // In future this may be passed the request and build a chain of activities and return sink.
-            outputActivity.setown(createOutputActivity(*requestTree));
+            outputActivity.setown(createOutputActivity(*requestTree, authorizedOnly, keyPairInfo));
 
             Owned<CRemoteRequest> remoteRequest = new CRemoteRequest(outputFormat, replyLimit, outputActivity);
 
@@ -7164,12 +7258,17 @@ public:
 };
 
 
-IRemoteFileServer * createRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy)
+IRemoteFileServer * createRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy, bool authorizedOnly, IPropertyTree *keyPairInfo)
 {
 #if SIMULATE_PACKETLOSS
     errorSimulationOn = false;
 #endif
-    return new CRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy);
+
+// NB: if no OOPENSSL, no authorization checks
+#ifndef _USE_OPENSSL
+    authorizedOnly = false;
+#endif
+    return new CRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy, authorizedOnly, keyPairInfo);
 }
 
 
