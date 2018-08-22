@@ -19,6 +19,9 @@
 #include "jtime.hpp"
 #include "digisign.hpp"
 
+using namespace cryptohelper;
+
+
 //define a container for multiple instances of a security manager cache
 typedef map<string, CPermissionsCache*> MapCache;
 static CriticalSection mapCacheCS;//guards modifications to the cache map

@@ -27,6 +27,8 @@
 #include "dautils.hpp"
 #include "digisign.hpp"
 
+using namespace cryptohelper;
+
 #ifndef _NO_LDAP
 #include "seclib.hpp"
 #include "ldapsecurity.hpp"

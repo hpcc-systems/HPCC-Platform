@@ -17,15 +17,18 @@
 #ifndef DIGISIGN_HPP
 #define DIGISIGN_HPP
 
-#ifndef DIGISIGN_API
+#ifndef CRYPTOHELPER_API
 
-#ifndef DIGISIGN_EXPORTS
-    #define DIGISIGN_API DECL_IMPORT
+#ifndef CRYPTOHELPER_EXPORTS
+    #define CRYPTOHELPER_API DECL_IMPORT
 #else
-    #define DIGISIGN_API DECL_EXPORT
-#endif //DIGISIGN_EXPORTS
+    #define CRYPTOHELPER_API DECL_EXPORT
+#endif //CRYPTOHELPER_EXPORTS
 
 #endif
+
+namespace cryptohelper
+{
 
 //General purpose digital signature manager
 //Useful to sign a text string, so the consumer can be assured it has not been altered
@@ -41,14 +44,16 @@ public:
 extern "C"
 {
     //Uses the HPCCPublicKey/HPCCPrivateKey key files specified in environment.conf
-    DIGISIGN_API IDigitalSignatureManager * queryDigitalSignatureManagerInstanceFromEnv();
+    CRYPTOHELPER_API IDigitalSignatureManager * queryDigitalSignatureManagerInstanceFromEnv();
 
     //Create using the given key files
-    DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * _pubKey, const char *_privKey, const char * _passPhrase);
+    CRYPTOHELPER_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * _pubKey, const char *_privKey, const char * _passPhrase);
 
     //Create using the given PEM formatted keys
-    DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(StringBuffer & _pubKeyBuff, StringBuffer & _privKeyBuff, const char * _passPhrase);
+    CRYPTOHELPER_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(StringBuffer & _pubKeyBuff, StringBuffer & _privKeyBuff, const char * _passPhrase);
 }
+
+} // namespace cryptohelper
 
 #endif
 
