@@ -816,6 +816,8 @@ inline bool isPartTLK(IPartDescriptor *p) { return isPartTLK(p->queryProperties(
 
 extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned timeoutms=INFINITE);
 
+extern da_decl bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg);
+
 
 #endif
 

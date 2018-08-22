@@ -60,6 +60,7 @@ include_directories (
          ./../../../ecl/hql 
          ./../../../system/security/securesocket 
          ./../../../system/security/shared 
+         ./../../../system/security/cryptohelper 
          ./../../../system/include 
          ./../../../common/workunit 
          ./../../../common/remote 
@@ -101,6 +102,7 @@ target_link_libraries ( ws_dfu
          dfuXRefLib 
          dfuwu 
          roxiecommlib 
+         cryptohelper
     )
 
 IF (USE_OPENSSL)

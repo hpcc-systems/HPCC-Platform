@@ -30,6 +30,8 @@
 
 #endif
 
+#include "pke.hpp"
+
 namespace cryptohelper
 {
 

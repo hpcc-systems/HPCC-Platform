@@ -991,6 +991,13 @@
                  </xs:restriction>
                </xs:simpleType>
             </xs:attribute>
+            <xs:attribute name="FileAccessExpirySeconds" type="xs:integer" use="optional" default="86400">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum time a file access request is valid for</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

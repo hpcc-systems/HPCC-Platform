@@ -1303,7 +1303,7 @@ static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool r
         throw e;
 }
 
-static bool checkLogicalName(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg)
+bool checkLogicalName(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg)
 {
     bool ret = true;
     if (dlfn.isMulti()) { //is temporary superFile?
@@ -1333,6 +1333,14 @@ static bool checkLogicalName(CDfsLogicalFileName &dlfn,IUserDescriptor *user,boo
     }
     return ret;
 }
+
+bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg)
+{
+    CDfsLogicalFileName dlfn;
+    dlfn.set(lfn);
+    return checkLogicalName(dlfn, user, readreq, createreq, allowquery, specialnotallowedmsg);
+}
+
 
 /*
  * This class removes all files marked for deletion during transactions.
