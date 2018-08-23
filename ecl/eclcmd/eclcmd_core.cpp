@@ -1950,12 +1950,12 @@ public:
             "\n"
             "Create and store ZAP file of the given workunit.\n"
             "\n"
-            "ecl zapgen <WUID> -path <zap_file_path>\n"
+            "ecl zapgen <WUID> --path <zap_file_path>\n"
             "\n"
             "   WUID                    workunit ID\n"
             "   path                    path to store ZAP file\n"
             " Options:\n"
-            "   --inc-thor-slave-logs   include Thor salve(s) log into the ZAP file\n"
+            "   --inc-thor-slave-logs   include Thor slave(s) log into the ZAP file\n"
             "   --description <text>    problem description string\n",
             stdout);
         EclCmdCommon::usage();
