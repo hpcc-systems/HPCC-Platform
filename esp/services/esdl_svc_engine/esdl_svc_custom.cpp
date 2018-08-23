@@ -71,6 +71,7 @@ void CEsdlCustomTransformChoose::processClauses(IPropertyTree *request, IXpathCo
                         }
                         else
                         {
+                            ensurePTree(request, targetField);
                             request->appendProp(targetField, evaluatedValue.str());
                         }
                     }
