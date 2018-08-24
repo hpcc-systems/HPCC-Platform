@@ -220,6 +220,7 @@ define({root:
     EventText: "Event Text",
     EventTextPH: "Event Text",
     Exception: "Exception",
+    ExpireDays: "Expire in (days)",
     FailIfNoSourceFile:"Fail If No Source File",
     Fatal: "Fatal",
     Fetched: "Fetched",
