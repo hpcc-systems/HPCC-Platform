@@ -87,13 +87,11 @@ bool WuResubmit(const char *wuid)
     SCMStringBuffer token;
     wu->getSecurityToken(token);
     SCMStringBuffer user;
-    SCMStringBuffer password;
-    extractToken(token.str(), wuid, user, password);
     wu->resetWorkflow();
     wu->setState(WUStateSubmitted);
     wu->commit();
     wu.clear();
-    submitWorkUnit(wuid,user.str(),password.str());
+    submitWorkUnit(wuid,user.str(),nullptr);//TODO remove password from signature
 
     PROGLOG("WuResubmit(%s): resubmitted",wuid);
     return true;

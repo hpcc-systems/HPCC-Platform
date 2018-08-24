@@ -202,10 +202,10 @@ static IPropertyTree *getEnvironmentTree(IConstEnvironment * daliEnv)
 
 static void setServerAccess(CClientFileSpray &server, IConstWorkUnit * wu)
 {
-    StringBuffer user, password, token;
+    StringBuffer user, token;
     wu->getSecurityToken(StringBufferAdaptor(token));
-    extractToken(token.str(), wu->queryWuid(), StringBufferAdaptor(user), StringBufferAdaptor(password));
-    server.setUsernameToken(user.str(), password.str(), "");
+    extractToken(token.str(), wu->queryWuid(), StringBufferAdaptor(user));
+    server.setUsernameToken(user.str(), nullptr, "");
 }
 
 static StringArray availableWsFS;

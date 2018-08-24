@@ -1603,9 +1603,9 @@ extern WORKUNIT_API bool waitForWorkUnitToCompile(const char * wuid, int timeout
 extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout = -1, bool returnOnWaitState = false);
 extern WORKUNIT_API bool secWaitForWorkUnitToCompile(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout = -1);
 extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr, ISecUser &secuser, const char *command, StringBuffer &response);
-extern WORKUNIT_API IStringVal& createToken(const char *wuid, const char *user, const char *password, IStringVal &str);
+extern WORKUNIT_API IStringVal& createToken(const char *wuid, const char *user, IStringVal &str);
 // This latter is temporary - tokens will be replaced by something more secure
-extern WORKUNIT_API void extractToken(const char *token, const char *wuid, IStringVal &user, IStringVal &password);
+extern WORKUNIT_API void extractToken(const char *token, const char *wuid, IStringVal &user);
 extern WORKUNIT_API WUState getWorkUnitState(const char* state);
 extern WORKUNIT_API IWorkflowScheduleConnection * getWorkflowScheduleConnection(char const * wuid);
 extern WORKUNIT_API const char *skipLeadingXml(const char *text);

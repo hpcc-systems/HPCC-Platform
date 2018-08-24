@@ -834,7 +834,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                     queryExtendedWU(wu)->copyWorkUnit(src, false, false);
 
                     SCMStringBuffer token;
-                    wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+                    wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), token).str());
                 }
 
                 wuids.append(wuid.str());
@@ -964,7 +964,7 @@ bool CWsWorkunitsEx::onWUSchedule(IEspContext &context, IEspWUScheduleRequest &r
             wu->setDebugValueInt("maxRunTime", req.getMaxRunTime(), true);
 
         SCMStringBuffer token;
-        wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+        wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), token).str());
 
         AuditSystemAccess(context.queryUserId(), true, "Scheduled %s", wuid.str());
     }
