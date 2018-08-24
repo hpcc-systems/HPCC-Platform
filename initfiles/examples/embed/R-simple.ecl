@@ -1,10 +1,10 @@
 IMPORT R;
 
 /*
- This example illustrates and tests the use of embedded JavaScript
+ This example illustrates and tests the use of embedded R
  */
 
-// Scalar parameters and resuls
+// Scalar parameters and results
 
 integer add1(integer VAL) := EMBED(R)
 VAL+1
@@ -110,7 +110,7 @@ ENDEMBED;
 // returning a record
 
 mtcarsrec testRecordOut() := EMBED(R)
-mtcars[t,];
+mtcars[1,];
 ENDEMBED;
 
 mtcarsrec testRecordOut2() := EMBED(R)
