@@ -239,8 +239,7 @@
 
                 <listitem>
                   <para>Specify whether or not to allow queries to be run
-                  immediately on Roxie. This must be enabled to run the
-                  debugger. (Default is true)</para>
+                  immediately on Roxie. (Default is true)</para>
                 </listitem>
               </varlistentry>
             </variablelist>

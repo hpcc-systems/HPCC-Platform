@@ -22,13 +22,6 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">ECL Debugger</emphasis></entry>
-
-          <entry>A development tool integrated into the ECL IDE, which is used
-          to debug queries as they are developed.</entry>
-        </row>
-
-        <row>
           <entry><emphasis role="bold">ECLPlus</emphasis></entry>
 
           <entry>Command line ECL execution tool to facilitate automation of
