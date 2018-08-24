@@ -6,7 +6,7 @@ function getConfig(env) {
     var dojoRoot = env.dojoRoot;
     var baseUrl = dojoRoot ? "." : "/esp/files";
     var hpccBaseUrl = baseUrl + "/node_modules/@hpcc-js";
-    var hpccMin = debugHPCC_JS ? "" : "min";
+    var hpccMin = debugHPCC_JS ? "" : ".min";
 
     return {
         baseUrl: baseUrl,
