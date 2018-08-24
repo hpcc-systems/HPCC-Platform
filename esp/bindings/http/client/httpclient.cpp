@@ -338,7 +338,7 @@ int CHttpClient::sendRequest(const char* method, const char* contenttype, String
         StringBuffer uidpair;
         uidpair.append(m_userid.get()).append(":").append(m_password.get());
         StringBuffer result;
-        Utils::base64encode(uidpair.str(), uidpair.length(), result);
+        JBASE64_Encode(uidpair.str(), uidpair.length(), result, false);
         StringBuffer authhdr("Basic ");
 
         //Remove the \n from the end of the encoded string.
@@ -458,7 +458,7 @@ int CHttpClient::sendRequest(IProperties *headers, const char* method, const cha
         StringBuffer uidpair;
         uidpair.append(m_userid.get()).append(":").append(m_password.get());
         StringBuffer result;
-        Utils::base64encode(uidpair.str(), uidpair.length(), result);
+        JBASE64_Encode(uidpair.str(), uidpair.length(), result, false);
         StringBuffer authhdr("Basic ");
 
         //Remove the \n from the end of the encoded string.
@@ -643,7 +643,7 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
         StringBuffer uidpair;
         uidpair.append(m_userid.get()).append(":").append(m_password.get());
         StringBuffer result;
-        Utils::base64encode(uidpair.str(), uidpair.length(), result);
+        JBASE64_Encode(uidpair.str(), uidpair.length(), result, false);
         StringBuffer authhdr("Basic ");
 
         //Remove the \n from the end of the encoded string.

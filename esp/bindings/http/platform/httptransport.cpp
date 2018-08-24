@@ -1608,7 +1608,7 @@ void CHttpRequest::getBasicAuthorization(StringBuffer& userid, StringBuffer& pas
         return;
 
     StringBuffer uidpair;
-    Utils::base64decode(authheader.length() - strlen("Basic "), authheader.str() + strlen("Basic "), uidpair);
+    JBASE64_Decode(authheader.str() + strlen("Basic "), uidpair);
 
     //uidpair formatted as   [domain\]username:password    (domain optional)
     
