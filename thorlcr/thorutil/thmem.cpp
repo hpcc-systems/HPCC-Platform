@@ -1627,19 +1627,19 @@ protected:
     IPointerArrayOf<CFileOwner> spillFiles;
     Owned<IOutputRowSerializer> serializer;
     RowCollectorSpillFlags diskMemMix;
-    rowcount_t totalRows;
-    unsigned overflowCount;
-    unsigned maxCores;
-    unsigned outStreams;
-    offset_t sizeSpill;
+    rowcount_t totalRows = 0;
+    unsigned overflowCount = 0;
+    unsigned maxCores = 0;
+    unsigned outStreams = 0;
+    offset_t sizeSpill = 0;
     ICompare *iCompare;
     StableSortFlag stableSort;
     EmptyRowSemantics emptyRowSemantics = ers_forbidden;
     Owned<CSharedSpillableRowSet> spillableRowSet;
-    unsigned options;
+    unsigned options = 0;
     unsigned spillCompInfo = 0;
-    __uint64 spillCycles;
-    __uint64 sortCycles;
+    __uint64 spillCycles = 0;
+    __uint64 sortCycles = 0;
 
     bool spillRows(bool critical)
     {
@@ -1828,6 +1828,8 @@ protected:
         totalRows = 0;
         overflowCount = outStreams = 0;
         sizeSpill = 0;
+        spillCycles = 0;
+        sortCycles = 0;
     }
 public:
     CThorRowCollectorBase(CActivityBase &_activity, IThorRowInterfaces *_rowIf, ICompare *_iCompare, StableSortFlag _stableSort, RowCollectorSpillFlags _diskMemMix, unsigned _spillPriority)
@@ -1835,9 +1837,6 @@ public:
           iCompare(_iCompare), stableSort(_stableSort), diskMemMix(_diskMemMix),
           spillableRows(_activity)
     {
-        totalRows = 0;
-        overflowCount = outStreams = 0;
-        sizeSpill = 0;
         if (rc_allMem == diskMemMix)
             spillPriority = SPILL_PRIORITY_DISABLE; // all mem, implies no spilling
         else
@@ -1851,8 +1850,6 @@ public:
             activity.getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
             setCompFlag(compType, spillCompInfo);
         }
-        spillCycles = 0;
-        sortCycles = 0;
         if (iCompare)
         {
             /* NB: See HPCC-17231 for details
