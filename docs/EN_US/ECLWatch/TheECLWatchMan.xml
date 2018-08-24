@@ -223,6 +223,24 @@
           conditions limit the results displayed until you clear the
           filter.</para>
         </sect3>
+
+        <sect3>
+          <title>The Mine Button</title>
+
+          <para>The <emphasis role="bold">Mine</emphasis> button appears along
+          the top of every list page. Check the Mine box to filter for only
+          items that you own. <figure>
+              <title>Mine button</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images\ECLWAMine00.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Uncheck the Mine button to display all jobs.</para>
+        </sect3>
       </sect2>
 
       <sect2 id="ECLWA_BannerItems">
@@ -445,7 +463,7 @@
           <para><orderedlist>
               <listitem>
                 <para>Click on your username link and the User Details window
-                opens. </para>
+                opens.</para>
 
                 <para><figure>
                     <title>User Details window</title>
@@ -486,7 +504,7 @@
                 <listitem>
                   <para>Click on your username link under the <emphasis
                   role="bold"><emphasis role="bold">LOGGED IN
-                  AS:</emphasis></emphasis> </para>
+                  AS:</emphasis></emphasis></para>
 
                   <para>The User Details window opens. There are fields where
                   you can change your password.</para>
@@ -522,7 +540,7 @@
 
             <para>Click the <emphasis role="bold">Lock</emphasis> link next to
             the username link to lock your session. You would then need to
-            enter your credentials to unlock your session. </para>
+            enter your credentials to unlock your session.</para>
           </sect4>
         </sect3>
       </sect2>
