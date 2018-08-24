@@ -6339,6 +6339,7 @@ bool CLocalWorkUnit::setDistributedAccessToken(const char * user)
 {
     CriticalBlock block(crit);
 
+    //If this format changes, you must update the isWorkunitDAToken() and extractFromWorkunitDAToken() methods
     VStringBuffer datoken("HPCC[u=%s,w=%s]", user, queryWuid());
 
     IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
@@ -6838,16 +6839,13 @@ const char *clusterTypeString(ClusterType clusterType, bool lcrSensitive)
 //    HPCC[u=user,w=wuid]keyFile;signature
 bool isWorkunitDAToken(const char * distributedAccessToken)
 {
-    if (strncmp(distributedAccessToken, "HPCC[", 5) ||
-        !strstr(distributedAccessToken+5, "u=") ||
-        !strchr(distributedAccessToken+5, ',')  ||
-        !strstr(distributedAccessToken+5, "w=") ||
-        !strchr(distributedAccessToken+5, ']')  ||
-        !strchr(distributedAccessToken+5, ';'))
-    {
-        return false;
-    }
-    return true;//appears to be a workunit token
+    const char * finger = distributedAccessToken;
+    if (0 == strncmp(finger,"HPCC[u=",7))
+        if ((finger = strstr(finger+7, ",w=")))
+            if ((finger = strchr(finger+3, ']')))
+                if ((finger = strchr(finger+1, ';')))
+                    return true;
+    return false;
 }
 
 bool extractFromWorkunitDAToken(const char * distributedAccessToken, StringBuffer * wuid, StringBuffer * user, StringBuffer * privKey)
@@ -6858,9 +6856,10 @@ bool extractFromWorkunitDAToken(const char * distributedAccessToken, StringBuffe
         return false;
     }
 
-    //Isolate string between []
-    StringBuffer tokenValues(distributedAccessToken + 5);
-    tokenValues.replace(']', (char)0);
+    //Extract the string between [ and ]
+    const char * pEndBracket = strchr(distributedAccessToken + 5, ']');
+    StringBuffer tokenValues;
+    tokenValues.append(pEndBracket - distributedAccessToken - 5, distributedAccessToken + 5);
 
     StringArray nameValues;
     nameValues.appendList(tokenValues.str(), ",",true);
@@ -6878,7 +6877,7 @@ bool extractFromWorkunitDAToken(const char * distributedAccessToken, StringBuffe
 
     if (privKey)
     {
-        const char * finger = strchr(distributedAccessToken+5, ']');
+        const char * finger = pEndBracket;
         if (finger)
         {
             ++finger;
@@ -6900,12 +6899,13 @@ CriticalSection verifyWorkunitDATokenCrit;
 int verifyWorkunitDAToken(const char * distributedAccessToken)
 {
     CriticalBlock block(verifyWorkunitDATokenCrit);
-    if (!isWorkunitDAToken(distributedAccessToken))
+    StringBuffer tokWuid;
+    StringBuffer tokUser;
+    if (!extractFromWorkunitDAToken(distributedAccessToken, &tokWuid, &tokUser, nullptr))//get the wuid and user
     {
-        DBGLOG("Not a valid workunit distributed access token");
+        //Not a valid workunit distributed access token
         return false;
     }
-
 
     //Validate signature
     IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
@@ -6922,55 +6922,31 @@ int verifyWorkunitDAToken(const char * distributedAccessToken)
             StringBuffer sig(++finger);
             if (!pDSM->digiVerify(token, sig))
             {
-                ERRLOG("verifyWorkunitDAToken : signature does not verify");
+                ERRLOG("verifyWorkunitDAToken : workunit distributed access token does not verify");
                 return 1;
             }
         }
     }
 
-    //Isolate string between []
-    StringBuffer tokenValues(distributedAccessToken + 5);
-    tokenValues.replace(']', (char)0);
-
-    StringArray nameValues;
-    nameValues.appendList(tokenValues.str(), ",",true);
-
-    //Verify workunit still active
-    const char * wuid = nullptr;
-    for (int idx = 0; idx < nameValues.ordinality(); idx++)
-    {
-        if (0==strncmp("w=", nameValues[idx], 2))
-        {
-            wuid = nameValues[idx] + 2;
-            break;
-        }
-    }
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(tokWuid.str());
     if(!cw)
     {
-        throw MakeStringException(WUERR_WorkunitAccessDenied,"verifyWorkunitDAToken : Cannot open workunit %s",wuid);
+        throw MakeStringException(WUERR_WorkunitAccessDenied,"verifyWorkunitDAToken : Cannot open workunit %s",tokWuid.str());
     }
 
-
-    VStringBuffer searchUser("u=%s",cw->queryUser());
-    if (NotFound == nameValues.find(searchUser.str()))
+    //Verify user matches
+    if (!streq(cw->queryUser(), tokUser.str()))
     {
         ERRLOG("verifyWorkunitDAToken : token user does not match workunit");
         return 1;
     }
 
-    VStringBuffer searchWuid("w=%s",cw->queryWuid());
-    if (NotFound == nameValues.find(searchUser.str()))
-    {
-        ERRLOG("verifyWorkunitDAToken : token wuid does not match workunit");
-        return 1;
-    }
+    // no need to compare tokWuid with workunit wuid, because it will always match
 
     bool wuActive;
     switch (cw->getState())
     {
-//TODO    case WUStateCompiling:    unclear if compiler needs to verify the token
     case WUStateRunning:
     case WUStateDebugRunning:
         DBGLOG("verifyWorkunitDAToken : Workunit token validated for %s %s, state is '%s'", cw->queryWuid(), cw->queryUser(), getWorkunitStateStr(cw->getState()));
