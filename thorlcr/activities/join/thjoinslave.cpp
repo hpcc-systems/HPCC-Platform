@@ -56,7 +56,7 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
 
     Owned<IRowStream> leftStream, rightStream;
     Owned<IException> secondaryStartException;
-    Owned<IThorRowLoader> iLoaderL;
+    Owned<IThorRowLoader> iLoaderL, iLoaderR;
 
     Owned<IBarrier> barrier;
     SocketEndpoint server;
@@ -181,10 +181,33 @@ public:
 
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
+        StringAttr primaryInputStr, secondaryInputStr;
+        if (rightpartition)
+        {
+            primaryInput.set(queryInput(1));
+            secondaryInput.set(queryInput(0));
+            primaryInputStr.set("R");
+            secondaryInputStr.set("L");
+            leftInput.set(secondaryInput);
+            rightInput.set(primaryInput);
+        }
+        else
+        {
+            primaryInput.set(queryInput(0));
+            secondaryInput.set(queryInput(1));
+            primaryInputStr.set("L");
+            secondaryInputStr.set("R");
+            leftInput.set(primaryInput);
+            rightInput.set(secondaryInput);
+        }
+        ActPrintLog("JOIN partition: %s. %s started first", primaryInputStr.get(), secondaryInputStr.get());
+
         if (islocal)
         {
-            iLoaderL.setown(createThorRowLoader(*this, ::queryRowInterfaces(queryInput(0)), leftCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN));
+            iLoaderL.setown(createThorRowLoader(*this, ::queryRowInterfaces(leftInput), leftCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN));
             iLoaderL->setTracingPrefix("Join left");
+            iLoaderR.setown(createThorRowLoader(*this, ::queryRowInterfaces(rightInput), rightCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN));
+            iLoaderR->setTracingPrefix("Join right");
         }
         else
         {
@@ -260,26 +283,6 @@ public:
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-
-        Linked<IThorRowInterfaces> primaryRowIf, secondaryRowIf;
-
-        StringAttr primaryInputStr, secondaryInputStr;
-        if (rightpartition)
-        {
-            primaryInput.set(queryInput(1));
-            secondaryInput.set(queryInput(0));
-            primaryInputStr.set("R");
-            secondaryInputStr.set("L");
-        }
-        else
-        {
-            primaryInput.set(queryInput(0));
-            secondaryInput.set(queryInput(1));
-            primaryInputStr.set("L");
-            secondaryInputStr.set("R");
-        }
-        ActPrintLog("JOIN partition: %s", primaryInputStr.get());
-        ActPrintLog("JOIN: Starting %s then %s", secondaryInputStr.get(), primaryInputStr.get());
 
         CAsyncCallStart asyncSecondaryStart(std::bind(&JoinSlaveActivity::startSecondaryInput, this));
         try
@@ -464,8 +467,6 @@ public:
         }
         else
         {
-            Owned<IThorRowLoader> iLoaderR = createThorRowLoader(*this, ::queryRowInterfaces(rightInput), rightCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
-            iLoaderR->setTracingPrefix("Join right");
             rightStream.setown(iLoaderR->load(rightInputStream, abortSoon));
             stopRightInput();
             mergeStats(spillStats, iLoaderR);
