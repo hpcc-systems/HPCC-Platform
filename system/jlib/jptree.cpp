@@ -5641,7 +5641,7 @@ static void writeJSONBase64ValueToStream(IIOStream &out, const char *val, size32
         return;
     }
     writeCharToStream(out, '"');
-    JBASE64_Encode(val, len, out);
+    JBASE64_Encode(val, len, out, false);
     writeCharToStream(out, '"');
 }
 
