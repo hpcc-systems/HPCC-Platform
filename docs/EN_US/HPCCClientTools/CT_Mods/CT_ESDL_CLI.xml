@@ -1053,9 +1053,9 @@
         <sect3>
           <title>Configuring ESDL binding for Proxy Mode methods</title>
 
-          <para>You can specify a proxy for ESDL service methods on another
-          ESP instance. Set up the proxy in the dynamic configuration
-          associated with the dESDL service. </para>
+          <para>You can specify that ESDL service methods be proxied to
+          another ESP instance. Set up the proxy in the dynamic configuration
+          associated with the dESDL service.</para>
 
           <para>Under the Methods tag where you would add Method tags, you can
           also add Proxy tags, as shown here:</para>
@@ -1064,12 +1064,12 @@
   &lt;Method name="myMethod" url="http://10.45.22.1:292/somepath"/&gt;
   &lt;Method name="myMethod2" url="http://10.45.22.1:292/somepath"/&gt; 
   &lt;Proxy method="myMethod3" address="http://10.45.22.1:292" /&gt; 
-  &lt;Proxy method="myWild*" address="http://10.45.22.1:292" /&gt; 
+  &lt;Proxy method="myWild*" forwardTo="http://10.45.22.1:292" /&gt; 
 &lt;/Methods&gt;</programlisting>
 
           <para>The Proxy tag also supports wildcards:</para>
 
-          <para><programlisting>&lt;Proxy method="myWild*" address="http://10.45.22.1:292" /&gt; </programlisting>This
+          <para><programlisting>&lt;Proxy method="myWild*" forwardTo="http://10.45.22.1:292" /&gt; </programlisting>This
           example binds all methods matching the pattern: myWild*</para>
         </sect3>
       </sect2>
