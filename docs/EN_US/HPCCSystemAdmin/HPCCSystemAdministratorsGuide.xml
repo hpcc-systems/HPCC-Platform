@@ -39,7 +39,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -388,7 +388,7 @@
 
           <para>You can find and add the extension, ECL for Visual Studio Code
           in the Visual Studio Marketplace. This extension adds rich language
-          support for the ECL language to VS Code. </para>
+          support for the ECL language to VS Code.</para>
         </sect3>
 
         <sect3 id="SysAdm_ComLine">
@@ -404,9 +404,10 @@
           details.</para>
         </sect3>
       </sect2>
-	      <xi:include href="HPCCSystemAdmin/SA-Mods/DAFtslave.xml"
-                xpointer="xpointer(//*[@id='SA_SupportUtilities'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="HPCCSystemAdmin/SA-Mods/DAFtslave.xml"
+                  xpointer="xpointer(//*[@id='SA_SupportUtilities'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <!--Inclusion-from-ClientTool-As-Sect1: REMOVED-->
@@ -893,33 +894,32 @@
     <sect1 id="SysAdm_Log_Files">
       <title>Log Files</title>
 
-      <para>You can review system messages and see any error messages as they
-      are reported and captured in log files. Log files can help you in
-      understanding what is occurring on the system and useful in
-      troubleshooting.</para>
+      <para>HPCC provides a wealth of information which can be used to debug,
+      track transactions, application performance, and troubleshooting
+      purposes. You can review HPCC Systems messages as they are reported and
+      captured in the log files. Log files can help you in understanding what
+      is occurring on the system and useful in troubleshooting.</para>
 
       <sect2 id="SysAdm_Component_Logs">
         <title>Component Logs</title>
 
-        <para>There are log files for each component in directories below
-        <emphasis role="bold">/var/log/HPCCSystems</emphasis> (default
-        location). You can optionally configure the system to write the logs
-        in a different directory. You should know where the log files are, and
+        <para>HPCC component files are written to <emphasis
+        role="bold">/var/log/HPCCSystems</emphasis> (default location). You
+        can optionally configure your HPCC system to write the logs to a
+        different directory. You should know where the log files are, and
         refer to the logs first when troubleshooting any issues.</para>
 
-        <para>There are log files which record activity among the various
-        components. You can find the log files in subdirectories named
-        corresponding to the components that they track. For example, the Thor
-        logs would be found in a directory named mythor, the sasha log would
-        be in the mysasha directory, the esp log in the myesp
-        directory.</para>
+        <para>You can find the log files in subdirectories named corresponding
+        to the components that they track. For example, if you have a Thor
+        cluster named 'mythor' its logs would be found in a subdirectory named
+        'mythor'.</para>
 
         <para>In each of the component subdirectories, there are several log
         files. Most of the log files use a logical naming convention that
-        includes the component name, the date, and time in the name of the log
-        file. There is also usually a link for the component with a simple
-        name, such as esp.log which is a short cut to the latest current log
-        file for that component.</para>
+        includes the component name and timestamp in the name of the log file.
+        There is also usually a link for the component with a simple name,
+        such as esp.log which is a short cut to the latest current log file
+        for that component.</para>
 
         <!-- # JIRA 18201 #-->
 
@@ -931,6 +931,91 @@
         and you should be mindful of available disk space where the system
         writes out its log files. It could prove to be helpful to separate
         your log file directory from your OS or component file system.</para>
+      </sect2>
+
+      <sect2 id="The_Log_Files">
+        <title>The Log Fields</title>
+
+        <para>The log files of all major HPCC Systems components provide
+        specific information relative to each component. The information that
+        gets logged is configurable. HPCC Systems component logs follow a
+        format defined in the environment.conf file <emphasis
+        role="bold">logfields</emphasis> setting. Optionally you can configure
+        to report additional information.</para>
+
+        <para>By default, the logs are configured to report the following
+        columns: TIM, DAT, MLT, MID, PID, TID, COD, QUO, PFX</para>
+
+        <para><informaltable>
+            <tgroup cols="2">
+              <tbody>
+                <row>
+                  <entry>MID</entry>
+
+                  <entry>Message ID</entry>
+                </row>
+
+                <row>
+                  <entry>DAT</entry>
+
+                  <entry>Date</entry>
+                </row>
+
+                <row>
+                  <entry>TIM</entry>
+
+                  <entry>Time</entry>
+                </row>
+
+                <row>
+                  <entry>MLT</entry>
+
+                  <entry>MilliTime</entry>
+                </row>
+
+                <row>
+                  <entry>PID</entry>
+
+                  <entry>Process ID</entry>
+                </row>
+
+                <row>
+                  <entry>TID</entry>
+
+                  <entry>Thread ID</entry>
+                </row>
+
+                <row>
+                  <entry>PFX</entry>
+
+                  <entry>Prefix (not output on all messages)</entry>
+                </row>
+
+                <row>
+                  <entry>QUO</entry>
+
+                  <entry>Quoted message. The actual message reported.</entry>
+                </row>
+
+                <row>
+                  <entry>COD</entry>
+
+                  <entry>Code</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Below is an example ESP log entry from
+        /var/log/HPCCSystems/myesp/esp.log (based on the stock default
+        <emphasis role="bold">logfields setting</emphasis>):</para>
+
+        <programlisting>000001EE 2018-08-29 15:00:46.653 17746 17775 
+  "TxSummary[activeReqs=2;contLen=-1;rcv=2ms;user=@127.0.0.1;req=GET wsdfu;total=3ms;]"</programlisting>
+
+        <para>For more information about configuring the log file contents see
+        the <link linkend="SysAdm_Env.conf">environment.conf</link>
+        section.</para>
       </sect2>
 
       <sect2 id="SysAdm_AccessLogFiles">
@@ -1210,6 +1295,167 @@ lock=/var/lock/HPCCSystems</programlisting>
 
         <para>The log file, <emphasis>hpcc-init.log</emphasis> is written to
         the HPCCSystems path.</para>
+
+        <sect3 id="logfields">
+          <title>The logfields Setting</title>
+
+          <para>The <emphasis role="bold">logfields</emphasis> setting
+          declares the fields to include in the component logs. You can
+          customize which fields appear in your logs based on your business
+          needs. </para>
+
+          <para>The syntax to use for logfields is to include the desired
+          columns with a plus (+) sign, and use the minus (-) to specify any
+          columns to exclude. For example, if you wanted to use the STD
+          columns and exclude PFX, you could enter:</para>
+
+          <programlisting>logfields=TIM+DAT+MLT+MID+PID+TID+COD+QUO</programlisting>
+
+          <para>or</para>
+
+          <programlisting>logfields=STD-PFX</programlisting>
+
+          <para>The following table reflects all the available logging fields
+          in the order in which they are written to the log file.
+          <informaltable>
+              <tgroup cols="2">
+                <tbody>
+                  <row>
+                    <entry>AUD</entry>
+
+                    <entry>Audience: (Operator | User | Monitor | Performance
+                    | Internal | Programmer | Legacy | Audit)</entry>
+                  </row>
+
+                  <row>
+                    <entry>CLS</entry>
+
+                    <entry>Class: (Disaster | Error | Warning | Information |
+                    Progress | Legacy | Event | Unknown | All)</entry>
+                  </row>
+
+                  <row>
+                    <entry>DET</entry>
+
+                    <entry>Detail (unsigned int)</entry>
+                  </row>
+
+                  <row>
+                    <entry>MID</entry>
+
+                    <entry>Message ID (unsigned int)</entry>
+                  </row>
+
+                  <row>
+                    <entry>TIM</entry>
+
+                    <entry>Time: POSIX.2-1992 and by ISO C99
+                    (%H:%M:%S)</entry>
+                  </row>
+
+                  <row>
+                    <entry>DAT</entry>
+
+                    <entry>Date: ISO 8601 format (%Y-%m-%d)</entry>
+                  </row>
+
+                  <row>
+                    <entry>MCT</entry>
+
+                    <entry>MicroTime: %02d:%02d:%02d.%06d</entry>
+                  </row>
+
+                  <row>
+                    <entry>MLT</entry>
+
+                    <entry>MilliTime: %02d:%02d:%02d.%03d</entry>
+                  </row>
+
+                  <row>
+                    <entry>PID</entry>
+
+                    <entry>Process ID (unsigned int)</entry>
+                  </row>
+
+                  <row>
+                    <entry>TID</entry>
+
+                    <entry>Thread ID (unsigned int)</entry>
+                  </row>
+
+                  <row>
+                    <entry>SES</entry>
+
+                    <entry>Session ID (unsigned int64)</entry>
+                  </row>
+
+                  <row>
+                    <entry>NOD</entry>
+
+                    <entry>Node (local endpoint url)</entry>
+                  </row>
+
+                  <row>
+                    <entry>JOB</entry>
+
+                    <entry>Job ID (unsigned int64)</entry>
+                  </row>
+
+                  <row>
+                    <entry>USE</entry>
+
+                    <entry>User ID (unsigned int64)</entry>
+                  </row>
+
+                  <row>
+                    <entry>COM</entry>
+
+                    <entry>Component (unsigned int)</entry>
+                  </row>
+
+                  <row>
+                    <entry>QUO</entry>
+
+                    <entry>Quote (message)</entry>
+                  </row>
+
+                  <row>
+                    <entry>COD</entry>
+
+                    <entry>Code (int)</entry>
+                  </row>
+
+                  <row>
+                    <entry>PFX</entry>
+
+                    <entry>Prefix: Error or Warning</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>The following are logfield macros which provide a bundled
+          group of columns:</para>
+
+          <para><informaltable>
+              <tgroup cols="2">
+                <tbody>
+                  <row>
+                    <entry>ALL</entry>
+
+                    <entry>Include All available logfields</entry>
+                  </row>
+
+                  <row>
+                    <entry>STD</entry>
+
+                    <entry>Only Include standard logfields: TIM, DAT, MLT,
+                    MID, PID, TID, COD, QUO, PFX</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
       </sect2>
 
       <sect2 id="Using_nice">
@@ -1312,10 +1558,10 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--LDAP and DALI Include-->
-	  <xi:include href="HPCCSystemAdmin/SA-Mods/DaliLDAP.xml"
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/DaliLDAP.xml"
                 xpointer="xpointer(//*[@id='Dali-LDAP'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-
 
     <sect1 id="SystemD_initScripts">
       <title>Initialization under Systemd</title>
