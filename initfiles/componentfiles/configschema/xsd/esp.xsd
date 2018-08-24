@@ -142,12 +142,25 @@
                         <xs:element name="HTTPS" minOccurs="0" hpcc:class="valueSet" hpcc:requiredIf="">
                             <xs:complexType>
                                 <xs:attribute name="acceptSelfSigned" type="xs:boolean" use="optional" default="true" hpcc:displayName="Accept Self Signed" hpcc:tooltip="whether to accept self-signed certificates"/>
-                                <xs:attribute name="CA_Certificates_Path" type="xs:string" use="optional" default="ca.pem" hpcc:displayName="Certificates Path" hpcc:tooltip="path to the file that contains CA certificates"/>
+                                <xs:attribute name="CA_Certificates_Path" type="xs:string" use="optional" default="ca.pem" hpcc:displayName="Certificates Path" hpcc:requiredIf="../EspBinding[@protocol='https']"
+                                              hpcc:tooltip="path to the file that contains CA certificates"/>
                                 <xs:attribute name="certificateFileName" type="xs:string" use="optional" default="certificate.cer" hpcc:displayName="Certificate Filename" hpcc:tooltip="Name of destination file in which the certificate will be written"/>
                                 <xs:attribute name="cipherList" type="xs:string" use="optional" default="ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5"
                                               hpcc:displayName="Cipher List" hpcc:tooltip="Sets the ordered list of available ciphers for use by openssl.  See openssl documentation on ciphers for information on use and formatting."/>
                                 <xs:attribute name="passphrase" type="xs:string" use="optional" hpcc:modifiers="mask,verify,ignoreNoChange,encrypt" hpcc:displayName="Passphrase" hpcc:tooltip="The passphrase used to generate the private key" />
-                                <xs:attribute name="privateKeyFileName" type="xs:string" use="optional" default="privatekey.cer" hpcc:displayName="Private Key Filename" hpcc:tooltip="Name of destination file in which the private key will be written" />
+                                <xs:attribute name="privateKeyFileName" type="xs:string" use="optional" default="privatekey.cer" hpcc:displayName="Private Key Filename" hpcc:requiredIf="../EspBinding[@protocol='https']"
+                                              hpcc:tooltip="Name of destination file in which the private key will be written" />
+                                <!-- The following are deprecated and marked hidden so that they don't appear to the user -->
+                                <xs:attribute name="city" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string" use="optional"/>
+                                <xs:attribute name="country" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string" use="optional"/>
+                                <xs:attribute name="daysValid" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string" use="optional"/>
+                                <xs:attribute name="enableVerification" hpcc:deprecated="true" hpcc:hidden="true" type="xs:boolean" use="optional"/>
+                                <xs:attribute name="organization" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string" use="optional"/>
+                                <xs:attribute name="organizationalUnit" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string" use="optional"/>
+                                <xs:attribute name="regenerateCredentials" hpcc:deprecated="true" hpcc:hidden="true" type="xs:boolean" use="optional"/>
+                                <xs:attribute name="requireAddressMatch" hpcc:deprecated="true" hpcc:hidden="true" type="xs:boolean" use="optional"/>
+                                <xs:attribute name="state" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string" use="optional"/>
+                                <xs:attribute name="trustedPeers" hpcc:deprecated="true" hpcc:hidden="true" type="xs:string" use="optional"/>
                             </xs:complexType>
                         </xs:element>
 
