@@ -358,19 +358,17 @@ void CRpcMessage::unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const ch
     }
 }
 
-/*
 IRpcMessage* createRpcMessage(const char* rootTag, StringBuffer& xml)
 {
     CRpcMessage* rpc = new  CRpcMessage(rootTag);
 
-    std::unique_ptr<XJXPullParser> xpp(new XmlPullParser(xml.str(), xml.length()));
+    std::unique_ptr<XmlPullParser> xpp(new XmlPullParser(xml.str(), xml.length()));
     xpp->setSupportNamespaces(true);
 
     rpc->unmarshall(xpp.get());
 
     return rpc;
 }
-*/
 
 bool CRpcResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt)
 {
