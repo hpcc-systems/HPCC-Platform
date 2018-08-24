@@ -64,7 +64,7 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt" />
+      <colspec align="left" colwidth="149.40pt" />
 
       <colspec />
 
@@ -294,6 +294,16 @@
           <entry>Optional. Specifies records are created on every
           node.</entry>
         </row>
+
+        <row>
+          <entry><emphasis role="bold">__OPTION__(LEGACY)</emphasis></entry>
+
+          <entry>Optional. Specifies that dataset contains deprecated record
+          formats and virtual fields. Use this option temporarily until you
+          can remove alien data types from the record definition. <indexterm>
+              <primary>OPTION</primary>
+            </indexterm></entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -340,6 +350,14 @@
 
   <para>The ninth form is used to create a DATASET using a TRANSFORM function
   (see <emphasis role="bold">DATASET from TRANSFORM</emphasis> below)</para>
+
+  <para>The __OPTION__(LEGACY) option can be used if your dataset definition
+  contains deprecated record formats and virtual fields. Use this option
+  temporarily until you can remove alien data types from the record
+  definition. If this is needed, you will receive a compiler error
+  message.</para>
+
+  <programlisting>d := DATASET('imgfile',{rawLayout x,unsigned8 _fpos{virtual(fileposition)} },FLAT, __OPTION__(LEGACY)); </programlisting>
 
   <sect2 id="THOR-FLAT_Files">
     <title>THOR/FLAT Files</title>
