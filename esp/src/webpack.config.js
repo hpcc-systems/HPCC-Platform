@@ -43,15 +43,8 @@ module.exports = function (env) {
     return {
         context: __dirname,
         entry: {
-            stub: [
-                "eclwatch/stub"/*,
-                "eclwatch/ActivityWidget",
-                "eclwatch/DFUQueryWidget",
-                "eclwatch/QuerySetQueryWidget",
-                "eclwatch/WUDetailsWidget",
-                "eclwatch/WUQueryWidget",
-                "eclwatch/TopologyWidget"
-            */]
+            stub: "eclwatch/stub",
+            dojoLib: "lib/src/dojoLib"
         },
         output: {
             filename: "[name].eclwatch.js",
