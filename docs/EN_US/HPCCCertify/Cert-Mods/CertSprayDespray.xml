@@ -208,8 +208,8 @@
       to a Thor cluster. A <emphasis>spray</emphasis> or
       <emphasis>import</emphasis> is the relocation of a data file from one
       location to a Thor cluster. The term spray was adopted due to the nature
-      of the file movement -- the file is partitioned across all nodes within a
-      cluster.</para>
+      of the file movement -- the file is partitioned across all nodes within
+      a cluster.</para>
 
       <para>For this example, we will spray the full_test_distributed file
       that we just put out on our landing zone.</para>
@@ -267,8 +267,14 @@
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">Name
-                      Prefix</emphasis></entry>
+                      <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                      <entry>Select the queue for the spray. </entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Target
+                      Scope</emphasis></entry>
 
                       <entry>The prefix for the logical file, in this case
                       <emphasis role="bold">certification</emphasis></entry>
@@ -327,6 +333,15 @@
 
                       <entry>Check this box to prevent splitting file parts to
                       multiple target parts.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Expire in
+                      (days)</emphasis></entry>
+
+                      <entry>An integer value indicating the number of days
+                      before automatically removing the file. If omitted, the
+                      default is -1 (never expires).</entry>
                     </row>
 
                     <row>
