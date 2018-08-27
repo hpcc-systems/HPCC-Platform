@@ -273,7 +273,7 @@ define([
                             field: "__hpcc_displayName",
                             label: this.i18n.Topology,
                             width: 130,
-                            collapseOnRefresh: true,
+                            collapseOnRefresh: false,
                             shouldExpand: function (row, level, previouslyExpanded) {
                                 if (previouslyExpanded !== undefined) {
                                     return previouslyExpanded;
@@ -488,7 +488,14 @@ define([
                 if (mode) {
                     this.store.viewMode(mode);
                     this.grid.refresh();
-                } else {
+                } else if (this.store._viewMode === "Targets") {
+                    this.grid.refresh();
+                } else if (this.store._viewMode === "Services") {
+                    this.grid.refresh();
+                } else if (this.store._viewMode === "Machines") {
+                    this.grid.refresh();
+                }
+                else {
                     this.store.viewMode("Targets");
                     this.store.refresh(function () {
                         context.grid.refresh();
