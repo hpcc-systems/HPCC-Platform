@@ -411,17 +411,8 @@ StringBuffer &buildVarPath(StringBuffer &path, const char *tagname, const char *
 void EspBaseArrayParam::toJSON(IEspContext* ctx, StringBuffer &s, const char *tagname, const char *itemname)
 {
     unsigned count = getLength();
-    if (!count)
-    {
-        if (nilBH!=nilRemove)
-        {
-            delimitJSON(s);
-            if (tagname && *tagname)
-                s.append('\"').append(tagname).append("\": ");
-            s.append("[]");
-        }
+    if (!count && nilBH==nilRemove)
         return;
-    }
 
     if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
     {
