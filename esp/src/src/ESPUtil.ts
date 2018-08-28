@@ -1,5 +1,7 @@
 ﻿import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
+import * as cookie from "dojo/cookie";
+
 import "dojo/i18n";
 // @ts-ignore
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
@@ -249,6 +251,16 @@ export var IdleWatcher = dojo.declare([Evented], {
     constructor: function (idleDuration) {
         idleDuration = idleDuration || 30 * 1000;
         this._idleDuration = idleDuration;
+
+        var context = this;
+        var prevLocked;
+        this._intervalLockHandle = setInterval(function () {
+            var locked = cookie("Status") === "locked";
+            if (!locked && prevLocked) {
+                context.emit("idle", {});
+            }
+            prevLocked = locked;
+        }, 1000);
     },
 
     start: function () {
@@ -282,6 +294,11 @@ export var IdleWatcher = dojo.declare([Evented], {
             this._keydownHandle.remove();
             delete this._keydownHandle;
         }
+    },
+
+    stopAll:function() {
+        this.stop();
+        clearInterval(this._intervalLockHandle);
     }
 });
 

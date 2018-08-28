@@ -120,7 +120,7 @@ define([
 
             destroy: function (args) {
                 this._idleWatcherHandle.remove();
-                this._idleWatcher.stop();
+                this._idleWatcher.stopAll();
                 this.inherited(arguments);
             },
 
