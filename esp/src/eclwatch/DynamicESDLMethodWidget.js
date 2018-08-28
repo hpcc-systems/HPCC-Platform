@@ -167,8 +167,7 @@ define([
                             __hpcc_parentName: null,
                             __hpcc_id: row.Name
                         });
-
-                        if (row.Attributes) {
+                        if (row.XML) {
                             newRows.push({
                                 __hpcc_parentName: row.Name,
                                 __hpcc_id: row.Name + idx,
