@@ -434,7 +434,7 @@ define([
             this.setDisabled(this.id + "CopyDropDown", this.logicalFile.isDeleted());
             this.setDisabled(this.id + "RenameDropDown", this.logicalFile.isDeleted());
             this.setDisabled(this.id + "DesprayDropDown", this.logicalFile.isDeleted());
-            this.setDisabled(this.id + "_Content", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "_Content", this.logicalFile.isDeleted()  || !this.logicalFile.Ecl);
             this.setDisabled(this.id + "_Source", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
             this.setDisabled(this.id + "_DEF", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
             this.setDisabled(this.id + "_XML", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
