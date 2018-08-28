@@ -11,6 +11,7 @@ define([
     "dojo/dom-style",
     "dojo/request/xhr",
     "dojo/keys",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/form/Select",
@@ -30,7 +31,7 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, on, domStyle, xhr, keys,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, on, domStyle, xhr, keys, topic,
     registry, Select, CheckBox,
     _Widget, Utility, WsAccount,
     template) {
@@ -86,6 +87,9 @@ define([
                             context.hide();
                             context.unlockDialog.destroyRecursive();
                             domClass.remove("SessionLock", "overlay");
+                            topic.publish("hpcc/session_management_status", {
+                                status: "Unlocked"
+                            });
                         } else {
                             status.innerHTML = response.UnlockResponse.Message
                         }
