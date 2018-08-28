@@ -11,6 +11,8 @@ define([
     "dojo/dom-style",
     "dojo/request/xhr",
     "dojo/keys",
+    "dojo/cookie",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/form/Select",
@@ -30,7 +32,7 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, on, domStyle, xhr, keys,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, on, domStyle, xhr, keys, cookie, topic,
     registry, Select, CheckBox,
     _Widget, Utility, WsAccount,
     template) {
@@ -71,6 +73,7 @@ define([
                 var context = this;
 
                 if (this.unlockForm.validate()) {
+                    cookie("Status", "login_attempt");
                     WsAccount.Unlock({
                         request: {
                             username: this.unlockUserName.get("value"),
@@ -86,8 +89,13 @@ define([
                             context.hide();
                             context.unlockDialog.destroyRecursive();
                             domClass.remove("SessionLock", "overlay");
+                            topic.publish("hpcc/session_management_status", {
+                                status: "Unlocked"
+                            });
+                            cookie("Status", "Unlocked");
                         } else {
-                            status.innerHTML = response.UnlockResponse.Message
+                            status.innerHTML = response.UnlockResponse.Message;
+                            cookie("Status", "Locked");
                         }
                     });
                 }
@@ -104,6 +112,13 @@ define([
 
                 xhr("esp/lock", {
                     method: "post",
+                }).then(function(response){
+                    if (response) {
+                        topic.publish("hpcc/session_management_status", {
+                            status: "Locked"
+                        });
+                        cookie("Status", "Locked");
+                    }
                 });
             },
 

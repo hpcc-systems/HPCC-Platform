@@ -5,6 +5,7 @@ import * as config from "dojo/_base/config";
 import * as Deferred from "dojo/_base/Deferred";
 import * as QueryResults from "dojo/store/util/QueryResults";
 import * as topic from "dojo/topic";
+import * as cookie from "dojo/cookie";
 
 import * as hpccComms from "@hpcc-js/comms";
 
@@ -44,6 +45,10 @@ class RequestHelper {
         return this.serverIP ? true : false;
     }
 
+    isLocked() {
+        return cookie("Status") !== "login_attempt" && cookie("Status") === "Locked";
+    }
+
     _send(service, action, _params) {
         var params = lang.mixin({
             request: {},
@@ -65,6 +70,10 @@ class RequestHelper {
         }
         // var method = params.method ? params.method : "get";
 
+        if (this.isLocked()) {
+            throw new Error("session locked");
+        }
+
         var retVal = null;
         if (this.isCrossSite()) {
             var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), type: "jsonp" });
@@ -73,6 +82,7 @@ class RequestHelper {
             var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service) });
             retVal = transport.send(action + postfix, params.request, handleAs === "text" ? "text" : "json");
         }
+
         return retVal.then(function (response) {
             params.load(response);
             return response;
@@ -402,4 +412,3 @@ export const Store = declare(null, {
         return QueryResults(deferredResults);
     }
 });
-

@@ -299,6 +299,15 @@ define([
                     context.refreshGrid();
                 });
 
+                topic.subscribe("hpcc/session_management_status", function (publishedMessage) {
+                    if (publishedMessage.status === "Unlocked") {
+                        context.refreshGrid();
+                        context._idleWatcher.start();
+                    } else if (publishedMessage.status === "Locked") {
+                        context._idleWatcher.stop();
+                    }
+                });
+
                 topic.subscribe("hpcc/ecl_wu_created", function (topic) {
                     context.refreshGrid();
                 });
@@ -313,7 +322,6 @@ define([
                 if (this.userName === null) {
                     this.mineControl.set("disabled", true);
                 }
-                
             },
 
             _onMine: function (event) {
