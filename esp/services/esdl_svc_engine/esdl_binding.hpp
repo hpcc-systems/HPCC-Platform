@@ -91,6 +91,7 @@ public:
     Owned<IEsdlTransformer>     m_pEsdlTransformer;
     Owned<IEsdlDefinition>      m_esdl;
     StringBuffer                m_serviceNameSpaceBase;
+    StringAttr                  m_namespaceScheme;
     bool                        m_usesURLNameSpace;
 
 public:
@@ -178,6 +179,9 @@ public:
 };
 
 #define DEFAULT_ESDLBINDING_URN_BASE "urn:hpccsystems:ws"
+#define SCAPPS_NAMESPACE_BASE "http://webservices.seisint.com/"
+
+#define NAMESPACE_SCHEME_CONFIG_VALUE_SCAPPS "scapps"
 
 class EsdlBindingImpl : public CHttpSoapBinding
 {

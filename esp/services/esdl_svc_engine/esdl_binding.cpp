@@ -162,8 +162,13 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
     m_bGenerateLocalTrxId = true;
     m_custTrxCompileFail = false;
 
-    VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
-    IPropertyTree * srvcfg = cfg->queryPropTree(xpath.str());
+    VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]", process);
+    IPropertyTree * espcfg = cfg->queryPropTree(xpath);
+    if (!espcfg)
+        throw MakeStringException(ERR_ESDL_BINDING_INTERNERR, "Could not access ESP process configuration: esp process '%s' service name '%s'", process, service);
+
+    xpath.setf("EspService[@name=\"%s\"]", service);
+    IPropertyTree * srvcfg = espcfg->queryPropTree(xpath);
     if (srvcfg)
     {
         //This is treated as the actual service name -sigh
@@ -187,16 +192,21 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
             ESPLOG(LogNormal, "ESP Service %s is not attached to any logging manager.", service);
 
         m_usesURLNameSpace = false;
-        if (srvcfg->hasProp("@namespaceBase"))
-        {
+        m_namespaceScheme.set(srvcfg->queryProp("@namespaceScheme"));
+        if (m_namespaceScheme.isEmpty())
+            m_namespaceScheme.set(espcfg->queryProp("@namespaceScheme"));
+
+        if (streq(m_namespaceScheme.str(), NAMESPACE_SCHEME_CONFIG_VALUE_SCAPPS))
+            m_serviceNameSpaceBase.set(SCAPPS_NAMESPACE_BASE);
+        else if (srvcfg->hasProp("@namespaceBase"))
             m_serviceNameSpaceBase.set(srvcfg->queryProp("@namespaceBase")).trim();
-            m_usesURLNameSpace = startsWith(m_serviceNameSpaceBase.str(), "http://") ? true : false;
-        }
         else
             m_serviceNameSpaceBase.set(DEFAULT_ESDLBINDING_URN_BASE);
 
-        xpath.setf("Software/EspProcess[@name=\"%s\"]/EspBinding[@service=\"%s\"]", process, service); //get this service's binding cfg
-        m_oEspBindingCfg.set(cfg->queryPropTree(xpath.str()));
+        m_usesURLNameSpace = startsWith(m_serviceNameSpaceBase.str(), "http://") ? true : false;
+
+        xpath.setf("EspBinding[@service=\"%s\"]", service); //get this service's binding cfg
+        m_oEspBindingCfg.set(espcfg->queryPropTree(xpath.str()));
     }
     else
         throw MakeStringException(-1, "Could not access ESDL service configuration: esp process '%s' service name '%s'", process, service);
@@ -1763,15 +1773,24 @@ StringBuffer & EsdlBindingImpl::generateNamespace(IEspContext &context, CHttpReq
     if (!m_staticNamespace.isEmpty())
         return ns.set(m_staticNamespace);
 
-    if (m_pESDLService->m_serviceNameSpaceBase.length()>0)
-    {
-        ns.appendf("%s%c%s", m_pESDLService->m_serviceNameSpaceBase.str(), m_pESDLService->m_usesURLNameSpace ? '/' : ':', serv);
+    if (m_pESDLService->m_serviceNameSpaceBase.isEmpty())
+        throw MakeStringExceptionDirect(ERR_ESDL_BINDING_INTERNERR, "Could not generate namespace, ensure namespace base is correctly configured.");
 
-        if (method && strlen(method) > 0)
-            ns.append(m_pESDLService->m_usesURLNameSpace ? '/': ':').append(method);
+    if (streq(m_pESDLService->m_namespaceScheme.str(), NAMESPACE_SCHEME_CONFIG_VALUE_SCAPPS))
+    {
+        //Need proper case for ESDL service name
+        IEsdlDefService *esdlService = m_esdl->queryService(serv);
+        const char *esdlServiceName = (esdlService) ? esdlService->queryName() : nullptr;
+        if (!esdlServiceName || !*esdlServiceName)
+            throw MakeStringExceptionDirect(ERR_ESDL_BINDING_INTERNERR, "Could not generate namespace, ensure ESDL definition is correctly configured.");
+        ns.set(SCAPPS_NAMESPACE_BASE).append(esdlServiceName);
+        return ns;
     }
-    else
-        throw MakeStringExceptionDirect(-1, "Could not generate namespace, ensure namespace base is correctly configured.");
+
+    ns.appendf("%s%c%s", m_pESDLService->m_serviceNameSpaceBase.str(), m_pESDLService->m_usesURLNameSpace ? '/' : ':', serv);
+
+    if (method && *method)
+        ns.append(m_pESDLService->m_usesURLNameSpace ? '/': ':').append(method);
 
     StringBuffer ns_optionals;
     IProperties *params = context.queryRequestParameters();

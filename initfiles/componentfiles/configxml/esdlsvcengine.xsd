@@ -35,6 +35,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="namespaceScheme" type="xs:string" use="optional" default="">
+               <xs:annotation>
+                 <xs:appinfo>
+                    <tooltip>The scheme used to generate dynamic service namespaces.</tooltip>
+                 </xs:appinfo>
+               </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="namespaceBase" type="xs:string" use="optional" default="urn:hpccsystems:ws">
                 <xs:annotation>
                     <xs:appinfo>
