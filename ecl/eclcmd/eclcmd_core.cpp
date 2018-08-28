@@ -1950,7 +1950,7 @@ public:
             "\n"
             "Create and store ZAP file of the given workunit.\n"
             "\n"
-            "ecl zapgen <WUID> -path <zap_file_path>\n"
+            "ecl zapgen <WUID> --path <zap_file_path>\n"
             "\n"
             "   WUID                    workunit ID\n"
             "   path                    path to store ZAP file\n"
