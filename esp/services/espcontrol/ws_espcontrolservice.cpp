@@ -179,7 +179,10 @@ bool CWSESPControlEx::onSetLogging(IEspContext& context, IEspSetLoggingRequest& 
 #ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to change log settings. Permission denied.");
+        }
 #endif
 
         if (!m_container)
@@ -222,7 +225,10 @@ bool CWSESPControlEx::onSessionQuery(IEspContext& context, IEspSessionQueryReque
 #ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to query session. Permission denied.");
+        }
 #endif
 
         StringBuffer xpath;
@@ -260,7 +266,10 @@ bool CWSESPControlEx::onSessionInfo(IEspContext& context, IEspSessionInfoRequest
 #ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to get session information. Permission denied.");
+        }
 #endif
 
         StringBuffer id = req.getID();
@@ -301,7 +310,10 @@ bool CWSESPControlEx::onCleanSession(IEspContext& context, IEspCleanSessionReque
 #ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to clean session. Permission denied.");
+        }
 #endif
 
         StringBuffer id, userID, fromIP;
@@ -333,7 +345,10 @@ bool CWSESPControlEx::onSetSessionTimeout(IEspContext& context, IEspSetSessionTi
 #ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to set session timeout. Permission denied.");
+        }
 #endif
 
         StringBuffer id, userID, fromIP;
