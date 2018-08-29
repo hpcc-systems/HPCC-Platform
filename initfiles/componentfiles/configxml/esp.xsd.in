@@ -977,6 +977,20 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="namespaceScheme" use="optional" default="basic">
+               <xs:annotation>
+                 <xs:appinfo>
+                    <tooltip>The scheme used to generate dynamic service namespaces.</tooltip>
+                 </xs:appinfo>
+               </xs:annotation>
+               <xs:simpleType>
+               <xs:restriction base="xs:string">
+                 <xs:enumeration value=""/>
+                   <xs:enumeration value="esdl"/>
+                   <xs:enumeration value="scapps"/>
+                 </xs:restriction>
+               </xs:simpleType>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
