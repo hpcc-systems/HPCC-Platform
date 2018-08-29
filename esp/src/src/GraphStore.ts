@@ -15,7 +15,7 @@ type Memory = {
 export interface GraphStoreBase extends Memory {
 }
 
-@declareDecorator(Memory)
+@declareDecorator("GraphStoreBase", Memory)
 export class GraphStoreBase { }
 
 export class GraphStore extends GraphStoreBase {

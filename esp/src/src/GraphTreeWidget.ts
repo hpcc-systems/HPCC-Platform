@@ -44,13 +44,15 @@ import "dijit/form/SimpleTextarea";
 import "dijit/form/NumberSpinner";
 import "dijit/form/DropDownButton";
 import "dijit/form/Select";
+import "dijit/Toolbar";
+import "dijit/ToolbarSeparator";
 
 import declareDecorator from './DeclareDecorator';
 
 type _Widget = any;
 export interface GraphTreeWidget extends _Widget { }
 
-@declareDecorator(_Widget)
+@declareDecorator("GraphTreeWidget", _Widget)
 export class GraphTreeWidget {
     templateString = template;
     baseClass = "GraphTreeWidget";

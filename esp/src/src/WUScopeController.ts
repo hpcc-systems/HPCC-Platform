@@ -579,12 +579,13 @@ export class WUScopeController {
     }
 
     formatStoreRow(item: ScopeEdge | ScopeSubgraph | ScopeVertex) {
-        const retVal = item._.formattedAttrs();
+        const retVal = item._.rawAttrs();
         retVal["Id"] = item._.Id;
         for (const key in retVal) {
             //  TODO Move into BaseScope  ---
             retVal[key] = decodeHtml(retVal[key]);
         }
+        retVal.__formatted = item._.formattedAttrs();
         return retVal;
     }
 
