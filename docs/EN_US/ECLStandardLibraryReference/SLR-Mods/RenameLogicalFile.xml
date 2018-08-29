@@ -10,8 +10,8 @@
       <primary>File.RenameLogicalFile</primary>
     </indexterm><indexterm>
       <primary>RenameLogicalFile</primary>
-    </indexterm>(</emphasis> <emphasis> filename, newname </emphasis>
-  <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis> filename, newname,
+  </emphasis>[,allowOverwrite] <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -32,6 +32,14 @@
 
           <entry>A null-terminated string containing the new logical name for
           the file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>allowOverwrite</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          allow the renamed file to overwrite an existing file of the same
+          name. If omitted, the default is FALSE.</entry>
         </row>
       </tbody>
     </tgroup>
