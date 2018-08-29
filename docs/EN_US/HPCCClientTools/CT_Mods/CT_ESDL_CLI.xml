@@ -1063,7 +1063,7 @@
           <programlisting>&lt;Methods&gt; 
   &lt;Method name="myMethod" url="http://10.45.22.1:292/somepath"/&gt;
   &lt;Method name="myMethod2" url="http://10.45.22.1:292/somepath"/&gt; 
-  &lt;Proxy method="myMethod3" address="http://10.45.22.1:292" /&gt; 
+  &lt;Proxy method="myMethod3" forwardTo="http://10.45.22.1:292" /&gt; 
   &lt;Proxy method="myWild*" forwardTo="http://10.45.22.1:292" /&gt; 
 &lt;/Methods&gt;</programlisting>
 
