@@ -21,6 +21,7 @@
 #include "ldapsecurity.hpp"
 #include "authmap.ipp"
 #include "digisign.hpp"
+#include "workunit.hpp"
 
 /**********************************************************
  *     CLdapSecUser                                       *
@@ -647,6 +648,29 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         return false;
     }
 
+    //Check if the password is a "real" password, or a workunit distributed access token
+    const char * wutoken = user->credentials().getPassword();
+    if (wutoken && * wutoken && isWorkunitDAToken(wutoken))
+    {
+        int rc = verifyWorkunitDAToken(wutoken);//throws if cannot open workunit
+        if (rc == 0)
+        {
+            //we should not cache, since we do not know when the workunit completes
+            DBGLOG("CLdapSecManager::authenticate() : workunit token validated for user %s", user->getName());
+            user->setAuthenticateStatus(AS_AUTHENTICATED);
+            return true;
+        }
+        else
+        {
+            if (rc == 1)
+                WARNLOG("CLdapSecManager::authenticate() : workunit token INVALID for user %s", user->getName());
+            else
+                WARNLOG("CLdapSecManager::authenticate() : cannot access workunit for user %s", user->getName());
+            user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
+            return false;
+        }
+    }
+
     bool isCaching = m_permissionsCache->isCacheEnabled() && !m_usercache_off;//caching enabled?
     bool isUserCached = false;
     Owned<ISecUser> cachedUser = new CLdapSecUser(user->getName(), "");
@@ -664,22 +688,41 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     }
 
     //Verify provided signature if present
-    IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
-    if (pDSM && pDSM->isDigiVerifierConfigured() && !isEmptyString(user->credentials().getSignature()))
+    IDigitalSignatureManager * pDSM = nullptr;
+    if (!isEmptyString(user->credentials().getSignature()))
     {
-        StringBuffer b64Signature(user->credentials().getSignature());
-        if (!pDSM->digiVerify(user->getName(), b64Signature))//digital signature valid?
+        if (isUserCached)
         {
-            user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
-            WARNLOG("Invalid digital signature for user %s", user->getName());
-            return false;
+            if (streq(cachedUser->credentials().getSignature(), user->credentials().getSignature()))
+            {
+                return true;
+            }
+            else
+            {
+                WARNLOG("Digital signature for %s does not match cached signature", user->getName());
+                return false;
+            }
         }
         else
         {
-            user->setAuthenticateStatus(AS_AUTHENTICATED);
-            if(isCaching && !isUserCached)
-                m_permissionsCache->add(*user);
-            return true;
+            pDSM = queryDigitalSignatureManagerInstanceFromEnv();
+            if (pDSM && pDSM->isDigiVerifierConfigured() && !isEmptyString(user->credentials().getSignature()))
+            {
+                StringBuffer b64Signature(user->credentials().getSignature());
+                if (!pDSM->digiVerify(user->getName(), b64Signature))//digital signature valid?
+                {
+                    user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
+                    WARNLOG("Invalid digital signature for user %s", user->getName());
+                    return false;
+                }
+                else
+                {
+                    user->setAuthenticateStatus(AS_AUTHENTICATED);
+                    if(isCaching && !isUserCached)
+                        m_permissionsCache->add(*user);
+                    return true;
+                }
+            }
         }
     }
 
@@ -704,6 +747,8 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         else if (isEmptyString(user->credentials().getPassword()) && (0 == user->credentials().getSessionToken()) && isEmptyString(user->credentials().getSignature()))
         {
             //No need to sign if password or authenticated session based user
+            if (!pDSM)
+                pDSM = queryDigitalSignatureManagerInstanceFromEnv();
             if (pDSM && pDSM->isDigiSignerConfigured())
             {
                //Set user digital signature

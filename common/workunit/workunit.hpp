@@ -1217,7 +1217,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual unsigned getResultLimit() const = 0;
     virtual IConstWUResultIterator & getResults() const = 0;
     virtual IStringVal & getScope(IStringVal & str) const = 0;
-    virtual IStringVal & getSecurityToken(IStringVal & str) const = 0;
+    virtual void getWorkunitDistributedAccessToken(IStringVal & datoken) const = 0;
     virtual IStringVal & getStateEx(IStringVal & str) const = 0;
     virtual __int64 getAgentSession() const = 0;
     virtual unsigned getAgentPID() const = 0;
@@ -1302,7 +1302,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setPriorityLevel(int level) = 0;
     virtual void setRescheduleFlag(bool value) = 0;
     virtual void setResultLimit(unsigned value) = 0;
-    virtual void setSecurityToken(const char * value) = 0;
     virtual void setState(WUState state) = 0;
     virtual void setStateEx(const char * text) = 0;  // Indicates why blocked
     virtual void setAgentSession(__int64 sessionId) = 0;
@@ -1597,15 +1596,17 @@ extern WORKUNIT_API IWUResult * updateWorkUnitResult(IWorkUnit * w, const char *
 extern WORKUNIT_API IConstWUResult * getWorkUnitResult(IConstWorkUnit * w, const char *name, unsigned sequence);
 extern WORKUNIT_API void updateSuppliedXmlParams(IWorkUnit * w);
 
+//workunit distributed access token support
+extern WORKUNIT_API bool isWorkunitDAToken(const char * distributedAccessToken);
+extern WORKUNIT_API bool extractFromWorkunitDAToken(const char * token, StringBuffer * wuid, StringBuffer * user, StringBuffer * privKey);
+extern WORKUNIT_API int verifyWorkunitDAToken(const char * distributedAccessToken);
+
 //returns a state code.  WUStateUnknown == timeout
 extern WORKUNIT_API WUState waitForWorkUnitToComplete(const char * wuid, int timeout = -1, bool returnOnWaitState = false);
 extern WORKUNIT_API bool waitForWorkUnitToCompile(const char * wuid, int timeout = -1);
 extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout = -1, bool returnOnWaitState = false);
 extern WORKUNIT_API bool secWaitForWorkUnitToCompile(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout = -1);
 extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr, ISecUser &secuser, const char *command, StringBuffer &response);
-extern WORKUNIT_API IStringVal& createToken(const char *wuid, const char *user, const char *password, IStringVal &str);
-// This latter is temporary - tokens will be replaced by something more secure
-extern WORKUNIT_API void extractToken(const char *token, const char *wuid, IStringVal &user, IStringVal &password);
 extern WORKUNIT_API WUState getWorkUnitState(const char* state);
 extern WORKUNIT_API IWorkflowScheduleConnection * getWorkflowScheduleConnection(char const * wuid);
 extern WORKUNIT_API const char *skipLeadingXml(const char *text);

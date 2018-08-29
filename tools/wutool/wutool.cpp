@@ -1329,7 +1329,6 @@ protected:
             wu->setPriorityLevel(2) ;
             wu->setRescheduleFlag(true);
             wu->setResultLimit(101);
-            wu->setSecurityToken("secret");
             wu->setState(WUStateAborted);
             wu->setStateEx("stateEx");
             wu->setAgentSession(1234567890123);
@@ -1390,7 +1389,6 @@ protected:
             ASSERT(wu->getPriorityLevel()==2);
             ASSERT(wu->getRescheduleFlag());
             ASSERT(wu->getResultLimit()==101);
-            ASSERT(streq(wu->getSecurityToken(s).str(), "secret"));
             ASSERT(wu->getState()==WUStateAborted);
             ASSERT(streq(wu->getStateEx(s).str(), "stateEx"));
             ASSERT(wu->getAgentSession()==1234567890123);

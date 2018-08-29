@@ -34,6 +34,9 @@ interface IDigitalSignatureManager : extends IInterface //Public/Private key mes
 public:
     virtual bool isDigiSignerConfigured() = 0;
     virtual bool isDigiVerifierConfigured() = 0;
+    virtual void setKeyFileNames(const char * pub, const char * priv) = 0;
+    virtual const char * queryPublicKeyFile() const = 0;
+    virtual const char * queryPrivateKeyFile() const = 0;
     virtual bool digiSign(const char * text, StringBuffer & b64Signature) = 0;//signs, using private key
     virtual bool digiVerify(const char * text, StringBuffer & b64Signature) = 0;//verifies, using public key
 };

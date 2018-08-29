@@ -1906,9 +1906,6 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
         }
     }
 
-    SCMStringBuffer token;
-    createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token);
-    workunit->setSecurityToken(token.str());
     workunit->setState(WUStateSubmitted);
     workunit->commit();
 
