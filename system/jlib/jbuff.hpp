@@ -57,47 +57,66 @@ private:
 
 //--------------------------------------------------------------------------------------------------------------------
 
-template <class CLASS> class OwnedMalloc
+template <class CLASS, void (*FREE_FUNC)(CLASS *)> class OwnedPtrCustomFree
 {
+    typedef OwnedPtrCustomFree<CLASS, FREE_FUNC> SELF;
+    void safeFree(CLASS *_ptr) { if (_ptr) FREE_FUNC(_ptr); }
+protected:
+    CLASS *ptr = nullptr;
+
 public:
-    inline OwnedMalloc()                        { ptr = NULL; }
-    inline OwnedMalloc(CLASS * _ptr)            { ptr = _ptr; }
+    OwnedPtrCustomFree<CLASS, FREE_FUNC>() { }
+    OwnedPtrCustomFree<CLASS, FREE_FUNC>(CLASS *_ptr) : ptr(_ptr) { }
+    OwnedPtrCustomFree<CLASS, FREE_FUNC>(SELF &&_ptr) { ptr = _ptr.getClear(); }
+    ~OwnedPtrCustomFree<CLASS, FREE_FUNC>() { safeFree(ptr); }
+
+    void operator = (CLASS * _ptr)
+    {
+        safeFree(ptr);
+        ptr = _ptr;
+    }
+    inline CLASS * operator -> () const { return ptr; }
+    inline operator CLASS *() const     { return ptr; }
+
+    inline void clear()                 { CLASS *temp=ptr; ptr=nullptr; safeFree(temp); }
+    inline CLASS *get() const           { return ptr; }
+    inline CLASS *getClear()            { CLASS * temp = ptr; ptr=nullptr; return temp; }
+    inline void setown(CLASS *_ptr)     { safeFree(ptr); ptr = _ptr; }
+
+    void operator = (const OwnedPtrCustomFree<CLASS, FREE_FUNC> & other) = delete;
+    void setown(const OwnedPtrCustomFree<CLASS, FREE_FUNC> &other) = delete;
+};
+
+//A simple object container/smart pointer
+template <typename CLASS> inline void ownedPtrDoDelete(CLASS *o) { delete o; }
+template <class CLASS>
+using OwnedPtr = OwnedPtrCustomFree<CLASS, ownedPtrDoDelete<CLASS>>;
+
+template <typename CLASS> void inline ownedMallocDoFree(CLASS *o) { free(o); }
+template <class CLASS> class OwnedMalloc : public OwnedPtrCustomFree<CLASS, ownedMallocDoFree<CLASS>>
+{
+    typedef OwnedPtrCustomFree<CLASS, ownedMallocDoFree<CLASS>> PARENT;
+public:
+    inline OwnedMalloc() : PARENT() { }
+    inline OwnedMalloc(CLASS * _ptr) : PARENT(_ptr) { }
     explicit inline OwnedMalloc(unsigned n, bool clearMemory = false) { doAllocate(n, clearMemory); }
-    inline ~OwnedMalloc()                       { free(ptr); }
-
-    inline CLASS * operator -> () const         { return ptr; }
-    inline operator CLASS *() const             { return ptr; }
-
-    inline void clear()                         { CLASS *temp=ptr; ptr=NULL; free(temp); }
-    inline CLASS * get() const                  { return ptr; }
-    inline CLASS * getClear()                   { CLASS * temp = ptr; ptr = NULL; return temp; }
-    inline void setown(CLASS * _ptr)            { CLASS * temp = ptr; ptr = _ptr; free(temp); }
-
     inline void allocate(bool clearMemory = false)   { allocateN(1, clearMemory); }
     inline void allocateN(unsigned n, bool clearMemory = false)
     {
-        clear();
+        PARENT::clear();
         doAllocate(n, clearMemory);
     }
 
+    void allocate(unsigned n, bool clearMemory = false) = delete;
+    void operator = (CLASS * _ptr) = delete;
 private:
-    inline OwnedMalloc(const OwnedMalloc<CLASS> & other);
-
     inline void doAllocate(unsigned n, bool clearMemory = false)
     {
         void * mem = clearMemory ? calloc(n, sizeof(CLASS)) : malloc(n * sizeof(CLASS));
-        ptr = static_cast<CLASS *>(mem);
+        PARENT::ptr = static_cast<CLASS *>(mem);
     }
-    void allocate(unsigned n, bool clearMemory = false);
-    void operator = (CLASS * _ptr);
-    void operator = (const OwnedMalloc<CLASS> & other);
-    void set(CLASS * _ptr);
-    void set(const OwnedMalloc<CLASS> &other);
-    void setown(const OwnedMalloc<CLASS> &other);
-
-private:
-    CLASS * ptr;
 };
+
 
 #define MEMBUFFER_MAXLEN UINT_MAX // size32_t
 
