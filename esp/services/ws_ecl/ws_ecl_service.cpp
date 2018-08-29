@@ -14,6 +14,7 @@
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
 #define     WSECL_ACCESS      "WsEclAccess"
+static const char* WSECL_ACCESS_DENIED = "WsEcl access permission denied.";
 
 const char *wsEclXsdTypes[] = {
     "xsd:string",
@@ -2449,8 +2450,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         IEspContext *context = request->queryContext();
         IProperties *parms = request->queryParameters();
 
-        if (!context->validateFeatureAccess(WSECL_ACCESS, SecAccess_Full, false))
-            throw MakeStringException(-1, "WsEcl access permission denied.");
+        context->ensureFeatureAccess(WSECL_ACCESS, SecAccess_Full, -1, WSECL_ACCESS_DENIED);
 
         const char *thepath = request->queryPath();
 
@@ -2681,8 +2681,7 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
 
     try
     {
-        if (!ctx->validateFeatureAccess(WSECL_ACCESS, SecAccess_Full, false))
-            throw MakeStringException(-1, "WsEcl access permission denied.");
+        ctx->ensureFeatureAccess(WSECL_ACCESS, SecAccess_Full, -1, WSECL_ACCESS_DENIED);
 
         const char *thepath = request->queryPath();
 
@@ -2811,8 +2810,7 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
         return 0;
     }
 
-    if (!ctx->validateFeatureAccess(WSECL_ACCESS, SecAccess_Full, false))
-        throw MakeStringException(-1, "WsEcl access permission denied.");
+    ctx->ensureFeatureAccess(WSECL_ACCESS, SecAccess_Full, -1, WSECL_ACCESS_DENIED);
 
     StringBuffer action;
     nextPathNode(thepath, action);
