@@ -405,13 +405,139 @@ int CHttpClient::sendRequest(const char* method, const char* contenttype, String
     return 0;
 }
 
+void copyHeaders(CHttpMessage &copyTo, CHttpMessage &copyFrom)
+{
+    if (copyFrom.queryHeaders().ordinality())
+    {
+        ForEachItemIn(i, copyFrom.queryHeaders())
+        {
+            StringArray pair;
+            pair.appendList(copyFrom.queryHeaders().item(i), ":", true);
+            const char *name = pair.item(0);
 
-int CHttpClient::sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent)
+            switch (*name)
+            {
+            case 'H':
+            case 'h':
+                if (strieq(name, "Host"))
+                    continue;
+                break;
+            case 'C':
+            case 'c':
+                if (strnicmp(name, "Content-", 8)==0)
+                {
+                    if (strieq(name+8, "Length") || strieq(name+8, "Type"))
+                        continue;
+                }
+                break;
+            default:
+                break;
+            }
+            copyTo.setHeader(name, pair.item(1));
+        }
+    }
+}
+
+void copyCookies(CHttpMessage &copyTo, CHttpMessage &copyFrom, const char *host)
+{
+    IArrayOf<CEspCookie>& cookies = copyFrom.queryCookies();
+    ForEachItemIn(x, cookies)
+    {
+        CEspCookie* cookie = &cookies.item(x);
+        if(!cookie)
+            continue;
+        cookie->setHost(host); //unfortunately changes copyFrom cookie... should make a true copy of cookie
+        copyTo.addCookie(cookie);
+    }
+}
+
+int CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage *response)
+{
+    CHttpRequest *forwardRequest = static_cast<CHttpRequest*>(request);
+    assertex(forwardRequest != nullptr);
+
+    StringBuffer forwardFor;
+    if (forwardRequest->getHeader("HPCC-Forward-For", forwardFor).length())
+        throw MakeStringExceptionDirect(-1, "Only one HPCC-Forward-For hop currently allowed");
+
+    CHttpResponse *forwardResponse = static_cast<CHttpResponse*>(response);
+    assertex(forwardResponse != nullptr);
+
+    StringBuffer errmsg;
+    if(connect(errmsg) < 0)
+    {
+        forwardResponse->setContent(errmsg);
+        forwardResponse->setContentType(HTTP_TYPE_TEXT_PLAIN);
+        return -1;
+    }
+
+    Owned<CHttpRequest> httprequest = new CHttpRequest(*m_socket);
+    Owned<CHttpResponse> httpresponse = new CHttpResponse(*m_socket);
+
+    httprequest->setMethod(forwardRequest->queryMethod());
+    httprequest->setVersion("HTTP/1.1");
+
+    if(m_proxy.length() <= 0)
+        httprequest->setPath(m_path.get());
+    else
+        httprequest->setPath(m_url.get());
+
+    httprequest->setHost(m_host.get());
+    httprequest->setPort(m_port);
+
+    copyHeaders(*httprequest, *forwardRequest);
+
+    httprequest->setHeader("HPCC-Forward-For", "true"); //For now limit to one hop, can support multi hpcc forward for hops in future, but why?
+
+    StringBuffer contentType;
+    forwardRequest->getContentType(contentType);
+
+    httprequest->setContentType(contentType);
+    httprequest->setContent(forwardRequest->queryContent());
+
+    if (getEspLogLevel()>LogNormal)
+    {
+        StringBuffer s;
+        DBGLOG("Content type: %s", forwardRequest->getContentType(s).str());
+        DBGLOG("Request content: %s", forwardRequest->queryContent());
+    }
+
+    Owned<IMultiException> me = MakeMultiException();
+
+    copyCookies(*httprequest, *forwardRequest, m_host);
+
+    httprequest->send();
+
+    if (m_readTimeoutSecs)
+        httpresponse->setTimeOut(m_readTimeoutSecs);
+    httpresponse->receive(false, nullptr);
+
+    copyCookies(*forwardResponse, *httpresponse, m_host);
+    copyHeaders(*forwardResponse, *httpresponse);
+
+    StringBuffer responseStatus;
+    StringBuffer responseContentType;
+
+    forwardResponse->setStatus(httpresponse->getStatus(responseStatus));
+    forwardResponse->setContent(httpresponse->queryContent());
+    forwardResponse->setContentType(httpresponse->getContentType(responseContentType));
+
+    if(!httpresponse->getPersistentEligible())
+        m_disableKeepAlive = true;
+    m_numRequests++;
+
+    if (getEspLogLevel()>LogNormal)
+        DBGLOG("Response content: %s", httpresponse->queryContent());
+
+    return 0;
+}
+
+int CHttpClient::sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& content, StringBuffer& responseContent, StringBuffer& responseStatus, bool alwaysReadContent)
 {
     StringBuffer errmsg;
     if(connect(errmsg) < 0)
     {
-        response.append(errmsg);
+        responseContent.append(errmsg);
         return -1;
     }
 
@@ -420,7 +546,7 @@ int CHttpClient::sendRequest(IProperties *headers, const char* method, const cha
 
     httprequest.setown(new CHttpRequest(*m_socket));
     httpresponse.setown(new CHttpResponse(*m_socket));
-    
+
     httprequest->setMethod(method);
     httprequest->setVersion("HTTP/1.1");
 
@@ -435,7 +561,7 @@ int CHttpClient::sendRequest(IProperties *headers, const char* method, const cha
 
     httprequest->setHost(m_host.get());
     httprequest->setPort(m_port);
-    
+
     httprequest->setContentType(contenttype);
 
     if (headers)
@@ -478,10 +604,10 @@ int CHttpClient::sendRequest(IProperties *headers, const char* method, const cha
     if (getEspLogLevel()>LogNormal)
     {
         DBGLOG("Content type: %s", contenttype);
-        DBGLOG("Request content: %s", request.str());
+        DBGLOG("Request content: %s", content.str());
     }
 
-    httprequest->setContent(request.str());
+    httprequest->setContent(content.str());
 
     Owned<IMultiException> me = MakeMultiException();
     //httprequest->sendWithoutContentType();
@@ -516,22 +642,15 @@ int CHttpClient::sendRequest(IProperties *headers, const char* method, const cha
     }
 #endif
 
-    httpresponse->getContent(response);
+    httpresponse->getContent(responseContent);
     httpresponse->getStatus(responseStatus);
 
-//const char* dstxml = "c:\\debug02.jpg";
-//int ofile = open(dstxml, _O_WRONLY | _O_CREAT | _O_BINARY);
-//if(ofile != -1)
-//{
-//write(ofile, response.str(), response.length());
-//close(ofile);
-//}
     if(!httpresponse->getPersistentEligible())
         m_disableKeepAlive = true;
     m_numRequests++;
 
     if (getEspLogLevel()>LogNormal)
-        DBGLOG("Response content: %s", response.str());
+        DBGLOG("Response content: %s", responseContent.str());
 
     return 0;
 }

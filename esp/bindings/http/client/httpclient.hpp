@@ -35,7 +35,9 @@ interface IHttpClient : extends ITransportClient
 
     virtual int sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response) = 0;
     virtual int sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent = false) = 0;
-    virtual int sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent = false) = 0;
+    virtual int sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& content, StringBuffer &response, StringBuffer& responseStatus, bool alwaysReadContent = false) = 0;
+    virtual int proxyRequest(IHttpMessage *request, IHttpMessage *response) = 0;
+
     virtual int postRequest(ISoapMessage & request, ISoapMessage & response) = 0;
 
 };

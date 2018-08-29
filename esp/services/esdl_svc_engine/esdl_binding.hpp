@@ -184,6 +184,7 @@ class EsdlBindingImpl : public CHttpSoapBinding
 private:
     Owned<IPropertyTree>                    m_bndCfg;
     Owned<IPropertyTree>                    m_esdlBndCfg;
+    Owned<IPropertyTree>                    m_proxyInfo;
 
     Owned<IEsdlDefinition>                  m_esdl;
     Owned<IEsdlDefinitionHelper>            m_xsdgen;
@@ -209,6 +210,9 @@ private:
             m_esdlBndCfg.clear();
         if (m_pESDLService)
             m_pESDLService->clearDESDLState();
+        if (m_proxyInfo)
+            m_proxyInfo.clear();
+
         //prob need to un-initesdlservinfo as well.
         ESPLOG(LogNormal, "Warning binding %s.%s is being un-loaded!", m_processName.get(), m_bindingName.get());
     }
@@ -225,6 +229,9 @@ public:
     }
 
     virtual int onGet(CHttpRequest* request, CHttpResponse* response);
+
+    bool checkForMethodProxy(const char *service, const char *method, StringBuffer &address);
+    int forwardProxyMessage(const char *addr, CHttpRequest* request, CHttpResponse* response);
 
     virtual void initEsdlServiceInfo(IEsdlDefService &srvdef);
 
@@ -278,6 +285,8 @@ public:
     virtual unsigned getCacheMethodCount(){return 0;}
     bool reloadBindingFromCentralStore(const char* bindingId);
     bool reloadDefinitionsFromCentralStore(IPropertyTree * esdlBndCng, StringBuffer & loadedname);
+    void configureProxies(IPropertyTree *cfg, const char *service);
+
     void clearBindingState();
 
     virtual bool subscribeBindingToDali() override
