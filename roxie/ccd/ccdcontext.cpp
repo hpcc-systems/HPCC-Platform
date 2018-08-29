@@ -3784,7 +3784,14 @@ public:
         }
         return strdup(factory->queryQueryName());
     }
-    virtual char *getJobOwner() { throwUnexpected(); }
+    virtual char *getJobOwner()
+    {
+        if (workUnit)
+        {
+            return strdup(workUnit->queryUser());
+        }
+        return strdup("");
+    }
     virtual char *getPlatform()
     {
         if (clusterNames.length())
