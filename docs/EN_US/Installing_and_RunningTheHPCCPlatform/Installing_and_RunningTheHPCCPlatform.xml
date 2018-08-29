@@ -2011,7 +2011,7 @@ sudo /etc/init.d/hpcc-init -c esp start
 
         <programlisting>sudo systemctl &lt;start|stop|restart&gt; &lt;full_service_name&gt; </programlisting>
 
-        <para>The systemd displays the service status in it's own
+        <para>The systemd displays the service status in its own
         format.</para>
 
         <programlisting>sudo systemctl status &lt;full_service_name&gt; </programlisting>
