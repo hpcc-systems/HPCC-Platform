@@ -18,8 +18,9 @@
     <para>A <emphasis>despray</emphasis> or <emphasis>export</emphasis> is the
     relocation of a data file from a cluster to a single machine location
     (such as a Landing Zone). The term despray was adopted due to the nature
-    of the file movement -- the file is reassembled from its parts on all nodes
-    in the cluster and placed in a single file on the destination.</para>
+    of the file movement -- the file is reassembled from its parts on all
+    nodes in the cluster and placed in a single file on the
+    destination.</para>
 
     <para>A <emphasis>copy </emphasis>is the replication of a data file from
     one cluster to another cluster within the same environment.</para>
@@ -357,7 +358,7 @@
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Select the queue.</entry>
+                    <entry>Select the queue for the spray.</entry>
                   </row>
 
                   <row>
@@ -410,6 +411,15 @@
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
                     <entry>Check this box to compress the files.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>An integer value indicating the number of days
+                    before automatically removing the file. If omitted, the
+                    default is -1 (never expires).</entry>
                   </row>
 
                   <row>
@@ -494,7 +504,7 @@
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Select the queue.</entry>
+                    <entry>Select the queue for the spray.</entry>
                   </row>
 
                   <row>
@@ -607,6 +617,15 @@
                   </row>
 
                   <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>An integer value indicating the number of days
+                    before automatically removing the file. If omitted, the
+                    default is -1 (never expires).</entry>
+                  </row>
+
+                  <row>
                     <entry><emphasis role="bold">Quoted
                     Terminator</emphasis></entry>
 
@@ -691,7 +710,7 @@
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Select the queue.</entry>
+                    <entry>Select the queue for the spray.</entry>
                   </row>
 
                   <row>
@@ -747,6 +766,15 @@
 
                     <entry>Check this box to prevent splitting file parts to
                     multiple target parts.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>An integer value indicating the number of days
+                    before automatically removing the file. If omitted, the
+                    default is -1 (never expires).</entry>
                   </row>
 
                   <row>
@@ -840,7 +868,7 @@
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Select the queue.</entry>
+                    <entry>Select the queue for the spray.</entry>
                   </row>
 
                   <row>
@@ -919,6 +947,15 @@
                   </row>
 
                   <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>An integer value indicating the number of days
+                    before automatically removing the file. If omitted, the
+                    default is -1 (never expires).</entry>
+                  </row>
+
+                  <row>
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
                     <entry>Check this box to compress the files.</entry>
@@ -991,7 +1028,7 @@
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Select the queue.</entry>
+                    <entry>Select the queue for the spray.</entry>
                   </row>
 
                   <row>
@@ -1054,6 +1091,15 @@
                     cluster).</para><para><emphasis role="bold">This option is
                     only available on systems where replication has been
                     enabled.</emphasis></para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>An integer value indicating the number of days
+                    before automatically removing the file. If omitted, the
+                    default is -1 (never expires).</entry>
                   </row>
 
                   <row>
@@ -1129,7 +1175,7 @@
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Select the queue.</entry>
+                    <entry>Select the queue for the spray.</entry>
                   </row>
 
                   <row>
@@ -1190,6 +1236,15 @@
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
                     <entry>Check this box to compress the files.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>An integer value indicating the number of days
+                    before automatically removing the file. If omitted, the
+                    default is -1 (never expires).</entry>
                   </row>
 
                   <row>
