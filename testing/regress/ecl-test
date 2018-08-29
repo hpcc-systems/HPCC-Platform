@@ -188,6 +188,8 @@ class RegressMain:
                                 action = 'store_true')
         commonParser.add_argument('--server', help="ESP server address. Default value (espIp) defined in ecl-test.json config file.",
                                 nargs='?', default=None,  metavar="networkAddress")
+        commonParser.add_argument('--username',  '-u', help="Specify a username. If this appears in command line and the STDIO is a TTY like device then, the test engine displays a prompt to get user's password. Pipe like 'echo \"<password>\" | ./elc-test run -u <username>  ...' can be used to provide user's password as well. The username and password overrides those stored in ecl-test.json config file.",
+                                nargs='?', default=None,  metavar="username")
 
         executionParser=argparse.ArgumentParser(add_help=False)
         executionParser.add_argument('--runclass', '-r', help="Run subclass(es) of the suite. Default value is 'all'",
@@ -267,6 +269,28 @@ class RegressMain:
         self.config = Config(self.args.config).configObj
         if ('server' in self.args) and (self.args.server != None):
             self.config.set('espIp',  self.args.server)
+            pass
+
+        if self.args.username != None:
+            self.config.set('username',  self.args.username)
+            import sys
+            if sys.stdin.isatty():
+                import getpass
+                passw = getpass.getpass("Please enter %s's password:" % (self.args.username))
+            else:
+                # The pswDebugMode needs to me to debug/trace this code
+                # Alternatively we can call it enablePipePassword if we need/want that feature
+                pswDebugMode = True  
+                if not pswDebugMode:
+                    err = Error("8000")
+                    logging.error("%s. Password error:%s" % (-1,  err))
+                    exit(err.getErrorCode())
+                else:
+                    # Enable to pipe a password string to Test Engine like:
+                    #   echo "<password>" | ./ecl-test..."
+                    passw = sys.stdin.readline().rstrip()
+
+            self.config.set('password',  passw)
             pass
 
         if self.args.flushDiskCache and not isSudoer():

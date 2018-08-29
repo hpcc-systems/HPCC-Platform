@@ -57,6 +57,12 @@ Result:
 |                                 Set an ECL option (equivalent to #option).
 |        --pq threadNumber        Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |        --noversion              Avoid version expansion of queries. Execute them as a standard test.
+|        --server [networkAddress]
+|                                 ESP server address. Default value (espIp) defined in ecl-test.json config file.
+|        --username [username], -u [username]
+|                                 Specify a username. If this appears in command line and the STDIO is a TTY like device then, the test engine displays a prompt to get user's password. 
+|                                 Pipe like 'echo "<password>" \| ./elc-test run -u <username> ...' can be used to provide user's password as well.
+|                                 The username and password overrides those stored in ecl-test.json config file.
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
@@ -169,6 +175,13 @@ Result:
 |                                 Set an ECL option (equivalent to #option).
 |        --pq threadNumber        Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |        --noversion              Avoid version expansion of queries. Execute them as a standard test.
+|        --server [networkAddress]
+|                                 ESP server address. Default value (espIp) defined in
+|                                 ecl-test.json config file.
+|        --username [username], -u [username]
+|                                 Specify a username. If this appears in command line and the STDIO is a TTY like device then, the test engine displays a prompt to get user's password. 
+|                                 Pipe like 'echo "<password>" \| ./elc-test run -u <username> ...' can be used to provide user's password as well.
+|                                 The username and password overrides those stored in ecl-test.json config file.
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
@@ -229,6 +242,10 @@ Result:
 |        --server [networkAddress]
 |                                 ESP server address. Default value (espIp) defined in
 |                                 ecl-test.json config file.
+|        --username [username], -u [username]
+|                                 Specify a username. If this appears in command line and the STDIO is a TTY like device then, the test engine displays a prompt to get user's password. 
+|                                 Pipe like 'echo "<password>" \| ./elc-test run -u <username> ...' can be used to provide user's password as well.
+|                                 The username and password overrides those stored in ecl-test.json config file.
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
@@ -295,6 +312,10 @@ Result:
 |        --noversion              Avoid version expansion of queries. Execute them as a standard test.
 |        --server [networkAddress]
 |                                 ESP server address. Default value (espIp) defined in ecl-test.json config file.
+|        --username [username], -u [username]
+|                                 Specify a username. If this appears in command line and the STDIO is a TTY like device then, the test engine displays a prompt to get user's password. 
+|                                 Pipe like 'echo "<password>" \| ./elc-test run -u <username> ...' can be used to provide user's password as well.
+|                                 The username and password overrides those stored in ecl-test.json config file.
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
