@@ -183,10 +183,11 @@
           the filename is in lowercase. Options that do not change very often
           can be put in the ini file. For example:</para>
 
-          <programlisting>server=10.150.50.12
-cluster=training
-queue=trainingQueue
-user=rtor
+          <programlisting>;The values below are examples, you should change them to match your platform deployment
+server=10.150.50.12
+cluster=thor
+queue=mythor
+user=emilykate
 password=password</programlisting>
 
           <para>In all the examples below, we'll assume eclplus.ini has the
