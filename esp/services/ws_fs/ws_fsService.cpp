@@ -46,6 +46,8 @@
 #define FILE_DESPRAY_URL    "FileDesprayAccess"
 #define WUDETAILS_REFRESH_MINS 1
 
+static unsigned DROPZONEFILESEARCH_MAXFILES = 1000;
+
 void SetResp(StringBuffer &resp, IConstDFUWorkUnit * wu, bool array);
 int Schedule::run()
 {
@@ -2834,12 +2836,9 @@ bool CFileSprayEx::checkDropZoneIPAndPath(double clientVersion, const char* drop
 }
 
 void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* dropZonePath,
-    StringBuffer& relativePath, const char pathSep, IArrayOf<IEspPhysicalFileStruct>& filesInFolder, IArrayOf<IEspPhysicalFileStruct>& files)
+    IArrayOf<IEspPhysicalFileStruct>& files, unsigned& filesFound)
 {
     StringBuffer path = dropZonePath;
-    if (!relativePath.isEmpty())
-        path.append(pathSep).append(relativePath.str());
-
     Owned<IEspPhysicalFileStruct> aFile = createPhysicalFileStruct();
     aFile->setName(name);
     aFile->setPath(path);
@@ -2853,54 +2852,11 @@ void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di,
     timestr.appendf("%04d-%02d-%02d %02d:%02d:%02d", y,m,d,h,min,sec);
     aFile->setModifiedtime(timestr.str());
     aFile->setFilesize(di->getFileSize());
-    if (di->isDir() && filesInFolder.ordinality())
-        aFile->setFiles(filesInFolder);
     files.append(*aFile.getLink());
 }
 
-bool CFileSprayEx::searchDropZoneFileInFolder(IEspContext& context, IFile* f, const char* nameFilter,
-    bool returnAll, const char* dropZonePath, StringBuffer& relativePath, const char pathSep, IArrayOf<IEspPhysicalFileStruct>& files)
-{
-    bool foundMatch = false;
-    Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
-    ForEach(*di)
-    {
-        StringBuffer fname;
-        di->getName(fname);
-        if (!fname.length())
-            continue;
-
-        StringBuffer newPath = relativePath;
-        if (!newPath.isEmpty())
-            newPath.append(pathSep);
-        newPath.append(fname.str());
-
-        IArrayOf<IEspPhysicalFileStruct> filesInFolder;
-        if (returnAll) //Every files and subfolders in this folder have to be returned
-        {
-            if (di->isDir())
-                searchDropZoneFileInFolder(context, &di->get(), NULL, returnAll, dropZonePath, newPath, pathSep, filesInFolder);
-            addDropZoneFile(context, di, fname.str(), dropZonePath, relativePath, pathSep, filesInFolder, files);
-            continue;
-        }
-
-        bool foundMatchNew = WildMatch(fname.str(), nameFilter, true);
-        if (di->isDir() && searchDropZoneFileInFolder(context, &di->get(), nameFilter, foundMatchNew, dropZonePath,
-            newPath, pathSep, filesInFolder))
-        {
-            foundMatchNew = true;
-        }
-
-        if (foundMatchNew)
-        {
-            addDropZoneFile(context, di, fname.str(), dropZonePath, relativePath, pathSep, filesInFolder, files);
-            foundMatch = true;
-        }
-    }
-    return foundMatch;
-}
-
-void CFileSprayEx::appendDropZoneFiles(IEspContext& context, IpAddress& ip, const char* dir, const char* nameFilter, IArrayOf<IEspPhysicalFileStruct>& files)
+void CFileSprayEx::appendDropZoneFiles(IEspContext& context, IpAddress& ip, const char* dir,
+    const char* nameFilter, IArrayOf<IEspPhysicalFileStruct>& files, unsigned& filesFound)
 {
     RemoteFilename rfn;
     SocketEndpoint ep;
@@ -2910,9 +2866,19 @@ void CFileSprayEx::appendDropZoneFiles(IEspContext& context, IpAddress& ip, cons
     if(!f->isDirectory())
         throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", dir);
 
-    StringBuffer relativePath;
-    searchDropZoneFileInFolder(context, f, nameFilter, !nameFilter || !*nameFilter, dir,
-        relativePath, getPathSepChar(dir), files);
+    Owned<IDirectoryIterator> di = f->directoryFiles(isEmptyString(nameFilter) ? "*" : nameFilter, true, true);
+    ForEach(*di)
+    {
+        StringBuffer fname;
+        di->getName(fname);
+        if (!fname.length())
+            continue;
+
+        filesFound++;
+        if (filesFound > DROPZONEFILESEARCH_MAXFILES)
+            break;
+        addDropZoneFile(context, di, fname.str(), dir, files, filesFound);
+    }
 }
 
 bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSearchRequest &req, IEspDropZoneFileSearchResponse &resp)
@@ -2945,6 +2911,8 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid server %s specified.", dropZoneServerReq);
         }
 
+        double version = context.getClientVersion();
+        unsigned filesFound = 0;
         IArrayOf<IEspPhysicalFileStruct> files;
         Owned<IConstDropZoneServerInfoIterator> dropZoneServerItr = dropZoneInfo->getServers();
         ForEach(*dropZoneServerItr)
@@ -2958,9 +2926,17 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
             IpAddress ipAddr;
             ipAddr.ipset(server.str());
             if (isEmptyString(dropZoneServerReq) || ipAddr.ipequals(ipToMatch))
-                appendDropZoneFiles(context, ipAddr, directory.str(), req.getNameFilter(), files);
+                appendDropZoneFiles(context, ipAddr, directory.str(), req.getNameFilter(), files, filesFound);
+            if (filesFound > DROPZONEFILESEARCH_MAXFILES)
+                break;
         }
+
         resp.setFiles(files);
+        if ((version >= 1.16) && (filesFound > DROPZONEFILESEARCH_MAXFILES))
+        {
+            VStringBuffer msg("More than %u files are found. Only %u files are returned.", DROPZONEFILESEARCH_MAXFILES, DROPZONEFILESEARCH_MAXFILES);
+            resp.setWarning(msg.str());
+        }
     }
     catch(IException* e)
     {
