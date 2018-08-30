@@ -52,6 +52,8 @@
 #include "workunit.ipp"
 #include "digisign.hpp"
 
+using namespace cryptohelper;
+
 static int workUnitTraceLevel = 1;
 
 static StringBuffer &getXPath(StringBuffer &wuRoot, const char *wuid)

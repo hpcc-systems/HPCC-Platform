@@ -78,6 +78,6 @@ if(NOT PLUGIN)
         nbcd 
         eclrtl 
         deftype
-        digisign
+        cryptohelper
         environment)
 endif()
