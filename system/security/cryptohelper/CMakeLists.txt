@@ -14,20 +14,23 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: digisign
+# Component: cryptohelper
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for digisign
+#    Cmake Input File for cryptohelper
 #####################################################
 
 
-project( digisign )
+project( cryptohelper )
 
 set (
         SRCS
+        cryptocommon.cpp
         digisign.cpp
+        pke.cpp
+        ske.cpp
     )
 
 include_directories (
@@ -37,24 +40,24 @@ include_directories (
         ${OPENSSL_INCLUDE_DIR}
     )
 
-ADD_DEFINITIONS ( -DDIGISIGN_EXPORTS -D_USRDLL )
+ADD_DEFINITIONS ( -DCRYPTOHELPER_EXPORTS -D_USRDLL )
 
-HPCC_ADD_LIBRARY( digisign SHARED ${SRCS} )
+HPCC_ADD_LIBRARY( cryptohelper SHARED ${SRCS} )
 
 install (
-        TARGETS digisign
+        TARGETS cryptohelper
         RUNTIME DESTINATION ${EXEC_DIR}
         LIBRARY DESTINATION ${LIB_DIR}
     )
 
 target_link_libraries (
-        digisign
+        cryptohelper
         jlib
     )
 
 if (USE_OPENSSL)
       target_link_libraries (
-          digisign
+          cryptohelper
           ${OPENSSL_LIBRARIES}
     )
 endif()

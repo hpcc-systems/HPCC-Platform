@@ -41,7 +41,7 @@ set (    SRCS
 include_directories ( 
          ./../../include 
          ./../shared 
-         ./../digisign
+         ./../cryptohelper
          ./../../jlib 
          ./../../../esp/platform 
 	     ./../../../dali/base
@@ -55,7 +55,7 @@ HPCC_ADD_LIBRARY( LdapSecurity SHARED ${SRCS} )
 install ( TARGETS LdapSecurity RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( LdapSecurity
          jlib
-         digisign
+         cryptohelper
          dalibase
          ${OPENLDAP_LIBRARIES}
     )

@@ -35,6 +35,8 @@
 #include "dasess.hpp"
 #include "digisign.hpp"
 
+using namespace cryptohelper;
+
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
 #endif

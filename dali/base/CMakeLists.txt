@@ -64,7 +64,7 @@ include_directories (
          ./../../system/jlib 
          ./../../rtl/include 
          ./../../system/security/shared
-         ./../../system/security/digisign
+         ./../../system/security/cryptohelper
     )
 
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=3 -D_USRDLL -DDALI_EXPORTS )
@@ -79,7 +79,7 @@ if(NOT PLUGIN)
     target_link_libraries(
         dalibase 
         jlib
-        digisign
+        cryptohelper
         mp 
         hrpc 
         remote)

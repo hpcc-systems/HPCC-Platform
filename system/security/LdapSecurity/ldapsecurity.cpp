@@ -22,6 +22,9 @@
 #include "authmap.ipp"
 #include "digisign.hpp"
 
+using namespace cryptohelper;
+
+
 /**********************************************************
  *     CLdapSecUser                                       *
  **********************************************************/

@@ -38,7 +38,7 @@ include_directories (
          ./../../system/include 
          ./../../system/security/shared 
          ./../../system/security/LdapSecurity 
-         ./../../system/security/digisign
+         ./../../system/security/cryptohelper
          ./../../system/jlib 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
@@ -61,7 +61,7 @@ target_link_libraries ( daserver
          hrpc 
          remote 
          dalibase 
-         digisign
+         cryptohelper
     )
 IF (USE_OPENLDAP)
 target_link_libraries ( daserver LdapSecurity )

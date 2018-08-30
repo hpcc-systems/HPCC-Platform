@@ -21,20 +21,18 @@
 #include <openssl/evp.h>
 #endif
 #include "jencrypt.hpp"
+#include "cryptocommon.hpp"
 #include "digisign.hpp"
 #include <mutex>
 
+
+namespace cryptohelper
+{
 
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
 
 #define EVP_CLEANUP(key,ctx) EVP_PKEY_free(key);       \
                              EVP_MD_CTX_destroy(ctx);
-
-#define EVP_THROW(str) {                                            \
-                         char buff[120];                            \
-                         ERR_error_string(ERR_get_error(), buff);   \
-                         throw MakeStringException(-1, str, buff);  \
-                       }
 
 class CDigitalSignatureManager : implements IDigitalSignatureManager, public CInterface
 {
@@ -54,9 +52,7 @@ private:
         //create an RSA object from public key
         BIO * keybio = BIO_new_mem_buf((void*) keyBuff, -1);
         if (nullptr == keybio)
-        {
-            EVP_THROW("digiSign:BIO_new_mem_buf: %s");
-        }
+            throwEVPException(-1, "digiSign:BIO_new_mem_buf");
 
         RSA * rsa;
         if (isSigning)
@@ -72,16 +68,16 @@ private:
         if (nullptr == rsa)
         {
             if (isSigning)
-                EVP_THROW("digiSign:PEM_read_bio_RSAPrivateKey: %s")
+                throwEVPException(-1, "digiSign:PEM_read_bio_RSAPrivateKey");
             else
-                EVP_THROW("digiSign:PEM_read_bio_RSA_PUBKEY: %s")
+                throwEVPException(-1, "digiSign:PEM_read_bio_RSA_PUBKEY");
         }
 
         EVP_PKEY* pKey = EVP_PKEY_new();
         if (nullptr == pKey)
         {
             RSA_free(rsa);
-            EVP_THROW("digiSign:EVP_PKEY_new: %s");
+            throwEVPException(-1, "digiSign:EVP_PKEY_new");
         }
         EVP_PKEY_assign_RSA(pKey, rsa);//take ownership of the rsa. pKey will free rsa
 
@@ -89,7 +85,7 @@ private:
         if (nullptr == RSACtx)
         {
             EVP_PKEY_free(pKey);
-            EVP_THROW("digiSign:EVP_MD_CTX_create: %s");
+            throwEVPException(-1, "digiSign:EVP_MD_CTX_create");
         }
 
         //initialize context for SHA-256 hashing function
@@ -102,9 +98,9 @@ private:
         {
             EVP_CLEANUP(pKey, RSACtx);//cleans allocated key and digest context
             if (isSigning)
-                EVP_THROW("digiSign:EVP_DigestSignInit: %s")
+                throwEVPException(-1, "digiSign:EVP_DigestSignInit");
             else
-                EVP_THROW("digiSign:EVP_DigestVerifyInit: %s")
+                throwEVPException(-1, "digiSign:EVP_DigestVerifyInit");
         }
         *ctx = RSACtx;
         *PKey = pKey;
@@ -148,7 +144,7 @@ public:
         if (EVP_DigestSignUpdate(signingCtx, (size_t*)text, strlen(text)) <= 0)
         {
             EVP_CLEANUP(signingKey, signingCtx);
-            EVP_THROW("digiSign:EVP_DigestSignUpdate: %s");
+            throwEVPException(-1, "digiSign:EVP_DigestSignUpdate");
         }
 
         //compute length of signature
@@ -156,13 +152,13 @@ public:
         if (EVP_DigestSignFinal(signingCtx, nullptr, &encMsgLen) <= 0)
         {
             EVP_CLEANUP(signingKey, signingCtx);
-            EVP_THROW("digiSign:EVP_DigestSignFinal1: %s");
+            throwEVPException(-1, "digiSign:EVP_DigestSignFinal1");
         }
 
         if (encMsgLen == 0)
         {
             EVP_CLEANUP(signingKey, signingCtx);
-            EVP_THROW("digiSign:EVP_DigestSignFinal length returned 0: %s");
+            throwEVPException(-1, "digiSign:EVP_DigestSignFinal length returned 0");
         }
 
         //compute signature (signed digest)
@@ -177,7 +173,7 @@ public:
         {
             free(encMsg);
             EVP_CLEANUP(signingKey, signingCtx);
-            EVP_THROW("digiSign:EVP_DigestSignFinal2: %s");
+            throwEVPException(-1, "digiSign:EVP_DigestSignFinal2");
         }
 
 
@@ -208,7 +204,7 @@ public:
         if (EVP_DigestVerifyUpdate(verifyingCtx, text, strlen(text)) <= 0)
         {
             EVP_CLEANUP(verifyingKey, verifyingCtx);
-            EVP_THROW("digiVerify:EVP_DigestVerifyUpdate: %s");
+            throwEVPException(-1, "digiVerify:EVP_DigestVerifyUpdate");
         }
 
         int match = EVP_DigestVerifyFinal(verifyingCtx, (unsigned char *)decodedSig.str(), decodedSig.length());
@@ -291,7 +287,7 @@ static void addAlgorithms()
 extern "C"
 {
     //Returns reference to singleton instance created from environment.conf key file settings
-    DIGISIGN_API IDigitalSignatureManager * queryDigitalSignatureManagerInstanceFromEnv()
+    CRYPTOHELPER_API IDigitalSignatureManager * queryDigitalSignatureManagerInstanceFromEnv()
     {
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
         std::call_once(dsmInitFlag, createDigitalSignatureManagerInstance, &dsm);
@@ -303,7 +299,7 @@ extern "C"
 
     //Create using given key filespecs
     //Caller must release when no longer needed
-    DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * _pubKey, const char *_privKey, const char * _passPhrase)
+    CRYPTOHELPER_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * _pubKey, const char *_privKey, const char * _passPhrase)
     {
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
         StringBuffer privateKeyBuff;
@@ -345,7 +341,7 @@ extern "C"
 
     //Create using given PEM formatted keys
     //Caller must release when no longer needed
-    DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(StringBuffer & _pubKeyBuff, StringBuffer & _privKeyBuff, const char * _passPhrase)
+    CRYPTOHELPER_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(StringBuffer & _pubKeyBuff, StringBuffer & _privKeyBuff, const char * _passPhrase)
     {
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
         std::call_once(dsmAddAlgoFlag, addAlgorithms);
@@ -356,3 +352,4 @@ extern "C"
     }
 }
 
+} // namespace cryptohelper

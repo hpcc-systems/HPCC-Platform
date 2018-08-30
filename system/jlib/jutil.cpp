@@ -901,6 +901,42 @@ IRandomNumberGenerator *createRandomNumberGenerator()
     return new CRandom();
 }
 
+void fillRandomData(size32_t writeSz, void *_writePtr)
+{
+#ifdef __APPLE__
+//Apple does not currently support thread_local (very strange), so need to use __thread.
+static __thread Owned<IRandomNumberGenerator> generator = createRandomNumberGenerator();
+#else
+static thread_local Owned<IRandomNumberGenerator> generator = createRandomNumberGenerator();
+#endif
+    unsigned *writePtr = (unsigned *)_writePtr;
+    unsigned *bufEnd = (unsigned *)(((byte *)writePtr)+writeSz);
+    while (true)
+    {
+        size32_t diff = (const byte *)bufEnd - (const byte *)writePtr;
+        unsigned r = generator->next();
+        if (diff<sizeof(unsigned))
+        {
+            // last few bytes
+            byte *p = (byte *)writePtr;
+            while (diff--)
+            {
+                *p++ = r & 0xff;
+                r >>= 8;
+            }
+            break;
+        }
+        *writePtr++ = r;
+    }
+}
+
+void fillRandomData(size32_t writeSz, MemoryBuffer &mb)
+{
+    void *writePtr = mb.reserveTruncate(writeSz);
+    fillRandomData(writeSz, writePtr);
+}
+
+
 #ifdef WIN32
 // This function has the same prototype for rand_r, but seed is ignored.
 
