@@ -31,39 +31,37 @@
       fictitious. Any similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
- 
-    
-      <xi:include  href="../../common/Version.xml" xpointer="FooterInfo" 
-                  xmlns:xi="http://www.w3.org/2001/XInclude">
-                   <xi:fallback>
-                     <para><emphasis>FooterInfo Failed to load</emphasis></para>
-                    </xi:fallback>
-      </xi:include>
- 
-                
-     <xi:include  href="../../common/Version.xml" xpointer="DateVer" 
-                 xmlns:xi="http://www.w3.org/2001/XInclude">
-                  <xi:fallback>
-                    <para><emphasis>DateVer Failed to load</emphasis></para>
-                   </xi:fallback>
-     </xi:include>
-		
+    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>FooterInfo Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
+
+    <xi:include href="../../common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>DateVer Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    
-       
-    <xi:include  href="../../common/Version.xml" xpointer="Copyright" 
-                  xmlns:xi="http://www.w3.org/2001/XInclude">
-                    <xi:fallback>
-                      <para><emphasis>Copyright Failed to load</emphasis></para>
-                    </xi:fallback>
+    <xi:include href="../../common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>Copyright Failed to load</emphasis>
+        </para>
+      </xi:fallback>
     </xi:include>
-    
-    
 
     <mediaobject role="logo">
       <imageobject>
@@ -313,6 +311,18 @@ depending on where they wind up.-->
                 <para>Provides the option to search/display queries on a
                 single node or all nodes. Using this option can improve
                 performance if you have a large multi-node cluster.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Recreate Query</term>
+
+              <listitem>
+                <para>Recompiles a query into a new workunit and republishes
+                the new workunit. This is useful when upgrading to a new ECL
+                compiler and you want to recompile a query from the exact same
+                source. The ECL archive must be available within the workunit
+                of the query.</para>
               </listitem>
             </varlistentry>
           </variablelist></para>
