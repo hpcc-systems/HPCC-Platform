@@ -1,5 +1,26 @@
  <Methods>
+       <xsdl:CustomRequestTransform>
+          <xsdl:choose>
+             <xsdl:when test="$clientversion=1.9">
+                <xsdl:SetValue target="Row/Name/First"  value="'service'" />
+             </xsdl:when>
+             <xsdl:otherwise>
+                <xsdl:SetValue target="Row/Name/Last" value="'zz'"/>
+             </xsdl:otherwise>
+          </xsdl:choose>
+       </xsdl:CustomRequestTransform>
     <Method name="JavaEchoPersonInfo" querytype="java" javamethod="EsdlExample.EsdlExampleService.JavaEchoPersonInfo"/>
-    <Method name="RoxieEchoPersonInfo" querytype="roxie" url="http://localhost:9876/roxie" queryname="RoxieEchoPersonInfo"/>
+    <Method name="RoxieEchoPersonInfo" querytype="roxie" url="http://localhost:9876/roxie" queryname="RoxieEchoPersonInfo">
+         <xsdl:CustomRequestTransform>
+            <xsdl:choose>
+               <xsdl:when test="$clientversion=1.9">
+                  <xsdl:SetValue target="Row/Name/First"  value="'v1.9'"/>
+               </xsdl:when>
+               <xsdl:otherwise>
+                  <xsdl:SetValue target="Row/Name/Last" value="concat('v', $clientversion)"/>
+               </xsdl:otherwise>
+            </xsdl:choose>
+         </xsdl:CustomRequestTransform>
+   </Method>
 </Methods>
 

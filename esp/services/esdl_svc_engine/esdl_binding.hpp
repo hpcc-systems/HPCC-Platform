@@ -74,8 +74,9 @@ private:
     MapStringToMyClass<IException> javaExceptionMap;
     Owned<ILoggingManager> m_oLoggingManager;
     bool m_bGenerateLocalTrxId;
-    Owned<CEsdlCustomTransform> m_customRequestTransform;
-    bool m_custTrxCompileFail;
+    MapStringToMyClass<IEsdlCustomTransform> m_customRequestTransformMap;
+    Owned<CEsdlCustomTransform> m_serviceLevelRequestTransform;
+    bool m_serviceLevelCrtFail = false;
 
 #ifndef LINK_STATICALLY
     Owned<ILoadedDllEntry> javaPluginDll;
@@ -93,6 +94,7 @@ public:
     StringBuffer                m_serviceNameSpaceBase;
     StringAttr                  m_namespaceScheme;
     bool                        m_usesURLNameSpace;
+    MapStringTo<StringAttr, const char *> m_methodCRTransformErrors;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -145,6 +147,7 @@ public:
             m_pEsdlTransformer.clear();
         if(m_pServiceMethodTargets)
             m_pServiceMethodTargets.clear();
+        m_methodCRTransformErrors.kill();
     }
 
     virtual bool loadLogggingManager();
@@ -152,6 +155,8 @@ public:
     virtual void configureTargets(IPropertyTree *cfg, const char *service);
     void configureJavaMethod(const char *method, IPropertyTree &entry, const char *classPath);
     void configureUrlMethod(const char *method, IPropertyTree &entry);
+    void addServiceLevelRequestTransform(IPropertyTree *customRequestTransform);
+    void addMethodLevelRequestTransform(const char *method, IPropertyTree &methodCfg, IPropertyTree *customRequestTransform);
 
     virtual void handleServiceRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, const char *ns, const char *schema_location, IPropertyTree *req, StringBuffer &out, StringBuffer &logdata, unsigned int flags);
     virtual void generateTransactionId(IEspContext & context, StringBuffer & trxid)=0;
