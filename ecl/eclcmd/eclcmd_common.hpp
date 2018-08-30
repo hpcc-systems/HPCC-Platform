@@ -173,6 +173,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PATH "--path"
 #define ECLOPT_INC_THOR_SLAVE_LOGS "--inc-thor-slave-logs"
 #define ECLOPT_PROBLEM_DESC "--description"
+#define ECLOPT_CREATE_DIRS "--create-dirs"
 
 
 #define ECLOPT_LIB_PATH_S "-L"
