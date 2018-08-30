@@ -37,6 +37,8 @@ namespace cryptohelper
 class CDigitalSignatureManager : implements IDigitalSignatureManager, public CInterface
 {
 private:
+    StringBuffer publicKeyFile;
+    StringBuffer privateKeyFile;
     StringBuffer publicKeyBuff;
     StringBuffer privateKeyBuff;
     StringBuffer passphraseBuffEnc;
@@ -128,6 +130,22 @@ public:
     bool isDigiVerifierConfigured()
     {
         return verifyingConfigured;
+    }
+
+    void setKeyFileNames(const char * pub, const char * priv)
+    {
+        publicKeyFile.set(pub);
+        privateKeyFile.set(priv);
+    }
+
+    const char * queryPublicKeyFile() const
+    {
+        return publicKeyFile.str();
+    }
+
+    const char * queryPrivateKeyFile() const
+    {
+        return privateKeyFile.str();
     }
 
     //Create base 64 encoded digital signature of given text string
@@ -236,6 +254,20 @@ public:
         return false;
     }
 
+    void setKeyFileNames(const char * pub, const char * priv)
+    {
+    }
+
+    const char * queryPublicKeyFile() const
+    {
+        return nullptr;
+    }
+
+    const char * queryPrivateKeyFile() const
+    {
+        return nullptr;
+    }
+
     //Create base 64 encoded digital signature of given text string
     bool digiSign(const char * text, StringBuffer & b64Signature)
     {
@@ -333,7 +365,10 @@ extern "C"
                 throw MakeStringException(-1, "digiSign:Cannot load private key file");
         }
 
-        return createDigitalSignatureManagerInstanceFromKeys(publicKeyBuff, privateKeyBuff, _passPhrase);
+        IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromKeys(publicKeyBuff, privateKeyBuff, _passPhrase);
+        if (pDSM)
+            pDSM->setKeyFileNames(_pubKey, _privKey);
+        return pDSM;
 #else
         return nullptr;
 #endif

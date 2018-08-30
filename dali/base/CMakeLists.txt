@@ -65,6 +65,7 @@ include_directories (
          ./../../rtl/include 
          ./../../system/security/shared
          ./../../system/security/cryptohelper
+         ./../../common/workunit
     )
 
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=3 -D_USRDLL -DDALI_EXPORTS )
