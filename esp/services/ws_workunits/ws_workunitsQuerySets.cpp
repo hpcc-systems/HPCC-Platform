@@ -1670,9 +1670,6 @@ void copyWorkunitForRecompile(IEspContext &context, IWorkUnitFactory *factory, c
 
     wu->setAction(WUActionCompile);
 
-    SCMStringBuffer token;
-    wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
-
     jobname.set(src->queryJobName());
     if (jobname.length())
         wu->setJobName(jobname);

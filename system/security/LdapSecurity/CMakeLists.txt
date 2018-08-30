@@ -46,6 +46,7 @@ include_directories (
          ./../../../esp/platform 
 	     ./../../../dali/base
 	     ./../../../system/mp
+	     ./../../../common/workunit
          ${OPENLDAP_INCLUDE_DIR}
     )
 
@@ -57,6 +58,7 @@ target_link_libraries ( LdapSecurity
          jlib
          cryptohelper
          dalibase
+         workunit
          ${OPENLDAP_LIBRARIES}
     )
 

@@ -34,6 +34,7 @@
 #include "seclib.hpp"
 #include "dasess.hpp"
 #include "digisign.hpp"
+#include "workunit.hpp"
 
 using namespace cryptohelper;
 
@@ -937,7 +938,17 @@ public:
             PrintStackReport();
         }
 #endif
-        udesc->serialize(mb);
+        StringBuffer sb;
+        udesc->getPassword(sb);
+        if (isWorkunitDAToken(sb.str()))
+        {
+            Owned<IUserDescriptor> user = createUserDescriptor();
+            sb.clear();
+            user->set(udesc->getUserName(sb), nullptr);
+            user->serialize(mb);//Do not send workunit token to Dali. Dali authenticate with the DaliSignature
+        }
+        else
+            udesc->serialize(mb);
         mb.append(auditflags);
 
         //Serialize signature. If not provided, compute it

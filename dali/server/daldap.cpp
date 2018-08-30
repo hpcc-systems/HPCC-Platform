@@ -143,6 +143,8 @@ public:
         {
             username.append(filesdefaultuser);
             decrypt(password, filesdefaultpassword);
+            WARNLOG("Missing credentials, injecting deprecated filesdefaultuser");
+            reqSignature = nullptr;
         }
 
         Owned<ISecUser> user = ldapsecurity->createUser(username);
@@ -194,11 +196,19 @@ public:
                 ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s digital signature support not available",key?key:"NULL",obj?obj:"NULL",username.str());
         }
 
-        if (!ldapsecurity->authenticateUser(*user, NULL))
+        if (!isEmptyString(user->credentials().getPassword()))
         {
-            ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails LDAP authentication",key?key:"NULL",obj?obj:"NULL",username.str());
-            return SecAccess_None;//deny
+            if (!ldapsecurity->authenticateUser(*user, NULL))
+            {
+                const char * extra = "";
+                if (isEmptyString(reqSignature))
+                    extra = " (Password or Dali Signature not provided)";
+                ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails LDAP authentication%s",key?key:"NULL",obj?obj:"NULL",username.str(), extra);
+                return SecAccess_None;//deny
+            }
         }
+        else
+            user->setAuthenticateStatus(AS_AUTHENTICATED);
 
         bool filescope = stricmp(key,"Scope")==0;
         bool wuscope = stricmp(key,"workunit")==0;
