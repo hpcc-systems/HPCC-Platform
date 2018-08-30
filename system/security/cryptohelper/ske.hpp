@@ -35,12 +35,15 @@ namespace cryptohelper
 
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
 
-const unsigned aesKeySize = 256/8; // 256 bits
+const unsigned aesMaxKeySize = 256/8; // 256 bits
 const unsigned aesBlockSize = 128/8; // 128 bits
 
-CRYPTOHELPER_API size32_t aesKeyEncrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, const char key[aesKeySize], const char iv[aesBlockSize]);
-CRYPTOHELPER_API size32_t aesKeyDecrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, const char key[aesKeySize], const char iv[aesBlockSize]);
+// for AES, keyLen must be 16, 24, or 32 Bytes
 
+CRYPTOHELPER_API size32_t aesEncrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, size32_t keyLen, const char *key, const char iv[aesBlockSize] = nullptr);
+CRYPTOHELPER_API size32_t aesDecrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, size32_t keyLen, const char *key, const char iv[aesBlockSize] = nullptr);
+
+class CLoadedKey;
 // aesEncryptWithRSAEncryptedKey serializes encrypted data along with an RSA encrypted key in the format { RSA-encrypted-AES-key, aes-IV, AES-encrypted-data }
 CRYPTOHELPER_API size32_t aesEncryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const void *inBytes, const CLoadedKey &publicKey);
 // aesDecryptWithRSAEncryptedKey deserializes data created by aesEncryptWithRSAEncryptedKey

@@ -31,22 +31,42 @@
 #include "pke.hpp"
 #include "ske.hpp"
 
+static const EVP_CIPHER *getAesCipher(size32_t keyLen)
+{
+    switch (keyLen)
+    {
+    case 128/8:
+        return EVP_aes_128_cbc();
+    case 192/8:
+        return EVP_aes_192_cbc();
+    case 256/8:
+        return EVP_aes_256_cbc();
+    default:
+        throw makeStringException(0, "Invalid AES key size, must be 128, 192 or 256 bit");
+    }
+}
+
 namespace cryptohelper
 {
 
-size32_t aesKeyEncrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, const char key[aesKeySize], const char iv[aesBlockSize])
+// NB: static random IV used for AES, custom IV can be supplied to cryptohelper::aes* routines
+static const char staticAesIV[16+1] = "j5P2Sz&DnW'FOW^{";
+
+size32_t aesEncrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, size32_t keyLen, const char *key, const char iv[aesBlockSize])
 {
+    if (0 == inSz)
+        return 0;
     OwnedEVPCipherCtx ctx(EVP_CIPHER_CTX_new());
     if (!ctx)
         throw makeEVPException(0, "Failed EVP_CIPHER_CTX_new");
-
     /* Initialise the encryption operation. IMPORTANT - ensure you use a key
      * and IV size appropriate for your cipher
      * In this example we are using 256 bit AES (i.e. a 256 bit key). The
      * IV size for *most* modes is the same as the block size. For AES this
      * is 128 bits
      * */
-    if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, (const unsigned char *)key, (const unsigned char *)iv))
+    if (!iv) iv = staticAesIV;
+    if (1 != EVP_EncryptInit_ex(ctx, getAesCipher(keyLen), nullptr, (const unsigned char *)key, (const unsigned char *)iv))
         throw makeEVPException(0, "Failed EVP_EncryptInit_ex");
 
     /* Provide the message to be encrypted, and obtain the encrypted output.
@@ -72,8 +92,10 @@ size32_t aesKeyEncrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, co
     return (size32_t)ciphertext_len;
 }
 
-size32_t aesKeyDecrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, const char *key, const char *iv)
+size32_t aesDecrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, size32_t keyLen, const char *key, const char *iv)
 {
+    if (0 == inSz)
+        return 0;
     OwnedEVPCipherCtx ctx(EVP_CIPHER_CTX_new());
     if (!ctx)
         throw makeEVPException(0, "Failed EVP_CIPHER_CTX_new");
@@ -90,7 +112,8 @@ size32_t aesKeyDecrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, co
      * IV size for *most* modes is the same as the block size. For AES this
      * is 128 bits
      * */
-    if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, (const unsigned char *)key, (const unsigned char *)iv))
+    if (!iv) iv = staticAesIV;
+    if (1 != EVP_DecryptInit_ex(ctx, getAesCipher(keyLen), nullptr, (const unsigned char *)key, (const unsigned char *)iv))
         throw makeEVPException(0, "Failed EVP_DecryptInit_ex");
 
     /* Provide the message to be decrypted, and obtain the plaintext output.
@@ -115,19 +138,19 @@ size32_t aesKeyDecrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, co
 size32_t aesEncryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const void *inBytes, const CLoadedKey &publicKey)
 {
     // create random AES key and IV
-    char randomAesKey[aesKeySize];
+    char randomAesKey[aesMaxKeySize];
     char randomIV[aesBlockSize];
-    fillRandomData(aesKeySize, randomAesKey);
+    fillRandomData(aesMaxKeySize, randomAesKey);
     fillRandomData(aesBlockSize, randomIV);
 
     size32_t startSz = out.length();
     DelayedSizeMarker mark(out);
-    publicKeyEncrypt(out, aesKeySize, randomAesKey, publicKey);
+    publicKeyEncrypt(out, aesMaxKeySize, randomAesKey, publicKey);
     mark.write();
     out.append(aesBlockSize, randomIV);
 
     DelayedSizeMarker aesSz(out);
-    aesKeyEncrypt(out, inSz, inBytes, randomAesKey, randomIV);
+    aesEncrypt(out, inSz, inBytes, aesMaxKeySize, randomAesKey, randomIV);
     aesSz.write();
     return out.length()-startSz;
 }
@@ -137,12 +160,12 @@ size32_t aesDecryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const v
     MemoryBuffer in;
     in.setBuffer(inSz, (void *)inBytes, false);
     // read encrypted AES key
-    char randomAesKey[aesKeySize];
+    char randomAesKey[aesMaxKeySize];
     size32_t encryptedAESKeySz;
     in.read(encryptedAESKeySz);
     MemoryBuffer aesKey;
     size32_t decryptedAesKeySz = privateKeyDecrypt(aesKey, encryptedAESKeySz, in.readDirect(encryptedAESKeySz), privateKey);
-    if (decryptedAesKeySz != aesKeySize)
+    if (decryptedAesKeySz != aesMaxKeySize)
         throw makeStringException(0, "aesDecryptWithRSAEncryptedKey - invalid input");
 
     unsigned iVPos = in.getPos(); // read directly further down
@@ -151,7 +174,7 @@ size32_t aesDecryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const v
     size32_t aesEncryptedSz;
     in.read(aesEncryptedSz);
 
-    return aesKeyDecrypt(out, aesEncryptedSz, in.readDirect(aesEncryptedSz), (const char *)aesKey.bytes(), (const char *)in.bytes()+iVPos);
+    return aesDecrypt(out, aesEncryptedSz, in.readDirect(aesEncryptedSz), aesMaxKeySize, (const char *)aesKey.bytes(), (const char *)in.bytes()+iVPos);
 }
 
 
