@@ -41,6 +41,7 @@ public:
     virtual bool digiSign(StringBuffer & b64Signature, const char *text) const = 0;
     virtual bool digiVerify(const char *b64Signature, size32_t dataSz, const void *data) const = 0;//verifies, using public key
     virtual bool digiVerify(const char *b64Signature, const char *text) const = 0;
+    virtual const char * queryKeyName() const = 0;
 };
 
 //Uses the HPCCPublicKey/HPCCPrivateKey key files specified in environment.conf

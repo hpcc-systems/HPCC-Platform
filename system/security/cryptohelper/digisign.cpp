@@ -136,6 +136,11 @@ public:
     {
         return digiVerify(b64Signature, strlen(text), text);
     }
+
+    virtual const char * queryKeyName() const override
+    {
+        return pubKey->queryKeyName();
+    }
 };
 
 #else
@@ -190,6 +195,16 @@ public:
     {
         throwStringExceptionV(-1, "digiVerify: unavailable without openssl");
     }
+
+    virtual const char * queryPublicKeyFile() const override
+    {
+        throwStringExceptionV(-1, "digiVerify: unavailable without openssl");
+    }
+
+    virtual const char * queryPrivateKeyFile() const override
+    {
+        throwStringExceptionV(-1, "digiSign: unavailable without openssl");
+    }
 };
 
 #endif
@@ -238,7 +253,6 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const 
 {
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
     Owned<CLoadedKey> pubKey, privKey;
-
     Owned<IMultiException> exceptions;
     if (!isEmptyString(pubKeyFileName))
     {

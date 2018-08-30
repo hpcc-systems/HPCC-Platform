@@ -66,6 +66,7 @@ include_directories(
     ./../../../system/security/LdapSecurity
     ./../../../system/mp 
     ./../../../dali/base
+    ./../../../common/workunit
     )
 
 add_definitions(-DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN)

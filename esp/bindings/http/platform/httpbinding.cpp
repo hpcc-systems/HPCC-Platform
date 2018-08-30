@@ -48,6 +48,7 @@
 #include "jsonhelpers.hpp"
 #include "dasds.hpp"
 #include "daclient.hpp"
+#include "workunit.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
 #define DEFAULT_HTTP_PORT 80
@@ -699,6 +700,27 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
         ctx->setAuthError(EspAuthErrorUserNotFoundInContext);
         ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: No username provided");
         return false;
+    }
+
+    //Check if the password is a "real" password, or a workunit distributed access token
+    const char * pwd = user->credentials().getPassword();
+    if (isWorkunitDAToken(pwd))
+    {
+        wuTokenStates state = verifyWorkunitDAToken(pwd);//throws if cannot open workunit
+        if (state == wuTokenValid)
+        {
+            user->setAuthenticateStatus(AS_AUTHENTICATED);
+        }
+        else
+        {
+            user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
+            const char * reason = state == wuTokenInvalid ? "WUToken Workunit Token invalid" : "WUToken Workunit Inactive";
+            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", reason);
+            ctx->setAuthError(EspAuthErrorNotAuthenticated);
+            ctx->setRespMsg(reason);
+            user->credentials().setPassword(nullptr);
+            return false;
+        }
     }
 
     if(m_secmgr.get() == NULL)

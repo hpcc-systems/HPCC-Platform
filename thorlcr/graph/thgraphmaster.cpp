@@ -1291,7 +1291,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
 {
     SCMStringBuffer _token, _scope;
     workunit->getScope(_scope);
-    workunit->getSecurityToken(_token);
+    workunit->getWorkunitDistributedAccessToken(_token);
     wuid.set(workunit->queryWuid());
     user.set(workunit->queryUser());
     token.append(_token.str());
