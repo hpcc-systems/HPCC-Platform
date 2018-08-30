@@ -5,7 +5,6 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
-    "dojo/store/Memory",
     "dojo/store/Observable",
 
     "dijit/registry",
@@ -33,9 +32,13 @@ define([
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/form/Button",
-    "dijit/form/Select"
+    "dijit/form/Select",
+    "dijit/form/MultiSelect",
+    "dijit/form/DropDownButton",
+    "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, Memory, Observable,
+
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, Observable,
     registry, BorderContainer, TabContainer, ContentPane,
     selector,
     _TabContainerWidget, ESPWorkunit, DelayLoadWidget, ESPUtil, srcTimings,
@@ -103,8 +106,11 @@ define([
             },
 
             _onMetricsType: function (evt) {
-                this._metricFilter = evt.target.value;
+                this._metricFilter = this._timings.selectedMetrics();
                 this.refreshGrid();
+            },
+
+            _onMetricsClose: function (evt) {
             },
 
             _onReset: function () {
@@ -121,7 +127,7 @@ define([
                     context.refreshGrid();
                 }
 
-                var store = new Memory({
+                var store = new ESPUtil.UndefinedMemory({
                     idProperty: "__hpcc_id",
                     data: []
                 });
@@ -152,32 +158,44 @@ define([
 
             refreshGrid: function (forceRefresh) {
                 var context = this;
-                this._timings.refresh(forceRefresh).then(function (data) {
-                    context.grid.set("columns", {
+                this._timings.refresh(forceRefresh).then(function (args) {
+                    var cols = args[0];
+                    var data = args[1];
+                    var columns = {
                         __hpcc_id: { label: "##", width: 45 },
                         Name: {
                             label: context.i18n.Name,
                             sortable: true,
-                            formatter: function (Name, row) {
+                            width: 120,
+                            formatter: function (cell, row) {
                                 switch (row.Type) {
                                     case "graph":
                                     case "subgraph":
                                     case "activity":
                                     case "edge":
-                                        return "<a href='#" + Name + "' class='dgrid-row-url'>" + Name + "</a>";
+                                        return "<a href='#" + cell + "' class='dgrid-row-url'>" + cell + "</a>";
                                 }
-                                return Name;
+                                return cell;
                             }
-                        },
-                        Seconds: {
-                            label: context._timings._metricSelectLabel,
-                            width: 240
+                        }
+                    };
+                    cols.forEach(function (col) {
+                        var formattedID = "__" + col;
+                        columns[col] = {
+                            label: col,
+                            width: 120,
+                            formatter: function (cell, row) {
+                                var retVal = row[formattedID] || cell;
+                                return retVal !== undefined ? retVal : "";
+                            }
                         }
                     });
+                    context.grid.set("columns", columns);
                     context.store.setData(data.map(function (row, i) {
                         var GraphName;
                         var SubGraphId;
                         var ActivityId;
+                        var EdgeId;
                         switch (row.type) {
                             case "graph":
                                 GraphName = row.id;
@@ -187,22 +205,33 @@ define([
                                 SubGraphId = row.id;
                                 break;
                             case "activity":
-                            case "edge":
                                 GraphName = context._timings.graphID(row.name);
                                 SubGraphId = context._timings.subgraphID(row.name);
                                 ActivityId = row.id;
                                 break;
+                            case "edge":
+                                GraphName = context._timings.graphID(row.name);
+                                SubGraphId = context._timings.subgraphID(row.name);
+                                EdgeId = row.id;
+                                break;
                         }
-                        return {
+                        var dataRow = {
                             __hpcc_id: i + 1,
                             Name: row.id,
-                            Seconds: row[context._timings._metricSelectValue],
                             Type: row.type,
                             Scope: row.name,
                             GraphName: GraphName,
                             SubGraphId: SubGraphId,
-                            ActivityId: ActivityId
+                            ActivityId: ActivityId,
+                            EdgeId: EdgeId
+                        };
+                        for (var key in row){
+                            dataRow[key] = row[key];
                         }
+                        cols.forEach(function(col) {
+                            dataRow[col] = row[col];
+                        });
+                        return dataRow;
                     }));
                     context.grid.refresh();
                 });
@@ -220,20 +249,34 @@ define([
                 }
             },
 
-            ensurePane: function (id, params) {
+            openGraph: function(graphName, subgraphID) {
+                var tab = this.ensurePane(subgraphID + " - " + graphName, {
+                    GraphName: graphName,
+                    SubGraphId: subgraphID
+                });
+                if (tab) {
+                    this.selectChild(tab);
+                }
+            },
+
+            ensurePane: function (_id, params) {
+                var id = this.createChildTabID(_id);
                 var retVal = registry.byId(id);
                 if (!retVal) {
-                    var context = this;
                     retVal = new DelayLoadWidget({
-                        id: this.createChildTabID(id),
-                        title: id,
+                        id: id,
+                        title: _id,
                         closable: true,
                         delayWidget: "GraphTree7Widget",
+                        delayProps: {
+                            _owner: this
+                        },
                         params: {
                             Wuid: this.wu.Wuid,
                             GraphName: params.GraphName,
                             SubGraphId: params.SubGraphId,
-                            ActivityId: params.ActivityId
+                            ActivityId: params.ActivityId,
+                            EdgeId: params.EdgeId
                         }
                     });
                     if (retVal) {

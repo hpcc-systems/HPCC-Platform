@@ -11,19 +11,30 @@ import * as json from "dojo/json";
 import * as aspect from "dojo/aspect";
 import * as Evented from "dojo/Evented";
 import * as on from "dojo/on";
+import * as Memory from "dojo/store/Memory";
 
 import * as registry from "dijit/registry";
 import * as Tooltip from "dijit/Tooltip";
 
+// @ts-ignore
 import * as DGrid from "dgrid/Grid";
+// @ts-ignore
 import * as OnDemandGrid from "dgrid/OnDemandGrid";
+// @ts-ignore
 import * as Keyboard from "dgrid/Keyboard";
+// @ts-ignore
 import * as Selection from "dgrid/Selection";
+// @ts-ignore
 import * as ColumnResizer from "dgrid/extensions/ColumnResizer";
+// @ts-ignore
+import * as ColumnHider from "dgrid/extensions/ColumnHider";
+// @ts-ignore
 import * as DijitRegistry from "dgrid/extensions/DijitRegistry";
 
 import { select as d3Select } from "d3-selection";
 import { Pagination } from "./Pagination";
+
+import declareDecorator from './DeclareDecorator';
 
 declare const dojo;
 
@@ -309,6 +320,50 @@ export const FormHelper = declare(null, {
         return "";
     }
 });
+
+type Memory = {
+    data: any[];
+    queryEngine: any;
+    setData(data: any);
+    query(query: any, options: any): any;
+};
+
+export interface UndefinedMemoryBase extends Memory {
+}
+
+@declareDecorator("UndefinedMemoryBase", Memory)
+export class UndefinedMemoryBase { }
+
+export class UndefinedMemory extends UndefinedMemoryBase {
+
+    constructor() {
+        super();
+    }
+
+    query(query: any, options: any) {
+        if (options.sort !== undefined) {
+            if (options.sort.length > 0) {
+                var sortSet = options.sort;
+                options.sort = function (a, b) {
+                    for (var sort, i = 0; sort = sortSet[i]; i++) {
+                        var aValue = a[sort.attribute];
+                        var bValue = b[sort.attribute];
+                        // valueOf enables proper comparison of dates
+                        aValue = aValue != null ? aValue.valueOf() : aValue;
+                        bValue = bValue != null ? bValue.valueOf() : bValue;
+                        if (aValue != bValue) {
+                            if (aValue === undefined) return 1;     // Force "undefined" to bottom always
+                            if (bValue === undefined) return -1;    // Force "undefined" to bottom always
+                            return !!sort.descending == (aValue == null || aValue > bValue) ? -1 : 1;
+                        }
+                    }
+                    return 0;
+                }
+            }
+        }
+        return super.query(query, options);
+    }
+}
 
 export function Grid(pagination?, selection?, overrides?) {
     var baseClass = [];

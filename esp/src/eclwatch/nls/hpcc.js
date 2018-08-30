@@ -859,6 +859,8 @@ define({root:
     Zip: "Zip",
     ZippedAnalysisPackage: "Zipped Analysis Package",
     Zoom: "Zoom",
+    ZoomPlus: "Zoom +",
+    ZoomMinus: "Zoom -",
     Zoom100Pct: "Zoom 100%",
     ZoomAll: "Zoom All",
     ZoomWidth: "Zoom Width"

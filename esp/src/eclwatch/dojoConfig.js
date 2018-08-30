@@ -24,6 +24,7 @@ function getConfig(env) {
             "templates": baseUrl + "/eclwatch/templates",
             "ecl": baseUrl + "/eclwatch/ecl",
             "css": baseUrl + "/loader/css",
+            "d3-array": baseUrl + "/node_modules/d3-array/build/d3-array",
             "d3-selection": baseUrl + "/node_modules/d3-selection/build/d3-selection",
             "@hpcc-js/api": baseUrl + "/node_modules/@hpcc-js/api/dist/index" + hpccMin,
             "@hpcc-js/chart": baseUrl + "/node_modules/@hpcc-js/chart/dist/index" + hpccMin,

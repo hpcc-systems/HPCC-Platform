@@ -3,7 +3,9 @@ import * as on from "dojo/on";
 
 // @ts-ignore
 import * as DGrid from "dgrid/Grid";
+// @ts-ignore
 import * as _StoreMixin from "dgrid/_StoreMixin";
+// @ts-ignore
 import * as DGridPagination from "dgrid/extensions/Pagination";
 
 export const Pagination = declare([DGridPagination], {
