@@ -15,12 +15,10 @@ define([
 
     "dijit/registry",
 
-    "dojox/data/AndOrReadStore",
-    "dojox/html/entities",
-
     "hpcc/_Widget",
     "src/ESPUtil",
     "src/ESPWorkunit",
+    "src/Utility",
 
     "dojo/text!../templates/InfoGridWidget.html",
 
@@ -35,8 +33,7 @@ define([
 ],
     function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic, has, sniff,
         registry,
-        AndOrReadStore, entities,
-        _Widget, ESPUtil, ESPWorkunit,
+        _Widget, ESPUtil, ESPWorkunit, Utility,
         template) {
         return declare("InfoGridWidget", [_Widget], {
             templateString: template,
@@ -152,6 +149,8 @@ define([
                                 } else if (info.graphID && info.subgraphID) {
                                     var txt = "Graph " + info.graphID + "[" + info.subgraphID + "]";
                                     Message = Message.replace(txt, "<a href='#' class='dgrid-row-url'>" + txt + "</a>")
+                                } else {
+                                    Message = Utility.xmlEncode2(Message);
                                 }
                                 return Message;
                             }
