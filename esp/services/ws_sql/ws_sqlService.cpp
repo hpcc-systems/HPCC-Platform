@@ -43,8 +43,7 @@ bool CwssqlEx::onEcho(IEspContext &context, IEspEchoRequest &req, IEspEchoRespon
 
 bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &req, IEspGetDBMetaDataResponse &resp)
 {
-    if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Read, false))
-        throw MakeStringException(-1, "Failed to fetch HPCC information. Permission denied.");
+    context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Read, -1, "Failed to fetch HPCC information. Permission denied.");
 
     bool success = false;
     StringBuffer username;
@@ -230,8 +229,8 @@ bool CwssqlEx::onGetDBSystemInfo(IEspContext &context, IEspGetDBSystemInfoReques
     bool success = false;
     resp.setName("HPCC Systems");
 
-    if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Access, false))
-        throw MakeStringException(-1, "Failed to fetch HPCC information. Permission denied.");
+    context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Access, -1, "Failed to fetch HPCC information. Permission denied.");
+
     try
     {
         const char* build_ver = getBuildVersion();
@@ -716,8 +715,7 @@ bool CwssqlEx::getWUResult(IEspContext &context, const char * wuid, StringBuffer
 
 bool CwssqlEx::onSetRelatedIndexes(IEspContext &context, IEspSetRelatedIndexesRequest &req, IEspSetRelatedIndexesResponse &resp)
 {
-    if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Write, false))
-        throw MakeStringException(-1, "WsSQL::SetRelatedIndexes failed to execute SQL. Permission denied.");
+    context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Write, -1, "WsSQL::SetRelatedIndexes failed to execute SQL. Permission denied.");
 
     StringBuffer username;
     context.getUserID(username);
@@ -772,8 +770,7 @@ bool CwssqlEx::onGetRelatedIndexes(IEspContext &context, IEspGetRelatedIndexesRe
 {
     try
     {
-        if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Read, false))
-            throw MakeStringException(-1, "Failed to execute SQL. Permission denied.");
+        context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Read, -1, "Failed to execute SQL. Permission denied.");
 
         StringArray& filenames = req.getFileNames();
         if (filenames.length() == 0)
@@ -834,8 +831,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
     try
     {
         context.addTraceSummaryTimeStamp(LogMin, "StrtOnExecuteSQL");
-        if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Write, false))
-            throw MakeStringException(-1, "Failed to execute SQL. Permission denied.");
+        context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Write, -1, "Failed to execute SQL. Permission denied.");
 
         double version = context.getClientVersion();
 
@@ -1219,8 +1215,7 @@ bool CwssqlEx::onExecutePreparedSQL(IEspContext &context, IEspExecutePreparedSQL
 {
    try
    {
-       if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Write, false))
-           throw MakeStringException(-1, "Failed to execute SQL. Permission denied.");
+       context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Write, -1, "Failed to execute SQL. Permission denied.");
 
        const char *cluster = req.getTargetCluster();
        if (notEmpty(cluster) && !isValidCluster(cluster))
@@ -1340,8 +1335,7 @@ bool CwssqlEx::onPrepareSQL(IEspContext &context, IEspPrepareSQLRequest &req, IE
     bool clonable = false;
     try
     {
-        if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Write, false))
-            throw MakeStringException(-1, "Failed to Prepare SQL. Permission denied.");
+        context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Write, -1, "Failed to Prepare SQL. Permission denied.");
 
         double version = context.getClientVersion();
 
@@ -1666,8 +1660,7 @@ bool CwssqlEx::cloneAndExecuteWU(IEspContext &context, const char * originalwuid
 
 bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoadRequest &req, IEspCreateTableAndLoadResponse &resp)
 {
-    if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Write, false))
-            throw MakeStringException(-1, "Failed to fetch results (open workunit). Permission denied.");
+    context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Write, -1, "Failed to fetch results (open workunit). Permission denied.");
 
     bool success = true;
 
@@ -1931,8 +1924,7 @@ bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoad
 
 bool CwssqlEx::onGetResults(IEspContext &context, IEspGetResultsRequest &req, IEspGetResultsResponse &resp)
 {
-    if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Read, false))
-        throw MakeStringException(-1, "Failed to fetch results (open workunit). Permission denied.");
+    context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Read, -1, "Failed to fetch results (open workunit). Permission denied.");
 
     bool success = true;
     const char* parentWuId = req.getWuId();
