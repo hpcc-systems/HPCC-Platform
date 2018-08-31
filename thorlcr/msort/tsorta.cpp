@@ -514,8 +514,8 @@ void CThorKeyArray::split()
     unsigned n = ordinality();
     CThorExpandingRowArray newkeys(activity, rowif);
     newkeys.resize(n);
-    OwnedPtr<UnsignedArray> newSizes;
-    OwnedPtr<Int64Array> newFilePos;
+    OwnedUnsignedArray newSizes;
+    OwnedInt64Array newFilePos;
     if (sizes)
     {
         newSizes.setown(new UnsignedArray);
