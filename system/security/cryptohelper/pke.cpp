@@ -33,14 +33,27 @@
 namespace cryptohelper
 {
 
-void CLoadedKey::loadKeyBio(const char *keyMem)
+void CLoadedKey::loadKeyBio(size32_t keyLen, const char *keyMem)
 {
-    keyBio.setown(BIO_new_mem_buf(keyMem, -1));
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER <= 0x10100000L
+// openssl <= 1.0.1 prototyped BIO_new_mem_buf with void* even though it guaranteed it was const
+    keyBio.setown(BIO_new_mem_buf((void *)keyMem, keyLen));
+#else
+    keyBio.setown(BIO_new_mem_buf(keyMem, keyLen));
+#endif
     if (!keyBio)
         throwEVPException(0, "loadKeyBio: Failed to create bio for key");
 }
 
-bool CLoadedKey::loadKeyFileToMem(MemoryBuffer &keyMb, const char *keyFile)
+void CLoadedKey::loadKeyFromMem(const char *key)
+{
+    size32_t keyLen = strlen(key);
+    void *keyMem = keyMb.reserveTruncate(keyLen);
+    memcpy(keyMem, key, keyLen);
+    loadKeyBio(keyMb.length(), (const char *)keyMb.bytes());
+}
+
+bool CLoadedKey::loadKeyFromFile(const char *keyFile)
 {
     OwnedIFile iFile = createIFile(keyFile);
     OwnedIFileIO iFileIO = iFile->open(IFOread);
@@ -48,6 +61,7 @@ bool CLoadedKey::loadKeyFileToMem(MemoryBuffer &keyMb, const char *keyFile)
         return false;
     size32_t sz = iFile->size();
     verifyex(read(iFileIO, 0, sz, keyMb) == sz);
+    loadKeyBio(keyMb.length(), (const char *)keyMb.bytes());
     return true;
 }
 
@@ -64,10 +78,8 @@ class CLoadedPublicKeyFromFile : public CLoadedKey
 public:
     CLoadedPublicKeyFromFile(const char *keyFile, const char *passPhrase)
     {
-        MemoryBuffer keyMb;
-        if (!loadKeyFileToMem(keyMb, keyFile))
-            throwEVPExceptionV(0, "loadKeyFileToMem: failed to open key: %s", keyFile);
-        loadKeyBio((const char *)keyMb.bytes());
+        if (!loadKeyFromFile(keyFile))
+            throwEVPExceptionV(0, "loadKeyFromFile: failed to open key: %s", keyFile);
         RSA *rsaKey = PEM_read_bio_RSA_PUBKEY(keyBio, nullptr, nullptr, (void*)passPhrase);
         if (!rsaKey)
             throwEVPExceptionV(0, "Failed to public create key: %s", keyFile);
@@ -80,7 +92,7 @@ class CLoadedPublicKeyFromMemory : public CLoadedKey
 public:
     CLoadedPublicKeyFromMemory(const char *key, const char *passPhrase)
     {
-        loadKeyBio(key);
+        loadKeyFromMem(key);
         RSA *rsaKey = PEM_read_bio_RSA_PUBKEY(keyBio, nullptr, nullptr, (void*)passPhrase);
         if (!rsaKey)
             throwEVPException(0, "Failed to create public key");
@@ -93,10 +105,8 @@ class CLoadedPrivateKeyFromFile : public CLoadedKey
 public:
     CLoadedPrivateKeyFromFile(const char *keyFile, const char *passPhrase)
     {
-        MemoryBuffer keyMb;
-        if (!loadKeyFileToMem(keyMb, keyFile))
-            throwEVPException(0, "loadKeyFileToMem: failed to open private key");
-        loadKeyBio((const char *)keyMb.bytes());
+        if (!loadKeyFromFile(keyFile))
+            throwEVPException(0, "loadKeyFromFile: failed to open private key");
         RSA *rsaKey = PEM_read_bio_RSAPrivateKey(keyBio, nullptr, nullptr, (void*)passPhrase);
         if (!rsaKey)
             throwEVPException(0, "Failed to create private key");
@@ -109,7 +119,7 @@ class CLoadedPrivateKeyFromMemory : public CLoadedKey
 public:
     CLoadedPrivateKeyFromMemory(const char *key, const char *passPhrase)
     {
-        loadKeyBio(key);
+        loadKeyFromMem(key);
         RSA *rsaKey = PEM_read_bio_RSAPrivateKey(keyBio, nullptr, nullptr, (void*)passPhrase);
         if (!rsaKey)
             throwEVPException(0, "Failed to create private key");
