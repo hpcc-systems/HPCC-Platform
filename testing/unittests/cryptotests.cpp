@@ -380,50 +380,62 @@ protected:
             // create random data
             MemoryBuffer messageMb, encryptedMessageMb, decryptedMessageMb;
 
-            char aesKey[aesKeySize];
+            char aesKey[aesMaxKeySize];
             char aesIV[aesBlockSize];
-            fillRandomData(aesKeySize, aesKey);
+            fillRandomData(aesMaxKeySize, aesKey);
             fillRandomData(aesBlockSize, aesIV);
 
             fillRandomData(1024*100, messageMb);
-            printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
-            aesKeyEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesKey, aesIV);
-            aesKeyDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesKey, aesIV);
+            printf("aesEncryptDecryptTests with %u bytes with 256bit aes key\n", messageMb.length());
+            aesEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
+            aesDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
+            ASSERT(messageMb.length() == decryptedMessageMb.length());
+            ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
+
+            printf("aesEncryptDecryptTests with %u bytes with 192bit aes key\n", messageMb.length());
+            aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), 192/8, aesKey, aesIV);
+            aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), 192/8, aesKey, aesIV);
+            ASSERT(messageMb.length() == decryptedMessageMb.length());
+            ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
+
+            printf("aesEncryptDecryptTests with %u bytes with 128bit aes key\n", messageMb.length());
+            aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), 128/8, aesKey, aesIV);
+            aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), 128/8, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
             messageMb.clear(); // 0 length test
             printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
-            aesKeyEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesKey, aesIV);
-            aesKeyDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesKey, aesIV);
+            aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
+            aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
             fillRandomData(1, messageMb.clear()); // 1 byte test
             printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
-            aesKeyEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesKey, aesIV);
-            aesKeyDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesKey, aesIV);
+            aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
+            aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
             fillRandomData(cryptohelper::aesBlockSize-1, messageMb.clear()); // aesBlockSize-1 test
             printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
-            aesKeyEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesKey, aesIV);
-            aesKeyDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesKey, aesIV);
+            aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
+            aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
             fillRandomData(cryptohelper::aesBlockSize, messageMb.clear()); // aesBlockSize test
             printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
-            aesKeyEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesKey, aesIV);
-            aesKeyDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesKey, aesIV);
+            aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
+            aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
             fillRandomData(cryptohelper::aesBlockSize+1, messageMb.clear()); // aesBlockSize+1 test
             printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
-            aesKeyEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesKey, aesIV);
-            aesKeyDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesKey, aesIV);
+            aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
+            aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
         }
@@ -450,9 +462,9 @@ protected:
             MemoryBuffer messageMb;
             fillRandomData(1024*100, messageMb);
 
-            char aesKey[aesKeySize];
+            char aesKey[aesMaxKeySize];
             char aesIV[aesBlockSize];
-            fillRandomData(aesKeySize, aesKey);
+            fillRandomData(aesMaxKeySize, aesKey);
             fillRandomData(aesBlockSize, aesIV);
 
             Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey, nullptr);
@@ -486,13 +498,13 @@ protected:
         class CAsyncfor : public CAsyncFor
         {
             MemoryBuffer messageMb;
-            char aesKey[aesKeySize];
+            char aesKey[aesMaxKeySize];
             char aesIV[aesBlockSize];
         public:
             CAsyncfor()
             {
                 // create random key
-                fillRandomData(aesKeySize, aesKey);
+                fillRandomData(aesMaxKeySize, aesKey);
                 fillRandomData(aesBlockSize, aesIV);
                 // create random data
                 fillRandomData(1024*100, messageMb);
@@ -500,10 +512,10 @@ protected:
             void Do(unsigned idx)
             {
                 MemoryBuffer encryptedMessageMb;
-                aesKeyEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesKey, aesIV);
+                aesEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
 
                 MemoryBuffer decryptedMessageMb;
-                aesKeyDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesKey, aesIV);
+                aesDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
 
                 ASSERT(messageMb.length() == decryptedMessageMb.length());
                 ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
@@ -532,10 +544,10 @@ public:
     void aesCompareJlibVsCryptoHelper()
     {
         MemoryBuffer messageMb, encryptedMessageMb, decryptedMessageMb;
-        char aesKey[aesKeySize];
+        char aesKey[aesMaxKeySize];
         char aesIV[aesBlockSize];
         // create random key
-        fillRandomData(aesKeySize, aesKey);
+        fillRandomData(aesMaxKeySize, aesKey);
         fillRandomData(aesBlockSize, aesIV);
 
         // create random data
@@ -544,12 +556,12 @@ public:
         encryptedMessageMb.ensureCapacity(dataSz+aesBlockSize);
 
         CCycleTimer timer;
-        aesKeyEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesKey, aesIV);
+        cryptohelper::aesEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
         printf("OPENSSL AES %u MB encrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
 
         decryptedMessageMb.ensureCapacity(encryptedMessageMb.length()+aesBlockSize);
         timer.reset();
-        aesKeyDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesKey, aesIV);
+        cryptohelper::aesDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
         printf("OPENSSL AES %u MB decrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
 
         ASSERT(messageMb.length() == decryptedMessageMb.length());
@@ -557,12 +569,12 @@ public:
 
         encryptedMessageMb.clear();
         timer.reset();
-        aesEncrypt(aesKey, aesKeySize, messageMb.bytes(), messageMb.length(), encryptedMessageMb);
+        ::aesEncrypt(aesKey, aesMaxKeySize, messageMb.bytes(), messageMb.length(), encryptedMessageMb);
         printf("JLIB    AES %u MB encrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
 
         decryptedMessageMb.clear();
         timer.reset();
-        aesDecrypt(aesKey, aesKeySize, encryptedMessageMb.bytes(), encryptedMessageMb.length(), decryptedMessageMb);
+        ::aesDecrypt(aesKey, aesMaxKeySize, encryptedMessageMb.bytes(), encryptedMessageMb.length(), decryptedMessageMb);
         printf("JLIB    AES %u MB decrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
 
         ASSERT(messageMb.length() == decryptedMessageMb.length());
@@ -572,10 +584,10 @@ public:
     void aesSpeedTest()
     {
         MemoryBuffer messageMb;
-        char aesKey[aesKeySize];
+        char aesKey[aesMaxKeySize];
         char aesIV[aesBlockSize];
         // create random key
-        fillRandomData(aesKeySize, aesKey);
+        fillRandomData(aesMaxKeySize, aesKey);
         fillRandomData(aesBlockSize, aesIV);
 
         // create random data
@@ -584,12 +596,12 @@ public:
         MemoryBuffer encryptedMessageMb;
         encryptedMessageMb.ensureCapacity(dataSz+aesBlockSize);
         CCycleTimer timer;
-        aesKeyEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesKey, aesIV);
+        aesEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
         printf("AES %u MB encrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
         MemoryBuffer decryptedMessageMb;
         decryptedMessageMb.ensureCapacity(encryptedMessageMb.length()+aesBlockSize);
         timer.reset();
-        aesKeyDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesKey, aesIV);
+        aesDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
         printf("AES %u MB decrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
     }
 
