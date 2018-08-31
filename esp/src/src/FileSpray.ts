@@ -141,12 +141,21 @@ var LandingZonesStore = declare([ESPRequest.Store], {
         return landingZonesFilterStore.query(query.filter, options);
     }),
     addUserFile: function (_file) {
+        //  Just add a file "reference" so it can be remotely sprayed etc.
         var fileListStore = new FileListStore({
             parent: null
         });
+        _file._isUserFile = true;
         var file = fileListStore.get(_file.calculatedID);
         fileListStore.update(_file.calculatedID, _file);
         this.userAddedFiles[file.calculatedID] = file;
+    },
+    removeUserFile: function (_file) {
+        var fileListStore = new FileListStore({
+            parent: null
+        });
+        fileListStore.remove(_file.calculatedID);
+        delete this.userAddedFiles[_file.calculatedID];
     },
     postProcessResults: function (items) {
         for (var key in this.userAddedFiles) {

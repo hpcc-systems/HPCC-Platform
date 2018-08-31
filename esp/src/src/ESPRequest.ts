@@ -333,6 +333,13 @@ export const Store = declare(null, {
         lang.mixin(this.get(id), item);
     },
 
+    remove: function(id) {
+        var cachedArray = this.getCachedArray(false);
+        if (cachedArray) {
+            delete cachedArray[id];
+        }
+    },
+
     _hasResponseContent: function (response) {
         return lang.exists(this.responseQualifier, response);
     },

@@ -315,19 +315,28 @@ define([
                 var list = this.arrayToList(selection, "displayName");
                 if (confirm(this.i18n.DeleteSelectedFiles + "\n" + list)) {
                     var context = this;
+                    var doRefresh = false;
                     arrayUtil.forEach(selection, function (item, idx) {
-                        FileSpray.DeleteDropZoneFile({
-                            request: {
-                                NetAddress: item.NetAddress,
-                                Path: item.fullFolderPath,
-                                OS: item.OS,
-                                Names: item.displayName
-                            },
-                            load: function (response) {
-                                context.refreshGrid(true);
-                            }
-                        });
+                        if (item._isUserFile) {
+                            context.landingZoneStore.removeUserFile(item);
+                            doRefresh = true;
+                        } else {
+                            FileSpray.DeleteDropZoneFile({
+                                request: {
+                                    NetAddress: item.NetAddress,
+                                    Path: item.fullFolderPath,
+                                    OS: item.OS,
+                                    Names: item.displayName
+                                },
+                                load: function (response) {
+                                    context.refreshGrid(true);
+                                }
+                            });
+                        }
                     });
+                    if (doRefresh) {
+                        this.refreshGrid(true);
+                    }
                 }
             },
 
