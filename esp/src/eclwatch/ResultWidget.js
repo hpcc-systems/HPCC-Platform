@@ -15,7 +15,6 @@ define([
     "dgrid/Selection",
     "dgrid/selector",
     "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/ColumnHider",
     "dgrid/extensions/CompoundColumns",
     "dgrid/extensions/DijitRegistry",
     "src/Pagination",
@@ -36,7 +35,7 @@ define([
     "dijit/ToolbarSeparator"
 ], function (declare, lang, arrayUtil, i18n, nlsHPCC, ioQuery, dom,
     registry, TextBox,
-    Grid, Keyboard, Selection, selector, ColumnResizer, ColumnHider, CompoundColumns, DijitRegistry, PaginationModule,
+    Grid, Keyboard, Selection, selector, ColumnResizer, CompoundColumns, DijitRegistry, PaginationModule,
     _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, FilterDropDownWidget, TableContainer,
     template) {
         return declare("ResultWidget", [_Widget], {
@@ -188,7 +187,7 @@ define([
                         });
                         context.filter.refreshState();
 
-                        context.grid = new declare([Grid, PaginationModule.Pagination, Keyboard, ColumnResizer, ColumnHider, CompoundColumns, DijitRegistry])({
+                        context.grid = new declare([Grid, PaginationModule.Pagination, Keyboard, ColumnResizer, CompoundColumns, DijitRegistry])({
                             columns: structure,
                             rowsPerPage: 50,
                             pagingLinks: 1,

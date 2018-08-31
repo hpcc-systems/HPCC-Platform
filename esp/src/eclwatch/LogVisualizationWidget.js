@@ -13,7 +13,6 @@ define([
     "dijit/ToolbarSeparator",
 
     "dgrid/tree",
-    "dgrid/extensions/ColumnHider",
 
     "src/WsELK",
     "src/ESPWorkunit",
@@ -26,7 +25,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass, topic,
     registry, ToggleButton, ToolbarSeparator,
-    tree, ColumnHider,
+    tree,
     WsELK, ESPWorkunit, DelayLoadWidget, _TabContainerWidget, ESPUtil, Utility,
     template) {
         return declare("LogVisualizationWidget", [_TabContainerWidget], {

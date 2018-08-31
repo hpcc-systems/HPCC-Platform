@@ -13,7 +13,6 @@ define([
     "dijit/ToolbarSeparator",
 
     "dgrid/tree",
-    "dgrid/extensions/ColumnHider",
 
     "hpcc/GridDetailsWidget",
     "src/ws_machine",
@@ -24,7 +23,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass, topic,
     registry, ToggleButton, ToolbarSeparator,
-    tree, ColumnHider,
+    tree,
     GridDetailsWidget, WsMachine, ESPWorkunit, DelayLoadWidget, ESPUtil, Utility) {
         return declare("MonitoringWidget", [GridDetailsWidget], {
             i18n: nlsHPCC,

@@ -20,7 +20,6 @@ import * as OnDemandGrid from "dgrid/OnDemandGrid";
 import * as Keyboard from "dgrid/Keyboard";
 import * as Selection from "dgrid/Selection";
 import * as ColumnResizer from "dgrid/extensions/ColumnResizer";
-import * as ColumnHider from "dgrid/extensions/ColumnHider";
 import * as DijitRegistry from "dgrid/extensions/DijitRegistry";
 
 import { select as d3Select } from "d3-selection";
@@ -315,7 +314,7 @@ export function Grid(pagination?, selection?, overrides?) {
     var baseClass = [];
     var params = {};
     if (pagination) {
-        baseClass = [DGrid, Pagination, ColumnResizer, ColumnHider, Keyboard, DijitRegistry];
+        baseClass = [DGrid, Pagination, ColumnResizer, Keyboard, DijitRegistry];
         lang.mixin(params, {
             rowsPerPage: 50,
             pagingLinks: 1,
@@ -324,7 +323,7 @@ export function Grid(pagination?, selection?, overrides?) {
             pageSizeOptions: [25, 50, 100, 1000]
         });
     } else {
-        baseClass = [OnDemandGrid, ColumnResizer, ColumnHider, Keyboard, DijitRegistry];
+        baseClass = [OnDemandGrid, ColumnResizer, Keyboard, DijitRegistry];
     }
     if (selection) {
         baseClass.push(Selection);

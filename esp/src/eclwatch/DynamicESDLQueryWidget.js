@@ -17,7 +17,6 @@ define([
 
     "dgrid/tree",
     "dgrid/selector",
-    "dgrid/extensions/ColumnHider",
 
     "hpcc/GridDetailsWidget",
     "src/WsTopology",
@@ -30,7 +29,7 @@ define([
     "hpcc/DelayLoadWidget",
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domClass, domConstruct,
     registry, Button, ToolbarSeparator, Dialog, TextBox,
-    tree, selector, ColumnHider,
+    tree, selector,
     GridDetailsWidget, WsTopology, WsESDLConfig, Utility, DelayLoadWidget, ESPUtil, DynamicESDLDefinitionQueryWidget, TargetSelectWidget, DelayLoadWidget) {
     return declare("DynamicESDLQueryWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
         i18n: nlsHPCC,
