@@ -294,7 +294,7 @@ public:
             "   --main=<definition>    Definition to use from legacy ECL repository\n"
             "   --snapshot,-sn=<label> Snapshot label to use from legacy ECL repository\n"
             "   --ecl-only             Send ECL query to HPCC as text rather than as a generated archive\n"
-            "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
+            "   --limit=<limit>        Sets the result limit for the query\n"
             "   -f<option>[=value]     Set an ECL language option (equivalent to #option)\n"
             "   -f-<option>[=value]    Set an eclcc command line option (single '-')\n"
             "   -f--<option>[=value]   Set an eclcc command line option (double '-')\n"
