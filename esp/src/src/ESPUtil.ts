@@ -15,22 +15,16 @@ import * as on from "dojo/on";
 import * as registry from "dijit/registry";
 import * as Tooltip from "dijit/Tooltip";
 
-// @ts-ignore
 import * as DGrid from "dgrid/Grid";
-// @ts-ignore
 import * as OnDemandGrid from "dgrid/OnDemandGrid";
-// @ts-ignore
 import * as Keyboard from "dgrid/Keyboard";
-// @ts-ignore
 import * as Selection from "dgrid/Selection";
-// @ts-ignore
 import * as ColumnResizer from "dgrid/extensions/ColumnResizer";
-// @ts-ignore
 import * as ColumnHider from "dgrid/extensions/ColumnHider";
-// @ts-ignore
 import * as DijitRegistry from "dgrid/extensions/DijitRegistry";
-// @ts-ignore
-import * as Pagination from "dgrid/extensions/Pagination";
+
+import { select as d3Select } from "d3-selection";
+import { Pagination } from "./Pagination";
 
 declare const dojo;
 
@@ -150,6 +144,20 @@ var GridHelper = declare(null, {
     allowTextSelection: true,
     noDataMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.noDataMessage + "</span>",
     loadingMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.loadingMessage + "</span>",
+
+    scrollTo: override(function (inherited, pos) {
+        return inherited({ x: this.__xpos || pos.x, y: pos.y });
+    }),
+
+    refresh: override(function (inherited) {
+        const scroller = d3Select(this.domNode).select(".dgrid-scroller");
+        this.__xpos = scroller.property("scrollLeft");
+        const context = this;
+        return inherited(arguments).then(function () {
+            scroller.property("scrollLeft", context.__xpos);
+            delete context.__xpos;
+        });
+    }),
 
     postCreate: override(function (inherited) {
         inherited();
