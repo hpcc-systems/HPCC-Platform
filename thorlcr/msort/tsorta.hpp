@@ -61,6 +61,14 @@ interface IThorRowSortedLoader: extends IInterface
     virtual unsigned overflowScale()=0;
 };
 
+using OwnedUnsignedArray = OwnedPtr<UnsignedArray>;
+#ifdef _WIN32
+//Work around a strange windows compiler bug - the second use of OwnedPtr fails.
+using OwnedInt64Array = OwnedPtrCustomFree<Int64Array, ownedPtrDoDelete<Int64Array>>;
+#else
+using OwnedInt64Array = OwnedPtr<Int64Array>;
+#endif
+
 class THORSORT_API CThorKeyArray
 {
     CActivityBase &activity;
@@ -75,8 +83,8 @@ class THORSORT_API CThorKeyArray
     ICompare *icompare;
     ICompare *ikeycompare;
     ICompare *irowkeycompare;
-    OwnedPtr<UnsignedArray> sizes;       // serial sizes (needed if keysize==0)
-    OwnedPtr<Int64Array> filepos;
+    OwnedInt64Array filepos;
+    OwnedUnsignedArray sizes;       // serial sizes (needed if keysize==0)
     size32_t filerecsize;
     size32_t filerecnum;
     offset_t totalfilesize;
