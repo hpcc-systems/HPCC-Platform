@@ -43,13 +43,15 @@ namespace cryptohelper
 class CLoadedKey : public CSimpleInterfaceOf<IInterface>
 {
 protected:
+    MemoryBuffer keyMb;
     OwnedEVPRSA rsa;
     OwnedEVPBio keyBio;
     OwnedEVPPkey key;
     StringAttr keyName;
 
-    void loadKeyBio(const char *keyMem);
-    bool loadKeyFileToMem(MemoryBuffer &keyMb, const char *keyFile);
+    void loadKeyBio(size32_t keyLen, const char *keyMem);
+    void loadKeyFromMem(const char *key);
+    bool loadKeyFromFile(const char *keyFile);
     void finalize(RSA *rsaKey, const char *keyName);
 public:
     CLoadedKey() { }
