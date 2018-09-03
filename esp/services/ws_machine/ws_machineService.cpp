@@ -224,8 +224,7 @@ bool Cws_machineEx::onGetMachineInfo(IEspContext &context, IEspGetMachineInfoReq
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Machine Information. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Machine Information. Permission denied.");
 
         StringArray& addresses = req.getAddresses();
         if (addresses.empty())
@@ -249,8 +248,7 @@ bool Cws_machineEx::onGetMachineInfoEx(IEspContext &context, IEspGetMachineInfoR
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Machine Information. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Machine Information. Permission denied.");
 
         StringArray& addresses = req.getAddresses();
         if (addresses.empty())
@@ -280,8 +278,7 @@ bool Cws_machineEx::onGetTargetClusterInfo(IEspContext &context, IEspGetTargetCl
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Machine Information. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Target Cluster Information. Permission denied.");
 
         StringArray& targetClusters = req.getTargetClusters();
         if (targetClusters.empty())
@@ -2254,8 +2251,7 @@ bool Cws_machineEx::onGetComponentStatus(IEspContext &context, IEspGetComponentS
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Component Status. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Get Component Status. Permission denied.");
 
         Owned<IComponentStatusFactory> factory = getComponentStatusFactory();
         Owned<IESPComponentStatusInfo> status = factory->getComponentStatus();
@@ -2296,8 +2292,7 @@ bool Cws_machineEx::onUpdateComponentStatus(IEspContext &context, IEspUpdateComp
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Update Component Status. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_MACHINE_INFO_ACCESS_DENIED, "Failed to Update Component Status. Permission denied.");
 
         const char* reporter = req.getReporter();
         if (!reporter || !*reporter)
