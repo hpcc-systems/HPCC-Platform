@@ -248,6 +248,10 @@ define([
                 return retVal;
             },
 
+            openGraph: function(graphName, subgraphID) {
+                this._onRowDblClick({ Name: graphName }, { SubGraphId: subgraphID });
+            },
+
             createDetail: function (id, row, params) {
                 params = params || {};
                 if (this.mode === "Query") {

@@ -1,6 +1,5 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/Deferred",
     "dojo/_base/lang",
     "dojo/dom",
     "dojo/dom-style",
@@ -8,11 +7,12 @@ define([
     "dijit/layout/ContentPane",
 
     "src/Utility"
-], function (declare, Deferred, lang, dom, domStyle,
+], function (declare, lang, dom, domStyle,
     ContentPane,
     Utility) {
         return declare("DelayLoadWidget", [ContentPane], {
-            __hpcc_initalized: false,
+            __ensurePromise: undefined,
+            __initPromise: undefined,
             refresh: null,
 
             style: {
@@ -37,57 +37,58 @@ define([
             },
 
             ensureWidget: function () {
-                if (this.deferred) {
-                    return this.deferred.promise;
-                }
-
-                this.deferred = new Deferred();
-                this.startLoading();
+                if (this.__ensurePromise) return this.__ensurePromise;
                 var context = this;
-                Utility.resolve(this.delayWidget, function (widget) {
-                    var widgetInstance = new widget(lang.mixin({
-                        id: context.childWidgetID,
-                        style: {
-                            margin: "0px",
-                            padding: "0px",
-                            width: "100%",
-                            height: "100%"
+                this.__ensurePromise = new Promise(function (resolve, reject) {
+                    context.startLoading();
+                    Utility.resolve(context.delayWidget, function (Widget) {
+                        var widgetInstance = new Widget(lang.mixin({
+                            id: context.childWidgetID,
+                            style: {
+                                margin: "0px",
+                                padding: "0px",
+                                width: "100%",
+                                height: "100%"
+                            }
+                        }, context.delayProps ? context.delayProps : {}));
+                        context.widget = {};
+                        context.widget[widgetInstance.id] = widgetInstance;
+                        context.containerNode.appendChild(widgetInstance.domNode);
+                        widgetInstance.startup();
+                        widgetInstance.resize();
+                        if (widgetInstance.refresh) {
+                            context.refresh = function (params) {
+                                widgetInstance.refresh(params);
+                            }
                         }
-                    }, context.delayProps ? context.delayProps : {}));
-                    context.widget = {};
-                    context.widget[widgetInstance.id] = widgetInstance;
-                    context.containerNode.appendChild(widgetInstance.domNode);
-                    widgetInstance.startup();
-                    widgetInstance.resize();
-                    if (widgetInstance.refresh) {
-                        context.refresh = function (params) {
-                            widgetInstance.refresh(params);
-                        }
-                    }
-                    context.stopLoading();
-                    context.deferred.resolve(widgetInstance);
+                        context.stopLoading();
+                        resolve(widgetInstance);
+                    });
                 });
-                return this.deferred.promise;
+                return this.__ensurePromise;
             },
 
             //  Implementation  ---
             init: function (params) {
-                if (this.__hpcc_initalized)
-                    return false;
-
+                if (this.__initPromise) return this.__initPromise;
                 this.childWidgetID = this.id + "-DL";
-                this.__hpcc_initalized = true;
-
                 var context = this;
-                this.ensureWidget().then(function (widget) {
-                    widget.init(params);
-                    if (context.__hpcc_hash) {
-                        context.doRestoreFromHash(context.__hpcc_hash);
-                        context.__hpcc_hash = null;
-                    }
+                this.__initPromise = new Promise(function (resolve, reject) {
+                    context.ensureWidget().then(function (widget) {
+                        widget.init(params);
+                        if (context.__hpcc_hash) {
+                            context.doRestoreFromHash(context.__hpcc_hash);
+                            context.__hpcc_hash = null;
+                        }
+                        //  Let page finish initial render ---
+                        setTimeout(function () {
+                            resolve(widget);
+                        }, 20);
+                    });
                 });
-                return true;
+                return this.__initPromise;
             },
+
             restoreFromHash: function (hash) {
                 if (this.widget && this.widget[this.childWidgetID]) {
                     this.doRestoreFromHash(hash);

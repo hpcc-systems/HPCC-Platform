@@ -487,14 +487,14 @@ define([
                     if (lang.exists("OpenMode", params) && params.OpenMode === "Graph") {
                         return new DelayLoadWidget({
                             id: id,
-                            title: row.GraphName,
+                            title: row.GraphName + " - " + "sg" + row.GID,
                             closable: true,
-                            delayWidget: "GraphPageWidget",
+                            delayWidget: "GraphTree7Widget",
                             hpcc: {
                                 params: {
                                     Wuid: row.Wuid,
                                     GraphName: row.GraphName,
-                                    SubGraphId: row.GID
+                                    SubGraphId: "sg" + row.GID
                                 }
                             }
                         });
