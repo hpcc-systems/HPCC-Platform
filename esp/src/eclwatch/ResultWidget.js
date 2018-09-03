@@ -195,11 +195,11 @@ define([
                             pagingTextBox: true,
                             firstLastArrows: true,
                             pageSizeOptions: [25, 50, 100, 1000],
-                            store: result.getStore()
+                            store: result.getStore(),
+                            query: {
+                                FilterBy: context.getFilter()
+                            }
                         }, context.id + "Grid");
-                        context.grid.set("query", {
-                            FilterBy: context.getFilter()
-                        });
                         context.grid.startup();
                     });
                 } else {
