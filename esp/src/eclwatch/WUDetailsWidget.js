@@ -31,7 +31,7 @@ define([
     "hpcc/InfoGridWidget",
     "src/WsWorkunits",
 
-    "@hpcc-js/eclwatch",
+    "src/WUStatus",
 
     "dojo/text!../templates/WUDetailsWidget.html",
 
@@ -60,7 +60,7 @@ define([
     OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
     Clippy,
     _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, DelayLoadWidget, InfoGridWidget, WsWorkunits,
-    hpccEclWatch,
+    WUStatusModule,
     template) {
         return declare("WUDetailsWidget", [_TabContainerWidget], {
             templateString: template,
@@ -126,7 +126,7 @@ define([
 
                 Clippy.attach(this.id + "ClippyButton");
 
-                this.wuStatus = new hpccEclWatch.WUStatus()
+                this.wuStatus = new WUStatusModule.WUStatus()
                     .baseUrl("")
                     ;
             },
