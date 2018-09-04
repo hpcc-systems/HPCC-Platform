@@ -184,7 +184,7 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="certificateFileName" type="xs:string" use="optional" default="certificate.cer">
+            <xs:attribute name="certificateFileName" type="xs:string" use="optional" default="@HOME_DIR@/@RUNTIME_USER@/certificate/certificate.pem">
                 <xs:annotation>
                     <xs:appinfo>
                         <required>true</required>
@@ -192,7 +192,7 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="privateKeyFileName" type="xs:string" use="optional" default="privatekey.cer">
+            <xs:attribute name="privateKeyFileName" type="xs:string" use="optional" default="@HOME_DIR@/@RUNTIME_USER@/certificate/key.pem">
                 <xs:annotation>
                     <xs:appinfo>
                         <required>true</required>

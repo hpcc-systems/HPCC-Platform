@@ -17,6 +17,7 @@
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/dropzone.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/dropzone.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/eclagent_config.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/eclagent_config.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/esp.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/esp.xsd)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/SiteCertificate.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/SiteCertificate.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/espsmcservice.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/espsmcservice.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/ftslave_linux.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/ftslave_linux.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/roxie.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/roxie.xsd)
@@ -65,7 +66,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/plugin.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/regress.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/sasha.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/SiteCertificate.xsd
+    ${CMAKE_CURRENT_BINARY_DIR}/SiteCertificate.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/soapplus.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/topology.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/WsDeploy.xsd
