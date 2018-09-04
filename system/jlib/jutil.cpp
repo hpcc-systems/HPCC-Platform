@@ -903,12 +903,7 @@ IRandomNumberGenerator *createRandomNumberGenerator()
 
 void fillRandomData(size32_t writeSz, void *_writePtr)
 {
-#ifdef __APPLE__
-//Apple does not currently support thread_local (very strange), so need to use __thread.
-static __thread Owned<IRandomNumberGenerator> generator = createRandomNumberGenerator();
-#else
-static thread_local Owned<IRandomNumberGenerator> generator = createRandomNumberGenerator();
-#endif
+    static thread_local Owned<IRandomNumberGenerator> generator = createRandomNumberGenerator();
     unsigned *writePtr = (unsigned *)_writePtr;
     unsigned *bufEnd = (unsigned *)(((byte *)writePtr)+writeSz);
     while (true)
