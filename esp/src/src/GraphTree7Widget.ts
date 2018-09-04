@@ -69,7 +69,7 @@ export class GraphTree7Widget {
     targetQuery: any;
     queryId: any;
 
-    _owner;
+    _hostPage;
     wuid = "";
     graphName = "";
     subgraphsGrid = null;
@@ -390,9 +390,11 @@ export class GraphTree7Widget {
 
     formatColumns(columns) {
         columns.forEach((column: any) => {
-            column.formatter = function (cell, row) {
-                const retVal = (row.__formatted && row.__formatted[`${column.field}`]) ? row.__formatted[`${column.field}`] : cell;
-                return retVal !== undefined ? retVal : "";
+            if (column.formatter === undefined) {
+                column.formatter = function (cell, row) {
+                    const retVal = (row.__formatted && row.__formatted[`${column.field}`]) ? row.__formatted[`${column.field}`] : cell;
+                    return retVal !== undefined ? retVal : "";
+                }
             }
         })
     }
@@ -404,7 +406,7 @@ export class GraphTree7Widget {
         const context = this;
         this.subgraphsGrid.on(".dgrid-row-url:click", function (evt) {
             var row = context.subgraphsGrid.row(evt).data;
-            context._owner.openGraph(context.graphName, row.Id);
+            context._hostPage.openGraph(context.graphName, row.Id);
         });
 
         this._initItemGrid(this.subgraphsGrid);
@@ -419,7 +421,7 @@ export class GraphTree7Widget {
             {
                 label: this.i18n.ID, field: "Id", width: 54,
                 formatter: function (_id, row) {
-                    return "<img src='" + img + "'/>&nbsp;" + (context._owner ? "<a href='#" + _id + "' class='dgrid-row-url'>" + _id + "</a>" : _id);
+                    return "<img src='" + img + "'/>&nbsp;" + (context._hostPage ? "<a href='#" + _id + "' class='dgrid-row-url'>" + _id + "</a>" : _id);
                 }
             }
         ];
@@ -489,18 +491,20 @@ export class GraphTree7Widget {
                 scopeItem = scopeItem.parent;
             }
             const w = this._gc.item(itemID);
-            if (refresh) {
-                this._graph
-                    .data(this._gc.graphData(), true)   //  Force re-render 
-                    .render(w => {
-                        setTimeout(() => {
-                            this._graph
-                                .centerOnItem(w)
-                                ;
-                        }, 1000);
-                    });
-            } else {
-                this._graph.centerOnItem(w);
+            if (w) {
+                if (refresh) {
+                    this._graph
+                        .data(this._gc.graphData(), true)   //  Force re-render 
+                        .render(w => {
+                            setTimeout(() => {
+                                this._graph
+                                    .centerOnItem(w)
+                                    ;
+                            }, 1000);
+                        });
+                } else {
+                    this._graph.centerOnItem(w);
+                }
             }
         }
     }

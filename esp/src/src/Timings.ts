@@ -1,10 +1,23 @@
 import { Workunit } from "@hpcc-js/comms";
 import * as hpccCommon from "@hpcc-js/common";
 import { WUTimeline } from "@hpcc-js/eclwatch";
+import { ChartPanel } from "@hpcc-js/layout";
 import { Column } from "@hpcc-js/chart";
-import { ascending as d3Ascending } from "d3-array";
+import { ascending as d3Ascending, max as d3Max } from "d3-array";
+import { scaleLinear as d3ScaleLinear } from "d3-scale";
 
 const d3Select = (hpccCommon as any).select;
+
+class TimingColumn extends Column {
+
+    layerEnter(host, element, duration) {
+        super.layerEnter(host, element, duration);
+        this.tooltipHTML(d => {
+            const lparam = d.origRow[d.origRow.length - 1];
+            return d.column + ":  " + lparam["__" + d.column];
+        });
+    }
+}
 
 export class Timings {
     private wu: Workunit;
@@ -46,9 +59,18 @@ export class Timings {
         })
         ;
 
-    private chart = new Column()
+    private chart = new TimingColumn()
         .yAxisDomainLow(0 as any)
         .yAxisTickFormat("s")
+        .yAxisHidden(true)
+        ;
+    private chartPanel = new ChartPanel()
+        .dataButtonVisible(false)
+        .downloadButtonVisible(false)
+        .legendButtonVisible(false)
+        .legendVisible(true)
+        .titleOverlay(true)
+        .widget(this.chart)
         ;
 
     private metricsSelect;
@@ -58,7 +80,9 @@ export class Timings {
         this.timeline
             .target(timelineTarget)
             .wuid(wuid)
-        this.chart
+            ;
+        delete (this.timeline as any).__prop_tickFormat;
+        this.chartPanel
             .target(chartTarget)
             ;
         this.metricsSelect = d3Select(`#${metricsSelectTarget}`);
@@ -261,15 +285,35 @@ export class Timings {
                 ;
             options.exit().remove();
 
-            this.chart
+            const filteredData = data.filter((row, i) => row.name !== this._scopeFilter);
+            const normalizedData = this.normalize(filteredData);
+
+            this.chartPanel
                 .columns(["id", ...this._metricSelectValue])
-                .data(data.filter((row, i) => row.name !== this._scopeFilter).map((row, i) => {
-                    return [row.id, ...this._metricSelectValue.map(metric => row[metric])];
+                .data(normalizedData.map((row, i) => {
+                    return [row.id, ...this._metricSelectValue.map(metric => row[metric]), row];
                 }))
+                .lazyRender()
                 ;
 
             return [this._metricSelectValue, data];
         });
+    }
+
+    normalize(data) {
+        const normalizedData = data.map(row => {
+            return {
+                ...row
+            };
+        });
+        this._metricSelectValue.forEach(metric => {
+            var max = d3Max(data.map(row => row[metric]));
+            var scale = d3ScaleLinear().domain([0, max]).range([0, 100]);
+            normalizedData.forEach(row => {
+                row[metric] = scale(row[metric]);
+            });
+        });
+        return normalizedData;
     }
 
     resizeTimeline() {
@@ -280,7 +324,7 @@ export class Timings {
     }
 
     resizeChart() {
-        this.chart
+        this.chartPanel
             .resize()
             .lazyRender()
             ;
