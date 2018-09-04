@@ -137,15 +137,24 @@ public:
         {
             username.append(filesdefaultuser);
             decrypt(password, filesdefaultpassword);
+            WARNLOG("Missing credentials, injecting deprecated filesdefaultuser");
         }
 
         Owned<ISecUser> user = ldapsecurity->createUser(username);
-        user->credentials().setPassword(password);
-        if (!ldapsecurity->authenticateUser(*user, NULL))
+
+        if (!isEmptyString(password))
         {
-            ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails authentication",key?key:"NULL",obj?obj:"NULL",username.str());
-            return SecAccess_None;//deny
+            user->credentials().setPassword(password);
+            if (!ldapsecurity->authenticateUser(*user, NULL))
+            {
+                ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails LDAP authentication",key?key:"NULL",obj?obj:"NULL",username.str());
+                return SecAccess_None;//deny
+            }
+            else
+                user->setAuthenticateStatus(AS_AUTHENTICATED);
         }
+        else
+            user->setAuthenticateStatus(AS_AUTHENTICATED);//For now, allow callers that don't provide password
 
         bool filescope = stricmp(key,"Scope")==0;
         bool wuscope = stricmp(key,"workunit")==0;
