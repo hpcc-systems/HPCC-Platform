@@ -387,8 +387,8 @@ ecl deploy roxie - --name=FindPersonService
                 <row>
                   <entry>--wait-read=&lt;Secs&gt;</entry>
 
-                  <entry>Timeout while reading from socket (in seconds)
-                  </entry>
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
 
                 <row>
@@ -733,8 +733,7 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                 <row>
                   <entry>--limit=&lt;limit&gt;</entry>
 
-                  <entry>Sets the result limit for the query, defaults to
-                  100</entry>
+                  <entry>Sets the result limit for the query</entry>
                 </row>
 
                 <row>
