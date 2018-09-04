@@ -450,7 +450,7 @@ public:
     IHqlExpression * checkConstant(const attribute & errpos, IHqlExpression * expr, bool callAllowed);
     void checkConstantEvent(attribute & attr);
     IHqlExpression * checkConcreteModule(const attribute & errpos, IHqlExpression * expr);
-    void checkFoldConstant(attribute & attr);
+    void checkFoldConstant(attribute & attr, bool callAllowed);
     void checkInteger(attribute &e1);
     void checkPositive(attribute &e1);
     bool checkString(attribute &e1);
@@ -530,7 +530,7 @@ public:
 
     IHqlExpression * getTargetPlatformExpr();
     void normalizeExpression(attribute & expr);
-    void normalizeExpression(attribute & expr, type_t expectedType, bool isConstant);
+    void normalizeExpression(attribute & expr, type_t expectedType, bool isConstant, bool callAllowed=true);
 
     IHqlExpression * createListFromExprArray(const attribute & errpos, HqlExprArray & args);
     IHqlExpression * normalizeExprList(const attribute & errpos, const HqlExprArray & values);

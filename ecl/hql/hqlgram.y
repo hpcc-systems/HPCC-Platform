@@ -4796,27 +4796,27 @@ fieldAttr
                         }
     | MAXCOUNT '(' expression ')' 
                         {
-                            parser->normalizeExpression($3, type_int, true);
+                            parser->normalizeExpression($3, type_int, true, false);
                             $$.setExpr(createExprAttribute(maxCountAtom, $3.getExpr()));
                         }
     | CHOOSEN '(' expression ')' 
                         {
-                            parser->normalizeExpression($3, type_int, true);
+                            parser->normalizeExpression($3, type_int, true, false);
                             $$.setExpr(createExprAttribute(choosenAtom, $3.getExpr()));
                         }
     | MAXLENGTH '(' expression ')' 
                         {
-                            parser->normalizeExpression($3, type_int, true);
+                            parser->normalizeExpression($3, type_int, true, false);
                             $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                         }
     | MAXSIZE '(' expression ')' 
                         {
-                            parser->normalizeExpression($3, type_int, true);
+                            parser->normalizeExpression($3, type_int, true, false);
                             $$.setExpr(createExprAttribute(maxSizeAtom, $3.getExpr()));
                         }
     | NAMED '(' expression ')'  
                         {
-                            parser->normalizeExpression($3, type_any, true);
+                            parser->normalizeExpression($3, type_any, true, false);
                             $$.setExpr(createExprAttribute(namedAtom, $3.getExpr()));
                         }
     | RANGE '(' rangeExpr ')'           
@@ -4839,9 +4839,9 @@ fieldAttr
                         {
                             $$.setExpr(createExprAttribute(virtualAtom, createAttribute(sizeofAtom)));
                         }
-    | XPATH '(' constExpression ')'
+    | XPATH '(' expression ')'
                         {
-                            parser->normalizeExpression($3, type_string, false);
+                            parser->normalizeExpression($3, type_string, true, false);
                             parser->validateXPath($3);
                             $$.setExpr(createExprAttribute(xpathAtom, $3.getExpr()));
                         }

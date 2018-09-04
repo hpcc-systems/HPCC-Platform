@@ -9500,7 +9500,11 @@ public:
         switch (op)
         {
         case no_unboundselect:
-            throwUnexpected();
+            //If --fastsyntax is used it is possible for modules to not be fully bound.
+            //Unlikely to generate properly, but at least it will syntax check
+            if (expr->queryChild(1) == searchModule)
+                throwUnexpected();
+            break;
         case no_internalselect:
             if (expr->queryChild(1) == searchModule)
             {
