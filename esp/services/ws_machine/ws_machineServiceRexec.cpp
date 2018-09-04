@@ -647,8 +647,7 @@ bool Cws_machineEx::onStartStop( IEspContext &context, IEspStartStopRequest &req
 
     try
     {
-        if (!context.validateFeatureAccess(EXEC_FEATURE_URL, SecAccess_Full, false))
-            throw MakeStringException(ECLWATCH_EXECUTION_ACCESS_DENIED, "Permission denied.");
+        context.ensureFeatureAccess(EXEC_FEATURE_URL, SecAccess_Full, ECLWATCH_EXECUTION_ACCESS_DENIED, "Failed to Start/stop. Permission denied.");
 
         char* userName = (char*) m_sTestStr1.str();
         char* password = (char*) m_sTestStr2.str();
@@ -716,8 +715,7 @@ bool Cws_machineEx::onStartStopBegin( IEspContext &context, IEspStartStopBeginRe
 
     try
     {
-        if (!context.validateFeatureAccess(EXEC_FEATURE_URL, SecAccess_Full, false))
-            throw MakeStringException(ECLWATCH_EXECUTION_ACCESS_DENIED, "Permission denied.");
+        context.ensureFeatureAccess(EXEC_FEATURE_URL, SecAccess_Full, ECLWATCH_EXECUTION_ACCESS_DENIED, "Failed to Start/stop. Permission denied.");
 
         StringBuffer addresses;
         StringArray& addresses0 = req.getAddresses();
@@ -762,8 +760,7 @@ bool Cws_machineEx::onStartStopDone( IEspContext &context, IEspStartStopDoneRequ
 
     try
     {
-        if (!context.validateFeatureAccess(EXEC_FEATURE_URL, SecAccess_Full, false))
-            throw MakeStringException(ECLWATCH_EXECUTION_ACCESS_DENIED, "Permission denied.");
+        context.ensureFeatureAccess(EXEC_FEATURE_URL, SecAccess_Full, ECLWATCH_EXECUTION_ACCESS_DENIED, "Failed to Start/stop. Permission denied.");
 
         const char*addresses0 = req.getAddresses();
         bool bStop = req.getStop();

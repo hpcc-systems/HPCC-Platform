@@ -456,8 +456,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
 {
     try
     {
-        if (!context.validateFeatureAccess(METRICS_FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_METRICS_ACCESS_DENIED, "Failed to Get Metrics. Permission denied.");
+        context.ensureFeatureAccess(METRICS_FEATURE_URL, SecAccess_Read, ECLWATCH_METRICS_ACCESS_DENIED, "Failed to Get Metrics. Permission denied.");
 
         //insert entries in an array - one per IP address, sorted by IP address
         //
