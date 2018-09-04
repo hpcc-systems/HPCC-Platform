@@ -21,7 +21,7 @@
                     <div id="${id}AddFileDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.AddFile}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}AddFileForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}AddFileForm" style="width:600px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="hpcc.TableContainer">
                                     <input id="${id}AddFileIP" title="${i18n.IP}:" style="width: 95%;" name="NetAddress" data-dojo-type="dijit.form.TextBox" />
                                     <input id="${id}AddFilePath" title="${i18n.Path}:" style="width: 95%;" name="fullPath" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
@@ -37,7 +37,7 @@
                     <div id="${id}SprayFixedDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Fixed}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}SprayFixedForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}SprayFixedForm" style="width:600px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
@@ -57,6 +57,7 @@
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.ExpireDays}:" type="number" name="expireDays" data-dojo-type="dijit.form.TextBox" />
+                                        <input title="${i18n.DelayedReplication}:" name="delayedReplication" data-dojo-props="disabled: true, checked: true" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
@@ -107,6 +108,7 @@
                                         <input title="${i18n.RecordStructurePresent}:" name="recordStructurePresent" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.QuotedTerminator}:" name="quotedTerminator" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.ExpireDays}:" type="number" name="expireDays" data-dojo-type="dijit.form.TextBox" />
+                                        <input title="${i18n.DelayedReplication}:" name="delayedReplication" data-dojo-props="disabled: true, checked: true" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
@@ -118,7 +120,7 @@
                     <div id="${id}SprayXmlDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.XML}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}SprayXmlForm" style="width: 530px;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}SprayXmlForm" style="width:600px;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
@@ -149,6 +151,7 @@
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.ExpireDays}:" type="number" name="expireDays" data-dojo-type="dijit.form.TextBox" />
+                                        <input title="${i18n.DelayedReplication}:" name="delayedReplication" data-dojo-props="disabled: true, checked: true" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
@@ -160,7 +163,7 @@
                     <div id="${id}SprayJsonDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.JSON}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}SprayJsonForm" style="width: 530px;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}SprayJsonForm" style="width:600px;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
@@ -191,6 +194,7 @@
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.ExpireDays}:" type="number" name="expireDays" data-dojo-type="dijit.form.TextBox" />
+                                        <input title="${i18n.DelayedReplication}:" name="delayedReplication" data-dojo-props="disabled: true, checked: true" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
@@ -202,7 +206,7 @@
                     <div id="${id}SprayVariableDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Variable}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}SprayVariableForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}SprayVariableForm" style="width:600px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
@@ -228,6 +232,7 @@
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.ExpireDays}:" type="number" name="expireDays" data-dojo-type="dijit.form.TextBox" />
+                                        <input title="${i18n.DelayedReplication}:" name="delayedReplication" data-dojo-props="disabled: true, checked: true" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
@@ -239,7 +244,7 @@
                     <div id="${id}SprayBlobDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Blob}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}SprayBlobForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}SprayBlobForm" style="width:600px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
@@ -260,6 +265,7 @@
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.ExpireDays}:" type="number" name="expireDays" data-dojo-type="dijit.form.TextBox" />
+                                        <input title="${i18n.DelayedReplication}:" name="delayedReplication" data-dojo-props="disabled: true, checked: true" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
