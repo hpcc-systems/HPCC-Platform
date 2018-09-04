@@ -136,6 +136,7 @@ define({root:
     DefinitionID: "Definition ID",
     Definitions: "Definitions",
     DefinitionDeleted: "Definition deleted",
+    DelayedReplication: "Delayed replication",
     Delete: "Delete",
     DeleteBinding: "Delete Binding",
     DeletedBinding: "Deleted Binding",
