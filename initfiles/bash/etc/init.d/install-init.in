@@ -275,7 +275,7 @@ fi
 # Setting up values for /etc/sudoers and /etc/security/limits.conf files
 ${path}/sbin/add_conf_settings.sh
 
-groupNum=`grep -w ${user} /etc/passwd  | cut -d ':' -f 4`
+groupNum=`grep "^${user}:" /etc/passwd  | cut -d ':' -f 4`
 group=`grep -w ${groupNum} /etc/group | cut -d ':' -f 1`
 
 #Assigning correct permission for /User/hpcc
