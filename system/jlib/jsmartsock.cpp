@@ -45,9 +45,27 @@ public:
         unsigned port = defport;
 
         char *saveptr;
-        char *ip = strtok_r(copyFullText, "|", &saveptr);
-        while (ip != NULL)
+        char *hostportstr = strtok_r(copyFullText, "|", &saveptr);
+        while (hostportstr != nullptr)
         {
+            // strip off http[s]://
+            // is strcasestr/stristr available ?
+            char *ip = strstr(hostportstr, "http://");
+            if (ip == nullptr)
+                ip = strstr(hostportstr, "HTTP://");
+            if (ip != nullptr)
+                ip += 7;
+            else
+            {
+                ip = strstr(hostportstr, "https://");
+                if (ip == nullptr)
+                    ip = strstr(hostportstr, "HTTPS://");
+                if (ip != nullptr)
+                    ip += 8;
+            }
+            if (ip == nullptr)
+                ip = hostportstr;
+
             char *p = strchr(ip, ':');
 
             if (p)
@@ -83,7 +101,7 @@ public:
             {
                 array.append(new SmartSocketEndpoint(ip, port));
             }
-            ip = strtok_r(NULL, "|", &saveptr);
+            hostportstr = strtok_r(NULL, "|", &saveptr);
         }
 
         free(copyFullText);
