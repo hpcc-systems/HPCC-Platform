@@ -1389,18 +1389,17 @@ class CHqlTemplateFunctionContext : public CHqlExpressionWithType
 {
 public:
     CHqlTemplateFunctionContext(IHqlExpression* expr,  IHqlScope* scope)
-        : CHqlExpressionWithType(no_template_context,expr->getType())
+        : CHqlExpressionWithType(no_template_context,expr->getType()), context(scope)
     {
         addOperand(expr);
-        context = scope;
     }
-    ~CHqlTemplateFunctionContext() { ::Release(context); }
 
     virtual IHqlScope* queryScope() override { return context; }
     virtual IHqlDataset* queryDataset() override { return queryChild(0)->queryDataset(); }
+    virtual IHqlExpression *clone(HqlExprArray &newkids) override;
 
 protected: 
-    IHqlScope* context;             // allows symbols to be resolved when reparsing.
+    Owned<IHqlScope> context;             // allows symbols to be resolved when reparsing.
     virtual void sethash();
 };
 

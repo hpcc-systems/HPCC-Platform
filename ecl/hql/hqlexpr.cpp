@@ -11241,6 +11241,12 @@ void CHqlTemplateFunctionContext::sethash()
     HASHFIELD(context);
 }
 
+IHqlExpression * CHqlTemplateFunctionContext::clone(HqlExprArray &newkids)
+{
+    assertex(newkids.ordinality() == 1);
+    return createTemplateFunctionContext(LINK(&newkids.item(0)), LINK(context));
+}
+
 //==============================================================================================================
 
 extern IHqlExpression *createParameter(IIdAtom * id, unsigned idx, ITypeInfo *type, HqlExprArray & attrs)
