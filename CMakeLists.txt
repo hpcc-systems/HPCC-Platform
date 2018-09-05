@@ -133,6 +133,10 @@ endif()
 
 include(${HPCC_SOURCE_DIR}/cmake_modules/optionDefaults.cmake)
 
+if(NOT DESTDIR STREQUAL "")
+    set(CMAKE_INSTALL_MESSAGE LAZY)
+endif()
+
 if ( REMBED AND (NOT INCLUDE_PLUGINS) )
   # various components that are not needed if only making the R plugin
   SET(USE_LIBARCHIVE 0)
