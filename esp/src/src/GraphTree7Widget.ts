@@ -35,6 +35,8 @@ import "dijit/form/SimpleTextarea";
 import "dijit/form/NumberSpinner";
 import "dijit/form/DropDownButton";
 import "dijit/form/Select";
+import "dijit/Toolbar";
+import "dijit/ToolbarSeparator";
 
 import declareDecorator from './DeclareDecorator';
 import { WUScopeController } from "./WUScopeController";
@@ -52,7 +54,7 @@ type _Widget = {
 export interface GraphTree7Widget extends _Widget {
 }
 
-@declareDecorator(_Widget)
+@declareDecorator("GraphTree7Widget", _Widget)
 export class GraphTree7Widget {
     templateString = template;
     static baseClass = "GraphTree7Widget";
@@ -396,6 +398,15 @@ export class GraphTree7Widget {
             ;
     }
 
+    formatColumns(columns) {
+        columns.forEach((column: any) => {
+            column.formatter = function (cell, row) {
+                const retVal = (row.__formatted && row.__formatted[`${column.field}`]) ? row.__formatted[`${column.field}`] : cell;
+                return retVal !== undefined ? retVal : "";
+            }
+        })
+    }
+
     initSubgraphs() {
         this.subgraphsGrid = new declare([Grid(true, true)])({
             store: this.subgraphsStore
@@ -417,6 +428,7 @@ export class GraphTree7Widget {
             }
         ];
         this.subgraphsStore.appendColumns(columns, [this.i18n.TimeSeconds, "DescendantCount", "SubgraphCount", "ActivityCount"], ["ChildCount", "Depth"]);
+        this.formatColumns(columns);
         this.subgraphsGrid.set("columns", columns);
         this.subgraphsGrid.refresh();
     }
@@ -443,6 +455,7 @@ export class GraphTree7Widget {
             { label: this.i18n.Label, field: "Label", width: 150 }
         ];
         this.verticesStore.appendColumns(columns, [], ["Kind", "EclNameList", "EclText", "DefinitionList"]);
+        this.formatColumns(columns);
         this.verticesGrid.set("columns", columns);
         this.verticesGrid.refresh();
     }
@@ -462,6 +475,7 @@ export class GraphTree7Widget {
             { label: this.i18n.ID, field: "Id", width: 50 }
         ];
         this.edgesStore.appendColumns(columns, ["Label", "NumRowsProcessed"], ["IdSource", "IdTarget", "SourceIndex", "TargetIndex"]);
+        this.formatColumns(columns);
         this.edgesGrid.set("columns", columns);
         this.edgesGrid.refresh();
     }
