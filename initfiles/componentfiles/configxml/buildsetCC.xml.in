@@ -29,7 +29,7 @@
             <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-mirror/[COMPONENT]" name="mirror"/>
             <Category dir="${EXEC_PREFIX}/lib/[NAME]/queries/[INST]" name="query"/>
             <Category dir="${EXEC_PREFIX}/lock/[NAME]/[INST]" name="lock"/>
-        </Directories>  
+        </Directories>
     </Software>
     <Programs>
         <Build name="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" url="${PREFIX}/${DIR_NAME}">
@@ -75,8 +75,8 @@
                 path="componentfiles/eclagent"
                 processName="EclAgentProcess"
                 schema="eclagent_config.xsd"/>
-            <BuildSet installSet="deploy_map.xml" 
-                name="eclminus" 
+            <BuildSet installSet="deploy_map.xml"
+                name="eclminus"
                 path="componentfiles/eclminus"
                 overide="no"/>
             <BuildSet installSet="deploy_map.xml"
@@ -343,7 +343,13 @@
                     defaultResourcesBasedn="ou=EspServices,ou=ecl"
                     defaultSecurePort="18043"
                     plugin="esdl_svc_engine"
-                    type="DynamicESDL"/>
+                    type="DynamicESDL">
+                    <Authenticate access="Access"
+                         description="DESDLServiceAccess"
+                         path="/"
+                         required="Read"
+                         resource="Access"/>
+                </Properties>
             </BuildSet>
             <BuildSet deployable="no"
                 installSet="deploy_map.xml"
