@@ -37,6 +37,33 @@ define([
         var _prevReset = Date.now();
         var sessionIsActive = cookie("ESPSessionTimeoutSeconds");
 
+        if (sessionIsActive > -1) {
+            cookie("Status", "Unlocked");
+            cookie("ECLWatchUser", "true");
+
+            idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
+            monitorLockClick = new ESPUtil.MonitorLockClick();
+
+            monitorLockClick.on("unlocked", function () {
+                idleWatcher.start();
+            });
+            monitorLockClick.on("locked", function () {
+                idleWatcher.stop();
+            });
+            idleWatcher.on("active", function () {
+                _resetESPTime();
+            });
+            idleWatcher.on("idle", function () {
+                idleWatcher.stop();
+                var LockDialog = new LockDialogWidget({});
+                LockDialog.show();
+            });
+            idleWatcher.start();
+            monitorLockClick.unlocked();
+        } else if (cookie("ECLWatchUser")) {
+            window.location.replace(dojoConfig.urlInfo.basePath + "/Login.html");
+        }
+
         function _resetESPTime(evt) {
             if (Date.now() - _prevReset > SESSION_RESET_FREQ) {
                 _prevReset = Date.now();
@@ -45,17 +72,6 @@ define([
                 }).then(function (data) {
                 });
             }
-        }
-
-        function _onLogout(evt) {
-            xhr("esp/logout", {
-                method: "post"
-            }).then(function (data) {
-                if (data) {
-                    document.cookie = "ESPSessionID" + location.port + " = '' "; "expires=Thu, 01 Jan 1970 00:00:00 GMT"; // or -1
-                    window.location.reload();
-                }
-            });
         }
 
         function startLoading(targetNode) {
@@ -72,16 +88,15 @@ define([
             }).play();
         }
 
-        function initUnlockListener() {
-            var unlock = dom.byId("unlock");
-            on(unlock, "click", function (event) {
-                monitorLockClick.unlocked();
-            });
-        }
-
         function initUI() {
             var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
             var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
+
+            topic.subscribe("hpcc/session_management_status", function (publishedMessage) {
+                if (publishedMessage.status === "Unlocked") {
+                    monitorLockClick.unlocked();
+                }
+            })
 
             Utility.resolve(hpccWidget, function (WidgetClass) {
                 var webParams = {
@@ -142,40 +157,6 @@ define([
                 }
 
                 document.title = widget.getTitle ? widget.getTitle() : params.Widget;
-
-                if (sessionIsActive > -1) {
-                    if (!cookie("ECLWatchUser")) {
-                        cookie("ECLWatchUser", "true");
-                    }
-
-                    var lock = dom.byId("Lock");
-                    idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
-                    monitorLockClick = new ESPUtil.MonitorLockClick();
-                    if (lock) {
-                        on(lock, "click", function (event) {
-                            monitorLockClick.locked();
-                        });
-                    }
-                    monitorLockClick.on("unlocked", function () {
-                        idleWatcher.start();
-                    });
-                    monitorLockClick.on("locked", function () {
-                        idleWatcher.stop();
-                        initUnlockListener();
-                    });
-                    idleWatcher.on("active", function () {
-                        _resetESPTime();
-                    });
-                    idleWatcher.on("idle", function () {
-                        idleWatcher.stop();
-                        var LockDialog = new LockDialogWidget({});
-                        LockDialog.show();
-                    });
-                    idleWatcher.start();
-                    monitorLockClick.unlocked();
-                } else if (cookie("ECLWatchUser")) {
-                    window.location.replace(dojoConfig.urlInfo.basePath + "/Login.html");
-                }
                 stopLoading();
             }
             );
