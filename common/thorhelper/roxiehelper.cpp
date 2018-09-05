@@ -1466,6 +1466,8 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         try
         {
             sock->read(&len, sizeof (len), sizeof (len), bytesRead, timeout);
+            if (bytesRead==0) //graceful timeout
+                return false;
         }
         catch (IJSOCK_Exception *E)
         {
