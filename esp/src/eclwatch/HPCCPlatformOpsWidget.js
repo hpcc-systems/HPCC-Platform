@@ -77,17 +77,21 @@ define([
                             style: "border: 0; width: 100%; height: 100%"
                         }));
                     } else if (currSel.id === this.id + "_LogVisualization") {
+                        var context = this;
                         WsELK.GetConfigDetails({
                             request: {}
                         }).then(function (response) {
-                            if (lang.exists("GetConfigDetailsResponse", response)) {
+                            if (lang.exists("GetConfigDetailsResponse.IntegrateKibana", response) && response.GetConfigDetailsResponse.IntegrateKibana === true) {
                                 var elk = response.GetConfigDetailsResponse;
                                 currSel.set("content", dojo.create("iframe", {
                                     src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent(elk.KibanaAddress + ":" + elk.KibanaPort + elk.KibanaEntryPointURI),
                                     style: "border: 0; width: 100%; height: 100%"
                                 }));
                             } else {
-                                //load LogVisualizationWidget and show status there
+                                currSel.set("content", dojo.create ("div",{
+                                    innerHTML: "<p>" + context.i18n.LogVisualizationUnconfigured + "</p> <br> <a href = 'https://hpccsystems.com/blog/ELK_visualizations'>" + context.i18n.LearnMore + "</a>",
+                                    style: "margin: 0; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: medium; color: #c91312"
+                                }));
                             }
                         });
                     } else if (currSel.init) {
