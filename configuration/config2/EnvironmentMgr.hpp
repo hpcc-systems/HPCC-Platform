@@ -29,6 +29,7 @@
 #include "Status.hpp"
 #include "NameValue.hpp"
 #include "platform.h"
+#include "EnvSupportLib.hpp"
 
 class EnvironmentMgr;
 
@@ -46,13 +47,15 @@ class DECL_EXPORT EnvironmentMgr
     public:
 
         EnvironmentMgr();
-        virtual ~EnvironmentMgr() { }
-        bool loadSchema(const std::string &configPath, const std::string &masterConfigFile, const std::vector<std::string> &cfgParms = std::vector<std::string>());
+        virtual ~EnvironmentMgr() {}
+        bool loadSchema(const std::string &configPath, const std::string &masterConfigFile, const std::map<std::string, std::string> &cfgParms = std::map<std::string, std::string>());
         std::string getLastSchemaMessage() const;
         std::string getLastEnvironmentMessage() const { return m_message;  }
         bool loadEnvironment(const std::string &qualifiedFilename);
-        std::shared_ptr<EnvironmentNode> getEnvironmentNode(const std::string &nodeId);
-        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::string &parentNodeId, const std::string &configType, Status &status);
+        std::shared_ptr<EnvironmentNode> findEnvironmentNodeById(const std::string &nodeId) const;
+        std::shared_ptr<EnvironmentNode> getNewEnvironmentNode(const std::string &parentNodeId, const std::string &inputItem, Status &status) const;
+        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::string &parentNodeId, const std::string &configType, std::vector<NameValue> &initAttributes, Status &status);
+        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::shared_ptr<SchemaItem> &pNewCfgItem, std::vector<NameValue> &initAttributes, Status &status);
         bool removeEnvironmentNode(const std::string &nodeId);
         bool saveEnvironment(const std::string &qualifiedFilename);
         void discardEnvironment() { m_pRootNode = nullptr; m_nodeIds.clear();}
@@ -66,11 +69,12 @@ class DECL_EXPORT EnvironmentMgr
 
         void addPath(const std::shared_ptr<EnvironmentNode> pNode);
         virtual bool createParser() = 0;
-        std::shared_ptr<EnvironmentNode> addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::shared_ptr<SchemaItem> &pNewCfgItem, Status &status, const std::pair<std::string, std::string> &initAttribute);
         virtual std::vector<std::shared_ptr<EnvironmentNode>> doLoadEnvironment(std::istream &in, const std::shared_ptr<SchemaItem> &pSchemaItem) = 0;
         virtual bool save(std::ostream &out) = 0;
         void assignNodeIds(const std::shared_ptr<EnvironmentNode> &pNode);
         void insertExtraEnvironmentData(std::shared_ptr<EnvironmentNode> pNode);
+        std::shared_ptr<SchemaItem> findInsertableItem(const std::shared_ptr<EnvironmentNode> &pNode, const std::string &itemType) const;
+        void getInitAttributesFromItemType(const std::string &inputItemType, std::string &itemType, std::vector<NameValue> &initAttributes) const;
 
 
     protected:
@@ -80,6 +84,7 @@ class DECL_EXPORT EnvironmentMgr
         std::shared_ptr<EnvironmentNode> m_pRootNode;
         std::map<std::string, std::shared_ptr<EnvironmentNode>> m_nodeIds;
         std::string m_message;
+        std::vector<std::shared_ptr<EnvSupportLib>> m_supportLibs;
 
 
     private:

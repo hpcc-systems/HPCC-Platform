@@ -19,6 +19,8 @@
 #include "Exceptions.hpp"
 #include "XMLEnvironmentMgr.hpp"
 #include "InsertableItem.hpp"
+#include "Utils.hpp"
+#include <dlfcn.h>
 
 std::atomic_int EnvironmentMgr::m_key(1);
 
@@ -40,7 +42,7 @@ EnvironmentMgr::EnvironmentMgr() :
 }
 
 
-bool EnvironmentMgr::loadSchema(const std::string &configPath, const std::string &masterConfigFile, const std::vector<std::string> &cfgParms)
+bool EnvironmentMgr::loadSchema(const std::string &configPath, const std::string &masterConfigFile, const std::map<std::string, std::string> &cfgParms)
 {
     bool rc = false;
     if (createParser())
@@ -63,6 +65,30 @@ bool EnvironmentMgr::loadSchema(const std::string &configPath, const std::string
                 rc = false;
             }
         }
+
+        //
+        // Load any support libs that are environment specific
+        auto findIt = cfgParms.find("support_libs");
+        if (findIt != cfgParms.end())
+        {
+            std::vector<std::string> supportLibNames = splitString(findIt->second, ",");
+            for (auto &libName: supportLibNames)
+            {
+                std::string fullName = libName + ".so";
+
+                try
+                {
+                    std::shared_ptr<EnvSupportLib> pLib = std::make_shared<EnvSupportLib>(fullName, this);
+                    m_supportLibs.push_back(pLib);
+                }
+                catch (ParseException &pe)
+                {
+                    m_message = pe.what();
+                    rc = false;
+                }
+            }
+        }
+
     }
     return rc;
 }
@@ -164,7 +190,7 @@ void EnvironmentMgr::addPath(const std::shared_ptr<EnvironmentNode> pNode)
 }
 
 
-std::shared_ptr<EnvironmentNode> EnvironmentMgr::getEnvironmentNode(const std::string &nodeId)
+std::shared_ptr<EnvironmentNode> EnvironmentMgr::findEnvironmentNodeById(const std::string &nodeId) const
 {
     std::shared_ptr<EnvironmentNode> pNode;
     auto pathIt = m_nodeIds.find(nodeId);
@@ -174,55 +200,70 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::getEnvironmentNode(const std::s
 }
 
 
-
-std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std::string &parentNodeId, const std::string &configType, Status &status)
+std::shared_ptr<EnvironmentNode> EnvironmentMgr::getNewEnvironmentNode(const std::string &parentNodeId, const std::string &inputItemType, Status &status) const
 {
-    std::shared_ptr<EnvironmentNode> pNewNode;
-    std::shared_ptr<EnvironmentNode> pParentNode = getEnvironmentNode(parentNodeId);
+    std::shared_ptr<EnvironmentNode> pNewEnvNode;
+    std::shared_ptr<EnvironmentNode> pParentNode = findEnvironmentNodeById(parentNodeId);
     if (pParentNode)
     {
-        std::shared_ptr<SchemaItem> pNewCfgItem;
-        std::vector<InsertableItem> insertableItems;
-        std::string itemType = configType;
-        std::pair<std::string, std::string> initAttributeValue;
-        size_t atPos = itemType.find_first_of('@');
-        if (atPos != std::string::npos)
+        std::string itemType;
+        std::vector<NameValue> initAttributeValues;
+        getInitAttributesFromItemType(inputItemType, itemType, initAttributeValues);
+        std::shared_ptr<SchemaItem> pNewCfgItem = findInsertableItem(pParentNode, itemType);
+        if (pNewCfgItem)
         {
-            std::string attrNameValue = itemType.substr(atPos + 1);
-            itemType.erase(atPos, std::string::npos);
+            pNewEnvNode = std::make_shared<EnvironmentNode>(pNewCfgItem, pNewCfgItem->getProperty("name"), pParentNode);
+            pNewEnvNode->initialize();
+            pNewEnvNode->setAttributeValues(initAttributeValues, status, false, false);
+        }
+        else
+        {
+            status.addMsg(statusMsg::error, "Configuration type (" + inputItemType + ") not found");
+        }
+    }
+    return pNewEnvNode;
+}
 
-            size_t equalPos = attrNameValue.find_first_of('=');
-            if (equalPos != std::string::npos)
+
+
+std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std::string &parentNodeId, const std::string &inputItemType,
+                                                                       std::vector<NameValue> &initAttributes, Status &status)
+{
+    std::shared_ptr<EnvironmentNode> pNewNode;
+    std::shared_ptr<EnvironmentNode> pParentNode = findEnvironmentNodeById(parentNodeId);
+    if (pParentNode)
+    {
+        std::string itemType;
+        std::vector<NameValue> initAttributeValues;
+        getInitAttributesFromItemType(inputItemType, itemType, initAttributeValues);
+        std::shared_ptr<SchemaItem> pNewCfgItem = findInsertableItem(pParentNode, itemType);
+        if (pNewCfgItem)
+        {
+            pNewNode = addNewEnvironmentNode(pParentNode, pNewCfgItem, initAttributes, status);
+            if (pNewNode == nullptr)
             {
-                initAttributeValue.first = attrNameValue.substr(0, equalPos);
-                initAttributeValue.second = attrNameValue.substr(equalPos + 1);
+                status.addMsg(statusMsg::error, "Unable to create new node for itemType: " + inputItemType);
+            }
+            else
+            {
+                pNewNode->validate(status, true, false);
             }
         }
-        pParentNode->getInsertableItems(insertableItems);
-        for (auto it = insertableItems.begin(); it != insertableItems.end(); ++it)
+        else
         {
-            if ((*it).m_pSchemaItem->getItemType() == itemType)
-            {
-                pNewNode = addNewEnvironmentNode(pParentNode, (*it).m_pSchemaItem, status, initAttributeValue);
-                break;
-            }
-        }
-        if (pNewNode == nullptr)
-        {
-            status.addMsg(statusMsg::error, "Configuration type (" + configType + ") not found");
+            status.addMsg(statusMsg::error, "Configuration type (" + inputItemType + ") not found");
         }
     }
     else
     {
         status.addMsg(statusMsg::error, parentNodeId, "", "Unable to find indicated parent node");
     }
-    pNewNode->validate(status, true, false);
     return pNewNode;
 }
 
 
-std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::shared_ptr<SchemaItem> &pCfgItem, Status &status,
-                                                                       const std::pair<std::string, std::string> &initAttribute)
+std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std::shared_ptr<EnvironmentNode> &pParentNode, const std::shared_ptr<SchemaItem> &pCfgItem,
+                                                                       std::vector<NameValue> &initAttributes, Status &status)
 {
     std::shared_ptr<EnvironmentNode> pNewEnvNode;
 
@@ -233,36 +274,79 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
 
     addPath(pNewEnvNode);
     pNewEnvNode->initialize();
-    if (!initAttribute.first.empty())
-    {
-        std::shared_ptr<EnvironmentValue> pAttr = pNewEnvNode->getAttribute(initAttribute.first);
-        if (pAttr)
-        {
-            pAttr->setValue(initAttribute.second, nullptr);
-        }
-    }
+    pNewEnvNode->setAttributeValues(initAttributes, status, false, false);
     pParentNode->addChild(pNewEnvNode);
 
     //
     // Send a create event now that it's been added to the environment
     pCfgItem->getSchemaRoot()->processEvent("create", pNewEnvNode);
+
+    //
+    // Call any registered support libs with the event
+    for (auto &libIt: m_supportLibs)
+    {
+        libIt->processEvent("create", m_pSchema, pNewEnvNode, status);
+    }
+
     insertExtraEnvironmentData(m_pRootNode);
 
     //
     // Look through the children and add any that are necessary
-    std::vector<std::shared_ptr<SchemaItem>> cfgChildren;
-    pCfgItem->getChildren(cfgChildren);
-    for (auto childIt = cfgChildren.begin(); childIt != cfgChildren.end(); ++childIt)
+    std::vector<std::shared_ptr<SchemaItem>> cfgItemChildren;
+    pCfgItem->getChildren(cfgItemChildren);
+    std::vector<NameValue> empty;
+    for (auto &pCfgChild: cfgItemChildren)
     {
-        int numReq = (*childIt)->getMinInstances();
-        for (int i = 0; i<numReq; ++i)
+        for (int i = 0; i<pCfgChild->getMinInstances(); ++i)
         {
-            std::pair<std::string, std::string> empty;
-            addNewEnvironmentNode(pNewEnvNode, *childIt, status, empty);
+            addNewEnvironmentNode(pNewEnvNode, pCfgChild, empty, status);
         }
     }
 
     return pNewEnvNode;
+}
+
+
+std::shared_ptr<SchemaItem> EnvironmentMgr::findInsertableItem(const std::shared_ptr<EnvironmentNode> &pNode, const std::string &itemType) const
+{
+    std::shared_ptr<SchemaItem> pItem;
+    std::vector<InsertableItem> insertableItems;
+    pNode->getInsertableItems(insertableItems);
+    for (auto &pInsertableIt: insertableItems)
+    {
+        if (pInsertableIt.m_pSchemaItem->getItemType() == itemType)
+        {
+            pItem = pInsertableIt.m_pSchemaItem;
+            break;  // we found the insertable item we wanted, so time to get out
+        }
+    }
+    return pItem;
+}
+
+
+void EnvironmentMgr::getInitAttributesFromItemType(const std::string &inputItemType, std::string &itemType, std::vector<NameValue> &initAttributes) const
+{
+    //
+    // In case nothing specifed
+    itemType = inputItemType;
+
+    size_t atPos = itemType.find_first_of('@');
+    if (atPos != std::string::npos)
+    {
+        std::vector<std::string> initAttrs = splitString(inputItemType.substr(atPos + 1), ",");
+        for (auto &initAttr: initAttrs)
+        {
+            std::vector<std::string> kvPair = splitString(initAttr, "=");
+            if (kvPair.size() == 2)
+            {
+                initAttributes.emplace_back(NameValue(kvPair[0], kvPair[1]));
+            }
+            else
+            {
+                throw (ParseException("Invalid attribute initialization detected: " + initAttr));
+            }
+        }
+    }
 }
 
 
@@ -293,7 +377,7 @@ void EnvironmentMgr::insertExtraEnvironmentData(std::shared_ptr<EnvironmentNode>
 bool EnvironmentMgr::removeEnvironmentNode(const std::string &nodeId)
 {
     bool rc = false;
-    std::shared_ptr<EnvironmentNode> pNode = getEnvironmentNode(nodeId);
+    std::shared_ptr<EnvironmentNode> pNode = findEnvironmentNodeById(nodeId);
 
     if (pNode)
     {

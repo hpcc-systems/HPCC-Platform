@@ -19,6 +19,8 @@
 #include "Exceptions.hpp"
 #include "Utils.hpp"
 #include "ConfigPath.hpp"
+#include "EnvironmentMgr.hpp"
+
 
 void EnvironmentNode::addChild(std::shared_ptr<EnvironmentNode> pNode)
 {
@@ -312,19 +314,19 @@ void EnvironmentNode::getInsertableItems(std::vector<InsertableItem> &insertable
     // above to build a vector of insertable items
     std::vector<std::shared_ptr<SchemaItem>> configChildren;
     m_pSchemaItem->getChildren(configChildren);
-    for (auto cfgIt = configChildren.begin(); cfgIt != configChildren.end(); ++cfgIt)
+    for (auto &pCfgItem: configChildren)
     {
-        auto findIt = childCounts.find((*cfgIt)->getItemType());
+        auto findIt = childCounts.find(pCfgItem->getItemType());
         if (findIt != childCounts.end())
         {
-            if (findIt->second < (*cfgIt)->getMaxInstances())
+            if (findIt->second < pCfgItem->getMaxInstances())
             {
-                insertableItems.push_back(InsertableItem(shared_from_this(), *cfgIt));
+                insertableItems.push_back(InsertableItem(shared_from_this(), pCfgItem));
             }
         }
         else
         {
-            insertableItems.push_back(InsertableItem(shared_from_this(), *cfgIt));
+            insertableItems.push_back(InsertableItem(shared_from_this(), pCfgItem));
         }
     }
 }
@@ -391,16 +393,9 @@ void EnvironmentNode::doFetchNodes(ConfigPath &configPath, std::vector<std::shar
         else
         {
             //
-            // Get children nodes matching path element name (use this node if no element name)
+            // Get children nodes matching path element name (if no name, all children are returned)
             std::vector<std::shared_ptr<EnvironmentNode>> childNodes;
-            if (pPathItem->getElementName().empty())
-            {
-                childNodes.push_back(std::const_pointer_cast<EnvironmentNode>(shared_from_this()));
-            }
-            else
-            {
-                getChildren(childNodes, pPathItem->getElementName());
-            }
+            getChildren(childNodes, pPathItem->getElementName());
 
             //
             // If there is an attribute and/or attribute values, search the child nodes from above

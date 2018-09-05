@@ -49,6 +49,9 @@
                                 <eventData>
                                     <itemType>espbinding</itemType>
                                     <match>
+                                        <!-- match the event node's (the created espbinding) "service" attribute value
+                                             against all /Environment/Software/EspService nodes with a matching "name"
+                                             attribute value (other rules limit this to at most one match) -->
                                         <eventNodeAttribute>service</eventNodeAttribute>
                                         <targetPath>/Environment/Software/EspService</targetPath>
                                         <targetAttribute>name</targetAttribute>
@@ -111,9 +114,11 @@
                                 <eventAction>addAttributeDependencies</eventAction>
                                 <eventData>
                                     <itemType>espbinding</itemType>
+                                    <!-- These are the attribute value dependencies to add -->
                                     <attribute attributeName="protocol" attributeValue="http" dependentAttribute="port" dependentValue="8010"/>
                                     <attribute attributeName="protocol" attributeValue="https" dependentAttribute="port" dependentValue="18010"/>
                                     <match>
+                                        <!-- same match criteria as the insertXML event above -->
                                         <eventNodeAttribute>service</eventNodeAttribute>
                                         <targetPath>/Environment/Software/EspService</targetPath>
                                         <targetAttribute>name</targetAttribute>
@@ -128,6 +133,7 @@
                                     <itemType>espbinding</itemType>
                                     <attribute attributeName="resourcesBasedn" attributeValue="ou=SMC,ou=EspServices,ou=ecl"/>
                                     <match>
+                                        <!-- same match criteria as the insertXML event above -->
                                         <eventNodeAttribute>service</eventNodeAttribute>
                                         <targetPath>/Environment/Software/EspService</targetPath>
                                         <targetAttribute>name</targetAttribute>

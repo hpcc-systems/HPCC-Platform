@@ -1,4 +1,4 @@
-/*/*##############################################################################
+/*##############################################################################
 
     HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
@@ -24,6 +24,7 @@
 struct NameValue {
     std::string name;
     std::string value;
+    NameValue(const std::string &_name, const std::string &_value) : name(_name), value(_value) {}
 };
 
 #endif
