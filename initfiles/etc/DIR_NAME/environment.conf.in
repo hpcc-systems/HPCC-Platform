@@ -36,10 +36,10 @@ mpTraceLevel=0
 
 #Specify location of HPCC PKI public/private key files
 # note: if HPCCPassPhrase specified it must be encrypted
-#HPCCPassPhrase=
-#HPCCCertificateFile=/home/hpcc/.ssh/cert.cer
-#HPCCPublicKeyFile=/home/hpcc/.ssh/id_rsa.pub
-#HPCCPrivateKeyFile=/home/hpcc/.ssh/id_rsa
+#HPCCPassPhrase=XC+0Byt45EYD6qV5++8HW+lgsYB/nGud8FtgrubKdLk=
+#HPCCCertificateFile=${HOME_DIR}/${RUNTIME_USER}/certificate/certificate.pem
+#HPCCPublicKeyFile=${HOME_DIR}/${RUNTIME_USER}/certificate/public.key.pem
+#HPCCPrivateKeyFile=${HOME_DIR}/${RUNTIME_USER}/certificate/key.pem
 
 jvmoptions=-XX:-UsePerfData
 #Options to enable remote debugging of Java service or application
