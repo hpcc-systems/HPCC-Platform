@@ -1049,6 +1049,29 @@
           appropriate gateway's connection information, then use that
           information to create the actual gateway request connection.</para>
         </sect3>
+
+        <sect3>
+          <title>Configuring ESDL binding for Proxy Mode methods</title>
+
+          <para>You can specify that ESDL service methods be proxied to
+          another ESP instance. Set up the proxy in the dynamic configuration
+          associated with the dESDL service.</para>
+
+          <para>Under the Methods tag where you would add Method tags, you can
+          also add Proxy tags, as shown here:</para>
+
+          <programlisting>&lt;Methods&gt; 
+  &lt;Method name="myMethod" url="http://10.45.22.1:292/somepath"/&gt;
+  &lt;Method name="myMethod2" url="http://10.45.22.1:292/somepath"/&gt; 
+  &lt;Proxy method="myMethod3" forwardTo="http://10.45.22.1:292" /&gt; 
+  &lt;Proxy method="myWild*" forwardTo="http://10.45.22.1:292" /&gt; 
+&lt;/Methods&gt;</programlisting>
+
+          <para>The Proxy tag also supports wildcards:</para>
+
+          <para><programlisting>&lt;Proxy method="myWild*" forwardTo="http://10.45.22.1:292" /&gt; </programlisting>This
+          example binds all methods matching the pattern: myWild*</para>
+        </sect3>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_list-bindings" role="brk">
@@ -1190,13 +1213,13 @@
           </tgroup>
         </informaltable>
 
-        <para>Use this command to unbind ESDL service based bindings. </para>
+        <para>Use this command to unbind ESDL service based bindings.</para>
 
         <para>To unbind a given ESDL binding, provide the ESP process name and
-        the ESP binding which make up this ESDL binding. </para>
+        the ESP binding which make up this ESDL binding.</para>
 
         <para>Available ESDL bindings to unbind can be found using the "esdl
-        list-bindings" command </para>
+        list-bindings" command</para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
@@ -1366,7 +1389,7 @@
                 <entry>ESDLServiceName</entry>
 
                 <entry>The name of the ESDLService associated with the target
-                method. </entry>
+                method.</entry>
               </row>
 
               <row>
