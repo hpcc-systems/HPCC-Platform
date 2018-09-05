@@ -912,12 +912,11 @@ private:
             return false;
         StringBuffer lcdefid (definitionId);
         lcdefid.toLowerCase();
-        VStringBuffer xpath("%s[@id='%s']/esxdl", ESDL_DEF_PATH, lcdefid.str());
-        Owned<IRemoteConnection> definitionconn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
-        if (definitionconn)
-            return true;
-        else
+        Owned<IPTree> deftree = fetchDefinition(lcdefid.str());
+        if(!deftree)
             return false;
+        VStringBuffer xpath("esxdl/EsdlService[@name='%s']", serviceName);
+        return deftree->hasProp(xpath.str());
     }
 
     int getIdFromProcBindingDef(const char* espProcName, const char* espBindingName, const char* definitionId, StringBuffer& bindingId, StringBuffer& message)
