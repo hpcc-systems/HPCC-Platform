@@ -218,7 +218,7 @@ var TargetCluster = declare([Queue], {
 
     pause: ESPUtil.override(function (inherited) {
         var context = this;
-        return inherited().then(function (response) {
+        return inherited(arguments).then(function (response) {
             context.updateData({
                 ClusterStatus: 2
             });
@@ -228,7 +228,7 @@ var TargetCluster = declare([Queue], {
 
     resume: ESPUtil.override(function (inherited) {
         var context = this;
-        return inherited().then(function (response) {
+        return inherited(arguments).then(function (response) {
             context.updateData({
                 ClusterStatus: 0
             });
@@ -292,7 +292,7 @@ var ServerJobQueue = declare([Queue], {
 
     pause: ESPUtil.override(function (inherited) {
         var context = this;
-        return inherited().then(function (response) {
+        return inherited(arguments).then(function (response) {
             context.updateData({
                 QueueStatus: "paused"
             });
@@ -302,7 +302,7 @@ var ServerJobQueue = declare([Queue], {
 
     resume: ESPUtil.override(function (inherited) {
         var context = this;
-        return inherited().then(function (response) {
+        return inherited(arguments).then(function (response) {
             context.updateData({
                 QueueStatus: null
             });

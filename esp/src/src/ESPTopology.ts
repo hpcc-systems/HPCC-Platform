@@ -431,7 +431,7 @@ var TopologyTreeStore = declare([ESPTree.Store], {
         return retVal;
     }),
     clear: ESPUtil.override(function (inherited) {
-        inherited();
+        inherited(arguments);
         this.cachedTreeItems = {};
         this.cachedRelations = {};
         this.cachedRelationsPC = {};

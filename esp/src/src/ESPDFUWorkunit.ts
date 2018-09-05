@@ -126,7 +126,7 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:
     onSubmit: function () {
     },
     constructor: ESPUtil.override(function (inherited, args) {
-        inherited();
+        inherited(arguments);
         if (args) {
             declare.safeMixin(this, args);
         }
