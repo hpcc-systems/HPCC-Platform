@@ -125,7 +125,7 @@ define([
                         var tab = context.ensurePane(newValue, {
                             Wuid: Wuid,
                             GraphName: GraphName,
-                            SubGraphId: SubGraphId
+                            SubGraphId: "sg" + SubGraphId
                         });
                         context.selectChild(tab);
                     });
@@ -144,7 +144,7 @@ define([
                             id: id,
                             title: _id,
                             closable: true,
-                            delayWidget: "GraphPageWidget",
+                            delayWidget: "GraphTree7Widget",
                             params: params
                         });
                     } else {

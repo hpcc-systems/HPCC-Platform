@@ -25,6 +25,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "src/ESPWorkunit",
+    "src/ESPActivity",
     "src/ESPRequest",
     "hpcc/TargetSelectWidget",
     "hpcc/DelayLoadWidget",
@@ -59,7 +60,7 @@ define([
     registry,
     OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
     Clippy,
-    _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, DelayLoadWidget, InfoGridWidget, WsWorkunits,
+    _TabContainerWidget, ESPWorkunit, ESPActivity, ESPRequest, TargetSelectWidget, DelayLoadWidget, InfoGridWidget, WsWorkunits,
     WUStatusModule,
     template) {
         return declare("WUDetailsWidget", [_TabContainerWidget], {
@@ -133,6 +134,7 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
+                this.__globalActivities = ESPActivity.Get();
             },
 
             destroy: function (args) {
@@ -222,6 +224,16 @@ define([
                     );
                 }
             },
+            _onActiveGraph: function() {
+                this.graphsWidgetLoaded = true;
+                var context = this;
+                this.graphsWidget.init({
+                    Wuid: this.wu.Wuid
+                }).then(function(w) {
+                    w.openGraph(context.wu.GraphName, "sg" + context.wu.GID);
+                });
+                this.selectChild(this.graphsWidget.id);
+            },
 
             onZapReport: function (event) {
                 var context = this;
@@ -248,6 +260,8 @@ define([
             init: function (params) {
                 if (this.inherited(arguments))
                     return;
+
+                this.graphLink = dom.byId(this.id + "ActiveGraph");
 
                 if (params.Wuid) {
                     this.summaryWidget.set("title", params.Wuid);
@@ -540,6 +554,8 @@ define([
                     this.refreshActionState();
                 } else if (name === "StateID") {
                     this.refreshActionState();
+                } else if (name === "GraphName" || name === "GID") {
+                    this.graphLink.innerText = this.wu.GraphName && this.wu.GID ? this.wu.GraphName + " - " + this.wu.GID : "";
                 } else if (name === "ActionEx") {
                     this.refreshActionState();
                 } else if (name === "EventSchedule") {

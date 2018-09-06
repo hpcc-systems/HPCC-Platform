@@ -9,7 +9,8 @@
         "ActiveXObject",
         "CodeMirror",
         "d3",
-        "crossfilter"
+        "crossfilter",
+        "Promise"
     ],
     // JSHint Default Configuration File (as on JSHint website)
     // See http://jshint.com/docs/ for more details

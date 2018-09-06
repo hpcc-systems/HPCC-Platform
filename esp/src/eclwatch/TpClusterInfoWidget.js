@@ -38,10 +38,23 @@ define([
                             selectorType: 'checkbox',
                             sortable: false
                         }),
-                        Name: { label: this.i18n.Name, width: 180, sortable: true },
+                        Name: {
+                            label: this.i18n.Name,
+                            width: 180,
+                            sortable: true,
+                            formatter: function (cell, row) {
+                                return "<a href='#' class='dgrid-row-url'>" + cell + "</a>";
+                            }
+                        },
                         WorkUnit: { label: this.i18n.WUID, sortable: true }
                     }
                 }, domID);
+                retVal.on(".dgrid-row-url:click", function (evt) {
+                    if (context._onRowDblClick) {
+                        var row = retVal.row(evt).data;
+                        context._onRowDblClick(row);
+                    }
+                });
                 return retVal;
             },
 
