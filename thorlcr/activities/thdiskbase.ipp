@@ -34,6 +34,7 @@ protected:
     Owned<ProgressInfo> inputProgress;
     CThorStatsCollection diskStats;
     StringAttr fileName;
+    StringBuffer metaInfo;
 
 public:
     CDiskReadMasterBase(CMasterGraphElement *info);

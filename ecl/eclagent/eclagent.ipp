@@ -33,6 +33,7 @@
 #include <stdexcept> 
 #include "thorplugin.hpp"
 #include "thorcommon.hpp"
+#include "environment.hpp"
 #include "enginecontext.hpp"
 
 #define MAX_EDGEDATA_LENGTH 30000
@@ -226,6 +227,11 @@ public:
         return ctx->getHThorGroup(name);
     }
     
+    virtual const char *getFileAccessUrl() const
+    {
+        return ctx->getFileAccessUrl();
+    }
+
     virtual const char *queryWuid()
     {
         return ctx->queryWuid();
@@ -380,6 +386,8 @@ private:
     StringAttr agentTempDir;
     Owned<IOrderedOutputSerializer> outputSerializer;
     int retcode;
+    Owned<IEnvironmentFactory> factory;
+    Owned<IConstEnvironment> env;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
@@ -668,6 +676,8 @@ public:
     
     IGroup *getHThorGroup(StringBuffer &out);
     
+    virtual const char *getFileAccessUrl() const;
+
     virtual void updateWULogfile();
 
 // roxiemem::IRowAllocatorMetaActIdCacheCallback

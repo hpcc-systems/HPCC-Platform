@@ -403,6 +403,7 @@ interface IDistributedFile: extends IInterface
     virtual IPropertyTree *queryHistory() const = 0;                         // DFile History records
     virtual void resetHistory() = 0;
     virtual bool isExternal() const = 0;
+    virtual const StringBuffer &queryMetaInfo() const = 0;
 };
 
 
@@ -544,6 +545,11 @@ interface IFileRelationship: extends IInterface
 };
 
 typedef IIteratorOf<IFileRelationship> IFileRelationshipIterator;
+
+interface IDistributeFileAccessHook : extends IInterface
+{
+    virtual bool lookup(StringBuffer &fileMetaInfo, CDfsLogicalFileName &lfn, IUserDescriptor *user, bool write) const = 0;
+};
 
 /**
  * A distributed directory. Can created, access and delete files, super-files and logic-files.
@@ -687,8 +693,8 @@ interface IDistributedFileDirectory: extends IInterface
 
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                // sets default timeout for SDS connections and locking
                                                                                             // returns previous value
+    virtual IDistributeFileAccessHook *setFileAccessHook(IDistributeFileAccessHook *hook) = 0;
 };
-
 
 
 extern da_decl IDistributedFileDirectory &queryDistributedFileDirectory();
@@ -815,6 +821,9 @@ inline bool isPartTLK(IDistributedFilePart *p) { return isPartTLK(p->queryAttrib
 inline bool isPartTLK(IPartDescriptor *p) { return isPartTLK(p->queryProperties()); }
 
 extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned timeoutms=INFINITE);
+
+extern da_decl bool checkLogicalName(CDfsLogicalFileName &dlfn, IUserDescriptor *user, bool readreq, bool createreq, bool allowquery, const char *specialnotallowedmsg);
+extern da_decl bool checkLogicalName(const char *lfn, IUserDescriptor *user, bool readreq, bool createreq, bool allowquery, const char *specialnotallowedmsg);
 
 
 #endif

@@ -1015,8 +1015,10 @@ class CDistributedFileDirectory: implements IDistributedFileDirectory, public CI
 {
     Owned<IUserDescriptor> defaultudesc;
     Owned<IDFSredirection> redirection;
+    IDistributeFileAccessHook *fileAccessHook = nullptr;
 
     void resolveForeignFiles(IPropertyTree *tree,const INode *foreigndali);
+    IDistributedFile *getDistributedFile(const char *lname, IUserDescriptor *user, const INode *foreigndali=nullptr, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, const StringBuffer *fileMetaInfo=nullptr);
 
 protected: friend class CDistributedFile;
     StringAttr defprefclusters;
@@ -1134,6 +1136,12 @@ public:
         unsigned ret = defaultTimeout;
         defaultTimeout = timems;
         return ret;
+    }
+    virtual IDistributeFileAccessHook *setFileAccessHook(IDistributeFileAccessHook *hook) override
+    {
+        IDistributeFileAccessHook *oldHook = fileAccessHook;
+        fileAccessHook = hook;
+        return oldHook;
     }
 };
 
@@ -1303,7 +1311,7 @@ static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool r
         throw e;
 }
 
-static bool checkLogicalName(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg)
+bool checkLogicalName(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg)
 {
     bool ret = true;
     if (dlfn.isMulti()) { //is temporary superFile?
@@ -1333,6 +1341,14 @@ static bool checkLogicalName(CDfsLogicalFileName &dlfn,IUserDescriptor *user,boo
     }
     return ret;
 }
+
+bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg)
+{
+    CDfsLogicalFileName dlfn;
+    dlfn.set(lfn);
+    return checkLogicalName(dlfn, user, readreq, createreq, allowquery, specialnotallowedmsg);
+}
+
 
 /*
  * This class removes all files marked for deletion during transactions.
@@ -2686,6 +2702,7 @@ protected:
     bool dirty;
     bool external = false;
     Owned<IRemoteConnection> superOwnerLock;
+    StringBuffer metaInfo;
 public:
 
     IPropertyTree *queryRoot() { return root; }
@@ -2759,6 +2776,10 @@ public:
         queryAttributes().removeTree(queryHistory());
     }
 
+    void setMetaInfo(const StringBuffer &st)
+    {
+        metaInfo.append(st);
+    }
 protected:
     class CFileChangeWriteLock
     {
@@ -3196,6 +3217,7 @@ public:
     virtual bool getAccessedTime(CDateTime &dt) = 0;                            // get date and time last accessed (returns false if not set)
     virtual void setAccessedTime(const CDateTime &dt) = 0;                      // set date and time last accessed
     virtual bool isExternal() const { return external; }
+    virtual const StringBuffer &queryMetaInfo() const { return metaInfo; }
 };
 
 class CDistributedFile: public CDistributedFileBase<IDistributedFile>
@@ -7467,81 +7489,109 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
     Owned<IDfsLogicalFileNameIterator> redmatch;
     for (;;)
     {
-        checkLogicalName(*logicalname,user,true,writeattr,true,NULL);
-        if (logicalname->isExternal()) {
+        if (logicalname->isExternal())
+        {
+            checkLogicalName(*logicalname,user,true,writeattr,true,NULL);
             Owned<IFileDescriptor> fDesc = getExternalFileDescriptor(logicalname->get());
             if (!fDesc)
                 return NULL;
             return queryDistributedFileDirectory().createExternal(fDesc, logicalname->get());
         }
-        if (logicalname->isForeign()) {
-            IDistributedFile * ret = getFile(logicalname->get(),user,NULL);
-            if (ret)
-                return ret;
+        bool accessGranted = true; // unless fileAccessHook enabled (secure access enabled) and denied.
+        StringBuffer fileMetaInfo;
+        if (fileAccessHook) // if configured
+        {
+            /* JCSMORE - TBB SHOULD get all the meta required to build a IDistributedFile,
+             * but that will require a lot of refactoring.
+             *
+             * NB: hook will redirect request to foreign File Access URL's if configured.
+             */
+            accessGranted = fileAccessHook->lookup(fileMetaInfo, *logicalname, user, writeattr);
         }
-        else {
-            unsigned start = 0;
-            for (;;) {
-                CFileLock fcl;
-                unsigned mode = RTM_LOCK_READ | RTM_SUB;
-                if (hold) mode |= RTM_LOCK_HOLD;
-                CTimeMon tm(timeout);
-                if (!fcl.init(*logicalname, mode, timeout, "CDistributedFileDirectory::lookup"))
-                    break;
-                CFileSuperOwnerLock superOwnerLock;
-                if (lockSuperOwner)
+        if (accessGranted)
+        {
+            if (logicalname->isForeign())
+            {
+                if (accessGranted)
                 {
-                    unsigned remaining;
-                    tm.timedout(&remaining);
-                    verifyex(superOwnerLock.initWithFileLock(*logicalname, remaining, "CDistributedFileDirectory::dolookup(SuperOwnerLock)", fcl, mode));
+                    // JCSMORE - TBD - SHOULD be able to construct a IDistributeFile from meta info returned.
+                    return getDistributedFile(logicalname->get(), user, nullptr, FOREIGN_DALI_TIMEOUT, &fileMetaInfo);
                 }
-                if (fcl.getKind() == DXB_File)
+            }
+            else
+            {
+                unsigned start = 0;
+                for (;;)
                 {
-                    StringBuffer cname;
-                    if (logicalname->getCluster(cname).length())
+                    CFileLock fcl;
+                    unsigned mode = RTM_LOCK_READ | RTM_SUB;
+                    if (hold) mode |= RTM_LOCK_HOLD;
+                    CTimeMon tm(timeout);
+                    if (!fcl.init(*logicalname, mode, timeout, "CDistributedFileDirectory::lookup"))
+                        break;
+                    CFileSuperOwnerLock superOwnerLock;
+                    if (lockSuperOwner)
                     {
-                        IPropertyTree *froot=fcl.queryRoot();
-                        if (froot)
-                        {
-                            StringBuffer query;
-                            query.appendf("Cluster[@name=\"%s\"]",cname.str());
-                            if (!froot->hasProp(query.str()))
-                                break;
-                        }
+                        unsigned remaining;
+                        tm.timedout(&remaining);
+                        verifyex(superOwnerLock.initWithFileLock(*logicalname, remaining, "CDistributedFileDirectory::dolookup(SuperOwnerLock)", fcl, mode));
                     }
-                    CDistributedFile *ret = new CDistributedFile(this,fcl.detach(),*logicalname,user);  // found
-                    ret->setSuperOwnerLock(superOwnerLock.detach());
-                    return ret;
+                    if (fcl.getKind() == DXB_File)
+                    {
+                        StringBuffer cname;
+                        if (logicalname->getCluster(cname).length())
+                        {
+                            IPropertyTree *froot=fcl.queryRoot();
+                            if (froot)
+                            {
+                                StringBuffer query;
+                                query.appendf("Cluster[@name=\"%s\"]",cname.str());
+                                if (!froot->hasProp(query.str()))
+                                    break;
+                            }
+                        }
+
+                        CDistributedFile *ret = new CDistributedFile(this,fcl.detach(),*logicalname,user);  // found
+                        ret->setSuperOwnerLock(superOwnerLock.detach());
+                        /* JCSMORE in future, this 'fileMetaInfo' should represent everything we need,
+                         * such that I can create a IDistributedFile from it directly.
+                         * For the time being, it is just the security blob, to add into the IDistributedFile.
+                         */
+                        ret->setMetaInfo(fileMetaInfo);
+                        return ret;
+                    }
+                    // now super file
+                    if (fcl.getKind() != DXB_SuperFile)
+                        break;
+                    if (start==0)
+                        start = msTick();
+                    unsigned elapsed;
+                    try
+                    {
+                        CDistributedSuperFile *ret = new CDistributedSuperFile(this,fcl.detach(),*logicalname,user,transaction,SDS_SUB_LOCK_TIMEOUT);
+                        ret->setSuperOwnerLock(superOwnerLock.detach());
+                        return ret;
+                    }
+                    catch (ISDSException *e)
+                    {
+                        elapsed = msTick()-start;
+                        if ((e->errorCode()!=SDSExcpt_LockTimeout)||(elapsed>((timeout==INFINITE)?SDS_CONNECT_TIMEOUT:timeout)))
+                            throw;
+                        EXCLOG(e,"Superfile lookup");
+                        e->Release();
+                    }
+                    PROGLOG("CDistributedSuperFile connect timeout (%dms) pausing",elapsed);
+                    Sleep(SDS_TRANSACTION_RETRY/2+(getRandom()%SDS_TRANSACTION_RETRY));
                 }
-                // now super file
-                if (fcl.getKind() != DXB_SuperFile)
-                    break;
-                if (start==0)
-                    start = msTick();
-                unsigned elapsed;
-                try
-                {
-                    CDistributedSuperFile *ret = new CDistributedSuperFile(this,fcl.detach(),*logicalname,user,transaction,SDS_SUB_LOCK_TIMEOUT);
-                    ret->setSuperOwnerLock(superOwnerLock.detach());
-                    return ret;
-                }
-                catch (ISDSException *e)
-                {
-                    elapsed = msTick()-start;
-                    if ((e->errorCode()!=SDSExcpt_LockTimeout)||(elapsed>((timeout==INFINITE)?SDS_CONNECT_TIMEOUT:timeout)))
-                        throw;
-                    EXCLOG(e,"Superfile lookup");
-                    e->Release();
-                }
-                PROGLOG("CDistributedSuperFile connect timeout (%dms) pausing",elapsed);
-                Sleep(SDS_TRANSACTION_RETRY/2+(getRandom()%SDS_TRANSACTION_RETRY));
             }
         }
-        if (redmatch.get()) {
+        if (redmatch.get())
+        {
             if (!redmatch->next())
                 break;
         }
-        else {
+        else
+        {
             redmatch.setown(queryRedirection().getMatch(logicalname->get()));
             if (!redmatch.get())
                 break;
@@ -7549,7 +7599,6 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                 break;
         }
         logicalname = &redmatch->query();
-
     }
     return NULL;
 }
@@ -10639,33 +10688,39 @@ IFileDescriptor *CDistributedFileDirectory::getFileDescriptor(const char *lname,
     return fdesc;
 }
 
-IDistributedFile *CDistributedFileDirectory::getFile(const char *lname,IUserDescriptor *user,const INode *foreigndali,unsigned foreigndalitimeout)
+IDistributedFile *CDistributedFileDirectory::getDistributedFile(const char *lname, IUserDescriptor *user, const INode *foreigndali, unsigned foreigndalitimeout, const StringBuffer *fileMetaInfo)
 {
-    Owned<IPropertyTree> tree = getFileTree(lname,user,foreigndali,foreigndalitimeout,false);
+    Owned<IPropertyTree> tree = getFileTree(lname,user, foreigndali, foreigndalitimeout, false);
     if (!tree)
-        return NULL;
-    if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
+        return nullptr;
+    if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0)
+    {
         CDfsLogicalFileName dlfn;
         dlfn.set(lname);
         return new CDistributedSuperFile(this,tree, dlfn, user);
     }
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_File))!=0)
-        return NULL; // what is it?
+        return nullptr; // what is it?
 
     Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(tree,&queryNamedGroupStore(),IFDSF_FOREIGN_GROUP);
     if (!fdesc)
-        return NULL;
+        return nullptr;
     fdesc->setTraceName(lname);
     CDistributedFile *ret = new CDistributedFile(this, fdesc, user, false);
     ret->setLogicalName(lname);
     const char *date = tree->queryProp("@modified");
-    if (ret) {
-        CDateTime dt;
-        if (date&&*date)
-            dt.setString(date);
-        ret->setModificationTime(dt);
-    }
+    CDateTime dt;
+    if (date&&*date)
+        dt.setString(date);
+    ret->setModificationTime(dt);
+    if (fileMetaInfo)
+        ret->setMetaInfo(*fileMetaInfo);
     return ret;
+}
+
+IDistributedFile *CDistributedFileDirectory::getFile(const char *lname,IUserDescriptor *user,const INode *foreigndali,unsigned foreigndalitimeout)
+{
+    return getDistributedFile(lname, user, foreigndali, foreigndalitimeout);
 }
 
 static void addForeignName(IPropertyTree &t,const INode *foreigndali,const char *attr)

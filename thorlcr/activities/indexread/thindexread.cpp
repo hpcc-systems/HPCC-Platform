@@ -38,6 +38,7 @@ protected:
     UnsignedArray progressKinds;
     Owned<ProgressInfo> inputProgress;
     StringBuffer fileName;
+    StringBuffer metaInfo;
 
     rowcount_t aggregateToLimit()
     {
@@ -233,6 +234,7 @@ public:
                 addReadFile(index);
                 mapping.setown(getFileSlaveMaps(index->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), true, NULL, index->querySuperFile()));
             }
+            metaInfo.append(index->queryMetaInfo());
         }
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
@@ -260,6 +262,8 @@ public:
             partNumbers.append(parts.item(p2).queryPartIndex());
         if (partNumbers.ordinality())
             fileDesc->serializeParts(dst, partNumbers);
+        dst.append(metaInfo.length());
+        dst.append(metaInfo.length(), metaInfo.str());
     }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {
