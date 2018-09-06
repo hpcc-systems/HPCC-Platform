@@ -58,7 +58,6 @@ target_link_libraries ( unittests
          dalibase
          deftype
          libbase58
-         cryptohelper
          ${CPPUNIT_LIBRARIES}
     )
 

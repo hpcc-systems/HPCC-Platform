@@ -26,8 +26,16 @@
 
 //for AES, keylen must be 16, 24, or 32 Bytes
 
+namespace jlib
+{
+    extern jlib_decl MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
+    extern jlib_decl MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
+} // end of namespace jlib;
+
+// NB: these are wrappers to either the openssl versions (if USE_OPENSSL) or the jlib version.
 extern jlib_decl MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
 extern jlib_decl MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output);
+
 
 #define encrypt _LogProcessError12
 #define decrypt _LogProcessError15

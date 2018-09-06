@@ -467,7 +467,7 @@ bool createDaliSignature(const char * scope, IUserDescriptor *udesc, CDateTime &
         now.getString(timeStr, false);//get UTC timestamp
         VStringBuffer toSign("%s;%s;%s", scope, username.str(), timeStr.str());
 
-        pDSM->digiSign(toSign, b64sig);//Sign "scope;username;timeStamp"
+        pDSM->digiSign(b64sig, toSign);//Sign "scope;username;timeStamp"
         return true;
     }
     return false;

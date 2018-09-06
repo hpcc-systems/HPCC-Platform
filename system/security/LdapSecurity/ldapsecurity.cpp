@@ -671,7 +671,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     if (pDSM && pDSM->isDigiVerifierConfigured() && !isEmptyString(user->credentials().getSignature()))
     {
         StringBuffer b64Signature(user->credentials().getSignature());
-        if (!pDSM->digiVerify(user->getName(), b64Signature))//digital signature valid?
+        if (!pDSM->digiVerify(b64Signature, user->getName()))//digital signature valid?
         {
             user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
             WARNLOG("Invalid digital signature for user %s", user->getName());
@@ -711,7 +711,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
             {
                //Set user digital signature
                StringBuffer b64Signature;
-               pDSM->digiSign(user->getName(), b64Signature);
+               pDSM->digiSign(b64Signature, user->getName());
                user->credentials().setSignature(b64Signature);
             }
         }

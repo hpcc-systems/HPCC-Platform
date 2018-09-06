@@ -79,7 +79,6 @@ if(NOT PLUGIN)
     target_link_libraries(
         dalibase 
         jlib
-        cryptohelper
         mp 
         hrpc 
         remote)

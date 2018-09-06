@@ -20,27 +20,14 @@
 #ifndef PKE_HPP
 #define PKE_HPP
 
-#ifndef CRYPTOHELPER_API
-
-#ifndef CRYPTOHELPER_EXPORTS
-    #define CRYPTOHELPER_API DECL_IMPORT
-#else
-    #define CRYPTOHELPER_API DECL_EXPORT
-#endif //CRYPTOHELPER_EXPORTS
-
-#endif
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
 
 #include "cryptocommon.hpp"
 
 namespace cryptohelper
 {
 
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
-
-#include <openssl/evp.h>
-#include <openssl/err.h>
-
-class CLoadedKey : public CSimpleInterfaceOf<IInterface>
+class jlib_decl CLoadedKey : public CSimpleInterfaceOf<IInterface>
 {
 protected:
     MemoryBuffer keyMb;
@@ -61,21 +48,21 @@ public:
     const char *queryKeyName() const  { return keyName; }
 };
 
-CRYPTOHELPER_API CLoadedKey *loadPublicKeyFromFile(const char *keyFile, const char *passPhrase);
-CRYPTOHELPER_API CLoadedKey *loadPublicKeyFromMemory(const char *key, const char *passPhrase);
-CRYPTOHELPER_API CLoadedKey *loadPrivateKeyFromFile(const char *keyFile, const char *passPhrase);
-CRYPTOHELPER_API CLoadedKey *loadPrivateKeyFromMemory(const char *key, const char *passPhrase);
+jlib_decl CLoadedKey *loadPublicKeyFromFile(const char *keyFile, const char *passPhrase);
+jlib_decl CLoadedKey *loadPublicKeyFromMemory(const char *key, const char *passPhrase);
+jlib_decl CLoadedKey *loadPrivateKeyFromFile(const char *keyFile, const char *passPhrase);
+jlib_decl CLoadedKey *loadPrivateKeyFromMemory(const char *key, const char *passPhrase);
 
-CRYPTOHELPER_API size32_t publicKeyEncrypt(MemoryBuffer &out, size32_t inLen, const void *inBytes, const CLoadedKey &key);
-CRYPTOHELPER_API size32_t privateKeyDecrypt(MemoryBuffer &out, size32_t inLen, const void *inBytes, const CLoadedKey &key);
-CRYPTOHELPER_API size32_t publicKeyEncrypt(void *dst, size32_t dstMaxSz, size32_t inLen, const void *inBytes, const CLoadedKey &key);
-CRYPTOHELPER_API size32_t privateKeyDecrypt(void *dst, size32_t dstMaxSz, size32_t inLen, const void *inBytes, const CLoadedKey &key);
-
-
-#endif // end of #if defined(_USE_OPENSSL) && !defined(_WIN32)
+jlib_decl size32_t publicKeyEncrypt(MemoryBuffer &out, size32_t inLen, const void *inBytes, const CLoadedKey &key);
+jlib_decl size32_t privateKeyDecrypt(MemoryBuffer &out, size32_t inLen, const void *inBytes, const CLoadedKey &key);
+jlib_decl size32_t publicKeyEncrypt(void *dst, size32_t dstMaxSz, size32_t inLen, const void *inBytes, const CLoadedKey &key);
+jlib_decl size32_t privateKeyDecrypt(void *dst, size32_t dstMaxSz, size32_t inLen, const void *inBytes, const CLoadedKey &key);
 
 } // end of namespace cryptohelper
 
+#else
+class CLoadedKey;
+#endif // end of #if defined(_USE_OPENSSL) && !defined(_WIN32)
 
 #endif // PKE_HPP
 

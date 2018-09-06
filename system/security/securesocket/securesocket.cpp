@@ -860,46 +860,6 @@ const char* strtok__(const char* s, const char* d, StringBuffer& tok)
     return s;
 }
 
-static Mutex** mutexArray = NULL;
-static int numMutexes = 0;
-static CriticalSection mutexCrit;
-
-static void locking_function(int mode, int n, const char * file, int line)
-{
-    assertex(mutexArray != NULL && n < numMutexes);
-    if (mode & CRYPTO_LOCK)
-        mutexArray[n]->lock();
-    else
-        mutexArray[n]->unlock();
-}
-
-#ifndef _WIN32
-unsigned long pthreads_thread_id(void)
-{
-    return((unsigned long)pthread_self());
-}
-#endif
-
-static void initSSLLibrary()
-{
-    CriticalBlock b(mutexCrit);
-    if(mutexArray == NULL)
-    {
-        SSL_load_error_strings();
-        SSLeay_add_ssl_algorithms();
-        numMutexes= CRYPTO_num_locks();
-        mutexArray = new Mutex*[numMutexes];
-        for(int i = 0; i < numMutexes; i++)
-        {
-            mutexArray[i] = new Mutex;
-        }
-        CRYPTO_set_locking_callback(locking_function);
-#ifndef _WIN32
-        CRYPTO_set_id_callback((unsigned long (*)())pthreads_thread_id);
-#endif
-    }
-}
-
 
 class CSecureSocketContext : implements ISecureSocketContext, public CInterface
 {
@@ -922,7 +882,6 @@ public:
     {
         m_verify = false;
         m_address_match = false;
-        initSSLLibrary();
 
         if(sockettype == ClientSocket)
             m_meth = SSLv23_client_method();
@@ -942,7 +901,6 @@ public:
     {
         m_verify = false;
         m_address_match = false;
-        initSSLLibrary();
 
         if(sockettype == ClientSocket)
             m_meth = SSLv23_client_method();
@@ -986,7 +944,6 @@ public:
         assertex(config);
         m_verify = false;
         m_address_match = false;
-        initSSLLibrary();
 
         if(sockettype == ClientSocket)
             m_meth = SSLv23_client_method();

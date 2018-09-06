@@ -21,7 +21,6 @@
 #include <openssl/evp.h>
 #endif
 #include "jencrypt.hpp"
-#include "cryptocommon.hpp"
 #include "digisign.hpp"
 #include <mutex>
 
@@ -31,235 +30,173 @@ namespace cryptohelper
 
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
 
-#define EVP_CLEANUP(key,ctx) EVP_PKEY_free(key);       \
-                             EVP_MD_CTX_destroy(ctx);
 
-class CDigitalSignatureManager : implements IDigitalSignatureManager, public CInterface
+//Create base 64 encoded digital signature of given data
+bool digiSign(StringBuffer &b64Signature, size32_t dataSz, const void *data, const CLoadedKey &signingKey)
+{
+    OwnedEVPMdCtx signingCtx(EVP_MD_CTX_create());
+    //initialize context for SHA-256 hashing function
+    int rc = EVP_DigestSignInit(signingCtx, nullptr, EVP_sha256(), nullptr, signingKey);
+    if (rc <= 0)
+        throwEVPException(-1, "digiSign:EVP_DigestSignInit");
+
+    //add string to the context
+    if (EVP_DigestSignUpdate(signingCtx, data, dataSz) <= 0)
+        throwEVPException(-1, "digiSign:EVP_DigestSignUpdate");
+
+    //compute length of signature
+    size_t encMsgLen;
+    if (EVP_DigestSignFinal(signingCtx, nullptr, &encMsgLen) <= 0)
+        throwEVPException(-1, "digiSign:EVP_DigestSignFinal1");
+
+    if (encMsgLen == 0)
+        throwEVPException(-1, "digiSign:EVP_DigestSignFinal length returned 0");
+
+    //compute signature (signed digest)
+    OwnedEVPMemory encMsg = OPENSSL_malloc(encMsgLen);
+    if (encMsg == nullptr)
+        throw MakeStringException(-1, "digiSign:OPENSSL_malloc(%u) returned NULL", (unsigned)encMsgLen);
+
+    if (EVP_DigestSignFinal(signingCtx, (unsigned char *)encMsg.get(), &encMsgLen) <= 0)
+        throwEVPException(-1, "digiSign:EVP_DigestSignFinal2");
+
+    //convert to base64
+    JBASE64_Encode(encMsg, encMsgLen, b64Signature, false);
+
+    return true;
+}
+
+//Verify the given data was used to create the given digital signature
+bool digiVerify(const char *b64Signature, size32_t dataSz, const void *data, const CLoadedKey &verifyingKey)
+{
+    OwnedEVPMdCtx verifyingCtx(EVP_MD_CTX_create());
+    int rc = EVP_DigestVerifyInit(verifyingCtx, nullptr, EVP_sha256(), nullptr, verifyingKey);
+    if (rc <= 0)
+        throwEVPException(-1, "digiVerify:EVP_DigestVerifyInit");
+
+    //decode base64 signature
+    StringBuffer decodedSig;
+    JBASE64_Decode(b64Signature, decodedSig);
+
+    if (EVP_DigestVerifyUpdate(verifyingCtx, data, dataSz) <= 0)
+        throwEVPException(-1, "digiVerify:EVP_DigestVerifyUpdate");
+
+    return 1 == EVP_DigestVerifyFinal(verifyingCtx, (unsigned char *)decodedSig.str(), decodedSig.length());
+}
+
+
+class CDigitalSignatureManager : public CSimpleInterfaceOf<IDigitalSignatureManager>
 {
 private:
-    StringBuffer publicKeyBuff;
-    StringBuffer privateKeyBuff;
-    StringBuffer passphraseBuffEnc;
-    bool         signingConfigured;
-    bool         verifyingConfigured;
-
-    bool digiInit(bool isSigning, const char * passphraseEnc, EVP_MD_CTX * * ctx, EVP_PKEY * * PKey)
-    {
-        //To avoid threading issues, the keys are created on each call. Otherwise would require
-        //serialization with a critical section or implementing locking callbacks
-        const char * keyBuff = isSigning ? privateKeyBuff.str() : publicKeyBuff.str();
-
-        //create an RSA object from public key
-        BIO * keybio = BIO_new_mem_buf((void*) keyBuff, -1);
-        if (nullptr == keybio)
-            throwEVPException(-1, "digiSign:BIO_new_mem_buf");
-
-        RSA * rsa;
-        if (isSigning)
-        {
-            StringBuffer ppDec;
-            if (!isEmptyString(passphraseEnc))
-                decrypt(ppDec, passphraseEnc);
-            rsa = PEM_read_bio_RSAPrivateKey(keybio, nullptr, nullptr, (void*)ppDec.str());
-        }
-        else
-            rsa = PEM_read_bio_RSA_PUBKEY(keybio, nullptr, nullptr, nullptr);
-        BIO_free_all(keybio);
-        if (nullptr == rsa)
-        {
-            if (isSigning)
-                throwEVPException(-1, "digiSign:PEM_read_bio_RSAPrivateKey");
-            else
-                throwEVPException(-1, "digiSign:PEM_read_bio_RSA_PUBKEY");
-        }
-
-        EVP_PKEY* pKey = EVP_PKEY_new();
-        if (nullptr == pKey)
-        {
-            RSA_free(rsa);
-            throwEVPException(-1, "digiSign:EVP_PKEY_new");
-        }
-        EVP_PKEY_assign_RSA(pKey, rsa);//take ownership of the rsa. pKey will free rsa
-
-        EVP_MD_CTX * RSACtx = EVP_MD_CTX_create();//allocate, initializes and return a digest context
-        if (nullptr == RSACtx)
-        {
-            EVP_PKEY_free(pKey);
-            throwEVPException(-1, "digiSign:EVP_MD_CTX_create");
-        }
-
-        //initialize context for SHA-256 hashing function
-        int rc;
-        if (isSigning)
-            rc = EVP_DigestSignInit(RSACtx, nullptr, EVP_sha256(), nullptr, pKey);
-        else
-            rc = EVP_DigestVerifyInit(RSACtx, nullptr, EVP_sha256(), nullptr, pKey);
-        if (rc <= 0)
-        {
-            EVP_CLEANUP(pKey, RSACtx);//cleans allocated key and digest context
-            if (isSigning)
-                throwEVPException(-1, "digiSign:EVP_DigestSignInit");
-            else
-                throwEVPException(-1, "digiSign:EVP_DigestVerifyInit");
-        }
-        *ctx = RSACtx;
-        *PKey = pKey;
-        return true;
-    }
+    Linked<CLoadedKey> pubKey, privKey;
+    bool         signingConfigured = false;
+    bool         verifyingConfigured = false;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
-    CDigitalSignatureManager(const char * _pubKeyBuff, const char * _privKeyBuff, const char * _passPhrase)
-        : signingConfigured(false), verifyingConfigured(false)
+    CDigitalSignatureManager(CLoadedKey *_pubKey, CLoadedKey *_privKey) : pubKey(_pubKey), privKey(_privKey)
     {
-        publicKeyBuff.set(_pubKeyBuff);
-        privateKeyBuff.set(_privKeyBuff);
-        passphraseBuffEnc.set(_passPhrase);//MD5 encrypted passphrase
-        signingConfigured = !privateKeyBuff.isEmpty();
-        verifyingConfigured = !publicKeyBuff.isEmpty();
+        signingConfigured = nullptr != privKey.get();
+        verifyingConfigured = nullptr != pubKey.get();
     }
 
-    bool isDigiSignerConfigured()
+    virtual bool isDigiSignerConfigured() const override
     {
         return signingConfigured;
     }
 
-    bool isDigiVerifierConfigured()
+    virtual bool isDigiVerifierConfigured() const override
     {
         return verifyingConfigured;
     }
 
-    //Create base 64 encoded digital signature of given text string
-    bool digiSign(const char * text, StringBuffer & b64Signature)
+    //Create base 64 encoded digital signature of given data
+    virtual bool digiSign(StringBuffer & b64Signature, size32_t dataSz, const void *data) const override
     {
         if (!signingConfigured)
             throw MakeStringException(-1, "digiSign:Creating Digital Signatures not configured");
 
-        EVP_MD_CTX * signingCtx;
-        EVP_PKEY *   signingKey;
-        digiInit(true, passphraseBuffEnc.str(), &signingCtx, &signingKey);
-
-        //add string to the context
-        if (EVP_DigestSignUpdate(signingCtx, (size_t*)text, strlen(text)) <= 0)
-        {
-            EVP_CLEANUP(signingKey, signingCtx);
-            throwEVPException(-1, "digiSign:EVP_DigestSignUpdate");
-        }
-
-        //compute length of signature
-        size_t encMsgLen;
-        if (EVP_DigestSignFinal(signingCtx, nullptr, &encMsgLen) <= 0)
-        {
-            EVP_CLEANUP(signingKey, signingCtx);
-            throwEVPException(-1, "digiSign:EVP_DigestSignFinal1");
-        }
-
-        if (encMsgLen == 0)
-        {
-            EVP_CLEANUP(signingKey, signingCtx);
-            throwEVPException(-1, "digiSign:EVP_DigestSignFinal length returned 0");
-        }
-
-        //compute signature (signed digest)
-        unsigned char * encMsg = (unsigned char*) malloc(encMsgLen);
-        if (encMsg == nullptr)
-        {
-            EVP_CLEANUP(signingKey, signingCtx);
-            throw MakeStringException(-1, "digiSign:malloc(%u) returned NULL",(unsigned)encMsgLen);
-        }
-
-        if (EVP_DigestSignFinal(signingCtx, encMsg, &encMsgLen) <= 0)
-        {
-            free(encMsg);
-            EVP_CLEANUP(signingKey, signingCtx);
-            throwEVPException(-1, "digiSign:EVP_DigestSignFinal2");
-        }
-
-
-        //convert to base64
-        JBASE64_Encode(encMsg, encMsgLen, b64Signature, false);
-
-        //cleanup
-        free(encMsg);
-        EVP_CLEANUP(signingKey, signingCtx);
-        return true;//success
+        return cryptohelper::digiSign(b64Signature, dataSz, data, *privKey);
     }
 
+    virtual bool digiSign(StringBuffer & b64Signature, const char *text) const override
+    {
+        return digiSign(b64Signature, strlen(text), text);
+    }
 
-    //Verify the given text was used to create the given digital signature
-    bool digiVerify(const char * text, StringBuffer & b64Signature)
+    //Verify the given data was used to create the given digital signature
+    virtual bool digiVerify(const char *b64Signature, size32_t dataSz, const void *data) const override
     {
         if (!verifyingConfigured)
             throw MakeStringException(-1, "digiVerify:Verifying Digital Signatures not configured");
 
-        EVP_MD_CTX * verifyingCtx;
-        EVP_PKEY *   verifyingKey;
-        digiInit(false, passphraseBuffEnc.str(), &verifyingCtx, &verifyingKey);
+        return cryptohelper::digiVerify(b64Signature, dataSz, data, *pubKey);
+    }
 
-        //decode base64 signature
-        StringBuffer decodedSig;
-        JBASE64_Decode(b64Signature.str(), decodedSig);
-
-        if (EVP_DigestVerifyUpdate(verifyingCtx, text, strlen(text)) <= 0)
-        {
-            EVP_CLEANUP(verifyingKey, verifyingCtx);
-            throwEVPException(-1, "digiVerify:EVP_DigestVerifyUpdate");
-        }
-
-        int match = EVP_DigestVerifyFinal(verifyingCtx, (unsigned char *)decodedSig.str(), decodedSig.length());
-        EVP_CLEANUP(verifyingKey, verifyingCtx);
-        return match == 1;
+    virtual bool digiVerify(const char *b64Signature, const char *text) const override
+    {
+        return digiVerify(b64Signature, strlen(text), text);
     }
 };
 
 #else
 
 //Dummy implementation if no OPENSSL available.
-class CDigitalSignatureManager : implements IDigitalSignatureManager, public CInterface
+
+bool digiSign(StringBuffer &b64Signature, const char *text, const CLoadedKey &signingKey)
+{
+    throwStringExceptionV(-1, "digiSign: unavailable without openssl");
+}
+
+bool digiVerify(const char *b64Signature, const char *text, const CLoadedKey &verifyingKey)
+{
+    throwStringExceptionV(-1, "digiVerify: unavailable without openssl");
+}
+
+class CDigitalSignatureManager : public CSimpleInterfaceOf<IDigitalSignatureManager>
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CDigitalSignatureManager(const char * _pubKeyBuff, const char * _privKeyBuff, const char * _passPhrase)
     {
         WARNLOG("CDigitalSignatureManager: Platform built without OPENSSL!");
     }
 
-    bool isDigiSignerConfigured()
+    virtual bool isDigiSignerConfigured() const override
     {
         return false;
     }
 
-    bool isDigiVerifierConfigured()
+    virtual bool isDigiVerifierConfigured() const override
     {
         return false;
     }
 
-    //Create base 64 encoded digital signature of given text string
-    bool digiSign(const char * text, StringBuffer & b64Signature)
+
+    virtual bool digiSign(StringBuffer & b64Signature, size32_t dataSz, const void *data) const override
     {
-        //convert to base64
-        JBASE64_Encode(text, strlen(text), b64Signature, false);
-        return true;//success
+        throwStringExceptionV(-1, "digiSign: unavailable without openssl");
     }
 
-    //Verify the given text was used to create the given digital signature
-    bool digiVerify(const char * text, StringBuffer & b64Signature)
+    virtual bool digiSign(StringBuffer & b64Signature, const char * text) const override
     {
-        //decode base64 signature
-        StringBuffer decodedSig;
-        JBASE64_Decode(b64Signature.str(), decodedSig);
-        return streq(text, decodedSig);
+        throwStringExceptionV(-1, "digiSign: unavailable without openssl");
+    }
+
+    virtual bool digiVerify(const char *b64Signature, const char * text) const override
+    {
+        throwStringExceptionV(-1, "digiVerify: unavailable without openssl");
+    }
+
+    virtual bool digiVerify(const char *b64Signature, size32_t dataSz, const void *data) const override
+    {
+        throwStringExceptionV(-1, "digiVerify: unavailable without openssl");
     }
 };
 
 #endif
 
 
-static IDigitalSignatureManager * dsm;
+static IDigitalSignatureManager * dsm = nullptr;
 static std::once_flag dsmInitFlag;
-static std::once_flag dsmAddAlgoFlag;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -277,79 +214,135 @@ static void createDigitalSignatureManagerInstance(IDigitalSignatureManager * * p
     *ppDSM = createDigitalSignatureManagerInstanceFromFiles(pubKey, privKey, passPhrase);
 }
 
-static void addAlgorithms()
+
+//Returns reference to singleton instance created from environment.conf key file settings
+IDigitalSignatureManager * queryDigitalSignatureManagerInstanceFromEnv()
 {
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
-    OpenSSL_add_all_algorithms();
+    std::call_once(dsmInitFlag, createDigitalSignatureManagerInstance, &dsm);
+    return dsm;
+#else
+    return nullptr;
 #endif
 }
 
-extern "C"
+//Create using given key filespecs
+//Caller must release when no longer needed
+IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * pubKeyFileName, const char *privKeyFileName, const char * passPhrase)
 {
-    //Returns reference to singleton instance created from environment.conf key file settings
-    CRYPTOHELPER_API IDigitalSignatureManager * queryDigitalSignatureManagerInstanceFromEnv()
-    {
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
-        std::call_once(dsmInitFlag, createDigitalSignatureManagerInstance, &dsm);
-        return dsm;
-#else
-        return nullptr;
-#endif
-    }
+    Owned<CLoadedKey> pubKey, privKey;
 
-    //Create using given key filespecs
-    //Caller must release when no longer needed
-    CRYPTOHELPER_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * _pubKey, const char *_privKey, const char * _passPhrase)
+    Owned<IMultiException> exceptions;
+    if (!isEmptyString(pubKeyFileName))
     {
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
-        StringBuffer privateKeyBuff;
-        StringBuffer publicKeyBuff;
-
-        if (!isEmptyString(_pubKey))
+        try
         {
-            try
-            {
-                publicKeyBuff.loadFile(_pubKey);
-            }
-            catch (IException * e)
-            {
-                e->Release();
-            }
-            if (publicKeyBuff.isEmpty())
-                throw MakeStringException(-1, "digiSign:Cannot load public key file");
+            pubKey.setown(loadPublicKeyFromFile(pubKeyFileName, passPhrase));
         }
-
-        if (!isEmptyString(_privKey))
+        catch (IException * e)
         {
-            try
-            {
-                privateKeyBuff.loadFile(_privKey);
-            }
-            catch (IException * e)
-            {
-                e->Release();
-            }
-            if (privateKeyBuff.isEmpty())
-                throw MakeStringException(-1, "digiSign:Cannot load private key file");
+            if (!exceptions)
+                exceptions.setown(makeMultiException("createDigitalSignatureManagerInstanceFromFiles"));
+
+            exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromFiles:Cannot load public key file"));
+            e->Release();
         }
-
-        return createDigitalSignatureManagerInstanceFromKeys(publicKeyBuff, privateKeyBuff, _passPhrase);
-#else
-        return nullptr;
-#endif
     }
 
-    //Create using given PEM formatted keys
-    //Caller must release when no longer needed
-    CRYPTOHELPER_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(StringBuffer & _pubKeyBuff, StringBuffer & _privKeyBuff, const char * _passPhrase)
+    if (!isEmptyString(privKeyFileName))
     {
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
-        std::call_once(dsmAddAlgoFlag, addAlgorithms);
-        return new CDigitalSignatureManager(_pubKeyBuff, _privKeyBuff, _passPhrase);
-#else
-        return nullptr;
-#endif
+        try
+        {
+            privKey.setown(loadPrivateKeyFromFile(privKeyFileName, passPhrase));
+        }
+        catch (IException * e)
+        {
+            if (!exceptions)
+                exceptions.setown(makeMultiException("createDigitalSignatureManagerInstanceFromFiles"));
+
+            exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromFiles:Cannot load private key file"));
+            e->Release();
+        }
     }
+
+    // NB: allow it continue if 1 of the keys successfully loaded.
+    if (exceptions && exceptions->ordinality())
+    {
+        if (!pubKey && !privKey)
+            throw exceptions.getClear();
+        else
+            EXCLOG(exceptions, nullptr);
+    }
+
+    return new CDigitalSignatureManager(pubKey, privKey);
+#else
+    return nullptr;
+#endif
+}
+
+//Create using given PEM formatted keys
+//Caller must release when no longer needed
+IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const char * pubKeyString, const char * privKeyString, const char * passPhrase)
+{
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
+    Owned<CLoadedKey> pubKey, privKey;
+
+    Owned<IMultiException> exceptions;
+    if (!isEmptyString(pubKeyString))
+    {
+        try
+        {
+            pubKey.setown(loadPublicKeyFromMemory(pubKeyString, passPhrase));
+        }
+        catch (IException * e)
+        {
+            if (!exceptions)
+                exceptions.setown(makeMultiException("createDigitalSignatureManagerInstanceFromKeys"));
+
+            exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromFiles:Cannot load public key"));
+            e->Release();
+        }
+    }
+    if (!isEmptyString(privKeyString))
+    {
+        try
+        {
+            privKey.setown(loadPrivateKeyFromMemory(privKeyString, passPhrase));
+        }
+        catch (IException * e)
+        {
+            if (!exceptions)
+                exceptions.setown(makeMultiException("createDigitalSignatureManagerInstanceFromKeys"));
+
+            exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromFiles:Cannot load private key"));
+            e->Release();
+        }
+    }
+
+    // NB: allow it continue if 1 of the keys successfully loaded.
+    if (exceptions && exceptions->ordinality())
+    {
+        if (!pubKey && !privKey)
+            throw exceptions.getClear();
+        else
+            EXCLOG(exceptions, nullptr);
+    }
+    return new CDigitalSignatureManager(pubKey, privKey);
+#else
+    return nullptr;
+#endif
+}
+
+//Create using preloaded keys
+//Caller must release when no longer needed
+IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(CLoadedKey *pubKey, CLoadedKey *privKey)
+{
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
+    return new CDigitalSignatureManager(pubKey, privKey);
+#else
+    return nullptr;
+#endif
 }
 
 } // namespace cryptohelper

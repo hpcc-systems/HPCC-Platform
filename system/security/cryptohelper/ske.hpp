@@ -20,15 +20,8 @@
 #ifndef SKE_HPP
 #define SKE_HPP
 
-#ifndef CRYPTOHELPER_API
+#include "cryptocommon.hpp"
 
-#ifndef CRYPTOHELPER_EXPORTS
-    #define CRYPTOHELPER_API DECL_IMPORT
-#else
-    #define CRYPTOHELPER_API DECL_EXPORT
-#endif //CRYPTOHELPER_EXPORTS
-
-#endif
 
 namespace cryptohelper
 {
@@ -38,16 +31,14 @@ namespace cryptohelper
 const unsigned aesMaxKeySize = 256/8; // 256 bits
 const unsigned aesBlockSize = 128/8; // 128 bits
 
-// for AES, keyLen must be 16, 24, or 32 Bytes
-
-CRYPTOHELPER_API size32_t aesEncrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, size32_t keyLen, const char *key, const char iv[aesBlockSize] = nullptr);
-CRYPTOHELPER_API size32_t aesDecrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, size32_t keyLen, const char *key, const char iv[aesBlockSize] = nullptr);
+jlib_decl size32_t aesEncrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, size32_t keyLen, const char *key, const char iv[aesBlockSize] = nullptr);
+jlib_decl size32_t aesDecrypt(MemoryBuffer &out, size32_t inSz, const void *inBytes, size32_t keyLen, const char *key, const char iv[aesBlockSize] = nullptr);
 
 class CLoadedKey;
 // aesEncryptWithRSAEncryptedKey serializes encrypted data along with an RSA encrypted key in the format { RSA-encrypted-AES-key, aes-IV, AES-encrypted-data }
-CRYPTOHELPER_API size32_t aesEncryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const void *inBytes, const CLoadedKey &publicKey);
+jlib_decl size32_t aesEncryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const void *inBytes, const CLoadedKey &publicKey);
 // aesDecryptWithRSAEncryptedKey deserializes data created by aesEncryptWithRSAEncryptedKey
-CRYPTOHELPER_API size32_t aesDecryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const void *inBytes, const CLoadedKey &privateKey);
+jlib_decl size32_t aesDecryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const void *inBytes, const CLoadedKey &privateKey);
 
 
 #endif // end of #if defined(_USE_OPENSSL) && !defined(_WIN32)
