@@ -263,34 +263,36 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
                 ptree = &pt_iter->query();
                 if (ptree)
                 {
-                    binding_cfg *bcfg = new binding_cfg;
-                    
+                    OwnedPtr<binding_cfg> bcfg(new binding_cfg);
                     ptree->getProp("@name", bcfg->name);
-                    ptree->getProp("@type", bcfg->type);
-                    ptree->getProp("@plugin", bcfg->plugin);
-                    fixPlugin(bcfg->plugin);
-                    bcfg->isDefault = ptree->getPropBool("@defaultBinding", false);
-                    
-                    StringBuffer addr;
-                    ptree->getProp("@netAddress", addr);
-                    if(strcmp(addr.str(), ".") == 0)
-                    {
-                        bcfg->address.append("0.0.0.0");
-                    }
+                    bcfg->port = ptree->getPropInt("@port", 0);
+                    if (bcfg->port == 0)
+                        DBGLOG("Binding %s is configured with port 0, it will not be loaded.", bcfg->name.str());
                     else
                     {
-                        bcfg->address.append(addr.str());
+                        ptree->getProp("@type", bcfg->type);
+                        ptree->getProp("@plugin", bcfg->plugin);
+                        fixPlugin(bcfg->plugin);
+                        bcfg->isDefault = ptree->getPropBool("@defaultBinding", false);
+
+                        StringBuffer addr;
+                        ptree->getProp("@netAddress", addr);
+                        if (strcmp(addr.str(), ".") == 0)
+                        {
+                            bcfg->address.append("0.0.0.0");
+                        }
+                        else
+                        {
+                            bcfg->address.append(addr.str());
+                        }
+
+                        ptree->getProp("@service", bcfg->service_name);
+                        ptree->getProp("@protocol", bcfg->protocol_name);
+
+                        m_bindings.push_back(bcfg.getClear());
                     }
-                    
-                    StringBuffer portstr;
-                    ptree->getProp("@port", portstr);
-                    bcfg->port = atoi(portstr.str());
-                    ptree->getProp("@service", bcfg->service_name);
-                    ptree->getProp("@protocol", bcfg->protocol_name);
-                    
-                    m_bindings.push_back(bcfg);
                 }
-                
+
                 pt_iter->next();
             }
     
