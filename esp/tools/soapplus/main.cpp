@@ -793,6 +793,16 @@ int main(int argc, char** argv)
             printf("For stress test, please don't write the results to files. Remove the -w option and try again.\n");
             return 0;
         }
+
+        if(globals->hasProp("isPersist"))
+        {
+            if(globals->hasProp("persistrequests") || globals->hasProp("persistpause"))
+            {
+                printf("\nWarning: Will run the stress test with persistent connections, but parameters number-of-requests and pause-seconds will be ignored.\n\n");
+                globals->removeProp("persistrequests");
+                globals->removeProp("persistpause");
+            }
+        }
     }
 
     if (url == NULL && (action == SPA_CLIENT || action == SPA_BOTH) && !globals->getPropBool("autogen"))

@@ -137,6 +137,8 @@ public:
     }
 };
 
+class CSimpleSocket;
+
 class HttpClient : public CInterface, implements IInterface
 {
 private:
@@ -192,7 +194,7 @@ public:
     int sendRequest(StringBuffer& request, IFileIO* request_output = NULL, IFileIO* full_output = NULL, IFileIO* content_output = NULL, StringBuffer* outputbuf = NULL, HttpStat* stat = NULL);
 
     IArrayOf<CRequest>& queryStressRequests() {return m_stressrequests;}
-    int sendStressRequest(StringBuffer& request, HttpStat* stat);
+    int sendStressRequest(StringBuffer& request, HttpStat* stat, Owned<CSimpleSocket>& persistentSocket);
     bool queryStopStress() {return m_stopstress;}
     IProperties* queryGlobals() {return m_globals;}
     void addEspRequest(const char* requestId, const char* service, const char* method, StringBuffer& request, HttpStat& httpStat);
