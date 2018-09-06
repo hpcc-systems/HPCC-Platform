@@ -8,35 +8,54 @@
     <title>Getting Code Files</title>
 
     <para>All the example code for the <emphasis>Programmer's Guide</emphasis>
-    is available for download from the HPCC Systems website from the same page
-    that the PDF is available (<ulink
-    url="https://hpccsystems.com/training/documentation/learning-ecl">https://hpccsystems.com/training/documentation/learning-ecl</ulink>).
-    To make this code available for use in the ECL IDE, you simply:</para>
+    is installed with the IDE. Please note that it is installed to a read-only
+    folder. To use it, you should copy it to your MyFiles folder.</para>
+
+    <para>To make this code available for read/write use in the ECL IDE, you
+    simply:</para>
 
     <orderedlist>
       <listitem>
-        <para>Download the ECL_Code_Files.ZIP file.</para>
+        <para>Expand the <emphasis role="bold">examples</emphasis> folder in
+        the ECL IDE's repository panel.</para>
       </listitem>
 
       <listitem>
-        <para>In the ECL IDE, highlight your "My Files" folder, right-click
-        and select "Insert Folder" from the popup menu.</para>
+        <para>Select the <emphasis role="bold">ProgrammersGuide</emphasis>
+        folder, then right-click and select <emphasis role="bold">Locate File
+        in Explorer</emphasis> from the popup menu.</para>
       </listitem>
 
       <listitem>
-        <para>Name your new folder "ProgrammersGuide" (please note -- spaces
-        are NOT allowed in your ECL repository folder names).</para>
+        <para>From Windows Explorer, copy the <emphasis
+        role="bold">ProgrammersGuide</emphasis> folder.</para>
       </listitem>
 
       <listitem>
-        <para>In the ECL IDE, highlight your "ProgrammersGuide" folder,
-        right-click and select "Locate File in Explorer" from the popup
+        <para>Return to the ECL IDE, expand the <emphasis role="bold">My
+        Files</emphasis> folder.</para>
+      </listitem>
+
+      <listitem>
+        <para>Select any folder within <emphasis role="bold">My
+        Files</emphasis>, then right-click and select <emphasis
+        role="bold">Locate File in Explorer</emphasis> from the popup
         menu.</para>
       </listitem>
 
       <listitem>
-        <para>Extract all the files from the ECL_Code_Files.ZIP file into your
-        new folder.</para>
+        <para>In Windows Explorer, navigate up up level, then paste the copied
+        folder into the <emphasis role="bold">My Files</emphasis>
+        folder</para>
+      </listitem>
+
+      <listitem>
+        <para>Return to the ECL IDE.</para>
+      </listitem>
+
+      <listitem>
+        <para>Rt-click within the repository panel and select <emphasis
+        role="bold">Refresh</emphasis> from the popup menu.</para>
       </listitem>
     </orderedlist>
   </sect2>
