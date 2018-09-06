@@ -6060,6 +6060,95 @@ ECLRTL_API IRowStream * createRowStream(size32_t count, const byte * * rowset)
 }
 
 
+//The following are provided to provide compatibility with 6.x so that the dll can be loaded
+//Defined at the end of the file so they cannot cause any code to accidently call them.
+__declspec(noreturn) void jlib_decl throwIncompatible() __attribute__((noreturn));
+void throwIncompatible() { rtlFail(0, "Attempt to execute incompatible query version"); }
+
+ECLRTL_API int rtlSearchTableStringN(unsigned count, char * * table, unsigned width, const char * search) { throwIncompatible(); }
+ECLRTL_API int rtlSearchTableVStringN(unsigned count, char * * table, const char * search) { throwIncompatible(); }
+ECLRTL_API int rtlNewSearchDataTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search) { throwIncompatible(); }
+ECLRTL_API int rtlNewSearchEStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search) { throwIncompatible(); }
+ECLRTL_API int rtlNewSearchQStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search) { throwIncompatible(); }
+ECLRTL_API int rtlNewSearchStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search) { throwIncompatible(); }
+ECLRTL_API int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, UChar * * table, unsigned width, const UChar * search, const char * locale) { throwIncompatible(); }
+ECLRTL_API int rtlNewSearchVUnicodeTable(unsigned count, UChar * * table, const UChar * search, const char * locale) { throwIncompatible(); }
+ECLRTL_API int rtlNewSearchUtf8Table(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search, const char * locale) { throwIncompatible(); }
+ECLRTL_API int rtlSearchTableInteger8(unsigned count, __int64 * table, __int64 search) { throwIncompatible(); }
+ECLRTL_API int rtlSearchTableUInteger8(unsigned count, unsigned __int64 * table, unsigned __int64 search) { throwIncompatible(); }
+ECLRTL_API int rtlSearchTableInteger4(unsigned count, int * table, int search) { throwIncompatible(); }
+ECLRTL_API int rtlSearchTableUInteger4(unsigned count, unsigned * table, unsigned search) { throwIncompatible(); }
+ECLRTL_API void rtlReleaseRowset(unsigned count, byte * * rowset) { throwIncompatible(); }
+ECLRTL_API byte * * rtlLinkRowset(byte * * rowset) { throwIncompatible(); }
+ECLRTL_API void deserializeRowsetX(size32_t & count, byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in) { throwIncompatible(); }
+ECLRTL_API void deserializeGroupedRowsetX(size32_t & count, byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in) { throwIncompatible(); }
+ECLRTL_API void deserializeDictionaryX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in) { throwIncompatible(); }
+ECLRTL_API void serializeRowsetX(size32_t count, byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out) { throwIncompatible(); }
+ECLRTL_API void serializeGroupedRowsetX(size32_t count, byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out) { throwIncompatible(); }
+ECLRTL_API void serializeDictionaryX(size32_t count, byte * * rows, IOutputRowSerializer * serializer, MemoryBuffer & buffer) { throwIncompatible(); }
+ECLRTL_API double rtlLog(double x) { throwIncompatible(); }
+ECLRTL_API double rtlLog10(double x) { throwIncompatible(); }
+ECLRTL_API double rtlSqrt(double x) { throwIncompatible(); }
+ECLRTL_API double rtlACos(double x) { throwIncompatible(); }
+ECLRTL_API double rtlASin(double x) { throwIncompatible(); }
+ECLRTL_API IRowStream * createRowStream(size32_t count, byte * * rowset) { throwIncompatible(); }
+
+// from rtlkey.hpp version 6.x
+interface IKeySegmentMonitor;
+interface IOverrideableKeySegmentMonitor;
+interface IKeySegmentFormatTranslator;
+interface IKeySegmentOffsetTranslator;
+ECLRTL_API IKeySegmentMonitor *createEmptyKeySegmentMonitor(bool optional, unsigned _offset, unsigned _size) { throwIncompatible(); }
+ECLRTL_API IKeySegmentMonitor *createWildKeySegmentMonitor(unsigned _offset, unsigned _size) { throwIncompatible(); }
+ECLRTL_API IKeySegmentMonitor *createDummyKeySegmentMonitor(unsigned _offset, unsigned _size, bool isSigned, bool isLittleEndian) { throwIncompatible(); }
+ECLRTL_API IKeySegmentMonitor *createSingleKeySegmentMonitor(bool optional, unsigned _offset, unsigned _size, const void * value) { throwIncompatible(); }
+ECLRTL_API IOverrideableKeySegmentMonitor *createOverrideableKeySegmentMonitor(IKeySegmentMonitor *base) { throwIncompatible(); }
+ECLRTL_API IKeySegmentMonitor *createSingleBigSignedKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value) { throwIncompatible(); }
+ECLRTL_API IKeySegmentMonitor *createSingleLittleSignedKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value) { throwIncompatible(); }
+ECLRTL_API IKeySegmentMonitor *createSingleLittleKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value) { throwIncompatible(); }
+ECLRTL_API IKeySegmentMonitor *createVarOffsetKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, IKeySegmentOffsetTranslator * translator) { throwIncompatible(); }
+ECLRTL_API IKeySegmentMonitor *createTranslatedKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, IKeySegmentFormatTranslator * translator) { throwIncompatible(); }
+
+
+//from rtlds_imp.hpp version 6.x
+
+ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, byte **table) { throwIncompatible(); }
+ECLRTL_API bool rtlDictionaryExists(size32_t tableSize, byte **table) { throwIncompatible(); }
+ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow) { throwIncompatible(); }
+ECLRTL_API byte *rtlDictionaryLookupString(size32_t tableSize, byte **table, size32_t len, const char *source, byte *defaultRow) { throwIncompatible(); }
+ECLRTL_API byte *rtlDictionaryLookupStringN(size32_t tableSize, byte **table, size32_t N, size32_t len, const char *source, byte *defaultRow) { throwIncompatible(); }
+ECLRTL_API byte *rtlDictionaryLookupSigned(size32_t tableSize, byte **table, __int64 source, byte *defaultRow) { throwIncompatible(); }
+ECLRTL_API byte *rtlDictionaryLookupUnsigned(size32_t tableSize, byte **table, __uint64 source, byte *defaultRow) { throwIncompatible(); }
+ECLRTL_API byte *rtlDictionaryLookupSignedN(size32_t tableSize, byte **table, size32_t size, __int64 source, byte *defaultRow) { throwIncompatible(); }
+ECLRTL_API byte *rtlDictionaryLookupUnsignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source, byte *defaultRow) { throwIncompatible(); }
+ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source) { throwIncompatible(); }
+ECLRTL_API bool rtlDictionaryLookupExistsString(size32_t tableSize, byte **table, size32_t len, const char *source) { throwIncompatible(); }
+ECLRTL_API bool rtlDictionaryLookupExistsStringN(size32_t tableSize, byte **table, size32_t N, size32_t len, const char *source) { throwIncompatible(); }
+ECLRTL_API bool rtlDictionaryLookupExistsSigned(size32_t tableSize, byte **table, __int64 source) { throwIncompatible(); }
+ECLRTL_API bool rtlDictionaryLookupExistsUnsigned(size32_t tableSize, byte **table, __uint64 source) { throwIncompatible(); }
+ECLRTL_API bool rtlDictionaryLookupExistsSignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source) { throwIncompatible(); }
+ECLRTL_API bool rtlDictionaryLookupExistsUnsignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source) { throwIncompatible(); }
+ECLRTL_API void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngineRowAllocator * rowAllocator, size32_t count, byte * * rows) { throwIncompatible(); }
+ECLRTL_API void rtlDeserializeChildRowset(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in) { throwIncompatible(); }
+ECLRTL_API void rtlDeserializeChildGroupRowset(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in) { throwIncompatible(); }
+ECLRTL_API void rtlSerializeChildRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows) { throwIncompatible(); }
+ECLRTL_API void rtlSerializeChildGroupRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows) { throwIncompatible(); }
+ECLRTL_API void rtlDataset2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src, bool isGrouped) { throwIncompatible(); }
+ECLRTL_API void rtlRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows, bool isGrouped) { throwIncompatible(); }
+ECLRTL_API void rtlDataset2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src) { throwIncompatible(); }
+ECLRTL_API void rtlGroupedDataset2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src) { throwIncompatible(); }
+ECLRTL_API void rtlRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows) { throwIncompatible(); }
+ECLRTL_API void rtlGroupedRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows) { throwIncompatible(); }
+ECLRTL_API void rtlDeserializeDictionary(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src) { throwIncompatible(); }
+ECLRTL_API void rtlDeserializeDictionaryFromDataset(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, IHThorHashLookupInfo & hashInfo, size32_t lenSrc, const void * src) { throwIncompatible(); }
+ECLRTL_API void rtlSerializeDictionary(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows) { throwIncompatible(); }
+ECLRTL_API void rtlSerializeDictionaryToDataset(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows) { throwIncompatible(); }
+ECLRTL_API void rtlSerializeDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows) { throwIncompatible(); }
+ECLRTL_API void rtlSerializeDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows) { throwIncompatible(); }
+ECLRTL_API void rtlDeserializeChildDictionary(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in) { throwIncompatible(); }
+ECLRTL_API void rtlDeserializeChildDictionaryFromDataset(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, IHThorHashLookupInfo & hashInfo, IRowDeserializerSource & in) { throwIncompatible(); }
+ECLRTL_API void rtlSerializeChildDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows) { throwIncompatible(); }
+ECLRTL_API void rtlSerializeChildDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows) { throwIncompatible(); }
 
 #if 0
 void PrintExtract(StringBuffer & s, const char * tag)
