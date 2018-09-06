@@ -147,8 +147,7 @@ bool CWsTopologyEx::onTpSwapNode(IEspContext &context,IEspTpSwapNodeRequest  &re
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to Swap Node. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpSwapNode: Permission denied.");
 
         bool res = swapNode(req.getCluster(),req.getOldIP(),req.getNewIP());
 
@@ -177,8 +176,7 @@ bool CWsTopologyEx::onTpSetMachineStatus(IEspContext &context,IEspTpSetMachineSt
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to Set Machine Status. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpSetMachineStatus: Permission denied.");
 
         resp.setTpSetMachineStatusResult(true);
     }
@@ -200,8 +198,7 @@ bool CWsTopologyEx::onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req,
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Log File. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpLogFile: Permission denied.");
 
         const char* name = req.getName();
         const char* type = req.getType();
@@ -239,8 +236,7 @@ bool CWsTopologyEx::onSystemLog(IEspContext &context,IEspSystemLogRequest  &req,
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Log File. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::SystemLog: Permission denied.");
 
         const char* name = req.getName();
         if (!name || !*name)
@@ -389,8 +385,7 @@ bool CWsTopologyEx::onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req,
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Configuration File. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpXMLFile: Permission denied.");
 
         StringBuffer strBuff, xmlBuff;
         strBuff.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>");
@@ -970,8 +965,7 @@ bool CWsTopologyEx::onTpClusterQuery(IEspContext &context, IEspTpClusterQueryReq
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpClusterQuery: Permission denied.");
 
         IArrayOf<IEspTpCluster> clusters;
         const char* type = req.getType();
@@ -1009,8 +1003,7 @@ bool CWsTopologyEx::onTpListTargetClusters(IEspContext &context, IEspTpListTarge
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpListTargetClusters: Permission denied.");
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> env = factory->openEnvironment();
@@ -1099,8 +1092,7 @@ bool CWsTopologyEx::onTpTargetClusterQuery(IEspContext &context, IEspTpTargetClu
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpTargetClusterQuery: Permission denied.");
 
         double version = context.getClientVersion();
 
@@ -1150,8 +1142,7 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpLogicalClusterQuery: Permission denied.");
 
         IArrayOf<IEspTpLogicalCluster> clusters;
         CConstWUClusterInfoArray wuClusters;
@@ -1182,8 +1173,7 @@ bool CWsTopologyEx::onTpGroupQuery(IEspContext &context, IEspTpGroupQueryRequest
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Group Query. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpGroupQuery: Permission denied.");
 
         IArrayOf<IEspTpGroup> Groups;
         m_TpWrapper.getGroupList(context.getClientVersion(), req.getKind(), Groups);
@@ -1201,8 +1191,7 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Cluster Information. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpClusterInfo: Permission denied.");
 
         Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers/", myProcessSession(),RTM_SUB,SDS_LOCK_TIMEOUT);
         if (conn)
@@ -1250,8 +1239,7 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Service Query. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpServiceQuery: Permission denied.");
 
         double version = context.getClientVersion();
         const char* type = req.getType();
@@ -1313,9 +1301,8 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
 { 
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Machine Query. Permission denied.");
-        
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpMachineQuery: Permission denied.");
+
         double version = context.getClientVersion();
 
         IArrayOf<IEspTpMachine> MachineList;
@@ -1381,8 +1368,7 @@ bool CWsTopologyEx::onTpMachineInfo(IEspContext &context, IEspTpMachineInfoReque
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Machine Info. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpMachineInfo: Permission denied.");
 
         m_TpWrapper.getMachineInfo(context.getClientVersion(), req.getName(), req.getNetAddress(), resp.updateMachineInfo());
     }
@@ -1393,14 +1379,12 @@ bool CWsTopologyEx::onTpMachineInfo(IEspContext &context, IEspTpMachineInfoReque
     return false;
 }
 
-bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, 
-                                                                 IEspTpGetComponentFileRequest &req, 
-                                                                 IEspTpGetComponentFileResponse &resp)
+bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponentFileRequest &req, 
+    IEspTpGetComponentFileResponse &resp)
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpGetComponentFile: Permission denied.");
 
         const char* fileType = req.getFileType();
         if (!fileType || (0!=stricmp(fileType, "cfg") && 0!=stricmp(fileType, "log")))
@@ -1672,8 +1656,7 @@ bool CWsTopologyEx::onTpThorStatus(IEspContext &context, IEspTpThorStatusRequest
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to access Thor status. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpThorStatus: Permission denied.");
 
         const char* name   = req.getName();
         if (!name || !*name)
@@ -1726,8 +1709,7 @@ bool CWsTopologyEx::onTpGetServicePlugins(IEspContext &context, IEspTpGetService
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Service Plugins. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpGetServicePlugins: Permission denied.");
 
         IArrayOf<IEspTpEspServicePlugin> plugins;
         ForEachItemIn(i,espServicePlugins)
@@ -1754,8 +1736,7 @@ bool CWsTopologyEx::onTpDropZoneQuery(IEspContext &context, IEspTpDropZoneQueryR
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Machine Query. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpDropZoneQuery: Permission denied.");
 
         m_TpWrapper.getTpDropZones(context.getClientVersion(), req.getName(), req.getECLWatchVisibleOnly(), resp.getTpDropZones());
     }
