@@ -306,7 +306,7 @@ export class WUScopeController {
                 let weight = 100;
                 if (attrs["IsDependency"]) {
                     weight = 10;
-                    strokeDasharray = "1,5";
+                    strokeDasharray = "1,2";
                 } else if (attrs["_childGraph"]) {
                     strokeDasharray = "5,5";
                 } else if (isSpill) {
