@@ -1,7 +1,7 @@
-import { Icon } from "@hpcc-js/common";
+import { Icon, Palette } from "@hpcc-js/common";
 import { BaseScope, ScopeEdge, ScopeGraph, ScopeSubgraph, ScopeVertex } from "@hpcc-js/comms";
 import { Edge, IGraphData, Lineage, Subgraph, Vertex } from "@hpcc-js/graph";
-import { Edge as UtilEdge, Subgraph as UtilSubgraph, Vertex as UtilVertex} from "@hpcc-js/util";
+import { Edge as UtilEdge, Subgraph as UtilSubgraph, Vertex as UtilVertex } from "@hpcc-js/util";
 import { decodeHtml } from "./Utility";
 
 export type VertexType = Vertex | Icon;
@@ -19,6 +19,13 @@ export interface MyGraphData {
     edges: Edge[];
     hierarchy: Lineage[];
 }
+
+const UNKNOWN_STROKE = "darkgray";
+const UNKNOWN_FILL = "lightgray";
+const ACTIVE_STROKE = "#fea201";
+const ACTIVE_FILL = "#fed080";
+const FINISHED_STROKE = "darkgreen";
+const FINISHED_FILL = "lightgreen";
 
 function faCharFactory(kind): string {
     switch (kind) {
@@ -178,6 +185,37 @@ export class WUScopeController {
             }
         });
 
+        const sgColors: {
+            [key: string]: {
+                sg: Subgraph;
+                total: number;
+                started: number;
+                finished: number;
+            }
+        } = {};
+        retVal.hierarchy.forEach(h => {
+            let sgColor = sgColors[h.parent.id()];
+            if (!sgColor) {
+                sgColor = sgColors[h.parent.id()] = {
+                    sg: h.parent as Subgraph,
+                    total: 0,
+                    started: 0,
+                    finished: 0
+                };
+            }
+            if (h.child instanceof Vertex) {
+                sgColor.total++;
+                sgColor.started += (h.child as any).__started ? 1 : 0;
+                sgColor.finished += (h.child as any).__finished ? 1 : 0;
+            }
+        });
+        for (const key in sgColors) {
+            const sgColor = sgColors[key];
+            if (sgColor.total === sgColor.finished) {
+                // sgColor.sg.borderColor(...);
+            }
+        }
+
         if (!this.collapsedOnce && retVal.vertices.length >= 100) {
             this.collapsedOnce = true;
             retVal.subgraphs.forEach((sg: Subgraph) => {
@@ -204,7 +242,7 @@ export class WUScopeController {
             lpos = labelTpl.indexOf("%", rpos + 1);
         }
         retVal += labelTpl.substring(rpos + 1, labelTpl.length);
-        return retVal.split("\\n").join("\n");
+        return retVal.split("\n").filter(d => d.trim().length > 0).join("\n");
     }
 
     createSubgraph(subgraph: ScopeSubgraph): Subgraph {
@@ -240,9 +278,13 @@ export class WUScopeController {
                     ;
             } else {
                 v = new Vertex()
-                    .icon_shape_colorFill("#1f77b4")
-                    .icon_image_colorFill("white")
+                    .icon_shape_colorStroke(UNKNOWN_STROKE)
+                    .icon_shape_colorFill(UNKNOWN_STROKE)
+                    .icon_image_colorFill(Palette.textColor(UNKNOWN_STROKE))
                     .faChar(faCharFactory(attrs["Kind"]))
+                    .textbox_shape_colorStroke(UNKNOWN_STROKE)
+                    .textbox_shape_colorFill(UNKNOWN_FILL)
+                    .textbox_text_colorFill(Palette.textColor(UNKNOWN_FILL))
                     .text(decodeHtml(attrs["Label"]))
                     ;
                 const annotations = [];
@@ -250,9 +292,9 @@ export class WUScopeController {
                     annotations.push({
                         faChar: "\uf036",
                         tooltip: "Definition",
-                        shape_colorFill: "lightgray",
-                        shape_colorStroke: "lightgray",
-                        image_colorFill: "black"
+                        shape_colorFill: UNKNOWN_FILL,
+                        shape_colorStroke: UNKNOWN_FILL,
+                        image_colorFill: Palette.textColor(UNKNOWN_FILL)
                     });
                 }
                 if (vertex._.hasAttr("IsInternal")) {
@@ -261,7 +303,7 @@ export class WUScopeController {
                         tooltip: "IsInternal",
                         shape_colorFill: "red",
                         shape_colorStroke: "red",
-                        image_colorFill: "white"
+                        image_colorFill: Palette.textColor("red")
                     });
                 }
                 v.annotationIcons(annotations);
@@ -292,16 +334,6 @@ export class WUScopeController {
                 const isSpill = this.isSpill(edge);
                 const spansSubgraph = this.spansSubgraph(edge);
 
-                const label = this.format("%Label%\n%NumRowsProcessed%", attrs);
-                /*  TODO:  Add extra annotations once WUDetails is fixed...
-                const numSlaves = parseInt(attrs["NumSlaves"]);
-                const numStarts = parseInt(attrs["NumStarts"]);
-                const numStops = parseInt(attrs["NumStops"]);
-                const started = numStarts > 0;
-                const finished = numStops === numSlaves;
-                const active = started && !finished;
-                */
-
                 let strokeDasharray = null;
                 let weight = 100;
                 if (attrs["IsDependency"]) {
@@ -323,7 +355,6 @@ export class WUScopeController {
                     .targetMarker("arrow")
                     .weight(weight)
                     .strokeDasharray(strokeDasharray)
-                    .text(decodeHtml(label))
                     ;
                 this.edgesMap[edge._.Id] = e;
                 this.rEdgesMap[e.id()] = edge;
@@ -355,6 +386,37 @@ export class WUScopeController {
     appendEdge(edge: ScopeEdge, edges: Edge[]): Edge {
         const e = this.createEdge(edge);
         if (e) {
+            const attrs = edge._.rawAttrs();
+            const label = this.format("%Label%\n%NumRowsProcessed%", attrs);
+            e.text(decodeHtml(label))
+            const numSlaves = parseInt(attrs["NumSlaves"]);
+            const numStarts = parseInt(attrs["NumStarts"]);
+            const numStops = parseInt(attrs["NumStops"]);
+            if (!isNaN(numSlaves) && !isNaN(numStarts) && !isNaN(numStops)) {
+                const started = numStarts > 0;
+                const finished = numStops === numSlaves;
+                const active = started && !finished;
+                const strokeColor = active ? ACTIVE_STROKE : finished ? FINISHED_STROKE : UNKNOWN_STROKE;
+                const lightColor = active ? ACTIVE_FILL : finished ? FINISHED_FILL : UNKNOWN_FILL;
+                e.strokeColor(strokeColor);
+
+                const vInOut = [e.sourceVertex(), e.targetVertex()]
+                vInOut.forEach(v => {
+                    if (v instanceof Vertex) {
+                        (v as any)["__started"] = started;
+                        (v as any)["__finished"] = finished;
+                        (v as any)["__active"] = active;
+                        v
+                            .icon_shape_colorStroke(strokeColor)
+                            .icon_shape_colorFill(strokeColor)
+                            .icon_image_colorFill(Palette.textColor(strokeColor))
+                            .textbox_shape_colorStroke(strokeColor)
+                            .textbox_shape_colorFill(lightColor)
+                            .textbox_text_colorFill(Palette.textColor(lightColor))
+                            ;
+                    }
+                });
+            }
             edges.push(e);
         }
         return e;
