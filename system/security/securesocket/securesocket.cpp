@@ -783,6 +783,8 @@ void CSecureSocket::readTimeout(void* buf, size32_t min_size, size32_t max_size,
             int err = SSL_get_error(m_ssl, rc);
             // Ignoring SSL_ERROR_SYSCALL because IE prompting user acceptance of the certificate 
             // causes this error, but is harmless.
+            // Ignoring SSL_ERROR_SYSCALL also seems to ignore the timeout value being exceeded,
+            //    but for persistence at least, treating zero bytes read can be treated as a graceful completion of connection
             if((err != SSL_ERROR_NONE) && (err != SSL_ERROR_SYSCALL))
             {
                 if(m_loglevel >= SSLogMax)
