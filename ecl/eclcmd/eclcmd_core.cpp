@@ -1859,6 +1859,11 @@ public:
                 retVal = EclCmdOptionMatch;
                 continue;
             }
+            if (iter.matchFlag(optCreateDirs,ECLOPT_CREATE_DIRS))
+            {
+                retVal = EclCmdOptionMatch;
+                continue;
+            }
             if (iter.matchOption(optProblemDesc, ECLOPT_PROBLEM_DESC))
             {
                 if ((optProblemDesc.length() > 0) && (*optProblemDesc.str() != '-'))
@@ -1931,6 +1936,9 @@ public:
             if (!optPassword.isEmpty())
                 curlCommand.append(":").append(optPassword.get());
         }
+        if (optCreateDirs)
+            curlCommand.append(" --create-dirs");
+
         curlCommand.appendf(" -o %s %s", outputFile.str(), eclCmdURL.str());
 
         Owned<IPipeProcess> pipe = createPipeProcess();
@@ -1938,6 +1946,24 @@ public:
         {
             fprintf(stderr, "Failed to run zapgen command %s\n", curlCommand.str());
             return false;
+        }
+        if (pipe->hasError())
+        {
+            StringBuffer errMsg;
+            const unsigned errBuffSize = 64;
+            char err[errBuffSize];
+            size32_t len = 0;
+            while ((len = pipe->readError(errBuffSize, err)) > 0)
+                errMsg.append(err, 0, len);
+
+            if ((strstr(errMsg.str(), "Warning") != nullptr) || (strstr(errMsg.str(), "Failed") != nullptr))
+            {
+                fprintf(stderr, "Zapgen command returns with error:\n%s\n", errMsg.str());
+                return false;
+            }
+            else if (optVerbose)
+                fprintf(stderr, "Zapgen command returns with:\n%s\n", errMsg.str());
+
         }
 
         fprintf(stdout, "ZAP file written into %s.\n", outputFile.str());
@@ -1956,7 +1982,8 @@ public:
             "   path                    path to store ZAP file\n"
             " Options:\n"
             "   --inc-thor-slave-logs   include Thor slave(s) log into the ZAP file\n"
-            "   --description <text>    problem description string\n",
+            "   --description <text>    problem description string\n"
+            "   --create-dirs           create necesary directory tree\n",
             stdout);
         EclCmdCommon::usage();
     }
@@ -1964,6 +1991,7 @@ private:
     StringAttr         optWuid;
     StringAttr         optPath;
     bool               optIncThorSlave = false;
+    bool               optCreateDirs = false;
     StringAttr         optProblemDesc;
 };
 
