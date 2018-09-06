@@ -37,6 +37,16 @@ define([
         var _prevReset = Date.now();
         var sessionIsActive = cookie("ESPSessionTimeoutSeconds");
 
+        function _resetESPTime(evt) {
+            if (Date.now() - _prevReset > SESSION_RESET_FREQ) {
+                _prevReset = Date.now();
+                xhr("esp/reset_session_timeout", {
+                    method: "post"
+                }).then(function (data) {
+                });
+            }
+        }
+
         if (sessionIsActive > -1) {
             cookie("Status", "Unlocked");
             cookie("ECLWatchUser", "true");
@@ -62,16 +72,6 @@ define([
             monitorLockClick.unlocked();
         } else if (cookie("ECLWatchUser")) {
             window.location.replace(dojoConfig.urlInfo.basePath + "/Login.html");
-        }
-
-        function _resetESPTime(evt) {
-            if (Date.now() - _prevReset > SESSION_RESET_FREQ) {
-                _prevReset = Date.now();
-                xhr("esp/reset_session_timeout", {
-                    method: "post"
-                }).then(function (data) {
-                });
-            }
         }
 
         function startLoading(targetNode) {

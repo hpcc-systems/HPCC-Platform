@@ -17,13 +17,13 @@
                 <div id="${id}GraphToolbar" class="topPanel dijit dijitToolbar" role="toolbar">
                     <div data-dojo-attach-event="onClick:_onGraphRefresh" data-dojo-props="iconClass:'fa fa-refresh', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div data-dojo-attach-event="onClick:_onPartial" data-dojo-props="iconClass:'fa fa-window-restore', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
-                    <div data-dojo-attach-event="onClick:_onMax" data-dojo-props="iconClass:'fa fa-window-maximize', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                    <div data-dojo-attach-event="onClick:_onPartial" data-dojo-props="iconClass:'fa fa-window-restore', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.CollapseAll}</div>
+                    <div data-dojo-attach-event="onClick:_onMax" data-dojo-props="iconClass:'fa fa-window-maximize', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Restore}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div data-dojo-attach-event="onClick:_onZoomToFit" data-dojo-props="iconClass:'fa fa-arrows-alt', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
-                    <div data-dojo-attach-event="onClick:_onZoomToWidth" data-dojo-props="iconClass:'fa fa-arrows-h', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
-                    <div data-dojo-attach-event="onClick:_onZoomToPlus" data-dojo-props="iconClass:'fa fa-plus', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
-                    <div data-dojo-attach-event="onClick:_onZoomToMinus" data-dojo-props="iconClass:'fa fa-minus', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                    <div data-dojo-attach-event="onClick:_onZoomToFit" data-dojo-props="iconClass:'fa fa-arrows-alt', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ZoomAll}</div>
+                    <div data-dojo-attach-event="onClick:_onZoomToWidth" data-dojo-props="iconClass:'fa fa-arrows-h', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ZoomWidth}</div>
+                    <div data-dojo-attach-event="onClick:_onZoomToPlus" data-dojo-props="iconClass:'fa fa-plus', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ZoomPlus}</div>
+                    <div data-dojo-attach-event="onClick:_onZoomToMinus" data-dojo-props="iconClass:'fa fa-minus', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ZoomMinus}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <span id="${id}GraphStatus" ></span>
                 </div>
@@ -56,13 +56,6 @@
                 <div id="${id}Properties" title="${i18n.Properties}" data-dojo-type="dijit.layout.ContentPane">
                 </div>
             </div>
-        </div>
-    </div>
-    <div id="${id}InfoDialog" title="${i18n.InfoDialog}" data-dojo-type="dijit.Dialog">
-        <div id="${id}InfoDialogContent" class="dijitDialogPaneContentArea">
-        </div>
-        <div class="dijitDialogPaneActionBar">
-            <button id="${id}InfoDialogCancel" type="button" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
         </div>
     </div>
 </div>

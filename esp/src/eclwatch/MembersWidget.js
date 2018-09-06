@@ -188,7 +188,7 @@ define([
                 }).placeAt(this.dialog.domNode, "last");
 
                 on(this.dialogValidationTextBox, "keyup", function(event){
-                    if (context.dialogValidationTextBox.get("value") != "") {
+                    if (context.dialogValidationTextBox.get("value") !== "") {
                         context.dialogButton.set("disabled", false);
                     } else {
                         context.dialogButton.set("disabled", true);

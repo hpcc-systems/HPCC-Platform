@@ -252,7 +252,7 @@ define([
                 this._onRowDblClick({ Name: graphName }, { SubGraphId: subgraphID });
             },
 
-            createDetail: function (id, row, params) {
+            createDetail: function (_id, row, params) {
                 params = params || {};
                 if (this.mode === "Query") {
                     params.legacyMode = true;
@@ -284,6 +284,7 @@ define([
                 var title = row.Name;
                 var delayWidget = "GraphTree7Widget";
                 var delayProps = {
+                    _owner: this,
                     forceJS: true
                 };
                 if (params && params.SubGraphId) {
@@ -295,7 +296,7 @@ define([
                     delayProps = {};
                 }
                 return new DelayLoadWidget({
-                    id: id,
+                    id: _id,
                     title: title,
                     closable: true,
                     delayWidget: delayWidget,

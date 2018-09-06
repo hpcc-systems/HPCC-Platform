@@ -63,10 +63,13 @@ export class GraphTree7Widget {
     GraphName: any;
 
     subGraphId: string;
+    activityId: string;
+    edgeId: string;
     graphTimers: any;
     targetQuery: any;
     queryId: any;
 
+    _owner;
     wuid = "";
     graphName = "";
     subgraphsGrid = null;
@@ -184,32 +187,7 @@ export class GraphTree7Widget {
         });
         grid.on(".dgrid-row:dblclick", function (evt) {
             var item = grid.row(evt).data;
-            if (item.Id) {
-                let refresh = false;
-                let scopeItem = context._gc.scopeItem(item.Id);
-                while (scopeItem) {
-                    const w = context._gc.item(scopeItem._.Id);
-                    if (w && w instanceof Subgraph && w.minState() !== "normal") {
-                        w.minState("normal");
-                        refresh = true;
-                    }
-                    scopeItem = scopeItem.parent;
-                }
-                const w = context._gc.item(item.Id);
-                if (refresh) {
-                    context._graph
-                        .data(context._gc.graphData(), true)   //  Force re-render 
-                        .render(w => {
-                            setTimeout(() => {
-                                context._graph
-                                    .centerOnItem(w)
-                                    ;
-                            }, 1000);
-                        });
-                } else {
-                    context._graph.centerOnItem(w);
-                }
-            }
+            context.centerOn(item.Id)
         });
     }
 
@@ -317,7 +295,7 @@ export class GraphTree7Widget {
 
     refresh(params) {
         if (params.SubGraphId) {
-            this.syncSelectionFrom([params.SubGraphId]);
+            this.syncSelectionFrom(this);
         }
     }
 
@@ -325,21 +303,33 @@ export class GraphTree7Widget {
         this.wuid = params.Wuid;
         this.graphName = params.GraphName;
         this.subGraphId = params.SubGraphId;
+        this.activityId = params.ActivityId;
+        this.edgeId = params.EdgeId;
         this.targetQuery = params.Target;
         this.queryId = params.QueryId;
 
-        this.refreshData();
+        this.refreshData().then(() => {
+            this.syncSelectionFrom(this);
+            if (this.edgeId) {
+                this.centerOn(this.edgeId);
+            } else if (this.activityId) {
+                this.centerOn(this.activityId);
+            } else if (this.subGraphId) {
+                this.centerOn(this.subGraphId);
+            }
+        });
     }
 
     refreshData() {
         if (this.isWorkunit()) {
-            this.loadGraphFromWu(this.wuid, this.graphName, this.subGraphId, true);
+            return this.loadGraphFromWu(this.wuid, this.graphName, this.subGraphId, true);
         } else if (this.isQuery()) {
         }
+        return Promise.resolve();
     }
 
     loadGraphFromWu(wuid, graphName, subGraphId, refresh: boolean = false) {
-        this.fetchScopeGraph(wuid, graphName, subGraphId, refresh).then(() => {
+        return this.fetchScopeGraph(wuid, graphName, subGraphId, refresh).then(() => {
             this.loadGraph();
             this.loadSubgraphs();
             this.loadVertices();
@@ -411,6 +401,11 @@ export class GraphTree7Widget {
         this.subgraphsGrid = new declare([Grid(true, true)])({
             store: this.subgraphsStore
         }, this.id + "SubgraphsGrid");
+        const context = this;
+        this.subgraphsGrid.on(".dgrid-row-url:click", function (evt) {
+            var row = context.subgraphsGrid.row(evt).data;
+            context._owner.openGraph(context.graphName, row.Id);
+        });
 
         this._initItemGrid(this.subgraphsGrid);
     }
@@ -418,12 +413,13 @@ export class GraphTree7Widget {
     loadSubgraphs() {
         var subgraphs = this._gc.subgraphStoreData();
         this.subgraphsStore.setData(subgraphs);
+        const context = this;
+        const img = Utility.getImageURL("folder.png");
         var columns = [
             {
                 label: this.i18n.ID, field: "Id", width: 54,
                 formatter: function (_id, row) {
-                    var img = Utility.getImageURL("folder.png");
-                    return "<img src='" + img + "'/>&nbsp;" + _id;
+                    return "<img src='" + img + "'/>&nbsp;" + (context._owner ? "<a href='#" + _id + "' class='dgrid-row-url'>" + _id + "</a>" : _id);
                 }
             }
         ];
@@ -480,6 +476,35 @@ export class GraphTree7Widget {
         this.edgesGrid.refresh();
     }
 
+    centerOn(itemID?: string) {
+        if (itemID) {
+            let refresh = false;
+            let scopeItem = this._gc.scopeItem(itemID);
+            while (scopeItem) {
+                const w = this._gc.item(scopeItem._.Id);
+                if (w && w instanceof Subgraph && w.minState() !== "normal") {
+                    w.minState("normal");
+                    refresh = true;
+                }
+                scopeItem = scopeItem.parent;
+            }
+            const w = this._gc.item(itemID);
+            if (refresh) {
+                this._graph
+                    .data(this._gc.graphData(), true)   //  Force re-render 
+                    .render(w => {
+                        setTimeout(() => {
+                            this._graph
+                                .centerOnItem(w)
+                                ;
+                        }, 1000);
+                    });
+            } else {
+                this._graph.centerOnItem(w);
+            }
+        }
+    }
+
     inSyncSelectionFrom = false;
     syncSelectionFrom(sourceControl) {
         if (!this.inSyncSelectionFrom) {
@@ -506,7 +531,7 @@ export class GraphTree7Widget {
         var tab = this.widget.OverviewTabContainer.get("selectedChildWidget");
         this.setDisabled(this.id + "FindPrevious", this.foundIndex <= 0, "iconLeft", "iconLeftDisabled");
         this.setDisabled(this.id + "FindNext", this.foundIndex >= this.found.length - 1, "iconRight", "iconRightDisabled");
-        this.setDisabled(this.id + "ActivityMetric", tab.id !== this.id + "ActivitiesTreeMap");
+        this.setDisabled(this.id + "ActivityMetric", tab && tab.id !== this.id + "ActivitiesTreeMap");
     }
 }
 
@@ -516,7 +541,15 @@ GraphTree7Widget.prototype._syncSelectionFrom = Utility.debounce(function (this:
     var selectedGlobalIDs = sourceControlOrGlobalIDs instanceof Array ? sourceControlOrGlobalIDs : [];
     if (sourceControl) {
         //  Get Selected Items  ---
-        if (sourceControl === this._graph) {
+        if (sourceControl === this) {
+            if (this.edgeId) {
+                selectedGlobalIDs = [this.edgeId];
+            } else if (this.activityId) {
+                selectedGlobalIDs = [this.activityId];
+            } else if (this.subGraphId) {
+                selectedGlobalIDs = [this.subGraphId];
+            }
+        } else if (sourceControl === this._graph) {
             selectedGlobalIDs = this._graph.selection()
                 .map((w: any) => this._gc.rItem(w))
                 .filter(item => !!item)

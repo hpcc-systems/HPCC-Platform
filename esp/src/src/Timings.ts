@@ -2,6 +2,7 @@ import { Workunit } from "@hpcc-js/comms";
 import * as hpccCommon from "@hpcc-js/common";
 import { WUTimeline } from "@hpcc-js/eclwatch";
 import { Column } from "@hpcc-js/chart";
+import { ascending as d3Ascending } from "d3-array";
 
 const d3Select = (hpccCommon as any).select;
 
@@ -63,8 +64,15 @@ export class Timings {
         this.metricsSelect = d3Select(`#${metricsSelectTarget}`);
     }
 
-    init(wuid: string) {
+    selectedMetrics() {
+        this._metricSelectValue = this.metricsSelect.selectAll("option").nodes()
+            .filter(n => n.selected === true)
+            .map(n => n.value)
+            ;
+        return this._metricSelectValue;
+    }
 
+    init(wuid: string) {
     }
 
     protected walkScopeName(id: string, visitor: (name: string) => boolean) {
@@ -97,7 +105,7 @@ export class Timings {
 
     _scopeFilter: string = "";
     _metricSelectLabel: string = "";
-    _metricSelectValue: string = "";
+    _metricSelectValue: string[] = ["TimeElapsed"];
     _graphLookup: { [id: string]: string } = {};
     _subgraphLookup: { [id: string]: string } = {};
     fetchDetailsNormalizedPromise;
@@ -113,7 +121,7 @@ export class Timings {
                 ;
         }
         if (force || !this.fetchDetailsNormalizedPromise) {
-            this.fetchDetailsNormalizedPromise = this.wu.fetchDetailsNormalized({
+            this.fetchDetailsNormalizedPromise = Promise.all([this.wu.fetchDetailsMeta(), this.wu.fetchDetailsRaw({
                 ScopeFilter: {
                     MaxDepth: 999999,
                     ScopeTypes: []
@@ -141,20 +149,91 @@ export class Timings {
                     IncludeCreator: false,
                     IncludeCreatorType: false
                 }
+            })]).then(promises => {
+                const meta = promises[0];
+                const scopes = promises[1];
+                const columns: { [id: string]: any } = {
+                    id: {
+                        Measure: "label"
+                    },
+                    name: {
+                        Measure: "label"
+                    },
+                    type: {
+                        Measure: "label"
+                    }
+                };
+                const data: object[] = [];
+                for (const scope of scopes) {
+                    const props = {};
+                    if (scope && scope.Id && scope.Properties && scope.Properties.Property) {
+                        for (const key in scope.Properties.Property) {
+                            const scopeProperty = scope.Properties.Property[key];
+                            if (scopeProperty.Measure === "ns") {
+                                scopeProperty.Measure = "s";
+                            }
+                            columns[scopeProperty.Name] = { ...scopeProperty };
+                            delete columns[scopeProperty.Name].RawValue;
+                            delete columns[scopeProperty.Name].Formatted;
+                            switch (scopeProperty.Measure) {
+                                case "bool":
+                                    props[scopeProperty.Name] = !!+scopeProperty.RawValue;
+                                    break;
+                                case "sz":
+                                    props[scopeProperty.Name] = +scopeProperty.RawValue;
+                                    break;
+                                case "s":
+                                    props[scopeProperty.Name] = +scopeProperty.RawValue / 1000000000;
+                                    break;
+                                case "ns":
+                                    props[scopeProperty.Name] = +scopeProperty.RawValue;
+                                    break;
+                                case "ts":
+                                    props[scopeProperty.Name] = new Date(+scopeProperty.RawValue / 1000).toISOString();
+                                    break;
+                                case "cnt":
+                                    props[scopeProperty.Name] = +scopeProperty.RawValue;
+                                    break;
+                                case "cpu":
+                                case "skw":
+                                case "node":
+                                case "ppm":
+                                case "ip":
+                                case "cy":
+                                case "en":
+                                case "txt":
+                                case "id":
+                                case "fname":
+                                default:
+                                    props[scopeProperty.Name] = scopeProperty.RawValue;
+                            }
+                            props["__" + scopeProperty.Name] = scopeProperty.Formatted;
+                        }
+                        data.push({
+                            id: scope.Id,
+                            name: scope.ScopeName,
+                            type: scope.ScopeType,
+                            ...props
+                        });
+                    }
+                }
+                return {
+                    meta,
+                    columns,
+                    data
+                };
             });
         }
 
-        var context = this;
-        this._metricSelectValue = this.metricsSelect.node().value || "TimeElapsed";
-        return this.fetchDetailsNormalizedPromise.then(function (response) {
-            context._graphLookup = {};
-            context._subgraphLookup = {};
-            var data = response.data.filter(function (row) {
-                if (row.type === "graph") context._graphLookup[row.name] = row.id;
-                if (row.type === "subgraph") context._subgraphLookup[row.name] = row.id;
+        return this.fetchDetailsNormalizedPromise.then(response => {
+            this._graphLookup = {};
+            this._subgraphLookup = {};
+            var data = response.data.filter(row => {
+                if (row.type === "graph") this._graphLookup[row.name] = row.id;
+                if (row.type === "subgraph") this._subgraphLookup[row.name] = row.id;
                 if (!row.id) return false;
-                if (context._scopeFilter && row.name !== context._scopeFilter && row.name.indexOf(`${context._scopeFilter}:`) !== 0) return false;
-                if (row[context._metricSelectValue] === undefined) return false;
+                if (this._scopeFilter && row.name !== this._scopeFilter && row.name.indexOf(`${this._scopeFilter}:`) !== 0) return false;
+                if (this._metricSelectValue.every(m => row[m] === undefined)) return false;
                 return true;
             }).sort(function (l, r) {
                 if (l.WhenStarted === undefined && r.WhenStarted !== undefined || l.WhenStarted < r.WhenStarted) return -1;
@@ -170,32 +249,26 @@ export class Timings {
                 if (response.columns[key].Measure && response.columns[key].Measure !== "label") {
                     colArr.push(key)
                 }
-                if (key === context._metricSelectValue) {
-                    measure = response.columns[key].Measure;
-                }
             }
-            context._metricSelectLabel = context._metricSelectValue + (measure ? " (" + measure + ")" : "");
-            var options = context.metricsSelect.selectAll("option").data(colArr, function (d) { return d; });
+            colArr.sort(d3Ascending);
+            this._metricSelectLabel = this._metricSelectValue + (measure ? " (" + measure + ")" : "");
+            var options = this.metricsSelect.selectAll("option").data(colArr, function (d) { return d; });
             options.enter().append("option")
-                .property("value", function (d) { return d; })
                 .merge(options)
-                .text(function (d) { return d; })
+                .property("value", d => d)
+                .property("selected", d => this._metricSelectValue.indexOf(d) >= 0)
+                .text(d => d)
                 ;
             options.exit().remove();
-            context.metricsSelect.node().value = context._metricSelectValue;
 
-            context.chart
-                .columns([context._scopeFilter || "All", context._metricSelectLabel || "Weight"])
-                .data(data.filter(function (row, i) {
-                    return row.name !== context._scopeFilter;
-                }).map(function (row, i) {
-                    return [row.id, row[context._metricSelectValue]];
+            this.chart
+                .columns(["id", ...this._metricSelectValue])
+                .data(data.filter((row, i) => row.name !== this._scopeFilter).map((row, i) => {
+                    return [row.id, ...this._metricSelectValue.map(metric => row[metric])];
                 }))
-                .yAxisTitle(measure)
-                .render()
                 ;
 
-            return data;
+            return [this._metricSelectValue, data];
         });
     }
 

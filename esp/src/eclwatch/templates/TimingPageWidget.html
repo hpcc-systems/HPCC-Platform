@@ -5,9 +5,19 @@
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
                     <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <select id="${id}MetricsType" style="box-shadow: none" data-dojo-attach-event="onChange:_onMetricsType">
-                        <option value="TimeElapsed">TimeElapsed</option>
-                    </select>
+                    <div id="${id}MetricsDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>Metrics</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}MetricsForm" style="width: 240px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <select id="${id}MetricsType" multiple style="box-shadow: none;width:100%;height:320px" data-dojo-attach-event="onChange:_onMetricsType">
+                                    <option value="TimeElapsed">TimeElapsed</option>
+                                </select>
+                            </div>
+                            <div class="dijitDialogPaneActionBar">
+                                <button type="submit" data-dojo-attach-event="onClick:_onMetricsClose" data-dojo-type="dijit.form.Button">${i18n.Close}</button>
+                            </div>
+                        </div>
+                    </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}StackController" style="width: 100%" data-dojo-props="containerId:'${id}OverviewTabContainer'" data-dojo-type="dijit.layout.StackController"></div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>

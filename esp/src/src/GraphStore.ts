@@ -1,25 +1,9 @@
 import * as lang from "dojo/_base/lang";
 import * as arrayUtil from "dojo/_base/array";
-import * as Memory from "dojo/store/Memory";
 import * as QueryResults from "dojo/store/util/QueryResults";
+import {UndefinedMemory} from "./ESPUtil";
 
-import declareDecorator from './DeclareDecorator';
-
-type Memory = {
-    data: any[];
-    queryEngine: any;
-    setData(data: any);
-    query(query: any, options: any): any;
-};
-
-export interface GraphStoreBase extends Memory {
-}
-
-@declareDecorator("GraphStoreBase", Memory)
-export class GraphStoreBase { }
-
-export class GraphStore extends GraphStoreBase {
-
+export class GraphStore extends UndefinedMemory {
     idProperty: string;
     cacheColumns = {};
 
