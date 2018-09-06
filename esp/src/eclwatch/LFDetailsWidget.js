@@ -360,6 +360,21 @@ define([
                         this.removeChild(this.dfuWorkunitWidget);
                         this.dfuWorkunitWidget = null;
                     }
+                    this.contentWidget.reset();
+                    this.sourceWidget.reset();
+                    this.defWidget.reset();
+                    this.xmlWidget.reset();
+                    this.filePartsWidget.reset();
+                    this.widget._Queries.reset();
+                    this.widget._Graphs.reset();
+                    if (this.workunitWidget) {
+                        this.workunitWidget.reset();
+                    }
+                    if (this.dfuWorkunitWidget) {
+                        this.dfuWorkunitWidget.reset();
+                    }
+                    this.fileBelongsToWidget.reset();
+                    this.fileHistoryWidget.reset();
                 } else if (name === "Name") {
                     this.updateInput("RenameSourceName", oldValue, newValue);
                     this.updateInput("RenameTargetName", oldValue, newValue);

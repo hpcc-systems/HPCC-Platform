@@ -69,6 +69,18 @@ define([
             },
 
             //  Implementation  ---
+            reset:function() {
+                for (var key in this.widget) {
+                    this.widget[key].destroyRecursive();
+                    delete this.widget[key];
+                }
+                delete this.widget;
+                delete this.deferred;
+                delete this.__hpcc_initalized;
+                delete this.childWidgetID;
+                this.containerNode.innerHTML = "";
+            },
+
             init: function (params) {
                 if (this.__initPromise) return this.__initPromise;
                 this.childWidgetID = this.id + "-DL";

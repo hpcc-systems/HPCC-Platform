@@ -181,12 +181,26 @@ var Store = declare([ESPRequest.Store, ESPBase.default], {
     }
 });
 
-var Result = declare(null, {
-    i18n: nlsHPCC,
-    store: null,
-    Total: -1,
+class Result {
+    i18n = nlsHPCC;
+    store = null;
+    Total = -1;
 
-    constructor: function (args) {
+    Wuid: string;
+    Sequence: number;
+    isComplte: boolean;
+
+    NodeGroup: string;
+    Name: string;
+    RecordCount: string;
+
+    Cluster: string;
+
+    XmlSchema: string;
+    ECLSchemas: any;
+    wu: any;
+
+    constructor(args) {
         if (args) {
             declare.safeMixin(this, args);
         }
@@ -211,33 +225,33 @@ var Result = declare(null, {
                 isComplete: true
             });
         }
-    },
+    }
 
-    getName: function () {
+    getName() {
         return this.Name;
-    },
+    }
 
-    getID: function () {
+    getID() {
         if (this.Sequence != null) {
             return this.Sequence;
         }
         return this.Name;
-    },
+    }
 
-    isComplete: function () {
+    isComplete() {
         return this.Total !== -1;
-    },
+    }
 
-    canShowResults: function () {
+    canShowResults() {
         if (lang.exists("Sequence", this)) { //  Regular WU result
             return true;
         } else if (lang.exists("RecordCount", this) && this.RecordCount !== "") { //  DFU Sprayed CSV File will fail here
             return true;
         }
         return false;
-    },
+    }
 
-    getFirstSchemaNode: function (node, name) {
+    getFirstSchemaNode(node, name) {
         if (node && node.attributes) {
             if ((node.baseName && node.baseName === name) || (node.localName && node.localName === name) || (typeof (node.getAttribute) !== "undefined" && node.getAttribute("name") === name)) {
                 return node;
@@ -250,9 +264,9 @@ var Result = declare(null, {
             }
         }
         return null;
-    },
+    }
 
-    getFirstSequenceNode: function (schemaNode) {
+    getFirstSequenceNode(schemaNode) {
         var row = this.getFirstSchemaNode(schemaNode, "Row");
         if (!row)
             row = schemaNode;
@@ -260,9 +274,9 @@ var Result = declare(null, {
         if (!complexType)
             return null;
         return this.getFirstSchemaNode(complexType, "sequence");
-    },
+    }
 
-    isChildDataset: function (cell) {
+    isChildDataset(cell) {
         if (Object.prototype.toString.call(cell) !== "[object Object]") {
             return false;
         }
@@ -275,9 +289,9 @@ var Result = declare(null, {
             propCount++;
         }
         return propCount === 1 && firstPropType === "[object Array]";
-    },
+    }
 
-    rowToTable: function (cell, __row, node) {
+    rowToTable(cell, __row, node) {
         if (this.isChildDataset(cell)) {  //  Don't display "Row" as a header  ---
             for (var key in cell) {
                 this.rowToTable(cell[key], __row, node);
@@ -346,8 +360,9 @@ var Result = declare(null, {
                 }
                 break;
         }
-    },
-    injectJavascript: function (__cellContent, __row, __cell, __width) {
+    }
+
+    injectJavascript(__cellContent, __row, __cell) {
         //  Add paragraph so cells can valign  ---
         domConstruct.create("p", {
             style: {
@@ -360,8 +375,9 @@ var Result = declare(null, {
         } catch (e) {
             __cell.innerHTML = "<b>Error:</b>&nbsp;&nbsp;" + safeEncode(e.message) + "<br>" + safeEncode(__cellContent);
         }
-    },
-    parseName: function (nameObj) {
+    }
+
+    parseName(nameObj) {
         nameObj.width = 500;
         var titleParts = nameObj.name.split("__");
         if (titleParts.length >= 3) {
@@ -373,9 +389,10 @@ var Result = declare(null, {
         }
         titleParts = titleParts.slice(0, titleParts.length - 1);
         nameObj.displayName = titleParts.join("__");
-    },
-    getRowStructureFromSchema: function (parentNode, prefix) {
-        var sequence = this.getFirstSequenceNode(parentNode, "sequence");
+    }
+
+    getRowStructureFromSchema(parentNode, prefix) {
+        var sequence = this.getFirstSequenceNode(parentNode);
         if (!sequence)
             return null;
 
@@ -422,7 +439,7 @@ var Result = declare(null, {
                             field: prefix + name,
                             width: nameObj.width,
                             renderCell: function (row, cell, node, options) {
-                                context.injectJavascript(cell, row, node, this.width)
+                                context.injectJavascript(cell, row, node);
                             }
                         };
                     } else {
@@ -471,9 +488,9 @@ var Result = declare(null, {
             }
         }
         return retVal.length ? retVal : null;
-    },
+    }
 
-    getRowStructureFromData: function (rows) {
+    getRowStructureFromData(rows) {
         var retVal = [];
         for (var key in rows[0]) {
             if (key !== "myInjectedRowNum") {
@@ -495,9 +512,9 @@ var Result = declare(null, {
             }
         }
         return retVal;
-    },
+    }
 
-    getStructure: function () {
+    getStructure() {
         var structure = [
             {
                 cells: [
@@ -518,9 +535,9 @@ var Result = declare(null, {
         }
         this.store._structure = structure[0].cells[0];
         return this.store._structure;
-    },
+    }
 
-    fetchStructure: function (callback) {
+    fetchStructure(callback) {
         if (this.XmlSchema) {
             callback(this.getStructure());
         } else {
@@ -556,11 +573,11 @@ var Result = declare(null, {
                 }
             });
         }
-    },
+    }
 
-    getRowWidth: function (parentNode) {
+    getRowWidth(parentNode) {
         var retVal = 0;
-        var sequence = this.getFirstSequenceNode(parentNode, "sequence");
+        var sequence = this.getFirstSequenceNode(parentNode);
         if (!sequence)
             return retVal;
 
@@ -577,9 +594,9 @@ var Result = declare(null, {
             }
         }
         return retVal;
-    },
+    }
 
-    extractWidth: function (type, name) {
+    extractWidth(type, name) {
         var retVal = -1;
 
         switch (type) {
@@ -619,13 +636,13 @@ var Result = declare(null, {
             retVal = name.length;
 
         return retVal;
-    },
+    }
 
-    getStore: function () {
+    getStore() {
         return this.store;
-    },
+    }
 
-    fetchNRows: function (start, count) {
+    fetchNRows(start, count) {
         var deferred = new Deferred()
         this.store.query({
             Start: start,
@@ -634,9 +651,9 @@ var Result = declare(null, {
             deferred.resolve(results);
         });
         return deferred.promise;
-    },
+    }
 
-    fetchContent: function () {
+    fetchContent() {
         var deferred = new Deferred()
         var context = this;
         this.store.query({
@@ -648,16 +665,16 @@ var Result = declare(null, {
             });
         });
         return deferred.promise;
-    },
+    }
 
-    getLoadingMessage: function () {
+    getLoadingMessage() {
         if (lang.exists("wu.state", this)) {
             return "<span class=\'dojoxGridWating\'>[" + this.wu.state + "]</span>";
         }
         return "<span class=\'dojoxGridWating\'>[unknown]</span>";
-    },
+    }
 
-    getECLRecord: function () {
+    getECLRecord() {
         var retVal = "RECORD\n";
         for (var i = 0; i < this.ECLSchemas.ECLSchemaItem.length; ++i) {
             retVal += "\t" + this.ECLSchemas.ECLSchemaItem[i].ColumnType + "\t" + this.ECLSchemas.ECLSchemaItem[i].ColumnName + ";\n";
@@ -665,7 +682,7 @@ var Result = declare(null, {
         retVal += "END;\n";
         return retVal;
     }
-});
+}
 
 export function Get(params) {
     return new Result(params);
