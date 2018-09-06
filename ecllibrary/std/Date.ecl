@@ -637,7 +637,7 @@ EXPORT Seconds_t SecondsFromDateTimeRec(DateTime_rec datetime, BOOLEAN is_local_
     %e          Day of month (two digits, or a space followed by a single digit)
     %m          Month (two digits)
     %t          Whitespace
-    %y          year within century (00-99)
+    %y          Year within century (00-99)
     %Y          Full year (yyyy)
     %j          Julian day (1-366)
 
@@ -696,6 +696,24 @@ EXPORT Time_t FromStringToTime(STRING time_text, VARSTRING format) :=
  *                      (See documentation for strftime)
  * @return              The date that was matched in the string.
  *                      Returns 0 if failed to match.
+ *
+ * Supported characters:
+    %B          Full month name
+    %b or %h    Abbreviated month name
+    %d          Day of month (two digits)
+    %e          Day of month (two digits, or a space followed by a single digit)
+    %m          Month (two digits)
+    %t          Whitespace
+    %y          Year within century (00-99)
+    %Y          Full year (yyyy)
+    %j          Julian day (1-366)
+
+Common date formats
+    American    '%m/%d/%Y'  mm/dd/yyyy
+    Euro        '%d/%m/%Y'  dd/mm/yyyy
+    Iso format  '%Y-%m-%d'  yyyy-mm-dd
+    Iso basic   '%Y%m%d'    yyyymmdd
+                '%d-%b-%Y'  dd-mon-yyyy    e.g., '21-Mar-1954'
  */
 
 EXPORT Date_t MatchDateString(STRING date_text, SET OF VARSTRING formats) :=
@@ -810,10 +828,16 @@ EXPORT STRING ToString(Date_t date, VARSTRING format) := DateToString(date, form
  * @param from_format   The format the date is to be converted from.
  * @param to_format     The format the date is to be converted to.
  * @return              The converted string, or blank if it failed to match the format.
+ * @see                 FromStringToDate
  */
 
-EXPORT STRING ConvertDateFormat(STRING date_text, VARSTRING from_format='%m/%d/%Y', VARSTRING to_format='%Y%m%d') :=
-    DateToString(FromStringToDate(date_text, from_format), to_format);
+EXPORT STRING ConvertDateFormat(STRING date_text, VARSTRING from_format='%m/%d/%Y', VARSTRING to_format='%Y%m%d') := FUNCTION
+    parsedDate := FromStringToDate(date_text, from_format);
+
+    reformatResult := IF(parsedDate = (Date_t)0, '', DateToString(parsedDate, to_format));
+
+    RETURN reformatResult;
+END;
 
 
 /**
@@ -849,6 +873,7 @@ EXPORT STRING ConvertTimeFormat(STRING time_text, VARSTRING from_format='%H%M%S'
  * @param from_formats  The list of formats the date is to be converted from.
  * @param to_format     The format the date is to be converted to.
  * @return              The converted string, or blank if it failed to match the format.
+ * @see                 MatchDateString
  */
 
 EXPORT STRING ConvertDateFormatMultiple(STRING date_text, SET OF VARSTRING from_formats, VARSTRING to_format='%Y%m%d') := FUNCTION

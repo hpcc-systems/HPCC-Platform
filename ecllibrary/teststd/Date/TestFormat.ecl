@@ -7,6 +7,7 @@ IMPORT Std.Date;
 EXPORT TestFormat := MODULE
 
   SHARED DateFormats := ['%d %b %Y', '%Y %b %d', '%Y%m%d', '%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y'];
+  SHARED DateFormats2Y := ['%d %b %y', '%y %b %d', '%y%m%d', '%y-%m-%d', '%d/%m/%y', '%m/%d/%y'];
   SHARED TimeFormats := ['%H%M%S', '%H:%M:%S', '%H:%M'];
 
   EXPORT TestConstant := [
@@ -21,6 +22,7 @@ EXPORT TestFormat := MODULE
     ASSERT(Date.FromStringToDate('1 \t De   2056', '%d %b %Y') = 0, CONST);
     ASSERT(Date.FromStringToDate('1December1', '%d%b%Y') = 00011201, CONST);
     ASSERT(Date.FromStringToDate('1970-02-01', '%Y-%m-%d') = 19700201, CONST);
+    ASSERT(Date.FromStringToDate('', '%Y-%m-%d') = 0, CONST); // HPCC-16780; Invalid input date
 
     ASSERT(Date.FromStringToTime('12:34:56', '%H:%M:%S') = 123456, CONST);
 
@@ -49,12 +51,21 @@ EXPORT TestFormat := MODULE
 
   EXPORT TestDynamic := [
     ASSERT(Date.MatchDateString('1dec2011',DateFormats) = 20111201);
+    ASSERT(Date.MatchDateString('1dec11',DateFormats2Y) = 20111201);
     ASSERT(Date.MatchDateString('2011dec1',DateFormats) = 20111201);
+    ASSERT(Date.MatchDateString('11dec1',DateFormats2Y) = 20011211);
     ASSERT(Date.MatchDateString('1 december 2011',DateFormats) = 20111201);
+    ASSERT(Date.MatchDateString('1 december 11',DateFormats2Y) = 20111201);
     ASSERT(Date.MatchDateString('2011\tdecem\t01',DateFormats) = 20111201);
+    ASSERT(Date.MatchDateString('11\tdecem\t01',DateFormats2Y) = 20011211);
     ASSERT(Date.MatchDateString('20111201',DateFormats) = 20111201);
+    ASSERT(Date.MatchDateString('111201',DateFormats2Y) = 20111201);
     ASSERT(Date.MatchDateString('2011-12-01',DateFormats) = 20111201);
+    ASSERT(Date.MatchDateString('11-12-01',DateFormats2Y) = 20111201);
     ASSERT(Date.MatchDateString('1/12/2011',DateFormats) = 20111201);
+    ASSERT(Date.MatchDateString('1/12/11',DateFormats2Y) = 20111201);
+    ASSERT(Date.MatchDateString('1/12/11',DateFormats) = 111201);
+    ASSERT(Date.MatchDateString('1/12/11',DateFormats2Y) = 20111201);
 
     ASSERT(Date.DateToString(19700101, '%Y-%m-%d') = '1970-01-01');
     ASSERT(Date.DateToString(19700101, '%d/%m/%y') = '01/01/70');
@@ -72,12 +83,19 @@ EXPORT TestFormat := MODULE
     ASSERT(Date.SecondsToString(917872496,'%Y-%m-%dT%H:%M:%S') = '1999-02-01T12:34:56');
 
     ASSERT(Date.ConvertDateFormat('1/12/2011','%m/%d/%Y','%Y-%m-%d') = '2011-01-12');
+    ASSERT(Date.ConvertDateFormat('','%m/%d/%Y','%Y-%m-%d') = ''); // HPCC-16780; Invalid input date
+    ASSERT(Date.ConvertDateFormat('1234','%m/%d/%Y','%Y-%m-%d') = ''); // HPCC-16780; Invalid input date
 
     ASSERT(Date.ConvertTimeFormat('123456','%H%M%S','%H:%M:%S') = '12:34:56');
 
     ASSERT(Date.ConvertDateFormatMultiple('1/31/2011',DateFormats,'%Y-%m-%d') = '2011-01-31');
-
-    ASSERT(Date.ConvertDateFormatMultiple('',DateFormats,'%Y-%m-%d') = '');
+    ASSERT(Date.ConvertDateFormatMultiple('1/31/11',DateFormats2Y,'%Y-%m-%d') = '2011-01-31');
+    ASSERT(Date.ConvertDateFormatMultiple('1/31/11',DateFormats,'%Y-%m-%d') = '11-01-31');
+    ASSERT(Date.ConvertDateFormatMultiple('1/31/11',DateFormats2Y,'%Y-%m-%d') = '2011-01-31');
+    ASSERT(Date.ConvertDateFormatMultiple('',DateFormats,'%Y-%m-%d') = ''); // HPCC-16780; Invalid input date
+    ASSERT(Date.ConvertDateFormatMultiple('',DateFormats2Y,'%Y-%m-%d') = ''); // HPCC-16780; Invalid input date
+    ASSERT(Date.ConvertDateFormatMultiple('1234',DateFormats,'%Y-%m-%d') = ''); // HPCC-16780; Invalid input date
+    ASSERT(Date.ConvertDateFormatMultiple('1234',DateFormats2Y,'%Y-%m-%d') = ''); // HPCC-16780; Invalid input date
 
     ASSERT(Date.ConvertTimeFormatMultiple('123456',TimeFormats,'%H:%M:%S') = '12:34:56');
 
