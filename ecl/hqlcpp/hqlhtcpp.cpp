@@ -15476,6 +15476,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityProject(BuildCtx & ctx, IHqlEx
             doTransform(func.ctx, transform, selfCursor);
             buildReturnRecordSize(func.ctx, selfCursor);
         }
+        else if (op == no_projectrow)
+        {
+            if (transform->getOperator() == no_skip)
+                throwError(HQLERR_SkipNotValidHere);
+
+            BoundRow * selfCursor = buildTransformCursors(func.ctx, transform, dataset, nullptr, instance->activityExpr, selSeq);
+            doTransform(func.ctx, transform, selfCursor);
+            buildReturnRecordSize(func.ctx, selfCursor);
+        }
         else
             buildTransformBody(func.ctx, transform, dataset, NULL, instance->activityExpr, selSeq);
     }

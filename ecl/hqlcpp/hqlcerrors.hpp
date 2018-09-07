@@ -454,7 +454,7 @@
 #define HQLERR_InputsAreTooComplexToUpdate_Text "UPDATE cannot be used when the inputs names are not globally constant"
 #define HQLERR_ThorDenormOnlyLeftOuterJoin_Text "THOR currently only supports LEFT OUTER denormalize"
 #define HQLERR_ThorDenormNoFeatureX_Text        "THOR does not support DENORMALIZE(%s)"
-#define HQLERR_SkipNotValidHere_Text            "SKIP cannot be used here.  It is only valid directly with a transform"
+#define HQLERR_SkipNotValidHere_Text            "SKIP cannot be used here.  It is only valid directly with a DATASET transform"
 #define HQLERR_CsvNotSupportTableSet_Text       "Cannot read tables/datasets from a csv file"
 #define HQLERR_ExpectedConstantWorkunit_Text    "Argument %s to #workunit must be a constant"
 #define HQLERR_ExpectedConstantDebug_Text       "Argument %s to #debug must be a constant"
