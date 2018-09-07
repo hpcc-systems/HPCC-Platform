@@ -36,7 +36,7 @@
 
 #define STANDARD_CONFIGXMLDIR COMPONENTFILES_DIR"/configxml"
 
-static bool schemaNodeHasAttributes(IPropertyTree* pNode)
+bool schemaNodeHasAttributes(IPropertyTree* pNode)
 {
   //skip over xs:complexType, if any
   IPropertyTree* pTemp = pNode->queryPropTree(XSD_TAG_COMPLEX_TYPE);
@@ -47,7 +47,7 @@ static bool schemaNodeHasAttributes(IPropertyTree* pNode)
   return itAttr  ->first() && itAttr  ->isValid();
 }
 
-static bool schemaNodeHasAttributeGroups(IPropertyTree* pNode)
+bool schemaNodeHasAttributeGroups(IPropertyTree* pNode)
 {
   //skip over xs:complexType, if any
   IPropertyTree* pTemp = pNode->queryPropTree(XSD_TAG_COMPLEX_TYPE);
@@ -1267,6 +1267,7 @@ public:
               bOptSubType = true;
           }
 
+
           bool bHasElements = schemaNodeHasElements(pElement) != NULL;
 
           if (bViewChildNodes)
@@ -1378,6 +1379,7 @@ public:
             else
               m_multiRowNodes->addProp("Node", szElementName);
           }
+
 
           if (pInstanceNode)
           {
@@ -1647,7 +1649,8 @@ public:
             if(pCompTree)
             {
               buildSetName.append(pCompTree->queryProp(XML_ATTR_NAME));
-              CInstDetails* pInst  = m_wizard->getServerIPMap(compName, buildSetName,m_pEnv);
+
+              CInstDetails* pInst  = (m_wizard->hasBaseInstantRequested())? m_wizard->getServerIPMap(compName, buildSetName,m_pEnv) : NULL;
               if( pInst )
               {
                 StringArray& ipArray = pInst->getIpAssigned();
@@ -1657,7 +1660,7 @@ public:
                     ipAddr.append(ipArray.item(x));
                    else
                     ipAddr.append(ipArray.item(x)).append(",");
-    
+
                    tempPath.clear().appendf("./Hardware/Computer[@netAddress=\"%s\"]",ipAddr.str());
                    IPropertyTree* pHard = m_pEnv->queryPropTree(tempPath.str());
                    if(pHard)
@@ -1680,7 +1683,7 @@ public:
             if(pCompTree)
             {
               buildSetName.append(pCompTree->queryProp(XML_ATTR_NAME));
-              CInstDetails* pInst  = m_wizard->getServerIPMap(compName, buildSetName,m_pEnv);
+              CInstDetails* pInst  = (m_wizard->hasBaseInstantRequested())? m_wizard->getServerIPMap(compName, buildSetName,m_pEnv) : NULL;
               if( pInst )
               {
                 StringArray& ipArray = pInst->getIpAssigned();
@@ -1945,6 +1948,7 @@ IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSc
   obj.setGenerateOptional(flag);
   obj.setWizard(pWInputs);
   obj.generateHeaders();
+
   return pCompTree.getLink();
 }
 

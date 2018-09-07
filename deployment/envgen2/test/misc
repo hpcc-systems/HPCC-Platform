@@ -1,0 +1,19 @@
+#!/bin/bash
+
+
+add_content_1()
+{
+   # -add_contnet option
+   #--------------------------
+   test_id=add_topo_w_xml_file_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+add xml content by file with -add-content option
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -add-content "Software/Topology[@name=\"topology\"]" ./src/add_topo_1.xml
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-content "Software/Topology[@name=\"topology\"]" ./src/add_topo_1.xml
+
+}

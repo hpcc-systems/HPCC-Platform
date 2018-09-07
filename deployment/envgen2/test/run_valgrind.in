@@ -1,0 +1,4 @@
+#!/bin/bash
+
+valgrind --tool=memcheck --leak-check=yes --leak-check=full --show-leak-kinds=all @CMAKE_BINARY_DIR@/@CMAKE_BUILD_TYPE@/bin/envgen2  -env-in ./src/result_comparison/env_base.xml -env-out /tmp/envgen2_test/roxie_add_ip_1.xml -add-node roxie#myroxie@ip=1.0.0.22 > /tmp/envgen2_test/roxie_add_ip_1.vg 2>&1
+echo "check /tmp/envgen2_test/roxie_add_ip_1.vg"

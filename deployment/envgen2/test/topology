@@ -1,0 +1,21 @@
+#!/bin/bash
+
+
+add_topology()
+{
+   # Test Add a new thor topology "thor2"
+   #-------------------------------------
+   test_id=topo_thor2
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Create a new thor toplogy based on ecl_new_group.xml generated in add-support test."
+envgen2 -env-in ecl_new_cluster.xml -env-out ${test_id}.xml -add-topology  \
+topology:cluster@name=thor2:eclagent@process=myeclagent2:eclscheduler@process=myeclscheduler2:eclccserver@process=myeclccserver2:thor@process=mythor2
+EOF
+   fi
+   run_one_test -env-in ${out_dir}/ecl_new_group.xml -env-out ${out_dir}/topo_thor2.xml -add-topology \
+      topology:cluster@name=thor2:eclagent@process=myeclagent2:eclscheduler@process=myeclscheduler2:eclccserver@process=myeclccserver2:thor@process=mythor2
+
+}

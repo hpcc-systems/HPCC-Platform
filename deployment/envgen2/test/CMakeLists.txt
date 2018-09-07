@@ -13,10 +13,17 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-HPCC_ADD_SUBDIRECTORY (configgen "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (configenv "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (deploy "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (deployutils "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (envgen "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (envgen2 "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (configutils "PLATFORM")
+
+configure_file(setup setup COPYONLY)
+configure_file(add-node add-node COPYONLY)
+configure_file(mod-node mod-node COPYONLY)
+configure_file(rmv-node rmv-node COPYONLY)
+configure_file(esp-service esp-service COPYONLY)
+configure_file(topology topology COPYONLY)
+configure_file(misc misc COPYONLY)
+configure_file(regression regression COPYONLY)
+configure_file(run_valgrind.in run_valgrind @ONLY)
+configure_file(test.sh.in test.sh @ONLY)
+
+execute_process ( WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${CMAKE_COMMAND} -E make_directory  src )
+execute_process ( WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/src ./src/ )

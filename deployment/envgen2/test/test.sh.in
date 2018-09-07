@@ -1,0 +1,204 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(dirname $0)
+SCRIPT_NAME=$(basename $0)
+
+
+## Generate environment.xml files
+source ${SCRIPT_DIR}/setup
+source ${SCRIPT_DIR}/add-node
+source ${SCRIPT_DIR}/topology
+source ${SCRIPT_DIR}/mod-node
+source ${SCRIPT_DIR}/rmv-node
+source ${SCRIPT_DIR}/esp-service
+source ${SCRIPT_DIR}/regression
+source ${SCRIPT_DIR}/misc
+
+## Include test case
+
+
+usage()
+{
+   echo ""
+   echo "   Usage: $SCRIPT_NAME -b <value> -i -l <value> -n -o <value> -s <value> -v -V"
+   echo "     -b  bin directory contains envgen2"
+   echo "     -i  setup tempaltes"
+   echo "     -l  full path and name of log file"
+   echo "     -n  not run test. Show input only."
+   echo "     -o  output directory"
+   echo "     -s  source file directory"
+   echo "     -v  verbose: brief discription of the test"
+   echo "     -V  only display discription of the tests without running any test"
+   echo ""
+
+}
+
+message()
+{
+   [[ $verbose -eq 0 ]] && return
+   printf "%s\n" $$
+
+
+}
+
+run_one_test()
+{
+
+  if [[ $show_input_only -eq 1 ]]
+  then
+     echo ""
+     echo "${bin_dir}/envgen2  $@"
+     ${bin_dir}/envgen2 -show-input-only  $@
+  fi
+  if [[ $verbose -eq 2 ]] || [[ $show_input_only -eq 1 ]]
+  then
+     return
+  fi
+
+
+  test_count=$(expr $test_count \+ 1)
+  echo "" >> $log_file
+  echo "${bin_dir}/envgen2  $@ ">> $log_file
+  ${bin_dir}/envgen2 $@ >> $log_file 2>&1
+  if [ $? -ne 0 ]
+  then
+     printf "Test %-30s[ Failed ]\n" ${test_id} | tee -a $log_file
+     test_failed=$(expr $test_failed \+ 1)
+     return
+  fi
+
+  diff ${src_dir}/result_comparison/env_base.xml  ${out_dir}/${test_id}.xml > ${out_dir}/${test_id}.diff
+  echo "Check result diff ${src_dir}/result_comparison/${test_id}.diff  ${out_dir}/${test_id}.diff" >> $log_file
+  diff ${src_dir}/result_comparison/${test_id}.diff  ${out_dir}/${test_id}.diff >> $log_file
+  if [ $? -ne 0 ]
+  then
+     printf "Test %-30s[ Failed ]\n" ${test_id} | tee -a $log_file
+     test_failed=$(expr $test_failed \+ 1)
+  else
+     printf "Test %-30s[ OK ]\n" ${test_id} | tee -a $log_file
+     test_passed=$(expr $test_passed \+ 1)
+  fi
+
+}
+
+run_test_suite()
+{
+
+
+   if [[ $verbose -eq 2 ]] || [[ $show_input_only -eq 1 ]]
+   then
+      eval "$1"
+      return
+   fi
+   test_count=0
+   test_passed=0
+   test_failed=0
+
+   printf "\n\nRun test suite $1:\n"
+   eval "$1"
+
+   printf "\nSub total: %s\n" $test_count
+   printf "Passed: %s\n" $test_passed
+   printf "Failed: %s\n" $test_failed
+
+   total_count=$(expr $total_count \+ $test_count)
+   total_passed=$(expr $total_passed \+ $test_passed)
+   total_failed=$(expr $total_failed \+ $test_failed)
+
+}
+
+verbose=0
+src_dir=${SCRIPT_DIR}/src
+out_dir=/tmp/envgen2_test
+bin_dir=@CMAKE_BINARY_DIR@/@CMAKE_BUILD_TYPE@/bin
+log_file=
+setup=0
+show_input_only=0
+while getopts "*ib:hl:no:s:vV" arg
+do
+    case "$arg" in
+       b) bin_dir="$OPTARG"
+          ;;
+       i) setup=1
+          ;;
+       l) log_file="$OPTARG"
+          ;;
+       n) show_input_only=1;
+          ;;
+       o) out_dir="$OPTARG"
+          ;;
+       s) src_dir="$OPTARG"
+          ;;
+       v) verbose=1
+          ;;
+       V) verbose=2
+          ;;
+       h|?) usage
+          exit 1
+    esac
+done
+
+if [ -z "$bin_dir" ]
+then
+   echo .
+   echo "Missing bin_dir. Cannot find envgen2."
+   echo .
+   exit 1
+fi
+
+if [ -n "$out_dir" ] && [ ! -d "$out_dir" ]
+then
+   mkdir -p $out_dir
+fi
+
+[ -z "$log_file" ] && log_file=${out_dir}/envgen2.log
+[ -e "$log_file" ] && rm -rf $log_file
+
+if [ "$setup" = "1" ]
+then
+   run_setup
+   exit
+fi
+
+
+total_count=0
+total_passed=0
+total_failed=0
+
+in_dir=${src_dir}/result_comparison
+
+
+run_setup
+run_test_suite add_roxie
+run_test_suite add_thor
+run_test_suite add_support
+run_test_suite add_topology
+run_test_suite add_computer
+
+run_test_suite mod_dali
+run_test_suite mod_computer
+
+run_test_suite rmv_computer
+
+run_test_suite regression_1
+
+run_test_suite add_content_1
+
+run_test_suite add_binding
+
+run_test_suite mod_binding
+
+run_test_suite rmv_binding
+
+if [[ $verbose -ne 2 ]] && [[ $show_input_only -ne 1 ]]
+then
+   printf "\n\nSummery\n"
+   printf "Total tests: %s\n" $total_count
+   printf "Passed: %s\n" $total_passed
+   printf "Failed: %s\n" $total_failed
+fi
+
+if [[ $total_failed -gt 0 ]]
+then
+   printf "\nCheck log file %s for more detail\n" $log_file
+fi

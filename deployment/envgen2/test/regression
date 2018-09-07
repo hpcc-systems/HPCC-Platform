@@ -1,0 +1,45 @@
+#!/bin/bash
+
+
+regression_1()
+{
+   # -o option
+   #--------------------------
+   test_id=set_category_w_o_option_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Set or update directories with -o options
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -o log=/var/logs/[NAME]/mylogs2[INST]
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -o log=/var/logs/[NAME]/mylogs2[INST]
+
+   # -override option
+   #--------------------------
+   test_id=set_sw_attr_w_override_option_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Overrides software attribute with -override options
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -override "espsmc,@enableSystemUseRewrite,ture"
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -override "espsmc,@enableSystemUseRewrite,ture"
+
+
+   # -set_xpat_attrib_value option
+   #------------------------------
+   test_id=set_xpat_attr_1
+   if [[ $verbose -ne 0 ]]
+   then
+Set an attribute with xpath using -set_xpat_attrib_value option.
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -set_xpath_attrib_value -set_xpath_attrib_value
+    "Software/Topology/Cluster[@name=\"thor\"]/ThorCluster" "@process" "thor123"
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -set_xpath_attrib_value \
+       "Software/Topology/Cluster[@name=\"thor\"]/ThorCluster" "@process" "thor123"
+
+}

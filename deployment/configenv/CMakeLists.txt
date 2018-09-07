@@ -1,5 +1,6 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,10 +14,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-HPCC_ADD_SUBDIRECTORY (configgen "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (configenv "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (deploy "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (deployutils "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (envgen "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (envgen2 "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (configutils "PLATFORM")
+
+
+HPCC_ADD_SUBDIRECTORY (xml_jlibpt)
+#HPCC_ADD_SUBDIRECTORY (xml_envmgr)

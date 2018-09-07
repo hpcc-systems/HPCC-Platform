@@ -1187,6 +1187,9 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
   StringBuffer deployable = pBuildSet->queryProp("@" TAG_DEPLOYABLE);
   unsigned numOfIpNeeded = 1;
 
+ if (!hasBaseInstantRequested())
+    numOfIpNeeded = 0;
+
   if (m_doNotGenComp.find(buildSetName) != NotFound )
     return;
 
@@ -1301,4 +1304,9 @@ StringArray& CWizardInputs::getIpAddrMap(const char* buildSetName)
     }
 
     return m_ipaddressSupport;
+}
+
+bool CWizardInputs::hasBaseInstantRequested()
+{
+   return (m_supportNodes > 0) || (m_espNodes > 0) || (m_roxieNodes > 0) || (m_thorNodes > 0);
 }

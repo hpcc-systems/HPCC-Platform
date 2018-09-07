@@ -1,0 +1,96 @@
+32,35d31
+<   <Computer computerType="linuxmachine"
+<             domain="localdomain"
+<             name="node002015"
+<             netAddress="."/>
+421,429c417
+<                     version="1">
+<    <Instance computer="node002015"
+<              directory="/var/lib/HPCCSystems/mydafilesrv"
+<              name="s1"
+<              netAddress="."
+<              parallelRequestLimit="20"
+<              throttleCPULimit="75"
+<              throttleDelayMs="5000"/>
+<   </DafilesrvProcess>
+---
+>                     version="1"/>
+434,440c422
+<                      recoverFromIncErrors="true">
+<    <Instance computer="node002015"
+<              directory="/var/lib/HPCCSystems/mydali"
+<              name="s1"
+<              netAddress="."
+<              port="7070"/>
+<   </DaliServerProcess>
+---
+>                      recoverFromIncErrors="true"/>
+450,453d431
+<    <Instance computer="node002015"
+<              directory="/var/lib/HPCCSystems/mydfuserver"
+<              name="s1"
+<              netAddress="."/>
+478,480c456
+<             umask="022">
+<    <ServerList server="."/>
+<   </DropZone>
+---
+>             umask="022"/>
+496,501c472
+<                    wuQueueName="myeclagent_queue">
+<    <Instance computer="node002015"
+<              directory="/var/lib/HPCCSystems/myeclagent"
+<              name="s1"
+<              netAddress="."/>
+<   </EclAgentProcess>
+---
+>                    wuQueueName="myeclagent_queue"/>
+511,516c482
+<                       traceLevel="1">
+<    <Instance computer="node002015"
+<              directory="/var/lib/HPCCSystems/myeclccserver"
+<              name="s1"
+<              netAddress="."/>
+<   </EclCCServerProcess>
+---
+>                       traceLevel="1"/>
+521,526c487
+<                        name="myeclscheduler">
+<    <Instance computer="node002015"
+<              directory="/var/lib/HPCCSystems/myeclscheduler"
+<              name="s1"
+<              netAddress="."/>
+<   </EclSchedulerProcess>
+---
+>                        name="myeclscheduler"/>
+751,755d711
+<    <Instance computer="node002015"
+<              directory="/var/lib/HPCCSystems/myesp"
+<              FQDN=""
+<              name="s"
+<              netAddress="."/>
+971,977c927
+<                   version="1">
+<    <Instance computer="node002015"
+<              directory="/var/lib/HPCCSystems/myftslave"
+<              name="s1"
+<              netAddress="."
+<              program="/opt/HPCCSystems/bin/ftslave"/>
+<   </FTSlaveProcess>
+---
+>                   version="1"/>
+1135d1084
+<    <RoxieServerProcess computer="node002015" name="node002015" netAddress="."/>
+1188,1194c1137
+<                       xrefMaxScanThreads="500">
+<    <Instance computer="node002015"
+<              directory="/var/lib/HPCCSystems/mysasha"
+<              name="s1"
+<              netAddress="."
+<              port="8877"/>
+<   </SashaServerProcess>
+---
+>                       xrefMaxScanThreads="500"/>
+1228,1229d1170
+<    <ThorMasterProcess computer="node002015" name="m1"/>
+<    <ThorSlaveProcess computer="node002015" name="s1"/>

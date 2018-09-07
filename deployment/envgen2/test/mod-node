@@ -1,0 +1,53 @@
+#!/bin/bash
+
+mod_dali()
+{
+
+   in_dir=${src_dir}/result_comparison
+
+   # Test modify_dali_ip_1
+   #-----------------------
+   test_id=dali_mod_ip_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Modify dali ip to 1.0.0.22
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -mod-node dali#mydali@ip=1.0.0.22
+EOF
+   fi
+
+   # dali
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml  -mod-node dali#mydali@ip=1.0.0.20
+
+}
+
+mod_computer()
+{
+   # Test modify_computer_ip_1
+   #--------------------------
+   test_id=computer_mod_ip_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Modify computer 1.1.0.10 to 1.1.0.50
+envgen2 -env-in roxie_cluster_1.xml -env-out ${test_id}.xml -mod-node computer@ip="1.1.0.50|1.0.0.30"
+EOF
+   fi
+   run_one_test -env-in ${out_dir}/roxie_cluster_1.xml -env-out ${out_dir}/${test_id}.xml -mod-node computer@ip="1.1.0.50|1.0.0.30"
+
+   # Test modify_computer_ip_2
+   #--------------------------
+   test_id=computer_mod_ip_2
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Modify computer . to 1.1.0.60. Verify all software components instance updated.
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -mod-node computer@ip="1.1.0.60|."
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -mod-node computer@ip="1.1.0.60|."
+
+}

@@ -1,0 +1,219 @@
+#!/bin/bash
+
+add_roxie()
+{
+
+
+   # Test roxie_add_ip_1
+   #---------------------
+   test_id=roxie_add_ip_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Add a node with ip 1.0.0.22 to roxie "myroxie"
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -add-node roxie#myroxie@ip=1.0.0.22
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node roxie#myroxie@ip=1.0.0.22
+
+   # Test roxie_add_ip_2
+   #---------------------
+   test_id=roxie_add_ip_2
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Add two nodes with ip 1.0.0.22;1.0.0.23 to roxie "myroxie"
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -add-node roxie#myroxie@ip="1.0.0.22;1.0.0.23"
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node roxie#myroxie@ip="1.0.0.22;1.0.0.23"
+
+   # Test roxie_add_ip_range
+   #-------------------------
+   test_id=roxie_add_ip_range
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Add two nodes with ip 1.0.0.22-23 to roxie "myroxie"
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml  -add-node roxie#myroxie@ip=1.0.0.22-23
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node roxie#myroxie@ip=1.0.0.22-23
+
+
+   # Test roxie_add_ipfile_1
+   #-------------------------
+   test_id=roxie_add_ipfile_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Add a list of nodes with ipfile_1 to roxie "myroxie"
+JIRA HPCC-15638 Envgen - IP list for components should include file as a source
+envgen2 -env-in env_base.xml -env-out ${test_id}  -add-node roxie#myroxie@ipfile=${src_dir}/ipfile_1
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node roxie#myroxie@ipfile=${src_dir}/ipfile_1
+
+   # Test roxie_add_ipfile_2
+   #-------------------------
+   test_id=roxie_add_ipfile_2
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Add a list of nodes with ipfile_1 to roxie "myroxie"
+envgen2 -env-in env_base.xml -env-out ${test_id}-add-node roxie#myroxie@ipfile=${src_dir}/ipfile_2
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node roxie#myroxie@ipfile=${src_dir}/ipfile_2
+
+
+   # Test roxie_add_new_cluster
+   #----------------------------
+   test_id=roxie_add_new_cluster
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Create a new roxie cluster "newroxie" and add two nodes
+JIRA HPCC-8916 Generate environment.xml with more than one thor or roxie cluster defined
+JIRA HPCC-8915 Ability to group IP address usage for envgen. Actually "-add-node" support it in various scenarios.
+
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -add-node roxie#newroxie@ip=1.0.0.22-23
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node roxie#newroxie@ip=1.0.0.22-23
+
+
+   # Test roxie_clone_cluster
+   #----------------------------
+   test_id=roxie_clone_cluster_w_ips
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Create a new roxie cluster "newroxie" by clone "myroxie" and add two nodes
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -add-node roxie#newroxie|myroxie@ip=1.0.0.42-43
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node "roxie#newroxie|myroxie@ip=1.0.0.42-43"
+
+}
+
+add_thor()
+{
+   # Test thor_add_new_cluster
+   #----------------------------
+   test_id=thor_add_new_cluster
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Create a new thor cluster "mythor2" and add one master and two slaves"
+JIRA HPCC-8916 Generate environment.xml with more than one thor or roxie cluster defined
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -add-node thor#mythor2:master@ip=1.0.0.26:slave@ip=1.0.0.27-28
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node thor#mythor2:master@ip=1.0.0.26:slave@ip=1.0.0.27-28
+
+}
+
+add_support()
+{
+   # Test thor_add_new_cluster
+   #----------------------------
+   test_id=ecl_new_group
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Create a new ecl related support group  a new topology cluster"
+envgen2 -env-in thor_add_new_cluster.xml -env-out ${test_id}.xml -add-node eclagent#myeclagent2@ip=1.20.10.10 \
+-add-node eclscheduler#myeclscheduler2@ip=1.20.10.20 -add-node eclccserver#myeclccserver2@ip=1.20.10.30
+EOF
+   fi
+   run_one_test -env-in ${out_dir}/thor_add_new_cluster.xml -env-out ${out_dir}/ecl_new_group.xml \
+     -add-node eclagent#myeclagent2@ip=1.20.10.10 -add-node eclscheduler#myeclscheduler2@ip=1.20.10.20 \
+     -add-node eclccserver#myeclccserver2@ip=1.20.10.30
+
+
+   # Test add a server to DropZone
+   #----------------------------
+   test_id=dropzone_add_ip_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Add a server to dropzone"
+envgen2 -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node dropzone#mydropzone@ip=1.0.0.10
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node dropzone#mydropzone@ip=1.0.0.10
+
+
+   # Test no instance case
+   #----------------------------
+   test_id=no_instance
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Create a environmen.xml without any instance defined. This doesn't define roxie and thor"
+JIRA HPCC-15662 Envgen - Support Nodes can be 0 when manually assigning IPs
+This is test the first part of above JIRA ticket: to create en environment.xml without any ip assigned.
+envgen2 -env-out ${test_id}.xml
+EOF
+   fi
+   run_one_test -env-out ${out_dir}/${test_id}.xml
+
+
+   # Test add all instances manually
+   #--------------------------------
+   test_id=manually_add_all
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Manually add all wanted instances to an no instance environment.xml. JIRA HPCC-15636 part two
+JIRA HPCC-15662 Envgen - Support Nodes can be 0 when manually assigning IPs
+This is test the second part of above JIRA ticket: to create each component manually.
+EOF
+   fi
+   run_one_test -env-in ${out_dir}/no_instance.xml -env-out ${out_dir}/${test_id}.xml \
+   -add-node dali#mydali@ip=1.0.0.21 \
+   -add-node dfu#mydfuserver@ip=1.0.0.22 \
+   -add-node agent#myeclagent@ip=1.0.0.22 \
+   -add-node scheduler#myeclscheduler@ip=1.0.0.22 \
+   -add-node eclcc#myeclccserver@ip=1.0.0.23 \
+   -add-node dropzone#mydropzone@ip=1.0.0.23 \
+   -add-node esp#myesp@ip=1.0.0.24 \
+   -add-node roxie#myroxie@ip="1.0.0.25;1.0.0.26" \
+   -add-node thor#mythor:master@ip=1.0.0.27:slave@ip="1.0.0.27;1.0.0.28" \
+   -add-topology topology:cluster@name=hthor:eclagent@process=myeclagent:eclscheduler@process=myeclscheduler:eclccserver@process=myeclccserver \
+   -add-topology topology:cluster@name=thor:eclagent@process=myeclagent:eclscheduler@process=myeclscheduler:eclccserver@process=myeclccserver:thor@process=mythor \
+   -add-topology topology:cluster@name=roxie:eclscheduler@process=myeclscheduler:eclccserver@process=myeclccserver:roxie@process=myroxie \
+   -add-topology topology:cluster@name=thor_roxie:eclscheduler@process=myeclscheduler:eclccserver@process=myeclccserver:roxie@process=myroxie:thor@process=mythor
+
+
+}
+
+add_computer()
+{
+
+   # Test hd_add_computer_1
+   #-----------------------
+   test_id=hd_add_computer_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Add a computer with ip 1.1.0.10
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -add-node computer@ip=1.1.0.10
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node computer@ip=1.1.0.10
+}

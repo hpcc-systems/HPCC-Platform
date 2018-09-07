@@ -1,0 +1,48 @@
+35c35
+<             netAddress="."/>
+---
+>             netAddress="1.1.0.60"/>
+425c425
+<              netAddress="."
+---
+>              netAddress="1.1.0.60"
+438c438
+<              netAddress="."
+---
+>              netAddress="1.1.0.60"
+453c453
+<              netAddress="."/>
+---
+>              netAddress="1.1.0.60"/>
+479c479
+<    <ServerList server="."/>
+---
+>    <ServerList server="1.1.0.60"/>
+500c500
+<              netAddress="."/>
+---
+>              netAddress="1.1.0.60"/>
+515c515
+<              netAddress="."/>
+---
+>              netAddress="1.1.0.60"/>
+525c525
+<              netAddress="."/>
+---
+>              netAddress="1.1.0.60"/>
+755c755
+<              netAddress="."/>
+---
+>              netAddress="1.1.0.60"/>
+975c975
+<              netAddress="."
+---
+>              netAddress="1.1.0.60"
+1135c1135
+<    <RoxieServerProcess computer="node002015" name="node002015" netAddress="."/>
+---
+>    <RoxieServerProcess computer="node002015" name="node002015" netAddress="1.1.0.60"/>
+1192c1192
+<              netAddress="."
+---
+>              netAddress="1.1.0.60"

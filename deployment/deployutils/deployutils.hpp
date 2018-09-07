@@ -87,4 +87,7 @@ extern DEPLOYUTILS_API void addEspBindingInformation(const char* xmlArg, IProper
                                                      const IPropertyTree* pCfg, const char* serviceName);
 extern DEPLOYUTILS_API bool updateDirsWithConfSettings(IPropertyTree* pEnvRoot, IProperties* pParams, bool ovrLog = true, bool ovrRun = true);
 extern DEPLOYUTILS_API bool validateEnv(IConstEnvironment* pConstEnv, bool abortOnException = true);
+extern DEPLOYUTILS_API bool schemaNodeHasAttributes(IPropertyTree* pNode);
+extern DEPLOYUTILS_API bool schemaNodeHasAttributeGroups(IPropertyTree* pNode);
+extern DEPLOYUTILS_API IPropertyTree* schemaNodeHasElements(IPropertyTree* pNode);
 #endif

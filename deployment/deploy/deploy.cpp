@@ -114,8 +114,11 @@ public:
         int count = m_tempFiles.length();
         int i;
         for (i = 0; i < count; i++)
+        {
+            if (!checkFileExists(m_tempFiles.item(i))) continue;
             if (!DeleteFile(m_tempFiles.item(i)))
                 WARNLOG("Couldn't delete file %s", m_tempFiles.item(i));
+        }
         
         count = m_tempDirs.length();
         for (i = 0; i < count; i++)
@@ -1132,7 +1135,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
   ForEach(*pClusterIter)
   {
     IPropertyTree * pCluster = &pClusterIter->query();
-    IPropertyTreeIterator* pClusterProcessIter = pCluster->getElements("*");
+    Owned<IPropertyTreeIterator> pClusterProcessIter = pCluster->getElements("*");
     ForEach(*pClusterProcessIter)
     {
       IPropertyTree * pClusterProcess = &pClusterProcessIter->query();

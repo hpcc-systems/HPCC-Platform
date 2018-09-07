@@ -1,0 +1,70 @@
+#!/bin/bash
+
+add_binding()
+{
+
+   in_dir=${src_dir}/result_comparison
+
+   # Test add_dynamicesdl_1
+   #-----------------------
+   test_id=add_dynamicesdl_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Add ESP Service Dynamic ESDL
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -add-service esdl#dynamicesdl
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-service esdl#dynamicesdl
+
+
+   # Test add_binding_esdl_1
+   #-----------------------
+   test_id=add_binding_esdl_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Add dynamic ESDL binding in esp. If DaynamicESDL EspService doesn't exist it iwll create it first.
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -add-binding myesp@name=mydesdl^service=dynamicesdl^port=8043
+EOF
+   fi
+
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-binding "myesp@name=mydesdl^service=dynamicesdl^port=8043"
+
+}
+
+mod_binding()
+{
+   # Test mod_binding_1
+   #-----------------------
+   test_id=mod_binding_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Change EclWatch port (binding name "myespsmc" with attribute "port")
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -mod-binding myesp:myespsmc@port=8020
+EOF
+   fi
+
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -mod-binding "myesp:myespsmc@port=8020"
+}
+
+rmv_binding()
+{
+   # Test rmv_binding_1
+   #-----------------------
+   test_id=rmv_binding_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Remove EclWatch binding
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -rmv-binding myesp:myespsmc
+EOF
+   fi
+
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -rmv-binding "myesp:myespsmc"
+}

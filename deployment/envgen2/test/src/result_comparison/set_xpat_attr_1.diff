@@ -1,0 +1,4 @@
+1241c1241
+<     <ThorCluster process="mythor"/>
+---
+>     <ThorCluster process="thor123"/>
