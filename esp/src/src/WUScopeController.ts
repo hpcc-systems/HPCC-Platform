@@ -619,9 +619,9 @@ export class WUScopeController {
         return retVal;
     }
 
-    scopeItem(_: string): ScopeSubgraph | ScopeVertex | ScopeEdge {
+    scopeItem(_: string): ScopeSubgraph | ScopeVertex | ScopeEdge | undefined {
         const widget = this.item(_);
-        return this.rItem(widget);
+        return widget ? this.rItem(widget) : undefined;
     }
 
     item(_: string): Subgraph | VertexType | Edge {
@@ -761,10 +761,12 @@ export class WUScopeController {
 
     calcGraphTooltip(id: string, findText?: string) {
         const item = this.scopeItem(id);
-        const scope = item._;
-        const parentScope = item.parent._;
-        if (scope) {
-            return this.calcTooltip(scope, parentScope, findText);
+        if (item) {
+            const scope = item._;
+            const parentScope = item.parent._;
+            if (scope) {
+                return this.calcTooltip(scope, parentScope, findText);
+            }
         }
         return "";
     }

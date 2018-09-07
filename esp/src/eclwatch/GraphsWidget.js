@@ -284,7 +284,7 @@ define([
                 var title = row.Name;
                 var delayWidget = "GraphTree7Widget";
                 var delayProps = {
-                    _owner: this,
+                    _hostPage: this,
                     forceJS: true
                 };
                 if (params && params.SubGraphId) {

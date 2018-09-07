@@ -269,7 +269,7 @@ define([
                         closable: true,
                         delayWidget: "GraphTree7Widget",
                         delayProps: {
-                            _owner: this
+                            _hostPage: this
                         },
                         params: {
                             Wuid: this.wu.Wuid,
