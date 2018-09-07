@@ -15,3 +15,4 @@
 ################################################################################
 add_subdirectory (wsecl)
 add_subdirectory (WUManager)
+add_subdirectory (wsdfuaccess)

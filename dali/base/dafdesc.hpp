@@ -368,5 +368,7 @@ inline DFD_OS SepCharBaseOs(char c)
     return DFD_OSdefault;
 }
 
+extern da_decl void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file);
+
 
 #endif

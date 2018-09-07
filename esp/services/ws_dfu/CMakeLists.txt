@@ -60,6 +60,7 @@ include_directories (
          ./../../../ecl/hql 
          ./../../../system/security/securesocket 
          ./../../../system/security/shared 
+         ./../../../system/security/cryptohelper 
          ./../../../system/include 
          ./../../../common/workunit 
          ./../../../common/remote 

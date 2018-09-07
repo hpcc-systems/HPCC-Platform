@@ -22,6 +22,7 @@
 #include "jiter.ipp"
 #include "jmisc.hpp"
 #include "jencrypt.hpp"
+#include "jutil.hpp"
 
 #include "mpbase.hpp"
 #include "daclient.hpp"
@@ -29,6 +30,10 @@
 #include "dafdesc.hpp"
 #include "dasds.hpp"
 #include "dalienv.hpp"
+
+#include <string>
+#include <unordered_map>
+#include <tuple>
 
 #define SDS_LOCK_TIMEOUT  30000
 #define DEFAULT_DROPZONE_INDEX      1
@@ -109,6 +114,15 @@ private:
     mutable Mutex safeCache;
     mutable bool dropZoneCacheBuilt;
     mutable bool machineCacheBuilt;
+    mutable bool clusterKeyNameCache;
+    StringBuffer fileAccessUrl;
+
+    struct KeyPairMapEntity
+    {
+        std::string publicKey, privateKey;
+    };
+    mutable std::unordered_map<std::string, KeyPairMapEntity> keyPairMap;
+    mutable std::unordered_map<std::string, std::string> keyClusterMap;
     StringBuffer xPath;
     mutable unsigned numOfMachines;
     mutable unsigned numOfDropZones;
@@ -121,6 +135,76 @@ private:
     void init();
     mutable bool isDropZoneRestrictionLoaded = false;
     mutable bool dropZoneRestrictionEnabled = true;
+
+
+    void ensureClusterKeyMap() const // keyPairMap and keyClusterMap it alters is mutable
+    {
+        if (!clusterKeyNameCache)
+        {
+            StringBuffer keysDir;
+            envGetConfigurationDirectory("keys",nullptr, nullptr, keysDir);
+
+            Owned<IPropertyTreeIterator> keyPairIt = p->getElements("EnvSettings/Keys/KeyPair");
+            ForEach(*keyPairIt)
+            {
+                IPropertyTree &keyPair = keyPairIt->query();
+                const char *name = keyPair.queryProp("@name");
+                const char *publicKeyPath = keyPair.queryProp("@publicKey");
+                const char *privateKeyPath = keyPair.queryProp("@privateKey");
+                if (isEmptyString(name))
+                {
+                    WARNLOG("skipping invalid EnvSettings/Key/KeyPair entry, name not defined");
+                    continue;
+                }
+                if (isEmptyString(publicKeyPath) || isEmptyString(privateKeyPath))
+                {
+                    WARNLOG("skipping invalid EnvSettings/Key/KeyPair entry, name=%s", name);
+                    continue;
+                }
+                StringBuffer absPublicKeyPath, absPrivateKeyPath;
+                if (!isAbsolutePath(publicKeyPath))
+                {
+                    absPublicKeyPath.append(keysDir);
+                    addPathSepChar(absPublicKeyPath);
+                    absPublicKeyPath.append(publicKeyPath);
+                }
+                else
+                    absPublicKeyPath.append(publicKeyPath);
+                if (!isAbsolutePath(privateKeyPath))
+                {
+                    absPrivateKeyPath.append(keysDir);
+                    addPathSepChar(absPrivateKeyPath);
+                    absPrivateKeyPath.append(privateKeyPath);
+                }
+                else
+                    absPrivateKeyPath.append(privateKeyPath);
+
+                keyPairMap[name] = { absPublicKeyPath.str(), absPrivateKeyPath.str() };
+            }
+            Owned<IPropertyTreeIterator> clusterIter = p->getElements("EnvSettings/Keys/Cluster");
+            ForEach(*clusterIter)
+            {
+                IPropertyTree &cluster = clusterIter->query();
+                const char *clusterName = cluster.queryProp("@name");
+                if (isEmptyString(clusterName))
+                {
+                    WARNLOG("skipping EnvSettings/Keys/Cluster entry with no name");
+                    continue;
+                }
+                if (cluster.hasProp("@keyPairName"))
+                {
+                    const char *keyPairName = cluster.queryProp("@keyPairName");
+                    if (isEmptyString(keyPairName))
+                    {
+                        WARNLOG("skipping invalid EnvSettings/Key/Cluster entry, name=%s", clusterName);
+                        continue;
+                    }
+                    keyClusterMap[clusterName] = keyPairName;
+                }
+            }
+            clusterKeyNameCache = true;
+        }
+    }
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -165,6 +249,30 @@ public:
     unsigned getNumberOfDropZones() const { buildDropZoneCache(); return numOfDropZones; }
     IConstDropZoneInfo * getDropZoneByIndex(unsigned index) const;
     bool isDropZoneRestrictionEnabled() const;
+
+    virtual const char *getClusterKeyPairName(const char *cluster) const override
+    {
+        synchronized procedure(safeCache);
+        ensureClusterKeyMap();
+        return keyClusterMap[cluster].c_str();
+    }
+    virtual const char *getPublicKeyPath(const char *keyPairName) const override
+    {
+        synchronized procedure(safeCache);
+        ensureClusterKeyMap();
+        return keyPairMap[keyPairName].publicKey.c_str();
+    }
+    virtual const char *getPrivateKeyPath(const char *keyPairName) const override
+    {
+        synchronized procedure(safeCache);
+        ensureClusterKeyMap();
+        return keyPairMap[keyPairName].privateKey.c_str();
+    }
+    virtual const char *getFileAccessUrl() const
+    {
+        synchronized procedure(safeCache);
+        return fileAccessUrl.length() ? fileAccessUrl.str() : nullptr;
+    }
 };
 
 class CLockedEnvironment : implements IEnvironment, public CInterface
@@ -277,6 +385,14 @@ public:
             { return c->getDropZoneIterator(); }
     virtual bool isDropZoneRestrictionEnabled() const
             { return c->isDropZoneRestrictionEnabled(); }
+    virtual const char *getClusterKeyPairName(const char *cluster) const override
+            { return c->getClusterKeyPairName(cluster); }
+    virtual const char *getPublicKeyPath(const char *keyPairName) const override
+            { return c->getPublicKeyPath(keyPairName); }
+    virtual const char *getPrivateKeyPath(const char *keyPairName) const override
+            { return c->getPrivateKeyPath(keyPairName); }
+    virtual const char *getFileAccessUrl() const
+            { return c->getFileAccessUrl(); }
 };
 
 void CLockedEnvironment::commit()
@@ -1047,6 +1163,8 @@ void CLocalEnvironment::init()
     numOfMachines = 0;
     numOfDropZones = 0;
     isDropZoneRestrictionLoaded = false;
+    clusterKeyNameCache = false;
+    ::getFileAccessUrl(fileAccessUrl);
 }
 
 CLocalEnvironment::~CLocalEnvironment()
@@ -1508,6 +1626,8 @@ void CLocalEnvironment::clearCache()
         p.setown(conn->getRoot());
     }
     cache.kill();
+    keyClusterMap.clear();
+    keyPairMap.clear();
     init();
     resetPasswordsFromSDS();
 }

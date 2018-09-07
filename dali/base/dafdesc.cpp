@@ -3066,3 +3066,25 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
     }
     return res.getLink();
 }
+
+void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file)
+{
+    IPropertyTree *fileInfoTree = info.setPropTree("FileInfo", createPTree());
+    Owned<IPartDescriptorIterator> partIter = file.getIterator();
+    StringBuffer path, host;
+    ForEach(*partIter)
+    {
+        IPropertyTree *partTree = fileInfoTree->addPropTree("Part", createPTree());
+        IPartDescriptor &part = partIter->query();
+        unsigned numCopies = part.numCopies();
+        for (unsigned copy=0; copy<numCopies; copy++)
+        {
+            RemoteFilename rfn;
+            part.getFilename(copy, rfn);
+
+            IPropertyTree *copyTree = partTree->addPropTree("Copy", createPTree());
+            copyTree->setProp("@filePath", rfn.getLocalPath(path.clear()));
+            copyTree->setProp("@host", rfn.queryEndpoint().getUrlStr(host.clear()));
+        }
+    }
+}

@@ -23,6 +23,7 @@
 #include "fileview.hpp"
 #include "fvrelate.hpp"
 #include "dadfs.hpp"
+#include "environment.hpp"
 #include <atomic>
 
 class CThorNodeGroup: public CInterface
@@ -136,6 +137,9 @@ private:
     unsigned nodeGroupCacheTimeout;
     Owned<CThorNodeGroupCache> thorNodeGroupCache;
     std::atomic<bool> m_daliDetached{false};
+    Owned<IEnvironmentFactory> factory;
+    Owned<IConstEnvironment> env;
+    static const unsigned defaultMaxFileAccessExpirySeconds=86400; // 24 hours
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -165,6 +169,7 @@ public:
     virtual bool onSuperfileAction(IEspContext &context, IEspSuperfileActionRequest &req, IEspSuperfileActionResponse &resp);
     virtual bool onListHistory(IEspContext &context, IEspListHistoryRequest &req, IEspListHistoryResponse &resp);
     virtual bool onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req, IEspEraseHistoryResponse &resp);
+    virtual bool onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp);
 
 private:
     const char* getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix);
@@ -231,6 +236,12 @@ private:
     void queryFieldNames(IEspContext &context, const char *fileName, const char *cluster,
         unsigned __int64 fieldMask, StringArray &fieldNames);
     void parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray);
+    unsigned getFilePartsInfo(IEspContext &context, IDistributedFile *df, const char *clusterName,
+        IArrayOf<IEspDFUPartLocations> &dfuPartLocations, IArrayOf<IEspDFUPartCopies> &dfuPartCopies);
+    StringBuffer &getFileDafilesrvKeyName(StringBuffer &keyPairName, IDistributedFile &file);
+    void getFileMeta(StringBuffer &metaInfo, IDistributedFile &file, IUserDescriptor *user, CFileAccessRole role, const char *expiryTime, const char *keyPairName, IConstDFUFileAccessRequest &req);
+    void getFileAccess(IEspContext &context, IUserDescriptor *udesc, SecAccessFlags accessType, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp);
+
     bool attachServiceToDali() override
     {
         m_daliDetached = false;
@@ -257,6 +268,7 @@ private:
     StringBuffer user_;
     StringBuffer password_;
     StringAttr   espProcess;
+    unsigned maxFileAccessExpirySeconds = defaultMaxFileAccessExpirySeconds;
 };
 
 

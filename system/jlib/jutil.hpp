@@ -398,6 +398,9 @@ extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const 
 
 extern jlib_decl const char *queryCurrentProcessPath();
 
+extern jlib_decl StringBuffer &getFileAccessUrl(StringBuffer &out);
+
+
 /**
  * Locate the 'package home' directory - normally /opt/HPCCSystems - by detecting the current executable's location
  *

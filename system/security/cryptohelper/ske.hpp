@@ -23,6 +23,8 @@
 #include "cryptocommon.hpp"
 
 
+#include "pke.hpp"
+
 namespace cryptohelper
 {
 
