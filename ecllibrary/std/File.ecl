@@ -134,10 +134,11 @@ EXPORT SetReadOnly(varstring lfn, boolean ro=TRUE) :=
  *
  * @param oldname       The current name of the file to be renamed.
  * @param newname       The new logical name of the file.
+ * @param allowOverwrite Is it valid to overwrite an existing file of the same name?  Defaults to FALSE
  */
 
-EXPORT RenameLogicalFile(varstring oldname, varstring newname) :=
-    lib_fileservices.FileServices.RenameLogicalFile(oldname, newname);
+EXPORT RenameLogicalFile(varstring oldname, varstring newname, boolean allowOverwrite=FALSE) :=
+    lib_fileservices.FileServices.RenameLogicalFile(oldname, newname, allowOverwrite);
 
 /**
  * Returns a logical filename that can be used to refer to a logical file in a local or remote dali.
