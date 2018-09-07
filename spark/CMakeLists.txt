@@ -54,20 +54,27 @@ if(USE_SPARK)
         set(SPARK_URL  "${SPARK_URL_BASE}/spark/spark-${SPARK_VERSION}/${SPARK_PACKAGE_NAME}.tgz")
     endif(SPARK_URL)
 
-    set(MAVEN_REPO "https://repo1.maven.org/maven2")
-    set(SONATYPE_SNAPSHOT_REPO "https://oss.sonatype.org/content/repositories/snapshots")
-    set(HPCC_NAMESPACE "org/hpccsystems")
-    set(SPARK_HPCC_VERSION "7.0.0-beta-1")
-    set(SPARK_HPCC_JAR "spark-hpcc-${SPARK_HPCC_VERSION}.jar")
-    set(WSCLIENT_VERSION "7.0.0-SNAPSHOT")
-    set(WSCLIENT_JAR "wsclient-7.0.0-20180815.193749-3-jar-with-dependencies.jar")
+    set(CENTRAL_REPO "https://repo1.maven.org/maven2")
+    set(SNAPSHOT_REPO "https://oss.sonatype.org/content/repositories/snapshots")
+    if(NOT SPARK_HPCC_VERSION)
+        set(SPARK_HPCC_VERSION "7.0.0-beta-1")
+    endif()
+    if(NOT SPARK_HPCC_JAR)
+        set(SPARK_HPCC_JAR "spark-hpcc-${SPARK_HPCC_VERSION}.jar")
+    endif()
+    if(NOT WSCLIENT_VERSION)
+        set(WSCLIENT_VERSION "7.0.0-SNAPSHOT")
+    endif()
+    if(NOT WSCLIENT_JAR)
+        set(WSCLIENT_JAR "wsclient-7.0.0-20180815.193749-3-jar-with-dependencies.jar")
+    endif()
     file(DOWNLOAD
-        ${MAVEN_REPO}/${HPCC_NAMESPACE}/spark-hpcc/${SPARK_HPCC_VERSION}/${SPARK_HPCC_JAR}
+        ${CENTRAL_REPO}/org/hpccsystems/spark-hpcc/${SPARK_HPCC_VERSION}/${SPARK_HPCC_JAR}
         ${CMAKE_CURRENT_BINARY_DIR}/${SPARK_HPCC_JAR}
         INACTIVITY_TIMEOUT 30
         TIMEOUT 90)
     file(DOWNLOAD
-        ${SONATYPE_SNAPSHOT_REPO}/${HPCC_NAMESPACE}/wsclient/${WSCLIENT_VERSION}/${WSCLIENT_JAR}
+        ${SNAPSHOT_REPO}/org/hpccsystems/wsclient/${WSCLIENT_VERSION}/${WSCLIENT_JAR}
         ${CMAKE_CURRENT_BINARY_DIR}/${WSCLIENT_JAR}
         INACTIVITY_TIMEOUT 30
         TIMEOUT 90)
