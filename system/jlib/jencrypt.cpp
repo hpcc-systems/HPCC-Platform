@@ -1811,22 +1811,12 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size
 
 MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
-    cryptohelper::aesEncrypt(output, inlen, input, keylen, (const char *)key);
-    return output;
-#else
     return jlib::aesEncrypt(key, keylen, input, inlen, output);
-#endif
 }
 
 MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
-#if defined(_USE_OPENSSL) && !defined(_WIN32)
-    cryptohelper::aesDecrypt(output, inlen, input, keylen, (const char *)key);
-    return output;
-#else
     return jlib::aesDecrypt(key, keylen, input, inlen, output);
-#endif
 }
 
 #define CRYPTSIZE 32
