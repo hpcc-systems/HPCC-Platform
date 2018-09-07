@@ -64,13 +64,14 @@
                         </xs:appinfo>
                     </xs:annotation>
                     <xs:complexType>
-                        <xs:attribute name="name" type="string" use="required">
+                        <xs:attribute name="name" type="string" use="required" default="mythor">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <title>nodeGroup</title>
                                     <tooltip>Thor node group to backup</tooltip>
                                     <width>120</width>
                                     <colIndex>1</colIndex>
+                                    <autogenforwizard>1</autogenforwizard>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
@@ -79,6 +80,7 @@
                                 <xs:appinfo>
                                     <tooltip>Interval in hours for backup to be run</tooltip>
                                     <colIndex>2</colIndex>
+                                    <autogenforwizard>1</autogenforwizard>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
