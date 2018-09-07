@@ -449,7 +449,7 @@ void CPermissionsCache::add(ISecUser& sec_user)
         {
             //Set user digital signature
             StringBuffer b64Signature;
-            pDSM->digiSign(sec_user.getName(), b64Signature);
+            pDSM->digiSign(b64Signature, sec_user.getName());
             sec_user.credentials().setSignature(b64Signature);//callers sec_user will now contain signature
         }
     }

@@ -108,7 +108,7 @@ protected:
             {
                 VStringBuffer text("I am here %d", idx);
                 StringBuffer sig;
-                bool ok = dsm->digiSign(text, sig);
+                bool ok = dsm->digiSign(sig, text);
                 if (!ok)
                     printf("Asynchronous asyncDigiSignUnitTest() test %d failed!\n", idx);
                 ASSERT(ok);
@@ -140,7 +140,7 @@ protected:
             }
             void Do(unsigned idx)
             {
-                bool ok = dsm->digiVerify(text, sig);
+                bool ok = dsm->digiVerify(sig, text);
                 if (!ok)
                     printf("Asynchronous asyncDigiVerifyUnitTest() test %d failed!\n", idx);
                 ASSERT(ok);
@@ -172,7 +172,7 @@ protected:
                     printf("Asynchronous asyncDigiSignAndVerifyUnitTest() test %d failed!\n", idx);
                 ASSERT(ok);
 
-                ok = dsm->digiVerify(text, sig);
+                ok = dsm->digiVerify(sig, text);
                 if (!ok)
                     printf("Asynchronous asyncDigiSignAndVerifyUnitTest() test %d failed!\n", idx);
                 ASSERT(ok);
@@ -201,66 +201,63 @@ protected:
             printf("\nExecuting digiSign() unit tests\n");
 
             //Create instance of digital signature manager
-            StringBuffer _pubKeyBuff(pubKey);
-            StringBuffer _privKeyBuff(privKey);
-            Owned<IDigitalSignatureManager> dsm(createDigitalSignatureManagerInstanceFromKeys(_pubKeyBuff, _privKeyBuff, nullptr));
-
+            Owned<IDigitalSignatureManager> dsm(createDigitalSignatureManagerInstanceFromKeys(pubKey, privKey, nullptr));
 
             printf("digiSign() test 1\n");
             StringBuffer txt(text1);
-            bool ok = dsm->digiSign(text1, sig1.clear());
+            bool ok = dsm->digiSign(sig1.clear(), text1);
             ASSERT(ok);
             ASSERT(0 == strcmp(text1, txt.str()));//source string should be unchanged
             ASSERT(!sig1.isEmpty());//signature should be populated
 
             StringBuffer sig(sig1);
-            ok = dsm->digiVerify(text1, sig1);
+            ok = dsm->digiVerify(sig1, text1);
             ASSERT(ok);
             ASSERT(0 == strcmp(text1, txt.str()));//source string should be unchanged
             ASSERT(0 == strcmp(sig.str(), sig1.str()));//signature should be unchanged
 
             printf("digiSign() test 2\n");
-            ok = dsm->digiVerify(text1, sig1);
+            ok = dsm->digiVerify(sig1, text1);
             ASSERT(ok);
-            ok = dsm->digiVerify(text1, sig1);
+            ok = dsm->digiVerify(sig1, text1);
             ASSERT(ok);
 
             printf("digiSign() test 3\n");
-            ok = dsm->digiSign(text2, sig2.clear());
+            ok = dsm->digiSign(sig2.clear(), text2);
             ASSERT(ok);
-            ok = dsm->digiVerify(text2, sig2);
+            ok = dsm->digiVerify(sig2, text2);
             ASSERT(ok);
-            ok = dsm->digiSign(text2, sig2.clear());
+            ok = dsm->digiSign(sig2.clear(), text2);
             ASSERT(ok);
-            ok = dsm->digiVerify(text2, sig2);
+            ok = dsm->digiVerify(sig2, text2);
             ASSERT(ok);
 
             printf("digiSign() test 4\n");
-            ok = dsm->digiVerify(text1, sig1);
+            ok = dsm->digiVerify(sig1, text1);
             ASSERT(ok);
 
             printf("digiSign() test 5\n");
-            ok = dsm->digiVerify(text2, sig2);
+            ok = dsm->digiVerify(sig2, text2);
             ASSERT(ok);
 
             printf("digiSign() test 6\n");
-            ok = dsm->digiVerify(text1, sig2);
+            ok = dsm->digiVerify(sig2, text1);
             ASSERT(!ok);//should fail
 
             printf("digiSign() test 7\n");
-            ok = dsm->digiVerify(text2, sig1);
+            ok = dsm->digiVerify(sig1, text2);
             ASSERT(!ok);//should fail
 
             printf("digiSign() test 8\n");
-            ok = dsm->digiSign(text3, sig3.clear());
+            ok = dsm->digiSign(sig3.clear(), text3);
             ASSERT(ok);
 
             printf("digiSign() test 9\n");
-            ok = dsm->digiVerify(text3, sig1);
+            ok = dsm->digiVerify(sig1, text3);
             ASSERT(!ok);//should fail
-            ok = dsm->digiVerify(text3, sig2);
+            ok = dsm->digiVerify(sig2, text3);
             ASSERT(!ok);//should fail
-            ok = dsm->digiVerify(text3, sig3);
+            ok = dsm->digiVerify(sig3, text3);
             ASSERT(ok);
 
             //Perform
@@ -268,7 +265,7 @@ protected:
             unsigned now = msTick();
             for (int x=0; x<1000; x++)
             {
-                dsm->digiSign(text3, sig3.clear());
+                dsm->digiSign(sig3.clear(), text3);
             }
             printf("digiSign() 1000 iterations took %d MS\n", msTick() - now);
 
@@ -276,7 +273,7 @@ protected:
             now = msTick();
             for (int x=0; x<1000; x++)
             {
-                dsm->digiVerify(text3, sig3);
+                dsm->digiVerify(sig3, text3);
             }
             printf("digiverify 1000 iterations took %d MS\n", msTick() - now);
 
@@ -569,12 +566,12 @@ public:
 
         encryptedMessageMb.clear();
         timer.reset();
-        ::aesEncrypt(aesKey, aesMaxKeySize, messageMb.bytes(), messageMb.length(), encryptedMessageMb);
+        jlib::aesEncrypt(aesKey, aesMaxKeySize, messageMb.bytes(), messageMb.length(), encryptedMessageMb);
         printf("JLIB    AES %u MB encrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
 
         decryptedMessageMb.clear();
         timer.reset();
-        ::aesDecrypt(aesKey, aesMaxKeySize, encryptedMessageMb.bytes(), encryptedMessageMb.length(), decryptedMessageMb);
+        jlib::aesDecrypt(aesKey, aesMaxKeySize, encryptedMessageMb.bytes(), encryptedMessageMb.length(), decryptedMessageMb);
         printf("JLIB    AES %u MB decrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
 
         ASSERT(messageMb.length() == decryptedMessageMb.length());

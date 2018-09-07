@@ -180,7 +180,7 @@ public:
                 VStringBuffer expectedStr("%s;%s;%s", obj, username.str(), requestTimestamp.str());
                 StringBuffer b64Signature(reqSignature);// signature of scope;user;timestamp
 
-                if (!pDSM->digiVerify(expectedStr, b64Signature))//does the digital signature match what we expect?
+                if (!pDSM->digiVerify(b64Signature, expectedStr))//does the digital signature match what we expect?
                 {
                     ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails digital signature verification",key?key:"NULL",obj?obj:"NULL",username.str());
                     return SecAccess_None;//deny
@@ -268,7 +268,7 @@ public:
             if (pDSM && pDSM->isDigiVerifierConfigured())
             {
                 StringBuffer b64Signature(udesc->querySignature());
-                if (!pDSM->digiVerify(username, b64Signature))//digital signature valid?
+                if (!pDSM->digiVerify(b64Signature, username))//digital signature valid?
                 {
                     ERRLOG("LDAP: enableScopeScans(%s) : Invalid user digital signature", username.str());
                     *err = -1;

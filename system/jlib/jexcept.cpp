@@ -114,6 +114,42 @@ IException jlib_decl *makeStringException(MessageAudience aud,int code,const cha
     return new StringException(code,why,aud);
 }
 
+class jlib_thrown_decl WrappedException: public StringException
+{
+    typedef StringException PARENT;
+public:
+    WrappedException(IException *_exception, int code, const char *str, MessageAudience aud = MSGAUD_user) : StringException(code, str, aud), exception(_exception) { }
+
+    virtual StringBuffer &  errorMessage(StringBuffer &str) const override
+    {
+        PARENT::errorMessage(str);
+        if (exception)
+        {
+            str.appendf("[ %u, ", exception->errorCode());
+            exception->errorMessage(str).append(" ]");
+        }
+        return str;
+    }
+protected:
+    Owned<IException> exception;
+};
+
+IException *makeWrappedExceptionVA(IException *e, int code, const char *format, va_list args)
+{
+    StringBuffer eStr;
+    eStr.limited_valist_appendf(1024, format, args);
+    return new WrappedException(e, code, eStr.str());
+}
+
+IException *makeWrappedExceptionV(IException *e, int code, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    IException *ret = makeWrappedExceptionVA(e, code, format, args);
+    va_end(args);
+    return ret;
+}
+
 void jlib_decl throwStringExceptionV(int code,const char *format, ...)
 {
     va_list args;

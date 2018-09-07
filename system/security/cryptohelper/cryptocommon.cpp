@@ -17,21 +17,55 @@
 
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
 
+#include <memory>
 #include "jliball.hpp"
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#include <openssl/ssl.h>
 #include "cryptocommon.hpp"
 
 
-static void addAlgorithms()
+static unsigned numCryptoLocks = 0;
+static std::vector<std::unique_ptr<CriticalSection>> cryptoLocks;
+
+
+static void locking_function(int mode, int n, const char * file, int line)
 {
+    assertex(n < numCryptoLocks);
+    if (mode & CRYPTO_LOCK)
+        cryptoLocks[n]->enter();
+    else
+        cryptoLocks[n]->leave();
+}
+
+static unsigned long pthreads_thread_id()
+{
+    return (unsigned long)GetCurrentThreadId();
+}
+
+static void initSSLLibrary()
+{
+    SSL_load_error_strings();
+    SSLeay_add_ssl_algorithms();
+    if (!CRYPTO_get_locking_callback())
+    {
+        numCryptoLocks = CRYPTO_num_locks();
+        for (unsigned i=0; i<numCryptoLocks; i++)
+            cryptoLocks.push_back(std::unique_ptr<CriticalSection>(new CriticalSection));
+        CRYPTO_set_locking_callback(locking_function);
+    }
+#ifndef _WIN32
+    if (!CRYPTO_get_id_callback())
+        CRYPTO_set_id_callback((unsigned long (*)())pthreads_thread_id);
+#endif
     OpenSSL_add_all_algorithms();
 }
 
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    addAlgorithms();
+    initSSLLibrary();
     return true;
 }
 MODULE_EXIT()

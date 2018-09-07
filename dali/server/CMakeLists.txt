@@ -61,7 +61,6 @@ target_link_libraries ( daserver
          hrpc 
          remote 
          dalibase 
-         cryptohelper
     )
 IF (USE_OPENLDAP)
 target_link_libraries ( daserver LdapSecurity )

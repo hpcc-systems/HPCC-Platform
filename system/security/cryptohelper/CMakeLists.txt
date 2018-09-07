@@ -40,24 +40,13 @@ include_directories (
         ${OPENSSL_INCLUDE_DIR}
     )
 
-ADD_DEFINITIONS ( -DCRYPTOHELPER_EXPORTS -D_USRDLL )
+IF (USE_OPENSSL)
+    include_directories(${OPENSSL_INCLUDE_DIR})
+ENDIF()
 
-HPCC_ADD_LIBRARY( cryptohelper SHARED ${SRCS} )
+ADD_DEFINITIONS( -D_LIB )
+ADD_DEFINITIONS( -D_USRDLL -DJLIB_EXPORTS )
 
-install (
-        TARGETS cryptohelper
-        RUNTIME DESTINATION ${EXEC_DIR}
-        LIBRARY DESTINATION ${LIB_DIR}
-    )
+#SET_SOURCE_FILES_PROPERTIES( ${SRCS} PROPERTIES LANGUAGE CXX )
+HPCC_ADD_LIBRARY( cryptohelper STATIC ${SRCS} )
 
-target_link_libraries (
-        cryptohelper
-        jlib
-    )
-
-if (USE_OPENSSL)
-      target_link_libraries (
-          cryptohelper
-          ${OPENSSL_LIBRARIES}
-    )
-endif()

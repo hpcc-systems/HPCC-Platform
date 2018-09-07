@@ -74,6 +74,8 @@ IException jlib_decl *makeStringExceptionV(MessageAudience aud, int code, const 
 IException jlib_decl *makeStringExceptionVA(MessageAudience aud, int code, const char *why, va_list args) __attribute__((format(printf, 3, 0)));
 IException jlib_decl *makeStringException(MessageAudience aud, int code, const char *why);
 __declspec(noreturn) void jlib_decl throwStringExceptionV(int code, const char *format, ...) __attribute__((format(printf, 2, 3), noreturn));
+IException jlib_decl *makeWrappedExceptionVA(IException *e, int code, const char *why, va_list args) __attribute__((format(printf, 3, 0)));
+IException jlib_decl *makeWrappedExceptionV(IException *e, int code, const char *why, ...) __attribute__((format(printf, 3, 4)));
 
 // Macros for legacy names of above functions
 

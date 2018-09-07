@@ -55,7 +55,6 @@ HPCC_ADD_LIBRARY( LdapSecurity SHARED ${SRCS} )
 install ( TARGETS LdapSecurity RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( LdapSecurity
          jlib
-         cryptohelper
          dalibase
          ${OPENLDAP_LIBRARIES}
     )

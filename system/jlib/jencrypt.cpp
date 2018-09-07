@@ -18,6 +18,12 @@
 
 #include "jencrypt.hpp"
 
+#ifdef _USE_OPENSSL
+
+#include "ske.hpp"
+
+#endif
+
 // From rijndael.hpp and rijndael.cpp:
 //
 // Creation date : Sun Nov 5 2000 03:21:05 CEST
@@ -1766,6 +1772,8 @@ inline Rijndael::KeyLength getAesKeyType(size_t keylen)
     return Rijndael::Key32Bytes;
 }
 
+namespace jlib
+{
 
 MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
@@ -1780,10 +1788,8 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size
         output.setLength(len);
     else 
         throw MakeStringException(-1,"AES Encryption error: %d, %s", len, getAesErrorText(len));
-
     return output;
 }
-
 
 MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
@@ -1798,8 +1804,29 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size
         output.setLength(len);
     else 
         throw MakeStringException(-1,"AES Decryption error: %d, %s", len, getAesErrorText(len));
-
     return output;
+}
+
+} // end of namespace jlib
+
+MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
+{
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
+    cryptohelper::aesEncrypt(output, inlen, input, keylen, (const char *)key);
+    return output;
+#else
+    return jlib::aesEncrypt(key, keylen, input, inlen, output);
+#endif
+}
+
+MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
+{
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
+    cryptohelper::aesDecrypt(output, inlen, input, keylen, (const char *)key);
+    return output;
+#else
+    return jlib::aesDecrypt(key, keylen, input, inlen, output);
+#endif
 }
 
 #define CRYPTSIZE 32

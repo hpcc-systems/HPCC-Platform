@@ -18,29 +18,22 @@
 #ifndef CRYPTOCOMMON_HPP
 #define CRYPTOCOMMON_HPP
 
-#ifndef CRYPTOHELPER_API
-
-#ifndef CRYPTOHELPER_EXPORTS
-    #define CRYPTOHELPER_API DECL_IMPORT
-#else
-    #define CRYPTOHELPER_API DECL_EXPORT
-#endif //CRYPTOHELPER_EXPORTS
-
-#endif
-
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
 
 #include <openssl/pem.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
+#include "jiface.hpp"
+#include "jbuff.hpp"
+
 namespace cryptohelper
 {
 
-CRYPTOHELPER_API IException *makeEVPException(int code, const char *msg);
-CRYPTOHELPER_API IException *makeEVPExceptionV(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
-CRYPTOHELPER_API void throwEVPException(int code, const char *format);
-CRYPTOHELPER_API void throwEVPExceptionV(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
+jlib_decl IException *makeEVPException(int code, const char *msg);
+jlib_decl IException *makeEVPExceptionV(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
+jlib_decl void throwEVPException(int code, const char *format);
+jlib_decl void throwEVPExceptionV(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 
 inline void voidBIOfree(BIO *bio) { BIO_free(bio); }
 inline void voidOpenSSLFree(void *m) { OPENSSL_free(m); }
@@ -51,10 +44,15 @@ typedef OwnedPtrCustomFree<EVP_PKEY_CTX, EVP_PKEY_CTX_free> OwnedEVPPkeyCtx;
 typedef OwnedPtrCustomFree<void, voidOpenSSLFree> OwnedEVPMemory;
 typedef OwnedPtrCustomFree<EVP_CIPHER_CTX, EVP_CIPHER_CTX_free> OwnedEVPCipherCtx;
 typedef OwnedPtrCustomFree<RSA, RSA_free> OwnedEVPRSA;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+typedef OwnedPtrCustomFree<EVP_MD_CTX, EVP_MD_CTX_destroy> OwnedEVPMdCtx;
+#else
+typedef OwnedPtrCustomFree<EVP_MD_CTX, EVP_MD_CTX_free> OwnedEVPMdCtx;
+#endif
 
 } // end of namespace cryptohelper
 
 #endif // end of #if defined(_USE_OPENSSL) && !defined(_WIN32)
 
-#endif
+#endif // CRYPTOCOMMON_HPP
 
