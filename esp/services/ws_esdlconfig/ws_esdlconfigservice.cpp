@@ -188,8 +188,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         if (m_isDetachedFromDali)
           throw MakeStringException(-1, "Cannot publish ESDL Service definition. ESP is currently detached from DALI.");
 
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "Failed to Publish ESDL Service definition. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "WsESDLConfigEx::PublishESDLDefinition: Permission denied.");
 
         Owned<IUserDescriptor> userdesc;
         const char *user = context.queryUserId();
@@ -407,8 +406,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
         if (m_isDetachedFromDali)
             throw MakeStringException(-1, "Cannot publish ESDL Binding. ESP is currently detached from DALI.");
 
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "Failed to Configure ESDL Service. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "WsESDLConfigEx::PublishESDLBinding: Permission denied.");
 
         double ver = context.getClientVersion();
 
@@ -647,8 +645,7 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
         if (m_isDetachedFromDali)
             throw MakeStringException(-1, "Cannot Configure ESDL Binding Method. ESP is currently detached from DALI.");
 
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "Failed to Configure ESDL Method. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "WsESDLConfigEx::ConfigureESDLBindingMethod: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -975,8 +972,7 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
         if (m_isDetachedFromDali)
             throw MakeStringException(-1, "Cannot fetch ESDL Binding. ESP is currently detached from DALI.");
 
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "Failed to fetch ESDL Service Configuration. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "WsESDLConfigEx::GetESDLBinding: Permission denied.");
 
         double ver = context.getClientVersion();
         StringBuffer username;
@@ -1214,8 +1210,7 @@ bool CWsESDLConfigEx::onDeleteESDLDefinition(IEspContext &context, IEspDeleteESD
     if (m_isDetachedFromDali)
         throw MakeStringException(-1, "Cannot delete ESDL Definition. ESP is currently detached from DALI.");
 
-    if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
-        throw MakeStringException(ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "Failed to DELETE ESDL entry. Permission denied.");
+    context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "WsESDLConfigEx::DeleteESDLDefinition: Permission denied.");
 
     StringBuffer esdlDefinitionId(req.getId());
     if (esdlDefinitionId.length()<=0)
@@ -1259,8 +1254,7 @@ bool CWsESDLConfigEx::onDeleteESDLBinding(IEspContext &context, IEspDeleteESDLBi
     if (m_isDetachedFromDali)
         throw MakeStringException(-1, "Cannot fetch ESDL Binding. ESP is currently detached from DALI.");
 
-    if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
-        throw MakeStringException(ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "Failed to DELETE ESDL entry. Permission denied.");
+    context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "WsESDLConfigEx::DeleteESDLBinding: Permission denied.");
 
     double ver = context.getClientVersion();
     StringBuffer esdlBindingId(req.getId());
@@ -1357,8 +1351,7 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
      if (m_isDetachedFromDali)
          throw MakeStringException(-1, "Cannot fetch ESDL Definition. ESP is currently detached from DALI.");
 
-    if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-        throw MakeStringException(ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "Failed to fetch ESDL definition. Permission denied.");
+    context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "WsESDLConfigEx::GetESDLDefinition: Permission denied.");
 
     StringBuffer id = req.getId();
     StringBuffer definition;
