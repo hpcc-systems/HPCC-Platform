@@ -45,6 +45,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
 FILESERVICES_API bool FILESERVICES_CALL fsFileValidate(ICodeContext *ctx, const char *name);
 FILESERVICES_API void FILESERVICES_CALL fsSetReadOnly(ICodeContext *ctx, const char *name, bool ro);
 FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile(ICodeContext *ctx, const char *oldname, const char *newname);
+FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile_v2(ICodeContext *ctx, const char *oldname, const char *newname, bool overwrite=false);
 FILESERVICES_API void FILESERVICES_CALL fsSendEmail(ICodeContext * ctx, const char *to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender);
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachText(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender);
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData(ICodeContext * ctx, const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender);

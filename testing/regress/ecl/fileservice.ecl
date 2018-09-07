@@ -26,6 +26,13 @@ rec := RECORD
 END;
 
 ds := DATASET([{'fruit', 123, 'apple'}, {'fruit', 246, 'ford'}, {'os', 680, 'bsd'}, {'music', 369, 'rhead'}, {'os', 987, 'os'}], rec);
+ds2 := DATASET( prefix + 'afterrename1.d00', rec, flat);
+
+string compareDatasets(dataset(rec) ds1, dataset(rec) ds2) := FUNCTION
+   boolean result := (0 = COUNT(JOIN(ds1, ds2, left.name=right.name, FULL ONLY)));
+   RETURN if(result, 'Pass', 'Fail');
+END;
+
 
 SEQUENTIAL(
   OUTPUT(ds, , prefix + 'renametest.d00', OVERWRITE),
@@ -33,5 +40,11 @@ SEQUENTIAL(
   File.RenameLogicalFile(prefix + 'afterrename1.d00', prefix + 'scope1::scope2::afterrename2.d00'),
   File.RenameLogicalFile(prefix + 'scope1::scope2::afterrename2.d00', prefix + 'scope1::afterrename3.d00'),
   OUTPUT(DATASET(prefix + 'scope1::afterrename3.d00', rec, FLAT)),
-  File.DeleteLogicalFile(prefix + 'scope1::afterrename3.d00')
+  File.DeleteLogicalFile(prefix + 'scope1::afterrename3.d00'),
+  OUTPUT(ds, , prefix + 'renametest.d00', OVERWRITE),
+  OUTPUT(ds, , prefix + 'afterrename1.d00', OVERWRITE),
+  // Rename with overwrite allowed
+  File.RenameLogicalFile(prefix + 'renametest.d00', prefix + 'afterrename1.d00', true),
+  output(compareDatasets(ds, ds2)),
+  File.DeleteLogicalFile(prefix + 'afterrename1.d00'),
 );

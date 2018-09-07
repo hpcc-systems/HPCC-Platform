@@ -64,7 +64,7 @@ static const char * EclDefinition =
 "  boolean FileExists(const varstring lfn, boolean physical=false) : c,context,entrypoint='fsFileExists'; \n"
 "  DeleteLogicalFile(const varstring lfn,boolean ifexists=false) : c,action,context,entrypoint='fsDeleteLogicalFile'; \n"
 "  SetReadOnly(const varstring lfn, boolean ro) : c,action,context,entrypoint='fsSetReadOnly'; \n"
-"  RenameLogicalFile(const varstring oldname, const varstring newname) : c,action,context,entrypoint='fsRenameLogicalFile'; \n"
+"  RenameLogicalFile(const varstring oldname, const varstring newname, boolean allowoverwrite=false) : c,action,context,entrypoint='fsRenameLogicalFile_v2'; \n"
 "  varstring GetBuildInfo() : c,pure,entrypoint='fsGetBuildInfo';\n"
 "  SendEmail(const varstring to, const varstring subject, const varstring body, const varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), const varstring sender=GETENV('emailSenderAddress')) : c,action,context,entrypoint='fsSendEmail'; \n"
 "  SendEmailAttachText(const varstring to, const varstring subject, const varstring body, const varstring attachment, const varstring mimeType, const varstring attachmentName, const varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), const varstring sender=GETENV('emailSenderAddress')) : c,action,context,entrypoint='fsSendEmailAttachText'; \n"
@@ -523,29 +523,46 @@ FILESERVICES_API void FILESERVICES_CALL fsSetReadOnly(ICodeContext *ctx, const c
     throw error.getClear();
 }
 
-
-FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile(ICodeContext *ctx, const char *oldname, const char *newname)
+FILESERVICES_API void FILESERVICES_CALL implementRenameLogicalFile(ICodeContext *ctx, const char *oldname, const char *newname, const bool overwrite)
 {
-    StringBuffer lfn, nlfn;
-    constructLogicalName(ctx, oldname, lfn);
-    constructLogicalName(ctx, newname, nlfn);
+    StringBuffer oldLfn, newLfn;
+    constructLogicalName(ctx, oldname, oldLfn);
+    constructLogicalName(ctx, newname, newLfn);
 
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
+    IDistributedFileDirectory &distributedDirectory = queryDistributedFileDirectory();
+
+    if (!distributedDirectory.exists(oldLfn.str(), udesc, false, false))
+        throw MakeStringException(0, "Old file %s doesn't exists.", oldLfn.str());
+
+    if (overwrite && distributedDirectory.exists(newLfn.str(), udesc, false, false))
+        fsDeleteLogicalFile(ctx, newname, true);
+
     try {
-        queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),udesc,transaction);
+        distributedDirectory.renamePhysical(oldLfn.str(), newLfn.str(), udesc, transaction);
         StringBuffer s("RenameLogicalFile ('");
-        s.append(lfn).append(", '").append(nlfn).append("') done");
-        WUmessage(ctx,SeverityInformation,NULL,s.str());
-        AuditMessage(ctx,"RenameLogicalFile",lfn.str(),nlfn.str());
+        s.append(oldLfn).append(", '").append(newLfn).append("') done");
+        WUmessage(ctx, SeverityInformation, NULL, s.str());
+        AuditMessage(ctx, "RenameLogicalFile", oldLfn.str(), newLfn.str());
     }
     catch (IException *e)
     {
         StringBuffer s;
         e->errorMessage(s);
-        WUmessage(ctx,SeverityWarning,"RenameLogicalFile",s.str());
+        WUmessage(ctx, SeverityWarning, "RenameLogicalFile", s.str());
         throw e;
      }
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile(ICodeContext *ctx, const char *oldname, const char *newname)
+{
+    implementRenameLogicalFile(ctx, oldname, newname, false);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile_v2(ICodeContext *ctx, const char *oldname, const char *newname, const bool overwrite)
+{
+    implementRenameLogicalFile(ctx, oldname, newname, overwrite);
 }
 
 
