@@ -55,29 +55,30 @@ if(USE_SPARK)
     endif(SPARK_URL)
 
     set(CENTRAL_REPO "https://repo1.maven.org/maven2")
-    set(SNAPSHOT_REPO "https://oss.sonatype.org/content/repositories/snapshots")
-    if(NOT SPARK_HPCC_VERSION)
-        set(SPARK_HPCC_VERSION "7.0.0-beta-1")
-    endif()
+
     if(NOT SPARK_HPCC_JAR)
-        set(SPARK_HPCC_JAR "spark-hpcc-${SPARK_HPCC_VERSION}.jar")
+        if(NOT SPARK_HPCC_VERSION)
+            set(SPARK_HPCC_VERSION "7.0.0")
+        endif()
+        file(DOWNLOAD
+            ${CENTRAL_REPO}/org/hpccsystems/spark-hpcc/${SPARK_HPCC_VERSION}/spark-hpcc-${SPARK_HPCC_VERSION}.jar
+            ${CMAKE_CURRENT_BINARY_DIR}/spark-hpcc-${SPARK_HPCC_VERSION}.jar
+            INACTIVITY_TIMEOUT 30
+            TIMEOUT 90)
+        set(SPARK_HPCC_JAR ${CMAKE_CURRENT_BINARY_DIR}/spark-hpcc-${SPARK_HPCC_VERSION}.jar)
     endif()
-    if(NOT WSCLIENT_VERSION)
-        set(WSCLIENT_VERSION "7.0.0-SNAPSHOT")
-    endif()
-    if(NOT WSCLIENT_JAR)
-        set(WSCLIENT_JAR "wsclient-7.0.0-20180815.193749-3-jar-with-dependencies.jar")
-    endif()
-    file(DOWNLOAD
-        ${CENTRAL_REPO}/org/hpccsystems/spark-hpcc/${SPARK_HPCC_VERSION}/${SPARK_HPCC_JAR}
-        ${CMAKE_CURRENT_BINARY_DIR}/${SPARK_HPCC_JAR}
-        INACTIVITY_TIMEOUT 30
-        TIMEOUT 90)
-    file(DOWNLOAD
-        ${SNAPSHOT_REPO}/org/hpccsystems/wsclient/${WSCLIENT_VERSION}/${WSCLIENT_JAR}
-        ${CMAKE_CURRENT_BINARY_DIR}/${WSCLIENT_JAR}
-        INACTIVITY_TIMEOUT 30
-        TIMEOUT 90)
+
+    if(NOT WSCLIENT_JAR)    
+        if(NOT WSCLIENT_VERSION)
+            set(WSCLIENT_VERSION "7.0.0")
+        endif()
+        file(DOWNLOAD
+            ${CENTRAL_REPO}/org/hpccsystems/wsclient/${WSCLIENT_VERSION}/wsclient-${WSCLIENT_VERSION}-jar-with-dependencies.jar
+            ${CMAKE_CURRENT_BINARY_DIR}/wsclient-${WSCLIENT_VERSION}-jar-with-dependencies.jar
+            INACTIVITY_TIMEOUT 30
+            TIMEOUT 90)
+        set(WSCLIENT_JAR ${CMAKE_CURRENT_BINARY_DIR}/wsclient-${WSCLIENT_VERSION}-jar-with-dependencies.jar)
+    endif(NOT WSCLIENT_JAR)
 
 
     message("")
@@ -123,8 +124,8 @@ if(USE_SPARK)
 
     install(
         FILES 
-            ${CMAKE_CURRENT_BINARY_DIR}/${SPARK_HPCC_JAR}
-            ${CMAKE_CURRENT_BINARY_DIR}/${WSCLIENT_JAR}
+            ${SPARK_HPCC_JAR}
+            ${WSCLIENT_JAR}
         COMPONENT runtime
         DESTINATION "jars/spark/"
         )
