@@ -469,7 +469,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
                     ptree->getProp("@name", bcfg->name);
                     bcfg->port = ptree->getPropInt("@port", 0);
                     if (bcfg->port == 0)
-                        DBGLOG("Binding %s is configured with port 0, do not load it.", bcfg->name.str());
+                        DBGLOG("Binding %s is configured with port 0, it will not be loaded.", bcfg->name.str());
                     else
                     {
                         ptree->getProp("@type", bcfg->type);
@@ -495,7 +495,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
                         m_bindings.push_back(bcfg.getClear());
                     }
                 }
-                
+
                 pt_iter->next();
             }
     
