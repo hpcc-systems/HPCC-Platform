@@ -1361,6 +1361,24 @@ IHqlExpression * ActivityInvariantHoister::replaceResourcedReferences(ActivityIn
     if (!isAffectedByResourcing(expr))
         return LINK(expr);
 
+    //Process each element in a sort list independently.  Otherwise (a very obscure bug)
+    //sort(ds, { ds, ds.x }) will incorrectly become SORT(ds, { ds', ds'.x })
+    if (expr->getOperator() == no_sortlist)
+    {
+        bool same = true;
+        HqlExprArray args;
+        args.ensure(expr->numChildren());
+        ForEachChild(i, expr)
+        {
+            IHqlExpression * cur = expr->queryChild(i);
+            IHqlExpression * mapped = replaceResourcedReferences(info, cur);
+            args.append(*mapped);
+            if (cur != mapped)
+                same = false;
+        }
+        return same ? LINK(expr) : expr->clone(args);
+    }
+
     LinkedHqlExpr mapped = expr;
     if (info && (info->childDependents.ordinality()))
     {
