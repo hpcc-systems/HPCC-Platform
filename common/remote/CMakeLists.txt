@@ -58,6 +58,7 @@ include_directories (
          ./../../system/jhtree
          ./../../rtl/eclrtl
          ./../../system/security/securesocket
+         ./../../system/security/cryptohelper
          ./../../testing/unittests
          ./../../rtl/include
     )
