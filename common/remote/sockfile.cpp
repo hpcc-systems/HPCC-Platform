@@ -4487,7 +4487,7 @@ void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IProperty
         if (isEmptyString(publicKeyFName))
             throwStringExceptionV(0, "createRemoteActivity: missing public key definition");
         Owned<CLoadedKey> publicKey = loadPublicKeyFromFile(publicKeyFName, nullptr); // NB: if cared could cache loaded keys
-        if (!digiVerify(metaInfoSignature, decompressedMetaInfoMb.length(), decompressedMetaInfoMb.bytes(), *publicKey))
+        if (!digiVerify(metaInfoSignature, metaInfoBlob.length(), metaInfoBlob.bytes(), *publicKey))
             throwStringExceptionV(0, "createRemoteActivity: signature verification failed");
 
         checkExpiryTime(*metaInfo);
