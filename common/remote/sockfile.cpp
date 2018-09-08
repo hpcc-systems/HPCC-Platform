@@ -186,14 +186,13 @@ struct dummyReadWrite
 // backward compatible modes
 typedef enum { compatIFSHnone, compatIFSHread, compatIFSHwrite, compatIFSHexec, compatIFSHall} compatIFSHmode;
 
-static const char *VERSTRING= "DS V2.3"       // dont forget FILESRV_VERSION in header
+static const char *VERSTRING= "DS V2.4"       // dont forget FILESRV_VERSION in header
 #ifdef _WIN32
 "Windows ";
 #else
 "Linux ";
 #endif
 
-typedef unsigned char RemoteFileCommandType;
 typedef int RemoteFileIOHandle;
 
 static unsigned maxConnectTime = 0;
@@ -349,16 +348,25 @@ enum
     RFCsetthrottle2,
     RFCsetfileperms,
 // 2.0
-    RFCreadfilteredindex,    // No longer used
+    RFCreadfilteredindex,    // No longer used     // 40
     RFCreadfilteredindexcount,
     RFCreadfilteredindexblob,
 // 2.2
-    RFCStreamRead,
-    RFCStreamReadTestSocket = '{',
+    RFCStreamRead,                                 // 43
+// 2.4
+    RFCStreamReadTestSocket,                       // 44
+    RFCStreamReadJSON = '{',
     RFCmaxnormal,
     RFCmax,
     RFCunknown = 255 // 0 would have been more sensible, but can't break backward compatibility
 };
+
+// used by testsocket only
+RemoteFileCommandType queryRemoteStreamCmd()
+{
+    return RFCStreamReadTestSocket;
+}
+
 
 #define RFCText(cmd) #cmd
 
@@ -408,11 +416,12 @@ const char *RFCStrings[] =
     RFCText(RFCreadfilteredcount),
     RFCText(RFCreadfilteredblob),
     RFCText(RFCStreamRead),
+    RFCText(RFCStreamReadTestSocket),
 };
 static const char *getRFCText(RemoteFileCommandType cmd)
 {
-    if (cmd==RFCStreamReadTestSocket)
-        return "RFCStreamReadTestSocket";
+    if (cmd==RFCStreamReadJSON)
+        return "RFCStreamReadJSON";
     else
     {
         unsigned elems = sizeof(RFCStrings) / sizeof(RFCStrings[0]);
@@ -608,9 +617,25 @@ public:
     }
 };
 
-static IDAFS_Exception *createDafsException(int code,const char *msg)
+static IDAFS_Exception *createDafsException(int code, const char *msg)
 {
-    return new CDafsException(code,msg);
+    return new CDafsException(code, msg);
+}
+
+static IDAFS_Exception *createDafsExceptionVA(int code, const char *format, va_list args)
+{
+    StringBuffer eStr;
+    eStr.limited_valist_appendf(1024, format, args);
+    return new CDafsException(code, eStr);
+}
+
+static IDAFS_Exception *createDafsExceptionV(int code, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    IDAFS_Exception *ret = createDafsExceptionVA(code, format, args);
+    va_end(args);
+    return ret;
 }
 
 void setDafsEndpointPort(SocketEndpoint &ep)
@@ -1836,7 +1861,7 @@ public:
         }
         MemoryBuffer actualTypeInfo;
         if (!dumpTypeInfo(actualTypeInfo, actual->querySerializedDiskMeta()->queryTypeInfo()))
-            throw MakeStringException(0, "Format not supported by remote read");
+            throw createDafsException(DAFSERR_cmdstream_unsupported_recfmt, "Format not supported by remote read");
         request.append(",\n \"inputBin\" : \"");
         JBASE64_Encode(actualTypeInfo.toByteArray(), actualTypeInfo.length(), request, false);
         request.append("\"");
@@ -2137,7 +2162,7 @@ public:
             fieldFilters.addFilter(OLINK(_fieldFilters.queryFilter(f)));
         iRemoteFileIO.setown(new CRemoteFilteredKeyIO(ep, filename, crc, actual, projected, fieldFilters, rowLimit));
         if (!iRemoteFileIO)
-            throw MakeStringException(0, "Unable to open remote key part: '%s'", filename.get());
+            throwStringExceptionV(DAFSERR_cmdstream_openfailure, "Unable to open remote key part: '%s'", filename.get());
         strm.setown(createFileSerialStream(iRemoteFileIO));
         prefetcher.setown(projected->createDiskPrefetcher());
         assertex(prefetcher);
@@ -4029,7 +4054,7 @@ protected:
     {
         fileName.set(config.queryProp("fileName"));
         if (isEmptyString(fileName))
-            throw MakeStringException(0, "CRemoteDiskBaseActivity: fileName missing");
+            throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteDiskBaseActivity: fileName missing");
 
         record = &inMeta->queryRecordAccessor(true);
         translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
@@ -4136,7 +4161,7 @@ class CRemoteDiskReadActivity : public CRemoteDiskBaseActivity
         {
             iFileIO.setown(iFile->open(IFOread));
             if (!iFileIO)
-                throw MakeStringException(1, "Failed to open: '%s'", fileName.get());
+                throw createDafsExceptionV(DAFSERR_cmdstream_protocol_failure, "Failed to open: '%s'", fileName.get());
             if (compressed)
             {
                 WARNLOG("meta info marked file '%s' as compressed, but detected file as uncompressed", fileName.get());
@@ -4468,13 +4493,21 @@ void checkExpiryTime(IPropertyTree &metaInfo)
 {
     const char *expiryTime = metaInfo.queryProp("expiryTime");
     if (isEmptyString(expiryTime))
-        throwStringExceptionV(0, "createRemoteActivity: invalid expiry specification");
+        throw createDafsException(DAFSERR_cmdstream_invalidexpiry, "createRemoteActivity: invalid expiry specification");
+
     CDateTime expiryTimeDt;
-    expiryTimeDt.setString(expiryTime);
+    try
+    {
+        expiryTimeDt.setString(expiryTime);
+    }
+    catch (IException *e)
+    {
+        throw createDafsException(DAFSERR_cmdstream_invalidexpiry, "createRemoteActivity: invalid expiry specification");
+    }
     CDateTime nowDt;
     nowDt.setNow();
     if (nowDt >= expiryTimeDt)
-        throwStringExceptionV(0, "createRemoteActivity: authorization expired");
+        throw createDafsException(DAFSERR_cmdstream_authexpired, "createRemoteActivity: authorization expired");
 }
 
 void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IPropertyTree *keyPairInfo)
@@ -4487,7 +4520,7 @@ void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IProperty
     StringBuffer metaInfoB64;
     actNode.getProp("metaInfo", metaInfoB64);
     if (0 == metaInfoB64.length())
-        throwStringExceptionV(0, "createRemoteActivity: missing metaInfo");
+        throw createDafsException(DAFSERR_cmdstream_protocol_failure, "createRemoteActivity: missing metaInfo");
 
     MemoryBuffer compressedMetaInfoMb;
     JBASE64_Decode(metaInfoB64.str(), compressedMetaInfoMb);
@@ -4502,7 +4535,7 @@ void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IProperty
 
     bool isSigned = metaInfoBlob.length() != 0;
     if (authorizedOnly && !isSigned)
-        throwStringExceptionV(0, "createRemoteActivity: unathorized");
+        throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: unathorized");
 
     if (isSigned)
     {
@@ -4515,18 +4548,18 @@ void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IProperty
 
         StringBuffer metaInfoSignature;
         if (!metaInfoEnvelope->getProp("signature", metaInfoSignature))
-            throwStringExceptionV(0, "createRemoteActivity: missing signature");
+            throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing signature");
 
         VStringBuffer keyPairPath("KeyPair[@name=\"%s\"]", keyPairName);
         IPropertyTree *keyPair = keyPairInfo->queryPropTree(keyPairPath);
         if (!keyPair)
-            throwStringExceptionV(0, "createRemoteActivity: missing key pair definition");
+            throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing key pair definition");
         const char *publicKeyFName = keyPair->queryProp("@publicKey");
         if (isEmptyString(publicKeyFName))
-            throwStringExceptionV(0, "createRemoteActivity: missing public key definition");
+            throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing public key definition");
         Owned<CLoadedKey> publicKey = loadPublicKeyFromFile(publicKeyFName, nullptr); // NB: if cared could cache loaded keys
         if (!digiVerify(metaInfoSignature, metaInfoBlob.length(), metaInfoBlob.bytes(), *publicKey))
-            throwStringExceptionV(0, "createRemoteActivity: signature verification failed");
+            throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: signature verification failed");
 
         checkExpiryTime(*metaInfo);
     }
@@ -4547,7 +4580,7 @@ void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IProperty
     StringBuffer partFileName;
     fileInfo->getProp(xpath, partFileName);
     if (!partFileName.length())
-        throwStringExceptionV(0, "createRemoteActivity: invalid file info");
+        throw createDafsException(DAFSERR_cmdstream_protocol_failure, "createRemoteActivity: invalid file info");
 
     actNode.setProp("fileName", partFileName.str());
     verifyex(actNode.removeProp("metaInfo")); // no longer needed
@@ -4599,7 +4632,7 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnl
                     if (streq("count", action))
                         activity.setown(createRemoteIndexCount(actNode));
                     else
-                        throwStringExceptionV(0, "Unknown action '%s' on index '%s'", action, partFileName);
+                        throw createDafsExceptionV(DAFSERR_cmdstream_protocol_failure, "Unknown action '%s' on index '%s'", action, partFileName);
                 }
                 else
                     activity.setown(createRemoteIndexRead(actNode));
@@ -4609,9 +4642,9 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnl
                 if (!isEmptyString(action))
                 {
                     if (streq("count", action))
-                        throwStringExceptionV(0, "Remote Disk Counts currently unsupported");
+                        throw createDafsException(DAFSERR_cmdstream_protocol_failure, "Remote Disk Counts currently unsupported");
                     else
-                        throwStringExceptionV(0, "Unknown action '%s' on flat file '%s'", action, partFileName);
+                        throw createDafsExceptionV(DAFSERR_cmdstream_protocol_failure, "Unknown action '%s' on flat file '%s'", action, partFileName);
                 }
                 else
                     activity.setown(createRemoteDiskRead(actNode));
@@ -6689,19 +6722,26 @@ public:
         }
     }
 
-    void cmdStreamReadTestSocket(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
-    {
-        reply.append('J');
-        /* testsocket is not actually passing in a command, and is interpreting '{' as the cmd to get here.
-         * so rewind so it can be read/parsed as JSON by cmdStreamRead
-         */
-        msg.reset(msg.getPos()-sizeof(RemoteFileCommandType));
-        cmdStreamReadCommon(msg, reply, client);
-    }
-
     void cmdStreamReadStd(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
     {
         reply.append(RFEnoerror);
+        cmdStreamReadCommon(msg, reply, client);
+    }
+
+    void cmdStreamReadJSON(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    {
+        /* NB: exactly the same handling as cmdStreamReadStd(RFCStreamRead) for now,
+         * may want to differentiate later
+         * i.e. return format is { len[unsigned4-bigendian], errorcode[unsigned4-bigendian], result } - where result format depends on request output type.
+         * errorcode = 0 means no error
+         */
+        reply.append(RFEnoerror);
+        cmdStreamReadCommon(msg, reply, client);
+    }
+
+    void cmdStreamReadTestSocket(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    {
+        reply.append('J');
         cmdStreamReadCommon(msg, reply, client);
     }
 
@@ -6811,6 +6851,7 @@ public:
             case RFCunlock:
             case RFCStreamRead:
             case RFCStreamReadTestSocket:
+            case RFCStreamReadJSON:
                 stdCmdThrottler.addCommand(cmd, msg, client);
                 return;
             // NB: The following commands are still bound by the the thread pool
@@ -6865,8 +6906,9 @@ public:
                 MAPCOMMAND(RFCgetinfo, cmdGetInfo);
                 MAPCOMMAND(RFCfirewall, cmdFirewall);
                 MAPCOMMANDCLIENT(RFCunlock, cmdUnlock, *client);
-                MAPCOMMANDCLIENTTESTSOCKET(RFCStreamReadTestSocket, cmdStreamReadTestSocket, *client);
                 MAPCOMMANDCLIENT(RFCStreamRead, cmdStreamReadStd, *client);
+                MAPCOMMANDCLIENT(RFCStreamReadJSON, cmdStreamReadJSON, *client);
+                MAPCOMMANDCLIENTTESTSOCKET(RFCStreamReadTestSocket, cmdStreamReadTestSocket, *client);
                 MAPCOMMANDCLIENT(RFCcopysection, cmdCopySection, *client);
                 MAPCOMMANDCLIENTTHROTTLE(RFCtreecopy, cmdTreeCopy, *client, &slowCmdThrottler);
                 MAPCOMMANDCLIENTTHROTTLE(RFCtreecopytmp, cmdTreeCopyTmp, *client, &slowCmdThrottler);
