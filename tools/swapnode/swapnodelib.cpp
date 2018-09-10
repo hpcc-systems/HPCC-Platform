@@ -84,16 +84,15 @@ bool WuResubmit(const char *wuid)
         ERRLOG("WuResubmit(%s): could not resubmit as workunit state is '%s'", wuid, wu->queryStateDesc());
         return false;
     }
-    SCMStringBuffer token;
-    wu->getSecurityToken(token);
-    SCMStringBuffer user;
-    SCMStringBuffer password;
-    extractToken(token.str(), wuid, user, password);
+    SCMStringBuffer daToken;
+    StringBuffer user;
+    wu->getWorkunitDistributedAccessToken(daToken);//TODO Can we use wu->queryUser() instead?
+    extractFromWorkunitDAToken(daToken.str(), nullptr, &user, nullptr);//get user from token
     wu->resetWorkflow();
     wu->setState(WUStateSubmitted);
     wu->commit();
     wu.clear();
-    submitWorkUnit(wuid,user.str(),password.str());
+    submitWorkUnit(wuid,user.str(),daToken.str());//use workunit token as password
 
     PROGLOG("WuResubmit(%s): resubmitted",wuid);
     return true;

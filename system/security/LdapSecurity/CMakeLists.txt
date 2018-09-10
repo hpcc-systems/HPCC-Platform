@@ -46,6 +46,7 @@ include_directories (
          ./../../../esp/platform 
 	     ./../../../dali/base
 	     ./../../../system/mp
+	     ./../../../common/workunit
          ${OPENLDAP_INCLUDE_DIR}
     )
 
@@ -56,6 +57,7 @@ install ( TARGETS LdapSecurity RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATI
 target_link_libraries ( LdapSecurity
          jlib
          dalibase
+         workunit
          ${OPENLDAP_LIBRARIES}
     )
 

@@ -55,6 +55,7 @@ include_directories (
          ./../../common/dllserver 
          ./../../system/jlib
          ./../../system/security/shared 
+         ./../../system/security/cryptohelper
          ./../../common/thorhelper 
          ./../../rtl/eclrtl 
          ./../../rtl/nbcd

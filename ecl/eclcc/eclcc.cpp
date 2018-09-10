@@ -2462,7 +2462,10 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(tempArg, "-token"))
         {
             // For use by eclccserver - not documented in usage()
-            extractToken(tempArg, optWUID, StringAttrAdaptor(optUser), StringAttrAdaptor(optPassword));
+            StringBuffer wuid,user;
+            extractFromWorkunitDAToken(tempArg, &wuid, &user,nullptr);
+            optWUID.set(wuid.str());
+            optUser.set(user.str());
         }
         else if (iter.matchOption(optWUID, "-wuid"))
         {

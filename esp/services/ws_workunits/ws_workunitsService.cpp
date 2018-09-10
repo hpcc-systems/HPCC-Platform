@@ -832,9 +832,6 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                     NewWsWorkunit wu(factory, context);
                     wuid.set(wu->queryWuid());
                     queryExtendedWU(wu)->copyWorkUnit(src, false, false);
-
-                    SCMStringBuffer token;
-                    wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
                 }
 
                 wuids.append(wuid.str());
@@ -962,9 +959,6 @@ bool CWsWorkunitsEx::onWUSchedule(IEspContext &context, IEspWUScheduleRequest &r
 
         if (req.getMaxRunTime())
             wu->setDebugValueInt("maxRunTime", req.getMaxRunTime(), true);
-
-        SCMStringBuffer token;
-        wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
 
         AuditSystemAccess(context.queryUserId(), true, "Scheduled %s", wuid.str());
     }
@@ -4636,8 +4630,6 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
     {
         if (srcxml->hasProp("@jobName"))
             wu->setJobName(srcxml->queryProp("@jobName"));
-        if (srcxml->hasProp("@token"))
-            wu->setSecurityToken(srcxml->queryProp("@token"));
         if (srcxml->hasProp("Query/Text"))
             wu.setQueryText(srcxml->queryProp("Query/Text"));
     }
