@@ -24,6 +24,11 @@ if(NOT "${CUSTOM_PACKAGE_SUFFIX}" STREQUAL "")
     set(version_file_prefix "${CUSTOM_PACKAGE_SUFFIX}_")
 endif()
 
+if(NOT USE_SPARK)
+    set(SPARK_ENV_S "<!-- Built with -DUSE_SPARK=OFF ")
+    set(SPARK_ENV_E "-->")
+endif(NOT USE_SPARK)
+
 configure_file("version.in" "version")
 configure_file("environment.conf.in" "environment.conf" IMMEDIATE)
 configure_file("environment.xml.in" "environment.xml" IMMEDIATE)

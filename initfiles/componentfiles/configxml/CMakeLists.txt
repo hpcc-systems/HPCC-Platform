@@ -25,6 +25,37 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/RoxieTopology.xsl ${CMAKE_CURRENT_BIN
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/thor.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/thor.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/thor.xsl ${CMAKE_CURRENT_BINARY_DIR}/thor.xsl)
 
+if(USE_SPARK)
+    set(SPARKTHOR_ENV_ENTRY "|.//SparkThorProcess")
+    set(SPARKTHOR_BUILDSET_ENTRY
+"            <BuildSet installSet=\"deploy_map.xml\"
+                name=\"sparkthor\"
+                path=\"componentfiles/sparkthor\"
+                processName=\"SparkThorProcess\"
+                schema=\"sparkThor.xsd\"/>")
+    set(SPARKTHOR_CGENCOMPLIST_LINUX_ENTRY
+"  <Component name=\"sparkthor\" processName=\"SparkThor\" schema=\"sparkThor.xsd\">
+     <File name=\"sparkThor.xsl\" method=\"xslt\" destName=\"spark-env.sh\"/>
+   </Component>")
+    set(SPARKTHOR_CGENCOMPLIST_WIN_ENTRY
+"  <Component name=\"sparkthor\" processName=\"SparkThor\" schema=\"sparkThor.xsd\">
+    <File name=\"sparkThor.xsl\" method=\"xslt\" destName=\"spark-env.conf\"/>
+  </Component>")
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsl.in
+        ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
+        @ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsd
+              ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
+        DESTINATION componentfiles/configxml
+        COMPONENT Runtime)
+endif()
+
+configure_file(environment.xsd.in environment.xsd @ONLY)
+configure_file(cgencomplist_linux.xml.in cgencomplist_linux.xml @ONLY)
+configure_file(cgencomplist_win.xml.in cgencomplist_win.xml @ONLY)
+
 if("${HPCC_PROJECT_ABBR}" STREQUAL "CC")
     configure_file("buildset${HPCC_PROJECT_ABBR}.xml.in" "buildset.xml")
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/buildset.xml DESTINATION componentfiles/configxml COMPONENT Runtime)
@@ -52,7 +83,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/eclcc.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/eclccserver.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/eclscheduler.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/environment.xsd
+    ${CMAKE_CURRENT_BINARY_DIR}/environment.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_account.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl2.xsd
@@ -70,8 +101,8 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/soapplus.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/topology.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/WsDeploy.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/cgencomplist_linux.xml
-    ${CMAKE_CURRENT_SOURCE_DIR}/cgencomplist_win.xml
+    ${CMAKE_CURRENT_BINARY_DIR}/cgencomplist_linux.xml
+    ${CMAKE_CURRENT_BINARY_DIR}/cgencomplist_win.xml
     ${CMAKE_CURRENT_SOURCE_DIR}/esp.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/dali.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/dfuplus.xsl

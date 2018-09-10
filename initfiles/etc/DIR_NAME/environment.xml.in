@@ -889,6 +889,25 @@
              name="s1"
              netAddress="."/>
   </EclSchedulerProcess>
+  @SPARK_ENV_S@
+  <SparkThorProcess build="_"
+                    buildSet="sparkthor"
+                    name="mysparkthor"
+                    NodeGroup="mythor"
+                    daliServers="mydali"
+                    SPARK_EXECUTOR_CORES="1"
+                    SPARK_EXECUTOR_MEMORY="1G"
+                    SPARK_MASTER_WEBUI_PORT="8080"
+                    SPARK_MASTER_PORT="7077"
+                    SPARK_WORKER_CORES="1"
+                    SPARK_WORKER_MEMORY="1G"
+                    SPARK_WORKER_PORT="7071">
+   <Instance computer="localhost"
+             directory="/var/lib/HPCCSystems/mysparkthor"
+             name="s1"
+             netAddress="."/>
+  </SparkThorProcess>
+  @SPARK_ENV_E@
  </Software>
  <EnvSettings>
   <pid>${PID_PATH}</pid>
@@ -954,8 +973,7 @@
              name="eclminus"
              overide="no"
              path="componentfiles/eclminus"/>
-   <BuildSet installSet="deploy_map.xml"
-             name="eclplus"
+   <BuildSet installSet="deploy_map.xml" name="eclplus"
              overide="no"
              path="componentfiles/eclplus"
              processName="EclPlusProcess"
@@ -1224,6 +1242,13 @@
                    resource="WsLoggingAccess"/>
     </Properties>
    </BuildSet>
+   @SPARK_ENV_S@
+   <BuildSet installSet="deploy_map.xml"
+             name="sparkthor"
+             path="componentfiles/sparkthor"
+             processName="SparkThorProcess"
+             schema="sparkThor.xsd"/>
+   @SPARK_ENV_E@
   </Build>
  </Programs>
 </Environment>

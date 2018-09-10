@@ -51,6 +51,7 @@
   <Component name="backupnode" processName="BackupNode" schema="backupnode.xsd">
     <File name="backupnode_vars.xsl" method="xslt" destName="backupnode.conf"/>
   </Component>
+  @SPARKTHOR_CGENCOMPLIST_LINUX_ENTRY@
   <Component name="ldapServer" processName="LDAPServerProcess">
     <File name="ldapserver.xsl" method="xslt" destName=".ldaprc"/>
   </Component>

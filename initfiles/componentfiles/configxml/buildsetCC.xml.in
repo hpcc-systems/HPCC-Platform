@@ -48,6 +48,7 @@
                 path="componentfiles/backupnode"
                 processName="BackupNodeProcess"
                 schema="backupnode.xsd"/>
+            @SPARKTHOR_BUILDSET_ENTRY@
             <BuildSet installSet="deploy_map.xml"
                 name="daliplugin"
                 path="componentfiles/daliplugin"
