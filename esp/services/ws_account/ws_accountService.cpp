@@ -152,7 +152,9 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
     {
         ISecUser* userInContext = context.queryUser();
         if (!userInContext)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, "User not set in EspContext");
+        {
+            return true;
+        }
 
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if (!secmgr)
