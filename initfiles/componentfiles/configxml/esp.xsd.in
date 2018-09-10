@@ -489,7 +489,7 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="passphrase" type="xs:string" use="optional" default="hpccsystems-platform">
+                        <xs:attribute name="passphrase" type="xs:string" use="optional">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <viewType>password</viewType>
