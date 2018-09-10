@@ -577,6 +577,13 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/addWorkunitError.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/getGlobalId.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/getLocalId.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+ 
   </chapter>
 
   <chapter id="Auditing">
