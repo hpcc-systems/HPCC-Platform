@@ -79,6 +79,7 @@ target_link_libraries(
     ${XERCES_LIBRARIES}
     jlib
     xmllib
+    dalibase
     )
 
 if(LIBMEMCACHED_FOUND)
