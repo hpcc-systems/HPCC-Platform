@@ -182,8 +182,7 @@ bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEs
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to Search Logical Files. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUSearch: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -320,8 +319,7 @@ bool CWsDfuEx::onDFUQuery(IEspContext &context, IEspDFUQueryRequest & req, IEspD
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to Browse Logical Files. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUQuery: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -347,8 +345,7 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to access DFUInfo. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUInfo: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -388,8 +385,7 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to Browse Space Usage. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUSpace: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -1159,8 +1155,7 @@ bool CWsDfuEx::onAddtoSuperfile(IEspContext &context, IEspAddtoSuperfileRequest 
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to AddtoSuperfile. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::AddtoSuperfile: Permission denied.");
 
         double version = context.getClientVersion();
         if (version > 1.17)
@@ -1433,8 +1428,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to update Logical Files. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUArrayAction: Permission denied.");
 
         CDFUArrayActions action = req.getType();
         if (action == DFUArrayActions_Undefined)
@@ -1543,8 +1537,7 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to access DFUDefFile. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUDefFile: Permission denied.");
 
         CDFUDefFileFormat format = req.getFormat();
         if (format == DFUDefFileFormat_Undefined)
@@ -1679,8 +1672,7 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to access DFURecordTypeInfo. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFURecordTypeInfo: Permission denied.");
 
         const char* fileName = req.getName();
         if (!fileName || !*fileName)
@@ -2617,8 +2609,7 @@ bool CWsDfuEx::onDFUFileView(IEspContext &context, IEspDFUFileViewRequest &req, 
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to Browse Files by Scope. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUFileView: Permission denied.");
 
         Owned<IUserDescriptor> userdesc;
         StringBuffer username;
@@ -3908,8 +3899,7 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to Superfile action. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::SuperfileAction: Permission denied.");
 
         const char* action = req.getAction();
         const char* superfile = req.getSuperfile();
@@ -4046,8 +4036,7 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to View Data File. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUGetDataColumns: Permission denied.");
 
         StringBuffer logicalNameStr;
         char* logicalName0 = (char*) req.getOpenLogicalName();
@@ -4496,8 +4485,7 @@ bool CWsDfuEx::onDFUSearchData(IEspContext &context, IEspDFUSearchDataRequest &r
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to View Data File. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUSearchData: Permission denied.");
 
         double version = context.getClientVersion();
 
@@ -4828,8 +4816,7 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to View Data File. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUBrowseData: Permission denied.");
 
         const char* logicalName0 = req.getLogicalName();
         const char* parentName = req.getParentName();
@@ -5100,8 +5087,7 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
-            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to Erase History. Permission denied (requires Full).");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::EraseHistory: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);

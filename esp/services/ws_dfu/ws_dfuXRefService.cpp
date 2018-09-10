@@ -138,9 +138,8 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
             throw MakeStringException(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "Unable to find a suitable IXRefFilesNode interface for %s",req.getType());
         }
 
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
-            throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to run Xref command. Permission denied.");
-       
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefArrayAction: Permission denied.");
+
         StringBuffer returnStr,UserName;
         const char* ActionType = req.getAction();
         ESPSerializationFormat fmt = context.getResponseFormat();
@@ -247,8 +246,7 @@ bool CWsDfuXRefEx::onDFUXRefLostFiles(IEspContext &context, IEspDFUXRefLostFiles
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to read Xref Lost Files. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefLostFiles: Permission denied.");
 
         if (!req.getCluster() || !*req.getCluster())
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Cluster not defined.");
@@ -279,8 +277,7 @@ bool CWsDfuXRefEx::onDFUXRefFoundFiles(IEspContext &context, IEspDFUXRefFoundFil
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to read Xref Found Files. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefFoundFiles: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -317,8 +314,7 @@ bool CWsDfuXRefEx::onDFUXRefOrphanFiles(IEspContext &context, IEspDFUXRefOrphanF
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to read Xref Orphan Files. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefOrphanFiles: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -355,8 +351,7 @@ bool CWsDfuXRefEx::onDFUXRefMessages(IEspContext &context, IEspDFUXRefMessagesQu
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to get Xref Messages. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefMessages: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -389,9 +384,8 @@ bool CWsDfuXRefEx::onDFUXRefCleanDirectories(IEspContext &context, IEspDFUXRefCl
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to clean Xref Directories. Permission denied.");
-        
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefCleanDirectories: Permission denied.");
+
         StringBuffer username;
         context.getUserID(username);
 
@@ -417,8 +411,7 @@ bool CWsDfuXRefEx::onDFUXRefDirectories(IEspContext &context, IEspDFUXRefDirecto
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to get Xref Directories. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefDirectories: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -496,8 +489,7 @@ bool CWsDfuXRefEx::onDFUXRefBuild(IEspContext &context, IEspDFUXRefBuildRequest 
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
-            throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to build Xref. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefBuild: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -535,8 +527,7 @@ bool CWsDfuXRefEx::onDFUXRefBuildCancel(IEspContext &context, IEspDFUXRefBuildCa
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
-            throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to cancel Xref Build. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefBuildCancel: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
@@ -595,8 +586,7 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
 {
     try
     {
-        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
-            throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to access Xref. Permission denied.");
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefList: Permission denied.");
 
         StringBuffer username;
         context.getUserID(username);
