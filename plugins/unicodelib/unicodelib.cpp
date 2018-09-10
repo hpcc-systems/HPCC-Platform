@@ -218,7 +218,7 @@ int doUnicodeCompareAtStrength(unsigned src1Len, UChar const * src1, unsigned sr
     UErrorCode error = U_ZERO_ERROR;
     Collator * coll = Collator::createInstance(error);
     coll->setStrength(strength);
-#if U_ICU_VERSION_MAJOR_NUM>=58
+#if U_ICU_VERSION_MAJOR_NUM>=59
     Collator::EComparisonResult ret = coll->compare((char16_t *)src1, src1Len, (char16_t *)src2, src2Len);
 #else
     Collator::EComparisonResult ret = coll->compare(src1, src1Len, src2, src2Len);
@@ -233,7 +233,7 @@ int doUnicodeLocaleCompareAtStrength(unsigned src1Len, UChar const * src1, unsig
     Locale locale(localename);
     Collator * coll = Collator::createInstance(locale, error);
     coll->setStrength(strength);
-#if U_ICU_VERSION_MAJOR_NUM>=58
+#if U_ICU_VERSION_MAJOR_NUM>=59
     Collator::EComparisonResult ret = coll->compare((char16_t *)src1, src1Len, (char16_t *)src2, src2Len);
 #else
     Collator::EComparisonResult ret = coll->compare(src1, src1Len, src2, src2Len);
@@ -1011,7 +1011,7 @@ static void appendUnicode(MemoryBuffer & result, const UnicodeString & source, i
 {
     result.append((unsigned)length);
     UChar * target = (UChar *)result.reserve(length * sizeof(UChar));
-#if U_ICU_VERSION_MAJOR_NUM>=58
+#if U_ICU_VERSION_MAJOR_NUM>=59
     source.extractBetween(from, from+length, (char16_t *) target, 0);
 #else
     source.extractBetween(from, from+length, target, 0);
