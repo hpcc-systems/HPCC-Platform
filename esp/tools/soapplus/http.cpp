@@ -878,6 +878,7 @@ void HttpClient::addEspRequest(const char* requestId, const char* service, const
     }
 }
 
+class CSimpleSocket;
 
 class CHttpStressThread : public Thread
 {
@@ -885,7 +886,6 @@ private:
     Owned<HttpStat> m_stat;
     HttpClient* m_client;
 
-    
 public:
     CHttpStressThread(HttpClient* client): m_client(client)
     {
@@ -902,6 +902,7 @@ public:
             delaymax = atoi(globals->queryProp("delaymax"));
         }
 
+        Owned<CSimpleSocket> persistent_socket = nullptr;
         if(m_client)
         {
             for(;;)
@@ -916,7 +917,7 @@ public:
                     if(STRESS_USE_JSOCKET)
                         m_client->sendRequest(req.queryReqbuf(), req.getName(), m_stat.get());
                     else
-                        m_client->sendStressRequest(req.queryReqbuf(), m_stat.get());
+                        m_client->sendStressRequest(req.queryReqbuf(), m_stat.get(), persistent_socket);
                     if(delaymax > 0 && !m_client->queryStopStress())
                     {
                         int delay = 0;
@@ -1077,11 +1078,12 @@ class CSimpleSocket : public CInterface, implements IInterface
     FILE* m_logfile;
     int m_sockfd;
     Owned<ISecureSocket> m_securesocket;
+    bool m_connected;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSimpleSocket(ISecureSocketContext* ssctx, FILE* logfile)
+    CSimpleSocket(ISecureSocketContext* ssctx, FILE* logfile) : m_connected (false)
     {
         m_ssctx = ssctx;
         if(ssctx)
@@ -1123,12 +1125,16 @@ public:
                 return -1;
             }
         }
+        m_connected = true;
 
         return 0;
     }
 
-    ssize_t readn(int fd, void *vptr, size_t n)
+    ssize_t readn(int fd, void *vptr, size_t min, size_t n)
     {
+        if (min > n)
+            return 0;
+
         size_t  nleft;
         ssize_t nread;
         char   *ptr;
@@ -1137,20 +1143,36 @@ public:
         nleft = n;
         while (nleft > 0)
         {
-            if ( (nread = ::recv(fd, ptr, nleft, 0)) < 0)
+            if ((nread = ::recv(fd, ptr, nleft, 0)) < 0)
             {
                 if (errno == EINTR)
+                {
                     nread = 0;      /* and call read() again */
+                    continue;
+                }
                 else
+                {
+                    close();
                     return (-1);
+                }
             }
             else if (nread == 0)
+            {
+                close();
                 break;              /* EOF */
+            }
 
             nleft -= nread;
             ptr += nread;
+            if (n - nleft >= min)
+                break;
         }
         return (n - nleft);         /* return >= 0 */
+    }
+
+    ssize_t readn(int fd, void *vptr, size_t n)
+    {
+        return readn(fd, vptr, n, n);
     }
 
     ssize_t writen(int fd, const void *vptr, size_t n)
@@ -1168,7 +1190,10 @@ public:
                 if (nwritten < 0 && errno == EINTR)
                     nwritten = 0;   /* and call write() again */
                 else
+                {
+                    close();
                     return (-1);    /* error */
+                }
             }
 
             nleft -= nwritten;
@@ -1193,14 +1218,26 @@ public:
 
     int receive(char* buf, int buflen)
     {
+        return receive(buf, buflen, buflen);
+    }
+
+    int receive(char* buf, int min, int buflen)
+    {
+        if (min > buflen)
+            return 0;
+
         unsigned int len = 0;
-        if(!m_isSSL)
+        if (!m_isSSL)
         {
-            // len = ::recv(m_sockfd, buf, buflen, 0);
-            len = readn(m_sockfd, buf, buflen);
+            //len = ::recv(m_sockfd, buf, buflen, 0);
+            len = readn(m_sockfd, buf, min, buflen);
         }
         else
-            m_securesocket->read(buf, 0, buflen, len, WAIT_FOREVER);
+        {
+            m_securesocket->read(buf, min, buflen, len, WAIT_FOREVER);
+            if(len <= 0)
+                close();
+        }
 
         return len;
     }
@@ -1212,11 +1249,16 @@ public:
             ::closesocket(m_sockfd);
             m_sockfd = -1;
         }
+        m_connected = false;
     }
 
+    bool isConnected()
+    {
+        return m_connected;
+    }
 };
 
-int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat)
+int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat, Owned<CSimpleSocket>& persistentSocket)
 {
     if(request.length() == 0)
     {
@@ -1229,40 +1271,130 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat)
 
     unsigned start = msTick();
 
-    Owned<CSimpleSocket> sock = new CSimpleSocket(m_ssctx.get(), m_logfile);
-    
-    int ret = sock->connect(m_serveraddr.get());
-    if(ret < 0)
+    Owned<CSimpleSocket> sock;
+    bool isPersistent = m_globals->getPropBool("isPersist", false);
+    if (isPersistent)
     {
+        if (persistentSocket.get() == nullptr)
+            persistentSocket.setown(new CSimpleSocket(m_ssctx.get(), m_logfile));
+        sock.set(persistentSocket.get());
+    }
+    else
+        sock.setown(new CSimpleSocket(m_ssctx.get(), m_logfile));
+    if (!sock->isConnected())
+    {
+        int ret = sock->connect(m_serveraddr.get());
+        if (ret < 0)
+        {
+            return -1;
+        }
+    }
+
+    bool shouldClose = false;
+    int sent = sock->send(request);
+    __int64 total_len = 0;
+    StringBuffer xml;
+    if (sent > 0)
+    {
+        int len = 0;
+        char recvbuf[2048];
+        if (!isPersistent)
+        {
+            while (1)
+            {
+                len = sock->receive(recvbuf, 2047);
+                if (len > 0)
+                {
+                    total_len += len;
+                    recvbuf[len] = 0;
+                    if (m_doValidation)
+                        xml.append(len, recvbuf);
+                    if (http_tracelevel >= 10)
+                        fprintf(m_logfile, "%s", recvbuf);
+                }
+                else
+                    break;
+            }
+        }
+        else
+        {
+            StringBuffer headersbuf;
+            unsigned int searchStart = 0;
+            while (1)
+            {
+                len = sock->receive(recvbuf, 1, 2047);
+                if (len > 0)
+                {
+                    total_len += len;
+                    recvbuf[len] = 0;
+                    if (http_tracelevel >= 10)
+                        fprintf(m_logfile, "%s", recvbuf);
+                    headersbuf.append(recvbuf);
+                    char* endofheaders = strstr((char*)(headersbuf.str()+searchStart), "\r\n\r\n");
+                    searchStart += len>3?(len-3):0;
+                    if (endofheaders != nullptr)
+                    {
+                        int conlen = 0;
+                        const char* conlenstr = strstr((char*)headersbuf.str(), "Content-Length:");
+                        if (conlenstr != nullptr)
+                            conlen = atoi(conlenstr+15);
+                        else
+                            shouldClose = true;
+                        if (conlen > 0)
+                        {
+                            int content_read = headersbuf.length() - (endofheaders+4 - headersbuf.str());
+                            if (m_doValidation && content_read > 0)
+                                xml.append(content_read, endofheaders+4);
+                            while (content_read < conlen)
+                            {
+                                int remaining = conlen - content_read;
+                                len = sock->receive(recvbuf, 2047>remaining?remaining:2047);
+                                if (len > 0)
+                                {
+                                    content_read += len;
+                                    total_len += len;
+                                    recvbuf[len] = 0;
+                                    if (m_doValidation)
+                                        xml.append(len, recvbuf);
+                                    if (http_tracelevel >= 10)
+                                        fprintf(m_logfile, "%s", recvbuf);
+                                }
+                                else
+                                {
+                                    sock->close();
+                                    return -1;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    else if (total_len >= 1000000) // Still haven't reached end of headers
+                    {
+                        fprintf(m_logfile, "HTTP headers too long.\n");
+                        shouldClose = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    sock->close();
+                    return -1;
+                }
+            }
+        }
+        if (m_doValidation && xml.length() > 0)
+            validate(xml);
+    }
+    else
+    {
+        fprintf(m_logfile, "Failed to send request.\n");
+        sock->close();
         return -1;
     }
 
-    int sent = sock->send(request);
-    __int64 total_len = 0;
-    if(sent >= 0)
-    {
-        int len = 1;
-        char recvbuf[2048];
-        StringBuffer xml;
-        while(1)
-        {
-            len = sock->receive(recvbuf, 2047);
-            if(len > 0)
-            {
-                total_len += len;
-                recvbuf[len] = 0;
-                if (m_doValidation)
-                    xml.append(len, recvbuf);
-                if(http_tracelevel >= 10)
-                    fprintf(m_logfile, "%s", recvbuf);
-            }
-            else
-                break;
-        }
-        if (m_doValidation && total_len > 0)
-            validate(xml);
-    }
-    sock->close();
+    if (!isPersistent || shouldClose)
+        sock->close();
+
     unsigned end = msTick();
     int duration = end - start;
 
@@ -1352,6 +1484,8 @@ StringBuffer& HttpClient::generateGetRequest(StringBuffer& request)
     if(m_port != 80)
         request.appendf(":%d", m_port);
     request.append("\r\n");
+    if(!m_globals->getPropBool("isPersist", false))
+        request.append("Connection: Close\r\n");
     request.append(m_authheader.str());
     request.append("\r\n");
     
@@ -1389,6 +1523,9 @@ StringBuffer& HttpClient::insertSoapHeaders(StringBuffer& request)
     headers.append(m_authheader.str());
     if(m_globals->hasProp("soapaction"))
         headers.append("SOAPAction: ").append(m_globals->queryProp("soapaction")).append("\r\n");
+
+    if(!m_globals->getPropBool("isPersist", false))
+        headers.append("Connection: Close\r\n");
 
     headers.append("\r\n");
 
@@ -1625,10 +1762,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
             numReq = atoi(m_globals->queryProp("persistrequests"));
         if(m_globals->hasProp("persistpause"))
             pausemillisecs = atof(m_globals->queryProp("persistpause"))*1000;
-        DBGLOG("Is persist, %d %d", numReq, pausemillisecs);
     }
-    else
-        DBGLOG("Is not persist");
 
     for(int iter=0; iter<numReq; iter++)
     {
