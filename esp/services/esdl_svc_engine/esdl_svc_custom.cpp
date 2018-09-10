@@ -266,26 +266,19 @@ void CEsdlCustomTransformChoose::toDBGLog ()
 //
 // CEsdlCustomTransform methods
 //
-CEsdlCustomTransform::CEsdlCustomTransform(IPropertyTree *cfg)
+CEsdlCustomTransform::CEsdlCustomTransform(IPropertyTree &currentTransform)
 {
-    Owned<IPropertyTreeIterator> transformsIter = cfg->getElements("xsdl:CustomRequestTransform");
-    {
-        ForEach(*transformsIter)
-        {
-            IPropertyTree & currentTransform = transformsIter->query();
-            m_name.set(currentTransform.queryProp("@name"));
-            //if m_ruleName.length() == 0?
-            DBGLOG("Compiling custom ESDL Transform: '%s'", m_name.str());
+    m_name.set(currentTransform.queryProp("@name"));
+    DBGLOG("Compiling custom ESDL Transform: '%s'", m_name.str());
 
-            Owned<IPropertyTreeIterator> conditionalIterator = currentTransform.getElements("xsdl:choose");
-            ForEach(*conditionalIterator)
-            {
-                auto xslchooseelement = &conditionalIterator->query();
-                Owned<CEsdlCustomTransformChoose> currconditional = new CEsdlCustomTransformChoose(xslchooseelement);
-                m_customTransformClauses.append(*LINK(currconditional));
-            }
-        }
+    Owned<IPropertyTreeIterator> conditionalIterator = currentTransform.getElements("xsdl:choose");
+    ForEach(*conditionalIterator)
+    {
+        auto xslchooseelement = &conditionalIterator->query();
+        Owned<CEsdlCustomTransformChoose> currconditional = new CEsdlCustomTransformChoose(xslchooseelement);
+        m_customTransformClauses.append(*LINK(currconditional));
     }
+
 #if defined(_DEBUG)
     toDBGLog();
 #endif

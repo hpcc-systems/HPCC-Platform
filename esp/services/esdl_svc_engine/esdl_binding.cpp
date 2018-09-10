@@ -161,7 +161,6 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
     m_espServiceName.set(service);
     m_espProcName.set(process);
     m_bGenerateLocalTrxId = true;
-    m_custTrxCompileFail = false;
 
     VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]", process);
     IPropertyTree * espcfg = cfg->queryPropTree(xpath);
@@ -299,6 +298,58 @@ void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entr
     }
 }
 
+void EsdlServiceImpl::addServiceLevelRequestTransform(IPropertyTree *customRequestTransform)
+{
+    if (!customRequestTransform)
+        return;
+
+    try
+    {
+        m_serviceLevelRequestTransform.setown(new CEsdlCustomTransform(*customRequestTransform));
+    }
+    catch(IException* e)
+    {
+        m_serviceLevelCrtFail = true;
+        StringBuffer msg;
+        e->errorMessage(msg);
+        ERRLOG("Service Level Custom Request Transform could not be processed!!: \n\t%s", msg.str());
+        e->Release();
+    }
+    catch (...)
+    {
+        m_serviceLevelCrtFail = true;
+        ERRLOG("Service Level Custom Request Transform could not be processed!!");
+    }
+}
+
+void EsdlServiceImpl::addMethodLevelRequestTransform(const char *method, IPropertyTree &methodCfg, IPropertyTree *customRequestTransform)
+{
+    if (!method || !*method || !customRequestTransform)
+        return;
+
+    try
+    {
+        Owned<CEsdlCustomTransform> crt = new CEsdlCustomTransform(*customRequestTransform);
+        m_customRequestTransformMap.setValue(method, crt.get());
+    }
+    catch(IException* e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        VStringBuffer errmsg("Custom Request Transform for method %s could not be processed!!: %s", method, msg.str());
+
+        m_methodCRTransformErrors.setValue(method, errmsg.str());
+        ERRLOG("%s", errmsg.str());
+        e->Release();
+    }
+    catch (...)
+    {
+        VStringBuffer errmsg("Custom Request Transform for method %s could not be processed!!", method);
+        m_methodCRTransformErrors.setValue(method, errmsg.str());
+        ERRLOG("%s", errmsg.str());
+    }
+}
+
 void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
 {
     VStringBuffer xpath("Definition[@esdlservice='%s']/Methods", service);
@@ -310,36 +361,20 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
         IPropertyTree * customRequestTransform = nullptr;
         try
         {
-            customRequestTransform = target_cfg->queryPropTree("Method/xsdl:CustomRequestTransforms");
+            customRequestTransform = target_cfg->queryPropTree("xsdl:CustomRequestTransform");
         }
         catch (IPTreeException *e)
         {
-            m_custTrxCompileFail = true;
             StringBuffer msg;
             e->errorMessage(msg);
-            ERRLOG("Encountered error while fetching \"hpcc:Transforms\" from service \"%s\" ESDL configuration. Ensure a single set of transforms is provided:\n%s ", service, msg.str());
+            VStringBuffer errmsg("Encountered error while fetching \"xsdl:CustomRequestTransform\" from service \"%s\" ESDL configuration: %s ", service, msg.str());
+
+            m_serviceLevelCrtFail = true;
+            ERRLOG("%s", errmsg.str());
             e->Release();
         }
 
-        try
-        {
-            if (customRequestTransform)
-                m_customRequestTransform.setown(new CEsdlCustomTransform(customRequestTransform));
-            m_custTrxCompileFail = false;
-        }
-        catch(IException* e)
-        {
-            m_custTrxCompileFail = true;
-            StringBuffer msg;
-            e->errorMessage(msg);
-            ERRLOG("Custom Request Transform could not be processed, will be ignored!!: \n\t%s", msg.str());
-            e->Release();
-        }
-        catch (...)
-        {
-            m_custTrxCompileFail = true;
-            ERRLOG("Custom Request Transform could not be processed, will be ignored!!");
-        }
+        addServiceLevelRequestTransform(customRequestTransform);
 
         m_pServiceMethodTargets.setown(createPTree(ipt_caseInsensitive));
         Owned<IPropertyTreeIterator> itns = target_cfg->getElements("Method");
@@ -358,14 +393,37 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
         Owned<IPropertyTreeIterator> iter = m_pServiceMethodTargets->getElements("Target");
         ForEach(*iter)
         {
-            const char *method = iter->query().queryProp("@name");
+            IPropertyTree &methodCfg = iter->query();
+            const char *method = methodCfg.queryProp("@name");
             if (!method || !*method)
                 throw MakeStringException(-1, "ESDL binding - found target method entry without name!");
-            const char *type = iter->query().queryProp("@querytype");
+
+            m_methodCRTransformErrors.remove(method);
+            m_customRequestTransformMap.remove(method);
+
+            IPropertyTree * customRequestTransform = nullptr;
+            try
+            {
+                customRequestTransform = methodCfg.queryPropTree("xsdl:CustomRequestTransform");
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                e->errorMessage(msg);
+                VStringBuffer errmsg("Encountered error while fetching 'xsdl:CustomRequestTransform' from service '%s', method '%s' ESDL configuration: %s ", service, method, msg.str());
+
+                m_methodCRTransformErrors.setValue(method, errmsg.str());
+                ERRLOG("%s", errmsg.str());
+                e->Release();
+            }
+
+            addMethodLevelRequestTransform(method, methodCfg, customRequestTransform);
+
+            const char *type = methodCfg.queryProp("@querytype");
             if (type && strieq(type, "java"))
-                configureJavaMethod(method, iter->query(), classPath);
+                configureJavaMethod(method, methodCfg, classPath);
             else
-                configureUrlMethod(method, iter->query());
+                configureUrlMethod(method, methodCfg);
             DBGLOG("Method %s configured", method);
         }
     }
@@ -422,8 +480,14 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     const char *mthName = mthdef.queryName();
     context.addTraceSummaryValue(LogMin, "method", mthName);
 
-    if (m_custTrxCompileFail)
-        throw MakeStringException(-1, "%s::%s disabled due to Custom Transform errors. Review tranform template in configuration.", srvdef.queryName(), mthName);
+
+    IEsdlCustomTransform *crt = m_customRequestTransformMap.getValue(mthdef.queryMethodName());
+    if (!crt)
+    {
+        if (m_serviceLevelCrtFail)
+            throw MakeStringException(-1, "%s::%s disabled due to Custom Transform errors. Review transform template in configuration.", srvdef.queryName(), mthName);
+        crt = m_serviceLevelRequestTransform;
+    }
 
     MapStringTo<SecAccessFlags>&  methaccessmap = const_cast<MapStringTo<SecAccessFlags>&>(mthdef.queryAccessMap());
     if (methaccessmap.ordinality() > 0)
@@ -505,6 +569,10 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         if (!tgtcfg)
             throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_CLIENT, "ESDL", "Target not configured for method: %s", mthName );
 
+        StringAttr *crtErrorMessage = m_methodCRTransformErrors.getValue(mthName);
+        if (crtErrorMessage && !crtErrorMessage->isEmpty())
+            throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_CLIENT, "ESDL", "%s", crtErrorMessage->str());
+
         implType = getEsdlMethodImplType(tgtcfg->queryProp("@querytype"));
 
         if (implType==EsdlMethodImplJava)
@@ -577,10 +645,10 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             reqcontent.set(reqWriter->str());
             context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
 
-            if (m_customRequestTransform)
+            if (crt)
             {
                 context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
-                m_customRequestTransform->processTransform(&context, reqcontent, m_oEspBindingCfg.get());
+                crt->processTransform(&context, reqcontent, m_oEspBindingCfg.get());
                 context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
             }
 
@@ -1348,12 +1416,10 @@ void EsdlBindingImpl::addService(const char * name,
                 IEsdlDefService *srvdef = m_esdl->queryService(name);
                 if (!srvdef)
                 {
-                    DBGLOG("WARNING ESP Service %s has been re-assigned to ESDL service definition %s", name, loadedservicename.str());
+                    DBGLOG("ESP Service %s has been assigned to ESDL service definition %s", name, loadedservicename.str());
                     srvdef = m_esdl->queryService(loadedservicename.str());
-
-                    //Unfortunately this is being done in order to support mismatching ESP service name (the name given to this ESP Service in configuration)
-                    //and the ESDL service definition assigned to this service via DESDL configuration...
                     name = loadedservicename.str();
+
                     m_espServiceName.set(name);
                     m_pESDLService->m_espServiceType.set(name);
                     m_pESDLService->m_esdl.set(m_esdl);

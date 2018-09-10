@@ -125,7 +125,12 @@ private:
     void processChildClauses(IEspContext * context, IPropertyTree *request, IXpathContext * xpathContext,  bool otherwise);
 };
 
-class CEsdlCustomTransform : public CInterface
+interface IEsdlCustomTransform : extends IInterface
+{
+       virtual void processTransform(IEspContext * context,  StringBuffer & request, IPropertyTree * bindingCfg)=0;
+};
+
+class CEsdlCustomTransform : implements IEsdlCustomTransform, public CInterface
 {
 private:
     CIArrayOf<CEsdlCustomTransformChoose> m_customTransformClauses;
@@ -134,7 +139,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
     CEsdlCustomTransform(){}
-    CEsdlCustomTransform(IPropertyTree *cfg);
+    CEsdlCustomTransform(IPropertyTree &cfg);
 
 #if defined(_DEBUG)
     void toDBGLog()
