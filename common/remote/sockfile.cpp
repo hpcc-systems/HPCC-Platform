@@ -4496,7 +4496,7 @@ void verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, const IProperty
     Owned<IPropertyTree> metaInfoEnvelope = createPTree(decompressedMetaInfoMb);
 
     Owned<IPropertyTree> metaInfo;
-#ifdef _USE_OPENSSL
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
     MemoryBuffer metaInfoBlob;
     metaInfoEnvelope->getPropBin("metaInfoBlob", metaInfoBlob);
 
