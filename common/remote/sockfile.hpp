@@ -119,6 +119,6 @@ extern void clientSetRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxread
 extern void clientAddSocketToCache(SocketEndpoint &ep,ISocket *socket);
 
 typedef unsigned char RemoteFileCommandType;
-extern RemoteFileCommandType queryRemoteStreamCmd(); // used by testsocket only
+extern REMOTE_API RemoteFileCommandType queryRemoteStreamCmd(); // used by testsocket only
 
 #endif
