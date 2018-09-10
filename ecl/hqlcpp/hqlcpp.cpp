@@ -3766,6 +3766,14 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_if:
         doBuildStmtIf(ctx, expr);
         return;
+    case no_case:
+    {
+        HqlCppCaseInfo info(*this);
+        doBuildCaseInfo(expr, info);
+        ExprEvaluateProcessor assigner;
+        info.buildProcess(ctx, assigner);
+        return;
+    }
     case no_call:
     case no_externalcall:
         doBuildStmtCall(ctx, expr);
@@ -7581,6 +7589,10 @@ void HqlCppTranslator::doBuildExprIf(BuildCtx & ctx, IHqlExpression * expr, CHql
 
 void HqlCppTranslator::doBuildStmtIf(BuildCtx & ctx, IHqlExpression * expr)
 {
+    OwnedHqlExpr converted = combineIfsToCase(expr);
+    if (converted)
+        return buildStmt(ctx, converted);
+
     BuildCtx subctx(ctx);
     CHqlBoundExpr cond;
     buildCachedExpr(subctx, expr->queryChild(0), cond);

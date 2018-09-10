@@ -4608,6 +4608,68 @@ IHqlExpression * combineIfsToMap(IHqlExpression * expr)
     return createWrapper(no_map, expr->queryType(), args);
 }
 
+class CaseMatcher
+{
+public:
+    void matchIfs(IHqlExpression * expr)
+    {
+        if (expr->getOperator() == no_if)
+        {
+            IHqlExpression * test = expr->queryChild(0);
+            if (test->getOperator() == no_eq)
+            {
+                IHqlExpression * search = test->queryChild(0);
+                if (!cond || (search == cond))
+                {
+                    cond = search;
+                    keys.append(*LINK(test->queryChild(1)));
+                    values.append(*LINK(expr->queryChild(1)));
+                    IHqlExpression * elseExpr = expr->queryChild(2);
+                    if (elseExpr)
+                        matchIfs(elseExpr);
+                    else
+                        defaultExpr.setown(createNullExpr(expr));
+                    return;
+                }
+            }
+        }
+        defaultExpr.set(expr);
+    }
+
+    IHqlExpression * createCase(ITypeInfo * type)
+    {
+        HqlExprArray args;
+        args.append(*LINK(cond));
+        ForEachItemIn(i, keys)
+        {
+            IHqlExpression & curValue = values.item(i);
+            args.append(*createValue(no_mapto, curValue.getType(), LINK(&keys.item(i)), LINK(&curValue)));
+        }
+        args.append(*LINK(defaultExpr));
+        return createWrapper(no_case, type, args);
+    }
+
+    bool worthMapping()
+    {
+        return keys.ordinality() > 1;
+    }
+
+protected:
+    HqlExprArray keys;
+    HqlExprArray values;
+    IHqlExpression * cond = nullptr;
+    OwnedHqlExpr defaultExpr;
+};
+
+IHqlExpression * combineIfsToCase(IHqlExpression * expr)
+{
+    CaseMatcher matcher;
+    matcher.matchIfs(expr);
+    if (matcher.worthMapping())
+        return matcher.createCase(expr->queryType());
+    return nullptr;
+}
+
 bool castPreservesValueAndOrder(IHqlExpression * expr)
 {
     assertex(isCast(expr));

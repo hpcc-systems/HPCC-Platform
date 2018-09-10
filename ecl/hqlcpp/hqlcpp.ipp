@@ -1336,6 +1336,7 @@ public:
     void doBuildRowAssignCreateRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
 
+    IReferenceSelector * doBuildRowCase(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * doBuildRowDeserializeRow(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * doBuildRowFromXMLorJSON(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * doBuildRowIdToBlob(BuildCtx & ctx, IHqlExpression * expr, bool isNew);
