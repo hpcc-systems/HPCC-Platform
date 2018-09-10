@@ -25,7 +25,7 @@ IF(MAKE_DOCS)
 	COMMAND mkdir -p ${zip_out_dir}
 	COMMAND mkdir -p ${ecl_code_name}
 	COMMAND rm -rf ${ecl_code_name}/*
-        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/PRG_Mods/"\"ECL Code Files\""/*.ecl ${ecl_code_name}/
+        COMMAND cp ${CMAKE_SOURCE_DIR}/initfiles/examples/ProgrammersGuide/*.ecl ${ecl_code_name}/
         COMMAND zip -r  ${zip_out_dir}/${ecl_code_name}.zip ${ecl_code_name}
         OUTPUT ${zip_out_dir}/${ecl_code_name}.zip
 	)
