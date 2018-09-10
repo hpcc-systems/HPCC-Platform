@@ -223,6 +223,7 @@ if (WIN32)
 elseif (("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" ))
 else ()
  target_link_libraries ( jlib rt )
+ target_link_libraries ( jlib -Wl,--whole-archive cryptohelper -Wl,--no-whole-archive)
 endif ()
 
 if (NOT PLUGIN)
