@@ -101,7 +101,7 @@ IPropertyTree * ComponentBase::removeAttributes(IPropertyTree* pNode, IPropertyT
       StringBuffer sb;
       IPropertyTree* pAttrTree = &attrsIter->query();
       const char* attrName = pAttrTree->queryProp("@name");
-      if (excludeList && excludeList->find(attrName))
+      if (excludeList && excludeList->contains(attrName))
          continue;
       sb.clear().appendf("@%s",attrName);
       const char* currentValue = pNode->queryProp(sb.str());
