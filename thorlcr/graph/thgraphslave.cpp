@@ -24,6 +24,7 @@
 #include "thcodectx.hpp"
 #include "thmem.hpp"
 #include "thorport.hpp"
+#include "sockfile.hpp"
 #include "slwatchdog.hpp"
 #include "thgraphslave.hpp"
 #include "thcompressutil.hpp"
@@ -1653,6 +1654,11 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     }
     tmpHandler.setown(createTempHandler(true));
     sharedAllocator.setown(::createThorAllocator(globalMemoryMB, sharedMemoryMB, numChannels, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
+
+    StringBuffer remoteCompressedOutput;
+    getOpt("remoteCompressedOutput", remoteCompressedOutput);
+    if (remoteCompressedOutput.length())
+        setRemoteOutputCompressionDefault(remoteCompressedOutput);
 }
 
 void CJobSlave::addChannel(IMPServer *mpServer)

@@ -17,13 +17,16 @@
 
 //version optRemoteRead=false
 //version optRemoteRead=true
+//version optRemoteRead=true,optCompression='LZ4'
 
 #option('layoutTranslation', true);
 
 import Std.File AS FileServices;
 import ^ as root;
 optRemoteRead := #IFDEFINED(root.optRemoteRead, false);
+optCompression := #IFDEFINED(root.optCompression, '');
 #option('forceRemoteRead', optRemoteRead);
+#option('remoteCompressedOutput', optCompression);
 
 
 #onwarning(4523, ignore);
@@ -37,6 +40,8 @@ suffix := '-' + WORKUNIT;
 fname := prefix + 'remoteread' + suffix;
 fname_comp := prefix + 'remoteread_comp' + suffix;
 fname_index := prefix + 'remoteread_index' + suffix;
+fname_large := prefix + 'remoteread_large' + suffix;
+fname_large_out := prefix + 'remoteread_largeout' + suffix;
 
 rec := RECORD
  string10 fname;
@@ -69,20 +74,34 @@ ds := project(DATASET(fname, rec_vf, FLAT), transform(rec_vf, SELF.logicalFile :
 ds_comp := project(DATASET(fname_comp, rec_vf, FLAT), transform(rec_vf, SELF.logicalFile := trimmedLogicalFilename(LEFT.logicalFile); SELF := LEFT;));
 ds_trans := project(DATASET(fname, rec_vf_trans, FLAT), transform(rec_vf_trans, SELF.logicalFile := trimmedLogicalFilename(LEFT.logicalFile); SELF := LEFT;));
 
+// big enough to test default buffer limits in dafilesrv
+largeds := DATASET(1000000, TRANSFORM(rec, SELF.fname := TRIM(inds[(COUNTER%3)+1].fname)+(string)COUNTER; SELF.lname := TRIM(inds[(COUNTER%3)+1].lname)+(string)COUNTER; SELF.age := inds[(COUNTER%3)+1].age+COUNTER));
+largeoutrec := RECORD // shuffles order
+ unsigned age;
+ string10 lname;
+ string10 fname;
+END;
+
+
+
 SEQUENTIAL(
  OUTPUT(inds, , fname, OVERWRITE);
  OUTPUT(inds, , fname_comp, COMPRESSED, OVERWRITE);
  BUILDINDEX(i, OVERWRITE);
+ OUTPUT(largeds, , fname_large, OVERWRITE);
+ OUTPUT(largeds, , fname_large, OVERWRITE);
 
  OUTPUT(ds);
  OUTPUT(ds_comp);
  OUTPUT(i);
  OUTPUT(ds_trans);
+ SUM(NOFOLD(DATASET(fname_large, rec, FLAT)), age);
 
  // Clean-up
  FileServices.DeleteLogicalFile(fname),
  FileServices.DeleteLogicalFile(fname_comp),
  FileServices.DeleteLogicalFile(fname_index),
+ FileServices.DeleteLogicalFile(fname_large),
 );
 
 
