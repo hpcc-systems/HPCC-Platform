@@ -27,6 +27,7 @@ include_directories (
          ./../../system/jlib
          ./../../system/include 
          ./../../system/security/securesocket
+         ./../../common/remote
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -35,6 +36,7 @@ set ( SRCS testsocket.cpp )
 HPCC_ADD_EXECUTABLE ( testsocket ${SRCS} )
 target_link_libraries ( testsocket
          jlib
+         remote
          )
 
 IF (USE_OPENSSL)

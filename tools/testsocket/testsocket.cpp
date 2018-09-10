@@ -26,6 +26,7 @@
 #include "jthread.hpp"
 #include "jfile.hpp"
 #include "securesocket.hpp"
+#include "sockfile.hpp"
 
 bool abortEarly = false;
 bool forceHTTP = false;
@@ -45,6 +46,7 @@ bool doLock = false;
 bool roxieLogMode = false;
 bool rawOnly = false;
 bool rawSend = false;
+bool remoteStreamQuery = false;
 bool remoteStreamForceResend = false;
 bool remoteStreamSendCursor = false;
 int verboseDbgLevel = 0;
@@ -335,7 +337,11 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
         }
         else if (remoteReadRequest)
         {
-            Owned<IPropertyTree> requestTree = createPTreeFromJSONString(queryLen, query);
+            auto cmd = queryRemoteStreamCmd();
+            size32_t remoteStreamCmdSz = sizeof(cmd);
+            size32_t jsonQueryLen = queryLen - remoteStreamCmdSz;
+            const char *jsonQuery = query + remoteStreamCmdSz;
+            Owned<IPropertyTree> requestTree = createPTreeFromJSONString(jsonQueryLen, jsonQuery);
             Owned<IPropertyTree> responseTree; // used if response is xml or json
             const char *outputFmtStr = requestTree->queryProp("format");
             const char *response = nullptr;
@@ -406,12 +412,13 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
 
                 requestTree->setProp("format", outputFmtStr);
                 StringBuffer requestStr;
+                requestStr.append(queryRemoteStreamCmd());
                 toJSON(requestTree, requestStr);
 
                 if (verboseDbgLevel > 0)
                 {
                     fputs("\nNext request:", stdout);
-                    fputs(requestStr, stdout);
+                    fputs(requestStr.str()+remoteStreamCmdSz, stdout);
                     fputs("\n", stdout);
                     fflush(stdout);
                 }
@@ -439,9 +446,10 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                 PROGLOG("Retry send for handle: %u", cursorHandle);
                 requestTree->setProp("cursorBin", remoteReadCursor);
                 StringBuffer requestStr;
+                requestStr.append(queryRemoteStreamCmd());
                 toJSON(requestTree, requestStr);
 
-                PROGLOG("requestStr = %s", requestStr.str());
+                PROGLOG("requestStr = %s", requestStr.str()+remoteStreamCmdSz);
                 sendlen = requestStr.length();
                 _WINREV(sendlen);
                 if (!rawSend && !useHTTP)
@@ -637,7 +645,11 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
             }
         }
         else
+        {
+            if (remoteStreamQuery)
+                fullQuery.append(queryRemoteStreamCmd());
             fullQuery.append(base);
+        }
     }
 
     const char * query = fullQuery.str();
@@ -784,6 +796,7 @@ void usage(int exitCode)
     printf("  -qname xx Use xx as queryname in place of the xml root element name\n");
     printf("  -r <n>    repeat the query several times\n");
     printf("  -rl       roxie logfile mode\n");
+    printf("  -rs       remote stream request\n");
     printf("  -rsr      force remote stream resend per continuation request\n");
     printf("  -rssc     send cursor per continuation request\n");
     printf("  -s        add stars to indicate transfer packets\n");
@@ -987,6 +1000,11 @@ int main(int argc, char **argv)
                 exit (EXIT_FAILURE);
             }
             arg+=2;
+        }
+        else if (strieq(argv[arg], "-rs"))
+        {
+            remoteStreamQuery = true;
+            ++arg;
         }
         else if (strieq(argv[arg], "-rsr"))
         {

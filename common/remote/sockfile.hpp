@@ -61,7 +61,7 @@ interface IRemoteFileServer : extends IInterface
     virtual StringBuffer &getStats(StringBuffer &stats, bool reset) = 0;
 };
 
-#define FILESRV_VERSION 23 // don't forget VERSTRING in sockfile.cpp
+#define FILESRV_VERSION 24 // don't forget VERSTRING in sockfile.cpp
 
 interface IKeyManager;
 interface IDelayedFile;
@@ -117,5 +117,8 @@ extern bool clientAsyncCopyFileSection(const char *uuid,    // from genUUID - mu
 
 extern void clientSetRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime);
 extern void clientAddSocketToCache(SocketEndpoint &ep,ISocket *socket);
+
+typedef unsigned char RemoteFileCommandType;
+extern RemoteFileCommandType queryRemoteStreamCmd(); // used by testsocket only
 
 #endif
