@@ -4252,6 +4252,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         }
     case no_actionlist:
     case no_orderedactionlist:
+    case no_parallel:
         {
             bool same = true;
             HqlExprArray args;
