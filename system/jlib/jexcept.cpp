@@ -131,7 +131,7 @@ public:
         return str;
     }
 protected:
-    Owned<IException> exception;
+    Linked<IException> exception;
 };
 
 IException *makeWrappedExceptionVA(IException *e, int code, const char *format, va_list args)

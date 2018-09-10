@@ -211,6 +211,12 @@ static void createDigitalSignatureManagerInstance(IDigitalSignatureManager * * p
 {
     const char * pubKey = nullptr, *privKey = nullptr, *passPhrase = nullptr;
     queryHPCCPKIKeyFiles(nullptr, &pubKey, &privKey, &passPhrase);
+    StringBuffer passPhraseDec;
+    if (!isEmptyString(passPhrase))
+    {
+        decrypt(passPhraseDec, passPhrase);
+        passPhrase = passPhraseDec.str();
+    }
     *ppDSM = createDigitalSignatureManagerInstanceFromFiles(pubKey, privKey, passPhrase);
 }
 
