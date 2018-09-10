@@ -118,6 +118,7 @@ if(USE_SPARK)
 
     install(
         DIRECTORY "${CMAKE_BINARY_DIR}/downloads/spark-hadoop"
+        USE_SOURCE_PERMISSIONS
         COMPONENT runtime
         DESTINATION "externals"
         )
