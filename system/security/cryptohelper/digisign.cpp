@@ -196,14 +196,9 @@ public:
         throwStringExceptionV(-1, "digiVerify: unavailable without openssl");
     }
 
-    virtual const char * queryPublicKeyFile() const override
+    virtual const char * queryKeyName() const override
     {
         throwStringExceptionV(-1, "digiVerify: unavailable without openssl");
-    }
-
-    virtual const char * queryPrivateKeyFile() const override
-    {
-        throwStringExceptionV(-1, "digiSign: unavailable without openssl");
     }
 };
 
