@@ -6,10 +6,12 @@ After=network.target remote-fs.target
 Type=oneshot
 User=@RUNTIME_USER@
 Group=@RUNTIME_GROUP@
+ExecStartPre=/bin/mkdir -p @RUNTIME_PATH@/%i @LOG_PATH@/%i @PID_PATH@ @LOCK_PATH@/%i
+ExecStartPre=/bin/chown -R @RUNTIME_USER@:@RUNTIME_GROUP@ @RUNTIME_PATH@ @LOG_PATH@ @PID_PATH@ @LOCK_PATH@
 ExecStart=@ADMIN_PATH@/check-component-exists.sh %i
-ExecStart=/bin/mkdir -p @RUNTIME_PATH@/%i @LOG_PATH@/%i @PID_PATH@ @LOCK_PATH@/%i
 ExecStart=@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -od @RUNTIME_PATH@ -id @COMPONENTFILES_PATH@/configxml -c %i
 ExecStart=/bin/bash -c '/bin/echo "PATH=$PATH:@EXEC_PATH@:@ADMIN_PATH@:@RUNTIME_PATH@/%i" > @RUNTIME_PATH@/%i/%i.cfg'
+PermissionsStartOnly=true
 
 [Install]
 WantedBy=default.target
