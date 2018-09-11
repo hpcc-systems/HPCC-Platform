@@ -26,9 +26,9 @@
 #include "cryptocommon.hpp"
 
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static unsigned numCryptoLocks = 0;
 static std::vector<std::unique_ptr<CriticalSection>> cryptoLocks;
-
 
 static void locking_function(int mode, int n, const char * file, int line)
 {
@@ -44,10 +44,8 @@ static unsigned long pthreads_thread_id()
     return (unsigned long)GetCurrentThreadId();
 }
 
-static void initSSLLibrary()
+static void installCallbacks()
 {
-    SSL_load_error_strings();
-    SSLeay_add_ssl_algorithms();
     if (!CRYPTO_get_locking_callback())
     {
         numCryptoLocks = CRYPTO_num_locks();
@@ -59,7 +57,17 @@ static void initSSLLibrary()
     if (!CRYPTO_get_id_callback())
         CRYPTO_set_id_callback((unsigned long (*)())pthreads_thread_id);
 #endif
+}
+#endif
+
+static void initSSLLibrary()
+{
+    SSL_load_error_strings();
+    SSLeay_add_ssl_algorithms();
     OpenSSL_add_all_algorithms();
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    installCallbacks();
+#endif
 }
 
 
