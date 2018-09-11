@@ -36,18 +36,25 @@ if(USE_SPARK)
     set(SPARKTHOR_CGENCOMPLIST_LINUX_ENTRY
 "  <Component name=\"sparkthor\" processName=\"SparkThor\" schema=\"sparkThor.xsd\">
      <File name=\"sparkThor.xsl\" method=\"xslt\" destName=\"spark-env.sh\"/>
+     <File name=\"spark-defaults.xsl\" method=\"xslt\" destName=\"spark-defaults.conf\"/>
    </Component>")
     set(SPARKTHOR_CGENCOMPLIST_WIN_ENTRY
 "  <Component name=\"sparkthor\" processName=\"SparkThor\" schema=\"sparkThor.xsd\">
     <File name=\"sparkThor.xsl\" method=\"xslt\" destName=\"spark-env.conf\"/>
+    <File name=\"spark-defaults.xsl\" method=\"xslt\" destName=\"spark-defaults.conf\"/>
   </Component>")
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsl.in
         ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
         @ONLY)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/spark-defaults.xsl.in
+        ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl
+        @ONLY)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsd
               ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
+              ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl
         DESTINATION componentfiles/configxml
         COMPONENT Runtime)
 endif()
