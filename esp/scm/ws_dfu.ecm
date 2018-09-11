@@ -832,45 +832,87 @@ ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
     ESParray<ESPStruct History, Origin> History;
 };
 
-ESPrequest DFUFileAccessRequest
+ESPStruct DFUFileAccessRequestBase
 {
     string Name;
     string Cluster;
+    string JobId;
     int ExpirySeconds(60);
     ESPenum FileAccessRole AccessRole;
     ESPenum SecAccessType AccessType;
-    string JobId;
     bool ReturnJsonTypeInfo(false);
     bool ReturnBinTypeInfo(false);
 };
 
-// DFUPartLocations and DFUPartCopies part of DFUFileAccessResponse below
-ESPStruct DFUPartLocations
+ESPrequest DFUFileAccessRequest
+{
+    EspStruct DFUFileAccessRequestBase RequestBase;
+};
+
+ESPStruct DFUPartLocation
 {
     int LocationIndex;
-    string Location;
+    string Host;
 };
 
-ESPStruct DFUPartCopies
+ESPStruct DFUFileCopy
+{
+    int CopyIndex;
+    int LocationIndex;
+    string Path;
+};
+
+ESPStruct DFUFilePart
 {
     int PartIndex;
-    ESParray<string> LocationIndexes;
+    ESParray<EspStruct DFUFileCopy> Copies;
 };
 
-ESPresponse [exceptions_inline] DFUFileAccessResponse
+ESPStruct DFUFileAccessInfo
 {
     string MetaInfoBlob;
     string ExpiryTime;
-    // {NumParts, FilePartLocations, FileParts} depend on ReturnFileInfo in request
+    // {NumParts, FileParts} depend on ReturnFileInfo in request
     int NumParts;        // number of parts in logical file
-    ESParray<EspStruct DFUPartLocations> FilePartLocations;
-    ESParray<EspStruct DFUPartCopies> FileParts;
+    ESParray<EspStruct DFUPartLocation> FileLocations;
+    ESParray<EspStruct DFUFilePart> FileParts;
     
     binary RecordTypeInfoBin;   // optional
     string RecordTypeInfoJson;  // optional
     
     int fileAccessPort;
     bool fileAccessSSL;
+};
+
+ESPresponse [exceptions_inline] DFUFileAccessResponse
+{
+    EspStruct DFUFileAccessInfo AccessInfo;
+};
+
+ESPrequest [nil_remove] DFUFileCreateRequest
+{
+    string ECLRecordDefinition;
+    ESParray<string> PartLocations;
+    EspStruct DFUFileAccessRequestBase RequestBase;
+};
+
+ESPresponse [exceptions_inline, nil_remove] DFUFileCreateResponse
+{
+    string FileId;
+    string Warning;
+    EspStruct DFUFileAccessInfo AccessInfo;
+};
+
+ESPrequest [nil_remove] DFUFilePublishRequest
+{
+    string FileId;
+    string ECLRecordDefinition;
+    int64 RecordCount;
+    int64 FileSize;
+};
+
+ESPresponse [exceptions_inline, nil_remove] DFUFilePublishResponse
+{
 };
 
 //  ===========================================================================
@@ -906,6 +948,8 @@ ESPservice [
     ESPmethod EclRecordTypeInfo(EclRecordTypeInfoRequest, EclRecordTypeInfoResponse);
 
     ESPmethod [auth_feature("DfuAccess:READ"), min_var("1.39")] DFUFileAccess(DFUFileAccessRequest, DFUFileAccessResponse);
+    ESPmethod [auth_feature("DfuAccess:FULL"), min_var("1.39")] DFUFileCreate(DFUFileCreateRequest, DFUFileCreateResponse);
+    ESPmethod [auth_feature("DfuAccess:FULL"), min_var("1.39")] DFUFilePublish(DFUFilePublishRequest, DFUFilePublishResponse);
 };
 
 SCMexportdef(WSDFU);

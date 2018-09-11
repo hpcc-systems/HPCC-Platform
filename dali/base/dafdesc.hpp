@@ -324,6 +324,7 @@ extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isr
 
 extern da_decl IFileDescriptor *createFileDescriptor();
 extern da_decl IFileDescriptor *createFileDescriptor(IPropertyTree *attr);      // ownership of attr tree is taken
+extern da_decl IFileDescriptor *createFileDescriptor(const char *lname, const char *clusterType, const char *groupName, IGroup *grp);
 extern da_decl IFileDescriptor *createExternalFileDescriptor(const char *logicalname);
 extern da_decl IFileDescriptor *getExternalFileDescriptor(const char *logicalname);
 extern da_decl ISuperFileDescriptor *createSuperFileDescriptor(IPropertyTree *attr);        // ownership of attr tree is taken

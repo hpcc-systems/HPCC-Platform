@@ -1550,6 +1550,8 @@ extern WORKUNIT_API IStringVal &getEclSchedulerQueueNames(IStringVal &ret, const
 extern WORKUNIT_API IStringVal &getAgentQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getRoxieQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *process);
+extern WORKUNIT_API ClusterType getClusterTypeByClusterName(const char *cluster);
+extern WORKUNIT_API StringBuffer &getClusterGroupName(StringBuffer &ret, const char *cluster);
 extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, const char *cluster);
 extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster);
 extern WORKUNIT_API StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster);
