@@ -151,12 +151,13 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
     try
     {
         ISecUser* userInContext = context.queryUser();
+        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if (!userInContext)
         {
+            if (secmgr || (context.getDomainAuthType() == AuthUserNameOnly))
+                throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, "User not set in EspContext");
             return true;
         }
-
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if (!secmgr)
         {
             resp.setUsername(userInContext->getName());
