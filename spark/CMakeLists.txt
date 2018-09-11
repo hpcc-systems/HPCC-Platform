@@ -131,4 +131,14 @@ if(USE_SPARK)
         DESTINATION "jars/spark/"
         )
 
+    configure_file(spark-defaults.conf.in spark-defaults.conf @ONLY)
+    configure_file(spark-env.sh.in spark-env.sh @ONLY)
+    install(
+        FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.conf
+            ${CMAKE_CURRENT_BINARY_DIR}/spark-env.sh
+        COMPONENT runtime
+        DESTINATION "externals/spark-hadoop/conf"
+        )
+
 endif(USE_SPARK)
