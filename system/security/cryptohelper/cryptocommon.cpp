@@ -32,7 +32,7 @@ static std::vector<std::unique_ptr<CriticalSection>> cryptoLocks;
 
 static void locking_function(int mode, int n, const char * file, int line)
 {
-    assertex(n < numCryptoLocks);
+    assertex(n < (int)numCryptoLocks);
     if (mode & CRYPTO_LOCK)
         cryptoLocks[n]->enter();
     else
