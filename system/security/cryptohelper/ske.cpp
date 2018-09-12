@@ -160,7 +160,6 @@ size32_t aesDecryptWithRSAEncryptedKey(MemoryBuffer &out, size32_t inSz, const v
     MemoryBuffer in;
     in.setBuffer(inSz, (void *)inBytes, false);
     // read encrypted AES key
-    char randomAesKey[aesMaxKeySize];
     size32_t encryptedAESKeySz;
     in.read(encryptedAESKeySz);
     MemoryBuffer aesKey;

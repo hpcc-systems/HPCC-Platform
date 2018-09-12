@@ -42,10 +42,6 @@ if(NOT TARGET libbase58)
   add_subdirectory(${HPCC_SOURCE_DIR}/system/libbase58 ${CMAKE_BINARY_DIR}/system/libbase58)
 endif(NOT TARGET libbase58)
 
-if(NOT TARGET cryptohelper)
-  add_subdirectory(${HPCC_SOURCE_DIR}/system/security/cryptohelper ${CMAKE_BINARY_DIR}/system/security/cryptohelper)
-endif(NOT TARGET cryptohelper)
-
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
   SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor")
 endif()
@@ -170,6 +166,10 @@ set (    INCLUDES
         jtime.ipp
         junicode.hpp
         jutil.hpp
+        ${HPCC_SOURCE_DIR}/system/security/cryptohelper/cryptocommon.cpp
+        ${HPCC_SOURCE_DIR}/system/security/cryptohelper/digisign.cpp
+        ${HPCC_SOURCE_DIR}/system/security/cryptohelper/pke.cpp
+        ${HPCC_SOURCE_DIR}/system/security/cryptohelper/ske.cpp
         )
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
@@ -202,7 +202,6 @@ target_link_libraries ( jlib
         lzma
         lz4
         libbase58
-        cryptohelper
        )
 
 if ( ${HAVE_LIBDL} )
@@ -219,11 +218,9 @@ endif (USE_OPENSSL)
 
 if (WIN32)
  target_link_libraries ( jlib ws2_32 mpr.lib Winmm.lib psapi.lib )
- SET_TARGET_PROPERTIES( jlib PROPERTIES LINK_FLAGS_DEBUG "/WHOLEARCHIVE:cryptohelper.lib")
 elseif (("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" ))
 else ()
  target_link_libraries ( jlib rt )
- target_link_libraries ( jlib -Wl,--whole-archive cryptohelper -Wl,--no-whole-archive)
 endif ()
 
 if (NOT PLUGIN)
