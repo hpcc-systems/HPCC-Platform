@@ -160,7 +160,8 @@
           executable. Options that do not change very often should be put in
           the ini file. For example:</para>
 
-          <programlisting>eclWatchIP=10.150.50.12
+          <programlisting>;The values below are examples, you should change them to match your platform deployment
+eclWatchIP=10.150.50.12
 eclWatchPort=28010
 eclUserName=emilykate
 eclPassword=elmo812
@@ -1312,7 +1313,7 @@ ecl results W20170519-142920 --noroot --exception-level=error
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>ecl activate Roxie FindpersonService.4</programlisting>
+        <programlisting>ecl activate roxie FindpersonService.4</programlisting>
 
         <para></para>
 
@@ -1415,7 +1416,7 @@ ecl results W20170519-142920 --noroot --exception-level=error
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>ecl deactivate Roxie FindpersonService</programlisting>
+        <programlisting>ecl deactivate roxie FindpersonService</programlisting>
 
         <para></para>
 
