@@ -290,7 +290,8 @@
           lowercase. Options that rarely change can be put in the dfuplus.ini
           file. For example:</para>
 
-          <programlisting>server=http://10.150.50.12:8010
+          <programlisting>;The values below are examples, you should change them to match your platform deployment
+server=http://10.150.50.12:8010
 username=rlor
 password=password
 overwrite=1
@@ -519,20 +520,20 @@ replicate=1</programlisting>
 
           <programlisting>//fixed spray example:
 dfuplus action=spray srcip=10.150.50.14
-          srcfile=c:\import\timezones.txt dstname=RTTEMP::timezones.txt
-          dstcluster=thor format=fixed recordsize=155
+          srcfile=/var/lib/HPCCSystems/mydropzone/timezones.txt dstname=RTTEMP::timezones.txt
+          dstcluster=mythor format=fixed recordsize=155
 
 //fixed spray example using a srcxml file:
-dfuplus action=spray srcxml=c:\import\flattimezones.xml
-          dstname=RTTEMP::timezones.txt dstcluster=thor recordsize=155
+dfuplus action=spray srcxml=/var/lib/HPCCSystems/mydropzone/flattimezones.xml
+          dstname=RTTEMP::timezones.txt dstcluster=mythor recordsize=155
 
 //csv spray example:
 dfuplus action=spray srcip=10.150.50.14
-          srcfile=c:\import\timezones.csv dstname=RTTEMP::timezones.csv
-          dstcluster=thor format=csv
+          srcfile=/var/lib/HPCCSystems/mydropzone/timezones.csv dstname=RTTEMP::timezones.csv
+          dstcluster=mythor format=csv
 
 //the spray.xml file contains:
-&lt;File directory="c:\import\"
+&lt;File directory="/var/lib/HPCCSystems/mydropzone/"
    group="thor"
    modified="2004-04-27T14:58:38"
    name="zip"
@@ -553,26 +554,25 @@ dfuplus action=spray srcip=10.150.50.14
    size="165"/&gt;
 &lt;/File&gt;
 
-//fixed spray example using the above spray.xml file to
-          combine
+//fixed spray example using the above spray.xml file to combine
 // multiple source files into a single logical file
-// in this case, zip._1_of_3, zip._2_of_3, and zip._3_of_3
-          into zip1:
+// in this case, zip._1_of_3, zip._2_of_3, and zip._3_of_3 into zip1:
 dfuplus action=spray srcxml=spray.xml
-          dstcluster=thordstname=RTTEMP::myzip1 recordsize=5
+          dstcluster=mythor dstname=RTTEMP::myzip1 recordsize=5
 
 //xml spray example:
 dfuplus action=spray srcip=10.150.50.14
-          srcfile=c:\import\timezones.xml dstname=RTTEMP::timezones.xml
-          dstcluster=thor format=xml rowtag=area
+          srcfile=/var/lib/HPCCSystems/mydropzone/timezones.xml dstname=RTTEMP::timezones.xml
+          dstcluster=mythor format=xml rowtag=area
 
 //Multiple spray all .JPG and .BMP files under
-// c:\import on 10.150.51.26 to single logical file
-          LE::imagedb:
-dfuplus action=spray srcip=10.150.51.26
-          srcfile=c:\import\*.jpg,c:\import\*.bmp
+// /var/lib/HPCCSystems/mydropzone/ on 10.150.51.26 to single logical file LE::imagedb
 
-dstcluster=le_thor dstname=LE::imagedb overwrite=1
+dfuplus action=spray srcip=10.150.51.26
+          srcfile=/var/lib/HPCCSystems/mydropzone/*.jpg,/var/lib/HPCCSystems/mydropzone/*.bmp
+          dstcluster=mythor 
+          dstname=LE::imagedb 
+          overwrite=1
           prefix=FILENAME,FILESIZE nosplit=1
 //this would result in a RECORD structure like this:
 imageRecord := RECORD
@@ -678,9 +678,9 @@ END;</programlisting>
           <para>Examples:</para>
 
           <programlisting>dfuplus action=despray dstip=10.150.50.14
-   dstfile=c:\import\despray\timezones.txt srcname=RTTEMP::timezones.txt
+   dstfile=/var/lib/HPCCSystems/mydropzone/timezones.txt srcname=RTTEMP::timezones.txt
 //the spray.xml file contains:
-&lt;File directory="c:\import\"
+&lt;File directory="/var/lib/HPCCSystems/mydropzone/"
    group="thor"
    modified="2004-04-27T14:58:38"
    name="zip"
@@ -703,7 +703,7 @@ size="165"/&gt;
 //despray example using the above spray.xml file to split a single
 // logical file into multiple destination files
 // in this case, zip._1_of_3, zip._2_of_3, and zip._3_of_3 from zip1:
-dfuplus action=despray dstxml=spray.xml dstcluster=thor
+dfuplus action=despray dstxml=spray.xml dstcluster=mythor
           srcname=RTTEMP::myzip1
 
 
@@ -715,7 +715,7 @@ DATA image; //first 4 bytes contain the length of the image data
 
 //you can despray into its component files like this:
 dfuplus action=dspray srcname=le::imagedb
-          dstip=10.150.51.26 dstfile=c:\export\
+          dstip=10.150.51.26 dstfile=/var/lib/HPCCSystems/mydropzone/
           splitprefix=FILENAME,FILESIZE
 </programlisting>
         </sect3>
@@ -805,7 +805,8 @@ dfuplus action=dspray srcname=le::imagedb
           <para>Example:</para>
 
           <programlisting>dfuplus action=copy srcname=RTTEMP::timezones.txt
-          dstname=srcname=RTTEMP::COPY::timezones.txt dstcluster=thor</programlisting>
+                    dstname=RTTEMP::COPY::timezones.txt 
+                    dstcluster=mythor</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_RemoveOps">
@@ -1287,10 +1288,10 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para>Example:</para>
 
-          <programlisting>dfuplus action=savexml srcname=RTTEMP::timezones.txt
+          <programlisting>dfuplus action=savexml srcname=rttemp::timezones.txt
           dstxml=flattimezones.xml
     // this results in the following XML file:
-    &lt;File directory="c:\thordata\rttemp"
+    &lt;File directory="/var/lib/HPCCSystems/hpcc-data/thor/rttemp"
           group="thor"
           modified="2004-06-18T14:17:16"
           name="timezones.txt"
@@ -1423,10 +1424,10 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
           <para>Example:</para>
 
-          <programlisting>dfuplus action=monitor event=MyEvent ip=edata10 file=/dz/arr.txt
+          <programlisting>dfuplus action=monitor event=MyEvent ip=edata10 file=/var/lib/HPCCSystems/mydropzone/arr.txt
 dfuplus action=monitor event=MyEvent ip=10.150.10.75
-            file=c:\dz\* shotlimit=-1 sub=1
-dfuplus action=monitor event=MyEvent file=//10.15.13.21/dz/*.txt
+            file=/var/lib/HPCCSystems/mydropzone/* shotlimit=-1 sub=1
+dfuplus action=monitor event=MyEvent file=//10.15.13.21/var/lib/HPCCSystems/mydropzone/*.txt
 dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
         </sect3>
 
