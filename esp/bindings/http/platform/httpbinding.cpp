@@ -204,6 +204,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, bnd_cfg, secMgrCfg));
                     m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                     m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
+                    m_setting_authmap.setown(m_secmgr->createSettingMap(authcfg));
                 }
                 else
                 {
@@ -239,6 +240,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
 
                         m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                         m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
+                        m_setting_authmap.setown(m_secmgr->createSettingMap(authcfg));
                     }
                     else if(stricmp(m_authmethod.str(), "Local") == 0)
                     {

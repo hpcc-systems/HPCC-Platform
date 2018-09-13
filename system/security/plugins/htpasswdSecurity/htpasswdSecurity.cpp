@@ -148,6 +148,11 @@ public:
 
         return feature_authmap;
     }
+
+    IAuthMap * createSettingMap(IPropertyTree * authConfig) override
+    {
+        return nullptr;
+    }
 protected:
 
     //ISecManager

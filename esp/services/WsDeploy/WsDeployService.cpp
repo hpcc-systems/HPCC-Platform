@@ -3306,16 +3306,17 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
         ForEach (*iterBindings)
         {
           IPropertyTree* pBinding = &iterBindings->query();
-          bool flag = false;
 
-          Owned<IPropertyTreeIterator> iterUrl = pBinding->getElements("AuthenticateFeature");
-          ForEach (*iterUrl)
+          if (!pBinding->hasProp("AuthenticateSetting"))
           {
-            flag = true;
-            break;
+            IPropertyTree* pAuthSetting = pBinding->addPropTree( "AuthenticateSetting", createPTree() );
+            pAuthSetting->addProp("@include", "");
+            pAuthSetting->addProp("@description", "");
+            pAuthSetting->addProp("@path", "");
+            pAuthSetting->addProp("@resource", "");
           }
 
-          if (!flag)
+          if (!pBinding->hasProp("AuthenticateFeature"))
           {
             IPropertyTree* pAuthFeature = pBinding->addPropTree( "AuthenticateFeature", createPTree() );
             pAuthFeature->addProp("@authenticate", "");
@@ -3325,15 +3326,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
             pAuthFeature->addProp("@service", "");
           }
 
-          flag = false;
-          Owned<IPropertyTreeIterator> iterFeature = pBinding->getElements("Authenticate");
-          ForEach (*iterFeature)
-          {
-            flag = true;
-            break;
-          }
-
-          if (!flag)
+          if (!pBinding->hasProp("Authenticate"))
           {
             IPropertyTree* pAuth = pBinding->addPropTree( "Authenticate", createPTree() );
             pAuth->addProp("@access", "");

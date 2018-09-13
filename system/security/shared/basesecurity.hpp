@@ -184,7 +184,10 @@ public:
 
     IAuthMap * createSettingMap(IPropertyTree * authconfig)
     {
-        throwUnexpected();
+#ifdef _DEBUG
+        DBGLOG("using CBaseSecurityManager::createSettingMap; override with desired behavior");
+#endif
+        return nullptr;
     }
 
     void deleteResource(SecResourceType rtype, const char * name, const char * basedn)

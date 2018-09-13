@@ -681,19 +681,35 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:for-each select="$bindingNode/Authenticate[@path='/']">
                <Location path="/" resource="{@resource}" required="{@access}" description="{@description}"/>
             </xsl:for-each>
-            
+
             <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
                <xsl:if test="$service='ws_smc' or @service=$service">
                   <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
                </xsl:if>
             </xsl:for-each>
-            
+
             <xsl:if test="$service = 'ws_topology'"><!--also add MachineInfoAccess stuff for topology-->
                <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
                   <xsl:if test="starts-with(@path, 'MachineInfoAccess')">
                      <Feature path="{@path}" resource="{@resource}" required="{@access}" description="{@description}">
                         <xsl:copy-of select="*"/>
                      </Feature>
+                  </xsl:if>
+               </xsl:for-each>
+            </xsl:if>
+
+            <xsl:for-each select="$bindingNode/AuthenticateSetting[@include='Yes']">
+               <xsl:if test="$service='ws_smc' or @service=$service">
+                  <Setting path="{@path}" resource="{@resource}" description="{@description}"/>
+               </xsl:if>
+            </xsl:for-each>
+
+            <xsl:if test="$service = 'ws_topology'"><!--also add MachineInfoAccess stuff for topology-->
+               <xsl:for-each select="$bindingNode/AuthenticateSetting[@include='Yes']">
+                  <xsl:if test="starts-with(@path, 'MachineInfoAccess')">
+                     <Setting path="{@path}" resource="{@resource}" description="{@description}">
+                        <xsl:copy-of select="*"/>
+                     </Setting>
                   </xsl:if>
                </xsl:for-each>
             </xsl:if>         
@@ -723,6 +739,22 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                      <Feature path="{@path}" resource="{@resource}" required="{@access}" description="{@description}">
                         <xsl:copy-of select="*"/>
                      </Feature>
+                  </xsl:if>
+               </xsl:for-each>
+            </xsl:if>
+
+            <xsl:for-each select="$bindingNode/AuthenticateSetting[@include='Yes']">
+               <xsl:if test="$service='ws_smc' or @service=$service">
+                  <Setting path="{@path}" resource="{@resource}" description="{@description}"/>
+               </xsl:if>
+            </xsl:for-each>
+
+            <xsl:if test="$service = 'ws_topology'">
+               <xsl:for-each select="$bindingNode/AuthenticateSetting[@include='Yes']">
+                  <xsl:if test="starts-with(@path, 'MachineInfoAccess')">
+                     <Setting path="{@path}" resource="{@resource}" description="{@description}">
+                        <xsl:copy-of select="*"/>
+                     </Setting>
                   </xsl:if>
                </xsl:for-each>
             </xsl:if>

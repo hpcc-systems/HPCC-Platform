@@ -183,6 +183,63 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="AuthenticateSetting" minOccurs="0" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:appinfo>
+                                        <viewType>list</viewType>
+                                        <title>Secure User Settings</title>
+                                    </xs:appinfo>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <!--DOC-Autobuild-code-->
+                                    <xs:annotation>
+                                        <xs:appinfo>
+                                            <docid>ESP.t2</docid>
+                                        </xs:appinfo>
+                                    </xs:annotation>
+                                    <xs:attribute name="include" use="optional" default="Yes">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <tooltip>Lookup this user setting for authenticated users?</tooltip>
+                                                <width>80</width>
+                                                <colIndex>1</colIndex>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                        <xs:simpleType>
+                                            <xs:restriction base="xs:string">
+                                                <xs:enumeration value="Yes"/>
+                                                <xs:enumeration value="No"/>
+                                            </xs:restriction>
+                                        </xs:simpleType>
+                                    </xs:attribute>
+                                    <xs:attribute name="description" type="xs:string" use="optional">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <width>200</width>
+                                                <colIndex>2</colIndex>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="path" type="xs:string" use="optional" default="/">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <tooltip>The logical path of a resource used to identify user configuration information.</tooltip>
+                                                <required>true</required>
+                                                <colIndex>3</colIndex>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="resource" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:appinfo>
+                                                <tooltip>The physical resource for user configuration information.</tooltip>
+                                                <width>120</width>
+                                                <colIndex>4</colIndex>
+                                            </xs:appinfo>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:sequence>
                         <xs:attribute name="name" type="xs:string" use="required">
                             <xs:annotation>
