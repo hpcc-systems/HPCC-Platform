@@ -204,7 +204,10 @@ public:
                 case XPATH_USERS:
                 case XPATH_XSLT_TREE:
                 {
-                    evaluated.append(xmlXPathConvertString (evaluatedXpathObj)->stringval);
+                    evaluatedXpathObj = xmlXPathConvertString (evaluatedXpathObj); //existing object is freed
+                    if (!evaluatedXpathObj)
+                        throw MakeStringException(-1,"XpathProcessor:evaluateAsString: could not convert result to string");
+                    evaluated.append(evaluatedXpathObj->stringval);
                     break;
                 }
                 default:
