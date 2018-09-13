@@ -84,26 +84,31 @@ MODULE_EXIT()
 namespace cryptohelper
 {
 
-static void populateErrorFormat(StringBuffer &formatMessage, const char *format)
+static void populateError(StringBuffer &msg)
 {
     // openssl doesn't define max error string size, but 1K will do
-    char *evpErr = formatMessage.reserve(1024);
+    char *evpErr = msg.reserve(1024);
     ERR_error_string_n(ERR_get_error(), evpErr, 1024);
-    formatMessage.setLength(strlen(evpErr));
-    formatMessage.append(" - ").append(format);
+    msg.setLength(strlen(evpErr));
+    msg.append(" - ");
 }
+
+static IException *makeEVPExceptionVA(int code, const char *format, va_list args)  __attribute__((format(printf,2,0)));
+
 IException *makeEVPExceptionVA(int code, const char *format, va_list args)
 {
-    StringBuffer formatMessage;
-    populateErrorFormat(formatMessage, format);
-    return makeStringExceptionVA(code, formatMessage, args);
+    StringBuffer message;
+    populateError(message);
+    message.valist_appendf(format, args);
+    return makeStringException(code, message);
 }
 
 IException *makeEVPException(int code, const char *msg)
 {
-    StringBuffer formatMessage;
-    populateErrorFormat(formatMessage, msg);
-    return makeStringException(code, formatMessage);
+    StringBuffer message;
+    populateError(message);
+    message.append(msg);
+    return makeStringException(code, message);
 }
 
 IException *makeEVPExceptionV(int code, const char *format, ...)
