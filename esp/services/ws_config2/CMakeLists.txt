@@ -68,6 +68,13 @@ target_link_libraries(ws_config2
     esphttp
     environment
     dllserver
-    securesocket
     config2
     )
+
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_config2
+        securesocket
+    )
+ENDIF()
+
+

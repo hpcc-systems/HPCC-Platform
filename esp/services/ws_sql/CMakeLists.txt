@@ -104,11 +104,17 @@ if(WSSQL_SERVICE)
         jlib
         xmllib
         esphttp
-        securesocket
         dalibase
         libantlr3c
         wuwebview
         )
+
+IF (USE_OPENSSL)
+    target_link_libraries ( ws_sql
+    	securesocket
+    )
+ENDIF()
+         
     install(TARGETS ws_sql
         RUNTIME DESTINATION ${EXEC_DIR}
         LIBRARY DESTINATION ${LIB_DIR}
