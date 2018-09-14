@@ -417,7 +417,7 @@ void EnvironmentNode::doFetchNodes(ConfigPath &configPath, std::vector<std::shar
                     if (!pPathItem->isSchemaItem())
                     {
                         std::shared_ptr<EnvironmentValue> pAttribute = (*childNodeIt)->getAttribute(attrName);
-                        if (pAttribute)
+                        if (pAttribute && pAttribute->isValueSet())
                         {
                             if (pPathItem->checkValueAgainstValueList(pAttribute->getValue(), true))
                             {

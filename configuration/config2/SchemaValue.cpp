@@ -24,7 +24,7 @@
 #include "Exceptions.hpp"
 
 SchemaValue::SchemaValue(const std::string &name, bool isDefined) :
-    m_name(name), m_displayName(name)
+    m_name(name), m_displayName(name), m_invertHiddenIf(false)
 {
     bitMask.m_required = 0;
     bitMask.m_readOnly = 0;
@@ -54,6 +54,7 @@ SchemaValue::SchemaValue(const SchemaValue &value)
     m_requiredIf = value.m_requiredIf;
     m_groupByName = value.m_groupByName;
     m_hiddenIf = value.m_hiddenIf;
+    m_invertHiddenIf = value.m_invertHiddenIf;
 
     // special processing? Maybe after inserting?
     std::vector<std::shared_ptr<SchemaValue>> m_mirrorToSchemaValues;
@@ -378,6 +379,7 @@ bool SchemaValue::isHidden(const EnvironmentValue *pEnvValue) const
         std::vector<std::shared_ptr<EnvironmentNode>> nodes;
         pEnvValue->getEnvironmentNode()->fetchNodes(m_hiddenIf, nodes);
         hidden = !nodes.empty();
+        hidden = m_invertHiddenIf == !hidden;
     }
     return hidden;
 }

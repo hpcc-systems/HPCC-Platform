@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema
-    xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormhpcc:presetValue="qualified" attributeFormhpcc:presetValue="unqualified"
     xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
     <xs:complexType name="ws_ecl">
@@ -16,7 +16,7 @@
                                 <xs:attribute name="vip" type="xs:string" use="required" hpcc:displayName="VIP" hpcc:tooltip=""/>
                                 <xs:attribute name="dnsInterval" type="xs:integer" use="optional" hpcc:displayName="DNS Cache timeout interval"
                                               hpcc:tooltip="DNS lookup cache timeout in seconds. Set to 0 to resolve DNS for every transaction.  Set to -1 (default) to keep DNS lookup cached indefinitely."/>
-                                <xs:attribute name="sendTargetToRoxie" type="xs:boolean" use="optional" hpcc:displayName="Send Target To Roxie" default="true"
+                                <xs:attribute name="sendTargetToRoxie" type="xs:boolean" use="optional" hpcc:displayName="Send Target To Roxie" hpcc:presetValue="true"
                                               hpcc:tooltip="Send roxie the target from which to run query (disable for backward compatibility issues)"/>
                             </xs:complexType>
                         </xs:element>
@@ -32,10 +32,10 @@
                     <xs:attributeGroup ref="buildInfo"/>
                     <xs:attribute name="name" type="xs:string" use="required" hpcc:autogenerateType="Prefix" hpcc:autoGenerateValue="wsecl" hpcc:displayName="Service Name"
                         hpcc:uniqueKey="espservice_key" hpcc:tooltip="Name for this ESP service" />
-                    <xs:attribute name="description" type="xs:string" use="optional" default="WS ECL Service" hpcc:displayName="Description" hpcc:tooltip="Allows creation of web services using ECL language" />
-                    <xs:attribute name="roxieTimeout" type="xs:unsignedInt" use="optional" default="300" hpcc:displayName="Roxie Timeout"
+                    <xs:attribute name="description" type="xs:string" use="optional" hpcc:presetValue="WS ECL Service" hpcc:displayName="Description" hpcc:tooltip="Allows creation of web services using ECL language" />
+                    <xs:attribute name="roxieTimeout" type="xs:unsignedInt" use="optional" hpcc:presetValue="300" hpcc:displayName="Roxie Timeout"
                                   hpcc:tooltip="Timeout (in seconds) for WsEcl connections to roxie (0 == wait forever)" />
-                    <xs:attribute name="workunitTimeout" type="xs:unsignedInt" use="optional" default="600" hpcc:displayName="Workunit Timeout"
+                    <xs:attribute name="workunitTimeout" type="xs:unsignedInt" use="optional" hpcc:presetValue="600" hpcc:displayName="Workunit Timeout"
                                   hpcc:tooltip="Timeout (in seconds), for WsEcl to wait for workunit to complete (0 == wait forever)" />
 
                     <xs:complexType name="espservice_options"/>

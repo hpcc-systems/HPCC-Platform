@@ -47,6 +47,8 @@ class DECL_EXPORT SchemaValue
         void setReadOnly(bool readOnly) { bitMask.m_readOnly = readOnly; }
         bool isReadOnly() const { return bitMask.m_readOnly; }
         void setHiddenIf(const std::string &hiddenIf) { m_hiddenIf = hiddenIf; }
+        void setInvertHiddenIf(bool invert) { m_invertHiddenIf = invert; }
+        bool getInvertHiddenIf() const { return m_invertHiddenIf; }
         void setHidden(bool hidden) { bitMask.m_hidden = hidden; }
         bool isHidden(const EnvironmentValue *pEnvValue=nullptr) const;
         void setDeprecated(bool deprecated) { bitMask.m_deprecated = deprecated; }
@@ -107,6 +109,7 @@ class DECL_EXPORT SchemaValue
         std::string m_requiredIf;
         std::string m_groupByName;
         std::string m_hiddenIf;
+        bool m_invertHiddenIf;
         // DON'T FORGET IF DATA ADDED, IT MAY MAY TO BE COPIED IN THE COPY CONSTRUCTOR!!
 
         struct {

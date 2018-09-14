@@ -719,21 +719,62 @@ void XSDSchemaParser::parseAllowedValue(const pt::ptree &allowedValueTree, Schem
 std::shared_ptr<SchemaValue> XSDSchemaParser::getSchemaValue(const pt::ptree &attr)
 {
     std::string attrName = getXSDAttributeValue(attr, "<xmlattr>.name");
+
+    if (!attr.get("<xmlattr>.default", "").empty())
+    {
+        throw(ParseException( "Attribute " + m_pSchemaItem->getProperty("name") + "[@" + attrName + "], XSD default is not supported, use hpcc:presetValue or hpcc:forcedConfigValue instead"));
+    }
+
     std::shared_ptr<SchemaValue> pCfgValue = std::make_shared<SchemaValue>(attrName);
     pCfgValue->setDisplayName(attr.get("<xmlattr>.hpcc:displayName", attrName));
     pCfgValue->setRequired(attr.get("<xmlattr>.use", "optional") == "required");
     pCfgValue->setTooltip(attr.get("<xmlattr>.hpcc:tooltip", ""));
     pCfgValue->setReadOnly(attr.get("<xmlattr>.hpcc:readOnly", "false") == "true");
-    pCfgValue->setHidden(attr.get("<xmlattr>.hpcc:hidden", "false") == "true");
     pCfgValue->setDeprecated(attr.get("<xmlattr>.hpcc:deprecated", "false") == "true");
     pCfgValue->setMirrorFromPath(attr.get("<xmlattr>.hpcc:mirrorFrom", ""));
     pCfgValue->setAutoGenerateType(attr.get("<xmlattr>.hpcc:autoGenerateType", ""));
     pCfgValue->setAutoGenerateValue(attr.get("<xmlattr>.hpcc:autoGenerateValue", ""));
-    pCfgValue->setDefaultValue(attr.get("<xmlattr>.default", ""));
-    pCfgValue->setCodeDefault(attr.get("<xmlattr>.hpcc:defaultInCode", ""));
     pCfgValue->setValueLimitRuleType(attr.get("<xmlattr>.hpcc:valueLimitRuleType", ""));
     pCfgValue->setValueLimitRuleData(attr.get("<xmlattr>.hpcc:valueLimitRuleData", ""));
     pCfgValue->setRequiredIf(attr.get("<xmlattr>.hpcc:requiredIf", ""));
+
+    //
+    // Process the various hidden/visible flags and ensure no conflicts
+    std::string hidden = attr.get("<xmlattr>.hpcc:hidden", "");
+    std::string hiddenIf = attr.get("<xmlattr>.hpcc:hiddenIf", "");
+    std::string visibleIf = attr.get("<xmlattr>.hpcc:visibleIf", "");
+    unsigned countAttrs = (hidden.empty() ? 0 : 1) + (hiddenIf.empty() ? 0 : 1) + (visibleIf.empty() ? 0 : 1);
+    if (countAttrs > 1)
+    {
+        throw(ParseException( "Attribute " + m_pSchemaItem->getProperty("name") + "[@" + attrName + "] Only one of hpcc:hidden, hpcc:hiddenIf or hpcc:visibleIf may be specified"));
+    }
+
+    if (!hidden.empty())
+    {
+        pCfgValue->setHidden(hidden == "true");
+    }
+    else
+    {
+        pCfgValue->setHiddenIf(!hidden.empty() ? hiddenIf : visibleIf);
+        pCfgValue->setInvertHiddenIf(!visibleIf.empty());
+    }
+
+    //
+    // Defaults
+    std::string preset = attr.get("<xmlattr>.hpcc:presetValue", "");
+    std::string forcedConfigValue = attr.get("<xmlattr>.hpcc:forcedConfigValue", "");
+    if (!preset.empty() && !forcedConfigValue.empty())
+    {
+        throw(ParseException( "Attribute " + m_pSchemaItem->getProperty("name") + "[@" + attrName + "] Only one of hpcc:presetValue or hpcc:forcedConfigValue may be specified"));
+    }
+    else if (!preset.empty())
+    {
+        pCfgValue->setCodeDefault(preset);
+    }
+    else
+    {
+        pCfgValue->setDefaultValue(forcedConfigValue);
+    }
 
     std::string modList = attr.get("<xmlattr>.hpcc:modifiers", "");
     if (modList.length())
