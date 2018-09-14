@@ -70,11 +70,17 @@
         <xs:restriction base="xs:string" hpcc:autoType="requestUser"/>
     </xs:simpleType>
 
+    <xs:simpleType name="timeOfDay">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="^([0-1]?\d|2[0-3])(?::([0-5]?\d))?(?::([0-5]?\d))?$"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:attributeGroup name="computerNodeReference">
-        <xs:attribute name="computer" hpcc:displayName="Computer" group="Attributes" type="nodeName" use="required"
-            hpcc:sourceKey="computer_name" hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]"
-            hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue" hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
-        <xs:attribute name="netAddress" group="Attributes" hpcc:displayName="Net Address" type="ipV4Address" use="required" hpcc:readOnly="true"
+        <xs:attribute name="computer" hpcc:displayName="Computer" type="nodeName" use="required" hpcc:sourceKey="computer_name"
+            hpcc:mirrorFrom="/Environment/Hardware/Computer[@name]" hpcc:valueLimitRuleType="addDependencies_FromSiblingAttributeValue"
+            hpcc:valueLimitRuleData="/Environment/Hardware/Computer,name,netAddress,netAddress"/>
+        <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="required" hpcc:readOnly="true"
             hpcc:sourceKey="computer_netaddress" hpcc:mirrorFrom="/Environment/Hardware/Computer[@netAddress]"/>
     </xs:attributeGroup>
 
@@ -95,7 +101,7 @@
                 <xs:sequence>
                     <xs:element name="Note" type="xs:string" minOccurs="0"/>
                 </xs:sequence>
-                <xs:attribute name="severity" hpcc:displayName="Severity" use="optional" default="Minor" hpcc:tooltip="Significance of this note">
+                <xs:attribute name="severity" hpcc:displayName="Severity" use="optional" hpcc:presetValue="Minor" hpcc:tooltip="Significance of this note">
                     <xs:simpleType>
                         <xs:restriction base="xs:string">
                             <xs:enumeration value="Minor"/>
@@ -149,7 +155,7 @@
                                                             </xs:element>
                                                         </xs:sequence>
                                                         <xs:attribute name="name" type="xs:string" use="required"/>
-                                                        <xs:attribute name="multipleInstances" type="xs:boolean" default="false" use="optional"/>
+                                                        <xs:attribute name="multipleInstances" type="xs:boolean" hpcc:presetValue="false" use="optional"/>
                                                     </xs:complexType>
                                                 </xs:element>
                                             </xs:sequence>
@@ -185,7 +191,7 @@
     <xs:attributeGroup name="secmgrplugin_reqd">
         <xs:attribute name="type" type="SecurityManager" use="required" hpcc:hidden="true" hpcc:readOnly="true"/>
         <xs:attribute name="libName" type="xs:string" use="required" hpcc:displayName="Library Name" hpcc:tooltip="The Security Manager plugin library name (.so)"/>
-        <xs:attribute name="instanceFactoryName" type="xs:string" use="required" hpcc:displayName="Instance Factory Method Name" default="createInstance"
+        <xs:attribute name="instanceFactoryName" type="xs:string" use="required" hpcc:displayName="Instance Factory Method Name" hpcc:presetValue="createInstance"
                       hpcc:tooltip="Name of the factory method to create the Security Manager instacne"/>
         <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:uniqueKey="secmgrplugin_name" hpcc:tooltip="Name for this SingleUser Security Manager instance"/>
     </xs:attributeGroup>

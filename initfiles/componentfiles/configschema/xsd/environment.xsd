@@ -22,6 +22,7 @@
     <xs:include schemaLocation="types.xsd"/>
     <xs:include schemaLocation="hardware.xsd"/>
     <xs:include schemaLocation="esp.xsd"/>
+    <xs:include schemaLocation="dali.xsd"/>
     <!--xs:include schemaLocation="esp_service_wsecl2.xsd"/-->
     <xs:include schemaLocation="secmgr_singleuser.xsd"/>
     <xs:include schemaLocation="esp_service_smc.xsd"/>
@@ -43,6 +44,7 @@
                             <xs:element type="secmgr_singleuser"/>
                             <xs:element type="espsmc"/>
                             <xs:element type="esp"/>
+                            <xs:element type="dali"/>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
