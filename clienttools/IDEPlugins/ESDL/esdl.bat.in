@@ -57,8 +57,8 @@ for /f "tokens=1,2,3 delims=/:" %%a in ("%8") do set http=%%a&set server=%%b&set
 echo.server: %server% >> %TMP%\log.txt
 echo.port  : %port% >> %TMP%\log.txt
 
-echo "%clienttoolsbindir%\esdl.exe publish %newinput% %2 --server %server% --port %port% --username %6 --password %9 -v" >>%TMP%\log.txt
-"%clienttoolsbindir%"\esdl.exe publish %newinput% %2 --server %server% --port %port% --username %6 --password %9 -v 2>%5 >>%TMP%\log.txt
+echo "%clienttoolsbindir%\esdl.exe publish %newinput% %2 --include-path %7 --server %server% --port %port% --username %6 --password %9 -v" >>%TMP%\log.txt
+"%clienttoolsbindir%"\esdl.exe publish %newinput% %2 --include-path %7 --server %server% --port %port% --username %6 --password %9 -v 2>%5 >>%TMP%\log.txt
 goto end
 
 :genecl
