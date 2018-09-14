@@ -27,7 +27,7 @@ class ConfigPathItem
 {
     public:
 
-        ConfigPathItem() : m_isParentPathItem(false), m_isCurrentPathItem(false), m_isSchemaItem(false), m_isRoot(false) {}
+        ConfigPathItem() : m_isParentPathItem(false), m_isCurrentPathItem(false), m_isSchemaItem(false), m_isRoot(false), m_presentInList(true) {}
         ConfigPathItem(const std::string &elemName) : m_isParentPathItem(false), m_isCurrentPathItem(false), m_isSchemaItem(false), m_isRoot(false), m_elementName(elemName) {}
 
         void setElementName(const std::string &elemName) { m_elementName = elemName; }
@@ -37,7 +37,7 @@ class ConfigPathItem
         void addAttributeValue(const std::string &attrValue) { m_attributeValues.push_back(attrValue); }
         bool hasAttributeValues() const { return m_attributeValues.size() > 0; }
         std::vector<std::string> getAttributeValues() const { return m_attributeValues; }
-        bool isValuePresentInValueList(const std::string val, bool returnTrueIfValueListEmpty = true) const;
+        bool checkValueAgainstValueList(const std::string val, bool returnTrueIfValueListEmpty = true) const;
         void setIsCurrentPathItem(bool currentItem) { m_isCurrentPathItem = currentItem; }
         bool isCurrentPathItem() const { return m_isCurrentPathItem; }
         void setIsParentPathItemn(bool parentElement) { m_isParentPathItem = parentElement; }
@@ -46,6 +46,7 @@ class ConfigPathItem
         bool isSchemaItem() const { return m_isSchemaItem; }
         void setIsRoot(bool root) { m_isRoot = root; }
         bool isRoot() const { return m_isRoot; }
+        void setExcludeValueList(bool exclude) { m_presentInList = exclude; }
 
 
     private:
@@ -54,6 +55,7 @@ class ConfigPathItem
         bool m_isCurrentPathItem;
         bool m_isSchemaItem;
         bool m_isRoot;
+        bool m_presentInList;
         std::string m_elementName;
         std::string m_attributeName;
         std::vector<std::string> m_attributeValues;

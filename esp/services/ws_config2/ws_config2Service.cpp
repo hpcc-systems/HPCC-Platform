@@ -48,7 +48,7 @@ bool Cws_config2Ex::onOpenSession(IEspContext &context, IEspOpenSessionRequest &
     std::string inputSchemaPath = req.getSchemaPath();
     std::string inputSourcePath = req.getSourcePath();
     std::string inputActivePath = req.getActivePath();
-    pNewSession->masterConfigFile = (inputMasterFile != "") ? inputMasterFile : CFG2_MASTER_CONFIG_FILE;
+    pNewSession->masterConfigFile = !inputMasterFile.empty() ? inputMasterFile : CFG2_MASTER_CONFIG_FILE;
     pNewSession->username = req.getUsername();
     pNewSession->schemaPath = !inputSchemaPath.empty() ? inputSchemaPath : CFG2_CONFIG_DIR;
     pNewSession->sourcePath = !inputSourcePath.empty() ? inputSourcePath : CFG2_SOURCE_DIR;
@@ -137,7 +137,7 @@ bool Cws_config2Ex::onGetEnvironmentFileList(IEspContext &context, IEspGetEnviro
     Owned<IFile> pDir = createIFile(pSession->sourcePath.c_str());
     if (pDir->exists())
     {
-        Owned<IDirectoryIterator> it = pDir->directoryFiles(NULL, false, true);
+        Owned<IDirectoryIterator> it = pDir->directoryFiles(nullptr, false, true);
         ForEach(*it)
         {
             StringBuffer filename;
@@ -489,7 +489,7 @@ bool Cws_config2Ex::onGetNodeTree(IEspContext &context, IEspGetTreeRequest &req,
 
     ConfigMgrSession *pSession = getConfigSession(sessionId, true);
 
-    if (nodeId == "")
+    if (nodeId.empty())
         nodeId = pSession->m_pEnvMgr->getRootNodeId();
 
     std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->getEnvironmentNode(nodeId);
@@ -542,9 +542,9 @@ bool Cws_config2Ex::onFetchNodes(IEspContext &context, IEspFetchNodesRequest &re
         }
         resp.setNodeIds(ids);
     }
-    catch (ParseException &pe)
+    catch (ParseException *pe)
     {
-        throw MakeStringException(CFGMGR_ERROR_PATH_INVALID, "%s", pe.what());
+        throw MakeStringException(CFGMGR_ERROR_PATH_INVALID, "%s", pe->what());
     }
 
     return true;
@@ -802,7 +802,7 @@ void Cws_config2Ex::getAttributes(const std::shared_ptr<EnvironmentNode> &pEnvNo
             }
             pAttribute->setRequired(pSchemaValue->isRequired());
             pAttribute->setReadOnly(pSchemaValue->isReadOnly());
-            pAttribute->setHidden(pSchemaValue->isHidden());
+            pAttribute->setHidden(pSchemaValue->isHidden(pEnvValue.get()));
             pAttribute->setDeprecated(pSchemaValue->isDeprecated());
             std::string groupName = pSchemaValue->getGroupByName();
             pAttribute->setGroup(groupName.empty() ? "Attributes" : groupName.c_str());
@@ -812,61 +812,64 @@ void Cws_config2Ex::getAttributes(const std::shared_ptr<EnvironmentNode> &pEnvNo
             if (!pSchemaValue->isReadOnly())
             {
                 std::vector<AllowedValue> allowedValues;
-                pSchemaValue->getAllowedValues(allowedValues, pEnvNode);
-                if (!allowedValues.empty())
+                if (pSchemaValue->getAllowedValues(allowedValues, pEnvNode))
                 {
+                    pAttribute->updateType().updateLimits().setHasChoices(true);
                     IArrayOf<IEspChoiceType> choices;
-                    for (auto valueIt=allowedValues.begin(); valueIt!=allowedValues.end(); ++valueIt)
+                    if (!allowedValues.empty())
                     {
-                        Owned<IEspChoiceType> pChoice = createChoiceType();
-                        pChoice->setDisplayName((*valueIt).m_displayName.c_str());
-                        pChoice->setValue((*valueIt).m_value.c_str());
-                        pChoice->setDesc((*valueIt).m_description.c_str());
-                        pChoice->setMsg((*valueIt).m_userMessage.c_str());
-                        pChoice->setMsgType((*valueIt).m_userMessageType.c_str());
-
-                        //
-                        // Add dependencies
-                        if ((*valueIt).hasDependencies())
+                        for (auto valueIt = allowedValues.begin(); valueIt != allowedValues.end(); ++valueIt)
                         {
-                            IArrayOf<IEspDependentValueType> dependencies;
-                            for (auto &depIt: (*valueIt).getDependencies())
-                            {
-                                Owned<IEspDependentValueType> pDep = createDependentValueType();
-                                pDep->setAttributeName(depIt.m_attribute.c_str());
-                                pDep->setAttributeValue(depIt.m_value.c_str());
-                                dependencies.append(*pDep.getLink());
-                            }
-                            pChoice->setDependencies(dependencies);
-                        }
+                            Owned<IEspChoiceType> pChoice = createChoiceType();
+                            pChoice->setDisplayName((*valueIt).m_displayName.c_str());
+                            pChoice->setValue((*valueIt).m_value.c_str());
+                            pChoice->setDesc((*valueIt).m_description.c_str());
+                            pChoice->setMsg((*valueIt).m_userMessage.c_str());
+                            pChoice->setMsgType((*valueIt).m_userMessageType.c_str());
 
-                        //
-                        // Add optional/required attributes.
-                        if (!(*valueIt).m_optionalAttributes.empty())
-                        {
-                            StringArray attributeNames;
-                            StringBuffer atrrname;
-                            for (auto &attr: (*valueIt).m_optionalAttributes)
+                            //
+                            // Add dependencies
+                            if ((*valueIt).hasDependencies())
                             {
-                                atrrname = attr.c_str();
-                                attributeNames.append(atrrname);
+                                IArrayOf<IEspDependentValueType> dependencies;
+                                for (auto &depIt: (*valueIt).getDependencies())
+                                {
+                                    Owned<IEspDependentValueType> pDep = createDependentValueType();
+                                    pDep->setAttributeName(depIt.m_attribute.c_str());
+                                    pDep->setAttributeValue(depIt.m_value.c_str());
+                                    dependencies.append(*pDep.getLink());
+                                }
+                                pChoice->setDependencies(dependencies);
                             }
-                            pChoice->setOptionalAttributes(attributeNames);
-                        }
 
-                        if (!(*valueIt).m_requiredAttributes.empty())
-                        {
-                            StringArray attributeNames;
-                            StringBuffer atrrname;
-                            for (auto &attr: (*valueIt).m_requiredAttributes)
+                            //
+                            // Add optional/required attributes.
+                            if (!(*valueIt).m_optionalAttributes.empty())
                             {
-                                atrrname = attr.c_str();
-                                attributeNames.append(atrrname);
+                                StringArray attributeNames;
+                                StringBuffer atrrname;
+                                for (auto &attr: (*valueIt).m_optionalAttributes)
+                                {
+                                    atrrname = attr.c_str();
+                                    attributeNames.append(atrrname);
+                                }
+                                pChoice->setOptionalAttributes(attributeNames);
                             }
-                            pChoice->setRequiredAttributes(attributeNames);
-                        }
 
-                        choices.append(*pChoice.getLink());
+                            if (!(*valueIt).m_requiredAttributes.empty())
+                            {
+                                StringArray attributeNames;
+                                StringBuffer atrrname;
+                                for (auto &attr: (*valueIt).m_requiredAttributes)
+                                {
+                                    atrrname = attr.c_str();
+                                    attributeNames.append(atrrname);
+                                }
+                                pChoice->setRequiredAttributes(attributeNames);
+                            }
+
+                            choices.append(*pChoice.getLink());
+                        }
                     }
                     pAttribute->updateType().updateLimits().setChoiceList(choices);
                 }

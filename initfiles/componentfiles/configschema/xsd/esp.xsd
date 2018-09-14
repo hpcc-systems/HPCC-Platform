@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+ -->
 <xs:schema
     xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
     xmlns:hpcc="someuri">
@@ -6,13 +23,11 @@
     <xs:complexType name="esp">
         <xs:sequence>
             <xs:element name="EspProcess" hpcc:class="component" hpcc:category="ESP Process" hpcc:itemType="esp" hpcc:displayName="ESP Process"  hpcc:docid="ESP.t6" maxOccurs="unbounded">
-                <xs:annotation>
-                    <xs:documentation>ESP Service Bindings</xs:documentation>
-                </xs:annotation>
                 <xs:complexType>
                     <xs:sequence>
 
-                        <xs:element name="EspBinding" maxOccurs="unbounded" hpcc:itemType="espbinding" hpcc:category="ESP Bindings" hpcc:insertLimitType="attribute" hpcc:insertLimitData="service" hpcc:displayName="ESP Service Bindings" hpcc:class="elementSet" hpcc:event="create">
+                        <xs:element name="EspBinding" maxOccurs="unbounded" hpcc:itemType="espbinding" hpcc:category="ESP Bindings" hpcc:insertLimitType="attribute" hpcc:insertLimitData="service"
+                                    hpcc:displayName="ESP Service Bindings" hpcc:class="elementSet" hpcc:event="create" hpcc:docid="ESP.t3">
                             <xs:complexType>
                                 <xs:sequence>
                                     <xs:element name="Authenticate" minOccurs="0" maxOccurs="unbounded" hpcc:class="elementSet" hpcc:displayName="URL Authentication" hpcc:docid="ESP.t1">
@@ -45,6 +60,7 @@
                                                 </xs:simpleType>
                                             </xs:attribute>
                                             <xs:attribute name="description" type="xs:string" use="optional" hpcc:displayName="Description"/>
+                                            <xs:attribute name="path" type="xs:string" use="required" hpcc:displayName="Path" default="/" hpcc:tooltip="The logical path of a resource used for authentication"/>
                                             <xs:attribute name="resource" type="xs:string" use="required" hpcc:displayName="Resource"/>
                                         </xs:complexType>
                                     </xs:element>
@@ -58,9 +74,10 @@
                                 </xs:sequence>
 
                                 <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Binding Name" hpcc:autoName="" />
-                                <xs:attribute name="defaultServiceVersion" type="version" use="optional" hpcc:displayName="Default Service Version" hpcc:tooltip="The default version for WSDL, XSD and the ESP form"/>
-                                <xs:attribute name="defaultForPort" type="xs:boolean" use="required" default="true" hpcc:displayName="Default for port" hpcc:tooltip="This binding is determines root access"/>
-                                <xs:attribute name="port" type="xs:nonNegativeInteger" use="required" hpcc:displayName="Port" hpcc:tooltip="Port to which the service is bound"/>
+                                <!-- Note that the value limit rule for the service attribute replaces use of a reference to a set of unique attribute values because this rule
+                                     is more restrictive than what a reference to a unique set of attribute values can provide -->
+                                <xs:attribute name="service" type="xs:string" use="required" hpcc:codeDefault="123abc" hpcc:hidden="true" hpcc:displayName="Service"
+                                    hpcc:valueLimitRuleType="uniqueItemType_espBinding" hpcc:valueLimitRuleData="EspBinding[@service],/Environment/Software/EspService[@name]"/>
                                 <xs:attribute name="protocol" use="required" default="http" hpcc:displayName="Protocol" hpcc:tooltip="The protocol to use">
                                     <xs:simpleType>
                                         <xs:restriction base="xs:string">
@@ -69,14 +86,14 @@
                                         </xs:restriction>
                                     </xs:simpleType>
                                 </xs:attribute>
-                                <xs:attribute name="resourcesBasedn" type="xs:string" use="optional" hpcc:displayName="" hpcc:tooltip="Base location for resources (used with ldap security)"/>
-                                <!-- Note that the value limit rule for the service attribute replaces use of a reference to a set of unique attribute values because this rule
-                                     is more restrictive than what a reference to a unique set of attribute values can provide -->
-                                <xs:attribute name="service" type="xs:string" use="required" hpcc:codeDefault="123abc" hpcc:hidden="true" hpcc:displayName="Service"
-                                    hpcc:valueLimitRuleType="uniqueItemType_espBinding" hpcc:valueLimitRuleData="EspBinding[@service],/Environment/Software/EspService[@name]"/>
-                                <xs:attribute name="type" type="xs:string" use="optional" hpcc:displayName="Security Manager Plugin" hpcc:tooltip="The Security Manager to be used by the Esp Service"/>
-                                <xs:attribute name="workunitsBasedn" type="xs:string" use="optional" default="ou=workunits,ou=ecl" hpcc:displayName="WorkUnits BaseDn" hpcc:tooltip="Base location for workunit resources (used with ldap security)" hpcc:requiredIf="xpath,xpath..."/>
+                                <xs:attribute name="port" type="xs:nonNegativeInteger" use="required" hpcc:displayName="Port" hpcc:tooltip="Port to which the service is bound"/>
                                 <xs:attribute name="wsdlServiceAddress" type="xs:string" use="optional" hpcc:displayName="wsdlServiceAddress" hpcc:tooltip="Overrides the address used by client applications to connect to the service"/>
+                                <xs:attribute name="defaultServiceVersion" type="version" use="optional" hpcc:displayName="Default Service Version" hpcc:tooltip="The default version for WSDL, XSD and the ESP form"/>
+                                <xs:attribute name="resourcesBasedn" type="xs:string" use="optional" hpcc:displayName="" hpcc:tooltip="Base location for resources (used with ldap security)"/>
+                                <xs:attribute name="workunitsBasedn" type="xs:string" use="optional" default="ou=workunits,ou=ecl" hpcc:displayName="WorkUnits BaseDn" hpcc:tooltip="Base location for workunit resources (used with ldap security)" hpcc:requiredIf="xpath,xpath..."/>
+                                <xs:attribute name="defaultForPort" type="xs:boolean" use="required" default="true" hpcc:displayName="Default for port" hpcc:tooltip="This binding is determines root access"/>
+                                <xs:attribute name="type" type="xs:string" use="optional" hpcc:displayName="Security Manager Plugin" hpcc:sourceKey="secmgrplugin_name" hpcc:hiddenIf="../Authentication[@method=('ldap','ldaps')]"
+                                              hpcc:requiredIf="../Authentication[@method!=('ldap','ldaps')]" hpcc:tooltip="The Security Manager to be used by the Esp Service"/>
                             </xs:complexType>
 
                         </xs:element>
@@ -208,7 +225,13 @@
                     <xs:attribute name="logResponses" type="xs:boolean" use="optional" default="false" hpcc:displayName="Log Responses"/>
                     <xs:attribute name="txSummaryLevel" type="xs:nonNegativeInteger" use="optional" default="1" hpcc:displayName="Tx Summary Level" hpcc:tooltip="Sets the TxSummary level [0: none, 1: min, 5: noraml, 10: max]" />
                     <xs:attribute name="txSummaryResourceReq" type="xs:boolean" use="optional" default="false" hpcc:displayName="Tx Summary Resource Req" hpcc:tooltip="Log TxSummary for Resource Requests" />
-                    <xs:attribute name="memCachedOptionString" type="xs:string" use="optional" hpcc:displayName="memcached Option String" hpcc:tooltip="Option string used by ESP memcached client" />
+                    <xs:attribute name="espCacheInitString" type="xs:string" use="optional" hpcc:displayName="Cache Init String" hpcc:tooltip="String used for initializing ESP cache client"/>
+                    <xs:attribute name="checkSessionTimeoutSeconds" type="xs:nonNegativeInteger" use="optional" hpcc:displayName="Check Session Timeout(s)" hpcc:tooltip="Check Session Timeout in every given seconds"/>
+                    <xs:attribute name="urlAlias" type="xs:string" use="optional" hpcc:displayName="URL Alias" hpcc:tooltip="The URL alias for this ESP. This can be used to detect Cross-Origin Resource Sharing (CORS) access"/>
+                    <xs:attribute name="PageCacheTimeoutSeconds" type="xs:nonNegativeInteger" use="optional" hpcc:diaplayName="Page Cache Timeout(s)" default="600" hpcc:tooltip="Paging data timeout in the given seconds"/>
+                    <xs:attribute name="MaxPageCacheItems" type="xs:nonNegativeInteger" use="optional" hpcc:displayName="Max Page Cache Items" default="1000" hpcc:tooltip="The maximum number of cached items inside one page cache. 0 means no cache"/>
+                    <xs:attribute name="maxPersistentIdleTime" type="xs:integer" use="optional" hpcc:displayName="Max Persistent Idle Time(s)" default="60" hpcc:tooltip="The maximum idle time in seconds (-1 for unlimited, 0 to disable)"/>
+                    <xs:attribute name="maxPersistentRequests" type="xs:integer" use="optional" hpcc:displayName="Max Persistent Requests" default="100" hpcc:tooltip="Maximum number of query requests per persistent http connection. (-1 for unlimited, 0 to disable)"/>
 
                 </xs:complexType>
 

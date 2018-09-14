@@ -46,8 +46,9 @@ class DECL_EXPORT SchemaValue
         bool hasDefaultValue() const { return !m_default.empty(); }
         void setReadOnly(bool readOnly) { bitMask.m_readOnly = readOnly; }
         bool isReadOnly() const { return bitMask.m_readOnly; }
+        void setHiddenIf(const std::string &hiddenIf) { m_hiddenIf = hiddenIf; }
         void setHidden(bool hidden) { bitMask.m_hidden = hidden; }
-        bool isHidden() const { return bitMask.m_hidden; }
+        bool isHidden(const EnvironmentValue *pEnvValue=nullptr) const;
         void setDeprecated(bool deprecated) { bitMask.m_deprecated = deprecated; }
         bool isDeprecated() const { return bitMask.m_deprecated; }
         void setTooltip(const std::string &tooltip) { m_tooltip = tooltip; }
@@ -72,7 +73,7 @@ class DECL_EXPORT SchemaValue
         void addEnvironmentValue(const std::shared_ptr<EnvironmentValue> &pEnvValue) { m_envValues.push_back(pEnvValue); }
         void getAllEnvironmentValues(std::vector<std::shared_ptr<EnvironmentValue>> &envValues) const;
         void validate(Status &status, const std::string &id, const EnvironmentValue *pEnvValue = nullptr) const;
-        void getAllowedValues(std::vector<AllowedValue> &allowedValues, const std::shared_ptr<const EnvironmentNode> &pEnvNode) const;
+        bool getAllowedValues(std::vector<AllowedValue> &allowedValues, const std::shared_ptr<const EnvironmentNode> &pEnvNode) const;
         void setAutoGenerateType(const std::string &type) { m_autoGenerateType = type; }
         const std::string &getAutoGenerateType() const { return m_autoGenerateType; }
         void setAutoGenerateValue(const std::string &value) { m_autoGenerateValue = value; }
@@ -105,6 +106,7 @@ class DECL_EXPORT SchemaValue
         std::string m_valueLimitRuleData;
         std::string m_requiredIf;
         std::string m_groupByName;
+        std::string m_hiddenIf;
         // DON'T FORGET IF DATA ADDED, IT MAY MAY TO BE COPIED IN THE COPY CONSTRUCTOR!!
 
         struct {

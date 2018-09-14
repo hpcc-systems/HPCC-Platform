@@ -23,6 +23,7 @@
     <xs:include schemaLocation="hardware.xsd"/>
     <xs:include schemaLocation="esp.xsd"/>
     <!--xs:include schemaLocation="esp_service_wsecl2.xsd"/-->
+    <xs:include schemaLocation="secmgr_singleuser.xsd"/>
     <xs:include schemaLocation="esp_service_smc.xsd"/>
     <!--xs:include schemaLocation="dafilesrv.xsd"/-->
     <!--xs:include schemaLocation="eclagent.xsd"/-->
@@ -39,6 +40,7 @@
                             <!-- this is like an include right now -->
                             <!--xs:element type="eclAgent"/-->
                             <!--xs:element type="ws_ecl"/-->
+                            <xs:element type="secmgr_singleuser"/>
                             <xs:element type="espsmc"/>
                             <xs:element type="esp"/>
                         </xs:sequence>

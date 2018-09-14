@@ -20,20 +20,20 @@
 #include "Utils.hpp"
 
 
-bool ConfigPathItem::isValuePresentInValueList(const std::string val, bool returnTrueIfValueListEmpty) const
+bool ConfigPathItem::checkValueAgainstValueList(const std::string val, bool returnTrueIfValueListEmpty) const
 {
+    bool found = false;
+
     if (m_attributeValues.empty())
     {
         return returnTrueIfValueListEmpty;
     }
 
-    for (auto it=m_attributeValues.begin(); it!=m_attributeValues.end(); ++it)
+    for (auto it=m_attributeValues.begin(); it!=m_attributeValues.end() && !found; ++it)
     {
-        if (*it == val)
-            return true;
+        found = (*it == val);
     }
-
-    return false;
+    return found == m_presentInList;
 }
 
 
@@ -116,20 +116,30 @@ void ConfigPath::parsePathElement(std::size_t start, const std::shared_ptr<Confi
         {
             pPathItem->setIsSchemaItem(attr[0] == '#');
 
-            //
-            // Value present?
+            std::size_t notEqualPos = attr.find("!=");
             std::size_t equalPos = attr.find_first_of('=');
-            if (equalPos != std::string::npos)
+            std::size_t comparePos = (notEqualPos != std::string::npos) ? notEqualPos : equalPos;
+
+            if (comparePos != std::string::npos)
             {
-                pPathItem->setAttributeName(attr.substr(1, equalPos-1));
-                std::string valueStr;
-                extractEnclosedString(attr.substr(equalPos + 1), valueStr, '(', ')', true);
-                std::vector<std::string> values = splitString(valueStr, ",");
-                for (auto &valstr : values)
+                pPathItem->setAttributeName(attr.substr(1, comparePos-1));
+                std::size_t valPos = attr.find_first_of("('", comparePos);
+                if (valPos != std::string::npos)
                 {
-                    std::string value;
-                    extractEnclosedString(valstr, value, '\'', '\'', false);
-                    pPathItem->addAttributeValue(value);
+                    std::string valueStr;
+                    extractEnclosedString(attr.substr(valPos), valueStr, '(', ')', true);
+                    std::vector<std::string> values = splitString(valueStr, ",");
+                    for (auto &valstr : values)
+                    {
+                        std::string value;
+                        extractEnclosedString(valstr, value, '\'', '\'', false);
+                        pPathItem->addAttributeValue(value);
+                    }
+                    pPathItem->setExcludeValueList(notEqualPos != std::string::npos);
+                }
+                else
+                {
+                    throw(ParseException("Bad path, missng attribute values at or around: " + element));
                 }
             }
             else

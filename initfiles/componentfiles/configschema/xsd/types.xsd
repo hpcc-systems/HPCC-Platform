@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -31,6 +31,10 @@
             <xs:pattern value="[a-zA-z0-9_\-]+"/>
             <!-- need regex to eliminate special characters -->
         </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="SecurityManager">
+        <xs:restriction base="xs:string"/>
     </xs:simpleType>
 
     <xs:simpleType name="version">
@@ -175,5 +179,14 @@
     <xs:attributeGroup name="buildInfo" hpcc:groupByName="Attributes">
         <xs:attribute name="build" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="fixedValue" hpcc:autoGenerateValue="_"/>
         <xs:attribute name="buildSet" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="configProperty" hpcc:autoGenerateValue="componentName"/>
+    </xs:attributeGroup>
+
+
+    <xs:attributeGroup name="secmgrplugin_reqd">
+        <xs:attribute name="type" type="SecurityManager" use="required" hpcc:hidden="true" hpcc:readOnly="true"/>
+        <xs:attribute name="libName" type="xs:string" use="required" hpcc:displayName="Library Name" hpcc:tooltip="The Security Manager plugin library name (.so)"/>
+        <xs:attribute name="instanceFactoryName" type="xs:string" use="required" hpcc:displayName="Instance Factory Method Name" default="createInstance"
+                      hpcc:tooltip="Name of the factory method to create the Security Manager instacne"/>
+        <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:uniqueKey="secmgrplugin_name" hpcc:tooltip="Name for this SingleUser Security Manager instance"/>
     </xs:attributeGroup>
 </xs:schema>

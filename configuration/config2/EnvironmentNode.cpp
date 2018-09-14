@@ -419,7 +419,7 @@ void EnvironmentNode::doFetchNodes(ConfigPath &configPath, std::vector<std::shar
                         std::shared_ptr<EnvironmentValue> pAttribute = (*childNodeIt)->getAttribute(attrName);
                         if (pAttribute)
                         {
-                            if (pPathItem->isValuePresentInValueList(pAttribute->getValue(), true))
+                            if (pPathItem->checkValueAgainstValueList(pAttribute->getValue(), true))
                             {
                                 ++childNodeIt;
                             }
@@ -437,7 +437,7 @@ void EnvironmentNode::doFetchNodes(ConfigPath &configPath, std::vector<std::shar
                     {
                         std::shared_ptr<SchemaItem> pSchemaItem = (*childNodeIt)->getSchemaItem();
                         std::string propertyValue = (attrName == "itemType") ? pSchemaItem->getItemType() : pSchemaItem->getProperty(attrName);
-                        if (pPathItem->isValuePresentInValueList(propertyValue, true))
+                        if (pPathItem->checkValueAgainstValueList(propertyValue, true))
                         {
                             ++childNodeIt;
                         }
