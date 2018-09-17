@@ -32,6 +32,7 @@ set (    SRCS
          dalitests.cpp
          jlibtests.cpp
          cryptotests.cpp
+         cfgmgr2unittests.cpp
     )
 
 include_directories (
@@ -45,6 +46,8 @@ include_directories (
          ./../../system/security/shared
          ./../../common/deftype
          ./../../system/security/cryptohelper
+         ./../../configuration/config2
+        ${CMAKE_BINARY_DIR}
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -58,6 +61,7 @@ target_link_libraries ( unittests
          dalibase
          deftype
          libbase58
+         config2
          ${CPPUNIT_LIBRARIES}
     )
 

@@ -23,6 +23,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/dafilesrv.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/dali.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/environment.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/secmgr_singleuser.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/buildset.xml
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/configschema/xsd COMPONENT Runtime)
