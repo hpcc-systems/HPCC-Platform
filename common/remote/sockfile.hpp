@@ -50,11 +50,28 @@ enum ThrottleClass
 #define DEFAULT_SLOWCMD_THROTTLECPULIMIT 75
 #define DEFAULT_SLOWCMD_THROTTLEQUEUELIMIT 1000
 
-#define DEFAULT_AUTHORIZED_ONLY false
+
+enum RowServiceCfg
+{
+    rs_off,     // No dedicated row service, allows row service commands on std. dafilesrv port.
+    rs_on,      // Dedicated row service on own port accepting authorized signed connections only. Row service commands on std. dafilersv port will be refused.
+    rs_both,    // Dedicated row service on own port accepting authorized signed connections only. Still accepts unsigned connection on std. dafilesrv port
+    rs_onssl,   // Same as rs_on, but SSL
+    rs_bothssl  // Same as rs_only, but SSL
+};
 
 interface IRemoteFileServer : extends IInterface
 {
-    virtual void run(DAFSConnectCfg connectMethod, SocketEndpoint &listenep, unsigned sslPort=0) = 0;
+    virtual void run(DAFSConnectCfg connectMethod, const SocketEndpoint &listenep, unsigned sslPort=0, const SocketEndpoint *rowServiceEp=nullptr, bool rowServiceSSL=false, bool rowServiceOnStdPort=true) = 0;
+    virtual void stop() = 0;
+    virtual unsigned idleTime() = 0; // in ms
+    virtual void setThrottle(ThrottleClass throttleClass, unsigned limit, unsigned delayMs=DEFAULT_STDCMD_THROTTLEDELAYMS, unsigned cpuThreshold=DEFAULT_STDCMD_THROTTLECPULIMIT, unsigned queueLimit=DEFAULT_STDCMD_THROTTLEQUEUELIMIT) = 0;
+    virtual StringBuffer &getStats(StringBuffer &stats, bool reset) = 0;
+};
+
+interface IRemoteRowServer : extends IInterface
+{
+    virtual void run(unsigned port=0) = 0;
     virtual void stop() = 0;
     virtual unsigned idleTime() = 0; // in ms
     virtual void setThrottle(ThrottleClass throttleClass, unsigned limit, unsigned delayMs=DEFAULT_STDCMD_THROTTLEDELAYMS, unsigned cpuThreshold=DEFAULT_STDCMD_THROTTLECPULIMIT, unsigned queueLimit=DEFAULT_STDCMD_THROTTLEQUEUELIMIT) = 0;
@@ -70,7 +87,7 @@ extern REMOTE_API IFile * createRemoteFile(SocketEndpoint &ep,const char * _file
 extern REMOTE_API unsigned getRemoteVersion(ISocket * _socket, StringBuffer &ver);
 extern REMOTE_API unsigned stopRemoteServer(ISocket * _socket);
 extern REMOTE_API const char *remoteServerVersionString();
-extern REMOTE_API IRemoteFileServer * createRemoteFileServer(unsigned maxThreads=DEFAULT_THREADLIMIT, unsigned maxThreadsDelayMs=DEFAULT_THREADLIMITDELAYMS, unsigned maxAsyncCopy=DEFAULT_ASYNCCOPYMAX, bool authorizedOnly=DEFAULT_AUTHORIZED_ONLY, IPropertyTree *keyPairInfo=nullptr);
+extern REMOTE_API IRemoteFileServer * createRemoteFileServer(unsigned maxThreads=DEFAULT_THREADLIMIT, unsigned maxThreadsDelayMs=DEFAULT_THREADLIMITDELAYMS, unsigned maxAsyncCopy=DEFAULT_ASYNCCOPYMAX, IPropertyTree *keyPairInfo=nullptr);
 extern REMOTE_API int setDafsTrace(ISocket * socket,byte flags);
 extern REMOTE_API int setDafsThrottleLimit(ISocket * socket, ThrottleClass throttleClass, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit, unsigned queueLimit, StringBuffer *errMsg=NULL);
 extern REMOTE_API bool enableDafsAuthentication(bool on);

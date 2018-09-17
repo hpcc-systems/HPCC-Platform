@@ -127,6 +127,13 @@ interface  IConstDropZoneInfoIterator : extends IIteratorOf<IConstDropZoneInfo>
     virtual unsigned count() const = 0;
 };
 
+interface IConstDaFileSrvInfo : extends IConstEnvBase
+{
+    virtual const char *getName() const = 0;
+    virtual unsigned getPort() const = 0;
+    virtual bool getSecure() const = 0;
+};
+
 interface IConstEnvironment : extends IConstEnvBase
 {
     virtual IConstDomainInfo * getDomain(const char * name) const = 0;
@@ -151,6 +158,7 @@ interface IConstEnvironment : extends IConstEnvBase
     virtual const char *getPublicKeyPath(const char *keyPairName) const = 0;
     virtual const char *getPrivateKeyPath(const char *keyPairName) const = 0;
     virtual const char *getFileAccessUrl() const = 0;
+    virtual IConstDaFileSrvInfo *getDaFileSrvGroupInfo(const char *name) const = 0;
 };
 
 
