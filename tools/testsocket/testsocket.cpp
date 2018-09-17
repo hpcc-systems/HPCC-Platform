@@ -553,7 +553,9 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
                     if (!persistSecureContext)
                         persistSecureContext.setown(createSecureSocketContext(ClientSocket));
                     persistSSock.setown(persistSecureContext->createSecureSocket(persistSocket.getClear()));
-                    persistSSock->secure_connect();
+                    int res = persistSSock->secure_connect();
+                    if (res < 0)
+                        throw MakeStringException(-1, "doSendQuery : Failed to establish secure connection");
                     persistSocket.setown(persistSSock.getClear());
 #else
                     throw MakeStringException(-1, "OpenSSL disabled in build");
@@ -571,7 +573,9 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
 #ifdef _USE_OPENSSL
                 secureContext.setown(createSecureSocketContext(ClientSocket));
                 Owned<ISecureSocket> ssock = secureContext->createSecureSocket(socket.getClear());
-                ssock->secure_connect();
+                int res = ssock->secure_connect();
+                if (res < 0)
+                    throw MakeStringException(-1, "doSendQuery : Failed to establish secure connection");
                 socket.setown(ssock.getClear());
 #else
                 throw MakeStringException(1, "OpenSSL disabled in build");

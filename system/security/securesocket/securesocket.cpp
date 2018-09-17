@@ -1715,7 +1715,9 @@ public:
         {
             ssock.setown(secureContext->createSecureSocket(sock.getClear()));
             // secure_connect may also DBGLOG() errors ...
-            ssock->secure_connect();
+            int res = ssock->secure_connect();
+            if (res < 0)
+                throw MakeStringException(-1, "connect_timeout : Failed to establish secure connection");
         }
         catch (IException *)
         {
