@@ -109,7 +109,7 @@ void usage(const char *exe)
   printf("\n");
   printf("Workunit commands:\n");
   printf("  listworkunits [<prop>=<val> [<lower> [<upper>]]] -- list workunits that match prop=val in workunit name range lower to upper\n");
-  printf("  listmatches <connection xpath> [<match xpath>=<val> [<property xpath>]]\n");
+  printf("  listmatches <connection xpath> [<match xpath>=<val> [<property xpaths>]] -- <property xpaths> is comma separated list of xpaths\n");
   printf("  workunittimings <WUID>\n");
   printf("\n");
   printf("Other dali server and misc commands:\n");
@@ -1889,16 +1889,32 @@ static void listmatches(const char *path, const char *match, const char *pval)
     {
         output.append(", match=").append(match);
         if (pval)
-            output.append(", property value = ").append(pval);
+            output.append(", property value(s) = ").append(pval);
     }
+    outln(output);
+    StringArray pvals;
+    if (pval)
+        pvals.appendList(pval, ",");
     Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(match?match:"*", iptiter_remote);
     ForEach(*iter)
     {
         IPropertyTree &e=iter->query();
         output.clear().append(e.queryName());
-        const char *val = e.queryProp(pval?pval:NULL);
-        if (val)
-            output.append(" = ").append(val);
+        bool first = true;
+        ForEachItemIn(pv, pvals)
+        {
+            const char *val = e.queryProp(pvals.item(pv));
+            if (val)
+            {
+                if (first)
+                {
+                    first = false;
+                    output.append(" = ").append(val);
+                }
+                else
+                    output.append(',').append(val);
+            }
+        }
         outln(output.str());
     }
 }
