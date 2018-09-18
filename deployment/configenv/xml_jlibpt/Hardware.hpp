@@ -26,11 +26,11 @@ namespace ech
 class Hardware : public ComponentBase
 {
 public:
-   static const char* TYPE;
-   static const char* MAKER;
-   static const char* SPEED;
-   static const char* DOMAIN;
-   static const char* OS;
+   static const char* c_type;
+   static const char* c_maker;
+   static const char* c_speed;
+   static const char* c_domain;
+   static const char* c_os;
 
    Hardware(EnvHelper * envHelper);
 
