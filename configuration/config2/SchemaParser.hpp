@@ -49,6 +49,7 @@ class DECL_EXPORT SchemaParser
 
         std::shared_ptr<SchemaItem> m_pSchemaItem;
         std::string m_message;                       // a place where a message can be stored and retrieved, such as for a parse error
+        std::vector<std::string> m_pluginPaths;      // vector of plugin paths passed in cfgParms["plugin_paths"] (comman separated list)
 };
 
 

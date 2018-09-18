@@ -24,7 +24,8 @@
 #include "Exceptions.hpp"
 
 static const std::string CFG2_MASTER_CONFIG_FILE = "environment.xsd";
-static const std::string CFG2_CONFIG_DIR = COMPONENTFILES_DIR  PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
+static const std::string CFG2_CONFIG_DIR = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
+static const std::string CFG2_PLUGINS_DIR = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR "plugins" PATHSEPSTR;
 static const std::string CFG2_SOURCE_DIR = CONFIG_SOURCE_DIR;
 static const std::string ACTIVE_ENVIRONMENT_FILE = CONFIG_DIR PATHSEPSTR ENV_XML_FILE;
 
@@ -67,10 +68,15 @@ bool Cws_config2Ex::onOpenSession(IEspContext &context, IEspOpenSessionRequest &
     pNewSession->configType = XML;
 
     //
-    // Open the session by loading the schema, which is done during session init
+    // Open the session by loading the schema, which is done during session init (build cfg parms as well)
     std::map<std::string, std::string> cfgParms;
     cfgParms["buildset"] = "buildset.xml";  // Note that this is hardcoded for now, when other types suppored, must be passed in
-    cfgParms["support_libs"] = "libcfgsupport_addrequiredinstances";
+
+    std::string inputSupportLibs = req.getSupportLibs();
+    cfgParms["support_libs"] = inputSupportLibs.empty() ? "libcfgsupport_addrequiredinstances" : inputSupportLibs;
+    std::string pluginsPath = req.getPluginPaths();
+    cfgParms["plugin_paths"] = !pluginsPath.empty() ? pluginsPath : CFG2_PLUGINS_DIR;
+
     if (pNewSession->initializeSession(cfgParms))
     {
         std::string sessionId = std::to_string(m_sessionKey);
@@ -981,8 +987,8 @@ void Cws_config2Ex::getAttributes(const std::shared_ptr<EnvironmentNode> &pEnvNo
                 pAttribute->setCurrentValue(pEnvValue->getValue().c_str());
             }
 
-            pAttribute->setDefaultValue(pSchemaValue->getDefaultValue().c_str());
-            pAttribute->setDefaultInCode(pSchemaValue->getCodeDefault().c_str());
+            pAttribute->setForcedValue(pSchemaValue->getForcedValue().c_str());
+            pAttribute->setPresetValue(pSchemaValue->getPresetValue().c_str());
 
             pAttribute->setIsPresentInEnvironment(static_cast<bool>(pEnvValue));
             nodeAttributes.append(*pAttribute.getLink());

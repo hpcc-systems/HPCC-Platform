@@ -66,69 +66,6 @@ bool XMLEnvironmentMgr::save(std::ostream &out)
 }
 
 
-void XMLEnvironmentMgr::parse(const pt::ptree &envTree, const std::shared_ptr<SchemaItem> &pConfigItem, std::shared_ptr<EnvironmentNode> &pEnvNode)
-{
-    //
-    // First see if the node has a value
-    std::string value;
-    try
-    {
-        value = envTree.get<std::string>("");
-        if (!value.empty())
-        {
-            std::shared_ptr<SchemaValue> pCfgValue = pConfigItem->getItemSchemaValue();
-            std::shared_ptr<EnvironmentValue> pEnvValue = std::make_shared<EnvironmentValue>(pEnvNode, pCfgValue, "");  // node's value has no name
-            pEnvValue->setValue(value, nullptr);
-            pEnvNode->setLocalEnvValue(pEnvValue);
-        }
-    }
-    catch (...)
-    {
-        // do nothing
-    }
-
-    //
-    // Find elements in environment tree cooresponding to this config item, then parse each
-    for (auto it = envTree.begin(); it != envTree.end(); ++it)
-    {
-        std::string elemName = it->first;
-
-        //
-        // First see if there are attributes for this element (<xmlattr> === <element attr1="xx" attr2="yy" ...></element>  The attr1 and attr2 are in this)
-        if (elemName == "<xmlattr>")
-        {
-            for (auto attrIt = it->second.begin(); attrIt != it->second.end(); ++attrIt)
-            {
-                std::shared_ptr<SchemaValue> pSchemaValue = pConfigItem->getAttribute(attrIt->first);  // note, undefined attributes in schema will return a generic schema value
-                std::string curValue = attrIt->second.get_value<std::string>();
-                std::shared_ptr<EnvironmentValue> pEnvValue = std::make_shared<EnvironmentValue>(pEnvNode, pSchemaValue, attrIt->first, curValue);   // this is where we would use a variant
-                pSchemaValue->addEnvironmentValue(pEnvValue);
-                pEnvNode->addAttribute(attrIt->first, pEnvValue);
-            }
-        }
-        else
-        {
-            std::string typeName = it->second.get("<xmlattr>.buildSet", "");
-            std::shared_ptr<SchemaItem> pSchemaItem;
-            if (!typeName.empty())
-            {
-                pSchemaItem = pConfigItem->getChildByItemType(elemName, typeName);
-            }
-            else
-            {
-                pSchemaItem = pConfigItem->getChild(elemName);
-            }
-            // todo: need to handle pSchemaitem (remant to pChildConfigItem) not found (throw exception or make a default config item)
-            std::shared_ptr<EnvironmentNode> pElementNode = std::make_shared<EnvironmentNode>(pSchemaItem, elemName, pEnvNode);
-            pElementNode->setId(getUniqueKey());
-            addPath(pElementNode);
-            parse(it->second, pSchemaItem, pElementNode);
-            pEnvNode->addChild(pElementNode);
-        }
-    }
-}
-
-
 void XMLEnvironmentMgr::serialize(pt::ptree &envTree, std::shared_ptr<EnvironmentNode> &pEnvNode) const
 {
     std::vector<std::shared_ptr<EnvironmentValue>> attributes;
