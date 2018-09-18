@@ -622,6 +622,8 @@ static IDAFS_Exception *createDafsException(int code, const char *msg)
     return new CDafsException(code, msg);
 }
 
+static IDAFS_Exception *createDafsExceptionVA(int code, const char *format, va_list args) __attribute__((format(printf,2,0)));
+
 static IDAFS_Exception *createDafsExceptionVA(int code, const char *format, va_list args)
 {
     StringBuffer eStr;
@@ -629,6 +631,7 @@ static IDAFS_Exception *createDafsExceptionVA(int code, const char *format, va_l
     return new CDafsException(code, eStr);
 }
 
+static IDAFS_Exception *createDafsExceptionV(int code, const char *format, ...) __attribute__((format(printf,2,3)));
 static IDAFS_Exception *createDafsExceptionV(int code, const char *format, ...)
 {
     va_list args;

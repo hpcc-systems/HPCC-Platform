@@ -13,7 +13,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-#ifndef _EVNGEN2_INCL
+#ifndef _ENVGEN2_INCL
 #define _ENVGEN2_INCL
 
 //#include <vector>
