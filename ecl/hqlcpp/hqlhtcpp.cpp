@@ -2906,8 +2906,8 @@ void initBoundStringTarget(CHqlBoundTarget & target, ITypeInfo * type, const cha
 
 //---------------------------------------------------------------------------
 
-GlobalClassBuilder::GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & _ctx, const char * _className, const char * _baseName, const char * _accessorInterface, bool _hasCodeContext)
-: translator(_translator), classctx(_ctx), nestedctx(_ctx), startctx(_ctx), createctx(_ctx), hasCodeContext(_hasCodeContext)
+GlobalClassBuilder::GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & _ctx, const char * _className, const char * _baseName, const char * _accessorInterface, bool _hasCodeContext, bool _createIsVirtual)
+: translator(_translator), classctx(_ctx), nestedctx(_ctx), startctx(_ctx), createctx(_ctx), hasCodeContext(_hasCodeContext), createIsVirtual(_createIsVirtual)
 {
     className.set(_className);
     baseName.set(_baseName);
@@ -2954,9 +2954,14 @@ void GlobalClassBuilder::buildClass(unsigned priority)
     BuildCtx oncreatectx(createctx);
     if (hasCodeContext)
     {
-        onCreateStmt = oncreatectx.addQuotedCompoundLiteral("void onCreate(ICodeContext * _ctx)");
+        if (createIsVirtual)
+            onCreateStmt = oncreatectx.addQuotedCompoundLiteral("virtual void onCreate(ICodeContext * _ctx) override");
+        else
+            onCreateStmt = oncreatectx.addQuotedCompoundLiteral("void onCreate(ICodeContext * _ctx)");
         oncreatectx.addQuotedLiteral("ctx = _ctx;");
     }
+    else if (createIsVirtual)
+        onCreateStmt = oncreatectx.addQuotedCompoundLiteral("virtual void onCreate() override");
     else
         onCreateStmt = oncreatectx.addQuotedCompoundLiteral("void onCreate()");
 
@@ -3527,7 +3532,7 @@ IHqlExpression * HqlCppTranslator::createRowAllocator(BuildCtx & ctx, IHqlExpres
 void HqlCppTranslator::buildMetaSerializerClass(BuildCtx & ctx, IHqlExpression * record, const char * serializerName, IAtom * serializeForm)
 {
     StringBuffer s;
-    GlobalClassBuilder serializer(*this, ctx, serializerName, "COutputRowSerializer", "IOutputRowSerializer", true);    // not sure this needs ctx or an activity id
+    GlobalClassBuilder serializer(*this, ctx, serializerName, "COutputRowSerializer", "IOutputRowSerializer", true, false);    // not sure this needs ctx or an activity id
 
     serializer.buildClass(RowMetaPrio);
     serializer.setIncomplete(true);
@@ -3570,7 +3575,7 @@ void HqlCppTranslator::buildMetaSerializerClass(BuildCtx & ctx, IHqlExpression *
 void HqlCppTranslator::buildMetaDeserializerClass(BuildCtx & ctx, IHqlExpression * record, const char * deserializerName, IAtom * serializeForm)
 {
     StringBuffer s;
-    GlobalClassBuilder deserializer(*this, ctx, deserializerName, "COutputRowDeserializer", "IOutputRowDeserializer", true);
+    GlobalClassBuilder deserializer(*this, ctx, deserializerName, "COutputRowDeserializer", "IOutputRowDeserializer", true, false);
 
     deserializer.buildClass(RowMetaPrio);
     deserializer.setIncomplete(true);
@@ -3601,7 +3606,7 @@ void HqlCppTranslator::buildMetaDeserializerClass(BuildCtx & ctx, IHqlExpression
 bool HqlCppTranslator::buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression * record, const char * prefetcherName)
 {
     StringBuffer s;
-    GlobalClassBuilder prefetcher(*this, ctx, prefetcherName, "CSourceRowPrefetcher", NULL, false);
+    GlobalClassBuilder prefetcher(*this, ctx, prefetcherName, "CSourceRowPrefetcher", NULL, false, true);
 
     prefetcher.buildClass(RowMetaPrio);
     prefetcher.setIncomplete(true);

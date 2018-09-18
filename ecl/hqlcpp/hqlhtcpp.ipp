@@ -90,7 +90,7 @@ class GlobalClassEvalContext;
 class GlobalClassBuilder
 {
 public:
-    GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & ctx, const char * className, const char * baseName, const char * _accessorInterface, bool _hasCodeContext);
+    GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & ctx, const char * className, const char * baseName, const char * _accessorInterface, bool _hasCodeContext, bool _createIsVirtual);
 
     void buildClass(unsigned priority=0);
     void completeClass(unsigned priority=0);
@@ -115,6 +115,7 @@ public:
     StringAttr accessorInterface;
     StringAttr accessorName;
     bool hasCodeContext;
+    bool createIsVirtual = false;
 };
 
 
