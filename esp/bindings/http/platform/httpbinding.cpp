@@ -266,6 +266,9 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     if(m_challenge_realm.length() == 0)
         m_challenge_realm.append("ESP");
 
+    //Even for non-session based environment, the sessionIDCookieName may be used to
+    //remove session related cookies cached in some browser page.
+    sessionIDCookieName.setf("%s%d", SESSION_ID_COOKIE, m_port);
     if (!m_secmgr.get() || !daliClientActive())
     {
         if (!daliClientActive())
@@ -336,7 +339,6 @@ void EspHttpBinding::setSDSSession()
         newAppSessionTree->setPropInt("@port", m_port);
     }
     sessionSDSPath.setf("%s/%s/", espSessionSDSPath.str(), appStr.str());
-    sessionIDCookieName.setf("%s%d", SESSION_ID_COOKIE, m_port);
 }
 
 static int compareLength(char const * const *l, char const * const *r) { return strlen(*l) - strlen(*r); }
