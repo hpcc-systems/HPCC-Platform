@@ -5037,8 +5037,11 @@ public:
                     continue;
                 }
 
+                // hold sect until finished with SelectItems ...
+                CriticalBlock block(sect);
+
                 int err = 0;
-                int n = ::epoll_wait(epfd, epevents, MAX_RET_EVENTS, 1000);
+                int n = ::epoll_wait(epfd, epevents, MAX_RET_EVENTS, 1);
                 if (n < 0)
                     err = ERRNO();
 
@@ -5051,7 +5054,6 @@ public:
                     break;
                 if (n < 0)
                 {
-                    CriticalBlock block(sect);
                     if (err != JSE_INTR)
                     {
                         if (dummysockopen)
@@ -5076,8 +5078,6 @@ public:
                     totnum++;
                     SelectItemArray tonotify;
                     {
-                        CriticalBlock block(sect);
-
                         for (int j=0;j<n;j++)
                         {
                             int tfd = -1;
@@ -5122,6 +5122,10 @@ public:
                             }
                         }
                     }
+
+                    // finished with SelectItems ...
+                    CriticalUnblock unblock(sect);
+
                     Owned<IException> nfyexcept;
                     ForEachItemIn(j,tonotify)
                     {
