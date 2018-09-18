@@ -8316,7 +8316,8 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
     }
 
     IHqlExpression * rhs = join->queryChild(1);
-    if (!isKeyedJoin(join) && (rhs->getOperator() == no_filter) && (rhs != join->queryChild(0)))
+    if (!isKeyedJoin(join) && (rhs->getOperator() == no_filter) && (rhs != join->queryChild(0)) &&
+	    !join->hasAttribute(lookupAtom) && !join->hasAttribute(allAtom) && !join->hasAttribute(smartAtom) && join->hasAttribute(streamedAtom))
     {
         IHqlExpression * cur = rhs;
         while (cur->getOperator() == no_filter)
