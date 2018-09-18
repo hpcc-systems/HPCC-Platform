@@ -799,12 +799,10 @@ EXPORT STRING SecondsToString(Seconds_t seconds, VARSTRING format = '%Y-%m-%dT%H
  */
 
 EXPORT STRING TimestampToString(Timestamp_t timestamp, VARSTRING format = '%Y-%m-%dT%H:%M:%S.%@') := FUNCTION
-    f := INTFORMAT(timestamp % 1000000, 6, 1);
-    s1 := TimeLib.SecondsToString(timestamp DIV 1000000, format);
-    s2 := REGEXREPLACE('%@', s1, f);
-    s3 := REGEXREPLACE('%#', s2, f[..3]);
-
-    RETURN s3;
+    ms := INTFORMAT(timestamp % 1000000, 6, 1);
+    f2 := REGEXREPLACE('%@', format, ms);
+    f3 := REGEXREPLACE('%#', f2, ms[..3]);
+    RETURN TimeLib.SecondsToString(timestamp DIV 1000000, f3);
 END;
 
 
