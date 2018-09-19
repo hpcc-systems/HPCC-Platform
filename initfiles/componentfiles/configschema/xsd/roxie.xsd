@@ -69,7 +69,7 @@
             <xs:attribute name="enableKeyDiff" type="xs:boolean" hpcc:displayName="Enable Key Diff" use="optional" hpcc:presetValue="true" hpcc:tooltip="Enable / Disable key diff functionality in roxie"/>
             <xs:attribute name="enableSysLog" type="xs:boolean" hpcc:displayName="Enable Sys Log" use="optional" hpcc:presetValue="true" hpcc:tooltip="Enable use of syslog for monitoring"/>
             <xs:attribute name="flushJHtreeCacheOnOOM" type="xs:boolean" hpcc:displayName="flushJHtreeCacheOnOOM" use="optional" hpcc:presetValue="true" hpcc:tooltip="Should the index node memory allocation flush the cache and retry if memory allocation fails"/>
-            <xs:attribute name="fieldTranslationEnabled" use="optional" hpcc:displayName="Enable Field Translation" hpcc:presetValue="false" hpcc:tooltip="Enables translation (where possible) of mismatched index layouts on-the-fly. Specify 'payload' to attempt to translate payload fields only">
+            <xs:attribute name="fieldTranslationEnabled" use="optional" hpcc:displayName="Enable Field Translation" hpcc:presetValue="payload" hpcc:tooltip="Enables translation (where possible) of mismatched layouts on-the-fly. Specify 'payload' to attempt to translate payload fields only">
                 <xs:simpleType>
                     <xs:restriction base="xs:string">
                         <xs:enumeration value="false" hpcc:displayName="False" hpcc:desciption=""/>

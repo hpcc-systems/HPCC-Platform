@@ -86,7 +86,7 @@ unsigned defaultTraceLimit = 10;
 unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
 RelaxedAtomic<unsigned> restarts;
-RecordTranslationMode fieldTranslationEnabled = RecordTranslationMode::None;
+RecordTranslationMode fieldTranslationEnabled = RecordTranslationMode::Payload;
 bool mergeSlaveStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
@@ -823,7 +823,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         coresPerQuery = topology->getPropInt("@coresPerQuery", 0);
 
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
-        fieldTranslationEnabled = RecordTranslationMode::None;
+        fieldTranslationEnabled = RecordTranslationMode::Payload;
         const char *val = topology->queryProp("@fieldTranslationEnabled");
         if (val)
             fieldTranslationEnabled = getTranslationMode(val);

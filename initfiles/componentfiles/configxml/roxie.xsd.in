@@ -638,10 +638,10 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="fieldTranslationEnabled" use="optional" default="false">
+    <xs:attribute name="fieldTranslationEnabled" use="optional" default="payload">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Enables translation (where possible) of mismatched index layouts on-the-fly. Specify 'payload' to attempt to translate payload fields only</tooltip>
+          <tooltip>Enables translation (where possible) of mismatched file layouts on-the-fly. Specify 'payload' to attempt to translate payload fields only</tooltip>
         </xs:appinfo>
       </xs:annotation>
       <xs:simpleType>
