@@ -1033,6 +1033,46 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
             return authTaskDone;
         }
 
+        unsigned sessionID = readCookie(authReq.authBinding->querySessionIDCookieName());
+        if (sessionID > 0)
+        {
+            if (authReq.authBinding->getDomainAuthType() == AuthUserNameOnly)
+            {
+                clearCookie(authReq.authBinding->querySessionIDCookieName());
+                clearCookie(SESSION_ID_TEMP_COOKIE);
+                clearCookie(SESSION_TIMEOUT_COOKIE);
+            }
+            else
+                clearSessionCookies(authReq);
+
+            if (!authReq.serviceName.isEmpty() && strieq(authReq.serviceName.str(), "esp"))
+            {
+                const char* method = authReq.methodName.str();
+                if (!isEmptyString(method))
+                {
+                    if (strieq(method, "lock") || strieq(method, "unlock"))
+                    {
+                        VStringBuffer errMsg("Action not supported: %s", method);
+                        sendLockResponse(strieq(method, "lock"), true, errMsg.str());
+                        return authTaskDone;
+                    }
+                    else if (strieq(method, "login") || strieq(method, "logout") || (strnicmp(method, "updatepassword", 14) == 0))
+                    {
+                        VStringBuffer errMsg("Action not supported: %s", method);
+                        sendMessage(errMsg.str(), "text/html; charset=UTF-8");
+                        return authTaskDone;
+                    }
+                    else if (strieq(method, "get_session_timeout") || strieq(method, "reset_session_timeout"))
+                    {
+                        VStringBuffer errMsg("Action not supported: %s", method);
+                        ESPSerializationFormat respFormat = m_request->queryContext()->getResponseFormat();
+                        sendMessage(errMsg.str(), (respFormat == ESPSerializationJSON) ? "application/json" : "text/xml");
+                        return authTaskDone;
+                    }
+                }
+            }
+        }
+
         if (authReq.authBinding->getDomainAuthType() == AuthUserNameOnly)
             return handleUserNameOnlyMode(authReq);
         return authSucceeded;
@@ -1788,6 +1828,16 @@ void CEspHttpServer::addCookie(const char* cookieName, const char *cookieValue, 
         cookie->setHTTPOnly(true);
     cookie->setSameSite("Lax");
     m_response->addCookie(cookie);
+}
+
+void CEspHttpServer::clearSessionCookies(EspAuthRequest& authReq)
+{
+    clearCookie(authReq.authBinding->querySessionIDCookieName());
+    clearCookie(SESSION_ID_TEMP_COOKIE);
+    clearCookie(SESSION_START_URL_COOKIE);
+    clearCookie(SESSION_AUTH_OK_COOKIE);
+    clearCookie(SESSION_AUTH_MSG_COOKIE);
+    clearCookie(SESSION_TIMEOUT_COOKIE);
 }
 
 void CEspHttpServer::clearCookie(const char* cookieName)

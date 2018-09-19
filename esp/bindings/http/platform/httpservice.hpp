@@ -91,6 +91,7 @@ protected:
     void timeoutESPSessions(EspHttpBinding* authBinding, IPropertyTree* espSessions);
     void addCookie(const char* cookieName, const char *cookieValue, int maxAgeSec, bool httpOnly);
     void clearCookie(const char* cookieName);
+    void clearSessionCookies(EspAuthRequest& authReq);
     unsigned readCookie(const char* cookieName);
     const char* readCookie(const char* cookieName, StringBuffer& cookieValue);
     void sendLockResponse(bool lock, bool error, const char* msg);
