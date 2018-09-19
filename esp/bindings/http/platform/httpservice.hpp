@@ -99,6 +99,7 @@ protected:
     void sendGetAuthTypeResponse(EspAuthRequest& authReq, const char* authType);
     void createGetSessionTimeoutResponse(StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
     void resetSessionTimeout(EspAuthRequest& authReq, unsigned sessionID, StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
+    void sendException(EspAuthRequest& authReq, unsigned code, const char* msg);
     void sendMessage(const char* msg, const char* msgType);
     IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
 

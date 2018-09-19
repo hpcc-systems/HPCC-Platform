@@ -1306,6 +1306,39 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     return authSucceeded;
 }
 
+void CEspHttpServer::sendException(EspAuthRequest& authReq, unsigned code, const char* msg)
+{
+    if (authReq.isSoapPost) //from SOAP Test page
+    {
+        sendMessage(msg, "text/html; charset=UTF-8");
+        return;
+    }
+
+    StringBuffer resp;
+    ESPSerializationFormat format = m_request->queryContext()->getResponseFormat();
+    if (format == ESPSerializationJSON)
+    {
+        resp.set("{ ");
+        resp.append(" \"Exceptions\": { ");
+        resp.append(" \"Exception\": { ");
+        resp.appendf("\"Code\": \"%u\"", code);
+        if (!isEmptyString(msg))
+            resp.appendf(", \"Message\": \"%s\"", msg);
+        resp.append(" }");
+        resp.append(" }");
+        resp.append(" }");
+    }
+    else
+    {
+        resp.set("<Exceptions><Exception>");
+        resp.append("<Code>").append(code).append("</Code>");
+        if (!isEmptyString(msg))
+            resp.append("<Message>").append(msg).append("</Message>");
+        resp.append("</Exception></Exceptions>");
+    }
+    sendMessage(resp.str(), (format == ESPSerializationJSON) ? "application/json" : "text/xml");
+}
+
 void CEspHttpServer::sendAuthorizationMsg(EspAuthRequest& authReq)
 {
     StringBuffer resp;
@@ -1539,16 +1572,9 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     if (!sessionTree)
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
-        ESPLOG(LogMin, "Authentication failed: session:<%u> not found", sessionID);
-
-        clearCookie(authReq.authBinding->querySessionIDCookieName());
-        clearCookie(SESSION_AUTH_OK_COOKIE);
-        ESPLOG(LogMin, "clearCookie() called for session <%u> ID cookie", sessionID);
-
-        if (authReq.isSoapPost) //from SOAP Test page
-            sendMessage("Session expired. Please close this page and login again.", "text/html; charset=UTF-8");
-        else
-            askUserLogin(authReq, "Authentication failed: invalid sessionID.");
+        clearSessionCookies(authReq);
+        sendException(authReq, 401, "Authentication failed: invalid session ID.");
+        ESPLOG(LogMin, "Authentication failed: invalid session ID '%u'. clearSessionCookies() called for the session.", sessionID);
         return authFailed;
     }
 
@@ -1557,8 +1583,9 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     if (!streq(m_request->getPeer(peer).str(), sessionStartIP))
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
-        ESPLOG(LogMin, "Authentication failed: session:<%u> received from <%s>, not from <%s>", sessionID, peer.str(), sessionStartIP);
-        sendMessage("Invalid session.", "text/html; charset=UTF-8");
+        clearSessionCookies(authReq);
+        sendException(authReq, 401, "Authentication failed: network address for ESP session changed.");
+        ESPLOG(LogMin, "Authentication failed: session ID %u from IP %s. ", sessionID, peer.str());
         return authFailed;
     }
 
