@@ -525,5 +525,7 @@ extern graph_decl void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &
 extern graph_decl const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &partDesc, RecordTranslationMode translationMode, unsigned expectedFormatCrc, IOutputMetaData *expectedFormat, unsigned projectedFormatCrc, IOutputMetaData *projectedFormat);
 extern graph_decl bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn, StringBuffer &localPath);
 
+extern graph_decl void checkAndDumpAbortInfo(const char *cmd);
+
 #endif
 

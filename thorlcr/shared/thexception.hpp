@@ -119,7 +119,7 @@
 #define TE_PipeReturnedFailure                  TE_Base + 96
 #define TE_IdleRestart                          TE_Base + 97
 #define TE_NotEnoughFreeSpace                   TE_Base + 98
-#define TE_WorkUnitWriteLimitExceeded               TE_Base + 99
+#define TE_WorkUnitWriteLimitExceeded           TE_Base + 99
 #define TE_CsvLineLenghtExceeded                TE_Base + 100
 #define TE_ActivityBufferingLimitExceeded       TE_Base + 101
 #define TE_CouldNotCreateLookAhead              TE_Base + 102
@@ -156,7 +156,8 @@
 #define TE_SkewWarning                          TE_Base + 133
 #define TE_SkewError                            TE_Base + 134
 #define TE_KERN                                 TE_Base + 135
-#define TE_Final                                TE_Base + 136       // keep this last
+#define TE_WorkUnitAbortingDumpInfo             TE_Base + 136
+#define TE_Final                                TE_Base + 137       // keep this last
 #define ISTHOREXCEPTION(n) (n > TE_Base && n < TE_Final)
 
 #endif

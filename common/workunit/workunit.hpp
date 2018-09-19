@@ -748,7 +748,7 @@ enum WUSubscribeOptions
 
 interface IWorkUnitSubscriber
 {
-    virtual void notify(WUSubscribeOptions flags) = 0;
+    virtual void notify(WUSubscribeOptions flags, unsigned valueLen, const void *valueData) = 0;
 };
 
 interface IWorkUnitWatcher : extends IInterface

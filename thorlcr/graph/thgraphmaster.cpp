@@ -1676,7 +1676,7 @@ bool CJobMaster::go()
             }
             _watcher->unsubscribe();
         }
-        void notify(WUSubscribeOptions flags)
+        virtual void notify(WUSubscribeOptions flags, unsigned valueLen, const void *valueData) override
         {
             CriticalBlock b(crit);
             if (!watcher)
@@ -1687,7 +1687,18 @@ bool CJobMaster::go()
                 if (factory->isAborting(wu.queryWuid()))
                 {
                     LOG(MCwarning, thorJob, "ABORT detected from user");
-                    Owned <IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort");
+
+                    unsigned code = TE_WorkUnitAborting; // default
+                    if (job.getOptBool("dumpInfoOnUserAbort", false))
+                        code = TE_WorkUnitAbortingDumpInfo;
+                    else if ((1 == valueLen) && ('2' == *((const char *)valueData)))
+                    {
+                        /* NB: Standard abort mechanism will trigger abort subscriber with "1"
+                         * If "2" is signalled, it means - Abort with dump info.
+                         */
+                        code = TE_WorkUnitAbortingDumpInfo;
+                    }
+                    Owned <IException> e = MakeThorException(code, "User signalled abort");
                     job.fireException(e);
                 }
             }
@@ -2193,6 +2204,12 @@ void CMasterGraph::abort(IException *e)
 {
     if (aborted) return;
     bool _graphDone = graphDone; // aborting master activities can trigger master graphDone, but want to fire GraphAbort to slaves if graphDone=false at start.
+    bool dumpInfo = TE_WorkUnitAbortingDumpInfo == e->errorCode() || job.getOptBool("dumpInfoOnAbort");
+    if (dumpInfo)
+    {
+        StringBuffer dumpInfoCmd;
+        checkAndDumpAbortInfo(queryJob().getOpt("dumpInfoCmd", dumpInfoCmd));
+    }
     try { CGraphBase::abort(e); }
     catch (IException *e)
     {
@@ -2209,6 +2226,7 @@ void CMasterGraph::abort(IException *e)
             CMessageBuffer msg;
             msg.append(GraphAbort);
             msg.append(job.queryKey());
+            msg.append(dumpInfo);
             msg.append(queryGraphId());
             jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "abort");
         }

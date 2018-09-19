@@ -152,6 +152,8 @@ void  jlib_decl printStackReport(__int64 startIP = 0);
 #define PrintStackReport printStackReport
 
 bool jlib_decl getAllStacks(StringBuffer &output);
+unsigned jlib_decl getCommandOutput(StringBuffer &output, const char *cmd, const char *cmdTitle=nullptr, const char *allowedPrograms=nullptr);
+bool jlib_decl getDebuggerGetStacksCmd(StringBuffer &output);
 
 #ifdef _DEBUG
 #define RELEASE_CATCH_ALL       int*********

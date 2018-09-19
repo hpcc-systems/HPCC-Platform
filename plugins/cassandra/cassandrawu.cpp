@@ -3751,7 +3751,7 @@ public:
             if (timeout==-1 || waited + 20000 < timeout)
             {
                 waiter->wait(20000);  // recheck state every 20 seconds, in case eclagent has crashed.
-                if (waiter->aborted)
+                if (waiter->isAborted())
                     return WUStateUnknown;  // MORE - throw an exception?
             }
             else if (waited > timeout || !waiter->wait(timeout-waited))
@@ -3793,7 +3793,7 @@ public:
                 break;
             }
             waiter->wait(10000);  // recheck state every 20 seconds even if no notifications... just because we used to before
-            if (waiter->aborted)
+            if (waiter->isAborted())
                 break;
         }
         return ret;

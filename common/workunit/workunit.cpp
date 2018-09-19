@@ -3194,7 +3194,7 @@ CWorkUnitWatcher::CWorkUnitWatcher(IWorkUnitSubscriber *_subscriber, WUSubscribe
     if (flags & SubscribeOptionAbort)
     {
         VStringBuffer xpath("/WorkUnitAborts/%s", wuid);
-        abortId = querySDS().subscribe(xpath.str(), *this);
+        abortId = querySDS().subscribe(xpath.str(), *this, false, true);
     }
 }
 CWorkUnitWatcher::~CWorkUnitWatcher()
@@ -3220,11 +3220,11 @@ void CWorkUnitWatcher::notify(SubscriptionId id, const char *xpath, SDSNotifyFla
 {
     CriticalBlock b(crit);
     if (id==stateId)
-        subscriber->notify(SubscribeOptionState);
+        subscriber->notify(SubscribeOptionState, valueLen, valueData);
     else if (id==actionId)
-        subscriber->notify(SubscribeOptionAction);
+        subscriber->notify(SubscribeOptionAction, valueLen, valueData);
     else if (id==abortId)
-        subscriber->notify(SubscribeOptionAbort);
+        subscriber->notify(SubscribeOptionAbort, valueLen, valueData);
 }
 
 
@@ -5522,7 +5522,7 @@ public:
                 if (timeout==-1 || waited + 20000 < timeout)
                 {
                     waiter->wait(20000);  // recheck state every 20 seconds, in case eclagent has crashed.
-                    if (waiter->aborted)
+                    if (waiter->isAborted())
                     {
                         ret = WUStateUnknown;  // MORE - throw an exception?
                         break;
@@ -5557,7 +5557,7 @@ public:
                     break;
                 unsigned waited = msTick() - start;
                 waiter->wait(20000);  // recheck state every 20 seconds even if no timeout, in case eclagent has crashed.
-                if (waiter->aborted)
+                if (waiter->isAborted())
                 {
                     ret = WUActionUnknown;  // MORE - throw an exception?
                     break;
