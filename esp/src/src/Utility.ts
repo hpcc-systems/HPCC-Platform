@@ -465,7 +465,7 @@ export function resolve(hpccWidget, callback) {
             require(["src/GraphTree7Widget"], doLoad);
             break;
         case "Graph7Widget":
-            require(["hpcc/Graph7Widget"], doLoad);
+            require(["src/Graph7Widget"], doLoad);
             break;
         case "GridDetailsWidget":
             require(["hpcc/GridDetailsWidget"], doLoad);

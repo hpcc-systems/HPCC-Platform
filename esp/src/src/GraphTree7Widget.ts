@@ -105,7 +105,7 @@ export class GraphTree7Widget {
     private _prevHashSum;
     private _prevScopeGraph: Promise<ScopeGraph>;
     fetchScopeGraph(wuid: string, graphID: string, subgraphID: string = "", refresh: boolean = false): Promise<ScopeGraph> {
-        this.graphStatus.innerText = "Fetching...";
+        this.graphStatus.innerText = this.i18n.FetchingData;
         const hash = hashSum({
             wuid,
             graphID,
@@ -119,7 +119,7 @@ export class GraphTree7Widget {
                 for (const graph of graphs) {
                     if (graph.Name === graphID) {
                         return graph.fetchScopeGraph(subgraphID).then(scopedGraph => {
-                            this.graphStatus.innerText = "Loading...";
+                            this.graphStatus.innerText = this.i18n.Loading;
                             return new Promise<ScopeGraph>((resolve, reject) => {
                                 setTimeout(() => {
                                     this._gc.set(scopedGraph);
@@ -352,7 +352,18 @@ export class GraphTree7Widget {
                 this.syncSelectionFrom(this._graph);
             })
             .on("progress", what => {
-                this.graphStatus.innerText = what === "end" ? "" : what;
+                switch (what) {
+                    case "start":
+                    case "layout-start":
+                    case "layout-tick":
+                        this.graphStatus.innerText = this.i18n.PerformingLayout;
+                        break;
+                    case "layout-end":
+                    case "end":
+                    default:
+                        this.graphStatus.innerText = "";
+                        break;
+                }
             });
         ;
         this._graph.tooltipHTML((v: Vertex) => {
