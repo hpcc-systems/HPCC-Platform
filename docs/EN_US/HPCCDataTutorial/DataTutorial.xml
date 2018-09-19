@@ -42,21 +42,24 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--Release Info makes a running page footer: now an include! -->
 
     <!--The following include statement pulls in the date_ver from version.xml-->
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <!--corpname never prints-->
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--Copyright tag inserts the symbol automatically: Now an Include!-->
@@ -387,8 +390,8 @@
         it to a Thor cluster. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location to a Thor cluster. The term spray was adopted due to the
-        nature of the file movement -- the file is partitioned across all nodes
-        within a cluster.</para>
+        nature of the file movement -- the file is partitioned across all
+        nodes within a cluster.</para>
 
         <para>In this example, the file is on your Landing Zone and is named
         <emphasis role="bold">OriginalPerson.</emphasis></para>
@@ -475,6 +478,11 @@
           <listitem>
             <para>Choose the mythor cluster from the <emphasis
             role="bold">Group</emphasis> drop list.</para>
+          </listitem>
+
+          <listitem>
+            <para>If there are multiple queues, select one from the
+            list.</para>
           </listitem>
 
           <listitem>
@@ -829,8 +837,8 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
             <para>For our purposes, it will be easier to have all the names in
             all uppercase. This demonstrates one of the steps in the basic
-            process of preparing data (Extract, Transform, and Load--ETL) using
-            ECL.</para>
+            process of preparing data (Extract, Transform, and Load--ETL)
+            using ECL.</para>
           </listitem>
 
           <listitem>
