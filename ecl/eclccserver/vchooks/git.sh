@@ -165,7 +165,7 @@ if [ -n "$IS_ECLSERVER" ]; then
   echo $GIT_INCLUDE_PATH
 else
   if [ -n "$GIT_VERBOSE" ]; then
-    report_info "GIT: calling eclcc $GIT_INCLUDE_PATH $@"  
+    report_info "GIT: calling eclcc $GIT_INCLUDE_PATH -q -qa $@"  
   fi
-  eclcc $GIT_INCLUDE_PATH "$@"
+  eclcc $GIT_INCLUDE_PATH -q -qa "$@"
 fi
