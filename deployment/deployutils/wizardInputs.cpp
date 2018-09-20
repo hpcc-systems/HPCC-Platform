@@ -1002,6 +1002,7 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
            ForEach(*i)
            {
              IPropertyTree* pAuthCopy = createPTreeFromIPT(&i->query());
+             pAuthCopy->addProp("@include", "Yes");
              mergeAttributes(pAuthCopy, pCompTree->queryPropTree("AuthenticateSetting"));
              IPropertyTree* pNewNode = pEspBindingInfo->addPropTree("AuthenticateSetting", pAuthCopy);
            }

@@ -83,6 +83,10 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
             <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
                <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
             </xsl:for-each>
+
+            <xsl:for-each select="$bindingNode/AuthenticateSetting[@include='Yes']">
+               <Setting path="{@path}" resource="{@resource}" description="{@description}"/>
+            </xsl:for-each>
             </Authenticate>
          </xsl:when>
          <xsl:when test="$authMethod='secmgrPlugin'">
@@ -98,6 +102,10 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
 
             <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
                <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
+            </xsl:for-each>
+
+            <xsl:for-each select="$bindingNode/AuthenticateSetting[@include='Yes']">
+               <Setting path="{@path}" resource="{@resource}" description="{@description}"/>
             </xsl:for-each>
             </Authenticate>
          </xsl:when>

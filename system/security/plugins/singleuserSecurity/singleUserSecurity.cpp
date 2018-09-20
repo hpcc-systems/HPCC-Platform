@@ -119,6 +119,11 @@ public:
 
         return feature_authmap;
     }
+
+    IAuthMap * createSettingMap(IPropertyTree * authConfig) override
+    {
+        return nullptr;
+    }
     bool logoutUser(ISecUser & user) override { return true; }
 
 protected:

@@ -418,6 +418,7 @@ void CConfigEnvHelper::mergeServiceAuthenticationWithBinding(IPropertyTree* pBin
   //add nodes from buildset properties that are missing in binding
   //
   bool bAuthenticateFeature = !strcmp(NodeName, "AuthenticateFeature");
+  bool bAuthenticateSetting = !strcmp(NodeName, "AuthenticateSetting");
   Owned<IPropertyTreeIterator> iSrc = pNewProperties->getElements(NodeName);
   ForEach(*iSrc)
   {
@@ -431,6 +432,8 @@ void CConfigEnvHelper::mergeServiceAuthenticationWithBinding(IPropertyTree* pBin
       pNode = pBinding->addPropTree(NodeName, createPTreeFromIPT(pNode));
       if (bAuthenticateFeature)
         pNode->addProp("@authenticate", "Yes");
+      else if (bAuthenticateSetting)
+        pNode->addProp("@include", "Yes");
     }
   }
 }
