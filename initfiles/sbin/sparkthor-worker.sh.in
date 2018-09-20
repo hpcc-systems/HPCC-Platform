@@ -18,8 +18,9 @@
 _command=${1:-start}
 _component=${2:-mysparkthor}
 
-exec 3>&2 2>@LOG_PATH@/${_component}/sparkthor-worker.${_command}.debug
-set -x
+#### Uncomment following lines for verbose debugging
+#exec 3>&2 2>@LOG_PATH@/${_component}/sparkthor-worker.${_command}.debug
+#set -x
 
 export logfile="@LOG_PATH@/${_component}/sparkthor-worker.log"
 source @INSTALL_DIR@/etc/init.d/hpcc_common
