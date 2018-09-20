@@ -104,7 +104,7 @@ void InsertEnvironmentDataCreateEventHandler::doHandleEvent(std::shared_ptr<Envi
 
 void AttributeSetValueCreateEventHandler::addAttributeValue(const std::string &attrName, const std::string &attrVal)
 {
-    m_attrVals.push_back({attrName, attrVal});
+    m_attrVals.push_back(NameValue(attrName, attrVal));
 }
 
 
@@ -113,10 +113,10 @@ void AttributeSetValueCreateEventHandler::doHandleEvent(std::shared_ptr<Environm
 
     for (auto &attrValPair : m_attrVals)
     {
-        std::shared_ptr<EnvironmentValue> pAttr = pEventNode->getAttribute(attrValPair.first);
+        std::shared_ptr<EnvironmentValue> pAttr = pEventNode->getAttribute(attrValPair.name);
         if (pAttr)
         {
-            pAttr->setValue(attrValPair.second, nullptr);
+            pAttr->setValue(attrValPair.value, nullptr);
         }
     }
 }

@@ -32,7 +32,7 @@ InsertableItem::InsertableItem(std::shared_ptr<const EnvironmentNode> pParentEnv
             std::shared_ptr<SchemaValue> pSchemaValue = m_pSchemaItem->getAttribute(attributeName);
             std::vector<AllowedValue> allowedValues;
             pSchemaValue->getAllowedValues(allowedValues, m_pParentEnvNode);
-            for (auto &&av : allowedValues)
+            for (auto &av : allowedValues)
             {
                 m_itemLimits.push_back(InsertItemLimitChoice(av.m_value, attributeName, av.m_value));
             }

@@ -26,7 +26,7 @@
     <!--xs:include schemaLocation="esp_service_wsecl2.xsd"/-->
     <xs:include schemaLocation="secmgr_singleuser.xsd"/>
     <xs:include schemaLocation="esp_service_smc.xsd"/>
-    <!--xs:include schemaLocation="dafilesrv.xsd"/-->
+    <xs:include schemaLocation="dafilesrv.xsd"/>
     <!--xs:include schemaLocation="eclagent.xsd"/-->
     <xs:element name="Environment" hpcc:category="root" hpcc:class="category">
         <xs:complexType>
@@ -37,7 +37,7 @@
                 <xs:element name="Software" hpcc:class="category" hpcc:displayName="Software">
                     <xs:complexType>
                         <xs:sequence>
-                            <!--xs:element type="dafilesrv"/-->
+                            <xs:element type="dafilesrv"/>
                             <!-- this is like an include right now -->
                             <!--xs:element type="eclAgent"/-->
                             <!--xs:element type="ws_ecl"/-->

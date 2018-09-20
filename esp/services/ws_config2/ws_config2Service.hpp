@@ -41,6 +41,7 @@ public:
     virtual bool onSetValues(IEspContext &context, IEspSetValuesRequest &req, IEspStatusResponse &resp);
     virtual bool onGetParents(IEspContext &context, IEspGetParentsRequest &req, IEspGetParentsResponse &resp);
     virtual bool onInsertNode(IEspContext &context, IEspInsertNodeRequest &req, IEspGetNodeResponse &resp);
+    virtual bool onGetCreateNodeInfo(IEspContext &context, IEspGetCreateNodeInfoRequest &req, IEspGetCreateNodeInfoResponse &resp);
     virtual bool onRemoveNode(IEspContext &context, IEspRemoveNodeRequest &req, IEspStatusResponse &resp);
 
     virtual bool onOpenSession(IEspContext &context, IEspOpenSessionRequest &req, IEspOpenSessionResponse &resp);
@@ -64,6 +65,7 @@ private:
     ConfigMgrSession *getConfigSessionForUpdate(const std::string &sessionId, const std::string &lockKey);
     bool deleteConfigSession(const std::string &sessionId);
     void getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNode, IEspGetNodeResponse &resp) const;
+    void getCreateNodeInfoResponse(const std::shared_ptr<EnvironmentNode> &pNode, IEspGetCreateNodeInfoResponse &resp) const;
     void getNodeInfo(const std::shared_ptr<EnvironmentNode> &pNode, IEspNodeInfoType &nodeInfo) const;
     void getNodeInfo(const std::shared_ptr<SchemaItem> &pNodeSchemaItem, IEspNodeInfoType &nodeInfo) const;
     void getAttributes(const std::shared_ptr<EnvironmentNode> &pEnvNode, IArrayOf<IEspAttributeType> &nodeAttributes, bool includeMissing = false) const;

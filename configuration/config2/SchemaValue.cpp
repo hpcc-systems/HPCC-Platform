@@ -226,35 +226,27 @@ bool SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
     else if (m_valueLimitRuleType == "uniqueItemType_espBinding")
     {
         std::vector<std::string> params = splitString(m_valueLimitRuleData, ",");
-        if (params.size() != 2)
+        if (params.size() != 4)
         {
-            std::string msg = "Applying rule " + m_valueLimitRuleType + ", expected 2 parameters in rule data";
+            std::string msg = "Applying rule " + m_valueLimitRuleType + ", expected 4 parameters in rule data";
             throw(ParseException(msg));
         }
 
-        //
-        // First parameter is the source values for an attribute search. The two parts of the parameter are the path to the
-        // node set where the atttribute, the second part, name is found (not that there may be no entries). Find all the nodes
-        // for the path (parts[0]), then get all of the values for the attribute (parts[1]). This serves as the list of existing
-        // values that are eliminated from the final list of allowable values.
-        ConfigPath sourcePath(params[0]);
-        std::shared_ptr<ConfigPathItem> pSourcePath = sourcePath.getNextPathItem();
+
         std::vector<std::shared_ptr<EnvironmentNode>> existingSourceNodes;
-        pEnvNode->fetchNodes(pSourcePath->getElementName(), existingSourceNodes);
+        pEnvNode->fetchNodes(params[0], existingSourceNodes);
         std::vector<std::string> existingSourceAttributeValues;
         for (auto &existingNodeIt: existingSourceNodes)
         {
-            existingSourceAttributeValues.push_back( existingNodeIt->getAttributeValue(pSourcePath->getAttributeName()));
+            existingSourceAttributeValues.push_back( existingNodeIt->getAttributeValue(params[1]));
         }
 
         //
         // Get the full set of possible values using the params[1] values. From its parts, parts[0] is the path
         // to find the set of all possible nodes that could serve as an allowable value.
         std::vector<std::shared_ptr<EnvironmentNode>> allSourceNodes;
-        ConfigPath valuesPath(params[1]);
-        std::shared_ptr<ConfigPathItem> pValuesPath = valuesPath.getNextPathItem();
-        std::string sourceAttributeName = pValuesPath->getAttributeName();  // for use below in case parts is reused later
-        pEnvNode->fetchNodes(pValuesPath->getElementName(), allSourceNodes);
+        std::string sourceAttributeName = params[3];  // for use below in case parts is reused later
+        pEnvNode->fetchNodes(params[2], allSourceNodes);
 
         //
         // For each exising source node, using the existingSourceAttributeValues, matching the name to the value in
@@ -284,7 +276,7 @@ bool SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
 
             if (itemTypeIt == existingItemTypes.end())
             {
-                allowedValues.push_back({ sourceIt->getAttributeValue(sourceAttributeName), "" });
+                allowedValues.emplace_back(AllowedValue(sourceIt->getAttributeValue(sourceAttributeName), ""));
             }
         }
         rc = true;
@@ -295,18 +287,32 @@ bool SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
     // while a keyed reference is present for XML schema validation)
     else if (isFromUniqueValueSet())
     {
+        std::shared_ptr<EnvironmentValue> pEnvValue = pEnvNode->getAttribute(getName());
+        std::vector<std::string> curValues;
+        pEnvValue->getAllValuesForSiblings(curValues);
+
         std::vector<std::string> refValues;
         getAllKeyRefValues(refValues);
-        for (auto it = refValues.begin(); it != refValues.end(); ++it)
+
+        //
+        // For each key reference value (the full set of allowed values), remove any that are already in use (curValues)
+        for (auto &refIt: refValues)
         {
-            allowedValues.push_back({ *it, "" });
+            std::vector<std::string>::const_iterator inUseIt = std::find_if(curValues.begin(), curValues.end(), [&](const std::string &curValueIt) {
+                return curValueIt == refIt;
+            });
+
+            if (inUseIt == curValues.end())
+            {
+                allowedValues.emplace_back(AllowedValue(refIt, ""));
+            }
         }
 
         if (!allowedValues.empty() && m_valueLimitRuleType == "addDependencies_FromSiblingAttributeValue")
         {
             std::vector<std::string> params = splitString(m_valueLimitRuleData, ",");
 
-            if (params.size() != 2)
+            if (params.size() != 4)
             {
                 std::string msg = "Applying rule " + m_valueLimitRuleType + ", expected 4 parameters in rule data";
                 throw(ParseException(msg));
@@ -320,7 +326,7 @@ bool SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
             //
             // Get an environment node pointer using the first entry in the env values vector. We know it's not empty because
             // we have at least one allowed value. Use this for fetching
-            std::shared_ptr<EnvironmentNode> pEnvNode = m_envValues[0].lock()->getEnvironmentNode();
+            std::shared_ptr<EnvironmentNode> pEnvValuesNode = m_envValues[0].lock()->getEnvironmentNode();
 
             //
             // Loop through each allowed value and find it's environment node (by value). Then add a dependency
@@ -329,7 +335,7 @@ bool SchemaValue::getAllowedValues(std::vector<AllowedValue> &allowedValues, con
             {
                 std::string path = matchPath + "[@" + matchAttribute + "='" + allowedValue.m_value + "']";
                 std::vector<std::shared_ptr<EnvironmentNode>> envNodes;
-                pEnvNode->fetchNodes(path, envNodes);
+                pEnvValuesNode->fetchNodes(path, envNodes);
                 if (!envNodes.empty())
                 {
                     std::shared_ptr<EnvironmentValue> pAttr = envNodes[0]->getAttribute(depAttrSource);

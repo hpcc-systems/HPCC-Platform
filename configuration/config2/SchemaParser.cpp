@@ -19,7 +19,7 @@
 #include "Exceptions.hpp"
 
 
-bool SchemaParser::parse(const std::string &configPath, const std::string &masterConfigFile,  const std::vector<std::string> &cfgParms)
+bool SchemaParser::parse(const std::string &configPath, const std::string &masterConfigFile,  const std::map<std::string, std::string> &cfgParms)
 {
     bool rc = true;
     try
