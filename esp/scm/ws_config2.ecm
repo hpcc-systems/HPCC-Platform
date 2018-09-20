@@ -136,6 +136,8 @@ ESPstruct ChoiceType
     ESParray<string, Attribute> RequiredAttributes;    // Attributes to be enabled and must be filled in (UI)
 };
 
+
+
 ESPstruct LimitsType
 {
     bool   MinValid(false);
@@ -241,27 +243,6 @@ ESPrequest InsertNodeRequest  // response is same as GetPathRequest
     string SessionLockKey;
     string ParentNodeId;
     string NodeType;  // name of new instance to create
-    ESParray<ESPstruct AttributeValueType, Attribute> AttributeValues;
-    bool AllowInvalid(false);  // true to allow setting an invalid value
-    bool ForceCreate(false);   // force creaation of new value if not defined
-    string LocalValue("");
-};
-
-
-ESPrequest GetCreateNodeInfoRequest
-{
-    string SessionId;
-    string ParentNodeId;
-    string NodeType;  // name of new instance to create
-};
-
-
-ESPresponse [exceptions_inline] GetCreateNodeInfoResponse
-{
-    ESPstruct NodeInfoType NodeInfo;
-    ESParray<ESPstruct AttributeType, Attribute> Attributes;
-    bool LocalValueDefined(false);                               // true if the node is configured to have a value (not usually true)
-    ESPstruct AttributeType Value;                               // this would be <element>value</element> not normal, see valueDefined
 };
 
 
@@ -449,10 +430,6 @@ ESPservice [auth_feature("DEFERRED"),version("2.0"), default_client_version("2.0
         [
             description("Insert a new node into the environment")
         ] InsertNode(InsertNodeRequest, GetNodeResponse);
-    ESPMethod
-        [
-            description("Get information to insert a new node")
-        ] GetCreateNodeInfo(GetCreateNodeInfoRequest, GetCreateNodeInfoResponse);
     ESPMethod
         [
             description("Remove a node from the environment")

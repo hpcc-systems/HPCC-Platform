@@ -23,7 +23,6 @@ limitations under the License.
 #include <map>
 #include <memory>
 #include <vector>
-#include "NameValue.hpp"
 
 class EnvironmentNode;
 
@@ -110,7 +109,7 @@ class AttributeSetValueCreateEventHandler : public MatchEnvironmentEventHandler
 
     protected:
 
-        std::vector<NameValue> m_attrVals;
+        std::vector<std::pair<std::string, std::string>> m_attrVals;
 };
 
 #endif

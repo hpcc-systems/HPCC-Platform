@@ -68,9 +68,8 @@ bool Cws_config2Ex::onOpenSession(IEspContext &context, IEspOpenSessionRequest &
 
     //
     // Open the session by loading the schema, which is done during session init
-    std::map<std::string, std::string> cfgParms;
-    cfgParms["buildset"] = "buildset.xml";  // Note that this is hardcoded for now, when other types suppored, must be passed in
-    cfgParms["support_libs"] = "libcfgsupport_addrequiredinstances";
+    std::vector<std::string> cfgParms;
+    cfgParms.push_back("buildset.xml");  // Note that this is hardcoded for now, when other types suppored, must be passed in
     if (pNewSession->initializeSession(cfgParms))
     {
         std::string sessionId = std::to_string(m_sessionKey);
@@ -339,7 +338,7 @@ bool Cws_config2Ex::onGetNode(IEspContext &context, IEspGetNodeRequest &req, IEs
     Status status;
 
     EnvironmentMgr *pEnvMgr = pSession->m_pEnvMgr;
-    std::shared_ptr<EnvironmentNode> pNode = pEnvMgr->findEnvironmentNodeById(id);
+    std::shared_ptr<EnvironmentNode> pNode = pEnvMgr->getEnvironmentNode(id);
     if (pNode == nullptr)
     {
         throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "Environment node ID is not valid");
@@ -356,55 +355,17 @@ bool Cws_config2Ex::onGetNode(IEspContext &context, IEspGetNodeRequest &req, IEs
 }
 
 
-bool Cws_config2Ex::onGetCreateNodeInfo(IEspContext &context, IEspGetCreateNodeInfoRequest &req, IEspGetCreateNodeInfoResponse &resp)
-{
-    ConfigMgrSession *pSession = getConfigSession(req.getSessionId());
-    Status status;
-
-    std::string parentNodeId = req.getParentNodeId();
-    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->findEnvironmentNodeById(parentNodeId);
-
-    if (pNode)
-    {
-        std::shared_ptr<EnvironmentNode> pNewNode = pSession->m_pEnvMgr->getNewEnvironmentNode(parentNodeId, req.getNodeType(), status);
-        if (pNewNode)
-        {
-            getCreateNodeInfoResponse(pNewNode, resp);
-            pSession->modified = true;
-        }
-    }
-    else
-    {
-        throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "Environment node ID is not valid");
-    }
-
-    return true;
-}
-
-
 bool Cws_config2Ex::onInsertNode(IEspContext &context, IEspInsertNodeRequest &req, IEspGetNodeResponse &resp)
 {
     ConfigMgrSession *pSession = getConfigSessionForUpdate(req.getSessionId(), req.getSessionLockKey());
     Status status;
 
     std::string parentNodeId = req.getParentNodeId();
+    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->getEnvironmentNode(parentNodeId);
 
-    if (pSession->m_pEnvMgr->findEnvironmentNodeById(parentNodeId))
+    if (pNode)
     {
-        std::vector<NameValue> initAttributes;
-
-        bool forceCreate = req.getForceCreate();
-        bool allowInvalid = req.getAllowInvalid();
-        IArrayOf<IConstAttributeValueType> &attrbuteValues = req.getAttributeValues();
-
-        ForEachItemIn(i, attrbuteValues)
-        {
-            IConstAttributeValueType& attrVal = attrbuteValues.item(i);
-            initAttributes.emplace_back(NameValue(attrVal.getName(), attrVal.getValue()));
-        }
-
-        std::shared_ptr<EnvironmentNode> pNewNode = pSession->m_pEnvMgr->addNewEnvironmentNode(parentNodeId, req.getNodeType(), initAttributes, status);
-
+        std::shared_ptr<EnvironmentNode> pNewNode = pSession->m_pEnvMgr->addNewEnvironmentNode(parentNodeId, req.getNodeType(), status);
         if (pNewNode)
         {
             getNodeResponse(pNewNode, resp);
@@ -465,7 +426,7 @@ bool Cws_config2Ex::onSetValues(IEspContext &context, IEspSetValuesRequest &req,
     ConfigMgrSession *pSession = getConfigSessionForUpdate(sessionId, key);
 
     std::string id = req.getNodeId();
-    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->findEnvironmentNodeById(id);
+    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->getEnvironmentNode(id);
     if (pNode == nullptr)
     {
         throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "Environment node ID is not valid");
@@ -479,7 +440,10 @@ bool Cws_config2Ex::onSetValues(IEspContext &context, IEspSetValuesRequest &req,
     ForEachItemIn(i, attrbuteValues)
     {
         IConstAttributeValueType& attrVal = attrbuteValues.item(i);
-        values.emplace_back(NameValue(attrVal.getName(), attrVal.getValue()));
+        NameValue value;
+        value.name = attrVal.getName();
+        value.value = attrVal.getValue();
+        values.push_back(value);
     }
 
     pNode->setAttributeValues(values, status, allowInvalid, forceCreate);
@@ -498,7 +462,7 @@ bool Cws_config2Ex::onGetParents(IEspContext &context, IEspGetParentsRequest &re
     ConfigMgrSession *pSession = getConfigSession(sessionId, true);
 
     StringArray ids;
-    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->findEnvironmentNodeById(nodeId);
+    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->getEnvironmentNode(nodeId);
     if (pNode == nullptr)
     {
         throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "Environment node ID is not valid");
@@ -528,7 +492,7 @@ bool Cws_config2Ex::onGetNodeTree(IEspContext &context, IEspGetTreeRequest &req,
     if (nodeId.empty())
         nodeId = pSession->m_pEnvMgr->getRootNodeId();
 
-    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->findEnvironmentNodeById(nodeId);
+    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->getEnvironmentNode(nodeId);
     if (pNode)
     {
         getNodeTree(pNode, resp.updateTree(), req.getNumLevels(), req.getIncludeAttributes());
@@ -553,7 +517,7 @@ bool Cws_config2Ex::onFetchNodes(IEspContext &context, IEspFetchNodesRequest &re
             throw MakeStringException(CFGMGR_ERROR_PATH_INVALID, "Path may not begin at root if starting node specified");
         }
 
-        pStartingNode = pSession->m_pEnvMgr->findEnvironmentNodeById(startingNodeId);
+        pStartingNode = pSession->m_pEnvMgr->getEnvironmentNode(startingNodeId);
         if (!pStartingNode)
         {
             throw MakeStringException(CFGMGR_ERROR_NODE_INVALID, "The starting node ID is not valid");
@@ -578,9 +542,9 @@ bool Cws_config2Ex::onFetchNodes(IEspContext &context, IEspFetchNodesRequest &re
         }
         resp.setNodeIds(ids);
     }
-    catch (ParseException &pe)
+    catch (ParseException *pe)
     {
-        throw MakeStringException(CFGMGR_ERROR_PATH_INVALID, "%s", pe.what());
+        throw MakeStringException(CFGMGR_ERROR_PATH_INVALID, "%s", pe->what());
     }
 
     return true;
@@ -604,7 +568,7 @@ void Cws_config2Ex::buildStatusResponse(const Status &status, ConfigMgrSession *
         {
             StringArray ids;
             getNodeParents((*msgIt).nodeId, pSession, ids);
-            std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->findEnvironmentNodeById((*msgIt).nodeId);
+            std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->getEnvironmentNode((*msgIt).nodeId);
             pStatusMsg->setNodeName(pNode->getName().c_str());
             pStatusMsg->setParentIdList(ids);
         }
@@ -709,10 +673,10 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
     IArrayOf<IEspInsertItemType> newNodes;
     std::vector<InsertableItem> insertableList;
     pNode->getInsertableItems(insertableList);
-    for (auto &insertableItem: insertableList)
+    for (auto it=insertableList.begin(); it!=insertableList.end(); ++it)
     {
         bool addItem = true;
-        std::shared_ptr<SchemaItem> pSchemaItem = insertableItem.m_pSchemaItem;
+        std::shared_ptr<SchemaItem> pSchemaItem = (*it).m_pSchemaItem;
         Owned<IEspInsertItemType> pInsertInfo = createInsertItemType();
         pInsertInfo->setName(pSchemaItem->getProperty("displayName").c_str());
         pInsertInfo->setNodeType(pSchemaItem->getItemType().c_str());
@@ -720,11 +684,11 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
         pInsertInfo->setCategory(pSchemaItem->getProperty("category").c_str());
         pInsertInfo->setRequired(pSchemaItem->isRequired());
         pInsertInfo->setTooltip(pSchemaItem->getProperty("tooltip").c_str());
-        if (insertableItem.m_limitChoices)
+        if (it->m_limitChoices)
         {
             pInsertInfo->setFixedChoices(true);
             IArrayOf<IEspChoiceLimitType> fixedChoices;
-            for (auto &fc: insertableItem.m_itemLimits)
+            for (auto &fc : (*it).m_itemLimits)
             {
                 Owned<IEspChoiceLimitType> pChoice = createChoiceLimitType();
                 pChoice->setDisplayName(fc.itemName.c_str());
@@ -774,58 +738,6 @@ void Cws_config2Ex::getNodeResponse(const std::shared_ptr<EnvironmentNode> &pNod
         }
     }
 }
-
-
-void Cws_config2Ex::getCreateNodeInfoResponse(const std::shared_ptr<EnvironmentNode> &pNode, IEspGetCreateNodeInfoResponse &resp) const
-{
-    const std::shared_ptr<SchemaItem> &pNodeSchemaItem = pNode->getSchemaItem();
-    std::string nodeDisplayName;
-
-    //
-    // Fill in base node info struct
-    getNodeInfo(pNode, resp.updateNodeInfo());
-
-    //
-    // Handle the attributes
-    IArrayOf<IEspAttributeType> nodeAttributes;
-    if (pNode->hasAttributes())
-    {
-        getAttributes(pNode, nodeAttributes, true);
-    }
-    resp.setAttributes(nodeAttributes);
-
-    if (pNodeSchemaItem->isItemValueDefined())
-    {
-        resp.setLocalValueDefined(true);
-
-        const std::shared_ptr<SchemaValue> &pNodeSchemaValue = pNodeSchemaItem->getItemSchemaValue();
-        const std::shared_ptr<SchemaType> &pType = pNodeSchemaValue->getType();
-        resp.updateValue().updateType().setBaseType(pType->getBaseType().c_str());
-        resp.updateValue().updateType().setSubType(pType->getSubType().c_str());
-        resp.updateValue().setRequired(pNodeSchemaValue->isRequired());
-        resp.updateValue().setReadOnly(pNodeSchemaValue->isReadOnly());
-        resp.updateValue().setHidden(pNodeSchemaValue->isHidden());
-
-        std::shared_ptr<SchemaTypeLimits> &pLimits = pType->getLimits();
-        if (pLimits->isMaxSet())
-        {
-            resp.updateValue().updateType().updateLimits().setMaxValid(true);
-            resp.updateValue().updateType().updateLimits().setMax(pLimits->getMax());
-        }
-        if (pLimits->isMinSet())
-        {
-            resp.updateValue().updateType().updateLimits().setMinValid(true);
-            resp.updateValue().updateType().updateLimits().setMin(pLimits->getMin());
-        }
-
-        if (pNode->isLocalValueSet())
-        {
-            const std::shared_ptr<EnvironmentValue> &pLocalValue = pNode->getLocalEnvValue();
-            resp.updateValue().setCurrentValue(pLocalValue->getValue().c_str());
-        }
-    }
-}
-
 
 
 void Cws_config2Ex::getNodeInfo(const std::shared_ptr<EnvironmentNode> &pNode, IEspNodeInfoType &nodeInfo) const
@@ -1008,7 +920,7 @@ void Cws_config2Ex::getNodeDisplayName(const std::shared_ptr<EnvironmentNode> &p
 
 void Cws_config2Ex::getNodeParents(const std::string &nodeId, ConfigMgrSession *pSession, StringArray &parentNodeIds) const
 {
-    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->findEnvironmentNodeById(nodeId);
+    std::shared_ptr<EnvironmentNode> pNode = pSession->m_pEnvMgr->getEnvironmentNode(nodeId);
     if (pNode)
     {
         while (pNode)

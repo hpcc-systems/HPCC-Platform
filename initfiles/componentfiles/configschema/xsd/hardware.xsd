@@ -40,7 +40,7 @@
                             </xs:complexType>
                         </xs:element>
 
-                        <xs:element name="Computer" hpcc:itemType="computer" maxOccurs="unbounded" hpcc:class="elementSet" hpcc:displayName="Computers">
+                        <xs:element name="Computer" maxOccurs="unbounded" hpcc:class="elementSet" hpcc:displayName="Computers">
                             <xs:complexType>
                                 <xs:attribute name="name" hpcc:displayName="Name" type="nodeName" use="required" hpcc:uniqueKey="computer_name"/>
                                 <xs:attribute name="netAddress" hpcc:displayName="Net Address" type="ipV4Address" use="required" hpcc:uniqueKey="computer_netaddress"/>

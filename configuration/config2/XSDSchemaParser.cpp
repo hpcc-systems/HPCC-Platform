@@ -29,7 +29,7 @@
 
 namespace pt = boost::property_tree;
 
-bool XSDSchemaParser::doParse(const std::string &configPath, const std::string &masterConfigFile,  const std::map<std::string, std::string> &cfgParms)
+bool XSDSchemaParser::doParse(const std::string &configPath, const std::string &masterConfigFile,  const std::vector<std::string> &cfgParms)
 {
     bool rc = true;
 
@@ -346,7 +346,6 @@ void XSDSchemaParser::parseElement(const pt::ptree &elemTree)
         pNewSchemaItem->setMinInstances(minOccurs);
         pNewSchemaItem->setMaxInstances(maxOccurs);
         pNewSchemaItem->setHidden(elemTree.get("<xmlattr>.hpcc:hidden", "false") == "true");
-        pNewSchemaItem->setRequiredInstanceComponents(elemTree.get("<xmlattr>.hpcc:requiredInstanceComponents", ""));
 
         //
         // Type specified?
@@ -434,7 +433,7 @@ void XSDSchemaParser::parseAppInfo(const pt::ptree &elemTree)
         std::string eventType = getXSDAttributeValue(childTree, "eventType");
 
         //
-        // For a create event type, get the eventAction attrbute to decide what to do
+        // Fir a create event type, get the eventAction attrbute to decide what to do
         if (eventType == "create")
         {
             std::string eventAction = getXSDAttributeValue(childTree, "eventAction");
@@ -504,7 +503,7 @@ void XSDSchemaParser::parseAppInfo(const pt::ptree &elemTree)
                     //                          matchItemAttribute
                     else if (it->first == "match")
                     {
-                        std::string attrName = it->second.get("eventNodeAttribute", "");
+                        std::string attrName = it->second.get("eventNodeAttribute", "").data();
                         pInsert->setEventNodeAttributeName(attrName);
                         std::string matchAttrName = it->second.get("targetAttribute", "");
                         if (!matchAttrName.empty())

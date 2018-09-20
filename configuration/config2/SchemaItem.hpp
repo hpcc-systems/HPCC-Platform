@@ -30,7 +30,6 @@
 #include "ConfigPath.hpp"
 
 class EnvironmentNode;
-class EnvironmentMgr;
 
 
 class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
@@ -86,8 +85,6 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         void processEvent(const std::string &eventType, const std::shared_ptr<EnvironmentNode> &pEnvNode) const;
         void addEventHandler(const std::shared_ptr<EnvironmentEventHandler> &pHandler) { m_eventHandlers.push_back(pHandler); }
         void getPath(std::string &path) const;
-        void setRequiredInstanceComponents(const std::string list);
-        const std::vector<std::string> &getRequiredInstanceComponents() const { return m_requiredInstanceComponents; }
 
 
     protected:
@@ -125,7 +122,6 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
         std::map<std::string, SetInfo> m_uniqueAttributeValueSetDefs;
 
         std::vector<std::shared_ptr<EnvironmentEventHandler>> m_eventHandlers;
-        std::vector<std::string> m_requiredInstanceComponents;
 };
 
 #endif // _CONFIG2_CONFIGITEM_HPP_

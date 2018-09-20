@@ -76,8 +76,8 @@
                                 <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Binding Name" hpcc:autoName="" />
                                 <!-- Note that the value limit rule for the service attribute replaces use of a reference to a set of unique attribute values because this rule
                                      is more restrictive than what a reference to a unique set of attribute values can provide -->
-                                <xs:attribute name="service" type="xs:string" use="required" hpcc:hidden="true" hpcc:displayName="Service"
-                                    hpcc:valueLimitRuleType="uniqueItemType_espBinding" hpcc:valueLimitRuleData="EspBinding,service,/Environment/Software/EspService,name"/>
+                                <xs:attribute name="service" type="xs:string" use="required" hpcc:codehpcc:presetValue="123abc" hpcc:hidden="true" hpcc:displayName="Service"
+                                    hpcc:valueLimitRuleType="uniqueItemType_espBinding" hpcc:valueLimitRuleData="EspBinding[@service],/Environment/Software/EspService[@name]"/>
                                 <xs:attribute name="protocol" use="required" hpcc:presetValue="http" hpcc:displayName="Protocol" hpcc:tooltip="The protocol to use">
                                     <xs:simpleType>
                                         <xs:restriction base="xs:string">
@@ -189,7 +189,7 @@
                             </xs:complexType>
                         </xs:element>
 
-                        <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded" hpcc:class="valueSet" hpcc:requiredInstanceComponents="/Evnironment/Software/[#itemtype='dafilesrv']">
+                        <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded" hpcc:class="valueSet">
                             <xs:complexType>
                                 <xs:sequence>
                                     <xs:element name="Certificate" type="xs:string" minOccurs="0" hpcc:displayName="Certificate" hpcc:tooltip="A certificate can be pasted here from the clipboard.  Otherwise, the generated certificate is displayed here after deployment" />

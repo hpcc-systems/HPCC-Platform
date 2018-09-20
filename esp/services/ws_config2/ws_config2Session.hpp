@@ -24,7 +24,6 @@
 #include "build-config.h"
 #include <iterator>
 #include <algorithm>
-#include <map>
 
 
 #define SESSION_KEY_LENGTH 10
@@ -58,7 +57,7 @@ struct ConfigMgrSession {
     }
 
 
-    bool initializeSession(std::map<std::string, std::string> &cfgParms)
+    bool initializeSession(std::vector<std::string> &cfgParms)
     {
         bool rc = true;
         m_pEnvMgr = getEnvironmentMgrInstance(configType);

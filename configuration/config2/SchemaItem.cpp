@@ -20,7 +20,6 @@
 #include "SchemaTypeStringLimits.hpp"
 #include "SchemaTypeIntegerLimits.hpp"
 #include <algorithm>
-#include "Utils.hpp"
 
 
 SchemaItem::SchemaItem(const std::string &name, const std::string &className, const std::shared_ptr<SchemaItem> &pParent) :
@@ -85,7 +84,6 @@ SchemaItem::SchemaItem(const SchemaItem &item)
 
     m_uniqueAttributeValueSetReferences = item.m_uniqueAttributeValueSetReferences;
     m_uniqueAttributeValueSetDefs = item.m_uniqueAttributeValueSetDefs;
-    m_requiredInstanceComponents = item.m_requiredInstanceComponents;
 }
 
 
@@ -664,10 +662,4 @@ void SchemaItem::processEvent(const std::string &eventType, const std::shared_pt
     {
         (*childIt)->processEvent(eventType, pEventSourceNode);
     }
-}
-
-
-void SchemaItem::setRequiredInstanceComponents(const std::string list)
-{
-    m_requiredInstanceComponents = splitString(list, "|");
 }

@@ -46,7 +46,7 @@ class ConfigPathItem
         bool isSchemaItem() const { return m_isSchemaItem; }
         void setIsRoot(bool root) { m_isRoot = root; }
         bool isRoot() const { return m_isRoot; }
-        void setExcludeValueList(bool exclude) { m_presentInList = !exclude; }
+        void setExcludeValueList(bool exclude) { m_presentInList = exclude; }
 
 
     private:

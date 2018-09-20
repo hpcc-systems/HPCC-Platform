@@ -1,6 +1,6 @@
 ##############################################################################
 #
-#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 ##############################################################################
 
 project ( config2 )
-
-HPCC_ADD_SUBDIRECTORY (hpcc_support)
 
 if (USE_BOOST_REGEX)
 
@@ -41,7 +39,6 @@ if (USE_BOOST_REGEX)
         Utils.cpp
         InsertableItem.cpp
         ConfigPath.cpp
-        EnvSupportLib.cpp
     )
 
     INCLUDE_DIRECTORIES(
@@ -50,7 +47,6 @@ if (USE_BOOST_REGEX)
         ${HPCC_SOURCE_DIR}/deployment/deploy
         ${CMAKE_PREFIX_PATH}/mkspecs/linux-g++
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/hpcc_support
         ${CMAKE_BINARY_DIR}
         ${CMAKE_BINARY_DIR}/oss
     )
