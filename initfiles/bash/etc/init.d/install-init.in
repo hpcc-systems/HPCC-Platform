@@ -210,11 +210,6 @@ if [ -d ${INSTALL_DIR}/etc/bash_completion.d ] && [ -d /etc/bash_completion.d ];
     done
 fi
 
-# Ubuntu Unity Launcher
-if [ -f ${INSTALL_DIR}/share/hpcc-systems.desktop ] && [ -d /usr/share/applications ]; then
-    installFile ${INSTALL_DIR}/share/hpcc-systems.desktop /usr/share/applications 1 || exit 1
-fi
-
 # SSH config dir
 if [ ! -d ${homePath}/.ssh ]; then
     mkdir -p ${homePath}/.ssh
