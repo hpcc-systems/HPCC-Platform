@@ -617,6 +617,15 @@
               Time</emphasis> in the <emphasis>Programmer's Guide</emphasis>
               for more details.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>timeLimit</emphasis></entry>
+
+              <entry></entry>
+
+              <entry>For Roxie queries. Maximum run time (in ms) for a
+              query.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>

@@ -40,15 +40,18 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -360,7 +363,7 @@
           </tgroup>
         </informaltable></para>
 
-      <para>You can override coresPerQuery on a single query by using: </para>
+      <para>You can override coresPerQuery on a single query by using:</para>
 
       <para><programlisting>#OPTION('bindCores', N); </programlisting></para>
 
@@ -475,6 +478,89 @@
         <para></para>
 
         <beginpage />
+      </sect2>
+
+      <sect2>
+        <title>Roxie Query Time Limits</title>
+
+        <para>There are several ways to manage a query's time limit (in order
+        of precedence):</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Specify a value in the <emphasis
+            role="bold">timeLimit</emphasis> attribute in the query request,
+            For example:</para>
+
+            <para><programlisting>&lt;myQuery timeLimit="2000"&gt;
+  ...
+&lt;/myQuery&gt;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Specify a value in the <emphasis
+            role="bold">_timeLimit</emphasis> element within the query
+            request. For example:</para>
+
+            <para><programlisting>&lt;myQuery&gt;
+  &lt;_timeLimit&gt;2000&lt;_timeLimit&gt;
+  ...
+&lt;/myQuery&gt;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Specify the value of the <emphasis
+            role="bold">timeLimit</emphasis> attribute in the package
+            definition for the query.</para>
+
+            <para><programlisting>&lt;RoxiePackages&gt;
+   &lt;!-- Begin Queries --&gt;
+     &lt;Package id="MyQuery" timeLimit="2000"&gt;
+     &lt;Base id="thor::MyData_Key"/&gt;
+    &lt;/Package&gt;
+  &lt;!-- End Queries --&gt;
+  ...
+&lt;/RoxiePackages&gt;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Specify a value in the query's ECL code using <emphasis
+            role="bold">#OPTION</emphasis>. For example,</para>
+
+            <para><programlisting>#OPTION('timeLimit', 2000);
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Specify a value on the command line using <emphasis
+            role="bold">eclcc </emphasis>via the <emphasis
+            role="bold">-f</emphasis> argument. For example,</para>
+
+            <para><programlisting>eclcc MyQuery.ecl -ftimeLimit="2000" 
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Specify a value using <emphasis role="bold">ecl </emphasis>
+            command line interface using the <emphasis
+            role="bold">--timeLimit=&lt;sec&gt;</emphasis> argument. For
+            example,</para>
+
+            <para><programlisting>ecl publish roxie MyQuery.ecl --name=MyQuery --timeLimit=2000 -A 
+ecl queries config roxie MyQuery --timeLimit=2000
+ecl queries recreate roxie MyQuery --timeLimit=2000
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Use the default setting in your Roxie cluster's
+            configuration. There are separate default values for priority
+            levels: <emphasis
+            role="bold">defaultLowPriorityTimeLimit</emphasis>, <emphasis
+            role="bold">defaultHighPriorityTimeLimit</emphasis>, and <emphasis
+            role="bold">defaultSLAPriorityTimeLimit</emphasis>.</para>
+          </listitem>
+        </itemizedlist>
       </sect2>
     </sect1>
   </chapter>
@@ -870,12 +956,9 @@
   <chapter id="Capacity_Planning_for_Roxie_Clusters">
     <title>Capacity Planning for Roxie Clusters</title>
 
-
-     <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
+    <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
                 xpointer="xpointer(//*[@id='Capacity_Planning'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
- 
-
   </chapter>
 
   <chapter id="PreFlight_and_Roxie_Metrics">
