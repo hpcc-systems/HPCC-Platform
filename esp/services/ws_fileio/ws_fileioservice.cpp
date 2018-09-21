@@ -24,6 +24,7 @@
 #ifdef _WIN32
 #include "windows.h"
 #endif
+#include "exception_util.hpp"
 
 ///#define FILE_DESPRAY_URL "FileDesprayAccess"
 #define FILE_IO_URL     "FileIOAccess"
@@ -130,7 +131,7 @@ bool CWsFileIOEx::CheckServerAccess(const char* server, const char* relPath, Str
 
 bool CWsFileIOEx::onCreateFile(IEspContext &context, IEspCreateFileRequest &req, IEspCreateFileResponse &resp)
 {
-    context.validateFeatureAccess(FILE_IO_URL, SecAccess_Write, true);
+    context.ensureFeatureAccess(FILE_IO_URL, SecAccess_Write, ECLWATCH_ACCESS_TO_FILE_DENIED, "WsFileIO::CreateFile: Permission denied");
 
     StringBuffer result;
     const char* server = req.getDestDropZone();
@@ -188,7 +189,7 @@ bool CWsFileIOEx::onCreateFile(IEspContext &context, IEspCreateFileRequest &req,
 
 bool CWsFileIOEx::onReadFileData(IEspContext &context, IEspReadFileDataRequest &req, IEspReadFileDataResponse &resp)
 {
-    context.validateFeatureAccess(FILE_IO_URL, SecAccess_Read, true);
+    context.ensureFeatureAccess(FILE_IO_URL, SecAccess_Read, ECLWATCH_ACCESS_TO_FILE_DENIED, "WsFileIO::ReadFileData: Permission denied");
 
     StringBuffer result;
     const char* server = req.getDestDropZone();
@@ -281,7 +282,7 @@ bool CWsFileIOEx::onReadFileData(IEspContext &context, IEspReadFileDataRequest &
 
 bool CWsFileIOEx::onWriteFileData(IEspContext &context, IEspWriteFileDataRequest &req, IEspWriteFileDataResponse &resp)
 {
-    context.validateFeatureAccess(FILE_IO_URL, SecAccess_Write, true);
+    context.ensureFeatureAccess(FILE_IO_URL, SecAccess_Write, ECLWATCH_ACCESS_TO_FILE_DENIED, "WsFileIO::WriteFileData: Permission denied");
 
     StringBuffer result;
     const char* server = req.getDestDropZone();
