@@ -22,11 +22,11 @@
 namespace ech
 {
 
-const char* Hardware::TYPE    = "linuxmachine";
-const char* Hardware::MAKER   = "unknown";
-const char* Hardware::SPEED   = "1000";
-const char* Hardware::DOMAIN  = "localdomain";
-const char* Hardware::OS      = "linux";
+const char* Hardware::c_type    = "linuxmachine";
+const char* Hardware::c_maker   = "unknown";
+const char* Hardware::c_speed   = "1000";
+const char* Hardware::c_domain  = "localdomain";
+const char* Hardware::c_os      = "linux";
 
 Hardware::Hardware(EnvHelper * envHelper):ComponentBase("hardware", envHelper)
 {
@@ -67,7 +67,7 @@ void Hardware::create(IPropertyTree *params)
 
   IPropertyTree* pDomain = pCompTree->addPropTree(XML_TAG_DOMAIN, createPTree());
   xpath.clear().append(XML_ATTR_NAME);
-  pDomain->addProp(xpath, Hardware::DOMAIN);
+  pDomain->addProp(xpath, Hardware::c_domain);
 
   envTree->addPropTree(XML_TAG_HARDWARE, createPTreeFromIPT(pCompTree));
 
@@ -102,8 +102,8 @@ IPropertyTree* Hardware::addComputer(IPropertyTree *params)
     throw MakeStringException(CfgEnvErrorCode::InvalidParams, "Miss ip information in adding hardware");
 
   const char * computerName = getAttributeFromParams(attrs, "name", NULL);
-  const char * type         = getAttributeFromParams(attrs, "type", Hardware::TYPE);
-  const char * domain       = getAttributeFromParams(attrs, "domain", Hardware::DOMAIN);
+  const char * type         = getAttributeFromParams(attrs, "type", Hardware::c_type);
+  const char * domain       = getAttributeFromParams(attrs, "domain", Hardware::c_domain);
   const char * namePrefix   = getAttributeFromParams(attrs, "namePrefix", NULL);
 
   StringBuffer  sbIp;
@@ -176,7 +176,7 @@ IPropertyTree* Hardware::addComputer(IPropertyTree *params)
   mutex.unlock();
 
   //notify a new computer added
-  for (int i = 0; i < m_notifyAddList.ordinality(); i++)
+  for (unsigned i = 0; i < m_notifyAddList.ordinality(); i++)
   {
      ((SWProcess*)m_envHelper->getEnvSWComp(m_notifyAddList.item(i)))->computerAdded(pComputer);
   }
@@ -259,7 +259,7 @@ void Hardware::modify(IPropertyTree *params)
    IPropertyTree *pComputer = envTree->queryPropTree(xpath.str());
    if (!pComputer) return;
 
-   for (int i = 0; i < m_notifyUpdateList.ordinality(); i++)
+   for (unsigned i = 0; i < m_notifyUpdateList.ordinality(); i++)
    {
       ((SWProcess*)m_envHelper->getEnvSWComp(m_notifyUpdateList.item(i)))->computerUpdated(pComputer, sbOldName.str(), oldIp);
    }
@@ -311,7 +311,7 @@ void Hardware::remove(IPropertyTree *params)
 
    if (!sbComputerName.isEmpty())
    {
-      for (int i = 0; i < m_notifyUpdateList.ordinality(); i++)
+      for (unsigned i = 0; i < m_notifyUpdateList.ordinality(); i++)
       {
          ((SWProcess*)m_envHelper->getEnvSWComp(m_notifyUpdateList.item(i)))->computerDeleted(sbIp.str(), sbComputerName.str());
       }
@@ -351,7 +351,7 @@ IPropertyTree* Hardware::addComputerType(IPropertyTree *params)
   IPropertyTree* attrs  = params->queryPropTree("Attributes");
   assert(attrs);
 
-  const char * typeName         = getAttributeFromParams(attrs, "name", Hardware::TYPE);
+  const char * typeName         = getAttributeFromParams(attrs, "name", Hardware::c_type);
 
   IPropertyTree* envTree = m_envHelper->getEnvTree();
   IPropertyTree* pHardwareTree = envTree->queryPropTree(XML_TAG_HARDWARE);
@@ -361,10 +361,10 @@ IPropertyTree* Hardware::addComputerType(IPropertyTree *params)
   if (pComputerType) return pComputerType;
 
 
-  const char * manufacturer = getAttributeFromParams(attrs, "manufacturer", Hardware::MAKER);
-  const char * type         = getAttributeFromParams(attrs, "computerType", Hardware::TYPE);
-  const char * os           = getAttributeFromParams(attrs, "computerType", Hardware::OS);
-  const char * speed        = getAttributeFromParams(attrs, "nicSpeed", Hardware::SPEED);
+  const char * manufacturer = getAttributeFromParams(attrs, "manufacturer", Hardware::c_maker);
+  const char * type         = getAttributeFromParams(attrs, "computerType", Hardware::c_type);
+  const char * os           = getAttributeFromParams(attrs, "computerType", Hardware::c_os);
+  const char * speed        = getAttributeFromParams(attrs, "nicSpeed", Hardware::c_speed);
 
   synchronized block(mutex);
   pComputerType = pHardwareTree->addPropTree(XML_TAG_COMPUTERTYPE, createPTree());
@@ -392,7 +392,7 @@ IPropertyTree* Hardware::addDomain(IPropertyTree *params)
   IPropertyTree* pHardwareTree = envTree->queryPropTree(XML_TAG_HARDWARE);
   assert(pHardwareTree);
 
-  const char * domain  = getAttributeFromParams(attrs, "domain", Hardware::DOMAIN);
+  const char * domain  = getAttributeFromParams(attrs, "domain", Hardware::c_domain);
 
   StringBuffer xpath;
   xpath.clear().appendf(XML_TAG_DOMAIN "[@name=\"%s\"]", domain);
