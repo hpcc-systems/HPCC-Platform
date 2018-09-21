@@ -378,17 +378,18 @@ bool EnvironmentMgr::removeEnvironmentNode(const std::string &nodeId)
 {
     bool rc = false;
     std::shared_ptr<EnvironmentNode> pNode = findEnvironmentNodeById(nodeId);
+    std::vector<std::string> deletedNodeIds;
 
     if (pNode)
     {
         std::shared_ptr<EnvironmentNode> pParentNode = pNode->getParent();
-        if (pParentNode->removeChild(pNode))
+        if (pParentNode->removeChild(pNode, deletedNodeIds))
         {
-            m_nodeIds.erase(nodeId);
+            for (auto delNodeId: deletedNodeIds)
+                m_nodeIds.erase(delNodeId);
             rc = true;
         }
     }
-
     return rc;
 }
 

@@ -177,19 +177,25 @@ void SchemaValue::resetEnvironment()
 // replicates the new value throughout the environment
 void SchemaValue::mirrorValueToEnvironment(const std::string &oldValue, const std::string &newValue, Status *pStatus)
 {
-    std::string msg = "Value automatically changed from " + oldValue + " to " + newValue;
-    for (auto mirrorCfgIt = m_mirrorToSchemaValues.begin(); mirrorCfgIt != m_mirrorToSchemaValues.end(); ++mirrorCfgIt)
+    for (auto &pSchemaValue: m_mirrorToSchemaValues)
     {
-        for (auto &envValueIt: m_envValues)
+        pSchemaValue->doMirroroToEnvironmentValues(oldValue, newValue, pStatus);
+    }
+}
+
+
+void SchemaValue::doMirroroToEnvironmentValues(const std::string &oldValue, const std::string &newValue, Status *pStatus)
+{
+    std::string msg = "Value automatically changed from " + oldValue + " to " + newValue;
+    for (auto &envValueIt: m_envValues)
+    {
+        std::shared_ptr<EnvironmentValue> pEnvValue = envValueIt.lock();
+        if (pEnvValue && pEnvValue->getValue() == oldValue)
         {
-            std::shared_ptr<EnvironmentValue> pEnvValue = envValueIt.lock();
-            if (pEnvValue && pEnvValue->getValue() == oldValue)
+            pEnvValue->setValue(newValue, nullptr, true);
+            if (pStatus != nullptr)
             {
-                pEnvValue->setValue(newValue, nullptr, true);
-                if (pStatus != nullptr)
-                {
-                    pStatus->addMsg(statusMsg::change, msg, pEnvValue->getEnvironmentNode()->getId(), pEnvValue->getSchemaValue()->getDisplayName());
-                }
+                pStatus->addMsg(statusMsg::change, msg, pEnvValue->getEnvironmentNode()->getId(), pEnvValue->getSchemaValue()->getDisplayName());
             }
         }
     }
@@ -388,4 +394,17 @@ bool SchemaValue::isHidden(const EnvironmentValue *pEnvValue) const
         hidden = m_invertHiddenIf == !hidden;
     }
     return hidden;
+}
+
+
+void SchemaValue::removeEnvironmentValue(const std::shared_ptr<EnvironmentValue> &pEnvValue)
+{
+    for (auto it = m_envValues.begin(); it != m_envValues.end(); ++it)
+    {
+        if ((*it).lock() == pEnvValue)
+        {
+            m_envValues.erase(it);
+            break;
+        }
+    }
 }
