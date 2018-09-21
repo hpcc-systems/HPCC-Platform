@@ -82,8 +82,7 @@ bool CWsLoggingServiceEx::onUpdateLog(IEspContext& context, IEspUpdateLogRequest
 {
     try
     {
-        if (!context.validateFeatureAccess(WSLOGGING_ACCESS, SecAccess_Write, false))
-            throw MakeStringException(EspLoggingErrors::WSLoggingAccessDenied, "Failed to update log. Permission denied.");
+        context.ensureFeatureAccess(WSLOGGING_ACCESS, SecAccess_Write, EspLoggingErrors::WSLoggingAccessDenied, "WsLoggingService::UpdateLog: Permission denied.");
 
         context.addTraceSummaryTimeStamp(LogMin, "startQLog");
         for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
@@ -114,8 +113,7 @@ bool CWsLoggingServiceEx::onGetTransactionSeed(IEspContext& context, IEspGetTran
     bool bRet = false;
     try
     {
-        if (!context.validateFeatureAccess(WSLOGGING_ACCESS, SecAccess_Write, false))
-            throw MakeStringException(EspLoggingErrors::WSLoggingAccessDenied, "Failed to get transaction  seed. Permission denied.");
+        context.ensureFeatureAccess(WSLOGGING_ACCESS, SecAccess_Read, EspLoggingErrors::WSLoggingAccessDenied, "WsLoggingService::GetTransactionSeed: Permission denied.");
 
         LOGServiceType serviceType = LGSTGetTransactionSeed;
         for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
