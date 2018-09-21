@@ -387,6 +387,15 @@
 
                 <row>
                   <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+                  role="bold">Show Whitespace
+                  Characters</emphasis></emphasis></emphasis></entry>
+
+                  <entry>Check this box to display whitespace characters in
+                  the editor.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
                   role="bold">Target Background
                   Colors</emphasis></emphasis></emphasis></entry>
 
@@ -455,7 +464,7 @@
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Defaults</emphasis></entry>
+                  <entry><emphasis role="bold">Default</emphasis></entry>
 
                   <entry>Press this button to reset all values to the default
                   color settings.</entry>
@@ -583,8 +592,7 @@
 
               <tbody>
                 <row>
-                  <entry><emphasis role="bold"><emphasis
-                  role="bold">Compiler</emphasis></emphasis></entry>
+                  <entry><emphasis role="bold">Compiler</emphasis></entry>
 
                   <entry>Specify the compiler's full path and executable
                   name.</entry>
@@ -626,6 +634,20 @@
 
                   <entry>The Arrows next to the ECL Folder allow you to move
                   folders up and down in appearance in the workspace</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Add</emphasis></entry>
+
+                  <entry>Press the Add button to browse and select folders to
+                  add as ECL folders</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Delete</emphasis></entry>
+
+                  <entry>Press the Delete button to remove selected ECL
+                  folders</entry>
                 </row>
 
                 <row>
@@ -784,8 +806,8 @@
         <sect3 id="CT_ECLIDE_UsingTheRibbon">
           <title>Using the Ribbon</title>
 
-          <para>The Ribbon makes the commands that you need use to complete a
-          task easy to find.</para>
+          <para>The Ribbon makes the commands that you need to use to complete
+          a task easy to find.</para>
 
           <para><graphic fileref="../../images/CT07.jpg" /></para>
 
@@ -1301,17 +1323,14 @@
                 <row>
                   <entry><emphasis role="bold">New</emphasis></entry>
 
-                  <entry>opens a new ECL Builder window. CTRL-N</entry>
+                  <entry>Opens a new ECL Builder window. CTRL-N</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Open</emphasis></entry>
 
                   <entry>Provides access to the following Open submenus:
-                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> opens a saved query (.ECL file) into a new ECL Builder window. CTRL-O
-<emphasis role="bold">Open Attribute:</emphasis> opens a dialog to name the attribute to open. 
-                      Enter the fully qualified attribute name, then press the <emphasis
-                        role="bold">OK </emphasis>button.
+                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> Opens a saved query(.ECL file) in a new ECL Builder window. CTRL+O
 <emphasis role="bold">Open Workunit:</emphasis> opens a dialog to name the Workunit to open. 
                       Enter the Workunit ID (WUID), then press the <emphasis
                         role="bold">OK</emphasis> button.</programlisting></entry>
@@ -1320,16 +1339,23 @@
                 <row>
                   <entry><emphasis role="bold">Save</emphasis></entry>
 
-                  <entry>saves the contents of the window with input focus. An
+                  <entry>Saves the contents of the window with input focus. An
                   ECL Builder window query is saved to an .ECL file. An Editor
-                  window saves the ECL file to the Repository. CTRL-S</entry>
+                  window saves the ECL file to the Repository. CTRL+S</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Save As</emphasis></entry>
 
-                  <entry>saves the contents of the window with input focus to
+                  <entry>Saves the contents of the window with input focus to
                   a new filename.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">New
+                  Workspace</emphasis></entry>
+
+                  <entry>Opens a new blank workspace.</entry>
                 </row>
 
                 <row>
@@ -1339,20 +1365,20 @@
                   <programlisting role="tab"><emphasis role="bold">Print <emphasis
                           role="bold">Setup</emphasis>:</emphasis> opens a page setup dialog where you can set margins,
                       paper size, and orientation, etc.
-<emphasis role="bold">Print:</emphasis> prints the contents of the active window. CTRL-P
+<emphasis role="bold">Print:</emphasis> prints the contents of the active window. CTRL+P
 </programlisting></entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Close</emphasis></entry>
 
-                  <entry>closes the active window. CTRL-F4</entry>
+                  <entry>Closes the active window. CTRL+F4</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Logout</emphasis></entry>
 
-                  <entry>closes the session and allows you to login
+                  <entry>Closes the session and allows you to login
                   again.</entry>
                 </row>
 
@@ -1360,20 +1386,20 @@
                   <entry><emphasis role="bold">Change
                   Password</emphasis></entry>
 
-                  <entry>allows you to change your password.</entry>
+                  <entry>Allows you to change your password.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Exit</emphasis></entry>
 
-                  <entry>closes the ECL IDE.</entry>
+                  <entry>Closes the ECL IDE.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold"><emphasis
                   role="bold">Preferences </emphasis></emphasis></entry>
 
-                  <entry>opens the Preferences window to allow you to
+                  <entry>Opens the Preferences window to allow you to
                   configure ECL IDE options.</entry>
                 </row>
               </tbody>
@@ -1509,7 +1535,7 @@
             <tgroup cols="3">
               <colspec colwidth="90pt" />
 
-              <colspec colwidth="95.00pt" />
+              <colspec colwidth="165pt" />
 
               <colspec />
 
@@ -1672,6 +1698,15 @@
 
                   <entry>Select to set a tab width of between 1-16.</entry>
                 </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">   Toggle Whitespace Chars</emphasis></programlisting></entry>
+
+                  <entry>Toggles between displaying whitespace characters or
+                  not.</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable>
@@ -1699,6 +1734,16 @@
 
                   <entry>Locates specific text in the currently active window.
                   CTRL-F</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="../../images/CT090.jpg" /></entry>
+
+                  <entry><emphasis role="bold">Goto</emphasis></entry>
+
+                  <entry>Press the lower half of the Find icon to access the
+                  Go To Line dialog. Enter the line number to move your cursor
+                  to.</entry>
                 </row>
 
                 <row>
@@ -2098,7 +2143,8 @@
         <sect3 id="CT_ECLIDE_WorkUnitPopUpMenu_">
           <title>Workunit Pop-up Menu</title>
 
-          <para>Right-click on any Workunit for a Pop-up menu
+          <para>Right-click on any Workunit in the <emphasis
+          role="bold">Workunits</emphasis> panel for a Pop-up menu
           containing:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
@@ -2570,6 +2616,14 @@
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Locate
+                  Workunit in Explorer</emphasis></emphasis></entry>
+
+                  <entry>Opens a File Explorer window to the location of the
+                  workunit file.</entry>
+                </row>
+
+                <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Close
                   Workunit</emphasis></emphasis></entry>
 
@@ -2581,6 +2635,13 @@
                   Workunit</emphasis></emphasis></entry>
 
                   <entry>deletes the current Workunit</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Close All
+                  Workunits</emphasis></emphasis></entry>
+
+                  <entry>Closes all open workunits</entry>
                 </row>
               </tbody>
             </tgroup>
