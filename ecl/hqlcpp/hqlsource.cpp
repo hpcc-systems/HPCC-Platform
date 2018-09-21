@@ -4535,7 +4535,7 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
     prolog.append("struct ").append(className).append(" : public RtlCInterface, implements ").append(interfaceName);
     epilog.append(";");
 
-    GlobalClassBuilder builder(*this, declarectx, className, "CXmlToRowTransformer", interfaceName, true);
+    GlobalClassBuilder builder(*this, declarectx, className, "CXmlToRowTransformer", interfaceName, true, false);
     builder.buildClass(XmlTransformerPrio);
     builder.setIncomplete(true);
 
