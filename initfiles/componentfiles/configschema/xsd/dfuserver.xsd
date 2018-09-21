@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+-->
+
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="DfuServerProcess" hpcc:displayName="DFU Server Process" hpcc:itemType="dfuserver" minOccurs="0" maxOccurs="unbounded"
+                    hpcc:class="component" hpcc:docid="DF.t1">
+            <xs:complexType>
+                <xs:sequence>
+                    <xs:element name="SSH" hpcc:displayName="SSH Options" hpcc:tooltip="Options for using SSH remote execution"
+                                minOccurs="1" maxOccurs="1" hpcc:docid="DF.t2">
+                        <xs:complexType>
+                            <xs:attribute name="SSHidentityfile" hpcc:displayName="Identity File" type="xs:string"
+                                          hpcc:presetValue="$HOME/.ssh/id_rsa" hpcc:tooltip="location of identity file (private key) on Thor master"/>
+                            <xs:attribute name="SSHusername" hpcc:displayName="Username" type="xs:string"
+                                          hpcc:presetValye="hpcc" hpcc:tooltip="Username to use when running Thor slaves"/>
+                            <xs:attribute name="SSHpassword" hpcc:displayName="Password" type="xs:string" hpcc:modifiers="password"
+                                          hpcc:tooltip="Fixed password - only required if no identity file present NB **insecure**"/>
+                            <xs:attribute name="SSHtimeout" hpcc:displayName="Timeout (s)" type="xs:nonNegativeInteger"
+                                          hpcc:presetVaue="0" hpcc:tooltip="Timeout in seconds for SSH connects"/>
+                            <xs:attribute name="SSHretries" hpcc:displayName="Retries" type="xs:nonNegativeInteger"
+                                          hpcc:presetValue="3" hpcc:tooltip="Number of times to retry failed connect"/>
+                        </xs:complexType>
+                    </xs:element>
+
+                    <xs:element name="Instance" hpcc:itemType="hwinstance" maxOccurs="unbounded" hpcc:class="elementSet" hpcc:requiredInstanceComponents="/Evnironment/Software/[#itemType='dafilesrv']">
+                        <xs:complexType>
+                            <xs:attributeGroup ref="computerNodeReference"/>
+                            <xs:attribute name="directory" type="absolutePath" hpcc:hidden="true"/>
+                        </xs:complexType>
+                    </xs:element>
+
+                    <xs:element name="Notes" hpcc:displayName="Notes" type="usernotes"/>
+
+                </xs:sequence>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autoGenerateType="prefix_" hpcc:autoGenerateValue="dfuserver"
+                              hpcc:uniqueKey="dfuserver_name" hpcc:tooltip="Name for this DFU Server process"/>
+                <xs:attribute name="description" type="xs:string" hpcc:displayName="Description" hpcc:presetValue="DFU Server process" hpcc:tooltip="Description for this process"/>
+                <xs:attribute name="daliServers" hpcc:displayName="Dali Server" type="xs:string" hpcc:sourceKey="daliprocess_name"
+                              use="required" hpcc:tooltip="Specifies the dali server to which this DFU server is attached"/>
+                <xs:attribute name="queue" hpcc:displayName="Queue" type="xs:string" use="required" hpcc:presetValue="dfuserver_queue"
+                              hpcc:tooltip="Specifies the queue name to which DFU server jobs are sent"/>
+                <xs:attribute name="monitorqueue" hpcc:displayName="Monitor Queue" type="xs:string" use="required" hpcc:presetValue="dfuserver_monitor_queue"
+                              hpcc:tooltip="Specifies the queue name to which DFU monitoring jobs are sent"/>
+                <xs:attribute name="monitorinterval" hpcc:displayname="Monitor Interval (s)" type="xs:nonNegativeInteger"
+                              hpcc:presetValue="900" hpcc:tooltip="Specifies the polling interval for DFU monitoring (in seconds)"/>
+                <xs:attribute name="transferBufferSize" hpcc:displayName="Transfer Buffer Size (bytes)" type="xs:nonNegativeInteger"
+                              hpcc:presetValue="65536" hpcc:tooltip="Default buffer size used when transferring data"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>
