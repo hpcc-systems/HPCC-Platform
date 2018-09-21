@@ -5037,8 +5037,9 @@ public:
                     continue;
                 }
 
+                // poll for any events ...
                 int err = 0;
-                int n = ::epoll_wait(epfd, epevents, MAX_RET_EVENTS, 1000);
+                int n = ::epoll_wait(epfd, epevents, 1, 1000);
                 if (n < 0)
                     err = ERRNO();
 
@@ -5065,7 +5066,6 @@ public:
                         selectvarschange = true;
                         continue;
                     }
-                    n = 0;
                 }
                 else if (n>0)
                 {
@@ -5078,14 +5078,17 @@ public:
                     {
                         CriticalBlock block(sect);
 
-                        for (int j=0;j<n;j++)
+                        // retrieve events, without waiting, while holding CS ...
+                        int n2 = ::epoll_wait(epfd, epevents, MAX_RET_EVENTS, 0);
+
+                        for (int j=0;j<n2;j++)
                         {
                             int tfd = -1;
                             SelectItem *epsi = (SelectItem *)epevents[j].data.ptr;
                             if (epsi)
                                 tfd = epsi->handle;
 # ifdef EPOLLTRACE
-                            DBGLOG("EPOLL: epevents[%d].data.fd = %d, emask = %u", j, tfd, epevents[j].events);
+                            DBGLOG("EPOLL: j = %d, fd = %d, emask = %u", j, tfd, epevents[j].events);
 # endif
                             if (tfd >= 0)
                             {
