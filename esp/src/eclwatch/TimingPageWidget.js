@@ -106,7 +106,7 @@ define([
             },
 
             _onMetricsType: function (evt) {
-                this._metricFilter = this._timings.selectedMetrics();
+                this._metricFilter = this._timings.selectedMetricValues();
                 this.refreshGrid();
             },
 
@@ -185,7 +185,7 @@ define([
                             label: col,
                             width: 120,
                             formatter: function (cell, row) {
-                                var retVal = row[formattedID] || cell;
+                                var retVal = row[formattedID] && row[formattedID].Formatted || cell;
                                 return retVal !== undefined ? retVal : "";
                             }
                         }

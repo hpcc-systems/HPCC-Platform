@@ -10,11 +10,16 @@ const d3Select = (hpccCommon as any).select;
 
 class TimingColumn extends Column {
 
+    _columnsMetric = {};
     layerEnter(host, element, duration) {
         super.layerEnter(host, element, duration);
         this.tooltipHTML(d => {
             const lparam = d.origRow[d.origRow.length - 1];
-            return d.column + ":  " + lparam["__" + d.column];
+            const metric = this._columnsMetric[d.column];
+            const prop = lparam["__" + metric.Name];
+            const formattedValue = prop.Formatted;
+            const rawValue = prop.RawValue;
+            return `${d.column}:  ${formattedValue !== rawValue ? `${formattedValue} (${rawValue} ${prop.Measure})` : `${formattedValue}`}`;
         });
     }
 }
@@ -61,8 +66,6 @@ export class Timings {
 
     private chart = new TimingColumn()
         .yAxisDomainLow(0 as any)
-        .yAxisTickFormat("s")
-        .yAxisHidden(true)
         ;
     private chartPanel = new ChartPanel()
         .dataButtonVisible(false)
@@ -88,12 +91,12 @@ export class Timings {
         this.metricsSelect = d3Select(`#${metricsSelectTarget}`);
     }
 
-    selectedMetrics() {
-        this._metricSelectValue = this.metricsSelect.selectAll("option").nodes()
+    selectedMetricValues() {
+        this._metricSelectValues = this.metricsSelect.selectAll("option").nodes()
             .filter(n => n.selected === true)
             .map(n => n.value)
             ;
-        return this._metricSelectValue;
+        return this._metricSelectValues;
     }
 
     init(wuid: string) {
@@ -127,9 +130,10 @@ export class Timings {
         return retVal;
     }
 
+    _rawColumns = {};
     _scopeFilter: string = "";
     _metricSelectLabel: string = "";
-    _metricSelectValue: string[] = ["TimeElapsed"];
+    _metricSelectValues: string[] = ["TimeElapsed"];
     _graphLookup: { [id: string]: string } = {};
     _subgraphLookup: { [id: string]: string } = {};
     fetchDetailsNormalizedPromise;
@@ -193,9 +197,6 @@ export class Timings {
                     if (scope && scope.Id && scope.Properties && scope.Properties.Property) {
                         for (const key in scope.Properties.Property) {
                             const scopeProperty = scope.Properties.Property[key];
-                            if (scopeProperty.Measure === "ns") {
-                                scopeProperty.Measure = "s";
-                            }
                             columns[scopeProperty.Name] = { ...scopeProperty };
                             delete columns[scopeProperty.Name].RawValue;
                             delete columns[scopeProperty.Name].Formatted;
@@ -205,9 +206,6 @@ export class Timings {
                                     break;
                                 case "sz":
                                     props[scopeProperty.Name] = +scopeProperty.RawValue;
-                                    break;
-                                case "s":
-                                    props[scopeProperty.Name] = +scopeProperty.RawValue / 1000000000;
                                     break;
                                 case "ns":
                                     props[scopeProperty.Name] = +scopeProperty.RawValue;
@@ -231,7 +229,7 @@ export class Timings {
                                 default:
                                     props[scopeProperty.Name] = scopeProperty.RawValue;
                             }
-                            props["__" + scopeProperty.Name] = scopeProperty.Formatted;
+                            props["__" + scopeProperty.Name] = scopeProperty;
                         }
                         data.push({
                             id: scope.Id,
@@ -250,14 +248,15 @@ export class Timings {
         }
 
         return this.fetchDetailsNormalizedPromise.then(response => {
+            this._rawColumns = response.columns;
             this._graphLookup = {};
             this._subgraphLookup = {};
-            var data = response.data.filter(row => {
+            var rawData = response.data.filter(row => {
                 if (row.type === "graph") this._graphLookup[row.name] = row.id;
                 if (row.type === "subgraph") this._subgraphLookup[row.name] = row.id;
                 if (!row.id) return false;
                 if (this._scopeFilter && row.name !== this._scopeFilter && row.name.indexOf(`${this._scopeFilter}:`) !== 0) return false;
-                if (this._metricSelectValue.every(m => row[m] === undefined)) return false;
+                if (this._metricSelectValues.every(m => row[m] === undefined)) return false;
                 return true;
             }).sort(function (l, r) {
                 if (l.WhenStarted === undefined && r.WhenStarted !== undefined || l.WhenStarted < r.WhenStarted) return -1;
@@ -275,29 +274,50 @@ export class Timings {
                 }
             }
             colArr.sort(d3Ascending);
-            this._metricSelectLabel = this._metricSelectValue + (measure ? " (" + measure + ")" : "");
+            this._metricSelectLabel = this._metricSelectValues + (measure ? " (" + measure + ")" : "");
             var options = this.metricsSelect.selectAll("option").data(colArr, function (d) { return d; });
             options.enter().append("option")
                 .merge(options)
                 .property("value", d => d)
-                .property("selected", d => this._metricSelectValue.indexOf(d) >= 0)
+                .property("selected", d => this._metricSelectValues.indexOf(d) >= 0)
                 .text(d => d)
                 ;
             options.exit().remove();
 
-            const filteredData = data.filter((row, i) => row.name !== this._scopeFilter);
-            const normalizedData = this.normalize(filteredData);
+            let filteredData = rawData.filter((row, i) => row.name !== this._scopeFilter);
+            if (this.needsNormalize()) {
+                this.chart.yAxisTickFormat(".0%");
+                filteredData = this.normalize(filteredData);
+            } else {
+                this.chart.yAxisTickFormat(".02s");
+            }
+
+            this.chart._columnsMetric = {};
+            const columns = ["id", ...this._metricSelectValues.map(mv => {
+                const retVal = `${mv}(${this._rawColumns[mv].Measure})`;
+                this.chart._columnsMetric[retVal] = this._rawColumns[mv]; 
+                return retVal;
+            })];
 
             this.chartPanel
-                .columns(["id", ...this._metricSelectValue])
-                .data(normalizedData.map((row, i) => {
-                    return [row.id, ...this._metricSelectValue.map(metric => row[metric]), row];
+                .columns(columns)
+                .data(filteredData.map((row, i) => {
+                    return [row.id, ...this._metricSelectValues.map(metric => row[metric]), row];
                 }))
                 .lazyRender()
                 ;
 
-            return [this._metricSelectValue, data];
+            return [this._metricSelectValues, rawData];
         });
+    }
+
+    needsNormalize(): boolean {
+        const measures = {};
+        this._metricSelectValues.forEach(metricLabel => {
+            const metric = this._rawColumns[metricLabel];
+            measures[metric.Measure] = true;
+        });
+        return Object.keys(measures).length > 1;
     }
 
     normalize(data) {
@@ -306,9 +326,9 @@ export class Timings {
                 ...row
             };
         });
-        this._metricSelectValue.forEach(metric => {
+        this._metricSelectValues.forEach(metric => {
             var max = d3Max(data.map(row => row[metric]));
-            var scale = d3ScaleLinear().domain([0, max]).range([0, 100]);
+            var scale = d3ScaleLinear().domain([0, max]).range([0, 1]);
             normalizedData.forEach(row => {
                 row[metric] = scale(row[metric]);
             });
