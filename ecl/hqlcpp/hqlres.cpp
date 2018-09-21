@@ -479,7 +479,10 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         VStringBuffer label("%s_%u_txt_start", type, id);
         if (generateClang)
         {
-            fprintf(f, " .section __TEXT,%s_%u\n", type, id);
+#ifdef __APPLE__
+            if (id <= 1200)  // There is a limit of 255 sections before linker complains - and some are used elsewhere
+#endif
+                fprintf(f, " .section __TEXT,%s_%u\n", type, id);
             fprintf(f, " .global _%s\n", label.str());  // For some reason apple needs a leading underbar and linux does not
             fprintf(f, "_%s:\n", label.str());
         }
