@@ -88,7 +88,7 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="NodeGroup" type="xs:string" use="required" default="mythor">
+            <xs:attribute name="ThorClusterName" type="xs:string" use="required" default="mythor">
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>Thor group for workers to attach to</tooltip>

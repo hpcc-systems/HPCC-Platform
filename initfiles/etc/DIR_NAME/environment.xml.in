@@ -893,7 +893,7 @@
   <SparkThorProcess build="_"
                     buildSet="sparkthor"
                     name="mysparkthor"
-                    NodeGroup="mythor"
+                    ThorClusterName="mythor"
                     daliServers="mydali"
                     SPARK_EXECUTOR_CORES="1"
                     SPARK_EXECUTOR_MEMORY="1G"

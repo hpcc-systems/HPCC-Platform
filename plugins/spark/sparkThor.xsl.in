@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@
         </xsl:call-template>
         <xsl:call-template name="printVariable">
             <xsl:with-param name="var" select="'SPARK_MASTER_HOST'"/>
-            <xsl:with-param name="val" select="Instance/@netAddress"/>
+            <xsl:with-param name="val" select="Instance/@netAddress[1]"/>
         </xsl:call-template>
         <xsl:call-template name="printVariable">
             <xsl:with-param name="var" select="'SPARK_MASTER_WEBUI_PORT'"/>
@@ -62,11 +62,11 @@
         </xsl:call-template>
         <xsl:call-template name="printVariable">
             <xsl:with-param name="var" select="'NODEGROUP'"/>
-            <xsl:with-param name="val" select="@NodeGroup"/>
+            <xsl:with-param name="val" select="@ThorClusterName"/>
         </xsl:call-template>
         <xsl:text>export DALISERVER=</xsl:text>
         <xsl:call-template name="getThorNodeDali">
-            <xsl:with-param name="thorNode" select="@NodeGroup"/>
+            <xsl:with-param name="thorNode" select="@ThorClusterName"/>
         </xsl:call-template>
         <xsl:text>&#xa;</xsl:text>
         <xsl:text>export SPARK_LOG_DIR=@LOG_PATH@/</xsl:text><xsl:value-of select="@name"/><xsl:text>&#xa;</xsl:text>
