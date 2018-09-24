@@ -259,7 +259,8 @@ static void addElementToPTree(IPropertyTree * root, IDefRecordElement * elem)
     {
     case DEKnone:
         branchName.set("None");
-        assertex(elem->numChildren() == 0);
+        if (elem)
+            assertex(elem->numChildren() == 0);
         break;
     case DEKrecord:
         {
