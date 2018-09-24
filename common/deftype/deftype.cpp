@@ -1223,6 +1223,7 @@ bool CTransformTypeInfo::assignableFrom(ITypeInfo *t2)
 bool CSortListTypeInfo::assignableFrom(ITypeInfo *t2)
 {
     return (getTypeCode()==t2->getTypeCode());
+/*
     {
         //Not convinced any of this should be here...
         ITypeInfo *c1 = queryChildType();
@@ -1236,6 +1237,7 @@ bool CSortListTypeInfo::assignableFrom(ITypeInfo *t2)
         return false;
     }
     return queryChildType()->assignableFrom(t2);
+*/
 }
 
 bool CRowTypeInfo::assignableFrom(ITypeInfo *t2)
@@ -1881,7 +1883,6 @@ extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype)
 
 extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * parameters, IInterface * defaults, IInterface * attrs)
 {
-    assertex(basetype->getTypeCode() != type_function); // not just yet anyway
     if (!basetype || !parameters)
     {
         ::Release(basetype);
@@ -1890,6 +1891,7 @@ extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface *
         ::Release(attrs);
         throwUnexpected();
     }
+    assertex(basetype->getTypeCode() != type_function); // not just yet anyway
     return commonUpType(new CFunctionTypeInfo(basetype, parameters, defaults, attrs));
 }
 
