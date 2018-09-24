@@ -66,7 +66,7 @@ define([
             idleWatcher.on("idle", function () {
                 idleWatcher.stop();
                 var LockDialog = new LockDialogWidget({});
-                LockDialog.show();
+                LockDialog._onLock();
             });
             idleWatcher.start();
             monitorLockClick.unlocked();
@@ -95,6 +95,8 @@ define([
             topic.subscribe("hpcc/session_management_status", function (publishedMessage) {
                 if (publishedMessage.status === "Unlocked") {
                     monitorLockClick.unlocked();
+                } else  if (publishedMessage.status === "Locked") {
+                    monitorLockClick.locked();
                 }
             })
 

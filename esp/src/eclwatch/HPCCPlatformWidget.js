@@ -79,6 +79,7 @@ define([
 
             bannerContent: "",
             upgradeBar: null,
+            storage: null,
 
             postCreate: function (args) {
                 this.inherited(arguments);
@@ -234,6 +235,21 @@ define([
                 topic.subscribe("hpcc/monitoring_component_update", function (topic) {
                     context.checkMonitoring(topic.status);
                 });
+                this.storage = new ESPUtil.LocalStorage();
+                this.storage.on("storageUpdate", function(msg) {
+                    context._onUpdateFromStorage(msg)
+                });
+            },
+
+            _onUpdateFromStorage: function (msg){
+                var context = this;
+                if (msg.event.newValue === "logged_out") {
+                    window.location.reload();
+                } else if (msg.event.newValue === "Locked") {
+                    context._onShowLock();
+                } else if (msg.event.newValue === "Unlocked" || msg.event.oldValue === "Locked") {
+                    context._onHideLock();
+                }
             },
 
             initTab: function () {
@@ -439,12 +455,23 @@ define([
                 this.aboutDialog.hide();
             },
 
+            _onShowLock: function (evt) {
+                var LockDialog = new LockDialogWidget({});
+                LockDialog.show()
+            },
+
             _onLock: function (evt) {
                 var LockDialog = new LockDialogWidget({});
-                LockDialog.show();
+                LockDialog._onLock();
+            },
+
+            _onHideLock: function (evt) {
+                var LockDialog = new LockDialogWidget({});
+                LockDialog.hide();
             },
 
             _onLogout: function (evt) {
+                var context = this;
                 this.logoutConfirm.show();
                 query(".dijitDialogUnderlay").style("opacity", "0.5");
                 this.logoutConfirm.on("execute", function () {
@@ -455,6 +482,7 @@ define([
                             cookie("ECLWatchUser", "", { expires: -1 });
                             cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
                             window.location.reload();
+                            context.storage.setItem("Status", "logged_out");
                         }
                     });
                 });

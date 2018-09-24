@@ -317,7 +317,7 @@ hr.dashedLine {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 100;
+    z-index: 950;
     background-color: #1A9BD7;
 }
 .lockLogo{
@@ -615,6 +615,13 @@ hr.dashedLine {
     color: rgb(237, 28, 36);
 }
 
+.unlockStatus{
+    font-weight:bold;
+    font-size:1em;
+    color:rgb(218, 4, 0);
+    text-align: center;
+}
+
 table.miniSelect span {  
      width:20px;
 }
@@ -666,7 +673,7 @@ table.miniSelect span {
     padding-left:10px;
 }
 
-#UnlockStatus{
+.unlockStatus{
     font-weight:bold;
     font-size:1em;
     color:rgb(218, 4, 0);
