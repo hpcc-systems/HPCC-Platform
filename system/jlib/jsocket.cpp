@@ -2040,10 +2040,14 @@ size32_t CSocket::writetms(void const* buf, size32_t size, unsigned timeoutms)
     {
         size32_t amnt = write(p,nleft);
 
-        if ( ((amnt == (size32_t)-1) || (amnt == 0)) && (++rollover >= 20) )
+        // can nonblock mode write() return -1 ?
+        if ( (amnt == 0) || (amnt == (size32_t)-1) )
         {
-            rollover = 0;
-            Sleep(20);
+            if (++rollover >= 20)
+            {
+                rollover = 0;
+                Sleep(20);
+            }
         }
         else
         {
