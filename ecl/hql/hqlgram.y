@@ -7770,6 +7770,33 @@ simpleDataRow
                             else
                                 $$.setExpr(createCompound($5.getExpr(), $3.getExpr()), $1);
                         }
+    | MAP '(' mapDatarowSpec ',' dataRow ')'
+                        {
+                            HqlExprArray args;
+                            OwnedHqlExpr elseExpr = $5.getExpr();
+                            $3.unwindCommaList(args);
+
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $5, true);
+
+                            args.append(*elseExpr.getClear());
+                            OwnedHqlExpr expr = createRow(no_map, args);
+                            $$.setExpr(foldConstantMapExpr(expr), $1);
+                        }
+    | CASE '(' expression ',' beginList caseDatarowSpec ',' dataRow ')'
+                        {
+                            parser->normalizeExpression($3, type_scalar, false);
+                            HqlExprArray args;
+                            OwnedHqlExpr elseExpr = $8.getExpr();
+                            parser->endList(args);
+                            parser->checkCaseForDuplicates(args, $6);
+
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $8, true);
+
+                            args.add(*$3.getExpr(),0);
+                            args.append(*elseExpr.getClear());
+                            OwnedHqlExpr expr = createRow(no_case, args);
+                            $$.setExpr(foldConstantCaseExpr(expr), $1);
+                        }
     ;
 
 dictionary
@@ -9688,33 +9715,6 @@ simpleDataSet
                             parser->validateXPath($3);
                             $$.setExpr(createDatasetF(no_xmlproject, $3.getExpr(), $5.getExpr(), parser->createUniqueId(), $6.getExpr(), NULL));
                             $$.setPosition($1);
-                        }
-    | MAP '(' mapDatarowSpec ',' dataRow ')'
-                        {
-                            HqlExprArray args;
-                            OwnedHqlExpr elseExpr = $5.getExpr();
-                            $3.unwindCommaList(args);
-
-                            parser->ensureMapToRecordsMatch(elseExpr, args, $5, true);
-
-                            args.append(*elseExpr.getClear());
-                            OwnedHqlExpr expr = createRow(no_map, args);
-                            $$.setExpr(foldConstantMapExpr(expr), $1);
-                        }
-    | CASE '(' expression ',' beginList caseDatarowSpec ',' dataRow ')'
-                        {
-                            parser->normalizeExpression($3, type_scalar, false);
-                            HqlExprArray args;
-                            OwnedHqlExpr elseExpr = $8.getExpr();
-                            parser->endList(args);
-                            parser->checkCaseForDuplicates(args, $6);
-
-                            parser->ensureMapToRecordsMatch(elseExpr, args, $8, true);
-
-                            args.add(*$3.getExpr(),0);
-                            args.append(*elseExpr.getClear());
-                            OwnedHqlExpr expr = createRow(no_case, args);
-                            $$.setExpr(foldConstantCaseExpr(expr), $1);
                         }
     | WHEN '(' dataSet ',' action sideEffectOptions ')'
                         {
