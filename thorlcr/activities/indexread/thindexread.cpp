@@ -136,7 +136,7 @@ protected:
                         first = false;
                     }
                     else if (tlkCrc != _tlkCrc)
-                        throw MakeActivityException(this, 0, "Sorted output on super files comprising of non coparitioned sub keys is not supported (TLK's do not match)");
+                        throw MakeActivityException(this, 0, "Sorted output on super files comprising of non copartitioned sub keys is not supported (TLK's do not match)");
                 }
             }
             if (!nofilter)
@@ -164,11 +164,19 @@ protected:
                 indexBaseHelper->createSegmentMonitors(tlk);
                 tlk->finishSegmentMonitors();
                 tlk->reset();
-                while (tlk->lookup(false))
+                unsigned slavePart = tlk->getPartition();  // Returns 0 if no partition info, or filter cannot be partitioned
+                if (slavePart)
                 {
-                    offset_t node = extractFpos(tlk);
-                    if (node)
-                        performPartLookup.replace(true, (aindex_t)(super?super->numSubFiles(true)*(node-1)+superSubIndex:node-1));
+                    performPartLookup.replace(true, slavePart-1);
+                }
+                else
+                {
+                    while (tlk->lookup(false))
+                    {
+                        offset_t node = extractFpos(tlk);
+                        if (node)
+                            performPartLookup.replace(true, (aindex_t)(super?super->numSubFiles(true)*(node-1)+superSubIndex:node-1));
+                    }
                 }
             }
             if (!super||!iter->next())
@@ -207,7 +215,7 @@ public:
             if (!isFileKey(index))
                 throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", helperFileName.get());
 
-            localKey = index->queryAttributes().getPropBool("@local");
+            localKey = index->queryAttributes().getPropBool("@local") && !index->queryAttributes().hasProp("@partitionFieldMask");
 
             if (container.queryLocalData() && !localKey)
                 throw MakeActivityException(this, 0, "Index Read cannot be LOCAL unless supplied index is local");
