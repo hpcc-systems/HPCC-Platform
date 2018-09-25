@@ -269,6 +269,8 @@ public:
             return EsdlCmdOptionMatch;
         if (iter.matchFlag(optHPCCCompFilesDir, HPCC_COMPONENT_FILES_DIR_CDE))
             return EsdlCmdOptionMatch;
+        if (iter.matchFlag(optUseUtf8Strings, ESDLOPT_USE_UTF8_STRINGS))
+            return EsdlCmdOptionMatch;
         if (iter.matchOption(optHPCCCompFilesDir, ESDL_OPTION_ECL_INCLUDE_LIST))
             return EsdlCmdOptionMatch;
         if (iter.matchOption(optECLHeaderBlock, ESDL_OPTION_ECL_HEADER_BLOCK))
@@ -389,6 +391,7 @@ public:
                 "      --ecl-imports         Comma-delimited import list to be attached to output ECL\n"
                 "                            each entry generates a corresponding import *.<entry>\n"
                 "      --ecl-header          Text included in target header (must be valid ECL) \n"
+                "      --utf8-               Don't use UTF8 strings"
                 "   " ESDLOPT_INCLUDE_PATH_USAGE
                 ,stdout);
     }
@@ -463,6 +466,7 @@ public:
         params->setProp("sourceFileName", finger);
         params->setProp("importsList", eclimports);
         params->setProp("eclHeader", eclheader);
+        params->setProp("utf8strings", optUseUtf8Strings ? "yes" : "no");
         StringBuffer esdl2eclxslt (optHPCCCompFilesDir.get());
         esdl2eclxslt.append("/xslt/esdl2ecl.xslt");
         esdl2eclxsltTransform(expstr.str(), esdl2eclxslt.str(), params, outfile.str());
@@ -507,6 +511,7 @@ public:
     bool optRollUpEclToSingleFile;
     bool optProcessIncludes;
     bool optOutputExpandedXML;
+    bool optUseUtf8Strings = true;
     StringAttr optHPCCCompFilesDir;
     StringAttr optECLIncludesList;
     StringAttr optECLHeaderBlock;
