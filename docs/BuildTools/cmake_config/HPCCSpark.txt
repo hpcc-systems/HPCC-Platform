@@ -14,5 +14,5 @@
 #    limitations under the License.
 ################################################################################
 
-DOCBOOK_TO_PDF( ${FO_XSL} SparkHPCC.xml "Spark_HPCC_Connector_${DOC_LANG}")
+DOCBOOK_TO_PDF( ${FO_XSL} SparkHPCC.xml "HPCC_Spark_Integration_${DOC_LANG}")
 

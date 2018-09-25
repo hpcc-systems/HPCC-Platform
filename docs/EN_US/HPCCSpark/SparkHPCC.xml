@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <title>Spark-HPCCSystems Distributed Connector</title>
+    <title>HPCC / Spark Integration</title>
 
     <mediaobject>
       <imageobject>
@@ -59,6 +59,389 @@
   </bookinfo>
 
   <chapter>
+    <title>HPCC / Spark Installation and Configuration</title>
+
+    <para>The HPCC Systems Spark plug-in, hpccsystems-plugin-spark, integrates
+    Spark into your HPCC System platform. Once installed and configured, the
+    Sparkthor component manages the Integrated Spark cluster. It dynamically
+    configures, starts, and stops your Integrated Spark cluster when you start
+    or stop your HPCC Systems platform.</para>
+
+    <sect1 role="nobrk">
+      <title>Spark Installation</title>
+
+      <para>To add Spark integration to your HPCC Systems cluster, you must
+      have an HPCC Cluster running version 7.0.0 or later. Java 8 is also a
+      required. You will need to configure the Sparkthor component. The
+      Sparkthor component needs to be associated with a valid existing Thor
+      cluster. The Spark slave nodes will be created alongside each Thor
+      slave. The Integrated Spark Master node will be designated during
+      configuration, along with any other Spark node resources. Then the
+      Sparkthor component will spawn an Integrated Spark cluster at start up.
+      You will also have a SPARK-HPCC jar connector available.</para>
+
+      <para>To get the Integrated Spark component, packages and plug-ins are
+      available from the HPCC Systems<superscript>®</superscript> web portal:
+      <ulink
+      url="https://hpccsystems.com/download/free-community-edition">https://hpccsystems.com/download/</ulink></para>
+
+      <para>Download the hpccsystems-plugin-spark package from the HPCC
+      Systems Portal.</para>
+
+      <sect2 id="installing-SparkPlugin">
+        <title>Installing the Spark Plug-in</title>
+
+        <para>The installation process and package that you download vary
+        depending on the operating system you plan to use. The installation
+        packages may fail to install if their dependencies are missing from
+        the target system. To install the package, follow the appropriate
+        installation instructions for your operating system:</para>
+
+        <sect3 id="Spark_CentOS">
+          <title>CentOS/Red Hat</title>
+
+          <para>For RPM based systems, you can install using yum.</para>
+
+          <para><programlisting>sudo yum install &lt;hpccsystems-plugin-spark&gt;  </programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Ubuntu/Debian</title>
+
+          <para>To install a Ubuntu/Debian package, use:</para>
+
+          <programlisting>sudo dpkg -i &lt;hpccsystems-plugin-spark&gt;  </programlisting>
+
+          <para>After installing the package, you should run the following to
+          update any dependencies.</para>
+
+          <para><programlisting>sudo apt-get install -f </programlisting></para>
+
+          <itemizedlist>
+            <listitem>
+              <para>You need to copy and install the plug-in onto all nodes.
+              This can be done using the install-cluster.sh script which is
+              provided with HPCC. Use the following command:</para>
+
+              <programlisting>/opt/HPCCSystems/sbin/install-cluster.sh &lt;hpccsystems-plugin-spark&gt;</programlisting>
+
+              <para>More details including other options that may be used with
+              this command are included in the appendix of Installing and
+              Running the HPCC Platform, also available on the HPCC
+              Systems<superscript>®</superscript> web portal.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Spark_Configuration">
+      <title>Spark Configuration</title>
+
+      <para>To configure your existing HPCC System to integrate Spark, install
+      the hpccsystems-plugin-spark package and modify your existing
+      environment (file) to add the Sparkthor component.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>If it is running, stop the HPCC system, using this
+          command:</para>
+
+          <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
+                      xpointer="element(/1)"
+                      xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png" /></entry>
+
+                    <entry>You can use this command to confirm HPCC processes
+                    are stopped:<para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Start the Configuration Manager service.<programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+</programlisting></para>
+
+          <para><graphic fileref="images/gs_img_configmgrStart.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Leave this window open. You can minimize it, if
+          desired.</para>
+        </listitem>
+
+        <listitem>
+          <para>Using a Web browser, go to the Configuration Manager's
+          interface:</para>
+
+          <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Check the box by the Advanced View and select the environment
+          file to edit.</para>
+        </listitem>
+
+        <listitem>
+          <para>Enable write access (checkbox top-right of the page)</para>
+        </listitem>
+
+        <listitem>
+          <para>Right-click on the Navigator panel on left side</para>
+
+          <para>Choose <emphasis role="bold">New Components</emphasis> then
+          <emphasis role="bold">Sparkthor</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Configure the attributes of your Spark Instance:</para>
+
+          <para><informaltable colsep="1" id="Th.t1" rowsep="1">
+              <tgroup align="left" cols="4">
+                <colspec colwidth="155pt" />
+
+                <colspec colwidth="2*" />
+
+                <colspec colwidth="1*" />
+
+                <colspec colwidth="0.5*" />
+
+                <thead>
+                  <row>
+                    <entry>attribute</entry>
+
+                    <entry>values</entry>
+
+                    <entry>default</entry>
+
+                    <entry>required</entry>
+                  </row>
+                </thead>
+
+                <tbody>
+                  <row>
+                    <entry>name</entry>
+
+                    <entry>Name for this process</entry>
+
+                    <entry>mysparkthor</entry>
+
+                    <entry>required</entry>
+                  </row>
+
+                  <row>
+                    <entry>ThorClusterName</entry>
+
+                    <entry>Thor cluster for workers to attach to*</entry>
+
+                    <entry>mythor*</entry>
+
+                    <entry>required</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_EXECUTOR_CORES</entry>
+
+                    <entry>Number of cores for executors</entry>
+
+                    <entry>1</entry>
+
+                    <entry>optional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_EXECUTOR_MEMORY</entry>
+
+                    <entry>Memory per executor</entry>
+
+                    <entry>1G</entry>
+
+                    <entry>optional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_MASTER_WEBUI_PORT</entry>
+
+                    <entry>Base port to use for master web interface</entry>
+
+                    <entry>8080</entry>
+
+                    <entry>optional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_MASTER_PORT</entry>
+
+                    <entry>Base port to use for master</entry>
+
+                    <entry>7077</entry>
+
+                    <entry>optional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_WORKER_CORES</entry>
+
+                    <entry>Number of cores for workers</entry>
+
+                    <entry>1</entry>
+
+                    <entry>optional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_WORKER_MEMORY</entry>
+
+                    <entry>Memory per worker</entry>
+
+                    <entry>1G</entry>
+
+                    <entry>optional</entry>
+                  </row>
+
+                  <row>
+                    <entry>SPARK_WORKER_PORT</entry>
+
+                    <entry>Base port to use for workers</entry>
+
+                    <entry>7071</entry>
+
+                    <entry>optional</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>*ThorClusterName targets an existing Thor cluster. When
+          configuring you must choose a valid existing Thor cluster for the
+          Integrated Spark cluster to mirror.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png" /></entry>
+
+                    <entry>NOTE: You should leave a least 2 cores open for
+                    HPCC to use to provide Spark with Data. The number of
+                    cores and memory you allocate to Spark would depend on the
+                    workload. Do not try and allocate too many resources to
+                    Spark where you could run into an issue of HPCC and Spark
+                    conflicting for resources.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Specify a Spark Master Node; Select the Spark Master Instances
+          tab. Right-click on the Instances table and choose <emphasis
+          role="bold">Add Instances </emphasis></para>
+
+          <para>Add the instance of your Spark master node.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png" /></entry>
+
+                    <entry>NOTE: You can only have one Spark Master
+                    Instance</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Save the environment file. Exit configmgr (Ctrl+C). Copy the
+          environment file from the source directory to the /etc/HPCCSystems
+          directory.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png" /></entry>
+
+                    <entry>Be sure system is stopped before attempting to move
+                    the environment.xml file.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para><programlisting>sudo cp /etc/HPCCSystems/source/&lt;new environment file.xml&gt; /etc/HPCCSystems/environment.xml</programlisting>and
+          distribute the new environment file to all the nodes in your
+          cluster.</para>
+
+          <para>You could choose to use the delivered hpcc-push.sh script to
+          deploy the new environment file. For example:</para>
+
+          <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt; </programlisting>
+        </listitem>
+      </orderedlist>
+
+      <para>Now you can start your HPCC System cluster and verify that
+      Sparkthor is alive.</para>
+
+      <para>To start your HPCC System.</para>
+
+      <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStart.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <para>Using a browser, navigate to your Integrated Master Spark instance
+      (the instance you added above) running on port 8080 of your HPCC
+      System.</para>
+
+      <para>For example, http://nnn.nnn.nnn.nnn:8080, where nnn.nnn.nnn.nnn is
+      your Integrated Spark Master node's IP address.</para>
+
+      <programlisting>https://192.168.56.101:8080</programlisting>
+    </sect1>
+  </chapter>
+
+  <chapter>
     <title>The Spark HPCC Systems Connector</title>
 
     <sect1 id="overview" role="nobrk">
@@ -84,17 +467,21 @@
       distributed dataset derived from the data on the HPCC Cluster and is
       created by the
       <emphasis>org.hpccsystems.spark.HpccFile.getRDD</emphasis>(…) method.
-      The <emphasis>HpccFile</emphasis> class uses the
-      <emphasis>org.hpccsystems.spark.HpccDataframeFactory</emphasis> class to
-      construct a <emphasis>Dataset&lt;Row&gt;</emphasis> object for the new
-      Spark interface.</para>
+      The <emphasis>HpccFile</emphasis> class supports loading data to
+      construct a <emphasis>Dataset&lt;Row&gt;</emphasis> object for the Spark
+      interface. This will first load the data into an RDD&lt;Row&gt; and then
+      convert this RDD to a Dataset&lt;Row&gt; through internal Spark
+      mechanisms.</para>
 
       <para>There are several additional artifacts of some interest. The
       <emphasis>org.hpccsystems.spark.ColumnPruner</emphasis> class is
       provided to enable retrieving only the columns of interest from the HPCC
-      Cluster. The <emphasis>org.hpccsystems.spark.thor.FileFilter</emphasis>
-      class is provided to enable retrieving only records of interest from the
-      HPCC Cluster.</para>
+      Cluster. The <emphasis>targetClusterList</emphasis> parameter on the
+      HpccFile constructor allows you to provide a string of comma delimited
+      field paths for this same purpose. The
+      <emphasis>org.hpccsystems.spark.thor.FileFilter</emphasis> class is
+      provided to enable retrieving only records of interest from the HPCC
+      Cluster.</para>
 
       <para>The git repository includes two examples under the
       Examples/src/main/scala folder. The examples
@@ -107,6 +494,9 @@
       url="https://github.com/hpcc-systems/ecl-ml/blob/master/ML/Tests/Explanatory/IrisDS.ecl">https://github.com/hpcc-systems/ecl-ml/blob/master/ML/Tests/Explanatory/IrisDS.ecl</ulink>)
       can be executed to generate the Iris dataset in HPCC. A walk-through of
       the examples is provided in the Examples section.</para>
+
+      <para>The Spark-HPCCSystems Distributed Connector also supports PySpark.
+      It uses the same classes/API as Java does.</para>
     </sect1>
 
     <sect1 id="primary-classes">
@@ -114,13 +504,12 @@
 
       <para>The <emphasis>HpccFile</emphasis> class and the
       <emphasis>HpccRDD</emphasis> classes are discussed in more detail below.
-      There are the primary classes used to access data from an HPCC Cluster.
-      The <emphasis>org.hpccsystems.spark.HpccDataframeFactory</emphasis>
-      class is employed by the
-      <emphasis>org.hpccsystems.spark.HpccFile</emphasis> class to produce a
-      <emphasis>Dataset&lt;Row&gt;</emphasis> instance employing an
-      <emphasis>org.hpccsystems.spark.HpccRDD</emphasis> instance to generate
-      the <emphasis>Dataset&lt;Row&gt;</emphasis> instance.</para>
+      These are the primary classes used to access data from an HPCC Cluster.
+      The <emphasis>HpccFile</emphasis> class supports loading data to
+      construct a <emphasis>Dataset&lt;Row&gt;</emphasis> object for the Spark
+      interface. This will first load the data into an RDD&lt;Row&gt; and then
+      convert this RDD to a Dataset&lt;Row&gt; through internal Spark
+      mechanisms.</para>
 
       <para>The <emphasis>org.hpccsystems.spark.HpccFile</emphasis> class has
       several constructors. All of the constructors take information about the
@@ -157,6 +546,48 @@
       block of data, and returns the first record. When the block is
       exhausted, the next block should be available on the socket and new read
       request is issued.</para>
+
+      <para>The <emphasis>HpccFileWriter</emphasis> is another primary class
+      used for writing data to an HPCC Cluster. It has a single constructor
+      with the following signature:</para>
+
+      <programlisting>public HpccFileWriter(String connectionString, String user, String pass) throws Exception { </programlisting>
+
+      <para>The first parameter <emphasis>connectionString</emphasis> contains
+      the same information as <emphasis>HpccFile</emphasis> only using a
+      single connection string. It should be in the following format:
+      {http|https}://{ECLWATCHHOST}:{ECLWATCHPORT} </para>
+
+      <para>The constructor will attempt to connect to HPCC. This connection
+      will then be used for any subsequent calls to
+      <emphasis>saveToHPCC</emphasis>.</para>
+
+      <programlisting>public long saveToHPCC(SparkContext sc, RDD&lt;Row&gt; scalaRDD, String clusterName, 
+                        String fileName) throws Exception {</programlisting>
+
+      <para>The <emphasis>saveToHPCC</emphasis> method only supports
+      RDD&lt;row&gt; types. You may need to modify your data representation to
+      use this functionality. However, this data representation is what is
+      used by Spark SQL and by HPCC. This is only supported by writing in a
+      co-located setup. Thus Spark and HPCC must be installed on the same
+      nodes. Reading only supports reading data in from a remote HPCC
+      cluster.</para>
+
+      <para>The <emphasis>clusterName</emphasis> as used in the above case is
+      the desired cluster to write data to, for example, the "mythor" Thor
+      cluster. Currently there is only support for writing to Thor clusters.
+      Writing to a Roxie cluster is not supported and will return an
+      exception. The filename as used in the above example is in the HPCC
+      format, for example: "~example::text".</para>
+
+      <para>Internally the saveToHPCC method will Spawn multiple Spark jobs.
+      Currently, this spawns two jobs. The first job maps the location of
+      partitions in the Spark cluster so it can provide this information to
+      HPCC. The second job does the actual writing of files. There are also
+      some calls internally to ESP to handle things like starting the writing
+      process by calling <emphasis>DFUCreateFile</emphasis> and publishing the
+      file once it has been written by calling
+      <emphasis>DFUPublishFile</emphasis>.</para>
     </sect1>
 
     <sect1 id="additional-classes-of-interest">
@@ -223,28 +654,18 @@
       examples.  </para>
 
       <para>These test programs are intended to be run from a development IDE
-      such as Eclipse whereas the examples below are dependent on the Spark
-      shell.</para>
+      such as Eclipse via the Spark-submit application whereas the examples
+      below are dependent on the Spark shell.</para>
 
       <sect2 id="iris_lr">
         <title>Iris_LR</title>
 
         <para>The Iris_LR example assumes a Spark Shell. You can use the
-        spark-submit command as well. The Spark shell command will need a
-        parameter for the location of the JAPI Jar and the Spark-HPCC
-        Jar.</para>
+        spark-submit command if you intend to compile and package these
+        examples. If you are already logged onto a node on an integrated
+        Spark-HPCC Cluster run the spark-shell:</para>
 
-        <programlisting> spark-shell –-jars /home/my_name/Spark-HPCC.jar,/home/my_name/japi.jar</programlisting>
-
-        <para>This brings up the Spark shell with the two jars pre-pended to
-        the class path. The first thing needed is to establish the imports for
-        the classes.</para>
-
-        <programlisting> import org.hpccsystems.spark.HpccFile
- import org.hpccsystems.spark.HpccRDD
- import org.apache.spark.mllib.regression.LabeledPoint
- import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS
- import org.apache.spark.mllib.evaluation.MulticlassMetrics</programlisting>
+        <programlisting> /opt/HPCCSystems/externals/spark-hadoop/bin/spark-shell</programlisting>
 
         <para>The next step is to establish your HpccFile and your RDD for
         that file. You need the name of the file, the protocol (http or
@@ -253,7 +674,7 @@
         value is the <emphasis>SparkContext</emphasis> object provided by the
         shell.</para>
 
-        <programlisting> val hpcc = new HpccFile("my_data", "http", "my_esp", "8010", "x", "*", "")
+        <programlisting> val hpcc = new HpccFile("myfile", "http", "myeclwatchhost", "8010", "myuser", "mypass", "")
  val myRDD = hpcc.getRDD(sc)</programlisting>
 
         <para>Now we have an RDD of the data. Nothing has actually happened at
@@ -324,7 +745,7 @@
         and is used instead of the <emphasis>SparkContext</emphasis>
         object.</para>
 
-        <programlisting> val hpcc = new HpccFile("my_data", "http", "my_esp", "8010", "x", "*", "")
+        <programlisting> val hpcc = new HpccFile("myfile", "http", "myeclwatchhost", "8010", "myuser", "mypass", "")
  val mt_df = hpcc.getDataframe(spark)</programlisting>
 
         <para>The Spark <emphasis>ml</emphasis> Machine Learning classes use
