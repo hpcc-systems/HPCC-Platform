@@ -24,6 +24,7 @@
 #include "SWEspService.hpp"
 #include "SWDirectories.hpp"
 #include "SWDaliProcess.hpp"
+#include "SWBackupNode.hpp"
 #include "SWTopology.hpp"
 #include "deployutils.hpp"
 #include "ComponentBase.hpp"
@@ -159,6 +160,10 @@ void Software::getSWCompName(const char *inputName, StringBuffer& out)
    {
       out.append("loggingmanager");
    }
+   else if (!stricmp(compNameLC, "backup") || !stricmp(compNameLC, "backupnode"))
+   {
+      out.append("backupnode");
+   }
    else if (!stricmp(compNameLC, "agent") || !stricmp(compNameLC, "eclagent") ||
          !stricmp(compNameLC, "EclAgentiProcess"))
    {
@@ -286,6 +291,10 @@ IConfigComp* Software::getSWComp(const char *compName)
    else if (!stricmp(buildSetName, "ftslave"))
    {
       pComp = (IConfigComp*) new SWProcess(buildSetName, m_envHelper);
+   }
+   else if (!stricmp(buildSetName, "backupnode"))
+   {
+      pComp = (IConfigComp*) new SWBackupNode(buildSetName, m_envHelper);
    }
    else
    {

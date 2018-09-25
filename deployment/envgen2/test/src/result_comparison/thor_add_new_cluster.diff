@@ -11,7 +11,7 @@
 >             domain="localdomain"
 >             name="node000028"
 >             netAddress="1.0.0.28"/>
-428a441,461
+440a453,473
 >    <Instance computer="node000026"
 >              directory="/var/lib/HPCCSystems/mydafilesrv"
 >              name="s"
@@ -33,7 +33,7 @@
 >              parallelRequestLimit="20"
 >              throttleCPULimit="75"
 >              throttleDelayMs="5000"/>
-976a1010,1024
+996a1030,1044
 >    <Instance computer="node000026"
 >              directory="/var/lib/HPCCSystems/myftslave"
 >              name="s"
@@ -49,7 +49,7 @@
 >              name="s_3"
 >              netAddress="1.0.0.28"
 >              program="/opt/HPCCSystems/bin/ftslave"/>
-1229a1278,1344
+1253a1302,1368
 >   </ThorCluster>
 >   <ThorCluster affinity=""
 >                allowedPipePrograms="*"

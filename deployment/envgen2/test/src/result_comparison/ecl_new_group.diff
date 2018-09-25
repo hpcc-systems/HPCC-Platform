@@ -23,7 +23,7 @@
 >             domain="localdomain"
 >             name="node010030"
 >             netAddress="1.20.10.30"/>
-428a453,494
+440a465,506
 >    <Instance computer="node000026"
 >              directory="/var/lib/HPCCSystems/mydafilesrv"
 >              name="s"
@@ -66,7 +66,7 @@
 >              parallelRequestLimit="20"
 >              throttleCPULimit="75"
 >              throttleDelayMs="5000"/>
-501a568,588
+513a580,600
 >   <EclAgentProcess allowedPipePrograms="*"
 >                    build="_"
 >                    buildSet="eclagent"
@@ -88,7 +88,7 @@
 >              name="s"
 >              netAddress="1.20.10.10"/>
 >   </EclAgentProcess>
-516a604,618
+529a617,632
 >   <EclCCServerProcess build="_"
 >                       buildSet="eclccserver"
 >                       daliServers="mydali"
@@ -97,6 +97,7 @@
 >                       enableSysLog="true"
 >                       generatePrecompiledHeader="true"
 >                       maxEclccProcesses="4"
+>                       monitorInterval="60"
 >                       name="myeclccserver2"
 >                       traceLevel="1">
 >    <Instance computer="node010030"
@@ -104,7 +105,7 @@
 >              name="s"
 >              netAddress="1.20.10.30"/>
 >   </EclCCServerProcess>
-526a629,638
+539a643,652
 >   <EclSchedulerProcess build="_"
 >                        buildSet="eclscheduler"
 >                        daliServers="mydali"
@@ -115,7 +116,7 @@
 >              name="s"
 >              netAddress="1.20.10.20"/>
 >   </EclSchedulerProcess>
-976a1089,1103
+996a1110,1124
 >    <Instance computer="node000026"
 >              directory="/var/lib/HPCCSystems/myftslave"
 >              name="s"
@@ -131,7 +132,7 @@
 >              name="s_3"
 >              netAddress="1.0.0.28"
 >              program="/opt/HPCCSystems/bin/ftslave"/>
-1229a1357,1423
+1253a1382,1448
 >   </ThorCluster>
 >   <ThorCluster affinity=""
 >                allowedPipePrograms="*"

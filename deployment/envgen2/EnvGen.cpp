@@ -782,6 +782,8 @@ void CEnvGen::usage_update_input_format_2()
   puts("For examples:");
   puts("   -add sw:roxie#myroxie:instance@ip=1.0.0.22;1.0.0.23");
   puts("   -mod sw:dali#mydali:instance@ip=1.0.0.20");
+  puts("   -mod sw:thor#mythor@channelsPerSlave=4");
+  puts("   -mod sw:backupnode#mybackupnode:NodeGroup@name=thor2");
   puts("   -rmv hd:computer@ip=1.1.0.30");
   puts("");
 }

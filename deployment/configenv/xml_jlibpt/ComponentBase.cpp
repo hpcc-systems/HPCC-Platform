@@ -375,8 +375,10 @@ void ComponentBase::resolveSelector(const char* selector, const char* key, Strin
    String lwSelector(selector);
    if ((lwSelector.toLowerCase())->startsWith("instance"))
       out.clear().appendf("%s[@netAddress=\"%s\"]", selector, key);
-   else
+   else if (key)
       out.clear().appendf("%s[@name=\"%s\"]", selector, key);
+   else
+      out.clear().appendf("%s", selector);
 
 }
 

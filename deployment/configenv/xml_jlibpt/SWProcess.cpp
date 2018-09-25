@@ -82,7 +82,7 @@ void SWProcess::create(IPropertyTree *params)
 
 unsigned SWProcess::add(IPropertyTree *params)
 {
-  int rc = SWComponentBase::add(params);
+  unsigned rc = SWComponentBase::add(params);
 
   IPropertyTree * envTree = m_envHelper->getEnvTree();
   const char* key = params->queryProp("@key");
@@ -98,6 +98,8 @@ unsigned SWProcess::add(IPropertyTree *params)
      {
         addInstances(compTree, params);
      }
+     // Other selectors handled by concrete software process,
+     // For example, NodeGroup in BackupNodeProcess, EspBinding in EspProcess
   }
 
   return rc;

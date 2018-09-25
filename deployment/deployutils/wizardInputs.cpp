@@ -280,13 +280,14 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
     if (m_arrBuildSetsWithAssignedIPs.find(buildSetName) != NotFound)
         instDetails = new CInstDetails(compName, getIpAddrMap(buildSetName));
 
-    if (m_ipaddress.ordinality() + m_supportNodes == 1 && instDetails == NULL)
+    if (m_ipaddress.ordinality() + m_supportNodes == 1 && instDetails == NULL && strcmp(buildSetName, "backupnode"))
     {
       instDetails = new CInstDetails(compName, m_ipaddress.item(0));
       m_compIpMap.setValue(buildSetName,instDetails);
       return instDetails;
     }
-    else if (m_supportNodes == 1 && strcmp(buildSetName, "roxie") && strcmp(buildSetName, "thor" ) && instDetails == NULL)
+    else if (m_supportNodes == 1 && strcmp(buildSetName, "roxie") && strcmp(buildSetName, "thor" )
+         && strcmp(buildSetName, "backupnode") && instDetails == NULL)
     {
       instDetails = new CInstDetails(compName, m_ipaddressSupport.item(0));
       m_compIpMap.setValue(buildSetName,instDetails);
@@ -294,6 +295,9 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
     }
     else
     {
+      if (!strcmp(buildSetName, "backupnode") && m_arrBuildSetsWithAssignedIPs.find(buildSetName) == NotFound)
+         return NULL;
+
       unsigned x = 0;
       unsigned origNumOfNodes(numOfNodes);
 
@@ -341,7 +345,7 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
               numOfNodes--;
             }
           }
-          else if (!strcmp(buildSetName, "roxie"))
+          else if (!strcmp(buildSetName, "roxie") || !strcmp(buildSetName, "backupnode"))
             sb.clear().append("non-support ");
 
           if (m_arrBuildSetsWithAssignedIPs.find(buildSetName) == NotFound)

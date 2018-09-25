@@ -190,6 +190,8 @@ run_test_suite mod_binding
 
 run_test_suite rmv_binding
 
+run_test_suite add_backup
+
 if [[ $verbose -ne 2 ]] && [[ $show_input_only -ne 1 ]]
 then
    printf "\n\nSummery\n"

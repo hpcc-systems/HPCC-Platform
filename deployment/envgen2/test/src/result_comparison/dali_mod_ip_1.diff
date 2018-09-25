@@ -3,7 +3,7 @@
 >             domain="localdomain"
 >             name="node000020"
 >             netAddress="1.0.0.20"/>
-428a433,439
+440a445,451
 >    <Instance computer="node000020"
 >              directory="/var/lib/HPCCSystems/mydafilesrv"
 >              name="s"
@@ -11,11 +11,11 @@
 >              parallelRequestLimit="20"
 >              throttleCPULimit="75"
 >              throttleDelayMs="5000"/>
-435c446
+447c458
 <    <Instance computer="node002015"
 ---
 >    <Instance computer="node000020"
-438c449
+450c461
 <              netAddress="."
 ---
 >              netAddress="1.0.0.20"

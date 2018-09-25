@@ -217,3 +217,19 @@ EOF
    fi
    run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node computer@ip=1.1.0.10
 }
+
+add_backup()
+{
+   # Test add_backupnode_instance_1
+   #--------------------------------
+   test_id=add_bkupnode_instance_1
+   if [[ $verbose -ne 0 ]]
+   then
+      cat << EOF
+
+Add a instance with ip 40.1.0.10 to BackupNode. Also add a new NodeGroup "newthorgroup"
+envgen2 -env-in env_base.xml -env-out ${test_id}.xml -add-node backupnod#mybackupnodee@ip=40.1.0.10 -add sw:backupnode#mybackupnode:NodeGroup@name=newthorgroup
+EOF
+   fi
+   run_one_test -env-in ${in_dir}/env_base.xml -env-out ${out_dir}/${test_id}.xml -add-node backupnode#mybackupnode@ip=40.1.0.10 -add sw:backupnode#mybackupnode:NodeGroup@name=newthorgroup
+}

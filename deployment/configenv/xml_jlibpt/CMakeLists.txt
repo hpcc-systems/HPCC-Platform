@@ -47,6 +47,7 @@ set (    INCLUDES
          ConfigEnvFactory.hpp
          ComponentFromXSD.hpp
          environment.hpp
+         SWBackupNode.hpp
 
     )
 set (    SRCS
@@ -69,6 +70,7 @@ set (    SRCS
          SWThorCluster.cpp
          SWTopology.cpp
          ComponentFromXSD.cpp
+         SWBackupNode.cpp
     )
 
 include_directories (

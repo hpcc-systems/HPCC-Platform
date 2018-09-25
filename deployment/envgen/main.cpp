@@ -121,7 +121,7 @@ int main(int argc, char** argv)
   const char* out_envname = NULL;
   const char* in_ipfilename;
   StringBuffer ipAddrs;
-  int roxieNodes=0, thorNodes=0, slavesPerNode=1, supportNodes=0, espNodes=1;
+  int roxieNodes=1, thorNodes=1, slavesPerNode=1, supportNodes=1, espNodes=1;
   bool roxieOnDemand = true;
   MapStringTo<StringBuffer> dirMap;
   StringArray overrides;

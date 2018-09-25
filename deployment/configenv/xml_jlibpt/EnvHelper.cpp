@@ -349,7 +349,8 @@ const char* EnvHelper::getXMLTagName(const char* name)
       return XML_TAG_TOPOLOGY;
    else if (!strcmp(nameLC, "ftslave") || !strcmp(nameLC, "ftslaveprocess"))
       return "FTSlaveProcess";
-
+   else if (!strcmp(nameLC, "backupnode") || !strcmp(nameLC, "backup") || !strcmp(nameLC, "BackupNodeProcess"))
+      return "BackupNodeProcess";
    else
       return name;
 }
